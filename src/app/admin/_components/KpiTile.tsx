@@ -11,6 +11,8 @@ export function KpiTile({
   delta,
   goodDirection = 'up',
   tone = 'neutral',
+  starvedTitle,
+  starvedDescription,
 }: {
   label: string;
   value: number | null;
@@ -20,6 +22,13 @@ export function KpiTile({
   delta?: number;
   goodDirection?: 'up' | 'down';
   tone?: 'neutral' | 'danger' | 'warning';
+  /** Override the starved-state (value===null) title — e.g. "Sentry not
+   *  configured" instead of the generic "log more data" copy, when the
+   *  starvation reason is a known integration state rather than a genuine
+   *  data-accumulation gap (bridge-tab-audit-p0p1 overview Finding 1). */
+  starvedTitle?: React.ReactNode;
+  /** Override the starved-state description. */
+  starvedDescription?: React.ReactNode;
 }) {
   return (
     <Link
@@ -45,6 +54,8 @@ export function KpiTile({
         label={label}
         value={value ?? undefined}
         starved={value === null}
+        starvedTitle={starvedTitle}
+        starvedDescription={starvedDescription}
         // Fairway's StatTile takes number-flow's `Format` (Intl.NumberFormatOptions
         // minus scientific/engineering notation) — the Shared Interfaces contract
         // pins the wider Intl.NumberFormatOptions here, so narrow at the boundary.

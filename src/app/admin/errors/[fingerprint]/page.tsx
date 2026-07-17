@@ -3,9 +3,12 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
 import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
+import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelNoData } from '../../_components/PanelStates';
 import { CopyReportButton } from '../../_components/CopyReportButton';
+import { SportBadge, type BridgeSport } from '../../_components/SportBadge';
+import { LocalTime } from '../../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +21,52 @@ const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {
 
 function severityTone(severity: string): FwStatusTone {
   return SEVERITY_TONE[severity as TriageSeverity] ?? 'neutral';
+}
+
+function normalizeSport(raw: string | null | undefined): BridgeSport | null {
+  return raw === 'golf' || raw === 'baseball' || raw === 'shared' ? raw : null;
+}
+
+/** Mirrors TriageQueue's detailLine() so the same source/feature/action
+ *  context an operator sees on the list view is also visible per-event
+ *  here, plus the resolveActionFilePath() "where it was" line — previously
+ *  computed only for the hidden copy-for-Claude report (incident-report.ts's
+ *  own comment calls that "the single highest-value line"), now surfaced
+ *  on-screen too. */
+function EventDetailLine({
+  source,
+  feature,
+  metadata,
+}: {
+  source: string | null | undefined;
+  feature: string | null | undefined;
+  metadata: unknown;
+}) {
+  const actionName = extractActionName(metadata);
+  const featureLabel = featureLabelFor(feature);
+  const filePath = resolveActionFilePath(feature, actionName);
+  const parts = [
+    source ? `source ${source}` : null,
+    feature ? `feature ${featureLabel ?? feature} (${feature})` : null,
+    actionName ? `action ${actionName}` : null,
+  ].filter((p): p is string => p !== null);
+
+  if (parts.length === 0 && !filePath) return null;
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      {parts.length > 0 ? (
+        <p className="break-words font-fw-mono text-caption leading-4 text-warm-500 [overflow-wrap:anywhere]">
+          {parts.join(' · ')}
+        </p>
+      ) : null}
+      {filePath ? (
+        <p className="break-words font-fw-mono text-caption leading-4 text-accent-700 [overflow-wrap:anywhere]">
+          source file: {filePath}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 export default async function FingerprintDetailPage({
@@ -53,13 +102,17 @@ export default async function FingerprintDetailPage({
             <Surface as="li" key={e.id} padding="sm" className="min-w-0">
               <div className="flex min-w-0 items-start justify-between gap-3">
                 <p className="min-w-0 flex-1 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{e.title}</p>
-                <StatusPill tone={severityTone(e.severity)} dot size="sm" className="shrink-0">
-                  {e.severity}
-                </StatusPill>
+                <div className="flex shrink-0 items-center gap-2">
+                  <SportBadge sport={normalizeSport(e.sport)} />
+                  <StatusPill tone={severityTone(e.severity)} dot size="sm">
+                    {e.severity}
+                  </StatusPill>
+                </div>
               </div>
               <p className="break-words font-fw-mono text-xs tabular-nums text-warm-500 [overflow-wrap:anywhere]">
-                {e.created_at ? new Date(e.created_at).toLocaleString() : 'unknown time'} · {e.url ?? 'no url'}
+                {e.created_at ? <LocalTime iso={e.created_at} variant="datetime" /> : 'unknown time'} · {e.url ?? 'no url'}
               </p>
+              <EventDetailLine source={e.source} feature={e.feature} metadata={e.metadata} />
               {e.user_id ? (
                 <Link href={`/admin/users/${e.user_id}`} className="text-xs text-accent-700 underline">
                   {e.user_email ?? e.user_id}

@@ -84,6 +84,7 @@ export type ActivityKind =
   | 'event_created'
   | 'demo_session'
   | 'document_uploaded'
+  | 'lift_session_logged'
   | 'error';
 
 const ALL_ACTIVITY_KINDS: readonly ActivityKind[] = [
@@ -95,6 +96,7 @@ const ALL_ACTIVITY_KINDS: readonly ActivityKind[] = [
   'event_created',
   'demo_session',
   'document_uploaded',
+  'lift_session_logged',
   'error',
 ];
 
@@ -662,6 +664,58 @@ async function fetchError(ctx: SourceCtx): Promise<ActivityItem[]> {
     });
 }
 
+type LiftSessionActivityRow = {
+  id: string;
+  created_at: string | null;
+  status: string;
+  sport: string;
+  team_id: string | null;
+  helm_lifting_athletes: { first_name: string | null; last_name: string | null } | null;
+  organizations: { name: string } | null;
+};
+
+/**
+ * Lift Lab kind (bridge-tab-audit-p0p1 activity Finding 1) — the "Everything
+ * Helm is doing" feed previously covered only golf + baseball; Lift Lab is a
+ * genuinely cross-sport product (helm_lifting_sessions carries its own
+ * `sport` column, not a golf_/baseball_ table prefix), so this source is not
+ * team-scoped the way round_submitted/event_created are UNLESS the caller's
+ * teamId happens to match `helm_lifting_sessions.team_id` directly (no
+ * resolveTeamUserIds-style indirection exists for Lift Lab yet) — an honest
+ * empty contribution, not a broken filter, when it doesn't.
+ */
+async function fetchLiftSessionLogged(ctx: SourceCtx): Promise<ActivityItem[]> {
+  let q = ctx.admin
+    .from('helm_lifting_sessions')
+    .select(
+      'id, created_at, status, sport, team_id, helm_lifting_athletes(first_name, last_name), organizations!helm_lifting_sessions_organization_id_fkey(name)',
+    )
+    .order('created_at', { ascending: false })
+    .limit(ctx.limit);
+  if (ctx.cursor) q = q.lt('created_at', ctx.cursor);
+  if (ctx.teamId) q = q.eq('team_id', ctx.teamId);
+  const { data, error } = await q;
+  if (error) throw new Error(`lift_session_logged: ${error.message}`);
+
+  const rows = (data ?? []) as unknown as LiftSessionActivityRow[];
+  const items: ActivityItem[] = [];
+  for (const r of rows) {
+    if (!r.created_at) continue;
+    const first = r.helm_lifting_athletes?.first_name ?? '';
+    const last = r.helm_lifting_athletes?.last_name ?? '';
+    const name = `${first} ${last}`.trim() || 'An athlete';
+    items.push({
+      id: `lift_session_logged:${r.id}`,
+      kind: 'lift_session_logged',
+      ts: r.created_at,
+      title: `${name} logged a Lift Lab session`,
+      detail: `${r.organizations?.name ?? 'an org'} — ${r.sport} — ${r.status}`,
+      href: '/admin/lifting',
+    });
+  }
+  return items;
+}
+
 const SOURCE_FETCHERS: Record<ActivityKind, (ctx: SourceCtx) => Promise<ActivityItem[]>> = {
   round_submitted: fetchRoundSubmitted,
   signup: fetchSignup,
@@ -671,6 +725,7 @@ const SOURCE_FETCHERS: Record<ActivityKind, (ctx: SourceCtx) => Promise<Activity
   event_created: fetchEventCreated,
   demo_session: fetchDemoSession,
   document_uploaded: fetchDocumentUploaded,
+  lift_session_logged: fetchLiftSessionLogged,
   error: fetchError,
 };
 

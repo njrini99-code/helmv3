@@ -123,13 +123,19 @@ export function excludeAuthNoise<T extends { not(column: string, operator: strin
 export function mergeTriage(input: {
   sentryIssues: SentryIssue[];
   appEvents: AppTriageEventRow[];
+  /** Honest per-batch attribution — see SentryTagHint in incident-feed.ts.
+   *  Only set when the caller actually scoped its Sentry fetch by that tag;
+   *  omitted/undefined fields render as unknown, never a guess. */
+  sentryTagHint?: { sport?: TriageItem['sport'] | null; feature?: string | null };
 }): TriageItem[] {
+  const hintSport = input.sentryTagHint?.sport ?? null;
+  const hintFeature = input.sentryTagHint?.feature ?? null;
   const items: TriageItem[] = input.sentryIssues.map((issue) => ({
     key: `sentry:${issue.id}`,
     origin: 'sentry' as const,
     title: issue.title,
     severity: SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error',
-    sport: null,
+    sport: hintSport,
     occurrences: issue.count,
     affectedUsers: issue.userCount,
     firstSeen: issue.firstSeen,
@@ -138,7 +144,7 @@ export function mergeTriage(input: {
     eventIds: [],
     substatus: issue.substatus,
     source: 'sentry',
-    feature: null,
+    feature: hintFeature,
     actionName: null,
     route: issue.culprit,
     report: buildIncidentReport({
@@ -147,6 +153,8 @@ export function mergeTriage(input: {
       fingerprint: issue.shortId,
       source: 'sentry',
       severity: SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error',
+      sport: hintSport,
+      featureKey: hintFeature,
       eventCount: issue.count,
       affectedUserCount: issue.userCount,
       firstSeen: issue.firstSeen,

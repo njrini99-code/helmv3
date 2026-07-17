@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchUsersTab, type RosterPlayerInsight, type TeamRosterInsight } from '@/lib/admin/data/users';
+import { fetchUsersTab, USER_ROLES, type RosterPlayerInsight, type TeamRosterInsight } from '@/lib/admin/data/users';
 import { Surface, Inset, StatTile, StatStrip, StatusPill, SearchField, Button, type FwStatusTone } from '@/components/fairway';
+import { FairwayLargeTitle } from '@/components/fairway/app-shell';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData } from '../_components/PanelStates';
 import { SportBadge } from '../_components/SportBadge';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { LocalTime } from '../_components/LocalTime';
+import { UserRoleFilterChips, type RoleChip } from './UserRoleFilterChips';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +34,11 @@ const PROFILE_TONE: Record<RosterPlayerInsight['profileQuality'], FwStatusTone> 
   missing: 'danger',
 };
 
-function shortDate(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleDateString() : 'never';
+/** Viewer-local date, matching the fix elsewhere in Bridge (LocalTime.tsx's
+ *  doc comment — a raw `toLocaleDateString()` call inside a Server Component
+ *  bakes the SERVER's (UTC) timezone into the SSR HTML for every viewer). */
+function LastActivityDate({ iso }: { iso: string | null }) {
+  return iso ? <LocalTime iso={iso} variant="date" fallback="never" /> : <>never</>;
 }
 
 function ActivityBar({ value, max }: { value: number; max: number }) {
@@ -75,7 +81,7 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
             </StatusPill>
           </div>
           <p className="mt-1 font-fw-mono text-xs tabular-nums text-warm-500">
-            last activity {shortDate(team.lastActivity)} · {team.playerCount} rostered · {team.errors7d} errors 7d
+            last activity <LastActivityDate iso={team.lastActivity} /> · {team.playerCount} rostered · {team.errors7d} errors 7d
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-right">
@@ -124,7 +130,7 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
                       <p className="mt-0.5 break-words text-xs text-warm-500">{player.email ?? 'no email'}</p>
                       <p className="mt-1.5 font-fw-mono text-xs tabular-nums text-warm-500">{meta}</p>
                       <p className="mt-0.5 text-xs text-warm-400">
-                        last signal {shortDate(player.lastActivity ?? player.lastSeen)}
+                        last signal <LastActivityDate iso={player.lastActivity ?? player.lastSeen} />
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -212,7 +218,7 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
                         </div>
                       </td>
                       <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-500">
-                        {shortDate(player.lastActivity ?? player.lastSeen)}
+                        <LastActivityDate iso={player.lastActivity ?? player.lastSeen} />
                       </td>
                       <td className="px-3">
                         <StatusPill tone={PROFILE_TONE[player.profileQuality]} dot={player.profileQuality !== 'complete'} size="sm">
@@ -405,6 +411,24 @@ export default async function UsersPage({
       ? params.attention
       : undefined;
 
+  // Role chips preserve every OTHER active filter (q/team/sport/attention)
+  // while toggling `role` — a bare `?role=coach` link would silently drop
+  // whatever else the operator had already narrowed down to.
+  function roleChipHref(nextRole: string | null): string {
+    const sp = new URLSearchParams();
+    if (q) sp.set('q', q);
+    if (nextRole) sp.set('role', nextRole);
+    if (team) sp.set('team', team);
+    if (sport) sp.set('sport', sport);
+    if (attention) sp.set('attention', attention);
+    const qs = sp.toString();
+    return qs ? `/admin/users?${qs}` : '/admin/users';
+  }
+  const roleChips: RoleChip[] = [
+    { key: 'all', label: 'All roles', href: roleChipHref(null), selected: !role },
+    ...USER_ROLES.map((r) => ({ key: r, label: r, href: roleChipHref(r), selected: role === r })),
+  ];
+
   async function Body() {
     const tab = await fetchUsersTab({ q, role, team });
     const golfCount = tab.users.filter((u) => u.sports.includes('golf')).length;
@@ -412,6 +436,11 @@ export default async function UsersPage({
 
     return (
       <div className="space-y-6">
+        <FairwayLargeTitle
+          title="Users & Teams"
+          eyebrow="Platform"
+          meta={`${tab.totalUsersCount} accounts · ${tab.teams.length} teams`}
+        />
         <form method="get" className="flex flex-wrap items-center gap-2">
           <SearchField
             name="q"
@@ -438,6 +467,8 @@ export default async function UsersPage({
             <span className="font-fw-mono text-xs text-warm-500">view {attention}</span>
           ) : null}
         </form>
+
+        <UserRoleFilterChips chips={roleChips} />
 
         <StatStrip count={4} mdColumns={4} ariaLabel="User directory KPIs">
           <StatTile label="Total users" value={tab.totalUsersCount} tone="neutral" mono />
@@ -479,7 +510,7 @@ export default async function UsersPage({
                       ))}
                     </div>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
-                      {u.lastSeen ? `seen ${new Date(u.lastSeen).toLocaleDateString()}` : 'never seen'}
+                      {u.lastSeen ? <>seen <LocalTime iso={u.lastSeen} variant="date" fallback="never" /></> : 'never seen'}
                     </span>
                   </li>
                 ))}

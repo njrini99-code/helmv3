@@ -18,6 +18,12 @@ import {
 export interface OverviewKpis {
   /** Unresolved Sentry issues (org-wide; not windowed). */
   sentryUnresolved: number | null;
+  /** Why `sentryUnresolved` is null when it is — 'unconfigured' (no
+   *  SENTRY_READ_TOKEN) vs 'error' (the API call failed) vs 'ok' (it isn't
+   *  null). Lets the KPI tile show honest starved copy instead of the
+   *  generic "log more data" message (bridge-tab-audit-p0p1 overview
+   *  Finding 1) — those are different problems with different fixes. */
+  sentryStatus: 'ok' | 'unconfigured' | 'error';
   /** Coalesced incident groups in the last 24h — same feed as Overview triage + Errors tab default. */
   incidentGroups24h: number;
   /** ALL `event_type='security'` rows in 24h — password resets, view-as
@@ -185,6 +191,7 @@ export async function fetchOverviewSnapshot() {
   const kpis: OverviewKpis = {
     sentryUnresolved:
       incidentFeed24h.sentry.status === 'ok' ? (incidentFeed24h.sentry.data?.length ?? 0) : null,
+    sentryStatus: incidentFeed24h.sentry.status,
     incidentGroups24h: incidentFeed24h.counts.totalGroups,
     securityEvents24h: security24h.count ?? 0,
     activeUsersToday: activeToday.count ?? 0,

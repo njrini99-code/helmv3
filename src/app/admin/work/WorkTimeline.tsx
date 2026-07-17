@@ -2,9 +2,11 @@ import Link from 'next/link';
 import { ExternalLink, GitPullRequest } from 'lucide-react';
 import type { WorkLogEntry } from '@/lib/admin/github-pr-timeline';
 import type { WorkArea } from '@/lib/admin/pr-body-parser';
-import { StatusPill, Surface, StatTile, StatStrip, type FwStatusTone } from '@/components/fairway';
+import { StatusPill, Surface, StatTile, StatStrip, InlineNotice, type FwStatusTone } from '@/components/fairway';
 
-const AREA_META: Record<WorkArea, { label: string; tone: FwStatusTone }> = {
+// Exported — WorkFilterChips (area/state filter row) reuses the same
+// labels/tones so the chips and the cards they filter never drift apart.
+export const AREA_META: Record<WorkArea, { label: string; tone: FwStatusTone }> = {
   golf: { label: 'GolfHelm', tone: 'success' },
   baseball: { label: 'BaseballHelm', tone: 'info' },
   coachhelm: { label: 'CoachHelm', tone: 'accent' },
@@ -15,7 +17,7 @@ const AREA_META: Record<WorkArea, { label: string; tone: FwStatusTone }> = {
   unknown: { label: 'Cross-cutting', tone: 'neutral' },
 };
 
-const STATE_META: Record<WorkLogEntry['state'], { label: string; tone: FwStatusTone }> = {
+export const STATE_META: Record<WorkLogEntry['state'], { label: string; tone: FwStatusTone }> = {
   merged: { label: 'Merged', tone: 'success' },
   open: { label: 'Open', tone: 'info' },
   closed: { label: 'Closed', tone: 'neutral' },
@@ -135,6 +137,8 @@ export function WorkTimeline({
   repoLabel,
   authorLogins,
   counts,
+  truncated = false,
+  fetchLimit,
 }: {
   entries: WorkLogEntry[];
   repoLabel: string;
@@ -145,6 +149,11 @@ export function WorkTimeline({
     open: number;
     byArea: Record<WorkArea, number>;
   };
+  /** True when the GitHub fetch hit GITHUB_PR_FETCH_LIMIT — `counts.total`
+   *  (and every derived count/chip) reflects the most-recently-updated
+   *  `fetchLimit` PRs, not the repo's whole history. */
+  truncated?: boolean;
+  fetchLimit?: number;
 }) {
   const months = groupByMonth(entries);
   const topAreas = (Object.entries(counts.byArea) as Array<[WorkArea, number]>)
@@ -179,6 +188,14 @@ export function WorkTimeline({
           Open {repoLabel} pulls
         </Link>
       </div>
+
+      {truncated ? (
+        <InlineNotice tone="warning" title="Showing the most recent PRs only">
+          Capped at {fetchLimit ?? counts.total} most-recently-updated pull requests
+          (<code className="text-xs">GITHUB_PR_FETCH_LIMIT</code>) — the repo&apos;s real PR history is likely longer
+          than the &quot;PRs tracked&quot; count below. Raise the limit (max 100) or add pagination to see further back.
+        </InlineNotice>
+      ) : null}
 
       {/* Count tiles: StatStrip is the ONE phone-shape primitive for KPI rows
           (doctrine rules 2/3/11 — docs/MOBILE_DOCTRINE.md). 3 peers → a 2-col

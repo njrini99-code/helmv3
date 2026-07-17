@@ -1,15 +1,28 @@
 import { GitPullRequest, ScrollText } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchWorkLog } from '@/lib/admin/github-pr-timeline';
+import { fetchWorkLog, type PrLifecycleState } from '@/lib/admin/github-pr-timeline';
+import type { WorkArea } from '@/lib/admin/pr-body-parser';
 import { Eyebrow, Surface, StatusPill } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
-import { WorkTimeline } from './WorkTimeline';
+import { WorkTimeline, AREA_META, STATE_META } from './WorkTimeline';
+import { WorkFilterChips, type WorkFilterChip } from './WorkFilterChips';
 
 export const dynamic = 'force-dynamic';
 
-async function WorkLogBody() {
+const WORK_AREAS = Object.keys(AREA_META) as WorkArea[];
+const PR_STATES = Object.keys(STATE_META) as PrLifecycleState[];
+
+function buildWorkHref(params: { area?: WorkArea; state?: PrLifecycleState }): string {
+  const sp = new URLSearchParams();
+  if (params.area) sp.set('area', params.area);
+  if (params.state) sp.set('state', params.state);
+  const qs = sp.toString();
+  return qs ? `/admin/work?${qs}` : '/admin/work';
+}
+
+async function WorkLogBody({ areaFilter, stateFilter }: { areaFilter?: WorkArea; stateFilter?: PrLifecycleState }) {
   const workLog = await fetchWorkLog();
 
   if (workLog.status === 'unconfigured') {
@@ -23,7 +36,8 @@ async function WorkLogBody() {
   if (workLog.status === 'error' || !workLog.data) {
     return <PanelStale label="Work log" error={workLog.error} />;
   }
-  if (workLog.data.entries.length === 0) {
+  const data = workLog.data;
+  if (data.entries.length === 0) {
     return (
       <PanelNoData
         label="No pull requests found"
@@ -32,22 +46,91 @@ async function WorkLogBody() {
     );
   }
 
+  const areaChips: WorkFilterChip[] = [
+    { key: 'all', label: 'All areas', href: buildWorkHref({ state: stateFilter }), selected: !areaFilter },
+    ...WORK_AREAS.filter((area) => data.counts.byArea[area] > 0).map((area) => ({
+      key: area,
+      label: AREA_META[area].label,
+      href: buildWorkHref({ area, state: stateFilter }),
+      selected: areaFilter === area,
+      count: data.counts.byArea[area],
+    })),
+  ];
+  const closedCount = Math.max(0, data.counts.total - data.counts.merged - data.counts.open);
+  const stateCounts: Record<PrLifecycleState, number> = {
+    merged: data.counts.merged,
+    open: data.counts.open,
+    closed: closedCount,
+  };
+  const stateChips: WorkFilterChip[] = [
+    { key: 'all', label: 'All states', href: buildWorkHref({ area: areaFilter }), selected: !stateFilter },
+    ...PR_STATES.filter((state) => stateCounts[state] > 0).map((state) => ({
+      key: state,
+      label: STATE_META[state].label,
+      href: buildWorkHref({ area: areaFilter, state }),
+      selected: stateFilter === state,
+      count: stateCounts[state],
+    })),
+  ];
+
+  const filteredEntries = data.entries.filter(
+    (entry) => (!areaFilter || entry.parsed.area === areaFilter) && (!stateFilter || entry.state === stateFilter),
+  );
+
+  // WorkTimeline's "PRs tracked" / "Merged" / "Open" stat tiles and its "Top
+  // areas" chip cluster must describe the SAME set of PRs as the timeline
+  // cards rendered below them — recount over `filteredEntries`, not
+  // `data.counts` (the platform-wide, pre-filter rollup), so picking an
+  // area/state chip narrows every number on the page together instead of
+  // narrowing only the card list while the tiles above keep showing the
+  // unfiltered totals.
+  const filteredCounts = {
+    total: filteredEntries.length,
+    merged: filteredEntries.filter((entry) => entry.state === 'merged').length,
+    open: filteredEntries.filter((entry) => entry.state === 'open').length,
+    byArea: Object.fromEntries(
+      WORK_AREAS.map((area) => [area, filteredEntries.filter((entry) => entry.parsed.area === area).length]),
+    ) as Record<WorkArea, number>,
+  };
+
   return (
-    <WorkTimeline
-      entries={workLog.data.entries}
-      repoLabel={workLog.data.repoLabel}
-      authorLogins={workLog.data.authorLogins}
-      counts={workLog.data.counts}
-    />
+    <div className="space-y-4">
+      <WorkFilterChips areaChips={areaChips} stateChips={stateChips} />
+      {filteredEntries.length === 0 ? (
+        <PanelNoData
+          label="No PRs match these filters"
+          description="Clear the area/state filters to see the full timeline."
+        />
+      ) : (
+        <WorkTimeline
+          entries={filteredEntries}
+          repoLabel={data.repoLabel}
+          authorLogins={data.authorLogins}
+          counts={filteredCounts}
+          truncated={workLog.truncated ?? false}
+          fetchLimit={data.fetchLimit}
+        />
+      )}
+    </div>
   );
 }
 
-export default async function WorkLogPage() {
+export default async function WorkLogPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = await searchParams;
+  const areaParam = typeof params.area === 'string' ? params.area : undefined;
+  const stateParam = typeof params.state === 'string' ? params.state : undefined;
+  const areaFilter = areaParam && (WORK_AREAS as string[]).includes(areaParam) ? (areaParam as WorkArea) : undefined;
+  const stateFilter =
+    stateParam && (PR_STATES as string[]).includes(stateParam) ? (stateParam as PrLifecycleState) : undefined;
 
   return (
     <div className="space-y-6">
-      <div>
+      <div data-fw-title-anchor>
         <Eyebrow as="p" tone="accent">
           Work log
         </Eyebrow>
@@ -72,7 +155,7 @@ export default async function WorkLogPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
           <PanelBoundary title="Your PR timeline">
-            <WorkLogBody />
+            <WorkLogBody areaFilter={areaFilter} stateFilter={stateFilter} />
           </PanelBoundary>
         </div>
 

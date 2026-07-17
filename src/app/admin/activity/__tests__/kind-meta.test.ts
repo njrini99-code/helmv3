@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ACTIVITY_KIND_META, isActivityKind, kindMeta } from '../kind-meta';
 
 describe('ACTIVITY_KIND_META', () => {
-  it('declares all 9 kinds in the owner-specified chip order', () => {
+  it('declares all 10 kinds in the owner-specified chip order', () => {
     expect(ACTIVITY_KIND_META.map((m) => m.chipLabel)).toEqual([
       'Rounds/Games',
       'Sign-ups',
@@ -12,6 +12,7 @@ describe('ACTIVITY_KIND_META', () => {
       'Events',
       'Demos',
       'Documents',
+      'Lift sessions',
       'Errors',
     ]);
   });

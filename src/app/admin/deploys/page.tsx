@@ -13,6 +13,7 @@ import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { Surface, Inset, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
 import { ShowMoreList } from './_components/ShowMoreList';
+import { ReleaseLedger } from './_components/ReleaseLedger';
 
 /** Phone card list (below `md`) shows this many deploys before "Show more" —
  *  keeps the default view inside the ~3-screen-height scroll budget (Mobile
@@ -56,16 +57,45 @@ function githubCommitHref(sha: string | null): string | null {
   return `https://github.com/${owner}/${repo}/commit/${sha}`;
 }
 
+/** The one place `VERCEL_GIT_COMMIT_SHA` is read for "what's live" — shared
+ *  by CurrentBuildCard's identity line and DeploymentsTable/DeploymentCard's
+ *  LIVE badge, so the two surfaces can never disagree on which row is the
+ *  one actually serving traffic right now (bridge-tab-audit-p0p1, deploys
+ *  P1: previously the operator had to eyeball-match them manually). */
+function currentBuildSha(): string | null {
+  return process.env.VERCEL_GIT_COMMIT_SHA ?? null;
+}
+
 /**
  * Currently-deployed build — Vercel system env, present on every deployment
  * with ZERO new secrets. Works even before VERCEL_API_TOKEN is provisioned.
+ *
+ * HONESTY FIX (bridge-tab-audit-p0p1, deploys P1): if Vercel Project Settings
+ * > Environment Variables > "Automatically expose System Environment
+ * Variables" is off, these vars are undefined at request time even in
+ * PRODUCTION — and the old fallback text ("local · working tree ·
+ * development") is byte-identical to what a real local dev server prints.
+ * `sha` undefined now renders an explicit unconfigured state instead of
+ * silently lying about being local.
  */
 function CurrentBuildCard() {
-  const sha = process.env.VERCEL_GIT_COMMIT_SHA;
+  const sha = currentBuildSha();
   const ref = process.env.VERCEL_GIT_COMMIT_REF;
   const message = process.env.VERCEL_GIT_COMMIT_MESSAGE;
   const author = process.env.VERCEL_GIT_COMMIT_AUTHOR_NAME;
-  const env = process.env.VERCEL_ENV ?? 'development';
+  const env = process.env.VERCEL_ENV;
+
+  if (!sha) {
+    return (
+      <section className="rounded-2xl bg-[var(--fw-color-nav-bg)] p-4 text-white">
+        <p className="text-xs uppercase tracking-widest text-white/60">This running build</p>
+        <p className="mt-1 text-sm text-white/70">
+          Build identity not exposed{env ? ` (env: ${env})` : ''} — enable &quot;Automatically expose System
+          Environment Variables&quot; in Vercel project settings, or this is a local dev server.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-2xl bg-[var(--fw-color-nav-bg)] p-4 text-white">
@@ -75,7 +105,7 @@ function CurrentBuildCard() {
           the line past the card edge and, since nothing here scopes overflow,
           drags the whole page into a horizontal pan (doctrine rule 1/3). */}
       <p className="mt-1 break-words font-fw-mono text-lg tabular-nums">
-        {sha ? sha.slice(0, 7) : 'local'} · {ref ?? 'working tree'} · {env}
+        {sha.slice(0, 7)} · {ref ?? 'unknown ref'} · {env ?? 'unknown env'}
       </p>
       {message ? <p className="mt-1 truncate text-sm text-white/70">{message}</p> : null}
       {author ? <p className="text-xs text-white/50">by {author}</p> : null}
@@ -94,6 +124,7 @@ function CurrentBuildCard() {
  * relying on horizontal scroll for phones.
  */
 async function DeploymentsTable() {
+  const liveSha = currentBuildSha();
   const deploys = await fetchVercelDeployments(20);
   if (deploys.status === 'unconfigured') {
     return (
@@ -128,10 +159,10 @@ async function DeploymentsTable() {
           moreCount={restRows.length}
           itemLabel="deployment"
           initial={visibleRows.map((d) => (
-            <DeploymentCard key={d.uid} d={d} />
+            <DeploymentCard key={d.uid} d={d} liveSha={liveSha} />
           ))}
           more={restRows.map((d) => (
-            <DeploymentCard key={d.uid} d={d} />
+            <DeploymentCard key={d.uid} d={d} liveSha={liveSha} />
           ))}
         />
       </div>
@@ -154,21 +185,29 @@ async function DeploymentsTable() {
               const sentryHref = sentryReleaseHref(d.commitSha);
               const commitSha = d.commitSha;
               const deployHref = d.url ? `https://${d.url}` : null;
+              const isLive = liveSha !== null && commitSha !== null && commitSha === liveSha;
               return (
                 <tr key={d.uid}>
                   <td className="sticky left-0 z-10 bg-surface py-2 pr-3">
-                    {commitSha ? (
-                      <a
-                        href={githubCommitHref(commitSha) ?? undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-fw-mono text-xs text-accent-700 underline"
-                      >
-                        {commitSha.slice(0, 7)}
-                      </a>
-                    ) : (
-                      <p className="font-fw-mono text-xs text-warm-900">{d.uid.slice(0, 7)}</p>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {commitSha ? (
+                        <a
+                          href={githubCommitHref(commitSha) ?? undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-fw-mono text-xs text-accent-700 underline"
+                        >
+                          {commitSha.slice(0, 7)}
+                        </a>
+                      ) : (
+                        <p className="font-fw-mono text-xs text-warm-900">{d.uid.slice(0, 7)}</p>
+                      )}
+                      {isLive ? (
+                        <StatusPill tone="success" dot size="sm">
+                          live
+                        </StatusPill>
+                      ) : null}
+                    </div>
                     {deployHref ? (
                       <a
                         href={deployHref}
@@ -223,28 +262,36 @@ async function DeploymentsTable() {
  * both are unbounded-length width-forcers) + 2–3 key stats (state, target,
  * age) + tap-through (the message/URL line, and the Sentry deep-link).
  */
-function DeploymentCard({ d }: { d: VercelDeployment }) {
+function DeploymentCard({ d, liveSha }: { d: VercelDeployment; liveSha: string | null }) {
   const sentryHref = sentryReleaseHref(d.commitSha);
   const commitSha = d.commitSha;
   const deployHref = d.url ? `https://${d.url}` : null;
+  const isLive = liveSha !== null && commitSha !== null && commitSha === liveSha;
 
   return (
     <li>
       <Inset padding="sm" className="flex flex-col gap-1.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            {commitSha ? (
-              <a
-                href={githubCommitHref(commitSha) ?? undefined}
-                target="_blank"
-                rel="noreferrer"
-                className="block truncate font-fw-mono text-sm font-medium text-accent-700 underline"
-              >
-                {commitSha.slice(0, 7)}
-              </a>
-            ) : (
-              <p className="truncate font-fw-mono text-sm text-warm-900">{d.uid.slice(0, 7)}</p>
-            )}
+            <div className="flex min-w-0 items-center gap-1.5">
+              {commitSha ? (
+                <a
+                  href={githubCommitHref(commitSha) ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="min-w-0 truncate font-fw-mono text-sm font-medium text-accent-700 underline"
+                >
+                  {commitSha.slice(0, 7)}
+                </a>
+              ) : (
+                <p className="min-w-0 truncate font-fw-mono text-sm text-warm-900">{d.uid.slice(0, 7)}</p>
+              )}
+              {isLive ? (
+                <StatusPill tone="success" dot size="sm" className="shrink-0">
+                  live
+                </StatusPill>
+              ) : null}
+            </div>
             <p className="mt-0.5 truncate font-fw-mono text-xs text-warm-600">{d.commitRef ?? '—'}</p>
           </div>
           <StatusPill tone={STATE_TONE[d.state] ?? 'neutral'} dot size="sm" className="shrink-0">
@@ -346,6 +393,15 @@ export default async function DeploysPage() {
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
       <CurrentBuildCard />
+
+      <Surface padding="sm">
+        <SectionLabel>Release ledger</SectionLabel>
+        <div className="mt-3">
+          <PanelBoundary title="Release ledger">
+            <ReleaseLedger />
+          </PanelBoundary>
+        </div>
+      </Surface>
 
       <Surface padding="sm">
         <SectionLabel>Deployments</SectionLabel>

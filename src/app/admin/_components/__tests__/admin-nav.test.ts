@@ -14,8 +14,10 @@ describe('ADMIN_NAV', () => {
       '/admin/activity',
       '/admin/errors',
       '/admin/auth',
+      '/admin/utilization',
       '/admin/golf',
       '/admin/baseball',
+      '/admin/lifting',
       '/admin/ben-leah',
       '/admin/work',
       '/admin/users',
@@ -23,7 +25,9 @@ describe('ADMIN_NAV', () => {
       '/admin/deploys',
       '/admin/health',
     ]);
-    expect(ADMIN_NAV.map((e) => e.key)).toEqual(['1', '2', '3', '4', '5', '6', 'B', 'W', '7', '8', '9', '0']);
+    expect(ADMIN_NAV.map((e) => e.key)).toEqual([
+      '1', '2', '3', '4', 'U', '5', '6', 'L', 'B', 'W', '7', '8', '9', '0',
+    ]);
   });
   it('maps shortcut keys to hrefs', () => {
     expect(hrefForShortcut('2')).toBe('/admin/activity');

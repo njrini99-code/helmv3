@@ -38,9 +38,23 @@ export interface TrendPoint {
   x: string | number;
   /** y value */
   y: number;
-  /** optional marker (e.g. a tournament) rendered as a ReferenceDot */
-  marker?: { label?: string };
+  /**
+   * Optional marker (e.g. a tournament, a deploy) rendered as a
+   * ReferenceDot. `tone` is additive (default `undefined` → the original
+   * accent-green ring, unchanged for every existing caller) — pass it to
+   * color-code the marker itself, e.g. a deploy ledger's improved/neutral/
+   * regressed verdict.
+   */
+  marker?: { label?: string; tone?: 'success' | 'neutral' | 'danger' };
 }
+
+/** Marker ring color per tone — `undefined`/omitted keeps the original
+ *  single accent-green ring every pre-existing TrendChart caller renders. */
+const MARKER_TONE_COLOR: Record<'success' | 'neutral' | 'danger', string> = {
+  success: VIZ_COLOR.accent,
+  neutral: 'var(--fw-color-warm-500)',
+  danger: VIZ_COLOR.danger,
+};
 
 export interface TrendChartProps {
   title: React.ReactNode;
@@ -205,7 +219,7 @@ export function TrendChart({
               y={m.y}
               r={4}
               fill={VIZ_COLOR.surface}
-              stroke={VIZ_COLOR.accent}
+              stroke={m.marker?.tone ? MARKER_TONE_COLOR[m.marker.tone] : VIZ_COLOR.accent}
               strokeWidth={2}
             />
           ))}

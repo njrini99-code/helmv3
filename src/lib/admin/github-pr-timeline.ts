@@ -38,6 +38,11 @@ export interface WorkLogSnapshot {
     open: number;
     byArea: Record<WorkArea, number>;
   };
+  /** The GITHUB_PR_FETCH_LIMIT (default 60, hard-capped 100) this snapshot
+   *  was fetched with — paired with the top-level `AdminFetchResult.truncated`
+   *  flag so the UI can render an honest "most recent N of possibly more"
+   *  caveat instead of presenting `counts.total` as the whole PR history. */
+  fetchLimit: number;
 }
 
 function prAuthorLogins(): string[] {
@@ -218,7 +223,7 @@ export async function fetchWorkLog(): Promise<AdminFetchResult<WorkLogSnapshot>>
       return bTime - aTime;
     });
 
-    return ok({
+    const snapshot: WorkLogSnapshot = {
       entries,
       repoLabel: label,
       authorLogins: authors,
@@ -228,7 +233,15 @@ export async function fetchWorkLog(): Promise<AdminFetchResult<WorkLogSnapshot>>
         open: entries.filter((entry) => entry.state === 'open').length,
         byArea: countByArea(entries),
       },
-    });
+      fetchLimit: limit,
+    };
+
+    // `pulls.length >= limit` means the fetch hit the GITHUB_PR_FETCH_LIMIT
+    // ceiling, not that the repo's PR history genuinely ends there — without
+    // this flag, `counts.total` on the "PRs tracked" tile reads as a complete
+    // count when it's really "most recent N".
+    const result = ok(snapshot);
+    return pulls.length >= limit ? { ...result, truncated: true } : result;
   } catch (err) {
     return failed(err instanceof Error ? err.message : String(err));
   }

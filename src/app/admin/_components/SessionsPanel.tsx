@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { SessionRow } from '@/lib/admin/data/auth';
 import { revokeSessionsForUser } from '@/app/admin/actions/sessions';
@@ -23,7 +24,11 @@ export function SessionsPanel({ sessions }: { sessions: SessionRow[] }) {
         <li key={s.session_id}>
           <Inset padding="sm" className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-              <p className="truncate text-sm font-medium text-warm-900">{s.email}</p>
+              <p className="truncate text-sm font-medium text-warm-900">
+                <Link href={`/admin/users/${s.user_id}`} className="underline decoration-warm-300 hover:decoration-warm-600">
+                  {s.email}
+                </Link>
+              </p>
               <p className="font-fw-mono text-xs tabular-nums text-warm-500">
                 started <LocalTime iso={s.created_at} variant="datetime" /> · refreshed{' '}
                 <LocalTime iso={s.updated_at} variant="datetime" />

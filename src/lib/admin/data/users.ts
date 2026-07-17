@@ -5,7 +5,7 @@ import { classifyTeamHealth, type GolfTeamHealthRow } from '@/lib/admin/data/gol
 import type { Database } from '@/lib/types/database';
 
 type UserRole = Database['public']['Enums']['user_role'];
-const USER_ROLES: readonly UserRole[] = ['coach', 'player', 'admin'];
+export const USER_ROLES: readonly UserRole[] = ['coach', 'player', 'admin'];
 
 export interface DirectoryUser {
   id: string;
@@ -110,6 +110,11 @@ type GolfRoundRow = ActivityRow & {
 type BaseballSignalRow = {
   team_id: string | null;
   player_id: string | null;
+  /** Pitcher-side FK on `baseball_pitch_events` (added separately from the
+   *  pre-existing batter/plate-appearance `player_id` column — see
+   *  `supabase/migrations/20260701013000_baseball_elite_event_tables_reconcile.sql`).
+   *  Absent on `baseball_player_timeline_events` rows (never selected there). */
+  pitcher_id?: string | null;
   created_at?: string | null;
   occurred_at?: string | null;
   event_type?: string | null;
@@ -165,7 +170,7 @@ export interface TeamRosterInsight extends GolfTeamHealthRow {
  *     would look broken). Resolved via player_id → user_id backmap since
  *     team_members rows key on player_id, not user_id.
  */
-export async function fetchUsersTab(filters: { q?: string; role?: string; team?: string }): Promise<{
+export async function fetchUsersTab(filters: { q?: string; role?: string; team?: string; sport?: 'golf' | 'baseball' }): Promise<{
   users: DirectoryUser[];
   /**
    * Real count of users matching every active filter, BEFORE the 500-row
@@ -184,6 +189,11 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
   const now = new Date();
   const ago30d = new Date(now.getTime() - 30 * 86400_000).toISOString();
   const ago7d = new Date(now.getTime() - 7 * 86400_000).toISOString();
+  // classifyTeamHealth() only ever looks back 14d (beyond that a team is
+  // 'dormant' regardless) — 90d is a generous window that keeps
+  // `baseball_games` last-activity resolution correct while bounding the
+  // query instead of scanning the platform's entire game history.
+  const ago90d = new Date(now.getTime() - 90 * 86400_000).toISOString();
 
   let userQuery = admin
     .from('users')
@@ -197,6 +207,16 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
   if (filters.role && (USER_ROLES as readonly string[]).includes(filters.role)) {
     userQuery = userQuery.eq('role', filters.role as UserRole);
   }
+
+  // `filters.sport` lets a sport-scoped caller (e.g. /admin/golf,
+  // /admin/baseball) skip the OTHER sport's roster/rounds/errors scans
+  // entirely instead of paying for a platform-wide 14-query fan-out just to
+  // filter most of it back out downstream (bridge-tab-audit-p0p1 golf
+  // Finding 2 follow-up). Omitting `sport` preserves the original
+  // platform-wide behavior every other caller (e.g. /admin/users) relies on.
+  const includeGolf = filters.sport !== 'baseball';
+  const includeBaseball = filters.sport !== 'golf';
+  const emptyRows = Promise.resolve({ data: [] as never[], error: null });
 
   const [
     usersRes,
@@ -215,60 +235,160 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     errorsRes,
   ] = await Promise.all([
     userQuery,
-    admin
-      .from('golf_players')
-      .select('id, user_id, email, first_name, last_name, graduation_year, handicap_index, onboarding_completed, profile_complete')
-      .limit(2000),
-    admin.from('golf_coaches').select('user_id').limit(2000),
-    admin
-      .from('baseball_players')
-      .select('id, user_id, email, first_name, last_name, grad_year, primary_position, secondary_position, onboarding_completed, profile_completion_percent, recruiting_activated')
-      .limit(2000),
-    admin.from('baseball_coaches').select('user_id').limit(2000),
-    admin.from('golf_teams').select('id, name'),
-    admin.from('baseball_teams').select('id, name'),
-    admin.from('golf_team_members').select('team_id, player_id, jersey_number, status').eq('status', 'active'),
-    admin.from('baseball_team_members').select('team_id, player_id, jersey_number, position, status').eq('status', 'active'),
+    // Every roster/player/team-membership query below is paginated past the
+    // PostgREST 1000-row cap via `fetchAllRowsResult` — a `.limit(N)` call
+    // does NOT raise the server-side `db-max-rows` (this repo's own
+    // documented gotcha), so a bare `.limit(2000)` (or no limit at all, on
+    // the two `*_team_members` queries) was silently truncating at 1000
+    // regardless of the requested/actual size once platform-wide rows crossed
+    // that line — corrupting roster counts, playerCount, and team health with
+    // no operator-visible warning. `.order('id')` gives every page a stable
+    // boundary.
+    includeGolf
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('golf_players')
+            .select('id, user_id, email, first_name, last_name, graduation_year, handicap_index, onboarding_completed, profile_complete')
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
+    includeGolf
+      ? fetchAllRowsResult((from, to) =>
+          admin.from('golf_coaches').select('user_id').order('user_id', { ascending: true }).range(from, to),
+        )
+      : emptyRows,
+    includeBaseball
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('baseball_players')
+            .select('id, user_id, email, first_name, last_name, grad_year, primary_position, secondary_position, onboarding_completed, profile_completion_percent, recruiting_activated')
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
+    includeBaseball
+      ? fetchAllRowsResult((from, to) =>
+          admin.from('baseball_coaches').select('user_id').order('user_id', { ascending: true }).range(from, to),
+        )
+      : emptyRows,
+    includeGolf ? admin.from('golf_teams').select('id, name') : emptyRows,
+    includeBaseball ? admin.from('baseball_teams').select('id, name') : emptyRows,
+    includeGolf
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('golf_team_members')
+            .select('team_id, player_id, jersey_number, status')
+            .eq('status', 'active')
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
+    includeBaseball
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('baseball_team_members')
+            .select('team_id, player_id, jersey_number, position, status')
+            .eq('status', 'active')
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
     // Platform-wide 30d activity — paginate past the PostgREST 1000-row cap
     // (a .limit(3000) still silently truncates at 1000 regardless of the
     // requested size); `.order('id')` gives stable page boundaries alongside
     // the primary `created_at`/`occurred_at` ordering the "first hit is max"
     // per-team last-activity maps below rely on.
+    includeGolf
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('golf_rounds')
+            .select('team_id, player_id, created_at, total_score, score_to_par')
+            .gte('created_at', ago30d)
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
+    // Windowed to 90d (see `ago90d` above) AND paginated — the prior
+    // `.limit(1000)` (no window) silently under-dated any team whose most
+    // recent game fell outside the newest-1000-rows-platform-wide slice,
+    // exactly the bug class flagged for `golf_rounds` immediately above.
+    includeBaseball
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('baseball_games')
+            .select('team_id, created_at')
+            .gte('created_at', ago90d)
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
+    // Selects `pitcher_id` alongside the pre-existing batter-side `player_id`
+    // (see BaseballSignalRow's doc comment) — a pitcher who never bats (common
+    // under DH rules) otherwise accumulates zero rows here regardless of
+    // innings thrown, forcing a false "quiet" watchlist flag.
+    includeBaseball
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('baseball_pitch_events')
+            .select('team_id, player_id, pitcher_id, created_at')
+            .gte('created_at', ago30d)
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
+    includeBaseball
+      ? fetchAllRowsResult((from, to) =>
+          admin
+            .from('baseball_player_timeline_events')
+            .select('team_id, player_id, occurred_at, event_type')
+            .gte('occurred_at', ago30d)
+            .order('occurred_at', { ascending: false })
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : emptyRows,
     fetchAllRowsResult((from, to) =>
       admin
-        .from('golf_rounds')
-        .select('team_id, player_id, created_at, total_score, score_to_par')
-        .gte('created_at', ago30d)
-        .order('created_at', { ascending: false })
+        .from('admin_events')
+        .select('team_id, sport, user_id')
+        .eq('event_type', 'error')
+        .gte('created_at', ago7d)
         .order('id', { ascending: true })
         .range(from, to),
     ),
-    admin.from('baseball_games').select('team_id, created_at').order('created_at', { ascending: false }).limit(1000),
-    fetchAllRowsResult((from, to) =>
-      admin
-        .from('baseball_pitch_events')
-        .select('team_id, player_id, created_at')
-        .gte('created_at', ago30d)
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, to),
-    ),
-    fetchAllRowsResult((from, to) =>
-      admin
-        .from('baseball_player_timeline_events')
-        .select('team_id, player_id, occurred_at, event_type')
-        .gte('occurred_at', ago30d)
-        .order('occurred_at', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, to),
-    ),
-    admin
-      .from('admin_events')
-      .select('team_id, sport, user_id')
-      .eq('event_type', 'error')
-      .gte('created_at', ago7d)
-      .limit(1000),
   ]);
+
+  // None of the 14 queries above ever THROW on a Supabase/RLS/schema error —
+  // they resolve to `{ data: null, error }` — so without this check, the
+  // `?? []` fallbacks throughout this function would quietly render "0 teams
+  // / 0 players / no rosters" as if that were real data, and PanelBoundary
+  // (wrapping every caller of this function) would never get the chance to
+  // show its PanelStale fallback for a genuine backend failure. Mirrors the
+  // fail-loud pattern already used in `fetchBaseballTab()`
+  // (src/lib/admin/data/baseball.ts).
+  const checks: Array<[string, { message: string; code?: string | null } | null | undefined]> = [
+    ['users', usersRes.error],
+    ['golf_players', golfPlayersRes.error],
+    ['golf_coaches', golfCoachesRes.error],
+    ['baseball_players', baseballPlayersRes.error],
+    ['baseball_coaches', baseballCoachesRes.error],
+    ['golf_teams', golfTeamsRes.error],
+    ['baseball_teams', baseballTeamsRes.error],
+    ['golf_team_members', golfMembersRes.error],
+    ['baseball_team_members', baseballMembersRes.error],
+    ['golf_rounds', golfRoundsRes.error],
+    ['baseball_games', baseballGamesRes.error],
+    ['baseball_pitch_events', baseballPitchEventsRes.error],
+    ['baseball_player_timeline_events', baseballTimelineEventsRes.error],
+    ['admin_events', errorsRes.error],
+  ];
+  for (const [table, error] of checks) {
+    if (error) throw new Error(`fetchUsersTab: ${table} query failed: ${error.message}`);
+  }
 
   const golfPlayerRows = (golfPlayersRes.data ?? []) as GolfPlayerRow[];
   const baseballPlayerRows = (baseballPlayersRes.data ?? []) as BaseballPlayerRow[];
@@ -326,6 +446,9 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     teamUsersQuery = teamUsersQuery.eq('role', filters.role as UserRole);
   }
   const teamUsersRes = teamUsersQuery ? await teamUsersQuery : null;
+  if (teamUsersRes?.error) {
+    throw new Error(`fetchUsersTab: team-scoped users query failed: ${teamUsersRes.error.message}`);
+  }
   const userRows = filters.team ? (teamUsersRes?.data ?? []) : (usersRes.data ?? []);
 
   const users: DirectoryUser[] = userRows
@@ -423,16 +546,28 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
   }
 
   const baseballActivityByPlayer = new Map<string, { count: number; last: string | null }>();
-  for (const r of [
-    ...((baseballPitchEventsRes.data ?? []) as BaseballSignalRow[]),
-    ...((baseballTimelineEventsRes.data ?? []) as BaseballSignalRow[]),
-  ]) {
-    if (!r.player_id) continue;
-    const at = r.created_at ?? r.occurred_at ?? null;
-    const current = baseballActivityByPlayer.get(r.player_id) ?? { count: 0, last: null };
+  // `baseball_pitch_events.player_id` is the pre-existing batter/plate-
+  // appearance column; `pitcher_id` was added separately for pitcher
+  // attribution (see BaseballSignalRow's doc comment). A row can carry
+  // BOTH ids at once — bump each side independently (mirrors the
+  // `.or('batter_id.eq.X,pitcher_id.eq.X')` pattern already used correctly
+  // in elite-stat-events.ts for the same table) so a pitcher who never bats
+  // (common under DH rules) still accrues activity instead of reading as
+  // permanently "quiet" on the watchlist.
+  function bumpBaseballActivity(playerId: string | null | undefined, at: string | null) {
+    if (!playerId) return;
+    const current = baseballActivityByPlayer.get(playerId) ?? { count: 0, last: null };
     current.count += 1;
     if (at && (!current.last || at > current.last)) current.last = at;
-    baseballActivityByPlayer.set(r.player_id, current);
+    baseballActivityByPlayer.set(playerId, current);
+  }
+  for (const r of (baseballPitchEventsRes.data ?? []) as BaseballSignalRow[]) {
+    const at = r.created_at ?? r.occurred_at ?? null;
+    bumpBaseballActivity(r.player_id, at);
+    bumpBaseballActivity(r.pitcher_id, at);
+  }
+  for (const r of (baseballTimelineEventsRes.data ?? []) as BaseballSignalRow[]) {
+    bumpBaseballActivity(r.player_id, r.created_at ?? r.occurred_at ?? null);
   }
 
   function displayName(player: { first_name: string | null; last_name: string | null; email: string | null }): string {

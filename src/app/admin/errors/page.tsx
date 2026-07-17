@@ -16,6 +16,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { CopyReportButton } from '../_components/CopyReportButton';
+import { BulkResolveButton } from '../_components/BulkResolveButton';
 import { ErrorsFilterChips } from './ErrorsFilterChips';
 
 export const dynamic = 'force-dynamic';
@@ -370,10 +371,15 @@ export default async function ErrorsPage({
         <Surface as="section" padding="sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-accent-600/25 pb-2">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">In-app incidents</h2>
-            <CopyReportButton
-              report={buildFilteredIncidentsReport(tab.incidents, filters)}
-              label={`Copy all (filtered) · ${tab.incidents.length}`}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <CopyReportButton
+                report={buildFilteredIncidentsReport(tab.incidents, filters)}
+                label={`Copy all (filtered) · ${tab.incidents.length}`}
+              />
+              <BulkResolveButton
+                eventIds={appIncidents.flatMap((incident) => incident.eventIds)}
+              />
+            </div>
           </div>
           <TriageQueue items={tab.incidents} />
           <p className="mt-2 text-xs text-warm-500">

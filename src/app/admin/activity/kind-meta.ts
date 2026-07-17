@@ -7,6 +7,7 @@ import {
   CalendarPlus,
   Sparkles,
   FileText,
+  Dumbbell,
   AlertTriangle,
   type LucideIcon,
 } from 'lucide-react';
@@ -44,6 +45,7 @@ export const ACTIVITY_KIND_META: readonly ActivityKindMeta[] = [
   { kind: 'event_created', chipLabel: 'Events', icon: CalendarPlus, tone: 'neutral' },
   { kind: 'demo_session', chipLabel: 'Demos', icon: Sparkles, tone: 'accent' },
   { kind: 'document_uploaded', chipLabel: 'Documents', icon: FileText, tone: 'neutral' },
+  { kind: 'lift_session_logged', chipLabel: 'Lift sessions', icon: Dumbbell, tone: 'neutral' },
   { kind: 'error', chipLabel: 'Errors', icon: AlertTriangle, tone: 'danger' },
 ] as const;
 

@@ -142,6 +142,12 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
               >
                 {grade}
               </span>
+              <Link
+                href={`/admin/thread/team/${teamId}`}
+                className="text-xs text-accent-700 underline-offset-2 hover:underline"
+              >
+                View journey →
+              </Link>
             </div>
             <p className="mt-1 text-sm text-warm-600">
               {extras.organizationName ?? 'No organization'} · {team.gender} ·{' '}

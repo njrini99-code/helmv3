@@ -7,11 +7,22 @@ import {
   type CronRegistryEntry,
 } from '@/lib/admin/cron-registry';
 
+export interface CronRunSummary {
+  startedAt: string;
+  status: string;
+  durationMs: number | null;
+}
+
 export interface CronBoardRow extends CronRegistryEntry {
   status: CronBoardStatus;
   lastRunAt: string | null;
   lastDurationMs: number | null;
   lastError: string | null;
+  /** Oldest → newest, up to RECENT_RUNS_PER_JOB — feeds the small inline
+   *  failure-rate strip. Empty array is the honest "never run" state. */
+  recentRuns: CronRunSummary[];
+  /** null when recentRuns is empty (never run) — distinct from a real 0/N. */
+  failureRate: { failures: number; total: number } | null;
 }
 
 export interface IntegrityRow {
@@ -43,6 +54,9 @@ interface BackgroundJobLogRow {
   started_at: string;
 }
 
+/** Runs kept per job for the recent-history strip / failure-rate summary. */
+const RECENT_RUNS_PER_JOB = 20;
+
 interface IntegrityEventRow {
   title: string;
   severity: string;
@@ -60,12 +74,26 @@ export async function fetchJobsTab(): Promise<JobsTab> {
   const admin = createAdminClient();
   const now = new Date();
 
-  const [jobRows, integrityRows, adminEventsCount, errorLogsCount, jobLogsCount] = await Promise.all([
-    admin
-      .from('background_job_logs')
-      .select('job_type, status, duration_ms, error_message, started_at')
-      .order('started_at', { ascending: false })
-      .limit(500),
+  // One bounded query PER job type (18 registry entries, each capped at
+  // RECENT_RUNS_PER_JOB) instead of a single globally-ordered top-500 query.
+  // The prior single-query shape let high-frequency crons (refresh-engagement
+  // every 5min, event/task-reminders hourly) crowd low-frequency ones
+  // (the 3 weekly jobs, any daily job idle >~1.5 days) entirely out of the
+  // fetched window — those jobs then read "never-ran" (the neutral,
+  // non-alarming status) even after actually failing days earlier. 18
+  // parallel queries is the documented, migration-free fix (no window-
+  // function RPC — no new migrations in this batch).
+  const [jobRunsPerJob, integrityRows, adminEventsCount, errorLogsCount, jobLogsCount] = await Promise.all([
+    Promise.all(
+      CRON_REGISTRY.map((entry) =>
+        admin
+          .from('background_job_logs')
+          .select('job_type, status, duration_ms, error_message, started_at')
+          .eq('job_type', entry.jobType)
+          .order('started_at', { ascending: false })
+          .limit(RECENT_RUNS_PER_JOB),
+      ),
+    ),
     admin
       .from('admin_events')
       .select('title, severity, metadata, created_at')
@@ -77,21 +105,25 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     admin.from('background_job_logs').select('id', { count: 'exact', head: true }),
   ]);
 
-  const latestByJob = new Map<string, BackgroundJobLogRow>();
-  for (const row of (jobRows.data ?? []) as BackgroundJobLogRow[]) {
-    if (row.started_at && !latestByJob.has(row.job_type)) {
-      latestByJob.set(row.job_type, row);
-    }
-  }
-
-  const board: CronBoardRow[] = CRON_REGISTRY.map((entry) => {
-    const last = latestByJob.get(entry.jobType) ?? null;
+  const board: CronBoardRow[] = CRON_REGISTRY.map((entry, i) => {
+    // Newest-first from the query above.
+    const runs = (jobRunsPerJob[i]?.data ?? []) as BackgroundJobLogRow[];
+    const last = runs[0] ?? null;
+    const failures = runs.filter((r) => r.status === 'failed').length;
     return {
       ...entry,
       status: classifyCronStatus(entry, last ? { started_at: last.started_at, status: last.status } : null, now),
       lastRunAt: last?.started_at ?? null,
       lastDurationMs: last?.duration_ms ?? null,
       lastError: last?.error_message ?? null,
+      // Oldest → newest, matching the Sparkline/detail-strip convention used
+      // elsewhere in Bridge.
+      recentRuns: [...runs].reverse().map((r) => ({
+        startedAt: r.started_at,
+        status: r.status,
+        durationMs: r.duration_ms,
+      })),
+      failureRate: runs.length > 0 ? { failures, total: runs.length } : null,
     };
   });
 

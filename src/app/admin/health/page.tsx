@@ -5,6 +5,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureDotGrid } from '../_components/FeatureDotGrid';
+import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,7 @@ export default async function FeatureHealthPage() {
     return (
       <>
         <p className="font-fw-mono text-xs tabular-nums text-warm-400">
-          generated {new Date(generatedAt).toLocaleTimeString()}
+          generated <LocalTime iso={generatedAt} variant="time" />
         </p>
         <div className="mt-4">
           <FeatureDotGrid features={features} />

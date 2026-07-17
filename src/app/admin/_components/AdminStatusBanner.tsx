@@ -1,5 +1,6 @@
 import { CheckCircle2, AlertTriangle, AlertOctagon, CloudOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LocalTime } from './LocalTime';
 
 export type BannerState = 'nominal' | 'attention' | 'critical' | 'stale';
 
@@ -37,7 +38,7 @@ export function AdminStatusBanner({
         <span className="text-sm font-medium">{s.label(attentionCount)}</span>
       </div>
       <span className="font-fw-mono text-xs tabular-nums text-white/60">
-        checked {new Date(checkedAt).toLocaleTimeString()}
+        checked <LocalTime iso={checkedAt} variant="time" />
       </span>
     </div>
   );

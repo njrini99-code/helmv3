@@ -37,9 +37,17 @@ export interface ErrorsTabFilters {
 
 const SPORTS = new Set(['golf', 'baseball', 'shared']);
 const SEVERITIES = new Set(['critical', 'error', 'warning', 'info']);
+// 'sentry' is a synthetic, UI-only source (the "this row came from Sentry"
+// breakdown chip — see incident-feed.ts's buildSentrySearchQuery doc
+// comment) rather than a real admin_events.source value. It's honored here
+// so the chip actually filters: queryAppErrorEvents's `.eq('source', 'sentry')`
+// naturally returns zero app rows (no admin_events row is ever tagged
+// 'sentry'), and buildSentrySearchQuery deliberately skips the error_source
+// token for it — net effect, selecting it narrows the merged list to
+// Sentry-origin incidents only.
 const SOURCES = new Set([
   'server_action', 'route_handler', 'server_component', 'background_job', 'request_hook',
-  'rls_denial', 'auth', 'cron', 'integrity', 'client', 'system',
+  'rls_denial', 'auth', 'cron', 'integrity', 'client', 'system', 'sentry',
 ]);
 // Valid drill-in targets: every non-excluded registry key. The CRM row is
 // deliberately never a valid filter value — CRM is never touched, never

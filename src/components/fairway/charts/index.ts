@@ -57,6 +57,10 @@ export type {
 export { Sparkline } from './Sparkline';
 export type { SparklineProps } from './Sparkline';
 
+// ── Pulse Grid's dual-lane heartbeat row (activity + error overlay + halo) ──
+export { EkgSparkline } from './EkgSparkline';
+export type { EkgSparklineProps, EkgBucket, EkgHalo } from './EkgSparkline';
+
 export { StatTile } from './StatTile';
 export type { StatTileProps } from './StatTile';
 
@@ -136,6 +140,14 @@ export type { ShotDispersionProps, ShotPoint } from './ShotDispersion';
 
 export { PuttingHeatmap } from './PuttingHeatmap';
 export type { PuttingHeatmapProps, HeatCell } from './PuttingHeatmap';
+
+// ── DOM-based feature × time density grid (Utilization tab) ────────────────
+export { AdoptionHeatGrid } from './AdoptionHeatGrid';
+export type {
+  AdoptionHeatGridProps,
+  AdoptionHeatGridRow,
+  AdoptionHeatGridCell,
+} from './AdoptionHeatGrid';
 
 // ── Theme tokens, formatters, Canvas helper ─────────────────────────────────
 export {
