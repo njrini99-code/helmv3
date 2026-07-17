@@ -139,6 +139,11 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 ### What It Does
 Aggregated player and team statistics with 50+ metrics, cached for performance. Includes scoring, short game, long game, course-by-course breakdowns, and trend analysis.
 
+> **Naming/nav source of truth**: `src/lib/golf/surface-registry.ts` (`group:
+> 'stats'`) is canonical for the Stats cockpit (`/dashboard/stats`) and Team
+> Stats (`/dashboard/stats/team`) display names/hrefs — see #12 above for the
+> full rationale.
+
 ### Data Flow
 ```
 Round completion → invalidateOnRoundComplete()
@@ -163,7 +168,7 @@ Player profile:
 |------|------|
 | Route (player) | `src/app/golf/(dashboard)/dashboard/stats/page.tsx` |
 | Route (team) | `src/app/golf/(dashboard)/dashboard/stats/team/page.tsx` |
-| Actions | `src/app/golf/actions/stats.ts`, `stats-v2.ts`, `stats-data.ts` |
+| Actions | `src/app/golf/actions/stats.ts`, `stats-data.ts`, `stats-leak-maps.ts` (leak maps, coach+player), `stats-intelligence.ts` (CoachHelm engine reads) |
 | Player stats | `src/app/golf/actions/player-profile-stats.ts` |
 | Components | `src/components/golf/stats/` |
 | Cache calculator | `src/lib/cache/golf-stats-calculator.ts` |
@@ -508,6 +513,14 @@ Calendar integration:
 
 ### What It Does
 AI intelligence layer that mines patterns from player data, generates insights, predicts performance, and creates round reviews — all personalized by the coach's philosophy settings.
+
+> **Naming/nav source of truth**: the canonical display name, href, role,
+> and group (rail / sub-nav tab / signals-segment / stats / page) for every
+> CoachHelm AI surface below (Brief, Signals/Alerts/Insights/Patterns,
+> Players, Effectiveness, Ask, Overview, Genome, etc.) live in
+> `src/lib/golf/surface-registry.ts` — not duplicated here. This doc covers
+> data flow, files, and gaps; the registry covers what a surface is called
+> and where it lives.
 
 ### Data Flow
 ```

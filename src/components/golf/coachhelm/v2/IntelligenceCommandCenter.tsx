@@ -27,13 +27,7 @@ import {
   IconStar,
   IconUsers,
   IconSettings,
-  IconBrain,
   IconBell,
-  IconLayers,
-  IconChartBar,
-  IconMessageSquare,
-  IconChartRadar,
-  IconTrophy,
 } from '@/components/icons';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -1227,210 +1221,6 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
 }
 
 // ============================================================================
-// SURFACE HUB DISCLOSURE
-// ============================================================================
-
-/**
- * CoachHelm surface disclosure.
- *
- * The Intelligence Command Center is the front door to the CoachHelm AI
- * layer, but until now it only deep-linked to two of its surfaces (the
- * Intelligence dashboard and Coaching-Intelligence settings). The remaining
- * seven coach-facing CoachHelm surfaces — Alerts, Patterns, Insights,
- * Analytics, AI Chat, Player Genome, and the Qualifying workspace — had no
- * in-product entry point from the command center, so coaches had to know the
- * URLs to reach them.
- *
- * This list is the single source of truth for the 3-column (1 on mobile)
- * surface-card grid rendered on the Overview tab. Each surface is an
- * icon + eyebrow + title + one-line description + link. Adding/removing a
- * surface here is the only change needed; the grid and the regression guard
- * (scripts/__tests__/coachhelm-hub.test.mjs) both read from these hrefs.
- *
- * Audit reference:
- *   docs/operations/2026-05-28-ultra-audit-MASTER-synthesis.md — CoachHelm
- *   surface-discoverability gap (orphaned routes with no in-product link).
- */
-const COACHHELM_SURFACES: {
-  href: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  icon: typeof IconTarget;
-}[] = [
-  {
-    href: '/golf/dashboard/intelligence',
-    eyebrow: 'Command',
-    title: 'Intelligence',
-    description: 'Team-wide signals, health, and the week at a glance.',
-    icon: IconBrain,
-  },
-  {
-    href: '/golf/dashboard/alerts',
-    eyebrow: 'Triage',
-    title: 'Alerts',
-    description: 'Time-sensitive flags that need a coach decision now.',
-    icon: IconBell,
-  },
-  {
-    href: '/golf/dashboard/patterns',
-    eyebrow: 'Discovery',
-    title: 'Patterns',
-    description: 'Recurring trends mined from player round data.',
-    icon: IconLayers,
-  },
-  {
-    href: '/golf/dashboard/insights',
-    eyebrow: 'Analysis',
-    title: 'Insights',
-    description: 'Evidence-backed coaching insights with reasoning chains.',
-    icon: IconSparkles,
-  },
-  {
-    href: '/golf/dashboard/analytics/coachhelm',
-    eyebrow: 'Measure',
-    title: 'Analytics',
-    description: 'Effectiveness of insights and AI coverage over time.',
-    icon: IconChartBar,
-  },
-  {
-    href: '/golf/dashboard/coachhelm/chat',
-    eyebrow: 'Converse',
-    title: 'AI Chat',
-    description: 'Ask CoachHelm about any player, stat, or trend.',
-    icon: IconMessageSquare,
-  },
-  {
-    href: '/golf/dashboard/coachhelm/genome/compare',
-    eyebrow: 'Profile',
-    title: 'Player Genome',
-    description: 'Compare performance fingerprints across your roster.',
-    icon: IconChartRadar,
-  },
-  {
-    href: '/golf/dashboard/qualifiers',
-    eyebrow: 'Selection',
-    title: 'Qualifying',
-    description: 'CoachHelm-backed qualifier analysis and lineup calls.',
-    icon: IconTrophy,
-  },
-  {
-    href: '/golf/dashboard/settings/coaching-intelligence',
-    eyebrow: 'Configure',
-    title: 'Coaching Intelligence',
-    description: 'Tune philosophy, tone, and which signals fire.',
-    icon: IconSettings,
-  },
-];
-
-/**
- * SurfaceHubGrid - 3-col (1 on mobile) disclosure of every CoachHelm surface.
- * Mirrors the matte surface-card treatment used across the command center
- * (cream-100 plinth, warm hairline border, soft shadow) so it reads as part
- * of the same editorial system rather than a bolt-on nav block.
- */
-const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { variant?: ICCVariant }) {
-  const isPage = variant === 'page';
-  // The grid lives ON one of these surfaces (today: the Command/Intelligence
-  // brief at /golf/dashboard/intelligence). The tile whose href IS the current
-  // route must NOT render as a Link — a self-link looks broken ("Command
-  // Intelligence button doesn't work"). Render it as a non-interactive
-  // "You're here" card instead. Route-agnostic: works wherever the grid mounts.
-  const pathname = usePathname();
-  const isCurrent = (href: string) =>
-    pathname === href || pathname === `${href}/`;
-
-  return (
-    <div>
-      <h3 className={cn(
-        'font-medium text-text-tertiary uppercase tracking-wider',
-        isPage ? 'text-body-sm mb-4' : 'text-eyebrow mb-2.5'
-      )}>
-        Explore CoachHelm
-      </h3>
-      <div className={cn('grid grid-cols-1 md:grid-cols-3', isPage ? 'gap-4' : 'gap-2.5')}>
-        {COACHHELM_SURFACES.map((surface) => {
-          const SurfaceIcon = surface.icon;
-          const current = isCurrent(surface.href);
-
-          const cardInner = (
-            <>
-              <div className={cn('flex items-center justify-between', isPage ? 'mb-3' : 'mb-2')}>
-                <div className={cn(
-                  'rounded-lg bg-fw-success-bg flex items-center justify-center',
-                  isPage ? 'w-10 h-10' : 'w-8 h-8'
-                )}>
-                  <SurfaceIcon size={isPage ? 18 : 15} className="text-fw-success" />
-                </div>
-                {current ? (
-                  <span className="text-eyebrow font-medium text-fw-success uppercase tracking-wider">
-                    You&apos;re here
-                  </span>
-                ) : (
-                  <IconChevronRight
-                    size={isPage ? 16 : 14}
-                    className="text-text-tertiary transition-transform group-hover:translate-x-0.5"
-                  />
-                )}
-              </div>
-              <span className={cn(
-                'block font-medium text-text-tertiary uppercase tracking-wider',
-                isPage ? 'text-xs' : 'text-eyebrow'
-              )}>
-                {surface.eyebrow}
-              </span>
-              <h4 className={cn(
-                'font-medium text-text-primary leading-snug',
-                isPage ? 'text-base mt-0.5' : 'text-body-sm'
-              )}>
-                {surface.title}
-              </h4>
-              <p className={cn(
-                'text-text-secondary leading-relaxed mt-0.5',
-                isPage ? 'text-sm' : 'text-xs'
-              )}>
-                {surface.description}
-              </p>
-            </>
-          );
-
-          // Current surface → static, non-clickable card (no dead self-link).
-          if (current) {
-            return (
-              <div
-                key={surface.href}
-                aria-current="page"
-                className={cn(
-                  'block bg-surface-sunken border border-border-subtle shadow-soft',
-                  'rounded-fw-md cursor-default',
-                  isPage ? 'rounded-2xl p-5' : 'p-3.5'
-                )}
-              >
-                {cardInner}
-              </div>
-            );
-          }
-
-          return (
-            <Link
-              key={surface.href}
-              href={surface.href}
-              className={cn(
-                'group block bg-surface border border-border-subtle shadow-soft hover:shadow-raise transition-shadow',
-                'rounded-fw-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                isPage ? 'rounded-2xl p-5' : 'p-3.5'
-              )}
-            >
-              {cardInner}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-});
-
-// ============================================================================
 // HELPER: Deep-analysis loading skeleton
 // ============================================================================
 
@@ -1791,12 +1581,6 @@ export function IntelligenceCommandCenter({
             </>
           )}
 
-          {/* Surface disclosure — in-product entry point to every CoachHelm
-              surface, for embeds that lack the unified tab strip. On the
-              Intelligence page itself (the unified CoachHelm shell), the top
-              tabs + Brief already own all this navigation, so the hub here is
-              pure scatter ("takes you all over the place") — hide it. */}
-          {!onIntelligencePage && <SurfaceHubGrid variant={variant} />}
         </div>
       </TabsContent>
 
@@ -1970,15 +1754,6 @@ export function IntelligenceCommandCenter({
               ))}
             </div>
           </div>
-
-          {/* Surfaces stay reachable even before any analysis has run — the
-              tabbed disclosure above is gated behind hasData. Hidden on the
-              Intelligence page (the unified shell owns navigation via tabs). */}
-          {!onIntelligencePage && (
-            <div className={cn(isPage ? 'mt-8' : 'mt-4')}>
-              <SurfaceHubGrid variant={variant} />
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -4,13 +4,14 @@ import { createClient } from '@/lib/supabase/server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals, FeatureUnavailable } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { surfaceName } from '@/lib/golf/surface-registry';
 
 // ============================================================================
 // METADATA
 // ============================================================================
 
 export const metadata = {
-  title: 'AI Insights | CoachHelm',
+  title: `${surfaceName('insights')} | CoachHelm`,
   description: 'View and manage AI-powered coaching insights',
 };
 
@@ -83,7 +84,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
   if (!coach) {
     return (
       <FeatureUnavailable
-        title="AI Insights"
+        title={surfaceName('insights')}
         message="The Insights workspace is designed for coaches managing the team's AI-generated insights. Players can view their own insights from the CoachHelm dashboard."
         actionHref="/golf/dashboard/coachhelm"
         actionLabel="Open CoachHelm"

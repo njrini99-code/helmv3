@@ -131,7 +131,11 @@ async function markCelebrationShownImpl(
     return { success: false, error: 'Failed to update insight' };
   }
 
-  revalidatePath('/golf/dashboard/my-insights');
+  // NOTE: /golf/dashboard/my-insights is a permanent redirect shim to
+  // /golf/dashboard/coachhelm (see surface-registry.ts `my-insights`,
+  // legacy:true/hidden:true) — it never renders cached content of its own, so
+  // revalidating it was a stale no-op. /golf/dashboard/coachhelm below is the
+  // real target that actually renders the celebration treatment.
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/coachhelm');
 

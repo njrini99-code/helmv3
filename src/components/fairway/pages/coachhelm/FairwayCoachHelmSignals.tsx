@@ -112,6 +112,7 @@ import type { InsightPriority } from '@/components/fairway/cards-insight/Insight
 import { InsightTrustChips } from './InsightTrustChips';
 import { getInsightTrustSignals } from '@/app/golf/actions/coachhelm-analytics';
 import type { TrustSignal } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
+import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the discriminated surface contract.
@@ -239,6 +240,17 @@ const GROUP_BY_OPTIONS: SegmentedOption<SignalGroupBy>[] = [
   { value: 'none', label: 'Flat' },
 ];
 
+/**
+ * The 3 sibling Signals routes this ONE shell serves. The segmented control
+ * cross-links them so a coach can hop Alerts ↔ Insights ↔ Patterns without a
+ * detour through the rail. Labels/hrefs come from surface-registry.ts (the
+ * single source of truth) — never a local string literal.
+ */
+type SignalsSegmentId = 'alerts' | 'insights' | 'patterns';
+const SIGNALS_SEGMENT_OPTIONS: SegmentedOption<SignalsSegmentId>[] = (
+  ['alerts', 'insights', 'patterns'] as const
+).map((id) => ({ value: id, label: surfaceName(id) }));
+
 /** The smart-default shortlist cap — /insights opens to the N most pressing
  *  signals (priority desc, then recency): never empty, never a firehose. */
 const SMART_DEFAULT_CAP = 8;
@@ -282,6 +294,26 @@ export function FairwayCoachHelmSignals({
 }: FairwayCoachHelmSignalsProps) {
   const router = useRouter();
   const isPatterns = signalSource === 'patterns';
+
+  /* -- which of the 3 sibling Signals routes this mount IS, derived from the
+        same discriminators the route forks already pass (never a pathname
+        sniff, so it can't drift from the props that actually shaped this
+        render): signalSource splits patterns off, and — within the
+        'insights' source — the alerts preset is the only one that seeds a
+        severity filter (['critical','high']); /insights opens unfiltered
+        (smartDefault narrows client-side, not via a seeded severity set). -- */
+  const activeSegment: SignalsSegmentId = isPatterns
+    ? 'patterns'
+    : (defaultFilter?.severity?.length ?? 0) > 0
+      ? 'alerts'
+      : 'insights';
+  const onSegmentChange = useCallback(
+    (next: SignalsSegmentId) => {
+      if (next === activeSegment) return;
+      router.push(surfaceHref(next));
+    },
+    [activeSegment, router],
+  );
 
   /* -- the raw, source-typed working sets (separate so rollback is clean) -- */
   const [insights, setInsights] = useState<EvidenceInsight[]>(initialInsights);
@@ -1543,6 +1575,16 @@ export function FairwayCoachHelmSignals({
       }
     >
       <div className="flex flex-col gap-6">
+        {/* Signals segmented control — the 3 sibling routes this ONE shell
+            serves (Alerts · Insights · Patterns) as a visible in-page
+            cross-link, not just a Cmd+K-only path. */}
+        <Segmented<SignalsSegmentId>
+          options={SIGNALS_SEGMENT_OPTIONS}
+          value={activeSegment}
+          onValueChange={onSegmentChange}
+          aria-label="Signals view"
+        />
+
         {/* honest summary tiles — never fabricate a 0%; show counts only.
             Compact 3-up even on mobile so the triage feed isn't pushed below
             the fold by three full-width stacked cards (premium-polish pass). */}
@@ -2005,12 +2047,15 @@ export function FairwayCoachHelmSignals({
         </div>
       ) : null}
 
-      {/* a quiet cross-link back into the workspace / deep view */}
-      {!isPatterns ? (
+      {/* a quiet cross-link back into the full workspace — /alerts ONLY. On
+          /insights this link pointed at itself (a dead self-link, since both
+          routes share isPatterns === false); gating on the segment (not
+          isPatterns) fixes that without touching /patterns' behavior. */}
+      {activeSegment === 'alerts' ? (
         <p className="mt-6 font-fw-sans text-body-sm text-text-tertiary">
           Looking for the full archive?{' '}
           <Link
-            href="/golf/dashboard/insights"
+            href={surfaceHref('insights')}
             className="rounded-fw-sm font-medium text-accent-700 underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           >
             Open the insight workspace

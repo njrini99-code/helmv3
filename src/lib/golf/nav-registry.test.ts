@@ -203,7 +203,11 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       '/golf/dashboard/roster',
       '/golf/dashboard/rounds',
       '/golf/dashboard/calendar',
-      '/golf/dashboard/stats',
+      // NOT '/golf/dashboard/stats': golf-ia-plan.json step 9 intentionally
+      // pruned the redundant "Stats" hub tab (it always dead-ended into Team
+      // Stats for single-role coaches). The route itself stays fully live —
+      // reachable via Team Stats' own per-player drill-down links — so it is
+      // asserted separately below (activeMatch coverage) instead of here.
       '/golf/dashboard/messages',
       '/golf/dashboard/announcements',
       '/golf/dashboard/travel',
@@ -264,6 +268,15 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       expect(roundsStats.activeMatch?.('/golf/dashboard/rounds/new')).toBe(true);
       expect(roundsStats.activeMatch?.('/golf/dashboard/qualifiers/q-1')).toBe(true);
       expect(roundsStats.activeMatch?.('/golf/dashboard/stats/team')).toBe(true);
+    });
+
+    it('coach Rounds & Stats rail item stays lit on the pruned-tab drill-down /stats?player= (step 9)', () => {
+      // The "Stats" hub tab is gone, but Team Stats' matchPrefixes keeps the
+      // rail lit while a coach is drilled into a player's stats page instead
+      // of going dark now that /stats has no tab of its own.
+      const items = buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items);
+      const roundsStats = items.find((i) => i.label === 'Rounds & Stats')!;
+      expect(roundsStats.activeMatch?.('/golf/dashboard/stats')).toBe(true);
     });
 
     it('coach CoachHelm AI rail item stays lit on /golf/dashboard/players/[playerId] (P410 fix)', () => {

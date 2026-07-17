@@ -13,11 +13,11 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/golf/dashboard/players/[playerId]/game"
-      component="LegacyPlayerInsightPage"
-      title="Failed to load player"
-      message="We couldn't load this player's data. Please try again."
-      homePath="/golf/dashboard/roster"
+      route="/golf/dashboard/players/[playerId]/genome"
+      component="PlayerGenomePage"
+      title="Failed to load genome"
+      message="We couldn't load this player's genome. Please try again."
+      homePath="/golf/dashboard/coachhelm"
     />
   );
 }

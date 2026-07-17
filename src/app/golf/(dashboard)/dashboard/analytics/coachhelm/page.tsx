@@ -11,12 +11,13 @@ import {
 } from '@/app/golf/actions/coachhelm-analytics';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayEffectiveness, InlineNotice, EmptyState, Button } from '@/components/fairway';
+import { FairwayEffectiveness, FeatureUnavailable, InlineNotice, EmptyState, Button } from '@/components/fairway';
 import { EffectivenessRetryButton } from './EffectivenessRetryButton';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { surfaceName } from '@/lib/golf/surface-registry';
 
 export const metadata = {
-  title: 'CoachHelm Analytics | GolfHelm',
+  title: `${surfaceName('effectiveness')} | CoachHelm`,
   description: 'Track the effectiveness of AI insights and prediction accuracy',
 };
 
@@ -24,8 +25,21 @@ export default async function CoachHelmAnalyticsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
-  const { coach } = session;
-  if (!coach) redirect('/golf/dashboard');
+  const { coach, player } = session;
+  if (!coach) {
+    return (
+      <FeatureUnavailable
+        title={surfaceName('effectiveness')}
+        message={
+          player
+            ? 'Effectiveness analytics tracks the coach toolkit’s insight and prediction accuracy. Players don’t have a coach-side view here.'
+            : 'No coach or player profile found. Please complete onboarding.'
+        }
+        actionHref={player ? '/golf/dashboard/coachhelm' : '/golf/dashboard'}
+        actionLabel={player ? 'Open CoachHelm' : 'Back to Dashboard'}
+      />
+    );
+  }
 
   const supabase = await createClient();
 

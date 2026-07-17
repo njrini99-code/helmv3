@@ -6,6 +6,7 @@ import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals, FeatureUnavailable, InlineNotice } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { surfaceName } from '@/lib/golf/surface-registry';
 
 /**
  * Patterns Page - Server Component
@@ -22,8 +23,8 @@ export default async function PatternsPage() {
     if (player) {
       return (
         <FeatureUnavailable
-          title="Pattern Management"
-          message="The Pattern Management dashboard is designed for coaches. Players can view their own patterns from the CoachHelm dashboard."
+          title={surfaceName('patterns')}
+          message="The Patterns dashboard is designed for coaches. Players can view their own patterns from the CoachHelm dashboard."
           actionHref="/golf/dashboard/coachhelm"
           actionLabel="Open CoachHelm"
         />
@@ -31,7 +32,7 @@ export default async function PatternsPage() {
     }
     return (
       <FeatureUnavailable
-        title="Pattern Management"
+        title={surfaceName('patterns')}
         message="No coach or player profile found. Please complete onboarding."
         actionHref="/golf/dashboard"
         actionLabel="Back to Dashboard"
@@ -75,6 +76,6 @@ export default async function PatternsPage() {
 }
 
 export const metadata = {
-  title: 'Pattern Management | CoachHelm',
+  title: `${surfaceName('patterns')} | CoachHelm`,
   description: 'View and manage AI-detected performance patterns for your team',
 };

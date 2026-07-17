@@ -194,6 +194,16 @@ export interface FairwayPlayerInsightProps {
    * component renders its own honest-empty state (never fabricated).
    */
   trendData?: Record<string, unknown> | null;
+  /**
+   * GOLF IA REORG (final_migrations #11) — true when this component is mounted
+   * as the "Scouting Report" tab inside /players/[playerId]/game (via
+   * PlayerDeepDiveTabs) rather than as a standalone route. Skips the
+   * self-owned CoachHelmShell masthead + breadcrumb + sub-nav, since the
+   * host page's own segmented control is the surface's chrome there — so it
+   * never renders two competing mastheads. The story content below is
+   * unchanged either way; only the outer wrapper differs.
+   */
+  embedded?: boolean;
 }
 
 /* ---------------------------------------------------------------------------
@@ -412,6 +422,7 @@ export function FairwayPlayerInsight({
   themes,
   trendData,
   signalCount,
+  embedded = false,
 }: FairwayPlayerInsightProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -649,28 +660,19 @@ export function FairwayPlayerInsight({
         <Link href={`/golf/dashboard/players/${player.id}/game`}>Game fingerprint</Link>
       </Button>
       <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
-        <Link href={`/golf/dashboard/coachhelm/genome/${player.id}`}>Genome</Link>
+        <Link href={`/golf/dashboard/players/${player.id}/genome`}>Genome</Link>
       </Button>
     </div>
   );
 
-  return (
-    <CoachHelmShell
-      active="players"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
-      signalCount={signalCount}
-      title="Player Insight"
-      breadcrumbs={[
-        { label: 'Players', href: '/golf/dashboard/development' },
-        { label: playerName },
-      ]}
-      actions={headerActions}
-    >
-      {/* This page is a narrative coaching STORY read top-to-bottom, so its body
-          keeps the tighter ~860px reading column inside the shell's wider gutter
-          rather than the shell's default 1200px instrument width. */}
-      <div className="mx-auto w-full max-w-[860px] space-y-12">
+  // The narrative coaching STORY, read top-to-bottom. Kept in one `content`
+  // value so both the standalone (CoachHelmShell-wrapped) and embedded
+  // (bare, hosted inside /players/[playerId]/game's Scouting Report tab)
+  // render paths share the exact same body — no duplicated JSX, no rewrite.
+  const content = (
+    // Tighter ~860px reading column — narrower than the shell's default
+    // 1200px instrument width, since this page is prose-like, not a grid.
+    <div className="mx-auto w-full max-w-[860px] space-y-12">
         {/* ════════ A · WHO + VERDICT ════════ */}
         <Surface elevation="shadow" padding="lg">
           <div className="flex items-start gap-5">
@@ -1020,6 +1022,26 @@ export function FairwayPlayerInsight({
           </Button>
         </div>
       </div>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <CoachHelmShell
+      active="players"
+      // eslint-disable-next-line jsx-a11y/aria-role
+      role="coach"
+      signalCount={signalCount}
+      title="Player Insight"
+      breadcrumbs={[
+        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: playerName },
+      ]}
+      actions={headerActions}
+    >
+      {content}
     </CoachHelmShell>
   );
 }

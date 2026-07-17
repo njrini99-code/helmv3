@@ -17,7 +17,12 @@
  *
  * Route allowlist (extend carefully — every new entry should be a
  * v3 surface that doesn't call scrollIntoView or use HTML5 drag-drop):
- *   /dashboard/coachhelm/genome/*       — radar + persona + dim grid
+ *   /dashboard/players/[playerId]/genome — radar + persona + dim grid
+ *     (GOLF IA REORG — canonical location; /dashboard/coachhelm/genome/*
+ *     is now a server-side redirect() shim that never mounts this client
+ *     component, so it stays listed only for any lingering deep links that
+ *     resolve before the redirect completes)
+ *   /dashboard/coachhelm/genome/*       — legacy redirect shim (see above)
  *   /dashboard/coachhelm/qualifying/*   — qualifying workspace
  *   /dashboard/coachhelm/chat           — chat history page
  *   /dashboard/my-standing              — standing matrix
@@ -37,6 +42,7 @@ import { usePathname } from 'next/navigation';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
 
 const ALLOW_PATTERNS: ReadonlyArray<RegExp> = [
+  /^\/golf\/dashboard\/players\/[^/]+\/genome(\/|$)/,
   /^\/golf\/dashboard\/coachhelm\/genome(\/|$)/,
   /^\/golf\/dashboard\/coachhelm\/qualifying(\/|$)/,
   /^\/golf\/dashboard\/coachhelm\/chat(\/|$)/,

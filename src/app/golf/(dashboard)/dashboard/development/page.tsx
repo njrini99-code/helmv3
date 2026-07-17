@@ -4,16 +4,17 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
+import { PlayersGridView, FeatureUnavailable, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
 import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
+import { surfaceName } from '@/lib/golf/surface-registry';
 
 export const metadata: Metadata = {
-  title: 'Development Plans | Helm Golf',
+  title: `${surfaceName('development')} | Helm Golf`,
   description: 'Manage player development plans and focus areas for your team.',
 };
 
@@ -27,8 +28,21 @@ export default async function DevelopmentPlansPage({
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
-  const { coach } = session;
-  if (!coach) redirect('/golf/dashboard?message=Development+plans+is+a+coach-only+feature');
+  const { coach, player } = session;
+  if (!coach) {
+    return (
+      <FeatureUnavailable
+        title={surfaceName('development')}
+        message={
+          player
+            ? 'Development Plans is designed for coaches managing the team’s focus areas. Players can view their own plan from My Development.'
+            : 'No coach or player profile found. Please complete onboarding.'
+        }
+        actionHref={player ? '/golf/dashboard/my-development' : '/golf/dashboard'}
+        actionLabel={player ? 'Open My Development' : 'Back to Dashboard'}
+      />
+    );
+  }
 
   const supabase = await createClient();
 

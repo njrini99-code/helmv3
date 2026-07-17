@@ -402,7 +402,12 @@ function playerName(row: InsightQueryRow): string {
 }
 
 function deepLinkFor(row: InsightQueryRow): string {
-  return `/golf/dashboard/players/${row.player_id}#insight-${row.id}`;
+  // GOLF IA REORG (final_migrations #11): the Scouting Report tab of the
+  // canonical /players/[playerId]/game route absorbed this content —
+  // ?tab=scouting lands directly on it (skipping the legacy redirect hop),
+  // and FairwayPlayerInsight's own hash-scroll effect still consumes the
+  // `#insight-<id>` fragment once the tab's insights finish loading.
+  return `/golf/dashboard/players/${row.player_id}/game?tab=scouting#insight-${row.id}`;
 }
 
 function toDigestInsight(row: InsightQueryRow): CoachDigestInsight | null {

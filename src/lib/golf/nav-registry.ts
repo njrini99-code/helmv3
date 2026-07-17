@@ -31,6 +31,7 @@
 
 import type { ComponentType, SVGProps } from 'react';
 import type { NavItem, NavSection } from '@/components/fairway/app-shell/types';
+import { surfaceName } from '@/lib/golf/surface-registry';
 import {
   IconHome,
   IconSparkles,
@@ -179,10 +180,23 @@ const COACH_CALENDAR_TABS: readonly GolfSubTab[] = [
   { id: 'travel', label: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
 ];
 
+// golf-ia-plan.json step 9: Team Stats is now the DEFAULT landing tab (tabs[0]
+// — hubToNavItem/buildCoachBottomNavItems always use a hub's first tab as its
+// rail/bottom-nav href), and the redundant "Stats" tab is pruned — it always
+// dead-ended right back into Team Stats for single-role coaches. /stats itself
+// stays fully live (drill-down only, via Team Stats' own ?player= links), so
+// Team Stats' matchPrefixes keeps it — and the owning "Rounds & Stats" rail
+// item — lit while a coach is on that drill-down, instead of going dark now
+// that /stats has no tab of its own.
 const COACH_ROUNDS_STATS_TABS: readonly GolfSubTab[] = [
+  {
+    id: 'team-stats',
+    label: surfaceName('stats-team'),
+    href: '/golf/dashboard/stats/team',
+    icon: IconChartBar,
+    matchPrefixes: ['/golf/dashboard/stats'],
+  },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
-  { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
-  { id: 'team-stats', label: 'Team Stats', href: '/golf/dashboard/stats/team', icon: IconChartBar },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
 ];
 
@@ -311,7 +325,7 @@ export function buildCoachRailSections(badges: GolfNavBadgeCounts): NavSection[]
   const items: NavItem[] = [
     hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome }),
     hubToNavItem({
-      label: 'CoachHelm AI',
+      label: surfaceName('rail-coachhelm-ai-coach'),
       href: '/golf/dashboard/intelligence',
       icon: IconSparkles,
       badge: navBadge(badges.coachhelm),
@@ -371,13 +385,13 @@ export function buildPlayerRailSections(badges: GolfNavBadgeCounts): NavSection[
   const items: NavItem[] = [
     hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome }),
     hubToNavItem({
-      label: 'CoachHelm AI',
+      label: surfaceName('rail-coachhelm-ai-player'),
       href: '/golf/dashboard/coachhelm',
       icon: IconSparkles,
       activeMatch: isCoachHelmPlayerCluster,
     }),
     hubToNavItem({ label: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf }),
-    hubToNavItem({ label: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar }),
+    hubToNavItem({ label: surfaceName('rail-my-stats-player'), href: '/golf/dashboard/stats', icon: IconChartBar }),
     hubToNavItem({
       label: 'Calendar',
       href: '/golf/dashboard/calendar',

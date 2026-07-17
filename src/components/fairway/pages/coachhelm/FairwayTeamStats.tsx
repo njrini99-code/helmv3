@@ -51,6 +51,7 @@ import {
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { surfaceName } from '@/lib/golf/surface-registry';
 
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
 import type { TeamLeakMaps, LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
@@ -1239,17 +1240,27 @@ function PlayerTile({
         </Link>
       ) : null}
 
-      {/* Always-present drill-in → that player's full stats page. P136: accent
-          text link sits at accent-700 (5.69:1 on surface) at REST — not the
-          failing accent-600 — and carries an underline so color is not the
-          only contrast cue. */}
-      <Link
-        href={`/golf/dashboard/stats?player=${player.id}`}
-        className="mt-3 inline-flex items-center gap-1 font-fw-sans text-caption font-medium text-accent-700 underline underline-offset-2 transition-colors hover:text-accent-800"
-      >
-        View full stats
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-      </Link>
+      {/* Always-present drill-in links → that player's full stats page, plus
+          (golf-ia-plan.json step 10, additive) the canonical per-player
+          Game Fingerprint hub. P136: accent text link sits at accent-700
+          (5.69:1 on surface) at REST — not the failing accent-600 — and
+          carries an underline so color is not the only contrast cue. */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <Link
+          href={`/golf/dashboard/stats?player=${player.id}`}
+          className="inline-flex items-center gap-1 font-fw-sans text-caption font-medium text-accent-700 underline underline-offset-2 transition-colors hover:text-accent-800"
+        >
+          View full stats
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+        <Link
+          href={`/golf/dashboard/players/${player.id}/game`}
+          className="inline-flex items-center gap-1 font-fw-sans text-caption font-medium text-accent-700 underline underline-offset-2 transition-colors hover:text-accent-800"
+        >
+          {surfaceName('player-game')}
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      </div>
     </InstrumentPanel>
   );
 }

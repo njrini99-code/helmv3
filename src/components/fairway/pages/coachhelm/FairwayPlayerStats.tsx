@@ -71,6 +71,20 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
     ? `Where ${playerName ?? 'this player'} stands vs PGA Tour and the team — and where the strokes are leaking.`
     : 'Where you stand vs PGA Tour and your team — and where the strokes are leaking.';
 
+  // golf-ia-plan.json step 8 — the shell's role/active-tab must track WHO is
+  // viewing, not a hardcoded value: a coach drilling into a teammate gets the
+  // coach's 5-tab strip (previously got the PLAYER strip pointed at the
+  // viewer's own /my-development, /my-game-profile, /my-standing — nonsense
+  // for a coach). Coach lands on the sibling idiom already used by every
+  // other coach player-detail surface (GenomeDetailView, FairwayPlayerInsight,
+  // PlayersGridView all use active="players" role="coach"). A player has no
+  // dedicated tab for their own /stats page (it's a separate rail item, not
+  // part of the 4-tab Overview/Development/Game Profile/Standing strip), so
+  // 'brief' (Overview) is the closest real tab — matching final_routes' note
+  // that /stats cross-links to "that player's CoachHelm Brief context".
+  const shellRole = isCoachView ? 'coach' : 'player';
+  const activeTab = isCoachView ? 'players' : 'brief';
+
   const backAction = isCoachView ? (
     <Link
       href="/golf/dashboard/stats"
@@ -84,9 +98,8 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">
         <CoachHelmShell
-          active="players"
-          // eslint-disable-next-line jsx-a11y/aria-role
-          role="player"
+          active={activeTab}
+          role={shellRole}
           eyebrow="Stats"
           title={title}
           description={description}

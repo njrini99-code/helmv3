@@ -202,13 +202,18 @@ export function FairwayPlayerGameFingerprint({
             </Button>
           }
           secondaryActions={
-            // Sibling cross-links (P107) — Game ↔ Insight ↔ Genome ↔ Profile.
+            // Sibling cross-links (P107) — Game ↔ Scouting report ↔ Genome ↔
+            // Profile. "Scouting report" is the same in-page tab the
+            // segmented control above switches to (?tab=scouting) — kept
+            // here too as a masthead-level shortcut.
             <>
               <Button asChild variant="ghost" size="sm" leftIcon={<IconSparkles size={15} />}>
-                <Link href={`/golf/dashboard/players/${player.id}`}>AI Insight</Link>
+                <Link href={`/golf/dashboard/players/${player.id}/game?tab=scouting`}>
+                  Scouting report
+                </Link>
               </Button>
               <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
-                <Link href={`/golf/dashboard/coachhelm/genome/${player.id}`}>Genome</Link>
+                <Link href={`/golf/dashboard/players/${player.id}/genome`}>Genome</Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href={`/golf/dashboard/roster/${player.id}`}>Player page</Link>

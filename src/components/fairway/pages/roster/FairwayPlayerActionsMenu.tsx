@@ -144,13 +144,15 @@ export function FairwayPlayerActionsMenu({
   const [selectedStatus, setSelectedStatus] =
     React.useState<FairwayPlayerStatus | null>(null);
 
-  // F142/F143: `/golf/dashboard/players/[playerId]` is the CoachHelm Player
-  // INSIGHT surface (AI patterns/predictions), NOT the roster profile —
-  // `/golf/dashboard/roster/[id]` is the profile (what the card's "View player"
-  // CTA opens). Labeling this kebab row "View Profile" pointed coaches at a
-  // different page than the card's primary action. The item is now "View
-  // Insights" so the two destinations are distinct + honestly named.
-  const insightHref = `/golf/dashboard/players/${playerId}`;
+  // F142/F143: the CoachHelm Player deep-dive (AI patterns/predictions) is
+  // NOT the roster profile — `/golf/dashboard/roster/[id]` is the profile
+  // (what the card's "View player" CTA opens). Labeling this kebab row "View
+  // Profile" pointed coaches at a different page than the card's primary
+  // action. The item is now "View Insights" so the two destinations are
+  // distinct + honestly named. GOLF IA REORG (final_migrations #11): the
+  // insight/verdict content moved into the Scouting Report tab of the
+  // canonical /players/[playerId]/game deep-dive.
+  const insightHref = `/golf/dashboard/players/${playerId}/game?tab=scouting`;
 
   /* ---- navigation helpers (close the popover first) ---- */
 
