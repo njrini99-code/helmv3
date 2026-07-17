@@ -1868,12 +1868,21 @@ async function submitGolfRoundComprehensiveImpl(
     // cache invalidation inside the user-facing response, adding 0.5–2s of
     // p99 latency to round submits. Move to after() so the user response
     // returns immediately; warnings are still logged from the after callback.
+    //
+    // 2026-07-17: closes #920 (race). This used to be a SECOND, independent
+    // after() callback that ran concurrently with the postRoundTrigger
+    // after() below — the CoachHelm engine could read golf_player_stats_cache
+    // before invalidateOnRoundComplete finished writing it, producing
+    // insights/predictions off a stale cache. Chained into a single after()
+    // so the cache refresh is fully awaited BEFORE postRoundTrigger runs.
     const cacheRoundId = round.id;
     const cachePlayerId = player.id;
     const cacheHolesCount = holesPayload.length;
     const cacheShotsCount = shotsCount;
     const cacheUserId = user.id;
     const cacheUserEmail = user.email;
+    const backgroundPlayerId = player.id;
+    const backgroundRoundId = round.id;
     after(async () => {
       try {
         const cacheResult = await invalidateOnRoundComplete(cachePlayerId, cacheRoundId);
@@ -1906,6 +1915,26 @@ async function submitGolfRoundComprehensiveImpl(
           },
         }, 'critical');
       }
+
+      // 2026-05-17: closes audit Finding 2 + A-NEW-6. Previously this fetched
+      // /api/coachhelm/analyze-player with `keepalive: true`. That had three
+      // problems: (1) an extra internal HTTP hop with cold-start risk;
+      // (2) keepalive's lifetime guarantees are best-effort on Fluid Compute;
+      // (3) the COACHHELM_INTERNAL_SECRET was a credential management surface.
+      //
+      // Runs via Next.js `after()` so the trigger fires post-response in the
+      // same function instance, AFTER the stats-cache refresh above has
+      // resolved (success or failure — postRoundTrigger reads the round's own
+      // shot/hole data, not the cache, so it still proceeds even if the cache
+      // refresh warned). postRoundTrigger writes terminal state to
+      // golf_rounds.coachhelm_{analyzed,failed}_at so the safety-net cron can
+      // recover deterministically if the after-callback dies.
+      const admin = createAdminClient();
+      await postRoundTrigger(admin, {
+        playerId: backgroundPlayerId,
+        roundId: backgroundRoundId,
+        triggerReason: 'round_submitted',
+      });
     });
 
     try {
@@ -1940,27 +1969,6 @@ async function submitGolfRoundComprehensiveImpl(
         },
       }, 'warning');
     }
-
-    // 2026-05-17: closes audit Finding 2 + A-NEW-6. Previously this fetched
-    // /api/coachhelm/analyze-player with `keepalive: true`. That had three
-    // problems: (1) an extra internal HTTP hop with cold-start risk;
-    // (2) keepalive's lifetime guarantees are best-effort on Fluid Compute;
-    // (3) the COACHHELM_INTERNAL_SECRET was a credential management surface.
-    //
-    // New: use Next.js `after()` so the trigger runs post-response in the same
-    // function instance. postRoundTrigger writes terminal state to
-    // golf_rounds.coachhelm_{analyzed,failed}_at so the safety-net cron can
-    // recover deterministically if the after-callback dies.
-    const backgroundPlayerId = player.id;
-    const backgroundRoundId = round.id;
-    after(async () => {
-      const admin = createAdminClient();
-      await postRoundTrigger(admin, {
-        playerId: backgroundPlayerId,
-        roundId: backgroundRoundId,
-        triggerReason: 'round_submitted',
-      });
-    });
 
     // Log round submission event (fire-and-forget)
     logRoundSubmitted(user.id, user.email || '', round.id, {

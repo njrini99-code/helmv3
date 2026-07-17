@@ -52,6 +52,14 @@ export interface TeamCategoryInsightsResult {
   data?: {
     categories: TeamCategory[];
     teamHealth: number;
+    /**
+     * The most recent completed round's `round_date` — a plain 'YYYY-MM-DD'
+     * calendar date, NOT a full timestamp. `golf_rounds.round_date` is a
+     * DATE column with no time-of-day component; consumers must format this
+     * as a date only (see FairwayBrief's `formatAnalyzed`) and must not
+     * localize it to the viewer's timezone, which would shift the calendar
+     * date itself around midnight. '' when there is no completed round yet.
+     */
     lastAnalyzed: string;
   };
   error?: string;
@@ -915,7 +923,14 @@ async function getTeamCategoryInsightsImpl(
       const d = typeof r.round_date === 'string' ? r.round_date : '';
       return d > max ? d : max;
     }, '');
-    const lastAnalyzed = latestRoundDate ? new Date(latestRoundDate).toISOString() : '';
+    // 2026-07-17 — #920 (fake timestamp): pass the plain 'YYYY-MM-DD' date
+    // straight through. The old `new Date(latestRoundDate).toISOString()`
+    // parsed the date-only string as UTC MIDNIGHT, and the Brief then
+    // localized that fabricated instant to the viewer's timezone — inventing
+    // a specific clock time ("8:00 PM") the round never had, and for viewers
+    // west of UTC, shifting the calendar date itself back a day. `round_date`
+    // has no time component; don't manufacture one.
+    const lastAnalyzed = latestRoundDate;
 
     return {
       success: true,

@@ -3817,6 +3817,26 @@ async function triggerPlayerInsightsAfterRoundImpl(
     const alertPosture = await loadAlertPostureForPlayer(playerId);
     confidenceThreshold *= alertPosture?.multiplier ?? 1.0;
 
+    // 2026-07-17 — #920: alert_posture='silent' resolves to an infinite
+    // confidence threshold above, which silently blocks EVERY insight for
+    // this player — nothing in the run distinguishes "engine found nothing"
+    // from "engine was gated shut by design." Surface it once per run (this
+    // function already runs once per player per invocation) so it shows up
+    // in the admin log feed instead of vanishing without a trace.
+    if (alertPosture?.multiplier === Number.POSITIVE_INFINITY) {
+      await logServerEvent(
+        `[insights.triggerPlayerInsightsAfterRound] alert_posture=silent — insight gate blocked for this player (confidence threshold = Infinity)`,
+        {
+          action: 'insights.triggerPlayerInsightsAfterRound.silentPosture',
+          featureArea: 'coachhelm',
+          playerId,
+          // Intentional coach setting, not a malfunction — admin-feed only, not Sentry.
+          skipSentry: true,
+        },
+        'info',
+      );
+    }
+
     // 2026-05-24 Wave 7B — philosophy gate (replaces the post-filter sweep
     // that used to live below this block). Built once here so every Tier-1
     // generator inside analyzePlayer skips writes the coach's philosophy

@@ -168,6 +168,15 @@ export interface PlayersGridViewProps {
    * empty state. Defaults to {} so the route may omit it during incremental wiring.
    */
   causalByPlayer?: Record<string, CausalRelationshipRow[]>;
+  /**
+   * #920 — player_ids whose coach-set alert_posture is 'silent'. That posture
+   * makes the CoachHelm confidence gate infinite for the player (see
+   * src/app/golf/actions/insights.ts), so the engine keeps running but never
+   * surfaces an insight for them — previously invisible anywhere in the coach
+   * UI. Drives a small "Insights muted" indicator on the roster row so a
+   * coach scanning this table can tell "no signal" apart from "gated shut."
+   */
+  silentPostureByPlayer?: Record<string, boolean>;
   /** Load error from the route (honest error state, distinct from empty). */
   loadError?: string | null;
   /**
@@ -243,6 +252,7 @@ export function PlayersGridView({
   goalsByPlayer = {},
   playerNameById = {},
   causalByPlayer = {},
+  silentPostureByPlayer = {},
   loadError,
   initialSelectedPlayerId = null,
   className,
@@ -581,6 +591,18 @@ export function PlayersGridView({
               avatarUrl={p.avatar_url}
               size="sm"
               meta={metaText || undefined}
+              nameAddon={
+                silentPostureByPlayer[p.id] ? (
+                  <Badge
+                    tone="neutral"
+                    variant="outline"
+                    size="sm"
+                    title="Alert posture is set to Silent for this player — CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                  >
+                    Insights muted
+                  </Badge>
+                ) : undefined
+              }
             />
           );
         },
@@ -711,7 +733,7 @@ export function PlayersGridView({
         meta: { align: 'right', cellClassName: 'w-8' },
       },
     ],
-    [goalsByPlayer],
+    [goalsByPlayer, silentPostureByPlayer],
   );
 
   /* ---- header actions ---- */
