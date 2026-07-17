@@ -335,8 +335,13 @@ export function FairwayRoundDetail({
                   scoreToPar != null
                     ? {
                         value: scoreToPar,
-                        // golf is lower-is-better: under par is the good direction
-                        direction: scoreToPar < 0 ? 'down' : scoreToPar > 0 ? 'up' : 'flat',
+                        // Bug #915: Readout's `direction` is the VERDICT
+                        // ('up' = green/good, 'down' = amber/bad), not the raw
+                        // numeric sign — golf is lower-is-better, so under par
+                        // (scoreToPar < 0) is the GOOD ('up') direction. The
+                        // previous `scoreToPar < 0 ? 'down' : ...` inverted
+                        // this: a great under-par round rendered amber ▼.
+                        direction: scoreToPar < 0 ? 'up' : scoreToPar > 0 ? 'down' : 'flat',
                         format: () => `${formatToPar(scoreToPar)} vs par`,
                       }
                     : undefined

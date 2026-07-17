@@ -1355,6 +1355,10 @@ export function FairwayCoachHelmSignals({
           key={row.id}
           variant={opts?.hero ? 'hero' : opts?.compact ? 'compact' : 'default'}
           priority={row.priority}
+          // Bug #915: a pattern's icon/accent follows its SIGNED stroke_impact
+          // (row.valence), not the priority severity tier — undefined for
+          // insight rows, which fall back to the unchanged priority-driven icon.
+          iconTone={row.valence}
           overline={row.overline}
           title={row.title}
           evidence={opts?.compact ? undefined : evidenceNode}
@@ -1983,6 +1987,9 @@ export function FairwayCoachHelmSignals({
             if (!o) setOpenRowId(null);
           }}
           priority={openRow.priority}
+          // Bug #915 — same direction-by-sign override as the card (see
+          // renderCard above) so the opened panel matches what was scanned.
+          iconTone={openRow.valence}
           overline={openRow.overline}
           title={openRow.title}
           meta={openRow.confidenceWord ?? undefined}
