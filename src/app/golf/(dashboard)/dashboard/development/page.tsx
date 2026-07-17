@@ -10,6 +10,7 @@ import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
 import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import { surfaceName } from '@/lib/golf/surface-registry';
 
@@ -310,6 +311,20 @@ export default async function DevelopmentPlansPage({
   // Dedupe-aware causal "why their scores move" rows, keyed by player_id.
   const causalByPlayer = await getTeamCausalRelationships(teamId);
 
+  // #920 — alert_posture='silent' makes the confidence gate infinite for that
+  // player (src/app/golf/actions/insights.ts), so the CoachHelm engine keeps
+  // running but never surfaces a single insight for them. That was invisible
+  // anywhere in the coach UI. One roster-wide intent read (no N+1 — same
+  // query the Roster page already uses) lets the Players-tab roster row flag
+  // it instead of silently reading as "nothing found."
+  const coachIntents = await loadCoachIntents(coach.id);
+  const silentPostureByPlayer: Record<string, boolean> = {};
+  for (const pid of playerIds) {
+    if (coachIntents.get(pid)?.alert_posture === 'silent') {
+      silentPostureByPlayer[pid] = true;
+    }
+  }
+
   // F133: honor the ?player= deep-link from a player's insight/genome card —
   // open the grid scoped to that player, but only if the id is actually on this
   // coach's roster (never trust the raw query param).
@@ -331,6 +346,7 @@ export default async function DevelopmentPlansPage({
         goalsByPlayer={goalsByPlayer}
         playerNameById={playerNameById}
         causalByPlayer={causalByPlayer}
+        silentPostureByPlayer={silentPostureByPlayer}
         initialSelectedPlayerId={initialSelectedPlayerId}
         loadError={loadError}
       />
