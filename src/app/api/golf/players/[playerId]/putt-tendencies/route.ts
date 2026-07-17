@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import type { PlayerPuttTendencies } from '@/lib/types/golf';
+import { withRouteHandler } from '@/lib/api/with-route-handler';
+import { logServerError } from '@/lib/server-error-logger';
 
 const EMPTY_TENDENCIES: PlayerPuttTendencies = {
   playerId: '',
@@ -27,11 +29,13 @@ interface PuttDetailRow {
   made: boolean;
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ playerId: string }> }
-) {
-  try {
+export const GET = withRouteHandler(
+  'golfPuttTendenciesApi.get',
+  { source: 'route_handler', sport: 'golf', featureArea: 'golf_putt_tendencies' },
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ playerId: string }> }
+  ) => {
     const { playerId } = await params;
     const supabase = await createClient();
 
@@ -96,7 +100,18 @@ export async function GET(
       .eq('shot.player_id', playerId) as { data: (PuttDetailRow & { shot: { player_id: string } })[] | null; error: { message: string } | null };
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      await logServerError(`Putt tendencies query failed: ${error.message}`, {
+        action: 'golfPuttTendenciesApi.get.query',
+        route: '/api/golf/players/[playerId]/putt-tendencies',
+        url: request.url,
+        source: 'route_handler',
+        sport: 'golf',
+        featureArea: 'golf_putt_tendencies',
+        userId: user.id,
+        statusCode: 500,
+        extra: { playerId },
+      }, 'error');
+      return NextResponse.json({ error: 'Failed to load putt tendencies' }, { status: 500 });
     }
 
     const rows = puttRows || [];
@@ -180,10 +195,5 @@ export async function GET(
     };
 
     return NextResponse.json(tendencies);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
+  },
+);

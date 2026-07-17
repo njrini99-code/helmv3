@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
+import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -172,6 +173,25 @@ function enrichTraceContext(message: string, context: RoundErrorContext): RoundE
   };
 }
 
+// Ceiling on 'bridge_write_failed' Sentry alerts (mirrors instrumentation.ts's
+// BRIDGE_PROCESS_WRITE_LIMIT for the process-level fallback path). Without
+// this, a Supabase outage — the exact scenario the Bridge exists to surface —
+// turns every failed error_logs/admin_events insert across the whole app
+// into its own unbounded Sentry issue.
+const BRIDGE_WRITE_FAILURE_ALERT_LIMIT = 5;
+let bridgeWriteFailureWindowStart = Date.now();
+let bridgeWriteFailureCount = 0;
+
+function allowBridgeWriteFailureAlert(): boolean {
+  const now = Date.now();
+  if (now - bridgeWriteFailureWindowStart > 60_000) {
+    bridgeWriteFailureWindowStart = now;
+    bridgeWriteFailureCount = 0;
+  }
+  bridgeWriteFailureCount += 1;
+  return bridgeWriteFailureCount <= BRIDGE_WRITE_FAILURE_ALERT_LIMIT;
+}
+
 async function writeAdminTables(
   message: string,
   error: Error | null,
@@ -223,7 +243,34 @@ async function writeAdminTables(
     feature: enriched.feature ?? enriched.featureArea ?? null,
   });
 
-  await Promise.allSettled([errorLogInsert, adminEventInsert]);
+  const [errorLogResult, adminEventResult] = await Promise.allSettled([errorLogInsert, adminEventInsert]);
+
+  // The Bridge's own persistence must never depend on itself to notice it's
+  // failing — this only ever falls through to console + Sentry, never back
+  // into logServerError/logServerException (that would recurse).
+  for (const [table, result] of [
+    ['error_logs', errorLogResult],
+    ['admin_events', adminEventResult],
+  ] as const) {
+    const writeError =
+      result.status === 'rejected'
+        ? result.reason
+        : (result.value as { error?: { code?: string; message?: string } } | undefined)?.error;
+    if (!writeError) continue;
+
+    const code = (writeError as { code?: string })?.code ?? null;
+    const failureMessage = (writeError as { message?: string })?.message ?? String(writeError);
+    console.error('[ServerErrorLogger] Bridge write failed', { table, code, message: failureMessage });
+    if (allowBridgeWriteFailureAlert()) {
+      Sentry.captureMessage('bridge_write_failed', {
+        level: 'error',
+        tags: { table },
+        // Stable fingerprint (not per-message) so repeated failures during
+        // an outage collapse into one Sentry issue instead of fanning out.
+        fingerprint: ['bridge_write_failed', table],
+      });
+    }
+  }
 }
 
 /** Static Sentry title — user/error copy lives in scope context, not the format string. */
@@ -376,6 +423,12 @@ export async function logServerException(
   // Caller explicitly handed us an Error — preserve the exception path so
   // the stack trace is captured even at warning severity.
   await captureServerTrace(normalizedError.message, context, severity, normalizedError, true);
+  // Mark the ORIGINAL error object (not normalizedError, which may be a
+  // freshly-constructed wrapper) so a subsequent `throw error;` by the
+  // caller is recognized by onRequestError as already-logged.
+  if (error instanceof Error) {
+    markBridgeLogged(error);
+  }
 }
 
 /**

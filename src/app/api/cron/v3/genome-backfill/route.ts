@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -29,23 +30,33 @@ interface BackfillSummary {
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-genome-backfill-oneshot', () => handle());
 }
 
 export async function POST(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-genome-backfill-oneshot', () => handle());
 }
 
 async function handle(): Promise<NextResponse> {
   const startedAt = Date.now();
   const supabase = createAdminClient();
 
-  const { data: members } = await supabase
+  const { data: members, error: membersErr } = await supabase
     .from('golf_team_members')
     .select('player_id')
     .eq('status', 'active');
+  if (membersErr) {
+    // Not logged here: this route is wrapped in recordJobRun (job-log.ts),
+    // which already writes a "Cron failed" Bridge event for any >=400
+    // response — logging again here would double-write error_logs/
+    // admin_events/Sentry for the same failure.
+    return NextResponse.json(
+      { error: membersErr.message, duration_ms: Date.now() - startedAt },
+      { status: 500 },
+    );
+  }
   const playerIds = Array.from(new Set((members ?? []).map((m) => m.player_id)));
 
   let computed = 0;
@@ -61,16 +72,30 @@ async function handle(): Promise<NextResponse> {
       errors += 1;
       await logServerError(
         `genome-backfill exception for ${pid}: ${err instanceof Error ? err.message : String(err)}`,
-        { action: 'cron.v3.genome-backfill' },
+        { action: 'cron.v3.genome-backfill', source: 'cron' },
       );
     }
   }
 
-  return NextResponse.json({
+  const body = {
     total_players: playerIds.length,
     computed,
     null_only: nullOnly,
     errors,
     duration_ms: Date.now() - startedAt,
-  } satisfies BackfillSummary);
+  } satisfies BackfillSummary;
+
+  // Total failure: every player errored and nothing computed. A partial
+  // failure (some computed, some errored) still returns 200 — the summary
+  // body carries the error count for the caller to inspect.
+  if (playerIds.length > 0 && errors > 0 && computed === 0) {
+    // Not logged here: this route is wrapped in recordJobRun (job-log.ts),
+    // which already writes a "Cron failed" Bridge event for any >=400
+    // response — logging again here would double-write error_logs/
+    // admin_events/Sentry for the same failure. Per-player exceptions are
+    // still logged individually above, in the loop.
+    return NextResponse.json(body, { status: 500 });
+  }
+
+  return NextResponse.json(body);
 }

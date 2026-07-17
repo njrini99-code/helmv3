@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { withRateLimit } from '@/lib/middleware/rate-limit';
 import { RATE_LIMITS } from '@/lib/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -208,7 +209,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    // This route IS the error-reporting pipeline — a failure here has no
+    // downstream logger to fall back on, so it must self-report directly.
+    console.error('[log-error route] Failed to persist client error report', error);
+    Sentry.captureException(error, { tags: { component: 'log-error-route' } });
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }

@@ -17,6 +17,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logServerException } from '@/lib/server-error-logger';
 import type {
   CrmAutomation,
   CrmAutomationAction,
@@ -81,43 +82,63 @@ export async function listAutomations(opts?: {
   activeOnly?: boolean;
 }): Promise<CrmAutomation[]> {
   const { supabase } = await getAuthedClient();
-  const client = supabase as AnySupabase;
+  try {
+    const client = supabase as AnySupabase;
 
-  let query = client
-    .from('crm_automations')
-    .select('*')
-    .order('trigger_event', { ascending: true })
-    .order('priority', { ascending: true })
-    .order('created_at', { ascending: false });
+    let query = client
+      .from('crm_automations')
+      .select('*')
+      .order('trigger_event', { ascending: true })
+      .order('priority', { ascending: true })
+      .order('created_at', { ascending: false });
 
-  if (opts?.trigger) {
-    query = query.eq('trigger_event', opts.trigger);
-  }
-  if (opts?.activeOnly) {
-    query = query.eq('is_active', true);
-  }
+    if (opts?.trigger) {
+      query = query.eq('trigger_event', opts.trigger);
+    }
+    if (opts?.activeOnly) {
+      query = query.eq('is_active', true);
+    }
 
-  const { data, error } = await query;
-  if (error) {
-    throw new Error(`Failed to load automations: ${error.message}`);
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Failed to load automations: ${error.message}`);
+    }
+    return (data ?? []).map((row: Record<string, unknown>) => normalizeRow(row));
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_automations.listAutomations',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
   }
-  return (data ?? []).map((row: Record<string, unknown>) => normalizeRow(row));
 }
 
 export async function getAutomation(id: string): Promise<CrmAutomation> {
   const { supabase } = await getAuthedClient();
-  const client = supabase as AnySupabase;
+  try {
+    const client = supabase as AnySupabase;
 
-  const { data, error } = await client
-    .from('crm_automations')
-    .select('*')
-    .eq('id', id)
-    .single();
+    const { data, error } = await client
+      .from('crm_automations')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-  if (error) {
-    throw new Error(`Failed to load automation: ${error.message}`);
+    if (error) {
+      throw new Error(`Failed to load automation: ${error.message}`);
+    }
+    return normalizeRow(data as Record<string, unknown>);
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_automations.getAutomation',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
   }
-  return normalizeRow(data as Record<string, unknown>);
 }
 
 export async function createAutomation(input: {
@@ -130,36 +151,46 @@ export async function createAutomation(input: {
   priority?: number;
 }): Promise<CrmAutomation> {
   const { supabase, user } = await getAuthedClient();
-  const client = supabase as AnySupabase;
+  try {
+    const client = supabase as AnySupabase;
 
-  if (!input.name || !input.name.trim()) {
-    throw new Error('Automation name is required');
+    if (!input.name || !input.name.trim()) {
+      throw new Error('Automation name is required');
+    }
+    if (!Array.isArray(input.actions) || input.actions.length === 0) {
+      throw new Error('At least one action is required');
+    }
+
+    const { data, error } = await client
+      .from('crm_automations')
+      .insert({
+        name: input.name.trim(),
+        description: input.description ?? null,
+        trigger_event: input.trigger_event,
+        conditions: input.conditions ?? [],
+        actions: input.actions,
+        is_active: input.is_active ?? true,
+        priority: input.priority ?? 100,
+        created_by: user.id,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create automation: ${error.message}`);
+    }
+
+    revalidatePath(CRM_AUTOMATIONS_PATH);
+    return normalizeRow(data as Record<string, unknown>);
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_automations.createAutomation',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
   }
-  if (!Array.isArray(input.actions) || input.actions.length === 0) {
-    throw new Error('At least one action is required');
-  }
-
-  const { data, error } = await client
-    .from('crm_automations')
-    .insert({
-      name: input.name.trim(),
-      description: input.description ?? null,
-      trigger_event: input.trigger_event,
-      conditions: input.conditions ?? [],
-      actions: input.actions,
-      is_active: input.is_active ?? true,
-      priority: input.priority ?? 100,
-      created_by: user.id,
-    })
-    .select('*')
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to create automation: ${error.message}`);
-  }
-
-  revalidatePath(CRM_AUTOMATIONS_PATH);
-  return normalizeRow(data as Record<string, unknown>);
 }
 
 export async function updateAutomation(
@@ -175,46 +206,66 @@ export async function updateAutomation(
   }>,
 ): Promise<CrmAutomation> {
   const { supabase } = await getAuthedClient();
-  const client = supabase as AnySupabase;
+  try {
+    const client = supabase as AnySupabase;
 
-  // Strip server-managed columns from any patch attempt.
-  const safePatch: Record<string, unknown> = {};
-  if (patch.name !== undefined) safePatch.name = patch.name.trim();
-  if (patch.description !== undefined) safePatch.description = patch.description;
-  if (patch.trigger_event !== undefined) safePatch.trigger_event = patch.trigger_event;
-  if (patch.conditions !== undefined) safePatch.conditions = patch.conditions;
-  if (patch.actions !== undefined) safePatch.actions = patch.actions;
-  if (patch.is_active !== undefined) safePatch.is_active = patch.is_active;
-  if (patch.priority !== undefined) safePatch.priority = patch.priority;
+    // Strip server-managed columns from any patch attempt.
+    const safePatch: Record<string, unknown> = {};
+    if (patch.name !== undefined) safePatch.name = patch.name.trim();
+    if (patch.description !== undefined) safePatch.description = patch.description;
+    if (patch.trigger_event !== undefined) safePatch.trigger_event = patch.trigger_event;
+    if (patch.conditions !== undefined) safePatch.conditions = patch.conditions;
+    if (patch.actions !== undefined) safePatch.actions = patch.actions;
+    if (patch.is_active !== undefined) safePatch.is_active = patch.is_active;
+    if (patch.priority !== undefined) safePatch.priority = patch.priority;
 
-  const { data, error } = await client
-    .from('crm_automations')
-    .update(safePatch)
-    .eq('id', id)
-    .select('*')
-    .single();
+    const { data, error } = await client
+      .from('crm_automations')
+      .update(safePatch)
+      .eq('id', id)
+      .select('*')
+      .single();
 
-  if (error) {
-    throw new Error(`Failed to update automation: ${error.message}`);
+    if (error) {
+      throw new Error(`Failed to update automation: ${error.message}`);
+    }
+
+    revalidatePath(CRM_AUTOMATIONS_PATH);
+    return normalizeRow(data as Record<string, unknown>);
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_automations.updateAutomation',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
   }
-
-  revalidatePath(CRM_AUTOMATIONS_PATH);
-  return normalizeRow(data as Record<string, unknown>);
 }
 
 export async function deleteAutomation(id: string): Promise<{ ok: true }> {
   const { supabase } = await getAuthedClient();
-  const client = supabase as AnySupabase;
+  try {
+    const client = supabase as AnySupabase;
 
-  const { error } = await client
-    .from('crm_automations')
-    .delete()
-    .eq('id', id);
+    const { error } = await client
+      .from('crm_automations')
+      .delete()
+      .eq('id', id);
 
-  if (error) {
-    throw new Error(`Failed to delete automation: ${error.message}`);
+    if (error) {
+      throw new Error(`Failed to delete automation: ${error.message}`);
+    }
+
+    revalidatePath(CRM_AUTOMATIONS_PATH);
+    return { ok: true };
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_automations.deleteAutomation',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
   }
-
-  revalidatePath(CRM_AUTOMATIONS_PATH);
-  return { ok: true };
 }

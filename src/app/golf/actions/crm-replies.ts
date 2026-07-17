@@ -15,6 +15,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logServerException } from '@/lib/server-error-logger';
 import { listMyDueTasks } from './crm-foundations';
 import type { CrmTask } from '../admin/crm/types/foundations';
 
@@ -86,31 +87,41 @@ export async function listReplies(opts?: {
   limit?: number;
 }): Promise<CrmReply[]> {
   const { supabase } = await getAuthedClient();
-  const client = supabase as AnySupabase;
+  try {
+    const client = supabase as AnySupabase;
 
-  let query = client
-    .from('crm_replies')
-    .select('*')
-    .order('received_at', { ascending: false });
+    let query = client
+      .from('crm_replies')
+      .select('*')
+      .order('received_at', { ascending: false });
 
-  if (opts?.coachId) {
-    query = query.eq('coach_id', opts.coachId);
-  }
-  if (opts?.threadId) {
-    query = query.eq('thread_id', opts.threadId);
-  }
-  if (opts?.unreadOnly) {
-    query = query.eq('is_read', false);
-  }
-  if (opts?.limit && opts.limit > 0) {
-    query = query.limit(opts.limit);
-  }
+    if (opts?.coachId) {
+      query = query.eq('coach_id', opts.coachId);
+    }
+    if (opts?.threadId) {
+      query = query.eq('thread_id', opts.threadId);
+    }
+    if (opts?.unreadOnly) {
+      query = query.eq('is_read', false);
+    }
+    if (opts?.limit && opts.limit > 0) {
+      query = query.limit(opts.limit);
+    }
 
-  const { data, error } = await query;
-  if (error) {
-    throw new Error(`Failed to load replies: ${error.message}`);
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Failed to load replies: ${error.message}`);
+    }
+    return (data ?? []).map((row: Record<string, unknown>) => normalizeReply(row));
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_replies.listReplies',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
   }
-  return (data ?? []).map((row: Record<string, unknown>) => normalizeReply(row));
 }
 
 export async function getCoachReplies(coachId: string): Promise<CrmReply[]> {
@@ -119,21 +130,31 @@ export async function getCoachReplies(coachId: string): Promise<CrmReply[]> {
 
 export async function markReplyRead(id: string): Promise<CrmReply> {
   const { supabase } = await getAuthedClient();
-  const client = supabase as AnySupabase;
+  try {
+    const client = supabase as AnySupabase;
 
-  const { data, error } = await client
-    .from('crm_replies')
-    .update({ is_read: true })
-    .eq('id', id)
-    .select('*')
-    .single();
+    const { data, error } = await client
+      .from('crm_replies')
+      .update({ is_read: true })
+      .eq('id', id)
+      .select('*')
+      .single();
 
-  if (error) {
-    throw new Error(`Failed to mark reply read: ${error.message}`);
+    if (error) {
+      throw new Error(`Failed to mark reply read: ${error.message}`);
+    }
+
+    revalidatePath(CRM_INBOX_PATH);
+    return normalizeReply(data as Record<string, unknown>);
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_replies.markReplyRead',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
   }
-
-  revalidatePath(CRM_INBOX_PATH);
-  return normalizeReply(data as Record<string, unknown>);
 }
 
 // ----------------------------------------------------------------------------

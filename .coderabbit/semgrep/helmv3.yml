@@ -105,6 +105,18 @@ rules:
             requireAdmin(...)
             ...
           }
+      # Same house-helper allowance, second name: the golf CRM actions
+      # (src/app/golf/actions/crm-*.ts) each define a local `getAuthedClient()`
+      # that wraps createClient() + auth.getUser() + an Unauthorized throw,
+      # returning { supabase, user }. Functionally identical to requireAdmin()
+      # above — verified 2026-07-16 that every definition follows that exact
+      # shape and the call is not used anywhere outside those files.
+      - pattern-not-inside: |
+          export async function $F(...) {
+            ...
+            getAuthedClient(...)
+            ...
+          }
 
   # ---------------------------------------------------------------------------
   # DATA-LOSS — DELETE-then-INSERT in a save/sync/submit path

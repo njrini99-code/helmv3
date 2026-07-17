@@ -51,6 +51,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { useToast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
@@ -132,16 +133,24 @@ export function FairwayMessages() {
 
   const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
     const supabase = createClient();
-    const { data: participants } = await supabase
+    const { data: participants, error: participantsError } = await supabase
       .from('golf_conversation_participants')
       .select('user_id')
       .eq('conversation_id', conversationId);
+
+    if (participantsError) {
+      logError(
+        new Error(participantsError.message || 'Failed to fetch group participants'),
+        { component: 'FairwayMessages', action: 'fetchGroupParticipants', sport: 'shared' },
+        'medium'
+      );
+    }
 
     if (!participants || participants.length === 0) return;
 
     const userIds = participants.map(p => p.user_id);
 
-    const [{ data: coaches }, { data: players }] = await Promise.all([
+    const [{ data: coaches, error: coachesError }, { data: players, error: playersError }] = await Promise.all([
       supabase
         .from('golf_coaches')
         .select('user_id, full_name, avatar_url')
@@ -151,6 +160,14 @@ export function FairwayMessages() {
         .select('user_id, first_name, last_name, avatar_url')
         .in('user_id', userIds),
     ]);
+
+    if (coachesError || playersError) {
+      logError(
+        new Error(coachesError?.message || playersError?.message || 'Failed to fetch group participant details'),
+        { component: 'FairwayMessages', action: 'fetchGroupParticipants', sport: 'shared' },
+        'medium'
+      );
+    }
 
     const map = new Map<string, { name: string; avatar: string | null }>();
     (coaches ?? []).forEach(c => {
@@ -218,8 +235,12 @@ export function FairwayMessages() {
             showToast('Conversation started', 'success');
           }
         } catch (err) {
-          void err;
           showToast('Failed to start conversation', 'error');
+          logError(
+            err instanceof Error ? err : new Error('Failed to start conversation'),
+            { component: 'FairwayMessages', action: 'handlePlayerParam', sport: 'shared' },
+            'high'
+          );
         }
         setHandledPlayerParam(true);
         router.replace('/golf/dashboard/messages', { scroll: false });
@@ -291,10 +312,19 @@ export function FairwayMessages() {
         showToast('Conversation started', 'success');
       } else if ('error' in result) {
         showToast(String(result.error) || 'Failed to start conversation', 'error');
+        logError(
+          new Error(String(result.error) || 'Failed to start conversation'),
+          { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
+          'high'
+        );
       }
     } catch (err) {
-      void err;
       showToast('Failed to start conversation', 'error');
+      logError(
+        err instanceof Error ? err : new Error('Failed to start conversation'),
+        { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
+        'high'
+      );
     }
   };
 
@@ -313,6 +343,11 @@ export function FairwayMessages() {
       return true;
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
+      logError(
+        error instanceof Error ? error : new Error('Failed to send message'),
+        { component: 'FairwayMessages', action: 'handleSendMessage', sport: 'shared' },
+        'high'
+      );
       return false;
     }
   };
@@ -327,11 +362,21 @@ export function FairwayMessages() {
       });
       if (!result.success) {
         showToast(result.error || 'Failed to send message', 'error');
+        logError(
+          new Error(result.error || 'Failed to send message with attachments'),
+          { component: 'FairwayMessages', action: 'handleSendMessageWithAttachments', sport: 'shared' },
+          'high'
+        );
         return false;
       }
       return true;
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
+      logError(
+        error instanceof Error ? error : new Error('Failed to send message with attachments'),
+        { component: 'FairwayMessages', action: 'handleSendMessageWithAttachments', sport: 'shared' },
+        'high'
+      );
       return false;
     }
   };
@@ -356,6 +401,11 @@ export function FairwayMessages() {
       setEditContent('');
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to update message', 'error');
+      logError(
+        error instanceof Error ? error : new Error('Failed to update message'),
+        { component: 'FairwayMessages', action: 'handleSaveEdit', sport: 'shared' },
+        'high'
+      );
     } finally {
       setIsEditSaving(false);
     }
@@ -374,6 +424,11 @@ export function FairwayMessages() {
       setDeleteConfirmId(null);
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to delete message', 'error');
+      logError(
+        error instanceof Error ? error : new Error('Failed to delete message'),
+        { component: 'FairwayMessages', action: 'handleConfirmDelete', sport: 'shared' },
+        'high'
+      );
     }
   };
   const handleCancelDelete = () => setDeleteConfirmId(null);

@@ -49,6 +49,7 @@ import {
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
+import { logError } from '@/lib/error-logging';
 import { submitReadinessCheckin } from '@/app/baseball/actions/lifting';
 import { getPlayerLiftTodaySummary } from '@/app/baseball/actions/player-today-lift';
 import type {
@@ -140,6 +141,11 @@ export default function PlayerLiftToday({
       if (!result.success) {
         setError(result.error ?? 'Could not load your lifts. Please try again.');
         setSessions([]);
+        logError(
+          new Error(result.error ?? 'Could not load lift sessions'),
+          { component: 'PlayerLiftToday', action: 'load', sport: 'baseball' },
+          'medium'
+        );
         return;
       }
       setSessions(result.sessions);
@@ -154,9 +160,14 @@ export default function PlayerLiftToday({
         setArm((existing.arm_status as BaseballReadinessArmStatus) ?? '');
         setReadinessNotes(existing.notes ?? '');
       }
-    } catch {
+    } catch (err) {
       setError('Could not load your lifts. Pull to refresh or try again.');
       setSessions([]);
+      logError(
+        err instanceof Error ? err : new Error('Could not load lift sessions'),
+        { component: 'PlayerLiftToday', action: 'load', sport: 'baseball' },
+        'medium'
+      );
     } finally {
       setLoading(false);
     }
@@ -181,6 +192,11 @@ export default function PlayerLiftToday({
       });
       if (!res.success) {
         setError(res.error ?? 'Could not save your check-in.');
+        logError(
+          new Error(res.error ?? 'Could not save readiness check-in'),
+          { component: 'PlayerLiftToday', action: 'handleReadiness', sport: 'baseball' },
+          'high'
+        );
         return;
       }
       setReadinessDone(true);
@@ -199,8 +215,13 @@ export default function PlayerLiftToday({
         updated_at: new Date().toISOString(),
       }));
       setTimeout(() => setReadinessDone(false), 3000);
-    } catch {
+    } catch (err) {
       setError('Something went wrong saving your check-in.');
+      logError(
+        err instanceof Error ? err : new Error('Something went wrong saving readiness check-in'),
+        { component: 'PlayerLiftToday', action: 'handleReadiness', sport: 'baseball' },
+        'high'
+      );
     } finally {
       setSavingReadiness(false);
     }

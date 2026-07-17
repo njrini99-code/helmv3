@@ -4,6 +4,8 @@ import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import type { Player, Organization } from '@/lib/types';
 import { DiscoverToggle, type DiscoverMode } from './DiscoverToggle';
 import { PlayerCardData } from './PlayerCard';
@@ -390,15 +392,35 @@ export function DiscoverView({
         const result = await removeFromWatchlist(coachId, playerId);
         if (result.success) {
           setWatchlistIds((prev) => prev.filter((id) => id !== playerId));
+        } else {
+          toast.error('Failed to update watchlist', result.message || 'Could not remove player from watchlist.');
+          logError(
+            new Error(result.message || 'Failed to remove from watchlist'),
+            { component: 'DiscoverView', action: 'handleWatchlist', sport: 'baseball' },
+            'high'
+          );
         }
       } else {
         const result = await addToWatchlist(coachId, playerId);
         if (result.success) {
           setWatchlistIds((prev) => [...prev, playerId]);
+        } else {
+          toast.error('Failed to update watchlist', result.message || 'Could not add player to watchlist.');
+          logError(
+            new Error(result.message || 'Failed to add to watchlist'),
+            { component: 'DiscoverView', action: 'handleWatchlist', sport: 'baseball' },
+            'high'
+          );
         }
       }
     } catch (error) {
       console.error('Error updating watchlist:', error);
+      toast.error('Failed to update watchlist', error instanceof Error ? error.message : 'Please try again.');
+      logError(
+        error instanceof Error ? error : new Error('Failed to update watchlist'),
+        { component: 'DiscoverView', action: 'handleWatchlist', sport: 'baseball' },
+        'high'
+      );
     }
   };
 

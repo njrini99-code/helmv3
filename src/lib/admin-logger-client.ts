@@ -121,141 +121,22 @@ async function logClientEvent(input: ClientEventInput): Promise<boolean> {
 }
 
 // ============================================
-// ERROR HELPERS
-// ============================================
-
-/**
- * Log a client-side error
- */
-async function logClientError(
-  error: Error | unknown,
-  context: {
-    title?: string;
-    severity?: AdminEventSeverity;
-    metadata?: Record<string, unknown>;
-  } = {}
-): Promise<boolean> {
-  const err = error instanceof Error ? error : new Error(String(error));
-  
-  return logClientEvent({
-    eventType: 'error',
-    title: context.title ?? err.message.slice(0, 200),
-    severity: context.severity ?? 'error',
-    message: err.message,
-    stackTrace: err.stack,
-    metadata: {
-      ...context.metadata,
-      errorName: err.name,
-      errorMessage: err.message,
-    },
-  });
-}
-
-// ============================================
 // GLOBAL ERROR HANDLER
 // ============================================
 
-let isGlobalHandlerSetup = false;
-let pendingErrors: Array<{ error: Error; errorInfo?: { componentStack?: string } }> = [];
-let flushTimeout: ReturnType<typeof setTimeout> | null = null;
-
 /**
- * Flush pending errors to the API
- * Batches errors to reduce API calls
- */
-async function flushPendingErrors() {
-  if (pendingErrors.length === 0) return;
-  
-  const errors = [...pendingErrors];
-  pendingErrors = [];
-  
-  // Log each error (could be batched in future)
-  for (const { error, errorInfo } of errors) {
-    await logClientError(error, {
-      title: `Unhandled error: ${error.message.slice(0, 100)}`,
-      severity: 'error',
-      metadata: {
-        componentStack: errorInfo?.componentStack,
-        isUnhandled: true,
-      },
-    });
-  }
-}
-
-/**
- * Schedule a flush of pending errors
- */
-function scheduleFlush() {
-  if (flushTimeout) return;
-  
-  flushTimeout = setTimeout(() => {
-    flushTimeout = null;
-    flushPendingErrors();
-  }, 1000); // Batch errors for 1 second
-}
-
-/**
- * Add an error to the pending queue
- */
-function queueError(error: Error, errorInfo?: { componentStack?: string }) {
-  pendingErrors.push({ error, errorInfo });
-  scheduleFlush();
-}
-
-/**
- * Setup global error handlers
- * Call this once in your app's root layout
+ * No longer registers window 'error'/'unhandledrejection' listeners — those
+ * duplicated the canonical handlers in `@/lib/error-logging`
+ * (`setupGlobalErrorHandlers`, mounted via `GlobalErrorHandlerSetup` in the
+ * root layout for both golf and baseball), which classify richer context
+ * (chunk-load, hydration, stale-server-action) and already write to Sentry +
+ * error_logs. Two listener pairs meant every uncaught error and rejection
+ * was logged twice, to two different tables. Kept as an exported no-op
+ * (rather than deleted) because `AdminErrorHandler` still calls it alongside
+ * `trackPagePerformance`, which remains this module's live responsibility.
  */
 export function setupGlobalErrorHandler() {
-  if (typeof window === 'undefined') return;
-  if (isGlobalHandlerSetup) return;
-  
-  isGlobalHandlerSetup = true;
-  
-  // Handle uncaught errors
-  window.addEventListener('error', (event) => {
-    // Ignore cross-origin script errors (no useful info)
-    if (!event.error) return;
-    
-    queueError(event.error);
-  });
-  
-  // Handle unhandled promise rejections
-  window.addEventListener('unhandledrejection', (event) => {
-    const error = event.reason instanceof Error 
-      ? event.reason 
-      : new Error(String(event.reason));
-    
-    queueError(error);
-  });
-  
-  // Flush on page unload
-  window.addEventListener('beforeunload', () => {
-    if (pendingErrors.length > 0) {
-      // Use sendBeacon for reliability on page unload
-      const browserInfo = getBrowserInfo();
-      for (const { error, errorInfo } of pendingErrors) {
-        const payload = JSON.stringify({
-          eventType: 'error',
-          title: `Unhandled error: ${error.message.slice(0, 100)}`,
-          severity: 'error',
-          message: error.message,
-          stackTrace: error.stack,
-          url: window.location.href,
-          browserInfo,
-          metadata: {
-            componentStack: errorInfo?.componentStack,
-            isUnhandled: true,
-            isBeforeUnload: true,
-          },
-        });
-        navigator.sendBeacon('/api/admin/log-event', payload);
-      }
-      pendingErrors = [];
-    }
-  });
-  
-  console.log('[AdminLoggerClient] Global error handler installed');
+  // Intentionally empty — see comment above.
 }
 
 // ============================================

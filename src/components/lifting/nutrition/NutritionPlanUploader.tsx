@@ -18,6 +18,7 @@
 import { useRef, useState, useTransition, type ChangeEvent, type FormEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { toast } from 'sonner';
+import { logError } from '@/lib/error-logging';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -292,6 +293,11 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
 
         if (!result.success) {
           toast.error(result.error ?? 'Failed to upload nutrition plan.');
+          logError(
+            new Error(result.error ?? 'Failed to upload nutrition plan'),
+            { component: 'NutritionPlanUploader', action: 'upload-nutrition-plan', sport: 'golf', orgId, planType },
+            'high'
+          );
           return;
         }
 
@@ -300,6 +306,11 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Something went wrong.';
         toast.error(msg);
+        logError(
+          err instanceof Error ? err : new Error(msg),
+          { component: 'NutritionPlanUploader', action: 'upload-nutrition-plan', sport: 'golf', orgId, planType },
+          'high'
+        );
       }
     });
   }

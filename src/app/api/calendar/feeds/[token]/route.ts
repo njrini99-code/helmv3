@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
 
 /**
  * Calendar Feed API Route
@@ -193,7 +194,7 @@ function generateICal(events: CalendarFeedEvent[], feedName: string, timezone: s
 // ============================================================================
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -289,6 +290,16 @@ export async function GET(
     }, undefined, { table: 'golf_events', action: 'calendarFeed', feature: 'calendar_events', sport: 'golf' });
 
     if (eventsError) {
+      await logServerError(`Calendar feed events query failed: ${eventsError.message}`, {
+        action: 'calendarFeedApi.get.eventsQuery',
+        route: '/api/calendar/feeds/[token]',
+        url: request.url,
+        source: 'route_handler',
+        sport: 'golf',
+        featureArea: 'calendar',
+        statusCode: 500,
+        extra: { teamId, feedType: typedFeed.feed_type },
+      }, 'error');
       return new NextResponse('Failed to fetch events', { status: 500 });
     }
 
@@ -312,7 +323,17 @@ export async function GET(
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
-  } catch {
+  } catch (error) {
+    await logServerException(error, {
+      action: 'calendarFeedApi.get',
+      route: '/api/calendar/feeds/[token]',
+      url: request.url,
+      source: 'route_handler',
+      sport: 'golf',
+      featureArea: 'calendar',
+      handled: false,
+      statusCode: 500,
+    });
     return new NextResponse('Internal server error', { status: 500 });
   }
 }

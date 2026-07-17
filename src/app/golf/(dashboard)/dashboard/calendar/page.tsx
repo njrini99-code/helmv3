@@ -8,6 +8,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { Metadata } from 'next';
+import { logServerException } from '@/lib/server-error-logger';
 
 // Code-split the Fairway calendar surface — it's the ONLY tree the route
 // renders, so this next/dynamic keeps its chunk loaded only when actually
@@ -69,7 +70,8 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
 
     teamId = coachTeamId || playerTeamResult.data?.team_id || null;
     coachList = coachListResult.data || [];
-  } catch {
+  } catch (error) {
+    void logServerException(error, { action: 'calendar-load', route: '/golf/dashboard/calendar', source: 'server_component', sport: 'golf' }, 'warning');
     // Team resolution failed (network/DB) — rendering an empty calendar here
     // is indistinguishable from "my season got wiped" (audit finding #20).
     // Throw so the route error boundary renders a real, retryable error state.

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/golf/actions/auth';
+import { logError } from '@/lib/error-logging';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -135,7 +136,12 @@ export function GolfSignInForm() {
       } else {
         router.push(`/golf/welcome?next=${encodeURIComponent(destination)}`);
       }
-    } catch {
+    } catch (err) {
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'GolfSignInForm', action: 'loginAction', sport: 'golf' },
+        'high'
+      );
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }

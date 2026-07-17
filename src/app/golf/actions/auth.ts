@@ -437,9 +437,17 @@ async function requestPasswordResetActionImpl(
 
   const supabase = await createClient();
 
-  await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+  const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
     redirectTo: `${getAppBaseUrl()}/golf/reset-password`,
   });
+
+  if (error) {
+    await logServerError(`[Golf Auth Error]: ${error.message}`, {
+      action: 'auth.requestPasswordResetAction',
+      source: 'auth',
+      sport: 'golf',
+    });
+  }
 
   // Log password-reset request (fire-and-forget) — closes the golf auth
   // capture gap: logins/failed-logins/signups were already tracked, but

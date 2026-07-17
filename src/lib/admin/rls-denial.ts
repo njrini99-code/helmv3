@@ -17,6 +17,37 @@ export function isRlsDenial(
   return /row-level security/i.test(error.message ?? '');
 }
 
+const STORM_WINDOW_MS = 10 * 60 * 1000;
+const STORM_THRESHOLD = 5;
+
+/**
+ * Per-instance, in-memory only — serverless functions don't share state
+ * across invocations or instances, so a storm spread thin across many
+ * cold-started instances under-counts here. Acceptable: this is a cheap
+ * single-instance tripwire for a hot loop hammering one denial, not an
+ * exact global counter (Sentry/admin_events volume itself is the
+ * cross-instance signal).
+ */
+const denialWindows = new Map<string, { count: number; windowStart: number }>();
+
+/** Returns true when this call crosses STORM_THRESHOLD within the window, and resets the window. */
+function trackDenialStorm(key: string): boolean {
+  const now = Date.now();
+  const existing = denialWindows.get(key);
+  if (!existing || now - existing.windowStart > STORM_WINDOW_MS) {
+    denialWindows.set(key, { count: 1, windowStart: now });
+    return false;
+  }
+  existing.count += 1;
+  if (existing.count > STORM_THRESHOLD) {
+    // Reset so the storm tag fires once per crossing, not on every denial
+    // for the remainder of the original window.
+    denialWindows.set(key, { count: 0, windowStart: now });
+    return true;
+  }
+  return false;
+}
+
 export function maybeCaptureRlsDenial(
   error: { code?: string | null; message?: string | null } | null | undefined,
   ctx: {
@@ -32,6 +63,7 @@ export function maybeCaptureRlsDenial(
   if (!isRlsDenial(error)) return;
   try {
     const feature = ctx.feature ?? featureForTable(ctx.table) ?? undefined;
+    const isStorm = trackDenialStorm(`${ctx.table}:${ctx.verb}`);
     void logServerEvent(
       `RLS denial: ${ctx.verb} on ${ctx.table}`,
       {
@@ -42,9 +74,12 @@ export function maybeCaptureRlsDenial(
         sport: ctx.sport,
         feature: feature ?? null,
         metadata: { table: ctx.table, verb: ctx.verb, message: error?.message ?? null },
-        skipSentry: true, // operational telemetry — admin feed, not a Sentry issue
+        tags: isStorm ? { rls_denial_storm: 'true' } : undefined,
+        // Routine denials stay admin-feed-only; a storm crossing the
+        // threshold escalates to a real Sentry issue at 'error' severity.
+        skipSentry: !isStorm,
       },
-      'warning',
+      isStorm ? 'error' : 'warning',
     ).catch(() => {});
   } catch {
     // Never break the caller.

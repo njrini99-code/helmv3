@@ -283,6 +283,7 @@ async function checkRouteAuthorization(
   user: { id: string },
   pathname: string,
   activeTeamCookie: string | null,
+  requestUrl: string,
 ): Promise<{ authorized: boolean; redirectTo?: string }> {
   const isRecruitingRoute = pathStartsWithAny(pathname, RECRUITING_ROUTES);
   const isOrgRoute = pathStartsWithAny(pathname, ORG_ROUTES);
@@ -305,6 +306,24 @@ async function checkRouteAuthorization(
     .select('id, coach_type')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  if (error) {
+    // maybeSingle() resolves "no row" as { data: null, error: null }, so a
+    // truthy error here is always a genuine query failure (not a missing
+    // profile) that was otherwise silently folded into the same PLAYER_HOME
+    // redirect below. Best-effort visibility only — routing is unchanged.
+    const key = process.env.INTERNAL_LOG_KEY;
+    if (key) {
+      fetch(new URL('/api/internal/log-auth-failure', requestUrl), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-internal-log-key': key },
+        body: JSON.stringify({
+          message: `checkRouteAuthorization baseball_coaches query failed: ${error.message}`.slice(0, 2000),
+          pathname,
+        }),
+      }).catch(() => {});
+    }
+  }
 
   if (error || !coach) {
     return { authorized: false, redirectTo: PLAYER_HOME };
@@ -531,8 +550,21 @@ export async function updateSession(request: NextRequest) {
         // Local scope: clear cookies without a GoTrue round-trip — middleware
         // must stay fast and must not depend on auth-server reachability.
         await supabase.auth.signOut({ scope: 'local' });
-      } catch {
-        /* fall through — the explicit cookie clears below still sign them out */
+      } catch (signOutError) {
+        // fall through — the explicit cookie clears below still sign them out
+        const message = signOutError instanceof Error ? signOutError.message : String(signOutError);
+        console.warn('[Middleware] idle-timeout signOut failed:', message);
+        const key = process.env.INTERNAL_LOG_KEY;
+        if (key) {
+          fetch(new URL('/api/internal/log-auth-failure', request.url), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-internal-log-key': key },
+            body: JSON.stringify({
+              message: `idle-timeout signOut failed: ${message}`.slice(0, 2000),
+              pathname,
+            }),
+          }).catch(() => {});
+        }
       }
 
       const loginUrl = request.nextUrl.clone();
@@ -603,6 +635,7 @@ export async function updateSession(request: NextRequest) {
       user,
       pathname,
       activeTeamCookie,
+      request.url,
     );
     if (!authResult.authorized && authResult.redirectTo) {
       return NextResponse.redirect(

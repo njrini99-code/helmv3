@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerException } from '@/lib/server-error-logger';
 import {
   FairwayRoundsLibrary,
   type RoundLibraryRound as FairwayRoundLibraryRound,
@@ -46,7 +47,8 @@ export default async function RoundsPage() {
   if (coach?.organization_id) {
     try {
       teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-    } catch {
+    } catch (error) {
+      void logServerException(error, { action: 'rounds-teamid-load', route: '/golf/dashboard/rounds', source: 'server_component', sport: 'golf' }, 'warning');
       // Network failure — proceed with null teamId
     }
   }
@@ -95,7 +97,8 @@ export default async function RoundsPage() {
         .eq('team_id', teamId)
         .eq('status', 'active');
       teamMembers = result.data;
-    } catch {
+    } catch (error) {
+      void logServerException(error, { action: 'rounds-teammembers-load', route: '/golf/dashboard/rounds', source: 'server_component', sport: 'golf' }, 'warning');
       // Network failure
     }
 

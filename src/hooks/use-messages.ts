@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { sendMessage as sendMessageAction, markMessagesAsRead } from '@/app/baseball/actions/messages';
+import { logError } from '@/lib/error-logging';
 import type { Message } from '@/lib/types';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 
@@ -34,7 +35,7 @@ export function useMessages(conversationId: string) {
     // display order. The prior unbounded ascending fetch silently dropped the
     // newest messages once a thread passed 1000 rows (PostgREST's row cap) --
     // mirrors src/hooks/golf/use-golf-messages.ts.
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('baseball_messages')
       .select('id, conversation_id, sender_id, content, read, created_at')
       .eq('conversation_id', requestConversationId)
@@ -45,6 +46,15 @@ export function useMessages(conversationId: string) {
     // while this request was in flight, discard it -- otherwise the previous
     // thread's messages could paint over the one the user is now viewing.
     if (conversationIdRef.current !== requestConversationId) return;
+
+    if (fetchError) {
+      console.error('[useMessages] Failed to load messages:', fetchError);
+      logError(
+        new Error(fetchError.message || 'Failed to load messages'),
+        { component: 'useMessages', action: 'fetchMessages', sport: 'baseball' },
+        'medium'
+      );
+    }
 
     setMessages(((data || []) as Message[]).reverse());
     setLoading(false);
@@ -111,12 +121,23 @@ export function useMessages(conversationId: string) {
       // Without this check a rejected send (auth, validation, not-a-participant)
       // was reported as sent: the input cleared and no error surfaced (#450).
       if (!result.success) {
-        console.error('Error sending message:', 'error' in result ? result.error : 'Unknown error');
+        const failureMessage = 'error' in result ? result.error : 'Unknown error';
+        console.error('Error sending message:', failureMessage);
+        logError(
+          new Error(typeof failureMessage === 'string' ? failureMessage : 'Failed to send message'),
+          { component: 'useMessages', action: 'sendMessage', sport: 'baseball' },
+          'high'
+        );
         return false;
       }
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
+      logError(
+        error instanceof Error ? error : new Error('Failed to send message'),
+        { component: 'useMessages', action: 'sendMessage', sport: 'baseball' },
+        'high'
+      );
       return false;
     }
   };
@@ -168,6 +189,11 @@ export function useConversations() {
 
     if (error) {
       console.error('Error fetching conversations:', error);
+      logError(
+        new Error((error as { message?: string })?.message || 'Failed to fetch conversations'),
+        { component: 'useMessages', action: 'fetchConversations', sport: 'baseball' },
+        'medium'
+      );
       setConversations([]);
       setLoading(false);
       return;

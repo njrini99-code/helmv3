@@ -84,11 +84,18 @@ async function handle(): Promise<NextResponse> {
   // All teams that have at least one active member. Paginated — platform-wide
   // fetch with no filter can exceed the PostgREST 1000-row cap once the team
   // count grows (mirrors event-reminders' use of fetchAllRowsResult).
-  const { data: teams } = await fetchAllRowsResult<{ id: string }>(
+  const { data: teams, error: teamsErr } = await fetchAllRowsResult<{ id: string }>(
     (from, to) => sb.from('golf_teams').select('id').order('id', { ascending: true }).range(from, to),
     undefined,
     { table: 'golf_teams', action: 'cron.v3.weekly-coach-email', sport: 'golf' },
   );
+  if (teamsErr) {
+    // Not logged here: this route is wrapped in recordJobRun (job-log.ts),
+    // which already writes a "Cron failed" Bridge event for any >=400
+    // response — logging again here would double-write error_logs/
+    // admin_events/Sentry for the same failure.
+    return NextResponse.json({ success: false, error: teamsErr.message }, { status: 500 });
+  }
   const teamIds = (teams ?? []).map((t) => t.id);
   summary.teams_considered = teamIds.length;
 
@@ -171,7 +178,7 @@ async function handle(): Promise<NextResponse> {
       summary.errors += 1;
       await logServerError(
         `weekly-coach-email failure ${team_id}: ${err instanceof Error ? err.message : String(err)}`,
-        { action: 'cron.v3.weekly-coach-email' },
+        { action: 'cron.v3.weekly-coach-email', source: 'cron' },
       );
     }
   }

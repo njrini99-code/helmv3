@@ -19,6 +19,17 @@
  * GITHUB_ACTIONS are asserted explicitly below so a stray VERCEL_ENV value
  * can never smuggle a CI run past the gate.
  *
+ * "Every error recorded" now extends to preview deployments on demand:
+ * ADMIN_EVENTS_CAPTURE_PREVIEW=1 opts a Vercel preview deployment into
+ * persistence, for rehearsing the pipeline against a real preview before a
+ * prod rollout. This is strictly additive and narrower than
+ * ADMIN_EVENTS_FORCE_CAPTURE — it only ever flips preview on, and the CI/
+ * GITHUB_ACTIONS and NEXT_PHASE guards above still win absolutely (checked
+ * first, unconditionally). Persisted preview rows are distinguishable from
+ * production rows via the `runtimeEnv: 'preview'` metadata tag
+ * (getRuntimeEnv() below), so they never get mistaken for prod incidents
+ * in the Bridge.
+ *
  * Lives in its own module (NOT server-error-logger) because that file is
  * 'use server' — every export there must be an async server action, and
  * exporting this sync helper from it broke the production build
@@ -30,8 +41,20 @@ export function shouldPersistAdminTables(): boolean {
   // GitHub Actions sets both CI=true and GITHUB_ACTIONS=true on every job
   // runner — never persist from there, independent of whatever VERCEL_ENV
   // happens to read (it's normally unset in CI, but this must not depend
-  // on that staying true).
+  // on that staying true). This check, and NEXT_PHASE above, must run
+  // before the preview opt-in below so neither guard can be bypassed by it.
   if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') return false;
+  // Deliberate opt-in to rehearse the pipeline against a real preview
+  // deployment. Requires both the flag and an actual Vercel preview env —
+  // a local machine can't set VERCEL_ENV=preview without deliberately
+  // faking it, so this can't be smuggled in the way a bare VERCEL_ENV
+  // check could.
+  if (
+    process.env.ADMIN_EVENTS_CAPTURE_PREVIEW === '1' &&
+    process.env.VERCEL_ENV === 'preview'
+  ) {
+    return true;
+  }
   // A VERCEL_ENV that exists but isn't 'production' (preview, or a local
   // override) is excluded explicitly rather than falling through.
   if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') return false;

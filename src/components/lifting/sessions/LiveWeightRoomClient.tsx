@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { logError } from '@/lib/error-logging';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -265,6 +266,11 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
       if (!result.success) {
         setAthletes(prev);
         toast.error('Failed to mark session complete.');
+        logError(
+          new Error(result.error || 'Failed to advance session lifecycle'),
+          { component: 'LiveWeightRoomClient', action: 'advance-session-lifecycle', sport: 'golf', orgId, sessionId: athlete.session_id },
+          'high'
+        );
       }
     });
   }
@@ -300,6 +306,11 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
       if (!result.success) {
         setAthletes(prev);
         toast.error('Failed to log set.');
+        logError(
+          new Error(result.error || 'Failed to log set result'),
+          { component: 'LiveWeightRoomClient', action: 'log-set-result', sport: 'golf', orgId, athleteId: athlete.athlete_id },
+          'high'
+        );
       } else {
         toast.success('Set logged.');
         setSetNum((n) => n + 1);

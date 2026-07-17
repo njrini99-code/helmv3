@@ -2,6 +2,8 @@
 
 import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import { cn } from '@/lib/utils';
 import {
   IconStar,
@@ -131,6 +133,11 @@ export function QuickActionsPanel({
       onClose();
     } catch (err) {
       console.error('Failed to schedule:', err);
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'QuickActionsPanel', action: 'schedule-crm-event', sport: 'golf', coachId: coach.id },
+        'high'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -160,6 +167,12 @@ export function QuickActionsPanel({
       onClose();
     } catch (err) {
       console.error('Failed to log contact:', err);
+      toast.error('Failed to log contact', err instanceof Error ? err.message : 'Please try again.');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'QuickActionsPanel', action: 'log-contact', sport: 'golf', coachId: coach.id },
+        'high'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -172,6 +185,11 @@ export function QuickActionsPanel({
       onClose();
     } catch (err) {
       console.error('Failed to save note:', err);
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'QuickActionsPanel', action: 'save-note', sport: 'golf', coachId: coach.id },
+        'high'
+      );
     } finally {
       setSubmitting(false);
     }

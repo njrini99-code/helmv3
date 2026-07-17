@@ -11,6 +11,7 @@ import {
   sendGolfMessageWithAttachments,
   type AttachmentUploadData,
 } from '@/app/golf/actions/messages';
+import { logError } from '@/lib/error-logging';
 
 interface SendMessageWithAttachmentsOptions {
   conversationId: string;
@@ -62,6 +63,11 @@ export function useMessageAttachments() {
             );
 
             if (!result.success) {
+              logError(
+                new Error(`Failed to upload ${attachment.file.name}: ${result.error}`),
+                { component: 'useMessageAttachments', action: 'upload-attachment', sport: 'golf', conversationId, fileName: attachment.file.name },
+                'high'
+              );
               throw new Error(`Failed to upload ${attachment.file.name}: ${result.error}`);
             }
 
@@ -92,20 +98,39 @@ export function useMessageAttachments() {
         );
 
         if (!messageResult.success) {
-          // Message failed - clean up uploaded files
-          const supabase = createClient();
+          logError(
+            new Error(messageResult.error || 'Failed to send message with attachments'),
+            { component: 'useMessageAttachments', action: 'send-message-with-attachments', sport: 'golf', conversationId },
+            'high'
+          );
+          // Message failed - clean up uploaded files. Own try/catch so a failed
+          // cleanup can't mask the original send failure returned below.
           const pathsToDelete = uploadResults
             .filter((r) => r.storagePath)
             .map((r) => r.storagePath!);
 
           if (pathsToDelete.length > 0) {
-            await supabase.storage.from(STORAGE_BUCKET).remove(pathsToDelete);
+            try {
+              const supabase = createClient();
+              await supabase.storage.from(STORAGE_BUCKET).remove(pathsToDelete);
+            } catch (cleanupErr) {
+              logError(
+                cleanupErr instanceof Error ? cleanupErr : new Error(String(cleanupErr)),
+                { component: 'useMessageAttachments', action: 'cleanup-orphaned-attachments', sport: 'golf', conversationId },
+                'medium'
+              );
+            }
           }
         }
 
         return messageResult;
       } catch (err) {
         console.error('[useMessageAttachments] Error:', err);
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'useMessageAttachments', action: 'send-message-with-attachments', sport: 'golf', conversationId },
+          'high'
+        );
         return {
           success: false,
           error: err instanceof Error ? err.message : 'Failed to send message with attachments',

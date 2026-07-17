@@ -281,7 +281,7 @@ function buildEventDescription(event: Record<string, unknown>): string {
  * GET /api/crm/google-calendar/sync
  * Sync all pending events to Google Calendar
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -307,6 +307,16 @@ export async function GET(_request: NextRequest) {
       .limit(50);
 
     if (error) {
+      await logServerError(`CRM Google Calendar batch sync events fetch failed: ${error.message}`, {
+        action: 'googleCalendarSyncApi.get.eventsFetch',
+        route: '/api/crm/google-calendar/sync',
+        url: request.url,
+        source: 'route_handler',
+        sport: 'golf',
+        featureArea: 'crm_google_calendar_sync',
+        userId: user.id,
+        statusCode: 500,
+      }, 'error');
       return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
     }
 
@@ -362,6 +372,25 @@ export async function GET(_request: NextRequest) {
         results.failed++;
         results.errors.push(`Event ${event.id}: ${(e as Error).message}`);
       }
+    }
+
+    if (results.failed > 0) {
+      // Roll-up, not one log per event — the loop above can touch up to 50
+      // events per run and per-event logging would flood error_logs/Sentry.
+      await logServerError(`CRM Google Calendar batch sync: ${results.failed} of ${events?.length ?? 0} events failed`, {
+        action: 'googleCalendarSyncApi.get.batchSync',
+        route: '/api/crm/google-calendar/sync',
+        url: request.url,
+        source: 'route_handler',
+        sport: 'golf',
+        featureArea: 'crm_google_calendar_sync',
+        userId: user.id,
+        metadata: {
+          failedCount: results.failed,
+          syncedCount: results.synced,
+          firstError: results.errors[0] ?? null,
+        },
+      }, 'warning');
     }
 
     // Update last sync timestamp

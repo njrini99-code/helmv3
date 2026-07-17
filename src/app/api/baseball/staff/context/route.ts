@@ -41,6 +41,7 @@ import {
   BASEBALL_CAPABILITY_KEYS,
   type BaseballCapabilityMap,
 } from '@/lib/baseball/capabilities';
+import { logServerException } from '@/lib/server-error-logger';
 
 /** Always re-resolve per request — capabilities are auth- and cookie-dependent. */
 export const dynamic = 'force-dynamic';
@@ -141,8 +142,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     return NextResponse.json(payload, { status: 200 });
-  } catch {
+  } catch (error) {
     // Never leak DB errors; fail closed with a non-2xx + zero-capability body.
+    await logServerException(error, {
+      action: 'baseballStaffContextApi.post',
+      route: '/api/baseball/staff/context',
+      url: request.url,
+      source: 'route_handler',
+      sport: 'baseball',
+      featureArea: 'baseball_staff_capabilities',
+      handled: false,
+      statusCode: 500,
+      teamId: requestedTeamId,
+    });
     return NextResponse.json(failClosedPayload(requestedTeamId), { status: 500 });
   }
 }

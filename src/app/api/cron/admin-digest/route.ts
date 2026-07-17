@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchTriageQueue, groupAppErrorEvents, type AppTriageEventRow } from '@/lib/admin/data/triage';
@@ -84,6 +85,15 @@ export async function GET(req: NextRequest) {
     };
 
     const result = await sendOpsDigest(buildDigestEmail(data));
+    if (!result.sent && !result.skipped) {
+      // A real send failure (not "ops transport unconfigured" — that's
+      // skipped=true and expected in dev/preview).
+      await logServerError(
+        `admin-digest send failed: ${result.reason ?? 'unknown'}`,
+        { action: 'cron.admin-digest', source: 'cron' },
+        'error',
+      );
+    }
     return NextResponse.json({ ok: true, ...result, reds: reds.length });
   });
 }

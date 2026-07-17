@@ -24,6 +24,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 const CRM_REVALIDATE_PATH = '/golf/admin/crm';
 
@@ -92,7 +94,16 @@ export async function logManualGmailTouch(input: {
     revalidatePath(CRM_REVALIDATE_PATH);
     return { ok: true };
   } catch (err) {
-    console.error('[crm] logManualGmailTouch failed:', err);
+    await logServerError(
+      `[crm-manual-send] logManualGmailTouch failed: ${describeError(err)}`,
+      {
+        action: 'crm_manual_send.logManualGmailTouch',
+        source: 'server_action',
+        sport: 'golf',
+        featureArea: 'crm',
+        metadata: { coachId: input.coach_id, subject: input.subject },
+      },
+    );
     return { ok: false };
   }
 }

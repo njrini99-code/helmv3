@@ -79,6 +79,7 @@ async function handle(): Promise<NextResponse> {
     if (error) {
       await logServerError(`standing-backfill team-select: ${error.message}`, {
         action: 'cron.v3.standing-backfill.team-select',
+        source: 'cron',
       });
       return NextResponse.json(
         { error: 'team-select failed', duration_ms: Date.now() - startedAt },
@@ -89,7 +90,7 @@ async function handle(): Promise<NextResponse> {
   } catch (err) {
     await logServerError(
       `standing-backfill team-select exception: ${err instanceof Error ? err.message : String(err)}`,
-      { action: 'cron.v3.standing-backfill.team-select' },
+      { action: 'cron.v3.standing-backfill.team-select', source: 'cron' },
     );
     return NextResponse.json(
       { error: 'team-select exception', duration_ms: Date.now() - startedAt },
@@ -114,15 +115,22 @@ async function handle(): Promise<NextResponse> {
       if (error) {
         await logServerError(
           `standing-backfill RPC chunk ${chunksProcessed}: ${error.message ?? 'unknown'}`,
-          { action: 'cron.v3.standing-backfill.rpc' },
+          { action: 'cron.v3.standing-backfill.rpc', source: 'cron' },
         );
-        return NextResponse.json({
-          total_teams_processed: chunksProcessed * TEAMS_PER_CHUNK,
-          chunks_processed: chunksProcessed,
-          rows_upserted_by_metric: rowsByMetric,
-          duration_ms: Date.now() - startedAt,
-          error: error.message ?? 'rpc-error',
-        } satisfies BackfillSummary);
+        // Total failure: no chunk completed before this error (equivalent to
+        // errors > 0 && computed === 0 for this file's per-chunk shape). A
+        // failure after some chunks already succeeded stays 200 — partial
+        // progress is real progress, and the summary body carries the error.
+        return NextResponse.json(
+          {
+            total_teams_processed: chunksProcessed * TEAMS_PER_CHUNK,
+            chunks_processed: chunksProcessed,
+            rows_upserted_by_metric: rowsByMetric,
+            duration_ms: Date.now() - startedAt,
+            error: error.message ?? 'rpc-error',
+          } satisfies BackfillSummary,
+          chunksProcessed === 0 ? { status: 500 } : undefined,
+        );
       }
       for (const row of (data ?? []) as Array<{ metric_id: string; rows_upserted: number }>) {
         rowsByMetric[row.metric_id] =
@@ -143,7 +151,7 @@ async function handle(): Promise<NextResponse> {
       } else {
         await logServerError(
           `standing-backfill round-RPC chunk ${chunksProcessed}: ${roundResult.error.message ?? 'unknown'}`,
-          { action: 'cron.v3.standing-backfill.round-rpc' },
+          { action: 'cron.v3.standing-backfill.round-rpc', source: 'cron' },
         );
       }
 
@@ -160,21 +168,24 @@ async function handle(): Promise<NextResponse> {
       } else {
         await logServerError(
           `standing-backfill shot-RPC chunk ${chunksProcessed}: ${shotResult.error.message ?? 'unknown'}`,
-          { action: 'cron.v3.standing-backfill.shot-rpc' },
+          { action: 'cron.v3.standing-backfill.shot-rpc', source: 'cron' },
         );
       }
     } catch (err) {
       await logServerError(
         `standing-backfill RPC chunk ${chunksProcessed} exception: ${err instanceof Error ? err.message : String(err)}`,
-        { action: 'cron.v3.standing-backfill.rpc' },
+        { action: 'cron.v3.standing-backfill.rpc', source: 'cron' },
       );
-      return NextResponse.json({
-        total_teams_processed: chunksProcessed * TEAMS_PER_CHUNK,
-        chunks_processed: chunksProcessed,
-        rows_upserted_by_metric: rowsByMetric,
-        duration_ms: Date.now() - startedAt,
-        error: err instanceof Error ? err.message : String(err),
-      } satisfies BackfillSummary);
+      return NextResponse.json(
+        {
+          total_teams_processed: chunksProcessed * TEAMS_PER_CHUNK,
+          chunks_processed: chunksProcessed,
+          rows_upserted_by_metric: rowsByMetric,
+          duration_ms: Date.now() - startedAt,
+          error: err instanceof Error ? err.message : String(err),
+        } satisfies BackfillSummary,
+        chunksProcessed === 0 ? { status: 500 } : undefined,
+      );
     }
     chunksProcessed += 1;
   }

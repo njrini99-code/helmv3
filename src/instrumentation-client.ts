@@ -82,12 +82,17 @@ Sentry.init({
       delete locationCtx.referrer;
     }
     // Auto-tag sport from current pathname — makes "errors in /golf vs
-    // /baseball" a one-click filter in the Sentry UI.
+    // /baseball" a one-click filter in the Sentry UI. /admin and /lifting
+    // get their own buckets (rather than falling into 'marketing') since
+    // both carry meaningfully different error populations than the public
+    // marketing/landing surfaces.
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
-      const sport = path.startsWith('/golf') ? 'golf'
+      const sport = path.startsWith('/admin') ? 'admin'
+        : path.startsWith('/lifting') ? 'lifting'
         : path.startsWith('/baseball') ? 'baseball'
-        : 'platform';
+        : path.startsWith('/golf') ? 'golf'
+        : 'marketing';
       event.tags = { ...event.tags, sport };
     }
     return event;

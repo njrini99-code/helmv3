@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
 
 const CHIP_SETS: Array<{ param: 'sport' | 'severity' | 'source' | 'window'; values: string[] }> = [
   { param: 'sport', values: ['golf', 'baseball', 'shared'] },
-  { param: 'severity', values: ['critical', 'error', 'warning'] },
+  { param: 'severity', values: ['critical', 'error', 'warning', 'info'] },
   { param: 'source', values: ['server_action', 'rls_denial', 'auth', 'cron', 'client'] },
   { param: 'window', values: ['24', '168'] },
 ];

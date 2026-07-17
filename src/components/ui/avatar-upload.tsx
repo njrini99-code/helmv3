@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logError } from '@/lib/error-logging';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/fairway';
 import { IconUpload, IconTrash, IconLoader, IconAlertCircle } from '@/components/icons';
@@ -92,6 +93,11 @@ export function AvatarUpload({
       console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Failed to upload image');
       setPreviewUrl(currentAvatarUrl || null); // Revert preview on error
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'AvatarUpload', action: 'upload-avatar', sport: 'shared', bucket },
+        'high'
+      );
     } finally {
       setUploading(false);
       if (fileInputRef.current) {

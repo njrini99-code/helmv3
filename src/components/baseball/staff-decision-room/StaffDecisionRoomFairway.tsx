@@ -49,6 +49,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import {
   IconBolt,
   IconAlertCircle,
@@ -816,6 +817,11 @@ function AgendaDetailPane({ item, onDone }: { item: DecisionRoomAgendaItem; onDo
         const res = await fn();
         if (!res.success) {
           toast.error('Could not complete that', res.error);
+          logError(
+            new Error(res.error || 'Could not complete agenda item action'),
+            { component: 'StaffDecisionRoomFairway', action: 'agendaDetailAction', sport: 'baseball' },
+            'high'
+          );
           return;
         }
         if (sealLabel) {
@@ -836,8 +842,13 @@ function AgendaDetailPane({ item, onDone }: { item: DecisionRoomAgendaItem; onDo
           setText('');
           onDone();
         }
-      } catch {
+      } catch (error) {
         toast.error('Something went wrong', 'Please try again.');
+        logError(
+          error instanceof Error ? error : new Error('Something went wrong completing agenda item action'),
+          { component: 'StaffDecisionRoomFairway', action: 'agendaDetailAction', sport: 'baseball' },
+          'high'
+        );
       }
     });
   }

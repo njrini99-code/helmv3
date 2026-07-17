@@ -37,6 +37,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway';
 import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import {
   IconClock,
   IconNote,
@@ -139,6 +140,11 @@ export function PostgameReviewClient({
         router.refresh();
       } else {
         toast.error('Could not generate review', res.error ?? 'Please try again.');
+        logError(
+          new Error(res.error ?? 'Could not generate postgame review'),
+          { component: 'PostgameReviewClient', action: 'handleGenerate', sport: 'baseball' },
+          'high'
+        );
       }
     });
   }
@@ -164,6 +170,11 @@ export function PostgameReviewClient({
           kind === 'practice' ? 'Could not add to practice' : 'Could not log it',
           res.error ?? 'Please try again.',
         );
+        logError(
+          new Error(res.error ?? `Could not convert postgame item (${kind})`),
+          { component: 'PostgameReviewClient', action: 'handleConvert', sport: 'baseball' },
+          'high'
+        );
       }
     });
   }
@@ -178,6 +189,11 @@ export function PostgameReviewClient({
         router.refresh();
       } else {
         toast.error('Could not update', res.error ?? 'Please try again.');
+        logError(
+          new Error(res.error ?? 'Could not update postgame item disposition'),
+          { component: 'PostgameReviewClient', action: 'handleDispose', sport: 'baseball' },
+          'high'
+        );
       }
     });
   }

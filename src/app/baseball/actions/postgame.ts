@@ -55,6 +55,7 @@ import {
   sweepActionOutcomes,
   type OutcomeSweepClient,
 } from '@/lib/baseball/coachhelm/outcome-sweep';
+import { logServerException } from '@/lib/server-error-logger';
 
 const POSTGAME_PATH = '/baseball/dashboard/postgame';
 const PRACTICE_PATH = '/baseball/dashboard/practice';
@@ -255,7 +256,12 @@ export const generatePostgameReview = withBaseballAction(
         });
         revalidatePath('/baseball/dashboard/decision-room');
         revalidatePath('/baseball/dashboard/command-center');
-      } catch {
+      } catch (error) {
+        void logServerException(
+          error,
+          { action: 'postgame.sweepActionOutcomes', sport: 'baseball', source: 'server_action', skipSentry: true },
+          'warning',
+        );
         // Swallow — the review is the primary deliverable; the ledger refreshes
         // again on the nightly cron.
       }

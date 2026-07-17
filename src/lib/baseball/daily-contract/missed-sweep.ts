@@ -52,6 +52,7 @@
 
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { DailyContractItem } from '@/lib/types/baseball-passport';
+import { logServerError } from '@/lib/server-error-logger';
 
 // isoMinusDays now lives in the shared contract-day module (killing the former
 // triple-duplication across the read-models + this sweep). Re-exported here so
@@ -199,6 +200,11 @@ export async function sweepMissedContracts(
   const nowIso = new Date().toISOString();
   let missed = 0;
   let timelineWritten = 0;
+  // Best-effort timeline echo failures — never rethrown per-row (the status
+  // transition already stands), accumulated and reported as ONE roll-up trace
+  // after the loop instead of silently dropped.
+  let timelineFailed = 0;
+  const failureSamples: string[] = [];
 
   for (const row of candidates) {
     // Non-destructive single-row UPDATE: status + missed_at only. We also re-assert
@@ -238,9 +244,28 @@ export async function sweepMissedContracts(
         occurredAt: `${row.contract_date}T23:59:59.000Z`,
       });
       if (res.ok) timelineWritten += 1;
-    } catch {
+    } catch (err) {
       // Swallowed by design (best-effort). The status transition stands.
+      timelineFailed += 1;
+      if (failureSamples.length < 5) {
+        failureSamples.push(`${row.id}: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
+  }
+
+  if (timelineFailed > 0) {
+    await logServerError(
+      `missed-sweep: ${timelineFailed} timeline echo write(s) failed for team ${teamId}`,
+      {
+        action: 'sweepMissedContracts',
+        sport: 'baseball',
+        source: 'background_job',
+        skipSentry: true,
+        teamId,
+        metadata: { failed: timelineFailed, sample: failureSamples },
+      },
+      'warning',
+    );
   }
 
   return { evaluated: candidates.length, missed, timelineWritten };

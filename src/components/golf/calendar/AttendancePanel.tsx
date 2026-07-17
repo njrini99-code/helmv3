@@ -24,6 +24,7 @@ import { Check, ClipboardCheck, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
+import { logError } from '@/lib/error-logging';
 import {
   bulkCheckIn,
   getAttendanceReport,
@@ -123,13 +124,18 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
         setViewerPlayerId(res.data.viewerPlayerId);
       } else {
         setLoadError(res.error ?? 'Failed to load attendance');
+        logError(
+          new Error(res.error ?? 'Failed to load attendance'),
+          { component: 'AttendancePanel', action: 'load-attendance-report', sport: 'golf', eventId, teamId },
+          'medium'
+        );
       }
       setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [eventId, reloadKey]);
+  }, [eventId, reloadKey, teamId]);
 
   const presentCount = useMemo(
     () => rows.filter((r) => r.mark === 'present' || r.mark === 'late').length,
@@ -166,9 +172,14 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
         // Roll back just this player's mark.
         setRowMark(playerId, previousMark);
         toast.error('Could not save attendance', res.error || 'Try again in a moment.');
+        logError(
+          new Error(res.error || 'Failed to save attendance'),
+          { component: 'AttendancePanel', action: 'mark-attendance', sport: 'golf', eventId, teamId, playerId },
+          'high'
+        );
       }
     },
-    [bulkPending, eventId, pendingIds, rows, setRowMark],
+    [bulkPending, eventId, teamId, pendingIds, rows, setRowMark],
   );
 
   const handleMarkAllPresent = useCallback(async () => {
@@ -186,8 +197,13 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
         prev.map((r) => ({ ...r, mark: previousMarks.get(r.playerId) ?? null })),
       );
       toast.error('Could not check everyone in', res.error || 'Try again in a moment.');
+      logError(
+        new Error(res.error || 'Failed to bulk check in'),
+        { component: 'AttendancePanel', action: 'bulk-check-in', sport: 'golf', eventId, teamId },
+        'high'
+      );
     }
-  }, [bulkPending, eventId, rows]);
+  }, [bulkPending, eventId, teamId, rows]);
 
   const handleRetry = useCallback(() => setReloadKey((k) => k + 1), []);
 

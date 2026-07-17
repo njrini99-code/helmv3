@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
 import type { GolfMessageRow } from '@/lib/types';
+import { logError } from '@/lib/error-logging';
 
 export interface GolfConversationParticipant {
   id: string;
@@ -70,10 +71,18 @@ export function useGolfMessages(conversationId: string) {
   const fetchOtherParticipantReadStatus = useCallback(async () => {
     if (!conversationId || !currentUserId) return;
 
-    const { data: participants } = await supabase
+    const { data: participants, error: participantsError } = await supabase
       .from('golf_conversation_participants')
       .select('user_id, last_read_at')
       .eq('conversation_id', conversationId);
+
+    if (participantsError) {
+      logError(
+        new Error(participantsError.message),
+        { component: 'useGolfMessages', action: 'fetch-other-participant-read-status', sport: 'golf', conversationId },
+        'medium'
+      );
+    }
 
     if (participants) {
       const otherParticipant = participants.find(p => p.user_id !== currentUserId);
@@ -108,6 +117,11 @@ export function useGolfMessages(conversationId: string) {
     // thread the user was already reading.
     if (fetchError) {
       console.error('[useGolfMessages] Failed to load messages:', fetchError);
+      logError(
+        new Error(fetchError.message),
+        { component: 'useGolfMessages', action: 'fetch-messages', sport: 'golf', conversationId },
+        'medium'
+      );
       setError(true);
       setLoading(false);
       return;
@@ -125,6 +139,11 @@ export function useGolfMessages(conversationId: string) {
       await markGolfMessagesAsRead(conversationId);
     } catch (err) {
       console.error('[useGolfMessages] Failed to mark messages as read:', err);
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'useGolfMessages', action: 'mark-messages-as-read', sport: 'golf', conversationId },
+        'medium'
+      );
     }
 
     // Fetch read receipt status
@@ -314,6 +333,11 @@ export function useGolfMessages(conversationId: string) {
     } catch (error) {
       // Roll back optimistic message on any error
       setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'useGolfMessages', action: 'send-message', sport: 'golf', conversationId },
+        'high'
+      );
       throw error;
     }
   };
@@ -323,10 +347,20 @@ export function useGolfMessages(conversationId: string) {
     const result = await updateGolfMessage(messageId, newContent);
 
     if (result && 'error' in result && result.error) {
+      logError(
+        new Error(result.error),
+        { component: 'useGolfMessages', action: 'edit-message', sport: 'golf', conversationId, messageId },
+        'high'
+      );
       throw new Error(result.error);
     }
 
     if (!result || !result.success) {
+      logError(
+        new Error('Failed to edit message'),
+        { component: 'useGolfMessages', action: 'edit-message', sport: 'golf', conversationId, messageId },
+        'high'
+      );
       throw new Error('Failed to edit message');
     }
 
@@ -343,11 +377,21 @@ export function useGolfMessages(conversationId: string) {
     if (result && 'error' in result && result.error) {
       // Rollback: re-fetch messages on failure
       fetchMessages();
+      logError(
+        new Error(result.error),
+        { component: 'useGolfMessages', action: 'delete-message', sport: 'golf', conversationId, messageId },
+        'high'
+      );
       throw new Error(result.error);
     }
 
     if (!result || !result.success) {
       fetchMessages();
+      logError(
+        new Error('Failed to delete message'),
+        { component: 'useGolfMessages', action: 'delete-message', sport: 'golf', conversationId, messageId },
+        'high'
+      );
       throw new Error('Failed to delete message');
     }
 
@@ -434,8 +478,13 @@ export function useGolfConversations() {
     try {
       const allowedIds = await getGolfActiveTeamConversationIds();
       if (allowedIds !== null) teamAllow = new Set(allowedIds);
-    } catch {
+    } catch (teamAllowErr) {
       teamAllow = null;
+      logError(
+        teamAllowErr instanceof Error ? teamAllowErr : new Error(String(teamAllowErr)),
+        { component: 'useGolfMessages', action: 'fetch-active-team-scope', sport: 'golf', userId },
+        'medium'
+      );
     }
 
     let conversationsData = rawData as ConversationRow[] | null;
@@ -445,7 +494,7 @@ export function useGolfConversations() {
     }
 
     // Also fetch team chat conversations directly (in case DB function doesn't include them)
-    const { data: groupConvs } = await supabase
+    const { data: groupConvs, error: groupConvsError } = await supabase
       .from('golf_conversation_participants')
       .select(`
         conversation:golf_conversations!inner(
@@ -458,6 +507,14 @@ export function useGolfConversations() {
         )
       `)
       .eq('user_id', userId);
+
+    if (groupConvsError) {
+      logError(
+        new Error(groupConvsError.message),
+        { component: 'useGolfConversations', action: 'fetch-team-chat-conversations', sport: 'golf', userId },
+        'medium'
+      );
+    }
 
     // Extract team chat conversations and merge them
     const groupConversations: ConversationRow[] = [];
@@ -607,6 +664,11 @@ export function useGolfConversations() {
       // P257: a real backend failure (RPC error AND no rows recovered) must NOT
       // masquerade as an empty inbox. Flag it so the rail shows a recoverable
       // error with Retry instead of the cheerful "No conversations yet" empty.
+      logError(
+        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { component: 'useGolfConversations', action: 'fetch-conversations', sport: 'golf', userId },
+        'medium'
+      );
       setError(true);
       setConversations([]);
       setLoading(false);

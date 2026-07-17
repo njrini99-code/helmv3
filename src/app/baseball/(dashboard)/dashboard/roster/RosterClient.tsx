@@ -19,6 +19,7 @@ import {
   searchAssignablePlayers,
 } from '@/app/baseball/actions/roster';
 import { useToast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import type { RosterBoardMember } from '@/components/baseball/roster';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { RosterReadModel } from '@/lib/baseball/read-models/roster';
@@ -452,11 +453,21 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
         await fetchRosterWithAggregates();
       } else {
         showToast(result.error || 'Failed to remove player', 'error');
+        logError(
+          new Error(result.error || 'Failed to remove player'),
+          { component: 'RosterClient', action: 'handleRemoveMember', sport: 'baseball' },
+          'high'
+        );
       }
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to remove player';
       showToast(message, 'error');
+      logError(
+        error instanceof Error ? error : new Error(message),
+        { component: 'RosterClient', action: 'handleRemoveMember', sport: 'baseball' },
+        'high'
+      );
       return { success: false, error: message };
     }
   }
@@ -469,11 +480,21 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
         await fetchRosterWithAggregates();
       } else {
         showToast(result.error || 'Failed to approve join request', 'error');
+        logError(
+          new Error(result.error || 'Failed to approve join request'),
+          { component: 'RosterClient', action: 'handleApproveMember', sport: 'baseball' },
+          'high'
+        );
       }
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to approve join request';
       showToast(message, 'error');
+      logError(
+        error instanceof Error ? error : new Error(message),
+        { component: 'RosterClient', action: 'handleApproveMember', sport: 'baseball' },
+        'high'
+      );
       return { success: false, error: message };
     }
   }
@@ -486,11 +507,21 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
         await fetchRosterWithAggregates();
       } else {
         showToast(result.error || 'Failed to decline join request', 'error');
+        logError(
+          new Error(result.error || 'Failed to decline join request'),
+          { component: 'RosterClient', action: 'handleRejectMember', sport: 'baseball' },
+          'high'
+        );
       }
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to decline join request';
       showToast(message, 'error');
+      logError(
+        error instanceof Error ? error : new Error(message),
+        { component: 'RosterClient', action: 'handleRejectMember', sport: 'baseball' },
+        'high'
+      );
       return { success: false, error: message };
     }
   }
@@ -507,11 +538,21 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
         await fetchRosterWithAggregates();
       } else {
         showToast(result.error || 'Failed to update player', 'error');
+        logError(
+          new Error(result.error || 'Failed to update player'),
+          { component: 'RosterClient', action: 'handleAssignPlayer', sport: 'baseball' },
+          'high'
+        );
       }
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update player';
       showToast(message, 'error');
+      logError(
+        error instanceof Error ? error : new Error(message),
+        { component: 'RosterClient', action: 'handleAssignPlayer', sport: 'baseball' },
+        'high'
+      );
       return { success: false, error: message };
     }
   }
@@ -520,9 +561,15 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
     try {
       return await searchAssignablePlayers({ query });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Search failed. Please try again.';
+      logError(
+        error instanceof Error ? error : new Error(message),
+        { component: 'RosterClient', action: 'handleSearchPlayers', sport: 'baseball' },
+        'medium'
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Search failed. Please try again.',
+        error: message,
       };
     }
   }
@@ -690,11 +737,19 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
               setLineupsRefreshKey((k) => k + 1);
             } else {
               showToast(result.error || 'Failed to save lineup', 'error');
+              logError(
+                new Error(result.error || 'Failed to save lineup'),
+                { component: 'RosterClient', action: 'onSaveLineup', sport: 'baseball' },
+                'high'
+              );
             }
           } catch (error) {
-            showToast(
-              error instanceof Error ? error.message : 'Failed to save lineup',
-              'error',
+            const message = error instanceof Error ? error.message : 'Failed to save lineup';
+            showToast(message, 'error');
+            logError(
+              error instanceof Error ? error : new Error(message),
+              { component: 'RosterClient', action: 'onSaveLineup', sport: 'baseball' },
+              'high'
             );
           } finally {
             setSavingLineup(false);
