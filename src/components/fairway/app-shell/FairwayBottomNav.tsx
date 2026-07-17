@@ -125,7 +125,23 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
         className,
       )}
     >
-      <ul className="flex items-stretch justify-around">
+      {/* #905: no `justify-around`. Every column below is `flex: 1 1 0%`
+          (min-w-0 `flex-1`), so flex-grow already consumes 100% of the row's
+          width — `justify-content` only matters when there's leftover OR
+          negative free space. #899's own root-cause writeup named the
+          negative-space case explicitly: `justify-around` (space-around)
+          falls back to `center` per the CSS Box Alignment spec whenever a
+          line overflows, and centering an overflowing row shifts its start
+          point negative — the exact "Home" tab left-edge overhang this
+          removes. `min-w-0` (already on every column) is the primary
+          defense against overflow ever occurring; dropping the fallback-to-
+          center trigger is the second layer, so a stray sub-pixel/font-
+          metric overflow degrades to the LAST column bleeding off the right
+          edge (same as any ordinary flex overflow) instead of shifting the
+          FIRST column's left edge negative. No visual change in the
+          steady (non-overflowing) state — flex-grow already produces the
+          identical even 5-up layout `space-around` would. */}
+      <ul className="flex items-stretch">
         {items.map((item) => {
           const active =
             item.active ??

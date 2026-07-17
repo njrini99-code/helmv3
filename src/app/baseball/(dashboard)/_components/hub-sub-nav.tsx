@@ -257,7 +257,23 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
             const isActive = t.id === resolvedId;
             const Icon = t.icon;
             return (
-              <li key={t.id} className="relative shrink-0">
+              // min-w-0 (not shrink-0): #905 — at 320/390px a hub capped at
+              // ≤3 tabs (Ruling 2) can still exceed the viewport once icon +
+              // padding + a longer label ("Postgame Review", "Operations")
+              // are summed (e.g. Stats & Performance's 3 tabs measure to
+              // ~424px unshrunk at a 390px viewport). `shrink-0` gave every
+              // tab the flex item's default `min-width: auto` floor (its
+              // full unbreakable `whitespace-nowrap` label width), so the
+              // LAST tab's own bounding rect — not just the scrollable
+              // strip's content — bled past the viewport edge even though
+              // `overflow-x-auto` visually clipped it (getBoundingClientRect
+              // reflects layout position, not ancestor clipping). `min-w-0`
+              // restores the default `flex-shrink: 1` floor to zero so the
+              // label's `truncate` (below) can actually engage — tabs now
+              // shrink-to-fit inside the viewport first, falling back to the
+              // strip's horizontal scroll only once even truncated tabs
+              // don't fit (mirrors the FairwayBottomNav min-w-0 fix, #899).
+              <li key={t.id} className="relative min-w-0">
                 <Link
                   href={t.href}
                   ref={(node) => {
@@ -289,7 +305,13 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
                       )}
                     />
                   )}
-                  <span className="relative">{t.label}</span>
+                  {/* min-w-0 + truncate: the tab's actual shrink mechanism —
+                      the label is the flex item whose default min-content
+                      floor (full nowrap text width) must be zeroed for the
+                      `<li>`'s min-w-0 above to have anywhere to give the
+                      space back to. Icon stays full-size (fixed 16px SVG,
+                      never the thing that should disappear first). */}
+                  <span className="relative min-w-0 truncate">{t.label}</span>
 
                   {/* The gliding active underline (layoutId; honors reduced-motion).
                       Kit cinematic settle curve — a glide, never a bouncy spring
