@@ -38,10 +38,7 @@ import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { ChatConversation, ChatMessage } from '@/lib/coachhelm/v3/chat/types';
-import {
-  CoachHelmShell,
-  type CoachHelmCrumb,
-} from './CoachHelmShell';
+import { CoachHelmShell } from './CoachHelmShell';
 import { useCoachChatSend } from './useCoachChatSend';
 import {
   AskConversationRail,
@@ -169,13 +166,14 @@ export function AskWorkspace({
   // Resolve the open thread's origin for the thread-pane context header.
   const activeOrigin = conversationId ? originById?.[conversationId] : undefined;
 
-  // Shell breadcrumb leaf: CoachHelm > Ask > <thread title> (when one is open).
-  const activeTitle = conversationId
-    ? conversations.find((c) => c.id === conversationId)?.title?.trim()
-    : undefined;
-  const breadcrumbs: CoachHelmCrumb[] | undefined = activeTitle
-    ? [{ label: activeTitle }]
-    : undefined;
+  // NOTE: this used to also pass a single-crumb `breadcrumbs={[{ label: activeTitle }]}`
+  // leaf (the open thread's title) to CoachHelmShell. With only one crumb and no
+  // href, CoachHelmShell's breadcrumb nav renders it with none of its usual
+  // affordances (no separator chevron, no linked ancestor) — just the thread's
+  // title as a bare span sitting between the masthead and the sub-nav tab bar,
+  // reading as a stray unstyled echo of whatever question opened the thread
+  // rather than a real breadcrumb trail. The rail already highlights the open
+  // thread, so it carried no navigational value — dropped rather than restyled.
 
   const description =
     conversations.length === 0
@@ -192,7 +190,6 @@ export function AskWorkspace({
       signalCount={signalCount}
       title="Ask CoachHelm"
       description={description}
-      breadcrumbs={breadcrumbs}
       className={className}
     >
       {/* ── The two-pane inbox: a conversation rail + a thread pane, both flat

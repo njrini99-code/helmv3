@@ -105,7 +105,18 @@ export default async function PlayerCoachHelmPage() {
   const { coach, player } = session;
 
   if (!player) {
-    if (coach) return <NotPlayerState />;
+    if (coach) {
+      // A coach landing on the PLAYER CoachHelm dashboard has their own
+      // coach-facing Brief — send them straight there instead of an
+      // interstitial that just points at "the roster page". The interstitial
+      // stays as a fallback for the genuine players-only edge case: a coach
+      // record with no resolved organization yet (mid-onboarding), where the
+      // Brief route can't resolve a team either.
+      if (coach.organization_id) {
+        redirect('/golf/dashboard/intelligence');
+      }
+      return <NotPlayerState />;
+    }
     return redirect('/golf/player');
   }
 

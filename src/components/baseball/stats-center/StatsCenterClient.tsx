@@ -760,7 +760,7 @@ export function StatsCenterClient({
               { label: 'On the Record', value: model.summary.playersWithData, emphasis: model.summary.playersWithData > 0 },
               { label: 'Official Games', value: model.summary.officialGames },
               { label: 'Scrimmages', value: model.summary.scrimmages },
-              { label: 'Needs Recalc', value: model.summary.unreconciled, emphasis: model.summary.unreconciled > 0 },
+              { label: 'Pending Updates', value: model.summary.unreconciled, emphasis: model.summary.unreconciled > 0 },
             ]}
           />
         </div>

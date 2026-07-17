@@ -610,6 +610,9 @@ function ScorecardNine({
   const scoreTotal =
     total ?? holes.reduce((s, h) => s + (finite(h.score) ?? 0), 0);
   const puttTotal = holes.reduce((s, h) => s + (finite(h.putts) ?? 0), 0);
+  // Golf convention: the front nine's total column reads "Out", the back
+  // nine's reads "In" — both nines were previously hard-coded to "Out".
+  const totalColumnLabel = label === 'Front' ? 'Out' : 'In';
 
   return (
     <div className="flex flex-col">
@@ -655,7 +658,7 @@ function ScorecardNine({
               {holes.map((h) => (
                 <Th key={h.hole_number}>{h.hole_number}</Th>
               ))}
-              <Th className="bg-surface-tint">Out</Th>
+              <Th className="bg-surface-tint">{totalColumnLabel}</Th>
             </tr>
           </thead>
           <tbody>

@@ -82,6 +82,22 @@ const ORIGIN_ICON: Record<AskOriginKind, React.ComponentType<{ size?: number; cl
   round: Flag,
 };
 
+/**
+ * The rail's own "Threads" bezel heading — a ReactNode, NOT a plain string,
+ * so InstrumentPanel skips its default `truncate` class (only applied when
+ * `header` is a string). This rail is a narrow sidebar column that always
+ * hits InstrumentPanel's `sm:flex-row` side-by-side bezel (that breakpoint
+ * reads the VIEWPORT, not this panel's own rendered width), so on a desktop
+ * viewport the heading was squeezed against the thread-count readout down to
+ * "Thr…" even though "Threads" easily fits on its own line. Dropping
+ * `truncate` lets it wrap instead of hard-ellipsizing.
+ */
+const THREADS_HEADER = (
+  <h3 className="font-fw-display text-h3 font-semibold leading-tight text-text-primary">
+    Threads
+  </h3>
+);
+
 /** Relative date — only ever called with a real ISO string (never fabricated). */
 function formatRelativeDate(iso: string): string {
   const then = new Date(iso).getTime();
@@ -149,7 +165,7 @@ export function AskConversationRail({
       <InstrumentPanel
         depth="base"
         padding="md"
-        header="Threads"
+        header={THREADS_HEADER}
         className={cn('flex flex-col', className)}
         aria-busy="true"
       >
@@ -173,7 +189,7 @@ export function AskConversationRail({
       <InstrumentPanel
         depth="base"
         padding="md"
-        header="Threads"
+        header={THREADS_HEADER}
         readout={countReadout}
         className={cn('flex flex-col', className)}
       >
@@ -192,7 +208,7 @@ export function AskConversationRail({
       as="nav"
       depth="base"
       padding="md"
-      header="Threads"
+      header={THREADS_HEADER}
       readout={countReadout}
       aria-label="Conversations"
       className={cn('flex flex-col', className)}

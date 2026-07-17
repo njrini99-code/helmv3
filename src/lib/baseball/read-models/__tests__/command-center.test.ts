@@ -318,6 +318,14 @@ describe('getCommandCenter — game-context via the #379 shared legacy adapter',
     expect(pulse!.careerAvg).toBeCloseTo(0.318, 3);
     expect(pulse!.recentTrend).toBe('improving');
     expect(pulse!.totalSessions).toBe(12);
+    // "On the Record" (summary.playersWithData) is the OFFICIAL-record count
+    // (Stats Center's definition), not the broader box-score+practice
+    // `rosterPulse` — this player has legacy/practice sessions only (no
+    // box-score games), so `pulse.noData` is false but the KPI is honestly
+    // 0. Before this fix, summary.playersWithData was derived from
+    // rosterPulse and would have read 1 here, drifting from Stats Center's
+    // own "0 players with data" for the identical roster.
+    expect(result.summary.playersWithData).toBe(0);
   });
 
   it('no-data: a player with neither legacy nor box-score rows is honestly no-data, never a fabricated average', async () => {
@@ -366,6 +374,9 @@ describe('getCommandCenter — game-context via the #379 shared legacy adapter',
     // recentTrend has no canonical replacement yet — the permanent legacy
     // carve-out still surfaces it even for a box-score-sourced player.
     expect(pulse!.recentTrend).toBe('stable');
+    // This player DOES have an official box-score game, so "On the Record"
+    // agrees with Stats Center's own count for the identical roster.
+    expect(result.summary.playersWithData).toBe(1);
   });
 
   it('pitching-only box-score data this season must NOT mask a real legacy career_avg fallback', async () => {

@@ -67,7 +67,12 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
   const putts = round.total_putts;
   const hasAnyMicroStat = putts !== null || fir !== null || gir !== null;
 
-  const city = [round.course_city, round.course_state].filter(Boolean).join(', ');
+  // A bare state code with no city ("Va") reads as a stray, unlabeled
+  // fragment next to the type chip — only render a location when there's an
+  // actual city to anchor it (course_state alone is dropped, not shown bare).
+  const city = round.course_city
+    ? [round.course_city, round.course_state].filter(Boolean).join(', ')
+    : null;
 
   return (
     <Link
@@ -110,7 +115,9 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             {getRoundTypeLabel(round.round_type)}
           </Chip>
           {city && <span className="truncate">{city}</span>}
-          <span className="flex-shrink-0 tabular-nums">· {holesPlayed}h</span>
+          <span className="flex-shrink-0 tabular-nums">
+            · {holesPlayed} {holesPlayed === 1 ? 'hole' : 'holes'}
+          </span>
         </div>
 
         {/* Mobile-only condensed stat line — the quick stats are hidden on phones

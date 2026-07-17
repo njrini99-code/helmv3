@@ -103,7 +103,12 @@ function UnfinishedRow({
   const holesTarget = round.holes_played ?? 18;
   const currentHole = round.current_hole ?? 0;
   const isSetup = !currentHole;
-  const city = [round.course_city, round.course_state].filter(Boolean).join(', ');
+  // A bare state code with no city ("Va") reads as a stray, unlabeled
+  // fragment — only render a location when there's an actual city to anchor
+  // it (course_state alone is dropped, not shown bare).
+  const city = round.course_city
+    ? [round.course_city, round.course_state].filter(Boolean).join(', ')
+    : null;
   const timeAgo = relativeTime(round);
 
   const handleContinue = () => {
