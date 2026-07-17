@@ -203,8 +203,20 @@ export interface FairwayStatsCockpitProps {
    * route). Drives the cold-start CTA — only the player can log a round, so a
    * coach drill-down (which omits this) gets no player-only action. Defaults
    * to false so the roster profile path stays CTA-free.
+   *
+   * ALSO drives the SG cards' audience voice (bug #915): `false` (the coach
+   * drill-down default) renders the player's name/initials instead of "You"
+   * and drops the "your team" possessive from the cohort caption.
    */
   isOwnStats?: boolean;
+  /**
+   * The player's display name — only used when `isOwnStats` is false, to
+   * label the coach-facing SG card hero marker (see `isOwnStats`). The
+   * cockpit itself has no identity lookup (see the file header note), so the
+   * caller resolves + passes this. Falls back to a generic "Player" label
+   * when omitted.
+   */
+  playerName?: string;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -443,7 +455,17 @@ function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: b
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }: FairwayStatsCockpitProps) {
+export function FairwayStatsCockpit({
+  playerId,
+  className,
+  isOwnStats = false,
+  playerName,
+}: FairwayStatsCockpitProps) {
+  // Bug #915: the SG cards render in the player's own voice ("You" / "your
+  // team") by default. `isOwnStats` already tells us whether the viewer IS
+  // that player — reuse it as the StandingStrip audience signal rather than
+  // introducing a second flag callers have to keep in sync.
+  const standingViewerContext = isOwnStats ? 'self' : 'coach';
   const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
   const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
   const [standingRows, setStandingRows] = useState<PlayerStandingRow[] | null>(null);
@@ -766,6 +788,8 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
         sgTotal={sgTotal}
         detailedStats={detailedStats}
         gainLeak={gainLeak}
+        standingViewerContext={standingViewerContext}
+        playerName={playerName}
         headerAction={
           <Button
             variant="secondary"
@@ -832,6 +856,10 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                   }
                   seriesName="Score"
                   valueFormatter={(v) => v.toFixed(1)}
+                  // Bug #915: score is lower-is-better — a falling score (an
+                  // improving trend) must render green, not the amber
+                  // "declining" default.
+                  goodDirection="down"
                 />
               </section>
             </div>
@@ -944,6 +972,8 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                           unit={cfg.unit}
                           scale={cfg.default_scale}
                           size="card"
+                          viewer_context={standingViewerContext}
+                          player_name={playerName}
                         />
                       ))}
                     </div>
@@ -996,6 +1026,8 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                 matrixByCategory={matrixByCategory}
                 open={showDetailed}
                 onToggle={() => setShowDetailed((v) => !v)}
+                standingViewerContext={standingViewerContext}
+                playerName={playerName}
               />
               <ShotPatterns spray={sprayData} putting={detailedStats?.puttingByBreak ?? null} />
               <ComprehensiveDetail
@@ -1042,12 +1074,17 @@ function SgVerdict({
   detailedStats,
   gainLeak,
   headerAction,
+  standingViewerContext,
+  playerName,
 }: {
   sgTotal: PlayerStandingRow | null;
   detailedStats: GolfStats | null;
   gainLeak: { best: { label: string }; worst: { label: string } } | null;
   /** Rendered in the hero panel's own header bezel (top-right), e.g. the print/export control. */
   headerAction?: React.ReactNode;
+  /** Bug #915 — 'self' shows "You" on the SG card, 'coach' shows the player's name/initials. */
+  standingViewerContext: 'self' | 'coach';
+  playerName?: string;
 }) {
   const sgCfg = getMetricRenderConfig('sg_total');
   const scoringAvg = finite(detailedStats?.scoringAverage);
@@ -1097,6 +1134,8 @@ function SgVerdict({
               unit={sgCfg.unit}
               scale={sgCfg.default_scale}
               size="card"
+              viewer_context={standingViewerContext}
+              player_name={playerName}
             />
           ) : (
             <InsufficientData
@@ -2038,11 +2077,16 @@ function DetailedStandingsSection({
   matrixByCategory,
   open,
   onToggle,
+  standingViewerContext,
+  playerName,
 }: {
   detailedGroups: ReadonlyArray<(typeof CATEGORY_ORDER)[number]>;
   matrixByCategory: Map<string, Array<{ id: MetricId; row: PlayerStandingRow; cfg: MetricRenderConfig }>>;
   open: boolean;
   onToggle: () => void;
+  /** Bug #915 — 'self' shows "You" on each SG card, 'coach' shows the player's name/initials. */
+  standingViewerContext: 'self' | 'coach';
+  playerName?: string;
 }) {
   if (detailedGroups.length === 0) return null;
   return (
@@ -2101,6 +2145,8 @@ function DetailedStandingsSection({
                       unit={cfg.unit}
                       scale={cfg.default_scale}
                       size="card"
+                      viewer_context={standingViewerContext}
+                      player_name={playerName}
                     />
                   ))}
                 </div>

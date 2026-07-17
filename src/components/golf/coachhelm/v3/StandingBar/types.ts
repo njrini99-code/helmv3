@@ -94,6 +94,26 @@ export interface StandingBarProps {
 
   /** Used when state === 'error'. */
   errorMessage?: string;
+
+  /**
+   * Who is reading this card. `'self'` (default) is the player viewing their
+   * own stats — "You" + "your team" phrasing. `'coach'` is a coach viewing a
+   * teammate's card — the player is not "you" to this reader, so the hero
+   * marker/readout labels with `player_name` (or a neutral fallback) instead,
+   * and cohort captions drop the "your" possessive ("Bottom of team", not
+   * "Bottom of your team"). Bug #915 — Team Stats showed "YOU −3.34 … Below
+   * team average" to the coach reading it.
+   */
+  viewer_context?: 'self' | 'coach';
+
+  /**
+   * The player's display name, used for the coach-facing hero label when
+   * `viewer_context === 'coach'`. Callers may pass a full name or first name;
+   * the card derives short initials from it for the tight 3-up readout row
+   * and uses the name verbatim in the aria label. Falls back to "Player" when
+   * omitted. Ignored when `viewer_context !== 'coach'`.
+   */
+  player_name?: string;
 }
 
 /** Threshold below which the team marker is omitted (Part VII.3 cold-start rule). */

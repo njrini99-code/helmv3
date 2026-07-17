@@ -80,3 +80,62 @@ describe('Ribbon — trend delta never double-signs a signed valueFormatter', ()
     expect(text).not.toMatch(/[+\-−]{2}/);
   });
 });
+
+/**
+ * Bug #915 — the "Score by round" trend delta rendered a falling (improving)
+ * score as an amber "▼" decline, because Ribbon never told Readout which
+ * raw direction was GOOD for the plotted metric. `goodDirection` fixes this
+ * by classifying via the shared `classifyTrend` and passing the resulting
+ * verdict through as Readout's `direction` override.
+ */
+describe('Ribbon — goodDirection (score/lower-is-better trend coloring)', () => {
+  function getDeltaDirection(): string | null {
+    const delta = document.querySelector('[data-slot="readout-delta"]');
+    expect(delta).not.toBeNull();
+    return delta!.getAttribute('data-direction');
+  }
+
+  it('DEFAULT (goodDirection="up", unchanged): a falling series reads "down" — the old, still-correct behavior for higher-is-better metrics', () => {
+    render(<Ribbon title="SG total" data={DECLINING} seriesName="SG" />);
+    expect(getDeltaDirection()).toBe('down');
+  });
+
+  it('goodDirection="down": the SAME falling series now reads "up" (green) — a lower score is an improvement', () => {
+    render(
+      <Ribbon
+        title="Score by round"
+        data={DECLINING}
+        valueFormatter={(v) => v.toFixed(1)}
+        seriesName="Score"
+        goodDirection="down"
+      />,
+    );
+    expect(getDeltaDirection()).toBe('up');
+  });
+
+  it('goodDirection="down": a RISING series (a worsening score) reads "down" (amber)', () => {
+    render(
+      <Ribbon
+        title="Score by round"
+        data={IMPROVING /* raw values rise 0.1 -> 0.66 */}
+        valueFormatter={(v) => v.toFixed(1)}
+        seriesName="Score"
+        goodDirection="down"
+      />,
+    );
+    expect(getDeltaDirection()).toBe('down');
+  });
+
+  it('goodDirection="down": a flat series (within the deadzone) reads "flat" regardless', () => {
+    render(
+      <Ribbon
+        title="Score by round"
+        data={[{ x: 'R1', y: 72 }, { x: 'R2', y: 72 }]}
+        valueFormatter={(v) => v.toFixed(1)}
+        seriesName="Score"
+        goodDirection="down"
+      />,
+    );
+    expect(getDeltaDirection()).toBe('flat');
+  });
+});

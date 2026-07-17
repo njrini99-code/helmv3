@@ -155,6 +155,63 @@ export function teamRelativeText(
   return better ? 'Above team average' : 'Below team average';
 }
 
+/* ───────────────────────────────────────────────────────────────────────────
+ * Audience voice — bug #915: a coach reading a player's SG card saw
+ * player-first-person copy ("YOU −3.34 … Below team average / Bottom of your
+ * team") even though the coach, not the player, is the reader. `teamCohortText`
+ * / `teamRelativeText` above are written in the player's own voice ("your
+ * team") because that's the common case (a player viewing their own stats);
+ * these two helpers let a `viewer_context: 'coach'` caller neutralize that
+ * possessive and swap the "You" subject for the player's name.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Strip the player-possessive "your" from a cohort/relative sentence for a
+ * coach reader. `teamCohortText`/`teamRelativeText` only ever emit "your
+ * team" (never "my team" or other possessives), so a single case-insensitive
+ * replacement covers every sentence shape both functions produce:
+ *   "Bottom of your team"   -> "Bottom of team"
+ *   "Top 18% on your team"  -> "Top 18% on team"
+ *   "About your team average" -> "About team average"
+ * "Above/Below team average" already carry no possessive and pass through
+ * unchanged. No-op for `viewer_context !== 'coach'` (or an empty string).
+ */
+export function neutralizeForCoach(text: string, viewerContext?: 'self' | 'coach'): string {
+  if (viewerContext !== 'coach' || !text) return text;
+  return text.replace(/\byour team\b/gi, 'team');
+}
+
+/**
+ * Short initials from a display name for the tight coach-facing readout
+ * label (mirrors the "T"/"P" single/double-letter marker convention already
+ * used on the bar). "Ethan Rodriguez" -> "ER"; a single-word name takes its
+ * first two letters ("Ethan" -> "ET"). Falls back to "PL" when no usable name
+ * is given — never fabricates a real player's initials.
+ */
+export function initialsFromName(name: string | null | undefined): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return 'PL';
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const first = parts[0];
+  if (!first) return 'PL';
+  if (parts.length === 1) return first.slice(0, 2).toUpperCase();
+  const last = parts[parts.length - 1]!;
+  return `${first[0]}${last[0]}`.toUpperCase();
+}
+
+/**
+ * The subject label for the hero marker/readout: "You" for the player's own
+ * view (default), or the player's initials for a coach reader. Full name is
+ * reserved for the spoken aria label (`deriveAriaLabel`) — initials keep the
+ * visual 3-up row ("You"/"Team"/"PGA"-width) from overflowing.
+ */
+export function standingSubjectLabel(
+  viewerContext: 'self' | 'coach' | undefined,
+  playerName: string | null | undefined,
+): string {
+  return viewerContext === 'coach' ? initialsFromName(playerName) : 'You';
+}
+
 /**
  * Derive the auto state from the props when one isn't passed explicitly.
  * 'error' and 'empty' must be passed in; this function returns either
@@ -174,11 +231,19 @@ export function shouldShowTeamMarker(props: Pick<StandingBarProps, 'team_avg' | 
   return true;
 }
 
-/** Auto-derive a single-sentence aria label. */
+/**
+ * Auto-derive a single-sentence aria label. When `viewer_context === 'coach'`
+ * the spoken subject is the player's name (falling back to "Player" — never
+ * the player's own "You"), and the cohort clause drops the "your team"
+ * possessive (bug #915 — a coach's screen reader must not hear "you" for a
+ * player who isn't them).
+ */
 export function deriveAriaLabel(props: StandingBarProps): string {
   if (props.ariaLabel) return props.ariaLabel;
+  const isCoach = props.viewer_context === 'coach';
+  const subject = isCoach ? props.player_name?.trim() || 'Player' : 'You';
   const you = formatValue(props.player_value, props.unit);
-  const parts = [`${props.metric_label}. You: ${you}.`];
+  const parts = [`${props.metric_label}. ${subject}: ${you}.`];
   // P3: omit the reference phrase entirely when the anchor is suppressed —
   // a women's player on a metric with no credible women's baseline must not be
   // narrated against a misleading men's value.
@@ -192,6 +257,6 @@ export function deriveAriaLabel(props: StandingBarProps): string {
     parts.push(`Team average: ${formatValue(props.team_avg, props.unit)}.`);
   }
   const cohort = teamRelativeText(props.player_value, props.team_avg, props.direction);
-  if (cohort) parts.push(cohort + '.');
+  if (cohort) parts.push(neutralizeForCoach(cohort, props.viewer_context) + '.');
   return parts.join(' ');
 }

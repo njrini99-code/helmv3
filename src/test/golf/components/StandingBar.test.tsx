@@ -26,6 +26,9 @@ import {
   shouldShowTeamMarker,
   deriveAriaLabel,
   pgaReferenceLabel,
+  neutralizeForCoach,
+  initialsFromName,
+  standingSubjectLabel,
 } from '@/components/golf/coachhelm/v3/StandingBar';
 
 // ---------------------------------------------------------------------------
@@ -213,6 +216,113 @@ describe('deriveAriaLabel', () => {
     const label = deriveAriaLabel(props);
     expect(label).toContain('Field average:');
     expect(label).not.toContain('PGA Tour:');
+  });
+
+  // Bug #915 — coach reading a teammate's card must never hear "You".
+  it('coach viewer_context: speaks the player name, not "You", and drops "your team"', () => {
+    const props: StandingBarProps = {
+      metric_id: 'sg_total',
+      metric_label: 'SG: Total',
+      player_value: -3.34,
+      team_avg: 0.1,
+      team_n: 8,
+      team_pct: 5,
+      pga_value: 0,
+      direction: 'higher_better',
+      unit: 'strokes',
+      scale: { min: -4, max: 4 },
+      size: 'card',
+      viewer_context: 'coach',
+      player_name: 'Ethan Rodriguez',
+    };
+    const label = deriveAriaLabel(props);
+    expect(label).toContain('Ethan Rodriguez: -3.34');
+    expect(label).not.toMatch(/\bYou\b/);
+    expect(label).not.toContain('your team');
+  });
+
+  it('coach viewer_context without a player_name falls back to "Player", never "You"', () => {
+    const props: StandingBarProps = {
+      metric_id: 'sg_total', metric_label: 'SG: Total',
+      player_value: 0.5, team_avg: null, pga_value: 0,
+      direction: 'higher_better', unit: 'strokes',
+      scale: { min: -1, max: 1 }, size: 'card',
+      viewer_context: 'coach',
+    };
+    const label = deriveAriaLabel(props);
+    expect(label).toContain('Player: 0.50');
+    expect(label).not.toMatch(/\bYou\b/);
+  });
+
+  it('self viewer_context (default) is unchanged: "You" + "your team" language', () => {
+    const props: StandingBarProps = {
+      metric_id: 'sg_total',
+      metric_label: 'SG: Total',
+      player_value: -3.34,
+      team_avg: 0.1,
+      team_n: 8,
+      pga_value: 0,
+      direction: 'higher_better',
+      unit: 'strokes',
+      scale: { min: -4, max: 4 },
+      size: 'card',
+    };
+    const label = deriveAriaLabel(props);
+    expect(label).toContain('You: -3.34');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Audience voice — bug #915 (StandingStrip's "YOU −3.34 … Below team
+// average / Bottom of your team" shown to a coach reading a player's card)
+// ---------------------------------------------------------------------------
+
+describe('neutralizeForCoach', () => {
+  it('strips "your team" for a coach viewer', () => {
+    expect(neutralizeForCoach('Bottom of your team', 'coach')).toBe('Bottom of team');
+    expect(neutralizeForCoach('Top 18% on your team', 'coach')).toBe('Top 18% on team');
+    expect(neutralizeForCoach('About your team average', 'coach')).toBe('About team average');
+  });
+  it('is a no-op for text with no possessive to strip', () => {
+    expect(neutralizeForCoach('Above team average', 'coach')).toBe('Above team average');
+    expect(neutralizeForCoach('Below team average', 'coach')).toBe('Below team average');
+  });
+  it('is a no-op for the player\'s own view (self, or undefined)', () => {
+    expect(neutralizeForCoach('Bottom of your team', 'self')).toBe('Bottom of your team');
+    expect(neutralizeForCoach('Bottom of your team', undefined)).toBe('Bottom of your team');
+  });
+  it('passes through an empty string', () => {
+    expect(neutralizeForCoach('', 'coach')).toBe('');
+  });
+});
+
+describe('initialsFromName', () => {
+  it('takes first + last initial for a two-word name', () => {
+    expect(initialsFromName('Ethan Rodriguez')).toBe('ER');
+  });
+  it('takes the first two letters of a single-word name', () => {
+    expect(initialsFromName('Ethan')).toBe('ET');
+  });
+  it('uses first + last of a multi-word name (ignores middle names)', () => {
+    expect(initialsFromName('Mary Jane Watson')).toBe('MW');
+  });
+  it('falls back to "PL" for missing/blank names — never fabricates initials', () => {
+    expect(initialsFromName(null)).toBe('PL');
+    expect(initialsFromName(undefined)).toBe('PL');
+    expect(initialsFromName('   ')).toBe('PL');
+  });
+});
+
+describe('standingSubjectLabel', () => {
+  it('is "You" for the self viewer (default)', () => {
+    expect(standingSubjectLabel('self', 'Ethan Rodriguez')).toBe('You');
+    expect(standingSubjectLabel(undefined, 'Ethan Rodriguez')).toBe('You');
+  });
+  it('is the player\'s initials for a coach viewer', () => {
+    expect(standingSubjectLabel('coach', 'Ethan Rodriguez')).toBe('ER');
+  });
+  it('falls back to "PL" for a coach viewer with no player name', () => {
+    expect(standingSubjectLabel('coach', undefined)).toBe('PL');
   });
 });
 

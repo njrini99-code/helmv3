@@ -56,4 +56,7 @@ export {
   shouldShowTeamMarker,
   deriveAriaLabel,
   pgaReferenceLabel,
+  neutralizeForCoach,
+  initialsFromName,
+  standingSubjectLabel,
 } from './utils';

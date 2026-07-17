@@ -91,6 +91,17 @@ export interface SignalRow {
    * tiebreak (magnitude-desc). Undefined for insights. Additive/optional.
    */
   strokeImpact?: number | null;
+  /**
+   * Bug #915 — the pattern icon/accent must derive from the SIGNED
+   * stroke_impact (a plays-better pattern is 'positive', plays-worse is
+   * 'negative'), not from the severity/priority tier alone. `priority`
+   * buckets by |impact| magnitude regardless of sign, which let a
+   * high-magnitude POSITIVE pattern land in the 'high' tier (warning-orange
+   * flame) and a low-magnitude NEGATIVE one land in 'medium' (green
+   * sparkle) — backwards. Set ONLY by `patternToSignalRow`; insights leave
+   * it undefined (their priority-only tone is unaffected by this bug).
+   */
+  valence?: 'positive' | 'negative' | 'neutral';
   /** The original row, kept so action handlers can read whatever they need. */
   raw: EvidenceInsight | ExtendedPattern;
 }
@@ -165,6 +176,22 @@ function derivePatternPriority(
   if (patternType === 'contextual') return 'low';
   if (typeof strokeImpact !== 'number' || Number.isNaN(strokeImpact)) return 'low';
   return impactToPriority(strokeImpact);
+}
+
+/**
+ * Bug #915 — the pattern card's icon/accent must derive from the SIGNED
+ * stroke_impact, not from `priority` (a severity tier keyed off |impact|,
+ * blind to sign). Positive impact = the player plays BETTER under this
+ * condition (a strength — green); negative = plays WORSE (a leak — amber).
+ * Zero/missing stays neutral rather than fabricating a direction.
+ */
+function derivePatternValence(
+  strokeImpact: number | null | undefined,
+): NonNullable<SignalRow['valence']> {
+  if (typeof strokeImpact !== 'number' || !Number.isFinite(strokeImpact) || strokeImpact === 0) {
+    return 'neutral';
+  }
+  return strokeImpact > 0 ? 'positive' : 'negative';
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -318,17 +345,55 @@ export function insightToSignalRow(
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * Coach voice (bug #915) — `/dashboard/patterns` is coach-only (guarded in
+ * page.tsx: `if (!coach) return <FeatureUnavailable ... />`), but
+ * `PatternMiner.generateDescription`/`generateRecommendation`
+ * (pattern-miner.ts) write PLAYER-first-person text ("you tend to score…",
+ * "discuss with your coach") because that engine has no reader-audience
+ * concept — it just narrates the pattern. Team-authored patterns
+ * (team-pattern-generator.ts) already write third-person with the player's
+ * name baked in, so `toCoachVoice` is a no-op for them (no "you tend to" /
+ * generic-fallback substring to match). This is the seam where both sources
+ * land in ONE coach-appropriate voice before rendering.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/** The exact generic fallback `generateRecommendation` emits (pattern-miner.ts). */
+const GENERIC_COACH_DISCUSSION_RECOMMENDATION = 'Monitor this pattern and discuss with your coach.';
+
+/**
+ * Rewrite a pattern's player-voiced narrative into the coach's third-person
+ * voice. Falls back to "the player" when no name is available — never
+ * fabricates one.
+ */
+export function toCoachVoice(text: string, playerName: string | null | undefined): string {
+  if (!text) return text;
+  const name = playerName?.trim() || 'the player';
+  // The one player-addressed recommendation the engine emits: "discuss with
+  // your coach" makes no sense read BY the coach — swap it for the task's
+  // own suggested phrasing rather than let a generic "your"->possessive
+  // regex mangle it into "discuss with Ethan's coach".
+  if (text.trim() === GENERIC_COACH_DISCUSSION_RECOMMENDATION) {
+    return `Worth a conversation with ${name}.`;
+  }
+  // The ONE first-person fragment `generateDescription` produces — every
+  // conditional/compound/anomaly pattern description ends "…you tend to
+  // score N strokes worse/better than average."
+  return text.replace(/\byou tend to\b/gi, `${name} tends to`);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
  * PATTERN → SignalRow (the headline rewrite + statistician demotion)
  * ─────────────────────────────────────────────────────────────────────────── */
 
 /**
  * Build the plain-language "so what" headline for a pattern. Prefers the
- * engine's own description; otherwise composes a coach-readable sentence from
- * the (present) condition labels + outcome — never invents numbers.
+ * engine's own description (coach-voiced via `toCoachVoice`); otherwise
+ * composes a coach-readable sentence from the (present) condition labels +
+ * outcome — never invents numbers.
  */
 function patternHeadline(pattern: ExtendedPattern): string {
   if (pattern.description && pattern.description.trim().length > 0) {
-    return pattern.description.trim();
+    return toCoachVoice(pattern.description.trim(), pattern.playerName);
   }
   const player = pattern.playerName ? `${pattern.playerName}: ` : '';
   const conditionLabel =
@@ -343,15 +408,15 @@ function patternHeadline(pattern: ExtendedPattern): string {
         ? 'drops'
         : 'shifts';
   if (conditionLabel && outcomeMetric) {
-    return `${player}When ${conditionLabel.toLowerCase()}, ${outcomeMetric.toLowerCase()} ${dir}`;
+    return `${player}${conditionLabel}, ${outcomeMetric.toLowerCase()} ${dir}`;
   }
   return `${player}${titleCaseToken(pattern.patternType)} pattern detected`;
 }
 
-/** The body sentence — the recommendation if present, else a quiet fallback. */
+/** The body sentence — the recommendation if present (coach-voiced), else a quiet fallback. */
 function patternBody(pattern: ExtendedPattern): string {
   if (pattern.recommendation && pattern.recommendation.trim().length > 0) {
-    return pattern.recommendation.trim();
+    return toCoachVoice(pattern.recommendation.trim(), pattern.playerName);
   }
   // Preserve the SIGN of stroke_impact: a negative value is strokes LOST
   // (harmful), a positive value is strokes GAINED (helpful). Math.abs would
@@ -450,6 +515,7 @@ export function patternToSignalRow(pattern: ExtendedPattern): SignalRow {
     // > temporal > contextual, then magnitude). Insights never set these.
     patternTypeRank: patternTypeRank(pattern.patternType),
     strokeImpact: typeof pattern.strokeImpact === 'number' ? pattern.strokeImpact : null,
+    valence: derivePatternValence(pattern.strokeImpact),
     raw: pattern,
   };
 }

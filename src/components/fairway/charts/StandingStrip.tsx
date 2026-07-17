@@ -35,6 +35,8 @@ import {
   shouldShowTeamMarker,
   deriveAriaLabel,
   pgaReferenceLabel,
+  neutralizeForCoach,
+  standingSubjectLabel,
 } from '@/components/golf/coachhelm/v3/StandingBar';
 
 /** StandingStrip shares the legacy StandingBar prop surface verbatim. */
@@ -62,8 +64,12 @@ export function StandingStrip(props: StandingStripProps) {
   // marker uses (`showTeam`), so we never narrate a percentile we won't draw.
   const cohortText =
     props.show_cohort_text !== false && showTeam
-      ? teamCohortText(props.team_pct, props.team_n)
+      ? neutralizeForCoach(teamCohortText(props.team_pct, props.team_n), props.viewer_context)
       : '';
+  // Bug #915: the hero marker/readout is labeled "You" for a player's own
+  // view, but a coach reading a teammate's card sees the player's initials
+  // instead — the coach is never "you" to the player being read.
+  const heroLabel = standingSubjectLabel(props.viewer_context, props.player_name);
   // CF-3: SG metrics anchor to the field average (0), not a PGA Tour score.
   // Women's teams get "LPGA" instead of "PGA" for non-SG metrics.
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
@@ -117,7 +123,7 @@ export function StandingStrip(props: StandingStripProps) {
 
       {/* High-contrast 3-up readouts (You is the green hero figure) */}
       <div className="grid grid-cols-3 gap-2">
-        <Readout label="You" value={formatValue(props.player_value, props.unit)} tone="accent" align="start" />
+        <Readout label={heroLabel} value={formatValue(props.player_value, props.unit)} tone="accent" align="start" />
         {showTeam && props.team_avg !== null ? (
           <Readout label="Team" value={formatValue(props.team_avg, props.unit)} align="center" />
         ) : (

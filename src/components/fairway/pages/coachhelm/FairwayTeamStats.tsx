@@ -1220,6 +1220,10 @@ function PlayerTile({
           unit={renderCfg.unit}
           scale={renderCfg.default_scale}
           size="card"
+          // Bug #915: Team Stats is coach-only — the coach reading this card
+          // is never the player it describes.
+          viewer_context="coach"
+          player_name={fullName}
         />
       ) : (
         <StandingStrip
