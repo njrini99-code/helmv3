@@ -11,6 +11,7 @@ import { ViewHeader, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -262,17 +263,14 @@ export default async function TeamStatsPage() {
     const bestRound18 = scores18.length > 0 ? Math.min(...scores18) : null;
     const bestRound9 = scores9.length > 0 ? Math.min(...scores9) : null;
 
-    // Calculate scoring trend (last 5 vs previous 5) using normalized scores
-    let scoringTrend: number | null = null;
-    if (normalizedScores.length >= 6) {
-      const recent5 = normalizedScores.slice(0, 5);
-      const previous5 = normalizedScores.slice(5, 10);
-      if (previous5.length >= 3) {
-        const recentAvg = recent5.reduce((a, b) => a + b, 0) / recent5.length;
-        const prevAvg = previous5.reduce((a, b) => a + b, 0) / previous5.length;
-        scoringTrend = recentAvg - prevAvg; // Negative is good (improving)
-      }
-    }
+    // Scoring trend (last 5 vs previous 5, 18-hole-normalized) — canonical
+    // #914 trend classifier, shared with the CoachHelm Players tab roster
+    // table so the same player's overall-score trend can't disagree between
+    // Team Stats and Players. `hasSignal` distinguishes "not enough rounds
+    // yet" (null — an honest em-dash downstream) from a real zero-delta
+    // "Steady" read.
+    const scoringTrendResult = computeScoringTrendFromRounds(scoredRounds);
+    const scoringTrend = scoringTrendResult.hasSignal ? scoringTrendResult.delta : null;
 
     // Aggregate hole stats
     let totalFairwayHits = 0;

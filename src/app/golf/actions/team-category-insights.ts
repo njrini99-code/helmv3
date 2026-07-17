@@ -6,6 +6,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { computeSeriesTrend } from '@/lib/coachhelm/trend';
 import {
   samplePerPlayerRounds,
   computeTeamHealth,
@@ -189,30 +190,13 @@ function roundMetricValue(
 }
 
 /**
- * Determine trend and delta from two ordered groups of round metric values.
- * `recent` = most recent rounds, `previous` = older rounds.
+ * Minimum meaningful per-round change for a category metric to read as a
+ * trend rather than noise. Shared across all five categories — see
+ * `computeSeriesTrend` in `@/lib/coachhelm/trend` (#914's canonical trend
+ * classifier, now also consumed by the Players tab and Team Stats so a
+ * player's trend can't disagree across CoachHelm surfaces).
  */
-function computeTrend(
-  recent: number[],
-  previous: number[],
-  lowerIsBetter: boolean,
-): { trend: 'improving' | 'stable' | 'declining'; delta: number } {
-  if (recent.length === 0 || previous.length === 0) {
-    return { trend: 'stable', delta: 0 };
-  }
-  const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-  const prevAvg = previous.reduce((a, b) => a + b, 0) / previous.length;
-  const delta = recentAvg - prevAvg;
-  const threshold = 0.5; // Minimum meaningful change
-
-  if (Math.abs(delta) < threshold) {
-    return { trend: 'stable', delta };
-  }
-
-  // For "lower is better" metrics, a negative delta means improvement
-  const improving = lowerIsBetter ? delta < -threshold : delta > threshold;
-  return { trend: improving ? 'improving' : 'declining', delta };
-}
+const CATEGORY_TREND_THRESHOLD = 0.5;
 
 /**
  * Generate up to 3 insights for a category based on player data.
@@ -823,9 +807,18 @@ async function getTeamCategoryInsightsImpl(
           .map((r) => roundMetricValue(r, catDef.id))
           .filter((v): v is number => v != null);
 
-        const recentSlice = metricValues.slice(0, 5);
-        const previousSlice = metricValues.slice(5, 10);
-        const { trend, delta } = computeTrend(recentSlice, previousSlice, catDef.lowerIsBetter);
+        // Canonical trend classifier (#914): recent-5-vs-previous-5 window,
+        // shared threshold definition. minPrevious:1 preserves this category
+        // grid's existing behavior of reading a trend off a single prior
+        // round rather than requiring the stricter 3-round floor the
+        // score-trend surfaces use (Team Stats / Players tab) — a per-round
+        // category metric already has fewer, coarser samples than a
+        // per-player game-wide score series.
+        const { trend, delta } = computeSeriesTrend(metricValues, {
+          lowerIsBetter: catDef.lowerIsBetter,
+          threshold: CATEGORY_TREND_THRESHOLD,
+          minPrevious: 1,
+        });
 
         values.push(val);
         playerStats.push({
