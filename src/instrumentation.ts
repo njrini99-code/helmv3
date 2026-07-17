@@ -320,10 +320,16 @@ function allowBridgeProcessWrite(): boolean {
   return bridgeProcessWriteCount <= BRIDGE_PROCESS_WRITE_LIMIT;
 }
 
-function logProcessErrorToBridge(action: string, error: Error): void {
+function logProcessErrorToBridge(action: string, error: Error, metadata?: Record<string, unknown>): void {
   if (!allowBridgeProcessWrite()) return;
   void import('@/lib/server-error-logger')
-    .then((m) => m.logServerException(error, { action, source: 'background_job', handled: false }, 'error'))
+    .then((m) =>
+      m.logServerException(
+        error,
+        { action, source: 'background_job', handled: false, ...(metadata ? { metadata } : {}) },
+        'error'
+      )
+    )
     .catch(() => {});
 }
 
@@ -332,9 +338,34 @@ function registerProcessErrorHandlers(): void {
   processHandlersRegistered = true;
 
   process.on('unhandledRejection', (reason) => {
-    const error = reason instanceof Error ? reason : new Error(String(reason));
+    let error: Error;
+    if (reason instanceof Error) {
+      error = reason;
+    } else {
+      // Non-Error rejection reasons (a promise rejected with a string,
+      // plain object, number, etc.) used to become `new Error(String(reason))`
+      // — that Error's OWN stack always points at THIS handler, so Next dev's
+      // code-frame overlay blamed instrumentation.ts for every such
+      // rejection instead of the real throw site. console.error the RAW
+      // reason FIRST (before any synthesis) so the true payload is never
+      // masked, then build a clearly-labeled synthetic Error: `name` marks
+      // it as synthetic (not a real thrown Error) rather than masquerading
+      // as one, the message is PREFIXED with the stringified reason so it
+      // still reads naturally in Sentry/logs, and the untouched original
+      // reason is preserved in the Bridge metadata for anyone triaging the
+      // admin_events row (a stringified reason alone can lose structure —
+      // e.g. a plain `{ code, message }` rejection collapses to
+      // "[object Object]").
+      console.error('[instrumentation] unhandledRejection: non-Error reason', reason);
+      error = new Error(`${String(reason)} (unhandled promise rejection with a non-Error reason)`);
+      error.name = 'UnhandledRejection';
+    }
     Sentry.captureException(error);
-    logProcessErrorToBridge('process.unhandledRejection', error);
+    logProcessErrorToBridge(
+      'process.unhandledRejection',
+      error,
+      reason instanceof Error ? undefined : { reason }
+    );
   });
 
   process.on('uncaughtException', (error) => {
