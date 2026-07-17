@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
+import { getTeamPlayers } from '@/app/golf/actions/roster';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals, FeatureUnavailable } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -104,6 +105,14 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
   // getAlertCounts read is kept off this path entirely — it was only ever
   // feeding the now-suppressed badge.
   const signalCount = null;
+  // Roster names for the "By player" grouping — insight rows don't carry a
+  // joined name of their own (see alerts/page.tsx for the full rationale).
+  const rosterRes = await getTeamPlayers();
+  const playerNames: Record<string, string> = {};
+  for (const p of rosterRes.data ?? []) {
+    const name = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
+    if (name) playerNames[p.id] = name;
+  }
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <FairwayCoachHelmSignals
@@ -115,6 +124,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
           smartDefault: 'new_and_critical_this_week',
           view: 'table',
         }}
+        playerNames={playerNames}
         signalCount={signalCount}
         initialSearchParams={params}
       />
