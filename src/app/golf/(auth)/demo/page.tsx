@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, m, useReducedMotion } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { AlertCircle, Loader2, ArrowRight, BarChart2, Users, Brain } from 'lucide-react';
@@ -15,6 +15,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { createClient } from '@/lib/supabase/client';
 import { DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { enterDemo } from '@/app/golf/actions/demo-access';
+import { probeSignedIn } from '@/lib/demo/gate-probe';
 
 // ---------------------------------------------------------------------------
 // Value-prop pill items shown below the headline
@@ -56,6 +57,8 @@ function validateSchool(v: string): string | undefined {
 function DemoGateContent() {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get('message') === 'demo_session_expired';
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
   // Form state
@@ -77,20 +80,24 @@ function DemoGateContent() {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    let active = true;
     async function checkAuth() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        // Any already-authenticated visitor gets a "continue" shortcut. We can't
-        // reliably detect the shared demo account client-side (its email is a
-        // server-only secret), so we don't special-case it here.
-        if (user) {
-          setIsDemoUser(true);
-        }
-      } finally {
-        setCheckingAuth(false);
-      }
+      // probeSignedIn races supabase.auth.getUser() against a hard 4s
+      // deadline and treats ANY failure — timeout, thrown error, or a
+      // refresh-token error surfaced through getUser()'s own `error` field —
+      // as signed out. Without this, a stale/expired httpOnly Supabase
+      // cookie can leave getUser()'s internal refresh hanging forever, and
+      // this "Checking sign-in status" spinner never resolves (#918).
+      const user = await probeSignedIn(supabase);
+      if (!active) return;
+      // Any already-authenticated visitor gets a "continue" shortcut. We can't
+      // reliably detect the shared demo account client-side (its email is a
+      // server-only secret), so we don't special-case it here.
+      if (user) setIsDemoUser(true);
+      setCheckingAuth(false);
     }
     void checkAuth();
+    return () => { active = false; };
   }, [supabase]);
 
   // Derived inline errors (only shown after touch)
@@ -272,6 +279,16 @@ function DemoGateContent() {
                 Tell us a bit about yourself to get instant access.
               </p>
             </div>
+
+            {/* Friendly notice when bounced here after a demo session timed out (#918) */}
+            {sessionExpired && (
+              <div
+                role="status"
+                className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-xl text-sm text-center mb-4"
+              >
+                Your demo session timed out. Enter your info again to jump right back in.
+              </div>
+            )}
 
             {/* Already-signed-in shortcut */}
             {checkingAuth ? (

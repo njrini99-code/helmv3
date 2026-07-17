@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
     },
     error: null,
   })),
+  updateUser: vi.fn(async () => ({ data: { user: null }, error: null })),
   adminFrom: vi.fn(),
   insert: vi.fn(async () => ({ data: null, error: null })),
   logLogin: vi.fn(async () => ({})),
@@ -56,6 +57,7 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: {
       getUser: mocks.getUser,
       signInWithPassword: mocks.signInWithPassword,
+      updateUser: mocks.updateUser,
     },
   })),
 }));
@@ -115,6 +117,26 @@ beforeEach(() => {
       user: { id: 'demo-user-1', email: 'demo-coach@baseballhelmdemo.com' },
     },
     error: null,
+  });
+  mocks.updateUser.mockResolvedValue({ data: { user: null }, error: null });
+});
+
+describe('enterBaseballDemo — is_demo metadata stamp (#918)', () => {
+  it('stamps user_metadata.is_demo = true right after sign-in, before redirecting', async () => {
+    await expect(enterBaseballDemo(VALID_INPUT)).rejects.toThrow('REDIRECT:/baseball/dashboard?demo=1');
+
+    expect(mocks.updateUser).toHaveBeenCalledWith({ data: { is_demo: true } });
+    const signInOrder = mocks.signInWithPassword.mock.invocationCallOrder[0]!;
+    const updateOrder = mocks.updateUser.mock.invocationCallOrder[0]!;
+    expect(signInOrder).toBeLessThan(updateOrder);
+  });
+
+  it('never blocks demo entry when the metadata stamp fails', async () => {
+    mocks.updateUser.mockRejectedValue(new Error('gotrue hiccup'));
+
+    await expect(enterBaseballDemo(VALID_INPUT)).rejects.toThrow('REDIRECT:/baseball/dashboard?demo=1');
+
+    expect(mocks.signInWithPassword).toHaveBeenCalledTimes(1);
   });
 });
 
