@@ -1,5 +1,5 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchJobsTab, type CronBoardRow, type IntegrityRow } from '@/lib/admin/data/jobs';
+import { fetchJobsTab, type CronBoardRow, type CronRunSummary, type IntegrityRow } from '@/lib/admin/data/jobs';
 import { Surface, Inset, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -37,6 +37,51 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // Fairway-opt-in `accent-*` family (this page isn't a Fairway component).
 function KeyPanelRule() {
   return <DatelineRule className="mb-3" />;
+}
+
+/**
+ * Small inline failure-rate readout for the last RECENT_RUNS_PER_JOB runs
+ * (jobs.ts) — each run is one tick, oldest→newest, colored by status. Honest
+ * "never run" state (empty history — distinct from a real 0-failure run) so
+ * a job that's simply awaiting its first scheduled fire never gets rendered
+ * identically to one silently missing all its history (the exact bug this
+ * per-job-query fix resolves). Hand-rolled rather than the Fairway
+ * SegmentBar/Sparkline chart primitives — both are standalone-panel widgets
+ * (legend, big readout, InstrumentPanel chrome) sized for a chart slot, not
+ * a ~20px-tall strip embedded in a dense table row / phone card.
+ */
+function RecentRunsStrip({ runs }: { runs: CronRunSummary[] }) {
+  if (runs.length === 0) {
+    return <p className="text-caption text-warm-500">no run history yet</p>;
+  }
+  const failures = runs.filter((r) => r.status === 'failed').length;
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        role="img"
+        aria-label={`${failures} failed of last ${runs.length} runs`}
+        className="flex items-center gap-0.5"
+      >
+        {runs.map((r, i) => (
+          <span
+            key={`${r.startedAt}-${i}`}
+            title={`${r.status} · ${r.startedAt}`}
+            className={cn(
+              'h-3 w-1.5 shrink-0 rounded-sm',
+              r.status === 'failed'
+                ? 'bg-fw-danger'
+                : r.status === 'completed'
+                  ? 'bg-fw-success'
+                  : 'bg-warm-300',
+            )}
+          />
+        ))}
+      </div>
+      <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+        {failures > 0 ? `${failures}/${runs.length} failed` : `${runs.length}/${runs.length} ok`}
+      </span>
+    </div>
+  );
 }
 
 function formatDuration(ms: number | null): string {
@@ -82,6 +127,9 @@ function CronJobCard({ row }: { row: CronBoardRow }) {
         />
         <StatLine label="Duration" value={formatDuration(row.lastDurationMs)} />
         <StatLine label="Cadence" value={`${row.cadenceMinutes}m`} />
+      </div>
+      <div className="mt-2.5 border-t border-warm-200/60 pt-2">
+        <RecentRunsStrip runs={row.recentRuns} />
       </div>
       {row.status === 'failed' && row.lastError ? (
         <p className="mt-2 break-words border-t border-warm-200/60 pt-2 text-xs text-fw-danger">
@@ -145,7 +193,7 @@ function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[640px] text-sm">
+        <table className="w-full min-w-[780px] text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-widest text-warm-500">
               <th className="sticky left-0 z-10 bg-surface py-2 pr-3">Job</th>
@@ -153,6 +201,7 @@ function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
               <th className="px-3">Last run</th>
               <th className="px-3">Duration</th>
               <th className="px-3">Cadence</th>
+              <th className="px-3">Last 20 runs</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-warm-200/60">
@@ -181,6 +230,9 @@ function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
                   {formatDuration(row.lastDurationMs)}
                 </td>
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">{row.cadenceMinutes}m</td>
+                <td className="px-3">
+                  <RecentRunsStrip runs={row.recentRuns} />
+                </td>
               </tr>
             ))}
           </tbody>

@@ -12,6 +12,7 @@ import { KpiTile } from '../_components/KpiTile';
 import { TeamHealthTable, type TeamHealthEntry } from '../_components/TeamHealthTable';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
+import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,11 +29,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // rule above the card title.
 function KeyPanelRule() {
   return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
-}
-
-function lastSeenLabel(value: string | null) {
-  if (!value) return 'never';
-  return new Date(value).toLocaleDateString();
 }
 
 function playerTone(player: RosterPlayerInsight): 'success' | 'warning' | 'danger' | 'neutral' {
@@ -58,7 +54,8 @@ function TeamCommandCard({ team }: { team: TeamRosterInsight }) {
             {team.name}
           </Link>
           <p className="mt-1 font-fw-mono text-xs text-warm-500">
-            {team.playerCount} players · last {lastSeenLabel(team.lastActivity)}
+            {team.playerCount} players · last{' '}
+            {team.lastActivity ? <LocalTime iso={team.lastActivity} variant="date" fallback="never" /> : 'never'}
           </p>
         </div>
         <StatusPill tone={team.errors7d > 0 || team.attentionPlayers > 0 ? 'warning' : 'success'} dot size="sm">
@@ -127,7 +124,12 @@ function PlayerWatchlist({ players }: { players: RosterPlayerInsight[] }) {
                 {player.activity30d} signals 30d
               </span>
               <span className="font-fw-mono text-xs tabular-nums text-warm-600">
-                last {lastSeenLabel(player.lastActivity ?? player.lastSeen)}
+                last{' '}
+                {player.lastActivity ?? player.lastSeen ? (
+                  <LocalTime iso={(player.lastActivity ?? player.lastSeen) as string} variant="date" fallback="never" />
+                ) : (
+                  'never'
+                )}
               </span>
               <StatusPill tone={playerTone(player)} dot size="sm">
                 {player.profileQuality}
@@ -191,7 +193,13 @@ async function BaseballBody() {
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
         <Surface padding="sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            {/* data-fw-title-anchor: registers this masthead as the mobile
+                condense-observer's target (FairwayContentAnchor) — without a
+                marker here this page's real first rendered element is a full
+                page-body wrapper (too tall to qualify as "title-sized"), so
+                the observer fell back to the static header sentinel and the
+                condensed bar title never had honest content to show at rest. */}
+            <div data-fw-title-anchor>
               <KeyPanelRule />
               <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Baseball command center</p>
               {/* Mobile Doctrine rule 2: eyebrow + long title + paragraph is a

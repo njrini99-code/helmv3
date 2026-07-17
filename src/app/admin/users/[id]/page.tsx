@@ -7,6 +7,7 @@ import { SessionsPanel } from '../../_components/SessionsPanel';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelNoData } from '../../_components/PanelStates';
 import { SportBadge } from '../../_components/SportBadge';
+import { LocalTime } from '../../_components/LocalTime';
 import { enterViewAs } from '../../actions/view-as';
 import { EngagementPanel } from './EngagementPanel';
 import { ViewAsButton } from './ViewAsButton';
@@ -69,8 +70,9 @@ export default async function UserDetailPage({
               ))}
             </div>
             <p className="font-fw-mono text-xs tabular-nums text-warm-500">
-              {user.role} · joined {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'} · last
-              seen {user.lastSeen ? new Date(user.lastSeen).toLocaleString() : 'never'}
+              {user.role} · joined{' '}
+              {user.createdAt ? <LocalTime iso={user.createdAt} variant="date" fallback="—" /> : '—'} · last seen{' '}
+              {user.lastSeen ? <LocalTime iso={user.lastSeen} variant="datetime" fallback="never" /> : 'never'}
             </p>
           </div>
           {viewAsConfigured ? (
@@ -123,7 +125,7 @@ export default async function UserDetailPage({
                     </span>
                     <span className="min-w-0 flex-1 basis-full truncate text-warm-800 sm:basis-auto">{a.label}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
-                      {new Date(a.at).toLocaleString()}
+                      <LocalTime iso={a.at} variant="datetime" />
                     </span>
                   </li>
                 ))}
@@ -147,7 +149,7 @@ export default async function UserDetailPage({
                     <li key={e.id} className="py-1.5 text-sm text-warm-800">
                       {e.title}
                       <span className="ml-2 font-fw-mono text-xs text-warm-500">
-                        {new Date(e.created_at).toLocaleString()}
+                        <LocalTime iso={e.created_at} variant="datetime" />
                       </span>
                     </li>
                   ))}
@@ -178,7 +180,7 @@ export default async function UserDetailPage({
                         <span className="min-w-0 flex-1 basis-full truncate text-warm-800 sm:basis-auto">{e.title}</span>
                       )}
                       <span className="font-fw-mono text-xs tabular-nums text-warm-500">
-                        {new Date(e.created_at).toLocaleString()}
+                        <LocalTime iso={e.created_at} variant="datetime" />
                       </span>
                     </li>
                   ))}

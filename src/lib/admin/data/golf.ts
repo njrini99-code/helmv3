@@ -95,9 +95,32 @@ export async function fetchGolfTab(): Promise<{
   ] = await Promise.all([
       fetchAdminRollupA(),
       admin.from('golf_teams').select('id, name'),
-      admin.from('golf_team_members').select('team_id').eq('status', 'active'),
-      admin.from('admin_events').select('team_id')
-        .eq('sport', 'golf').eq('event_type', 'error').gte('created_at', ago7d).limit(1000),
+      // Platform-wide active roster — paginate past the PostgREST 1000-row
+      // cap (bridge-tab-audit-p0p1 golf Finding 1) rather than the prior
+      // unpaginated fetch, which silently under-counted playerCount on the
+      // Teams health table once active golf_team_members crossed 1000 rows.
+      fetchAllRowsResult((from, to) =>
+        admin
+          .from('golf_team_members')
+          .select('team_id')
+          .eq('status', 'active')
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
+      // 7d golf error events — same pagination fix as above, replacing a
+      // bare `.limit(1000)` that silently under-counted `errors7d` on the
+      // Teams health table during an actual error storm (the exact scenario
+      // this table exists to surface).
+      fetchAllRowsResult((from, to) =>
+        admin
+          .from('admin_events')
+          .select('team_id')
+          .eq('sport', 'golf')
+          .eq('event_type', 'error')
+          .gte('created_at', ago7d)
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
       // Pure count — head:true never triggers the PostgREST 1000-row cap,
       // unlike deriving calls30d from llmCalls.length on a capped fetch.
       admin.from('golf_coachhelm_llm_calls').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),

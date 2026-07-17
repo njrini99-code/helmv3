@@ -5,9 +5,11 @@ type AdminHref =
   | '/admin/auth'
   | '/admin/golf'
   | '/admin/baseball'
+  | '/admin/lifting'
   | '/admin/ben-leah'
   | '/admin/work'
   | '/admin/users'
+  | '/admin/utilization'
   | '/admin/jobs'
   | '/admin/deploys'
   | '/admin/health';
@@ -21,15 +23,20 @@ export interface AdminNavEntry {
   meta?: string;
 }
 
-/** The primary Bridge tabs. Order is the keyboard map: '1'-'9' for the first
- *  nine tabs, '0' for Health, and 'B' for the Ben + Leah intake desk. */
+/** The primary Bridge tabs. Order is the keyboard map: '1'-'9' for the
+ *  original first nine tabs, '0' for Health, 'B' for the Ben + Leah intake
+ *  desk, and single letters for tabs added after that numeric map was
+ *  fixed (Lift Lab, Utilization) — never renumbering '1'-'9' avoids
+ *  reassigning a shortcut an admin already has muscle memory for. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Overview', href: '/admin', key: '1', section: 'Operations', description: 'Command posture, triage, deploys', meta: 'live' },
   { label: 'Activity', href: '/admin/activity', key: '2', section: 'Operations', description: 'User and product event stream' },
   { label: 'Errors', href: '/admin/errors', key: '3', section: 'Operations', description: 'Sentry plus app incident groups', meta: 'trace' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Operations', description: 'Access, sessions, auth failures' },
+  { label: 'Utilization', href: '/admin/utilization', key: 'U', section: 'Operations', description: 'Feature usage and adoption' },
   { label: 'Golf', href: '/admin/golf', key: '5', section: 'Apps', description: 'GolfHelm production signals' },
   { label: 'Baseball', href: '/admin/baseball', key: '6', section: 'Apps', description: 'BaseballHelm production signals' },
+  { label: 'Lift Lab', href: '/admin/lifting', key: 'L', section: 'Apps', description: 'Cross-sport strength program activity' },
   { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Operations', description: 'Submit bugs, changes, additions', meta: 'issues' },
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Operations', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
   { label: 'Users & Teams', href: '/admin/users', key: '7', section: 'Platform', description: 'Accounts, teams, engagement' },

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
-  RefreshCw,
+  RefreshCw, Dumbbell, Search,
 } from 'lucide-react';
 import {
   AppShell,
@@ -63,8 +63,10 @@ const NAV_ICON_BY_HREF = {
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/auth': KeyRound,
+  '/admin/utilization': Gauge,
   '/admin/golf': Flag,
   '/admin/baseball': CircleDot,
+  '/admin/lifting': Dumbbell,
   '/admin/ben-leah': MessageSquarePlus,
   '/admin/work': ScrollText,
   '/admin/users': Users,
@@ -94,10 +96,17 @@ function BridgeMoreSheetHeader({
   lastSyncedAt,
   refreshing,
   onRefresh,
+  onSearchOpen,
 }: {
   lastSyncedAt: number;
   refreshing: boolean;
   onRefresh: () => void;
+  /** bridge-visibility-wave: the ONLY touch entry point to the ⌘K Command
+   *  Menu (and its curated Saved Views) — previously desktop/keyboard-only
+   *  (the search slot lives in FairwayTopBar's `hidden ... md:flex` region,
+   *  and `Meta+K` needs a physical keyboard), so mobile had no way to reach
+   *  it at all. */
+  onSearchOpen: () => void;
 }) {
   return (
     <div className="mb-3 space-y-3 border-b border-border-subtle pb-4">
@@ -108,6 +117,15 @@ function BridgeMoreSheetHeader({
         <span aria-hidden>·</span>
         <RelativeTime sinceMs={lastSyncedAt} />
       </div>
+      <Button
+        type="button"
+        variant="secondary"
+        fullWidth
+        onClick={onSearchOpen}
+        leftIcon={<Search size={16} aria-hidden />}
+      >
+        Jump to command, incident, user…
+      </Button>
       <Button
         type="button"
         variant="secondary"
@@ -201,9 +219,15 @@ export function AdminShell({
     [],
   );
 
-  // Mobile parity (375px mandate): FairwayTopBar collapses the full trail to
-  // just the last crumb below `md`, which is the ONLY on-screen "where am I"
-  // signal on pages whose body starts straight into KPI tiles with no h1.
+  // Mobile parity (375px mandate): below `md` FairwayTopBar's breadcrumb slot
+  // is hidden entirely (desktop-only chrome, condensing-header decision 4) —
+  // it is NOT the on-screen "where am I" signal on phone. That job belongs to
+  // each page's own in-content masthead: a mounted `<FairwayLargeTitle>` (or
+  // any element marked `data-fw-title-anchor`) both renders full-size at rest
+  // AND registers its text as the top bar's condensed-copy fallback once it
+  // scrolls away. Tabs that render no masthead at all have no on-screen page
+  // identity until they adopt one (bridge-tab-audit-p0p1 finding 11) — this
+  // `breadcrumbs` value only feeds the DESKTOP trail below.
   const breadcrumbs = useMemo(() => computeBreadcrumbs(pathname), [pathname]);
 
   useEffect(() => {
@@ -335,6 +359,13 @@ export function AdminShell({
   const overflow = useMemo(() => selectOverflow(sections, BRIDGE_BOTTOM_NAV_HREFS), [sections]);
   const more = useMemo(() => summarizeMoreTab(overflow, pathname), [overflow, pathname]);
   const openMoreSheet = useCallback(() => setMoreOpen(true), []);
+  // bridge-visibility-wave: the More sheet's own "Jump to…" button routes
+  // here — close the sheet first so the Command Menu dialog never stacks on
+  // top of the still-open vaul Drawer.
+  const openCommandFromSheet = useCallback(() => {
+    setMoreOpen(false);
+    setCommandOpen(true);
+  }, []);
 
   const bottomNav = useMemo(
     () => (
@@ -371,8 +402,15 @@ export function AdminShell({
   );
 
   const moreSheetHeader = useMemo(
-    () => <BridgeMoreSheetHeader lastSyncedAt={lastSyncedAt} refreshing={refreshing} onRefresh={doRefresh} />,
-    [lastSyncedAt, refreshing, doRefresh],
+    () => (
+      <BridgeMoreSheetHeader
+        lastSyncedAt={lastSyncedAt}
+        refreshing={refreshing}
+        onRefresh={doRefresh}
+        onSearchOpen={openCommandFromSheet}
+      />
+    ),
+    [lastSyncedAt, refreshing, doRefresh, openCommandFromSheet],
   );
   const moreSheetFooter = useMemo(
     () => (

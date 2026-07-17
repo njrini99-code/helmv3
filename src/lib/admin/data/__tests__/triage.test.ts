@@ -46,6 +46,18 @@ describe('mergeTriage', () => {
     expect(items[1]!.key).toBe('sentry:noisy');
   });
 
+  it('attributes sport/feature to sentry-origin items only when the caller says the fetch was scoped by that tag', () => {
+    const unscoped = mergeTriage({ sentryIssues: [sentryIssue({})], appEvents: [] });
+    expect(unscoped[0]).toMatchObject({ sport: null, feature: null });
+
+    const scoped = mergeTriage({
+      sentryIssues: [sentryIssue({})],
+      appEvents: [],
+      sentryTagHint: { sport: 'golf', feature: 'round_tracking' },
+    });
+    expect(scoped[0]).toMatchObject({ sport: 'golf', feature: 'round_tracking' });
+  });
+
   it('carries sentry substatus + permalink through', () => {
     const items = mergeTriage({
       sentryIssues: [sentryIssue({ substatus: 'regressed' })],

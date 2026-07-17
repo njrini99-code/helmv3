@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildIncidentFeedFromSources,
+  buildSentrySearchQuery,
   filterSentryIssuesByDeploy,
   filterSentryIssuesByWindow,
   summarizeIncidentFeed,
@@ -85,5 +86,27 @@ describe('incident feed', () => {
 
     const filtered = filterSentryIssuesByDeploy([fixed, regressed], deployAt, now);
     expect(filtered.map((i) => i.id)).toEqual(['regressed']);
+  });
+});
+
+describe('buildSentrySearchQuery', () => {
+  it('defaults to is:unresolved plus the same info/debug noise floor queryAppErrorEvents applies', () => {
+    expect(buildSentrySearchQuery({})).toBe('is:unresolved !level:info !level:debug');
+  });
+
+  it('translates an explicit severity to the matching Sentry level, no floor exclusion', () => {
+    expect(buildSentrySearchQuery({ severity: 'critical' })).toBe('is:unresolved level:fatal');
+    expect(buildSentrySearchQuery({ severity: 'error' })).toBe('is:unresolved level:error');
+    expect(buildSentrySearchQuery({ severity: 'info' })).toBe('is:unresolved level:info');
+  });
+
+  it('adds sport/feature/source tokens so Sentry-origin incidents are actually narrowed', () => {
+    expect(
+      buildSentrySearchQuery({ sport: 'golf', feature: 'round_tracking', source: 'server_action' }),
+    ).toBe('is:unresolved !level:info !level:debug sport:golf feature:round_tracking error_source:server_action');
+  });
+
+  it('never translates the synthetic "sentry" source chip into an error_source token', () => {
+    expect(buildSentrySearchQuery({ source: 'sentry' })).toBe('is:unresolved !level:info !level:debug');
   });
 });

@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { Activity, RadioTower } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchGolfTab } from '@/lib/admin/data/golf';
+import { fetchUsersTab } from '@/lib/admin/data/users';
+import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
 import type { RollupAFeatureAdoptionPayload, FeatureCountPair } from '@/app/golf/actions/admin/rollup-a';
 import { Surface, StatStrip, StatTile, TrendChart, type StatTileProps } from '@/components/fairway';
@@ -8,6 +11,9 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { TeamHealthTable } from '../_components/TeamHealthTable';
+import { TeamCommandCard } from '../_components/TeamCommandCard';
+import { PlayerWatchlist } from '../_components/PlayerWatchlist';
+import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 
@@ -59,7 +65,12 @@ function KeyPanelRule() {
 }
 
 async function GolfBody() {
-  const [tab, featureHealth] = await Promise.all([fetchGolfTab(), fetchFeatureHealth()]);
+  const [tab, featureHealth, usersTab, errorsTab] = await Promise.all([
+    fetchGolfTab(),
+    fetchFeatureHealth(),
+    fetchUsersTab({ sport: 'golf' }),
+    fetchErrorsTab({ sport: 'golf', windowHours: 168 }),
+  ]);
   const r = tab.rollup.rounds;
   const ch = tab.rollup.coachhelm;
   const u = tab.rollup.users;
@@ -87,8 +98,43 @@ async function GolfBody() {
     { label: 'Last 7d', count: u.cohortWeeks.w1.length },
   ];
 
+  // Golf half of the baseball parity gap (bridge-tab-audit-p0p1 golf
+  // Finding 2) — TeamCommandCard mosaic + PlayerWatchlist + error-trace
+  // quick-links, sourced from fetchUsersTab (same rich per-player rows
+  // baseball's page already renders), filtered to sport='golf'.
+  const golfTeams = usersTab.teams.filter((team) => team.sport === 'golf');
+  const golfPlayers = golfTeams.flatMap((team) => team.players);
+  const watchlist = golfPlayers
+    .filter((player) => player.errors7d > 0 || player.activity30d === 0 || player.profileQuality !== 'complete')
+    .sort((a, b) => {
+      if (a.errors7d !== b.errors7d) return b.errors7d - a.errors7d;
+      if (a.profileQuality !== b.profileQuality) return a.profileQuality === 'missing' ? -1 : 1;
+      return a.activity30d - b.activity30d;
+    })
+    .slice(0, 12);
+  const topGolfTeams = [...golfTeams]
+    .sort((a, b) => {
+      if (a.attentionPlayers !== b.attentionPlayers) return b.attentionPlayers - a.attentionPlayers;
+      if (a.errors7d !== b.errors7d) return b.errors7d - a.errors7d;
+      return b.playerCount - a.playerCount;
+    })
+    .slice(0, 6);
+
   return (
     <div className="space-y-6">
+      {/* data-fw-title-anchor: registers this masthead as the mobile
+          condense-observer's target (FairwayContentAnchor) — without a
+          marker here this page's real first rendered element is a full
+          page-body wrapper (too tall to qualify as "title-sized"), matching
+          the fix already applied to baseball/page.tsx's sibling masthead. */}
+      <div data-fw-title-anchor>
+        <KeyPanelRule />
+        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Golf command center</p>
+        <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">
+          Team-by-team, player-by-player visibility
+        </h2>
+      </div>
+
       {/* Activity pulse */}
       <section className="space-y-4">
         <SectionLabel>Activity pulse</SectionLabel>
@@ -252,6 +298,51 @@ async function GolfBody() {
         </p>
       </Surface>
 
+      {/* Team command map + watchlist + error-trace hooks — golf's parity
+          counterpart to admin/baseball/page.tsx's identical section, sourced
+          from fetchUsersTab so player-level drill-down works the same way
+          on both sport tabs (bridge-tab-audit-p0p1 golf Finding 2). */}
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid gap-4 lg:grid-cols-2">
+          {topGolfTeams.length === 0 ? (
+            <Surface padding="sm">
+              <PanelNoData label="No team cards yet" description="Team cards appear when golf teams have roster membership." />
+            </Surface>
+          ) : (
+            topGolfTeams.map((team) => (
+              <TeamCommandCard key={team.teamId} team={team} teamHref={`/admin/users?team=${team.teamId}`} />
+            ))
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <PlayerWatchlist players={watchlist} title="Player-by-player watchlist" />
+          <Surface padding="sm">
+            <SectionLabel>Error trace hooks</SectionLabel>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <StatTile label="Incidents 7d" value={errorsTab.incidents.length} tone="neutral" mono goodDirection="down" />
+              <StatTile label="RLS denials 24h" value={errorsTab.rlsDenials24h} tone="neutral" mono goodDirection="down" />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/admin/errors?sport=golf&window=168"
+                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+              >
+                <RadioTower size={14} aria-hidden />
+                Open golf errors
+              </Link>
+              <Link
+                href="/admin/users?sport=golf&attention=watch"
+                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+              >
+                <Activity size={14} aria-hidden />
+                Open launch watchlist
+              </Link>
+            </div>
+          </Surface>
+        </div>
+      </section>
+
       {/* CoachHelm engine health — key panel: the AI engine that makes
           CoachHelm worth paying for, so it earns the same 2px green left
           edge as the overview's Feature health rollup. */}
@@ -261,7 +352,7 @@ async function GolfBody() {
         <p className="mt-2 text-sm text-warm-700">
           Last insight generated:{' '}
           <span className="font-fw-mono text-warm-900">
-            {ch.lastInsightAt ? new Date(ch.lastInsightAt).toLocaleString() : 'never'}
+            {ch.lastInsightAt ? <LocalTime iso={ch.lastInsightAt} variant="datetime" fallback="never" /> : 'never'}
           </span>
         </p>
         <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">

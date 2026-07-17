@@ -63,6 +63,49 @@ export function filterSentryIssuesByDeploy(
   return issues.filter((issue) => Date.parse(issue.lastSeen) >= deployAt);
 }
 
+const SEVERITY_TO_SENTRY_LEVEL: Record<TriageSeverity, string> = {
+  critical: 'fatal',
+  error: 'error',
+  warning: 'warning',
+  info: 'info',
+};
+
+/**
+ * Translate the Errors-tab / triage filter set into Sentry's search-query
+ * syntax so severity/sport/source/feature narrow Sentry-origin incidents
+ * exactly like queryAppErrorEvents already narrows admin_events. Sentry
+ * events carry these as SDK tags — scope.setTag('sport', ...), ('feature',
+ * ...), ('error_source', ...) (server-error-logger.ts, with-baseball-
+ * action.ts, with-lifting-action.ts) — so `tag:value` search tokens work
+ * even though the LIST endpoint never returns per-issue tags (see
+ * fetchSentryFeatureCounts's spike note in sentry-api.ts — this reuses that
+ * same documented workaround, extended to 4 filter dimensions instead of 1).
+ *
+ * `source: 'sentry'` is a synthetic UI-only value (the "this row came from
+ * Sentry" chip — see errors.ts SOURCES), not a real error_source tag — it
+ * already narrows admin_events to zero rows (queryAppErrorEvents's
+ * `.eq('source', filters.source)`), so it's deliberately NOT translated into
+ * an error_source token here, leaving the Sentry side unfiltered by source.
+ *
+ * No explicit severity filter → the same noise floor queryAppErrorEvents
+ * applies by default (excludes severity=info) so a default-view info/debug
+ * Sentry issue doesn't outlive an equivalent app-origin info event.
+ */
+export function buildSentrySearchQuery(
+  filters: Pick<IncidentFeedFilters, 'severity' | 'sport' | 'source' | 'feature'>,
+): string {
+  const tokens = ['is:unresolved'];
+  if (filters.severity) {
+    tokens.push(`level:${SEVERITY_TO_SENTRY_LEVEL[filters.severity]}`);
+  } else {
+    tokens.push('!level:info', '!level:debug');
+  }
+  if (filters.sport) tokens.push(`sport:${filters.sport}`);
+  if (filters.feature) tokens.push(`feature:${filters.feature}`);
+  if (filters.source && filters.source !== 'sentry') tokens.push(`error_source:${filters.source}`);
+  return tokens.join(' ');
+}
+
 export function summarizeIncidentFeed(incidents: readonly TriageItem[]): IncidentFeedCounts {
   const appGroups = incidents.filter((item) => item.origin === 'app').length;
   const sentryGroups = incidents.filter((item) => item.origin === 'sentry').length;
@@ -79,14 +122,26 @@ export function summarizeIncidentFeed(incidents: readonly TriageItem[]): Inciden
   };
 }
 
+/**
+ * Honest attribution only — set when the caller actually scoped the Sentry
+ * fetch by that tag (buildSentrySearchQuery's `sport:`/`feature:` tokens), so
+ * this is never a guess presented as certain (the list endpoint itself never
+ * returns per-issue tags — see buildSentrySearchQuery's doc comment).
+ */
+export interface SentryTagHint {
+  sport?: TriageItem['sport'] | null;
+  feature?: string | null;
+}
+
 /** Pure merge — unit-testable; async fetchers feed this. */
 export function buildIncidentFeedFromSources(
   appEvents: readonly AppTriageEventRow[],
   sentryIssues: readonly SentryIssue[],
   windowHours: number,
+  sentryTagHint?: SentryTagHint,
 ): { incidents: TriageItem[]; counts: IncidentFeedCounts } {
   const sentryInWindow = filterSentryIssuesByWindow(sentryIssues, windowHours);
-  const incidents = mergeTriage({ sentryIssues: sentryInWindow, appEvents: [...appEvents] });
+  const incidents = mergeTriage({ sentryIssues: sentryInWindow, appEvents: [...appEvents], sentryTagHint });
   return { incidents, counts: summarizeIncidentFeed(incidents) };
 }
 
@@ -139,22 +194,45 @@ export async function fetchIncidentFeed(
   sentry: AdminFetchResult<SentryIssue[]>;
   counts: IncidentFeedCounts;
 }> {
-  const [sentry, appEvents, deploy] = await Promise.all([
+  // `sentry` stays the fully unfiltered org-wide unresolved pull — it backs
+  // the Errors tab's deliberately un-windowed "Sentry unresolved (org-wide)"
+  // panel and must never reflect severity/sport/source/feature narrowing.
+  // The MERGE population is a separate, filter-scoped query (`filteredSentry`)
+  // so severity/sport/source/feature actually narrow Sentry-origin incidents
+  // in the triage queue / "Active groups" the same way they narrow app-origin
+  // ones — this is the P0 fix (filter chips silently doing nothing to Sentry
+  // rows). `prefetched.sentry` (no live caller today) opts out of the extra
+  // round trip and reuses the raw pull for both.
+  const [sentry, filteredSentry, appEvents, deploy] = await Promise.all([
     prefetched?.sentry ?? fetchSentryIssues({ limit: 50 }),
+    prefetched?.sentry ? null : fetchSentryIssues({ query: buildSentrySearchQuery(filters), limit: 50 }),
     queryAppErrorEvents(filters),
     getProductionDeployAt(),
   ]);
+
+  // If the filtered Sentry call itself failed (rate limit, network, etc) it
+  // still resolves to a truthy `{ status: 'error', data: null }` envelope —
+  // `filteredSentry ?? sentry` would treat that as "no fallback needed" and
+  // silently drop every Sentry-origin incident even though the raw `sentry`
+  // pull above succeeded. Only trust the filtered result when it actually
+  // succeeded; otherwise fall back to the raw org-wide pull (unfiltered by
+  // severity/sport/source/feature, but real data beats a false empty state).
+  const mergeSentrySource = filteredSentry && filteredSentry.status === 'ok' ? filteredSentry : sentry;
 
   // Deploy-based hiding applies only to the MERGED incident feed (the
   // triage queue / "Active groups" surfaces) — never to the raw `sentry`
   // AdminFetchResult returned below, which backs the Errors tab's
   // deliberately un-windowed "Sentry unresolved (org-wide)" panel.
-  const releaseFilteredSentry = filterSentryIssuesByDeploy(sentry.data ?? [], deploy.deployAt);
+  const releaseFilteredSentry = filterSentryIssuesByDeploy(mergeSentrySource.data ?? [], deploy.deployAt);
 
   const { incidents, counts } = buildIncidentFeedFromSources(
     appEvents,
     releaseFilteredSentry,
     filters.windowHours,
+    // Honest attribution: only set when the merge query was actually scoped
+    // by that tag — an unfiltered view still can't know per-issue sport/
+    // feature (the list endpoint doesn't return tags), so it stays null.
+    { sport: filters.sport ?? null, feature: filters.feature ?? null },
   );
 
   return { incidents, appEvents, sentry, counts };

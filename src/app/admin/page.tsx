@@ -97,6 +97,22 @@ async function BannerAndKpis() {
       href: '/admin/errors',
       tone: kpis.sentryUnresolved ? 'danger' : 'neutral',
       goodDirection: 'down',
+      // Honest starved copy (bridge-tab-audit-p0p1 overview Finding 1) —
+      // without this the tile falls through to StatTile's generic "log a
+      // few more data points" message even when Sentry is unconfigured or
+      // its API call failed, telling the operator to wait for something
+      // that will never fill in on its own.
+      ...(kpis.sentryStatus === 'unconfigured'
+        ? {
+            starvedTitle: 'Sentry not configured',
+            starvedDescription: 'Set SENTRY_READ_TOKEN to pull live unresolved-issue counts.',
+          }
+        : kpis.sentryStatus === 'error'
+          ? {
+              starvedTitle: 'Sentry fetch failed',
+              starvedDescription: 'The last live pull errored — see the Errors tab for in-app incidents in the meantime.',
+            }
+          : {}),
     },
     {
       key: 'incident-groups-24h',
@@ -178,10 +194,14 @@ function SignalBoard({
   kpis: OverviewKpis;
   watcher: Array<WatcherSignal & { stale: boolean }>;
 }) {
+  // `href` on the Lifting row (bridge-tab-audit-p0p1 overview Finding 2) —
+  // Overview already computed this count with nowhere to click through to;
+  // /admin/lifting is that destination now. Golf/Baseball get the same
+  // treatment for consistency (previously only decorative, no href).
   const activity = [
-    ['Golf', kpis.activityToday.golf],
-    ['Baseball', kpis.activityToday.baseball],
-    ['Lifting', kpis.activityToday.lifting],
+    ['Golf', kpis.activityToday.golf, '/admin/golf'],
+    ['Baseball', kpis.activityToday.baseball, '/admin/baseball'],
+    ['Lifting', kpis.activityToday.lifting, '/admin/lifting'],
   ] as const;
   const totalActivity = activity.reduce((sum, [, value]) => sum + value, 0);
 
@@ -207,10 +227,14 @@ function SignalBoard({
         <div className="py-3 md:px-4 md:py-0">
           <h2 className="text-eyebrow uppercase text-warm-500">Product activity</h2>
           <div className="mt-3 space-y-2">
-            {activity.map(([label, value]) => {
+            {activity.map(([label, value, href]) => {
               const pct = totalActivity > 0 ? Math.round((value / totalActivity) * 100) : 0;
               return (
-                <div key={label} className="grid grid-cols-[72px_1fr_44px] items-center gap-2">
+                <Link
+                  key={label}
+                  href={href}
+                  className="grid grid-cols-[72px_1fr_44px] items-center gap-2 rounded-fw-md transition-colors hover:bg-surface-sunken"
+                >
                   <span className="text-caption text-warm-600">{label}</span>
                   <span className="h-2 overflow-hidden rounded-full bg-warm-100">
                     <span
@@ -220,7 +244,7 @@ function SignalBoard({
                     />
                   </span>
                   <span className="text-right font-fw-mono text-caption tabular-nums text-warm-900">{value}</span>
-                </div>
+                </Link>
               );
             })}
           </div>

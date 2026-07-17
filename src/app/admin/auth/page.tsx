@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchAuthTab, fetchActiveSessions } from '@/lib/admin/data/auth';
+import { fetchAuthTab, fetchActiveSessions, parseAuthFilters, type AuthTabFilters } from '@/lib/admin/data/auth';
+import { fetchActivationFunnel } from '@/lib/admin/data/activation-funnel';
 import {
   StatusPill,
   MetricCard,
@@ -7,6 +9,8 @@ import {
   TrendChart,
   InlineNotice,
   Surface,
+  SearchField,
+  Button,
   type FwStatusTone,
 } from '@/components/fairway';
 import { SessionsPanel } from '../_components/SessionsPanel';
@@ -15,6 +19,8 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
+import { AuthFilterChips, type AuthFilterChip } from './AuthFilterChips';
+import { ActivationRunway } from './ActivationRunway';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +33,35 @@ const SEVERITY_TONE: Record<string, FwStatusTone> = {
   info: 'neutral',
 };
 
-async function AuthBody() {
-  const tab = await fetchAuthTab();
+const SPORT_CHIP_VALUES = ['golf', 'baseball', 'shared'] as const;
+const EVENT_TYPE_CHIP_VALUES = ['login', 'signup', 'security'] as const;
+
+function chipHref(current: URLSearchParams, param: string, value: string): string {
+  const next = new URLSearchParams(current);
+  if (next.get(param) === value) next.delete(param);
+  else next.set(param, value);
+  const qs = next.toString();
+  return qs ? `/admin/auth?${qs}` : '/admin/auth';
+}
+
+function clearFiltersHref(): string {
+  return '/admin/auth';
+}
+
+/** A user-linked cell — most rows carry a user_id (from admin_events, or
+ *  resolved from login_attempts.email); some legacy/system rows don't, so the
+ *  fallback renders the same text without a link rather than a dead link. */
+function UserLink({ userId, children }: { userId: string | null; children: React.ReactNode }) {
+  if (!userId) return <>{children}</>;
+  return (
+    <Link href={`/admin/users/${userId}`} className="underline decoration-warm-300 hover:decoration-warm-600">
+      {children}
+    </Link>
+  );
+}
+
+async function AuthBody({ filters }: { filters: AuthTabFilters }) {
+  const tab = await fetchAuthTab(filters);
   const signInSeriesEmpty = tab.signInSeries.every((d) => d.y === 0);
 
   return (
@@ -92,7 +125,9 @@ async function AuthBody() {
                     <StatusPill tone={isLocked ? 'danger' : 'warning'} dot size="sm">
                       {isLocked ? 'locked' : 'failed'}
                     </StatusPill>
-                    <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">{l.email}</span>
+                    <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
+                      <UserLink userId={l.user_id}>{l.email}</UserLink>
+                    </span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
                       {l.failed_attempts} failed
                     </span>
@@ -122,7 +157,7 @@ async function AuthBody() {
           {tab.feed.length === 0 ? (
             <PanelNoData
               label="No sign-in activity"
-              description="No logins, signups, or security events in the last 7 days."
+              description="No logins, signups, or security events match the current filters."
             />
           ) : (
             <ul className="divide-y divide-warm-200/60">
@@ -136,7 +171,12 @@ async function AuthBody() {
                   </span>
                   <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
                     {row.title}
-                    {row.user_email ? ` — ${row.user_email}` : ''}
+                    {row.user_email ? (
+                      <>
+                        {' — '}
+                        <UserLink userId={row.user_id}>{row.user_email}</UserLink>
+                      </>
+                    ) : null}
                   </span>
                   <SportBadge sport={(row.sport as BridgeSport) ?? null} />
                   <span className="font-fw-mono text-xs tabular-nums text-warm-500">
@@ -149,6 +189,20 @@ async function AuthBody() {
         </div>
       </Surface>
     </div>
+  );
+}
+
+async function Runway() {
+  const funnel = await fetchActivationFunnel();
+  return (
+    <Surface padding="md">
+      <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+        First 7 days — signup to activation
+      </h2>
+      <div className="mt-4">
+        <ActivationRunway golf={funnel.golf} baseball={funnel.baseball} />
+      </div>
+    </Surface>
   );
 }
 
@@ -173,13 +227,68 @@ async function Sessions() {
   );
 }
 
-export default async function AuthPage() {
+export default async function AuthPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = await searchParams;
+  const filters = parseAuthFilters(params);
+  const current = new URLSearchParams(
+    Object.entries(params).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v] as [string, string]] : [])),
+  );
+  const hasActiveFilters = Boolean(filters.sport || filters.eventType || filters.q);
+
+  const chips: AuthFilterChip[] = [
+    ...SPORT_CHIP_VALUES.map((v) => ({
+      key: `sport:${v}`,
+      label: `sport: ${v}`,
+      href: chipHref(current, 'sport', v),
+      selected: filters.sport === v,
+    })),
+    ...EVENT_TYPE_CHIP_VALUES.map((v) => ({
+      key: `eventType:${v}`,
+      label: `type: ${v}`,
+      href: chipHref(current, 'eventType', v),
+      selected: filters.eventType === v,
+    })),
+  ];
+
   return (
     <div className="space-y-6">
       <AutoRefresh />
+
+      <div className="space-y-3">
+        <form method="get" className="flex flex-wrap items-center gap-2">
+          <SearchField
+            name="q"
+            defaultValue={filters.q ?? ''}
+            placeholder="Search email…"
+            aria-label="Search auth events and lockouts by email"
+            wrapperClassName="max-w-xs"
+          />
+          <Button type="submit" variant="secondary" size="sm">
+            Search
+          </Button>
+          {hasActiveFilters ? (
+            <Button asChild variant="ghost" size="sm">
+              <Link href={clearFiltersHref()}>Clear filters</Link>
+            </Button>
+          ) : null}
+        </form>
+        {/* Sport/event-type chips only narrow the feed below — login_attempts
+            (Lockouts) has no sport/event_type column, only email, so those
+            rows only respond to the search box above (a sport-less table by
+            design — Lift Lab logins land here too). */}
+        <AuthFilterChips chips={chips} ariaLabel="Filter the sign-in feed" />
+      </div>
+
       <PanelBoundary title="Auth & sign-ins">
-        <AuthBody />
+        <AuthBody filters={filters} />
+      </PanelBoundary>
+      <PanelBoundary title="First 7 days">
+        <Runway />
       </PanelBoundary>
       <PanelBoundary title="Active sessions">
         <Sessions />
