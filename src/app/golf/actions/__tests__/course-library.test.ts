@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ── Mocks (declared before importing the action module) ──────────────────────
 const revalidatePath = vi.fn();
@@ -13,7 +13,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, contributeCourseFromRound, listCoursesStrict, getCourseTeeCountsStrict, getTeamSavedCoursesStrict } from '../course-library';
+import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, softDeleteCourse, getCourseTeeHoles, contributeCourseFromRound, listCoursesStrict, getCourseTeeCountsStrict, getTeamSavedCoursesStrict } from '../course-library';
 
 // ── A scriptable, chainable Supabase query-builder mock ──────────────────────
 type Scripted = { maybeSingle?: unknown; single?: unknown; resolve?: unknown };
@@ -212,7 +212,10 @@ describe('getTeamSavedCourses — soft-delete must not leak into a team library'
 
 describe('Phase 5 — unique normalized_name index: 23505 collision handling', () => {
   it('updateCourse surfaces a rename collision as a clear message (not a generic failure)', async () => {
-    const before = { id: 'c1', name: 'Old Name', normalized_name: 'old name', deleted_at: null };
+    // created_by_user_id set: a user-owned course, not a library row — keeps
+    // this test isolated to the 23505 collision path (see the ownership-gate
+    // describe block below for the library-row-blocks-edit behavior itself).
+    const before = { id: 'c1', name: 'Old Name', normalized_name: 'old name', deleted_at: null, created_by_user_id: 'u1' };
     const courses = tableBuilder({
       maybeSingle: { data: before, error: null },                              // the "before" fetch
       single: { data: null, error: { code: '23505', message: 'duplicate key' } }, // the update collides
@@ -227,7 +230,12 @@ describe('Phase 5 — unique normalized_name index: 23505 collision handling', (
   });
 
   it('restoreCourse refuses to un-delete into an active name collision (23505)', async () => {
-    const courses = tableBuilder({ resolve: { data: null, error: { code: '23505', message: 'duplicate key' } } });
+    // maybeSingle: the ownership-gate lookup in setCourseDeleted — created_by_user_id
+    // set so this stays a user-owned-course scenario, isolated to the 23505 path.
+    const courses = tableBuilder({
+      maybeSingle: { data: { id: 'c1', created_by_user_id: 'u1' }, error: null },
+      resolve: { data: null, error: { code: '23505', message: 'duplicate key' } },
+    });
     currentClient = makeClient({ id: 'u1' }, {
       golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
       golf_courses: courses,
@@ -330,5 +338,154 @@ describe('updateTee — destructive-write guard', () => {
     expect(res).toEqual({ success: false, error: 'At least one valid hole is required to replace the hole set' });
     // The early return must prevent ever touching the holes table.
     expect(client.from).not.toHaveBeenCalledWith('golf_course_tee_holes');
+  });
+});
+
+describe('#913 part 2 — library-owned courses require a super admin to edit/remove', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('updateCourse blocks a non-admin coach from editing a library row (created_by_user_id null)', async () => {
+    const before = {
+      id: 'c1', name: 'Pinehurst No. 2', normalized_name: 'pinehurst 2',
+      deleted_at: null, created_by_user_id: null,
+    };
+    const courses = tableBuilder({ maybeSingle: { data: before, error: null } });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+    });
+
+    const res = await updateCourse('c1', { name: 'Renamed' });
+
+    expect(res).toEqual({ success: false, error: 'This is a shared library course — only an admin can edit it.' });
+    expect(courses._calls.update).toBeUndefined(); // never reaches the write
+  });
+
+  it('updateCourse allows a super admin (SUPER_ADMIN_USER_IDS allowlist) to edit a library row', async () => {
+    vi.stubEnv('SUPER_ADMIN_USER_IDS', 'u1,someone-else');
+    const before = {
+      id: 'c1', name: 'Pinehurst No. 2', normalized_name: 'pinehurst 2',
+      deleted_at: null, created_by_user_id: null,
+    };
+    const after = { ...before, name: 'Renamed', normalized_name: 'renamed' };
+    const courses = tableBuilder({
+      maybeSingle: { data: before, error: null },
+      single: { data: after, error: null },
+    });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+      golf_course_edit_history: tableBuilder({ resolve: { data: null, error: null } }),
+    });
+
+    const res = await updateCourse('c1', { name: 'Renamed' });
+    expect(res.success).toBe(true);
+  });
+
+  it('updateCourse leaves a team/user-contributed course editable by any authenticated coach (open-contribution model unchanged)', async () => {
+    const before = {
+      id: 'c1', name: 'My Local Club', normalized_name: 'my local club',
+      deleted_at: null, created_by_user_id: 'some-other-real-user',
+    };
+    const after = { ...before, name: 'Renamed', normalized_name: 'renamed' };
+    const courses = tableBuilder({
+      maybeSingle: { data: before, error: null },
+      single: { data: after, error: null },
+    });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+      golf_course_edit_history: tableBuilder({ resolve: { data: null, error: null } }),
+    });
+
+    const res = await updateCourse('c1', { name: 'Renamed' });
+    expect(res.success).toBe(true);
+  });
+
+  it('softDeleteCourse blocks a non-admin coach from removing a library row', async () => {
+    const courses = tableBuilder({
+      maybeSingle: { data: { id: 'c1', created_by_user_id: null }, error: null },
+    });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+    });
+
+    const res = await softDeleteCourse('c1');
+
+    expect(res).toEqual({ success: false, error: 'This is a shared library course — only an admin can remove it.' });
+    expect(courses._calls.update).toBeUndefined();
+  });
+
+  it('softDeleteCourse allows a super admin to remove a library row', async () => {
+    vi.stubEnv('SUPER_ADMIN_USER_IDS', 'u1');
+    const courses = tableBuilder({
+      maybeSingle: { data: { id: 'c1', created_by_user_id: null }, error: null },
+      resolve: { data: null, error: null },
+    });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+      golf_course_edit_history: tableBuilder({ resolve: { data: null, error: null } }),
+    });
+
+    const res = await softDeleteCourse('c1');
+    expect(res.success).toBe(true);
+  });
+
+  it('softDeleteCourse leaves a team/user-contributed course removable by any authenticated coach (open-contribution model unchanged)', async () => {
+    const courses = tableBuilder({
+      maybeSingle: { data: { id: 'c1', created_by_user_id: 'some-other-real-user' }, error: null },
+      resolve: { data: null, error: null },
+    });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+      golf_course_edit_history: tableBuilder({ resolve: { data: null, error: null } }),
+    });
+
+    const res = await softDeleteCourse('c1');
+    expect(res.success).toBe(true);
+  });
+});
+
+describe('getCourseTeeHoles — #913 part 3 (course detail "Holes" summary)', () => {
+  it('returns {} for an unauthenticated caller', async () => {
+    currentClient = makeClient(null);
+    expect(await getCourseTeeHoles('c1')).toEqual({});
+  });
+
+  it('returns {} when the course has no active tees (skips the holes query)', async () => {
+    const tees = tableBuilder({ resolve: { data: [], error: null } });
+    const client = makeClient({ id: 'u1' }, { golf_course_tees: tees });
+    currentClient = client;
+
+    expect(await getCourseTeeHoles('c1')).toEqual({});
+    expect(client.from).not.toHaveBeenCalledWith('golf_course_tee_holes');
+  });
+
+  it('groups hole rows by tee_id, scoped to only this course’s active tee ids', async () => {
+    const tees = tableBuilder({ resolve: { data: [{ id: 't1' }, { id: 't2' }], error: null } });
+    const holes = tableBuilder({
+      resolve: {
+        data: [
+          { id: 'h1', tee_id: 't1', hole_number: 1, par: 4, yardage: 400, handicap_index: 7 },
+          { id: 'h2', tee_id: 't2', hole_number: 1, par: 5, yardage: 520, handicap_index: 3 },
+          { id: 'h3', tee_id: 't1', hole_number: 2, par: 3, yardage: 175, handicap_index: 15 },
+        ],
+        error: null,
+      },
+    });
+    currentClient = makeClient({ id: 'u1' }, { golf_course_tees: tees, golf_course_tee_holes: holes });
+
+    const res = await getCourseTeeHoles('c1');
+
+    expect(res['t1']).toHaveLength(2);
+    expect(res['t2']).toHaveLength(1);
+    expect(res['t1']![0]!.hole_number).toBe(1);
+    expect(res['t1']![1]!.hole_number).toBe(2);
+    expect(holes._calls.in).toContainEqual(['tee_id', ['t1', 't2']]);
   });
 });
