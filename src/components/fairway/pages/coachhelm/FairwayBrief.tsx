@@ -1014,6 +1014,15 @@ function CategoryHealthRow({ cat }: { cat: TeamCategory }) {
             )}
           />
           <span className="font-fw-sans text-body-sm text-text-secondary">{evidence.message}</span>
+          {/* Fixes #922 (Phase 1) — badges a genuine engine-backed sentence
+              (assembleBriefEngineInsights, from evidence.counterfactual on a
+              real golf_coach_insights row) with its real strokes-saved figure.
+              Absent on the hand-written template rows (no fabricated number). */}
+          {evidence.engineBacked && evidence.strokesSavedPerRound != null ? (
+            <Badge tone="warning" size="sm" className="ml-auto shrink-0">
+              {evidence.strokesSavedPerRound.toFixed(1)}/rd
+            </Badge>
+          ) : null}
         </div>
       ) : null}
 
