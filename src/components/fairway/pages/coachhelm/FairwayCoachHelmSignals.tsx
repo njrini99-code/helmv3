@@ -165,6 +165,16 @@ export interface FairwayCoachHelmSignalsProps {
   /* per-route initial data (SSR-fetched above the fork; UNCHANGED actions) */
   initialInsights?: EvidenceInsight[];
   initialPatterns?: ExtendedPattern[];
+  /**
+   * `player_id -> display name` for the coach's team roster (SSR-resolved via
+   * `getTeamPlayers`). Insight-sourced rows (alerts/insights) don't carry a
+   * player name of their own — only patterns do (resolved inline by
+   * `getTeamPatterns`) — so this is how the "By player" grouping gets a real
+   * name instead of falling back to "Unknown player" for every row. Optional:
+   * omitting it just means insight rows group under "Unknown player", the
+   * prior (degraded) behavior — never a hard failure.
+   */
+  playerNames?: Record<string, string>;
 
   /* shell chrome */
   /** Urgent+high open-signal count, computed once server-side (shell badge). */
@@ -287,6 +297,7 @@ export function FairwayCoachHelmSignals({
   defaultFilter,
   initialInsights = [],
   initialPatterns = [],
+  playerNames,
   signalCount,
   showScanTeam = false,
   title,
@@ -339,7 +350,7 @@ export function FairwayCoachHelmSignals({
   const [isBulkPending, startActionTransition] = useTransition();
 
   /* -- P058: the TRUE eligible insight total (post rank+dedupe, pre-100-slice)
-        from the meta read, so the "Loaded" tile can honestly disclose
+        from the meta read, so the "Showing" tile can honestly disclose
         "N of TOTAL" rather than silently truncating at the cap. Insights-only;
         patterns carry their own `patternCounts`. null until first load. */
   const [eligibleTotal, setEligibleTotal] = useState<number | null>(null);
@@ -619,21 +630,46 @@ export function FairwayCoachHelmSignals({
   /* ── project both sources into the ONE row vocabulary ──────────────────── */
   const allRows: SignalRow[] = useMemo(() => {
     if (isPatterns) return patternsToSignalRows(patterns);
-    return insightsToSignalRows(insights);
-  }, [isPatterns, patterns, insights]);
+    return insightsToSignalRows(insights, playerNames);
+  }, [isPatterns, patterns, insights, playerNames]);
 
-  // Team "where are we bleeding strokes" rollup (LeakBoard) — groups the live
-  // insights by skill category by summed stroke-impact. Previously orphaned
-  // (vizlab demo only); fed here from the SAME live insight rows the list shows.
-  // Insights only (patterns have their own evidence shape); LeakBoard renders
-  // its own honest-empty state, so we just pass what we have.
+  // Team "where are we bleeding strokes" rollup (LeakBoard) — groups insights
+  // by skill category by summed stroke-impact. Fed from its OWN full
+  // team-wide read (below), NOT the active sub-tab's `insights` state: that
+  // state is scoped per route (e.g. /alerts fetches urgent+high ONLY, via
+  // `priorities: defaultFilter.fetchPriorities`; /insights fetches the full
+  // range), so reusing it made the SAME "Where the team is bleeding" banner
+  // silently re-total depending on which sub-tab was open. A stable, whole-
+  // team source means the board reads the same number on /alerts and
+  // /insights. Insights only (patterns have their own evidence shape);
+  // LeakBoard renders its own honest-empty state, so we just pass what we have.
+  const [leakSourceInsights, setLeakSourceInsights] = useState<EvidenceInsight[]>([]);
+  useEffect(() => {
+    if (isPatterns) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        // Deliberately NO `priorities` filter — the whole team, every
+        // severity, is the stable scope this rollup promises.
+        const res = await getInsightsForCoachWithMeta(coachId, { limit: 100 });
+        if (!cancelled && res.ok) setLeakSourceInsights(res.data);
+      } catch {
+        // Best-effort / failure-silent — the board just stays at its own
+        // honest empty state, never a stale or wrong total.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isPatterns, coachId]);
+
   const leakInsights: LeakInsight[] = useMemo(() => {
     if (isPatterns) return [];
     const PRIORITY: Record<string, LeakInsight['priority']> = {
       critical: 'urgent', urgent: 'urgent', high: 'high', medium: 'medium', low: 'low', info: 'low',
     };
     const out: LeakInsight[] = [];
-    for (const ins of insights) {
+    for (const ins of leakSourceInsights) {
       const impact = ins.evidence?.strokes_impact;
       if (typeof impact !== 'number' || impact === 0) continue;
       out.push({
@@ -648,7 +684,7 @@ export function FairwayCoachHelmSignals({
       });
     }
     return out;
-  }, [isPatterns, insights]);
+  }, [isPatterns, leakSourceInsights]);
 
   /* ── client-side filter (ported applyClientFilters) ────────────────────── */
   const weight: Record<string, number> = useMemo(
@@ -1124,15 +1160,24 @@ export function FairwayCoachHelmSignals({
     return Array.from(seen.entries()).map(([value, label]) => ({ value, label }));
   }, [allRows]);
 
-  /* ── header summary tiles (honest counts, never fabricated) ────────────── */
+  /* ── header summary tiles (honest counts, never fabricated) ──────────────
+     "Urgent + high" is a SUBSET of "Open" — both scoped to open rows, priority
+     the narrower filter — so the tiles can never contradict each other (the
+     old version counted urgent+high across EVERY loaded row regardless of
+     status, which let a sub-tab that pre-filtered its server fetch to
+     urgent/high-only, like /alerts, show "Urgent + high" HIGHER than "Open"
+     whenever a few of those loaded rows were already acknowledged/resolved —
+     e.g. 13 urgent+high vs 10 open, reading as if there were MORE urgent
+     signals than open ones). This also now matches the shell badge's own
+     semantics (`getAlertCounts().counts.critical` — open urgent+high only). */
   const summary = useMemo(() => {
-    const open = allRows.filter(
+    const openRows = allRows.filter(
       (r) => r.status === 'active' || r.status === 'Detected' || r.status === 'Confirmed',
-    ).length;
-    const urgent = allRows.filter(
+    );
+    const urgent = openRows.filter(
       (r) => r.priority === 'critical' || r.priority === 'high',
     ).length;
-    return { total: allRows.length, open, urgent };
+    return { total: allRows.length, open: openRows.length, urgent };
   }, [allRows]);
 
   /* P058: honest "of N" footnote on the Loaded tile when the true eligible set
@@ -1142,8 +1187,11 @@ export function FairwayCoachHelmSignals({
      IS a known overflow — otherwise the value already IS complete. */
   const loadedFootnote = useMemo<string | undefined>(() => {
     if (isPatterns) {
+      // "capped at N" (not "showing first N") — the tile label itself is
+      // "Showing", so pairing it with a footnote that repeats the word read
+      // as a stutter ("SHOWING 5 / showing first 5").
       if (patternCounts?.capped) {
-        return `showing first ${summary.total}`;
+        return `capped at ${summary.total}`;
       }
       return undefined;
     }
@@ -1152,6 +1200,16 @@ export function FairwayCoachHelmSignals({
     }
     return undefined;
   }, [isPatterns, patternCounts, eligibleTotal, allRows.length, summary.total]);
+
+  /** The sub-tab noun the KPI tiles are scoped to — each tile already reflects
+   *  ONLY the active segment's own data (its own fetch/state), so the fix is
+   *  labeling that scope honestly instead of a generic "signals" that reads as
+   *  if all three sub-tabs shared one team-wide count. */
+  const SIGNAL_NOUN: Record<SignalsSegmentId, string> = {
+    alerts: 'alerts',
+    insights: 'insights',
+    patterns: 'patterns',
+  };
 
   /* ── grouping — drives BOTH the dense default feed and the grouped view ── */
   // While the smart-default shortlist is active, render it FLAT — a curated
@@ -1587,20 +1645,31 @@ export function FairwayCoachHelmSignals({
 
         {/* honest summary tiles — never fabricate a 0%; show counts only.
             Compact 3-up even on mobile so the triage feed isn't pushed below
-            the fold by three full-width stacked cards (premium-polish pass). */}
+            the fold by three full-width stacked cards (premium-polish pass).
+            All three tiles are scoped to the ACTIVE sub-tab's own data (its
+            own fetch/state) — the label now says so explicitly ("Open
+            alerts" on /alerts, "Open insights" on /insights, "Open patterns"
+            on /patterns) instead of a generic "Open signals" that read as if
+            it were a stable team-wide number, silently re-scoping as the
+            coach switched tabs. */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <MetricCard label="Open signals" value={summary.open} />
+          <MetricCard label={`Open ${SIGNAL_NOUN[activeSegment]}`} value={summary.open} />
           {/* P035: no `goodDirection` here — it only colors a `delta` chip, and
-              there is no delta on this tile, so it was a dead no-op prop. */}
+              there is no delta on this tile, so it was a dead no-op prop.
+              Scoped to the SAME open rows as the tile before it (see the
+              `summary` useMemo above), so this can never read higher than
+              "Open" — it's a severity breakdown OF the open count, not an
+              independent count across every loaded row regardless of status. */}
           <MetricCard label="Urgent + high" value={summary.urgent} />
-          {/* "Loaded" (not "Total"): this counts the rows currently in view —
-              the read caps at limit:100 and the smart default narrows further —
-              so labeling it "Total" over-claims completeness when more are
-              eligible than loaded. P058: when the eligible total exceeds the
-              loaded set, disclose "of N" honestly rather than silently
-              truncating; the footnote earns the tile its completeness claim. */}
+          {/* "Showing" (not "Loaded" — dev-speak a coach shouldn't have to
+              parse, and not "Total", which over-claims completeness when more
+              are eligible than loaded: the read caps at limit:100 and the
+              smart default narrows further). P058: when the eligible total
+              exceeds the loaded set, disclose "of N" honestly rather than
+              silently truncating; the footnote earns the tile its
+              completeness claim. */}
           <MetricCard
-            label="Loaded"
+            label="Showing"
             value={summary.total}
             footnote={loadedFootnote}
           />

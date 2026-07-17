@@ -274,8 +274,24 @@ function formatComparisonValue(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
-/** Project a single evidence insight into the shared row shape. */
-export function insightToSignalRow(insight: EvidenceInsight): SignalRow {
+/**
+ * Project a single evidence insight into the shared row shape.
+ *
+ * `playerNames` is an OPTIONAL `player_id -> display name` lookup (the coach's
+ * team roster, SSR-resolved from `golf_players` by the route fork). Insights
+ * themselves never carry a resolved name — `EvidenceInsight` is joined off
+ * `golf_coach_insights` only — so without this map every insight-sourced row
+ * left `playerName` `undefined` and the "By player" grouping's fallback
+ * (`r.playerName?.trim() || 'Unknown player'`) collapsed EVERY insight/alert
+ * into one "Unknown player" bucket, unlike patterns (which resolve the name
+ * inline via `getTeamPatterns`' own `golf_players` join). A missing map entry
+ * (e.g. a player removed from the roster) still falls back to `undefined` —
+ * never a fabricated name.
+ */
+export function insightToSignalRow(
+  insight: EvidenceInsight,
+  playerNames?: Record<string, string>,
+): SignalRow {
   const categoryLabel = titleCaseToken(insight.category) || 'Signal';
   const ev = insight.evidence;
   return {
@@ -286,7 +302,7 @@ export function insightToSignalRow(insight: EvidenceInsight): SignalRow {
     body: insight.content ?? '',
     overline: `${categoryLabel} · Signal`,
     playerId: insight.player_id,
-    playerName: undefined,
+    playerName: playerNames?.[insight.player_id] || undefined,
     category: insight.category,
     status: insight.status,
     createdAt: insight.created_at,
@@ -443,7 +459,11 @@ export function patternsToSignalRows(patterns: ExtendedPattern[]): SignalRow[] {
   return patterns.map(patternToSignalRow);
 }
 
-/** Batch helper: project an array of insights. */
-export function insightsToSignalRows(insights: EvidenceInsight[]): SignalRow[] {
-  return insights.map(insightToSignalRow);
+/** Batch helper: project an array of insights. `playerNames` is forwarded to
+ *  every row — see `insightToSignalRow` for why it's needed. */
+export function insightsToSignalRows(
+  insights: EvidenceInsight[],
+  playerNames?: Record<string, string>,
+): SignalRow[] {
+  return insights.map((insight) => insightToSignalRow(insight, playerNames));
 }

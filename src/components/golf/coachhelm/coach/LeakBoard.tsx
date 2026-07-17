@@ -9,12 +9,18 @@
  * strokes." A coach with 12 players and 90 seconds needs the latter.
  *
  * The LeakBoard regroups live insights by skill category and makes the UNIT of
- * every row the summed STROKE-IMPACT (−X.X str/rd), biggest bleed first — so the
- * flood of insights collapses into a triage board read in one scan. Each row
- * carries its leak count, the players affected, the worst severity, and a
- * "high bleed" flag at ≥ 0.8 str/rd.
+ * every row the SUMMED stroke-impact across every leak in that category —
+ * biggest bleed first — so the flood of insights collapses into a triage
+ * board read in one scan. Each row carries its leak count, the players
+ * affected, the worst severity, and a "high bleed" flag at ≥ `flameThreshold`.
  *
- * Honesty: stroke-impact is the engine's own counterfactual magnitude (already
+ * Honesty: the total is a SUM across every player and every leak insight in
+ * the category — NOT a per-round rate. It used to be labeled "str/rd" (a
+ * per-round unit), which read as if −26.4 meant a team losing 26 strokes
+ * EVERY round — 8x the genuine team SG-putting figure (~−3.19/rd) computed
+ * from real rounds. The label now says what the number actually is: a
+ * cross-player, cross-insight total for the window, never a rate. Stroke-
+ * impact itself is still the engine's own counterfactual magnitude (already
  * confidence- and sample-gated upstream); the board sums what the engine
  * surfaced, never invents a number. Decoupled shape — no server import.
  * ========================================================================== */
@@ -36,7 +42,8 @@ export interface LeakInsight {
 
 export interface LeakBoardProps {
   insights: LeakInsight[];
-  /** str/rd at or above which a category is flagged a high bleed. */
+  /** Summed total strokes (across every leak in the category) at or above
+   *  which it's flagged a high bleed. NOT a per-round rate. */
   flameThreshold?: number;
   className?: string;
 }
@@ -109,7 +116,7 @@ export function LeakBoard({ insights, flameThreshold = 0.8, className }: LeakBoa
         <p className="text-body-sm text-text-secondary">
           {insights.length} leak{insights.length !== 1 ? 's' : ''}
           {totalPlayers > 0 ? <> across {totalPlayers} player{totalPlayers !== 1 ? 's' : ''}</> : null} —
-          biggest stroke-bleed first.
+          total strokes lost this window, biggest bleed first.
         </p>
 
         <div className="space-y-3">
@@ -119,9 +126,12 @@ export function LeakBoard({ insights, flameThreshold = 0.8, className }: LeakBoa
               <div key={r.label} className="space-y-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-body-sm font-medium text-text-primary">{r.label}</span>
+                  {/* "total" (never "str/rd") — this is a SUM across every leak
+                      insight for every player in the category, not a per-round
+                      rate. See the file header for why that distinction matters. */}
                   <span className="shrink-0 font-fw-mono text-body-sm tabular-nums text-text-primary">
                     −{r.total.toFixed(1)}
-                    <span className="ml-1 text-caption text-text-tertiary">str/rd</span>
+                    <span className="ml-1 text-caption text-text-tertiary">total</span>
                   </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-surface-sunken">
