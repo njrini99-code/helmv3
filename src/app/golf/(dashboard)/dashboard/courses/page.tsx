@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import {
   listCoursesStrict,
   getCourseTeeCountsStrict,
@@ -32,6 +33,10 @@ export default async function CoursesPage() {
     getTeamSavedCoursesStrict(),
   ]);
 
+  // #913 part 2 — shared library courses (no human creator) may only be
+  // edited/removed by a super admin; everything else keeps open contribution.
+  const isSuperAdmin = isSuperAdminUserId(session.userId, process.env.SUPER_ADMIN_USER_IDS);
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <CourseLibraryClient
@@ -39,6 +44,7 @@ export default async function CoursesPage() {
         teeCounts={teeCounts}
         savedCourses={savedCourses}
         canManageTeam={userRole === 'coach'}
+        isSuperAdmin={isSuperAdmin}
       />
     </div>
   );

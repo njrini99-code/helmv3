@@ -15,14 +15,14 @@ import {
   IconX, IconMapPin, IconFlag, IconPlus, IconPencil, IconStar, IconUpload, IconTrash, IconCheck,
 } from '@/components/icons';
 import {
-  getCourseDetail, getTeeWithHoles, saveTeamCourse, unsaveTeamCourse,
+  getCourseDetail, getCourseTeeHoles, getTeeWithHoles, saveTeamCourse, unsaveTeamCourse,
   setCourseImageUrl, removeCourseImage, setTeamCoursePinned, setTeamCourseDefaultTee,
   softDeleteCourse, softDeleteTee,
 } from '@/app/golf/actions/course-library';
 import { uploadCourseImage } from '@/lib/golf/upload-course-image';
 import { safeCourseWebsiteUrl } from '@/lib/golf/course-library';
 import type {
-  GolfCourse, GolfCourseTee, GolfCourseTeeWithHoles, GolfTeamSavedCourseWithCourse,
+  GolfCourse, GolfCourseTee, GolfCourseTeeHole, GolfCourseTeeWithHoles, GolfTeamSavedCourseWithCourse,
 } from '@/lib/types/golf-course';
 
 export interface CourseDetailDrawerProps {
@@ -30,6 +30,11 @@ export interface CourseDetailDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canManageTeam: boolean;
+  /** #913 part 2 — only a super admin may edit/remove a shared LIBRARY course
+   *  (one with no human creator, i.e. `course.created_by_user_id == null`).
+   *  Team/user-contributed courses keep the pre-existing open-contribution
+   *  model regardless of this flag. */
+  isSuperAdmin: boolean;
   savedCourseIds: Set<string>;
   /** Saved-course rows keyed by course id — supplies pin + default-tee state. */
   savedById?: Map<string, GolfTeamSavedCourseWithCourse>;
@@ -42,11 +47,12 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export function CourseDetailDrawer({
-  courseId, open, onOpenChange, canManageTeam, savedCourseIds, savedById, onChanged,
+  courseId, open, onOpenChange, canManageTeam, isSuperAdmin, savedCourseIds, savedById, onChanged,
 }: CourseDetailDrawerProps) {
   const { showToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [detail, setDetail] = useState<{ course: GolfCourse; tees: GolfCourseTee[] } | null>(null);
+  const [holesByTeeId, setHolesByTeeId] = useState<Record<string, GolfCourseTeeHole[]>>({});
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [editCourseOpen, setEditCourseOpen] = useState(false);
@@ -76,17 +82,32 @@ export function CourseDetailDrawer({
     setDefaultTeeId(savedRow?.default_tee_id ?? null);
   }, [savedRow]);
 
+  // Hole data (for the read-only "Holes" summary, #913 part 3) is fetched
+  // alongside the course detail but is deliberately non-fatal: a failure here
+  // must never block the rest of the drawer (tee sets, save/pin, edit) —
+  // it just leaves the Holes section empty.
   const reload = async (id: string) => {
-    const d = await getCourseDetail(id);
+    const [d, holes] = await Promise.all([
+      getCourseDetail(id),
+      getCourseTeeHoles(id).catch(() => ({})),
+    ]);
     setDetail(d);
+    setHolesByTeeId(holes);
   };
 
   const loadDetail = (id: string) => {
     setLoading(true);
     setLoadError(false);
     setDetail(null);
-    getCourseDetail(id)
-      .then((d) => setDetail(d))
+    setHolesByTeeId({});
+    Promise.all([
+      getCourseDetail(id),
+      getCourseTeeHoles(id).catch(() => ({})),
+    ])
+      .then(([d, holes]) => {
+        setDetail(d);
+        setHolesByTeeId(holes);
+      })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   };
@@ -214,6 +235,12 @@ export function CourseDetailDrawer({
   const tees = detail?.tees ?? [];
   const location = course ? [course.city, course.state].filter(Boolean).join(', ') : '';
 
+  // #913 part 2 — a course with no human creator shipped with the shared
+  // library; only a super admin may edit or remove it. Team/user-contributed
+  // courses (created_by_user_id set) keep the existing open-contribution model.
+  const isLibraryOwned = course ? course.created_by_user_id == null : false;
+  const canEditCourse = !isLibraryOwned || isSuperAdmin;
+
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
@@ -272,9 +299,19 @@ export function CourseDetailDrawer({
               />
               {/* title overlay */}
               <div className="absolute inset-x-0 bottom-0 p-5">
-                <h2 className="font-fw-display text-title-2 font-semibold tracking-tight text-white drop-shadow-sm">
-                  {course?.name ?? (loadError ? 'Couldn’t load course' : 'Loading…')}
-                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-fw-display text-title-2 font-semibold tracking-tight text-white drop-shadow-sm">
+                    {course?.name ?? (loadError ? 'Couldn’t load course' : 'Loading…')}
+                  </h2>
+                  {isLibraryOwned && (
+                    <span
+                      className="inline-flex items-center rounded-full bg-black/35 px-2 py-0.5 text-caption font-medium text-white/85 backdrop-blur-sm"
+                      title="A shared course from the cloud library — editing and removal are admin-only"
+                    >
+                      Library course
+                    </span>
+                  )}
+                </div>
                 {location && (
                   <p className="mt-0.5 inline-flex items-center gap-1 text-body-sm text-white/85">
                     <IconMapPin size={13} aria-hidden /> {location}
@@ -333,12 +370,15 @@ export function CourseDetailDrawer({
                     {pinned ? 'Pinned' : 'Pin to top'}
                   </Button>
                 )}
-                {course && (
+                {/* #913 part 2 — a library-owned course (no human creator) can
+                    only be edited/removed by a super admin; team/user-contributed
+                    courses keep the pre-existing open-contribution model. */}
+                {course && canEditCourse && (
                   <Button variant="ghost" size="sm" onClick={() => setEditCourseOpen(true)}>
                     <IconPencil size={14} aria-hidden /> Edit course
                   </Button>
                 )}
-                {canManageTeam && course && (
+                {canManageTeam && course && canEditCourse && (
                   <Button
                     variant="danger"
                     size="sm"
@@ -417,6 +457,24 @@ export function CourseDetailDrawer({
                   </ul>
                 )}
               </section>
+
+              {/* Holes — #913 part 3: a read-only compact scorecard (par row +
+                  yardage row per tee) so a coach can SEE the routing without
+                  opening tee-set edit (which is where hole data otherwise
+                  lives exclusively). Skipped entirely while tees are loading
+                  or none of the loaded tees have hole data yet. */}
+              {!loading && tees.some((tee) => (holesByTeeId[tee.id]?.length ?? 0) > 0) && (
+                <section>
+                  <h3 className="mb-2 font-fw-sans text-body font-semibold text-text-primary">
+                    Holes
+                  </h3>
+                  <div className="space-y-3">
+                    {tees.map((tee) => (
+                      <TeeHolesSummary key={tee.id} tee={tee} holes={holesByTeeId[tee.id] ?? []} />
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {course?.last_edited_at && (
                 <p className="text-caption text-text-tertiary">
@@ -579,6 +637,82 @@ function TeeRow({
           <IconTrash size={14} aria-hidden />
         </Button>
       )}
+    </div>
+  );
+}
+
+/**
+ * Read-only compact scorecard for one tee — a "Hole" header row, a "Par"
+ * row, and a "Yds" row, all horizontally scrollable together (#913 part 3).
+ * Purely presentational: no edit affordance here on purpose — hole editing
+ * stays exclusively in TeeFormDrawer (Edit tee) so there's one place that
+ * can write hole data, and one place (here) to just see it.
+ */
+function TeeHolesSummary({ tee, holes }: { tee: GolfCourseTee; holes: GolfCourseTeeHole[] }) {
+  if (holes.length === 0) return null;
+
+  const byHoleNumber = new Map(holes.map((h) => [h.hole_number, h]));
+  const holeCount = Math.max(tee.holes_count, ...holes.map((h) => h.hole_number));
+  const holeNumbers = Array.from({ length: holeCount }, (_, i) => i + 1);
+
+  return (
+    <div className="rounded-fw-md border border-border-subtle bg-surface p-3">
+      <p className="mb-2 font-fw-sans text-body-sm font-semibold text-text-primary">
+        {tee.tee_name}
+        {tee.is_draft && <span className="ml-1.5 font-normal text-text-tertiary">· partial</span>}
+      </p>
+      <div className="overflow-x-auto">
+        <div className="inline-flex min-w-full flex-col gap-1">
+          <HoleValuesRow
+            label="Hole"
+            values={holeNumbers}
+            labelClassName="text-text-tertiary"
+            valueClassName="text-text-tertiary"
+          />
+          <HoleValuesRow
+            label="Par"
+            values={holeNumbers.map((n) => byHoleNumber.get(n)?.par ?? null)}
+          />
+          <HoleValuesRow
+            label="Yds"
+            values={holeNumbers.map((n) => byHoleNumber.get(n)?.yardage ?? null)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HoleValuesRow({
+  label, values, labelClassName, valueClassName,
+}: {
+  label: string;
+  values: ReadonlyArray<number | null>;
+  labelClassName?: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="flex items-center gap-0.5">
+      <span
+        className={cn(
+          'w-9 flex-shrink-0 text-caption font-medium text-text-secondary',
+          labelClassName,
+        )}
+      >
+        {label}
+      </span>
+      {values.map((v, i) => (
+        // Fixed-length hole-number columns (1..N) — position IS the identity.
+        <span
+          key={i}
+          className={cn(
+            'w-7 flex-shrink-0 text-center text-caption tabular-nums text-text-secondary',
+            valueClassName,
+          )}
+        >
+          {v == null ? '—' : v}
+        </span>
+      ))}
     </div>
   );
 }

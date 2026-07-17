@@ -17,6 +17,9 @@ export interface CourseLibraryClientProps {
   savedCourses: GolfTeamSavedCourseWithCourse[];
   /** Coaches may save courses to the team library + manage tees. */
   canManageTeam: boolean;
+  /** #913 part 2 — only a super admin may edit/remove a shared LIBRARY course
+   *  (one with no human creator). Everything else keeps open contribution. */
+  isSuperAdmin: boolean;
 }
 
 function playedMeta(saved: GolfTeamSavedCourseWithCourse): string | undefined {
@@ -30,6 +33,7 @@ export function CourseLibraryClient({
   teeCounts,
   savedCourses,
   canManageTeam,
+  isSuperAdmin,
 }: CourseLibraryClientProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -274,6 +278,7 @@ export function CourseLibraryClient({
         open={selectedCourseId !== null}
         onOpenChange={(o) => !o && setSelectedCourseId(null)}
         canManageTeam={canManageTeam}
+        isSuperAdmin={isSuperAdmin}
         savedCourseIds={new Set(savedCourses.map((s) => s.course_id))}
         savedById={savedById}
         onChanged={refresh}
