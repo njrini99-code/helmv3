@@ -237,7 +237,7 @@ export function HoleShotPath({
                     strokeLinecap="round"
                     strokeDasharray={isPenalty ? '2 1.5' : undefined}
                     opacity={0.92}
-                    initial={variant.interactive ? { pathLength: 0, opacity: 0 } : false}
+                    initial={variant.interactive && !prefersReducedMotion ? { pathLength: 0, opacity: 0 } : false}
                     animate={variant.interactive ? { pathLength: 1, opacity: 0.92 } : undefined}
                     transition={prefersReducedMotion ? { duration: 0 } : (variant.interactive
                         ? {
@@ -262,7 +262,7 @@ export function HoleShotPath({
                 return (
                   <m.g
                     key={`dot-${s.shot_number}`}
-                    initial={variant.interactive ? { scale: 0, opacity: 0 } : false}
+                    initial={variant.interactive && !prefersReducedMotion ? { scale: 0, opacity: 0 } : false}
                     animate={variant.interactive ? { scale: 1, opacity: 1 } : undefined}
                     transition={prefersReducedMotion ? { duration: 0 } : (variant.interactive
                         ? {
