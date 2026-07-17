@@ -102,7 +102,12 @@ export function FairwayRoundCard({ round, isBestOfPeriod, userRole }: FairwayRou
   const hasPutts = round.total_putts !== null;
   const hasAnyMicroStat = hasPutts || fir !== null || gir !== null;
 
-  const city = [round.course_city, round.course_state].filter(Boolean).join(', ');
+  // A bare state code with no city ("Va") reads as a stray, unlabeled
+  // fragment — only render a location when there's an actual city to anchor
+  // it (course_state alone is dropped, not shown bare).
+  const city = round.course_city
+    ? [round.course_city, round.course_state].filter(Boolean).join(', ')
+    : null;
 
   return (
     <Link
@@ -186,7 +191,7 @@ export function FairwayRoundCard({ round, isBestOfPeriod, userRole }: FairwayRou
             )}
           </div>
           <Badge tone="neutral" size="sm" numeric className="flex-shrink-0">
-            {holesPlayed}h
+            {holesPlayed} {holesPlayed === 1 ? 'hole' : 'holes'}
           </Badge>
         </div>
 

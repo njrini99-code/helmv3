@@ -36,6 +36,21 @@ import {
 } from '@/app/baseball/actions/stat-visual-views';
 import type { StatVisualSavedView } from './StatVisualsSection';
 
+/**
+ * A load failure is expected/non-actionable — not "your saved views are
+ * broken" — when it's a permission denial (sanitizeDbError's RLS-denial
+ * message) or the shared demo-account read-only guard. Neither is something
+ * the viewer can act on, so it stays silent; a genuine load failure (network,
+ * unexpected DB error) still toasts for the owner. Matched case-insensitively
+ * against a substring since a thrown server-action error crossing the RSC
+ * boundary can lose its exact message in production.
+ */
+function isSilentLoadFailure(message: string | null | undefined): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return m.includes('permission') || m.includes('live demo');
+}
+
 export interface UseStatVisualViewsResult {
   savedViews: StatVisualSavedView[];
   onSaveView: (input: {
@@ -67,14 +82,23 @@ export function useStatVisualViews(playerId?: string | null): UseStatVisualViews
 
   useEffect(() => {
     let cancelled = false;
+    // Toast id of any "load failed" warning this effect fired, so the
+    // cleanup below can dismiss it — a route change unmounts this hook's
+    // owner but sonner's Toaster is mounted once at the app root, so a
+    // toast fired on the way out would otherwise sit on screen through the
+    // navigation instead of disappearing with the surface that raised it.
+    let pendingToastId: string | number | null = null;
+
     void getStatVisualViews({ playerId: playerId ?? null })
       .then((res) => {
         if (cancelled) return;
         if (!res.success || !res.data) {
-          toast.warning(
-            'Saved views unavailable',
-            res.error ?? 'Could not load your saved chart settings.',
-          );
+          if (!isSilentLoadFailure(res.error)) {
+            pendingToastId = toast.warning(
+              'Saved views unavailable',
+              res.error ?? 'Could not load your saved chart settings.',
+            );
+          }
           return;
         }
         const loaded: StatVisualSavedView[] = res.data.map((v) => ({
@@ -85,13 +109,20 @@ export function useStatVisualViews(playerId?: string | null): UseStatVisualViews
         setSavedViews(loaded);
         savedViewsRef.current = loaded;
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
         // Network-level or unexpected throw — non-fatal, gallery still renders.
-        toast.warning('Saved views unavailable', 'Could not load your saved chart settings.');
+        const message = err instanceof Error ? err.message : null;
+        if (!isSilentLoadFailure(message)) {
+          pendingToastId = toast.warning(
+            'Saved views unavailable',
+            'Could not load your saved chart settings.',
+          );
+        }
       });
     return () => {
       cancelled = true;
+      if (pendingToastId !== null) toast.dismiss(pendingToastId);
     };
   }, [playerId]);
 
