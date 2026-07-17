@@ -1,5 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { updateSession } from '@/lib/supabase/middleware';
+
+/**
+ * updateSession throws `NEXT_PUBLIC_SUPABASE_URL is missing or a placeholder`
+ * / `NEXT_PUBLIC_SUPABASE_ANON_KEY is missing` (src/lib/supabase/middleware.ts)
+ * when the Supabase env vars aren't configured for this deploy. That is a
+ * deploy-time MISCONFIGURATION, not a transient runtime failure — matched by
+ * message since that guard-throw lives in a separate file this proxy doesn't
+ * otherwise need to import from.
+ */
+function isConfigError(error: unknown): boolean {
+  return error instanceof Error && /NEXT_PUBLIC_SUPABASE_(URL|ANON_KEY)/.test(error.message);
+}
 
 const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
 
@@ -65,6 +78,23 @@ export async function proxy(request: NextRequest) {
   try {
     return await updateSession(request);
   } catch (error) {
+    if (isConfigError(error)) {
+      // FAIL CLOSED: this specific error means Supabase env vars are missing
+      // or placeholders, so updateSession never even reached auth.getUser().
+      // Failing open (as every other error path below does) would silently
+      // disable every auth/authorization check in the app for the duration of
+      // the misconfiguration — every request to every protected /baseball,
+      // /golf, /lifting, and /admin route would pass straight through with NO
+      // session validation. A loud 500 is far safer than a silent open door.
+      Sentry.captureException(error, {
+        level: 'fatal',
+        tags: { middleware_failure: 'config' },
+      });
+      return new NextResponse('Service temporarily unavailable. Please try again shortly.', {
+        status: 500,
+      });
+    }
+
     // Supabase-js raises AuthApiError "Invalid Refresh Token: Refresh Token
     // Not Found" whenever a stale or already-rotated refresh-token cookie
     // arrives. That's normal background behaviour for logged-out users and
@@ -75,6 +105,14 @@ export async function proxy(request: NextRequest) {
       console.warn('[Proxy] Stale refresh token; treating session as logged out:', message);
     } else {
       console.warn('[Proxy] Session update failed:', message);
+      // Genuinely transient (network blip to Supabase/GoTrue, cookie parsing
+      // edge cases, …) — keep failing OPEN: a temporary hiccup must not lock
+      // every signed-in user out of the app. Route-level guards remain the
+      // backstop. Captured to Sentry so it's visible, not just console noise.
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: { middleware_failure: 'transient' },
+      });
       // Helm Bridge capture class #3: session-update failures were
       // console.warn-swallowed and invisible. Fire-and-forget to the node
       // logging route (edge-safe: plain fetch, never awaited-to-throw).

@@ -10,7 +10,7 @@ vi.mock('resend', () => ({
   },
 }));
 
-import { sendOpsDigest, __resetOpsTransportForTests } from '@/lib/admin/digest/transport';
+import { sendOpsDigest, sendOpsAlert, __resetOpsTransportForTests } from '@/lib/admin/digest/transport';
 
 const email = { subject: 's', html: '<p>h</p>', text: 't' };
 
@@ -42,5 +42,23 @@ describe('sendOpsDigest', () => {
     expect(mocks.send).toHaveBeenCalledWith(
       expect.objectContaining({ to: 'njrini99@gmail.com', subject: 's' }),
     );
+  });
+
+  it('sendOpsAlert sends text-only alerts without an html field', async () => {
+    const res = await sendOpsAlert({ subject: 'New demo request', text: 'someone@school.edu' });
+    expect(res).toMatchObject({ sent: true, messageId: 'msg-1' });
+    const payload = (mocks.send.mock.calls[0] as unknown as unknown[] | undefined)?.[0] as
+      | Record<string, unknown>
+      | undefined;
+    expect(payload).toMatchObject({ subject: 'New demo request', text: 'someone@school.edu' });
+    expect(payload).not.toHaveProperty('html');
+  });
+
+  it('sendOpsAlert skips with the same fail-soft contract when unconfigured', async () => {
+    vi.stubEnv('OPS_DIGEST_RESEND_API_KEY', '');
+    await expect(sendOpsAlert({ subject: 's', text: 't' })).resolves.toMatchObject({
+      skipped: true, reason: 'ops-transport-not-configured',
+    });
+    expect(mocks.send).not.toHaveBeenCalled();
   });
 });

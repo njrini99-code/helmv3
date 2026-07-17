@@ -7,6 +7,7 @@ export interface DigestData {
   };
   sentry: { unresolved: number | null; regressed: number | null };
   signups24h: Array<{ email: string; role: string }>;
+  demoRequests: { new24h: number; pendingTotal: number };
   activity24h: { golfRounds: number; baseballGames: number; liftSessions: number };
   reds: string[];
 }
@@ -55,6 +56,12 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
     for (const s of data.signups24h) lines.push(`  + ${s.email} (${s.role})`);
     lines.push('');
   }
+  if (data.demoRequests.new24h > 0 || data.demoRequests.pendingTotal > 0) {
+    lines.push(
+      `Demo requests: ${data.demoRequests.new24h} new · ${data.demoRequests.pendingTotal} awaiting reply`,
+      '',
+    );
+  }
   lines.push(
     `Activity: ${data.activity24h.golfRounds} golf rounds · ${data.activity24h.baseballGames} baseball games · ${data.activity24h.liftSessions} lift sessions`,
     '',
@@ -72,6 +79,7 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
   <strong>Sentry:</strong> ${data.sentry.unresolved === null ? 'not configured' : `${data.sentry.unresolved} unresolved · ${data.sentry.regressed ?? 0} regressed`}</p>
   ${data.errors24h.topIncidents.length > 0 ? `<ul>${data.errors24h.topIncidents.map((i) => `<li>${esc(i.title)} — ${i.occurrences}x, ${i.affectedUsers} users</li>`).join('')}</ul>` : ''}
   ${data.signups24h.length > 0 ? `<p><strong>New signups:</strong></p><ul>${data.signups24h.map((s) => `<li>${esc(s.email)} (${esc(s.role)})</li>`).join('')}</ul>` : ''}
+  ${data.demoRequests.new24h > 0 || data.demoRequests.pendingTotal > 0 ? `<p><strong>Demo requests:</strong> ${data.demoRequests.new24h} new · ${data.demoRequests.pendingTotal} awaiting reply</p>` : ''}
   <p><strong>Activity:</strong> ${data.activity24h.golfRounds} golf rounds · ${data.activity24h.baseballGames} baseball games · ${data.activity24h.liftSessions} lift sessions</p>
   <p><a href="https://helmsportslabs.com/admin">Open Helm Bridge →</a></p>
   </body></html>`;

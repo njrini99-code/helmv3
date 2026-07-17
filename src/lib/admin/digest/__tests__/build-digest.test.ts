@@ -6,6 +6,7 @@ const base: DigestData = {
   errors24h: { total: 0, critical: 0, topIncidents: [] },
   sentry: { unresolved: 0, regressed: 0 },
   signups24h: [],
+  demoRequests: { new24h: 0, pendingTotal: 0 },
   activity24h: { golfRounds: 3, baseballGames: 1, liftSessions: 2 },
   reds: [],
 };
@@ -37,5 +38,14 @@ describe('buildDigestEmail', () => {
   it('signups are listed by email + role', () => {
     const email = buildDigestEmail({ ...base, signups24h: [{ email: 'new@coach.com', role: 'coach' }] });
     expect(email.text).toContain('new@coach.com (coach)');
+  });
+
+  it('demo requests render when present and stay silent at zero', () => {
+    const quiet = buildDigestEmail(base);
+    expect(quiet.text).not.toContain('Demo requests');
+
+    const busy = buildDigestEmail({ ...base, demoRequests: { new24h: 1, pendingTotal: 2 } });
+    expect(busy.text).toContain('Demo requests: 1 new · 2 awaiting reply');
+    expect(busy.html).toContain('Demo requests');
   });
 });
