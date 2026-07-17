@@ -10,9 +10,9 @@ const WEEKLY = 7 * DAILY;
 /** Code-defined cadence registry — the "expected" half of expected-vs-actual.
  *  MUST mirror vercel.json crons exactly (contract test enforces). */
 export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
-  { jobType: 'coachhelm-validation', path: '/api/cron/coachhelm-validation', cadenceMinutes: WEEKLY },
+  { jobType: 'coachhelm-validation', path: '/api/cron/coachhelm-validation', cadenceMinutes: 60 },
   { jobType: 'coachhelm-calibration', path: '/api/cron/coachhelm-calibration', cadenceMinutes: DAILY },
-  { jobType: 'coachhelm-safety-net', path: '/api/cron/coachhelm-safety-net', cadenceMinutes: WEEKLY },
+  { jobType: 'coachhelm-safety-net', path: '/api/cron/coachhelm-safety-net', cadenceMinutes: 30 },
   { jobType: 'coachhelm-insight-lifecycle', path: '/api/cron/coachhelm-insight-lifecycle', cadenceMinutes: DAILY },
   { jobType: 'coachhelm-roster-sweep', path: '/api/cron/coachhelm-roster-sweep', cadenceMinutes: DAILY },
   { jobType: 'coach-morning-digest', path: '/api/cron/coach-morning-digest', cadenceMinutes: DAILY },
