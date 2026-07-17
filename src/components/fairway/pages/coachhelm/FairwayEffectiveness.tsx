@@ -119,11 +119,26 @@ import {
  * Honesty thresholds (resolved decisions — deterministic product rule)
  *  • per-bucket InsufficientData when a ConfidenceBucket has < 5 resolved
  *  • a global low-confidence caption while total resolved < 50
- *  • the gauge/ribbon need ≥ 2 validated points before they read a value
+ *  • the ribbon needs ≥ 2 validated points before it draws a line
  * ─────────────────────────────────────────────────────────────────────────── */
 const BUCKET_MIN_RESOLVED = 5;
 const GLOBAL_LOW_CONFIDENCE_RESOLVED = 50;
 const GAUGE_MIN_RESOLVED = 2;
+
+/**
+ * Whether the PRIMARY accuracy headline (the huge "ACCURACY 100%" hero + its
+ * Climbing/Holding delta chip) is trustworthy enough to show a real number.
+ * Gated on `BUCKET_MIN_RESOLVED` — the SAME threshold the calibration side
+ * panel already states in its own copy ("Still calibrating — needs
+ * {BUCKET_MIN_RESOLVED} resolved predictions…"). This used to gate on the
+ * much looser `GAUGE_MIN_RESOLVED` (2), which let a near-empty sample (e.g.
+ * 2 for 2) render an authoritative "100% ▲+8%" headline — a coach reading
+ * the ONE cockpit tile has no way to know that came from two coin flips.
+ * Exported for unit testing.
+ */
+export function isAccuracyHeadlineLive(resolved: number): boolean {
+  return resolved >= BUCKET_MIN_RESOLVED;
+}
 
 /* ════════════════════════════════════════════════════════════════════════════
  * P1-12 — INSIGHT TRUST LAYER (unified event-ledger rollup)
@@ -277,9 +292,20 @@ function TrustTrendGlyph({ trend }: { trend: TrustSignal['recentTrend'] }) {
       </span>
     );
   }
+  // No trend yet (not enough measured outcomes to compute one). Previously a
+  // bare "—" character with no visible label — an orphan placeholder that
+  // reads as broken/meaningless at a glance rather than an honest "not enough
+  // data" state (the title/aria-label were the only context, invisible to a
+  // sighted user scanning the table without hovering). Now matches the SAME
+  // icon idiom as the other three states, dimmed to read as "no data" rather
+  // than a genuine flat trend.
   return (
-    <span className="text-text-tertiary" title="No measured trend yet" aria-label="No measured trend yet">
-      —
+    <span
+      className="inline-flex items-center gap-1 text-text-tertiary/50"
+      title="Not enough outcomes measured yet to show a trend"
+    >
+      <Minus className="h-3.5 w-3.5" aria-hidden />
+      <span className="sr-only">No trend data yet</span>
     </span>
   );
 }
@@ -665,7 +691,7 @@ function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; d
 
   const lowConfidence = resolved > 0 && resolved < GLOBAL_LOW_CONFIDENCE_RESOLVED;
 
-  const live = resolved >= GAUGE_MIN_RESOLVED;
+  const live = isAccuracyHeadlineLive(resolved);
 
   return (
     <InstrumentPanel depth="raised" padding="lg" header="Prediction accuracy" as="section" className="flex flex-col gap-6">
@@ -680,8 +706,8 @@ function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; d
             display={formatPercent(accuracy, 0)}
             size="hero"
             state={live ? 'live' : 'awaiting'}
-            samples={live ? undefined : { have: resolved, need: GAUGE_MIN_RESOLVED }}
-            awaitingLabel="Awaiting predictions"
+            samples={live ? undefined : { have: resolved, need: BUCKET_MIN_RESOLVED }}
+            awaitingLabel="Calibrating"
           />
           {live && typeof climbDelta === 'number' ? (
             <span

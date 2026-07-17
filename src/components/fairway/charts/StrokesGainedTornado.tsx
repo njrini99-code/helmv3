@@ -105,7 +105,13 @@ export function StrokesGainedTornado({
   );
 }
 
-function TornadoInner({
+/**
+ * Exported for unit testing only — the parent `StrokesGainedTornado` always
+ * mounts this through `<ParentSize>`, which needs real DOM layout. Rendering
+ * `TornadoInner` directly with explicit `width`/`height` lets a test assert
+ * on the resulting SVG geometry without fighting ResizeObserver in jsdom.
+ */
+export function TornadoInner({
   width,
   height,
   data,
@@ -130,10 +136,18 @@ function TornadoInner({
     [bound, innerW],
   );
 
+  // Keyed by ROW INDEX, never by `d.label`. Two rows can legitimately share a
+  // label (e.g. `PatternImpactDeck`'s "Most impactful patterns" tornado uses
+  // the player's NAME as the label, and one player can have two separate
+  // high-impact patterns in the top-N) — `scaleBand`'s domain is a distinct
+  // key set, so a duplicate label previously collapsed both rows onto the
+  // SAME band, rendering their bars and value-annotation text on top of each
+  // other (e.g. two adjacent "+4.10" / "+4.67" labels reading as the single
+  // garbled string "+4.10+4.67"). Index-based keys are always unique.
   const yScale = React.useMemo(
     () =>
-      scaleBand<string>({
-        domain: data.map((d) => d.label),
+      scaleBand<number>({
+        domain: data.map((_, i) => i),
         range: [0, innerH],
         padding: ROW_PAD,
       }),
@@ -177,15 +191,15 @@ function TornadoInner({
           strokeDasharray="5 4"
         />
 
-        {data.map((d) => {
-          const y = yScale(d.label) ?? 0;
+        {data.map((d, i) => {
+          const y = yScale(i) ?? 0;
           const valX = xScale(d.value);
           const positive = d.value >= 0;
           const barX = positive ? zeroX : valX;
           const barW = Math.abs(valX - zeroX);
           const fill = positive ? VIZ_DIVERGING.positive : VIZ_DIVERGING.negative;
           return (
-            <g key={d.label}>
+            <g key={`${i}-${d.label}`}>
               {/* category label in the left gutter */}
               <text
                 x={-12}
