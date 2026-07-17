@@ -859,13 +859,26 @@ function CalendarHeader({
           <Menu className="w-5 h-5" />
         </IconButton>
 
-        {/* Editorial title — sculptural, light weight */}
-        <h2 className="text-h3 md:text-h2 font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0">
+        {/* Editorial title — sculptural, light weight.
+            `min-w-0` alone (no floor) let ANY shortfall in the header's
+            available width collapse this all the way to 1-2 characters
+            ("J…") — this is the ONLY item in the row without an explicit
+            min-content floor, so the flex shrink algorithm dumped the ENTIRE
+            deficit onto it even at desktop widths where the deficit was
+            small. Floors from `md:` up (where the longer text-h2 label
+            format is also active) cap how far it can shrink WITHOUT
+            reintroducing the original 390px mobile bug this component
+            already guards against (mobile keeps the unconstrained `min-w-0`
+            base case). */}
+        <h2 className="text-h3 md:text-h2 font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0 md:min-w-[100px] lg:min-w-[150px]">
           {getTitle()}
         </h2>
 
-        {/* Navigation — borderless arrows */}
-        <div className="flex items-center gap-0.5 ml-1">
+        {/* Navigation — borderless arrows. `shrink-0` so these small,
+            fixed-size controls are never asked to give up space to the
+            title — the title's own floor above is the intended pressure
+            valve, not these buttons shrinking unpredictably. */}
+        <div className="flex items-center gap-0.5 ml-1 shrink-0">
           <IconButton variant="default"
             type="button"
             onClick={() => onNavigate('prev')}
@@ -897,7 +910,7 @@ function CalendarHeader({
         <Button variant="ghost"
           type="button"
           onClick={() => onNavigate('today')}
-          className="pill-soft"
+          className="pill-soft shrink-0"
         >
           Today
         </Button>

@@ -92,9 +92,18 @@ export function PremiumEventBlock({
               style={{ backgroundColor: getEventDotColorVar(event.event_type) }}
               aria-hidden="true"
             />
+            {/* `min-w-0` here (not just on the flex-1 ancestor two levels up)
+                is load-bearing: as a flex item of the row above, this span's
+                default `min-width: auto` blocks `truncate`'s ellipsis from
+                ever kicking in — a long title just overflows this pill's
+                right edge into the day cell's neighbor instead of eliding,
+                since MonthView's grid columns are width-capped
+                (`minmax(0,1fr)`) but nothing between here and there clips
+                the overflow with a scrollbar; it just visually clips at the
+                calendar's right edge for the rightmost day-of-week column. */}
             <span
               className={cn(
-                'font-medium truncate leading-tight',
+                'font-medium truncate leading-tight min-w-0',
                 compact ? 'text-xs' : 'text-body-sm',
                 event.status === 'cancelled'
                   ? 'text-warm-400 line-through'
