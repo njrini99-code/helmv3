@@ -115,7 +115,7 @@ function LoginContent() {
         >
           {/* Brand lockup */}
           <m.div
-            initial={{ opacity: 0, y: -6 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
             onAnimationComplete={() => setBrandMountDone(true)}
@@ -159,7 +159,7 @@ function LoginContent() {
             id="login-form"
             role="region"
             aria-label="Login form"
-            initial={{ opacity: 0, y: 14 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] })}
             className="w-full max-w-[420px] mt-5 shrink-0"
@@ -188,7 +188,7 @@ function LoginContent() {
 
             {successMessage && (
               <m.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4 bg-primary-400/10 border border-primary-400/30 text-primary-700 px-4 py-3 rounded-xl text-sm"
               >

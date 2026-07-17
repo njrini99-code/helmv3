@@ -164,7 +164,7 @@ function DemoGateContent() {
         >
           {/* Brand mark */}
           <m.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={motionStagger(0)}
             className="flex flex-col items-center gap-2 mb-6 sm:mb-8"
@@ -194,7 +194,7 @@ function DemoGateContent() {
 
           {/* Headline + value props */}
           <m.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={motionStagger(0.1)}
             className="text-center mb-6 sm:mb-8 max-w-[380px]"
@@ -243,7 +243,7 @@ function DemoGateContent() {
             id="demo-form"
             role="region"
             aria-label="Demo access form"
-            initial={{ opacity: 0, y: 16 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={motionCard}
             className="w-full max-w-[420px]"
@@ -301,7 +301,7 @@ function DemoGateContent() {
                 {/* Server error */}
                 {serverError && (
                   <m.div
-                    initial={{ opacity: 0, y: -6 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
                     role="alert"
@@ -402,7 +402,7 @@ function DemoGateContent() {
 
           {/* Footer */}
           <m.div
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={motionStagger(0.55)}
             className="mt-6 flex flex-col items-center gap-3"
