@@ -134,14 +134,28 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
               : matchActive(item.href, pathname));
           const Icon = item.icon;
           return (
-            <li key={item.href} className="flex-1">
+            <li key={item.href} className="min-w-0 flex-1">
               <Link
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 aria-label={item.label}
                 className={cn(
-                  // Full-height column ≥44px tall touch target.
-                  'group relative flex min-h-[56px] flex-col items-center justify-center gap-0.5 px-1 py-1.5',
+                  // Full-height column ≥44px tall touch target. `min-w-0`
+                  // overrides the flex item's default `min-width: auto` floor
+                  // (the browser default lets a flex item refuse to shrink
+                  // below its unbreakable content's natural width even with
+                  // `flex: 1 1 0%` on the parent `<li>`) — without it, a long
+                  // label (e.g. "Development", "Messages", or a mode's
+                  // exposureNoun) can force this column past its 1/5 share of
+                  // a 320/390px bar, overflowing the row by a few px. Tailwind's
+                  // `justify-around` (space-around) falls back to `center` per
+                  // the CSS Box Alignment spec whenever the line's free space
+                  // is negative, and centering an overflowing row shifts its
+                  // start point negative — the exact -2px left overhang on the
+                  // first ("Home") tab this fixes. `min-w-0` here (mirroring
+                  // the `min-w-0` already on the More button below) lets the
+                  // label's own `truncate` class actually engage instead.
+                  'group relative flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-0.5 px-1 py-1.5',
                   'outline-none transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
                   'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
                   active ? 'text-accent-700' : 'text-text-tertiary hover:text-text-secondary',
@@ -178,7 +192,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
           );
         })}
         {onMoreOpen && (
-          <li className="flex-1">
+          <li className="min-w-0 flex-1">
             <Button
               type="button"
               variant="ghost"
