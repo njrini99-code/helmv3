@@ -231,6 +231,14 @@ interface NeedRow {
   reason: string;
 }
 
+/** "Who needs your attention" shows only the top N by priority — the big
+ *  number stays the HONEST total (`needs.length`), but the list itself was
+ *  silently truncated with no indication it was a "top 5", making the
+ *  header count and the visible list disagree (observed live: "7 players to
+ *  look at" heading a list of 5). Named so the cap and its caption below
+ *  can't drift apart. */
+const NEEDS_ATTENTION_LIST_CAP = 5;
+
 /* ---------------------------------------------------------------------------
  * PlayersGridView
  * ------------------------------------------------------------------------- */
@@ -1309,7 +1317,7 @@ function RosterHealthHeader({
             </span>
           </div>
           <ul className="flex flex-col">
-            {needs.slice(0, 5).map(({ row, reason }) => (
+            {needs.slice(0, NEEDS_ATTENTION_LIST_CAP).map(({ row, reason }) => (
               <li
                 key={row.player.id}
                 className="border-t border-border-subtle py-2.5 first:border-t-0"
@@ -1341,6 +1349,13 @@ function RosterHealthHeader({
               </li>
             ))}
           </ul>
+          {needs.length > NEEDS_ATTENTION_LIST_CAP ? (
+            <span className="font-fw-sans text-caption text-text-tertiary">
+              +{needs.length - NEEDS_ATTENTION_LIST_CAP} more player
+              {needs.length - NEEDS_ATTENTION_LIST_CAP === 1 ? '' : 's'} need a look — showing the top{' '}
+              {NEEDS_ATTENTION_LIST_CAP} by priority.
+            </span>
+          ) : null}
           <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>
         </>
       ) : (

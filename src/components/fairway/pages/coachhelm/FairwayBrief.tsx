@@ -155,14 +155,31 @@ function categoryPriority(cat: TeamCategory): 'high' | 'medium' | 'low' {
   return 'medium';
 }
 
-/** One-word plain-English status for a category (reused by the bar strip). */
+/**
+ * One-word-ish plain-English status for a category (reused by the bar strip
+ * and the strengths/weaknesses rows). Blends the canonical TREND with the
+ * category's RATING so the two never read as contradictory: a category can
+ * legitimately be both weak (rating < 50, "needs the most work") AND
+ * improving (trend momentum) at the same time — those are different
+ * questions ("how good is it right now" vs "which way is it moving"). Rather
+ * than a bare green "Trending up" sitting right under a hero that just named
+ * this category the team's weakest, a below-mid-line category that's
+ * improving reads as "Weak, improving" — still a green accent (the movement
+ * IS good news), just not claiming the category is doing well overall.
+ */
 function statusTag(
   trend: 'improving' | 'stable' | 'declining' | undefined,
   attentionCount: number,
+  rating?: number,
 ): { label: string; className: string } {
   if (attentionCount > 0)
     return { label: `${attentionCount} to watch`, className: 'text-fw-warning' };
-  if (trend === 'improving') return { label: 'Trending up', className: 'text-fw-success' };
+  const isWeak = rating != null && rating < 50;
+  if (trend === 'improving') {
+    return isWeak
+      ? { label: 'Weak, improving', className: 'text-fw-success' }
+      : { label: 'Trending up', className: 'text-fw-success' };
+  }
   if (trend === 'declining') return { label: 'Trending down', className: 'text-text-tertiary' };
   return { label: 'Steady', className: 'text-text-tertiary' };
 }
@@ -333,6 +350,11 @@ export function FairwayBrief({
       : [];
   const weakest = ranked[0] ?? null;
 
+  // Category id → 0–100 rating, so the "Category detail" cards below can
+  // blend rating + trend the same way the hero/strip do (statusTag) instead
+  // of a bare trend-only headline that can read as contradicting the hero.
+  const ratingByCategoryId = new Map<string, number>(ranked.map((r) => [r.categoryId, r.rating]));
+
   // ── Strengths vs weaknesses split — partitioned at the 50 mid-line (the same
   //    line the hero speaks in). `ranked` is worst-first; weaknesses keep that
   //    order, strengths read best-first. Each row opens the rich aspect panel.
@@ -372,7 +394,19 @@ export function FairwayBrief({
   ];
   const isSgCalibrated = !sgVsParSamples.some((v) => isImplausibleSG(v));
 
-  const totalAttention = categories.reduce((s, c) => s + c.attentionCount, 0);
+  // DISTINCT players needing attention across categories — NOT a sum of each
+  // category's attentionCount. A player can be flagged in 2+ categories (e.g.
+  // below-average in both putting AND approach), and summing counted them
+  // once per category, so "N need attention" could exceed the roster size
+  // (observed live: "8 need attention" on a 7-player team). Union the
+  // flagged player ids so the count is honestly bounded by playerCount.
+  const attentionPlayerIds = new Set<string>();
+  for (const c of categories) {
+    for (const p of c.players) {
+      if (p.needsAttention) attentionPlayerIds.add(p.playerId);
+    }
+  }
+  const totalAttention = attentionPlayerIds.size;
 
   /* -- masthead action cluster: NO primary here — the one green primary lives
         in the hero ("Work on {category}"). The old "Players"/"Ask CoachHelm"
@@ -512,7 +546,7 @@ export function FairwayBrief({
           {categories.length > 0 && playerCount > 0 ? (
             <div className="flex flex-col gap-3">
               {categories.map((cat) => (
-                <CategoryHealthRow key={cat.id} cat={cat} />
+                <CategoryHealthRow key={cat.id} cat={cat} rating={ratingByCategoryId.get(cat.id)} />
               ))}
             </div>
           ) : (
@@ -768,7 +802,7 @@ function CategoryBars({
     <ul className="flex flex-col gap-2">
       {rows.map((row) => {
         const isWorst = row.rating === lowestRating;
-        const tag = statusTag(row.cat?.trend, row.cat?.attentionCount ?? 0);
+        const tag = statusTag(row.cat?.trend, row.cat?.attentionCount ?? 0, row.rating);
         const barColor = isWorst
           ? 'bg-fw-warning'
           : row.rating >= 50
@@ -862,7 +896,7 @@ function AspectRow({
   tone: 'success' | 'warning';
   onOpen: (row: RankedCategory) => void;
 }) {
-  const tag = statusTag(row.cat?.trend, row.cat?.attentionCount ?? 0);
+  const tag = statusTag(row.cat?.trend, row.cat?.attentionCount ?? 0, row.rating);
   const barColor = tone === 'success' ? 'bg-fw-success' : 'bg-fw-warning';
   return (
     /* eslint-disable-next-line helm/no-raw-button */
@@ -956,7 +990,7 @@ function PulseStrip({
  * LINKS into Signals filtered to this category.
  * ────────────────────────────────────────────────────────────────────────── */
 
-function CategoryHealthRow({ cat }: { cat: TeamCategory }) {
+function CategoryHealthRow({ cat, rating }: { cat: TeamCategory; rating?: number }) {
   const priority = categoryPriority(cat);
   const TrendIcon =
     cat.trend === 'improving'
@@ -965,11 +999,18 @@ function CategoryHealthRow({ cat }: { cat: TeamCategory }) {
         ? IconTrendingDown
         : IconActivity;
 
+  // Rating and trend are different questions ("how good right now" vs "which
+  // way is it moving") — blend them so an improving-but-still-weak category
+  // doesn't read as an unqualified "trending up" directly under a hero that
+  // just named it the team's weakest area.
+  const isWeak = rating != null && rating < 50;
   const headline =
     cat.attentionCount > 0
       ? `${cat.attentionCount} player${cat.attentionCount === 1 ? ' needs' : 's need'} attention in ${cat.label.toLowerCase()}`
       : cat.trend === 'improving'
-        ? `${cat.label} is trending up`
+        ? isWeak
+          ? `${cat.label} is weak but improving`
+          : `${cat.label} is trending up`
         : cat.trend === 'declining'
           ? `${cat.label} is trending down`
           : `${cat.label} is holding steady`;

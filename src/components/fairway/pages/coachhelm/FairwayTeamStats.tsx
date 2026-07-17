@@ -51,6 +51,8 @@ import {
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { classifyTrendDelta } from '@/lib/coachhelm/trend';
+import { SCORE_TREND_THRESHOLD } from '@/lib/golf/scoring-trend';
 import { surfaceName } from '@/lib/golf/surface-registry';
 
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
@@ -242,9 +244,13 @@ function fmtHandicap(value: number | null): string {
   return value < 0 ? `+${Math.abs(value).toFixed(1)}` : value.toFixed(1);
 }
 
-// ── Scoring-trend classification (matches legacy TeamStatsTable) ──────────────
-// scoring_trend is recent-avg minus prior-avg of normalized scores, so a
-// NEGATIVE value = lower scores = improving. |trend| < 0.3 reads as steady.
+// ── Scoring-trend classification ────────────────────────────────────────────
+// scoring_trend is recent-avg minus prior-avg of normalized scores (computed
+// by the canonical `computeScoringTrendFromRounds`, see stats/team/page.tsx),
+// so a NEGATIVE value = lower scores = improving. Classification itself routes
+// through the SAME `classifyTrendDelta` + `SCORE_TREND_THRESHOLD` the
+// CoachHelm Players tab roster table uses (#914) — a given delta can't read
+// "Declining" here and "Improving" there.
 type TrendVerdict = 'improving' | 'declining' | 'steady';
 
 interface TrendDisplay {
@@ -257,11 +263,12 @@ interface TrendDisplay {
 
 function classifyScoringTrend(trend: number | null): TrendDisplay | null {
   if (trend === null || Number.isNaN(trend)) return null;
-  if (Math.abs(trend) < 0.3) {
+  const canonical = classifyTrendDelta(trend, { lowerIsBetter: true, threshold: SCORE_TREND_THRESHOLD });
+  if (canonical === 'stable') {
     return { verdict: 'steady', label: 'Steady', cls: 'text-text-tertiary', arrow: '→', magnitude: null };
   }
   const magnitude = Math.abs(trend).toFixed(1);
-  return trend < 0
+  return canonical === 'improving'
     ? { verdict: 'improving', label: 'Improving', cls: 'text-fw-success', arrow: '↘', magnitude }
     : { verdict: 'declining', label: 'Declining', cls: 'text-fw-warning', arrow: '↗', magnitude };
 }
