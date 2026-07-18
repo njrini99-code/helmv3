@@ -1088,7 +1088,9 @@ function formatRelativeDate(dateStr: string, now: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function ActionItemsPanel({ items }: { items: ActionItem[] }) {
+/** Exported for a deterministic render test (W1 count-coherence audit) — the
+ *  header count badge must always describe exactly what's rendered below it. */
+export function ActionItemsPanel({ items }: { items: ActionItem[] }) {
   // Defer relative-date computation to the client to avoid a hydration mismatch.
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
@@ -1128,8 +1130,17 @@ function ActionItemsPanel({ items }: { items: ActionItem[] }) {
         </Surface>
       ) : (
         <Surface elevation="border" padding="sm">
+          {/* W1 count-coherence audit fix: render the FULL `items` list, not a
+              slice(0, 6) — the header badge above (and the hero's "N items are
+              waiting on you" in coach-signal.ts, which sources the SAME
+              `enhancedData.actionItems` array) both state the true count, so a
+              truncated render disagreed with its own header on every team with
+              more than 6 open items. The upstream builder already bounds this
+              list (dashboard-data.ts caps tasks + announcements combined), so
+              rendering all of it is still a finite, calm digest — never an
+              unbounded list. */}
           <ul className="flex flex-col gap-2">
-            {items.slice(0, 6).map((item) => {
+            {items.map((item) => {
               const isUrgent = item.priority === 'high' || item.priority === 'urgent';
               return (
                 <li key={item.id} className="min-w-0">

@@ -205,6 +205,14 @@ export default async function TeamHubPage({
   }));
 
   const announcements = announcementsResult.success ? (announcementsResult.data ?? []) : [];
+  // W1 count-coherence audit: a FAILED fetch (RPC error, permission denial,
+  // transient network hiccup) must never be indistinguishable from a team
+  // that has genuinely posted nothing — folding it into `[]` above silently
+  // renders "No announcements" while the dedicated /dashboard/announcements
+  // page (a separate query path) may still show real rows. Mirrors the same
+  // `announcementsLoadError` flag player-hub-data.ts already derives for
+  // PlayerActionCenter's identical AnnouncementsList usage.
+  const announcementsLoadError = !announcementsResult.success;
 
   // ── Teammates (read-only roster grid in the Teammates tab) ──────────────────
   const teammates = (teammatesResult.data || [])
@@ -236,6 +244,7 @@ export default async function TeamHubPage({
       <FairwayTeamHubWrapper
         tasks={tasks}
         announcements={announcements}
+        announcementsLoadError={announcementsLoadError}
         trips={trips}
         classes={classes}
         teammates={teammates}
