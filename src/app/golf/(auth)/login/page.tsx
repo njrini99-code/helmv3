@@ -62,7 +62,11 @@ function LoginContent() {
         setIsAdmin(admin);
         setIsLoggedIn(true);
         const dest = isSafeInternalPath(returnTo) ? returnTo : resolveAdminPostLoginPath(admin);
-        router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
+        // Returning, already-authed user: straight to their destination. The
+        // ~3s /golf/welcome splash is reserved for FRESH sign-ins
+        // (golf-sign-in-form.tsx) — replaying it on every app open made the
+        // native cold start a five-shell cascade (#957 trace, fix 2/3).
+        router.replace(dest);
         return;
       }
       setIsLoggedIn(false);
