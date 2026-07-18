@@ -253,15 +253,20 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
               transition={{ duration: reduceMotion ? 0 : 0.16 }}
               className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2"
             >
-              {/* Below `sm` the row re-composes into two deliberate lines via
-                  `order` + `basis` (#957 — at phone width, search, three filter
-                  pills, a segmented view toggle AND the action buttons cannot
-                  share flex-wrap lines without something clipping mid-word at
-                  the viewport edge, which is exactly what shipped):
-                    line 1 · search (grows) + the compact action cluster
-                    line 2 · ONE full-width horizontal scroll strip holding the
-                            view toggle and the filter pills together
-                  From `sm` up the order utilities all reset and the original
+              {/* Below `sm` the row re-composes into stacked full-width lines
+                  (#957 — at phone width, search, three filter pills, a
+                  segmented view toggle AND the action buttons cannot share
+                  flex-wrap lines without something clipping mid-word at the
+                  viewport edge, which is exactly what shipped):
+                    line 1 · search, full width
+                    line 2 · the filter-pill scroll strip, full width
+                    line 3 · view toggle + actions, pinned right
+                  Deliberately NO `order` utilities: source order already reads
+                  top-to-bottom/left-to-right at every width, so DOM order,
+                  tab order, and visual order stay identical (a #959-review
+                  finding — an earlier draft reordered lines with `order-*`,
+                  which sent keyboard focus visually backwards on phones).
+                  From `sm` up the basis overrides reset and the original
                   single-line composition is byte-identical.
 
                   search — grows to absorb slack so the row reads as one quiet
@@ -277,37 +282,36 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
                   desktop widths (>=1280px), where there was actually plenty of
                   total room. */}
               {search ? (
-                <div className="order-1 min-w-[140px] flex-1 sm:order-none sm:min-w-[180px] sm:max-w-sm lg:w-72 lg:flex-none">
+                <div className="min-w-0 basis-full sm:min-w-[180px] sm:flex-1 sm:max-w-sm lg:w-72 lg:flex-none">
                   {search}
                 </div>
               ) : null}
 
               {/* filters — horizontally scrollable so a long set never breaks
-                  the row. Below `sm` it is the full-width second line and also
-                  hosts the view toggle (leading, so the strip scans as
-                  "mode, then narrowing"). From `lg` up it's the ONLY flex-1
-                  item on its line (search stopped competing for the same
-                  growth share above), so it claims all the room left over from
-                  search + the trailing cluster — the 3-pill set fits without
-                  ever needing its scroll fallback at desktop widths. */}
-              {(filters || viewToggle) ? (
+                  the row. Below `sm` it is its own full-width line, so the
+                  scroller gets the whole viewport to work with. From `lg` up
+                  it's the ONLY flex-1 item on its line (search stopped
+                  competing for the same growth share above), so it claims all
+                  the room left over from search + the trailing cluster — the
+                  3-pill set fits without ever needing its scroll fallback at
+                  desktop widths. */}
+              {filters ? (
                 <div
                   ref={filtersFadeRef}
                   style={filtersFadeStyle}
-                  className="order-3 flex basis-full items-center gap-2 overflow-x-auto min-w-0 grow-0 sm:order-none sm:basis-0 sm:grow [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  className="flex min-w-0 grow-0 basis-full items-center gap-2 overflow-x-auto sm:grow sm:basis-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                  {/* phone-only home for the view toggle; display:none from `sm`
-                      keeps the duplicate out of the tab order and the a11y tree */}
-                  {viewToggle ? <div className="shrink-0 sm:hidden">{viewToggle}</div> : null}
                   {filters}
                 </div>
               ) : null}
 
-              {/* trailing cluster — view toggle + primary action, always far-right.
-                  On phone the view toggle lives in the scroll strip above instead. */}
+              {/* trailing cluster — view toggle + primary action. Far-right on
+                  its shared desktop line; the right-pinned last line on phone
+                  (search and filters each took a full line above, so ml-auto
+                  starts this cluster on a fresh line and pushes it right). */}
               {(viewToggle || primaryAction) && (
-                <div className="order-2 ml-auto flex flex-shrink-0 items-center gap-2 sm:order-none">
-                  {viewToggle ? <div className="hidden sm:block">{viewToggle}</div> : null}
+                <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+                  {viewToggle}
                   {primaryAction}
                 </div>
               )}

@@ -42,9 +42,6 @@ describe('Toolbar — search stops competing with filters for growth at lg+', ()
         viewToggle={<button>Feed</button>}
       />,
     );
-    // The filters strip is the scroll container (the only overflow-x-auto
-    // element in the row) — don't reach it via the first <button>, which is
-    // now the strip's phone-only view-toggle slot, not a filter pill.
     const filtersWrapper = container.querySelector('[class*="overflow-x-auto"]');
     expect(filtersWrapper).not.toBeNull();
     expect(filtersWrapper!.className).toContain('sm:grow');
@@ -52,7 +49,7 @@ describe('Toolbar — search stops competing with filters for growth at lg+', ()
     expect(filtersWrapper!.className).toContain('min-w-0');
   });
 
-  it('below `sm` the strip is the full-width second line and hosts the view toggle', () => {
+  it('below `sm` the row stacks as full-width lines in SOURCE order — no `order` utilities (tab order must match visual order)', () => {
     const { container } = render(
       <Toolbar
         search={<input aria-label="search" />}
@@ -60,22 +57,24 @@ describe('Toolbar — search stops competing with filters for growth at lg+', ()
         viewToggle={<button data-testid="toggle">Feed</button>}
       />,
     );
-    // Phone composition (#957): line 1 = search + actions, line 2 = one
-    // full-width scroll strip (view toggle + filter pills together). The strip
-    // must take its own line (basis-full + order-3) and must not grow on it.
+    // Phone composition (#957 + #959 review): line 1 = search (basis-full),
+    // line 2 = the filter scroll strip (basis-full), line 3 = view toggle +
+    // actions (ml-auto). An earlier draft reflowed lines with `order-*`,
+    // which sent keyboard focus visually backwards on phones — DOM order,
+    // tab order, and visual order must stay identical, so `order` utilities
+    // are banned from this row.
+    const searchWrapper = container.querySelector('input')!.parentElement!;
     const strip = container.querySelector('[class*="overflow-x-auto"]')!;
+    expect(searchWrapper.className).toContain('basis-full');
     expect(strip.className).toContain('basis-full');
-    expect(strip.className).toContain('order-3');
-    // The view toggle renders in BOTH homes: phone slot inside the strip
-    // (hidden from `sm` up), desktop slot in the trailing cluster (hidden
-    // below `sm`) — exactly one is ever displayed.
-    const toggles = container.querySelectorAll('[data-testid="toggle"]');
-    expect(toggles).toHaveLength(2);
-    const phoneSlot = toggles[0]!.parentElement!;
-    const desktopSlot = toggles[1]!.parentElement!;
-    expect(strip.contains(phoneSlot)).toBe(true);
-    expect(phoneSlot.className).toContain('sm:hidden');
-    expect(desktopSlot.className).toContain('hidden');
-    expect(desktopSlot.className).toContain('sm:block');
+    for (const el of [searchWrapper, strip]) {
+      expect(el.className).not.toMatch(/(?:^|\s)order-/);
+    }
+    // The view toggle is mounted exactly ONCE, in the trailing cluster —
+    // never duplicated into a phone-only slot.
+    expect(container.querySelectorAll('[data-testid="toggle"]')).toHaveLength(1);
+    const trailing = container.querySelector('[data-testid="toggle"]')!.parentElement!;
+    expect(trailing.className).toContain('ml-auto');
+    expect(trailing.className).not.toMatch(/(?:^|\s)order-/);
   });
 });

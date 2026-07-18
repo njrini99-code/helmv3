@@ -299,7 +299,10 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-12 md:py-12">
+      {/* overflow-x-clip: same backstop as the coach dashboard root (clip, not
+          hidden — no scroll container, sticky keeps working) so no wide child
+          can stretch every full-width card past the phone's viewport (#957). */}
+      <div className="mx-auto w-full max-w-[1200px] overflow-x-clip px-6 py-8 md:px-12 md:py-12">
         {/* ── ViewHeader: single h1, persistent New Round action ───────────── */}
         <ViewHeader
           eyebrow={team?.name ?? 'Your team'}
