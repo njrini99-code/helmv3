@@ -49,6 +49,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Check, X, Target, ChevronDown, ChevronRight, RefreshCw, SlidersHorizontal, User } from 'lucide-react';
 
 import { CoachHelmShell } from './CoachHelmShell';
@@ -442,6 +443,42 @@ export function FairwayCoachHelmSignals({
   const [view, setView] = useState<SignalsView>(
     (sp.view as SignalsView) ?? defaultFilter?.view ?? (isPatterns ? 'grouped' : 'feed'),
   );
+
+  /* -- W2: mobile triage default (audit finding) --------------------------
+        The bare fallback above (`isPatterns ? 'grouped' : 'feed'`) is what
+        /alerts renders with — /insights and /patterns both already pin an
+        explicit `defaultFilter.view` ('table' / 'grouped'), so this is the
+        ONE default a coach actually hits unmodified. On a phone, 'feed'
+        combined with the default `groupBy: 'player'` still renders each
+        player's group as FULL InsightCards (evidence Inset + 3 full-weight
+        buttons) — a reading assignment, not a triage list (the audited
+        ~31,000px / 37-screen Signals feed). The `table`/`grouped` presets
+        already render the dense one-line-row treatment this needs; the fix
+        is choosing THAT by default under `sm`, not inventing a new one.
+
+        `useMediaQuery` is SSR-safe (server snapshot = false, mobile-first —
+        see AppShell's identical usage): the very first paint on an actual
+        phone already matches (no correction needed), and on an actual
+        desktop viewport React corrects the value synchronously BEFORE paint,
+        so this never produces a hydration mismatch or a visible flash on
+        either device class.
+
+        The override only ever applies to the UNTOUCHED default: a `?view=`
+        in the URL, a route's own `defaultFilter.view`, or the coach tapping
+        ANY option in the toolbar (`viewTouched`) all take precedence
+        permanently for the rest of the session — the existing toggle keeps
+        working exactly as before, on every viewport. */
+  const isCompactViewport = !useMediaQuery('(min-width: 640px)');
+  const [viewTouched, setViewTouched] = useState(false);
+  const hasExplicitViewPreset = Boolean(sp.view || defaultFilter?.view);
+  const mobileTriageDefaultActive =
+    isCompactViewport && !hasExplicitViewPreset && !viewTouched;
+  /** The view every RENDER decision (grouping/compact/hero + the toolbar's
+   *  own highlighted option) reads. `view` itself stays the coach's true,
+   *  URL-synced preference — `displayView` only ever diverges from it while
+   *  `mobileTriageDefaultActive` is active, and collapses back to `view` the
+   *  instant that stops being true. */
+  const displayView: SignalsView = mobileTriageDefaultActive ? 'grouped' : view;
 
   /* Grouping axis — the coach can swap player↔category from the toolbar. The
      insights triage workspace groups by player by default so a coach scans by
@@ -1153,6 +1190,9 @@ export function FairwayCoachHelmSignals({
   };
 
   const onViewChange = (v: SignalsView) => {
+    // The coach has now made an explicit choice — the mobile triage default
+    // (`mobileTriageDefaultActive`) must never override it again this session.
+    setViewTouched(true);
     setView(v);
     syncUrl({ view: v });
   };
@@ -1259,7 +1299,8 @@ export function FairwayCoachHelmSignals({
   // While the smart-default shortlist is active, render it FLAT — a curated
   // cross-player triage list fragments badly grouped one-row-per-player.
   const grouped =
-    !smartDefaultActive && (view === 'grouped' || (view === 'feed' && groupBy !== 'none'));
+    !smartDefaultActive &&
+    (displayView === 'grouped' || (displayView === 'feed' && groupBy !== 'none'));
   const groups = useMemo(() => {
     if (groupBy === 'none' || !grouped) return null;
     const map = new Map<string, SignalRow[]>();
@@ -1743,7 +1784,7 @@ export function FairwayCoachHelmSignals({
             syncUrl({ category: new Set() });
           }}
           viewOptions={VIEW_OPTIONS}
-          view={view}
+          view={displayView}
           onViewChange={onViewChange}
           appliedChips={appliedChips}
           onExport={!isPatterns ? handleExport : undefined}
@@ -1906,7 +1947,7 @@ export function FairwayCoachHelmSignals({
                 Compact view `grouped` is always false, so the segmented control
                 would change state with zero visible effect (dead UI). Hide it
                 there (and while the smart-default flat shortlist is active). */}
-            {!smartDefaultActive && view !== 'table' ? (
+            {!smartDefaultActive && displayView !== 'table' ? (
               <div className="flex items-center gap-3">
                 <span className="font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
                   Group
@@ -2037,10 +2078,12 @@ export function FairwayCoachHelmSignals({
                   <div id={sectionId} className="flex flex-col gap-3">
                     {visible.map((r, ri) =>
                       // the single hero card sits at the very top of the workspace
-                      // (feed only); the dedicated grouped view stays dense/compact.
-                      gi === 0 && ri === 0 && view === 'feed'
+                      // (feed only); the dedicated grouped view — and the mobile
+                      // triage default (`displayView`, see above) — stays dense/
+                      // compact, so a phone never gets a hero-then-full-card group.
+                      gi === 0 && ri === 0 && displayView === 'feed'
                         ? renderCard(r, { hero: true })
-                        : renderCard(r, { compact: view === 'grouped' }),
+                        : renderCard(r, { compact: displayView === 'grouped' }),
                     )}
                   </div>
                   {overflow > 0 ? (
@@ -2066,7 +2109,7 @@ export function FairwayCoachHelmSignals({
               );
             })}
           </div>
-        ) : view === 'table' ? (
+        ) : displayView === 'table' ? (
           <div className="flex flex-col gap-2">
             {rows.map((r) => renderCard(r, { compact: true }))}
           </div>
