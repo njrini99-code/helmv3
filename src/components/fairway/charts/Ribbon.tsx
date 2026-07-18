@@ -412,7 +412,11 @@ export function Ribbon({
             {active ? (
               <span
                 style={TABULAR_NUMS}
-                className="pointer-events-none absolute left-2 top-1 rounded-fw-sm bg-surface/90 px-2 py-0.5 font-fw-mono text-caption font-semibold text-text-primary shadow-soft"
+                // `bg-surface/90` compiled to no CSS (Tailwind can't apply a
+                // slash-opacity modifier to a custom color backed by a bare
+                // `var(--fw-color-*)` reference) — this crosshair readout
+                // pill had NO background. Plain `bg-surface` always compiles.
+                className="pointer-events-none absolute left-2 top-1 rounded-fw-sm bg-surface px-2 py-0.5 font-fw-mono text-caption font-semibold text-text-primary shadow-soft"
               >
                 {String(active.x)} · {fmt(active.y)}
               </span>

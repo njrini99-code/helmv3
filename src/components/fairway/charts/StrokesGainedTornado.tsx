@@ -106,6 +106,30 @@ export function StrokesGainedTornado({
 }
 
 /**
+ * How many decimal places the x-axis ticks need so adjacent ticks never
+ * collapse onto the same rounded label. `nice: true` guarantees a clean,
+ * evenly-spaced tick STEP (1, 2, 5, 0.5, 0.02, …) — but a fixed 1-decimal
+ * display doesn't scale down with it. A small-impact pattern set (a real,
+ * common case — most patterns move well under a stroke) niced to a 0.02
+ * step previously rendered three DISTINCT ticks as the indistinguishable
+ * "+0.0 / −0.0 / +0.0" — a raw, unrounded-reading artifact from a display
+ * precision that didn't match the scale's actual granularity. Deriving the
+ * decimal count from the step itself keeps ticks honest at any scale.
+ */
+function tickDecimals(ticks: readonly number[]): number {
+  if (ticks.length < 2) return 1;
+  const step = Math.abs((ticks[1] as number) - (ticks[0] as number));
+  if (!Number.isFinite(step) || step === 0) return 1;
+  const str = step.toString();
+  if (str.includes('e-')) {
+    const exp = Number(str.split('e-')[1]);
+    return Number.isFinite(exp) ? Math.min(exp, 4) : 1;
+  }
+  const dot = str.indexOf('.');
+  return dot === -1 ? 0 : Math.min(str.length - dot - 1, 4);
+}
+
+/**
  * Exported for unit testing only — the parent `StrokesGainedTornado` always
  * mounts this through `<ParentSize>`, which needs real DOM layout. Rendering
  * `TornadoInner` directly with explicit `width`/`height` lets a test assert
@@ -156,12 +180,14 @@ export function TornadoInner({
 
   const zeroX = xScale(0);
   const barH = yScale.bandwidth();
+  const xTicks = xScale.ticks(5);
+  const xTickDecimals = tickDecimals(xTicks);
 
   return (
     <svg width={width} height={height} aria-hidden>
       <Group left={MARGIN.left} top={MARGIN.top}>
         {/* x ticks — sparse, signed, tabular */}
-        {xScale.ticks(5).map((t) => (
+        {xTicks.map((t) => (
           <g key={t}>
             <Line
               from={{ x: xScale(t), y: 0 }}
@@ -177,7 +203,7 @@ export function TornadoInner({
               fontFamily={VIZ_FONT.numeric}
               fill={VIZ_COLOR.textTertiary}
             >
-              {formatSigned(t, 1)}
+              {formatSigned(t, xTickDecimals)}
             </text>
           </g>
         ))}

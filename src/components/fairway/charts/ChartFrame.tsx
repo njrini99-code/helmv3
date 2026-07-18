@@ -201,7 +201,12 @@ function ChartSkeleton({ height }: { height: number }) {
   return (
     <div
       style={{ height }}
-      className="flex w-full items-end gap-2 overflow-hidden rounded-fw-md bg-inset/40 p-3"
+      // `bg-inset/40` compiled to no CSS at all (Tailwind can't apply a
+      // slash-opacity modifier to a custom color backed by a bare
+      // `var(--fw-color-*)` reference) — this shimmer well had NO background.
+      // Plain `bg-inset` (the same muted well every other "no data" surface
+      // in the kit already uses unmodified) always compiles.
+      className="flex w-full items-end gap-2 overflow-hidden rounded-fw-md bg-inset p-3"
       aria-hidden
     >
       {Array.from({ length: 7 }).map((_, i) => (
@@ -222,7 +227,10 @@ function ChartStateSurface({ height, label }: { height: number; label: string })
       role="status"
       className={cn(
         'flex w-full flex-col items-center justify-center gap-1.5 rounded-fw-md',
-        'border border-dashed border-border-subtle bg-inset/30 px-6 text-center',
+        // `bg-inset/30` compiled to no CSS at all (same slash-opacity-on-a-
+        // custom-var limitation as ChartSkeleton above) — this dashed "no
+        // data" box had NO fill. Plain `bg-inset` always compiles.
+        'border border-dashed border-border-subtle bg-inset px-6 text-center',
       )}
     >
       <span className="font-fw-sans text-body-sm font-medium text-text-secondary">{label}</span>

@@ -107,9 +107,14 @@ export const VIZ_EASE: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
 /** Signed Strokes-Gained style number: always shows +/− with fixed decimals. */
 export function formatSigned(value: number, decimals = 2): string {
   const fixed = Math.abs(value).toFixed(decimals);
+  // A value that ROUNDS to zero at this precision (a hairline float artifact
+  // like -1e-15 from a "niced" scale tick, or a genuinely tiny value below
+  // the display's resolution) must never carry a sign — "−0.0" reads as a
+  // broken/garbled number, not an honest zero (§0 #8 honesty applies to
+  // number FORMATTING too, not just missing data).
+  if (Number(fixed) === 0) return fixed;
   if (value > 0) return `+${fixed}`;
-  if (value < 0) return `−${fixed}`; // U+2212 minus (aligns better than hyphen)
-  return (0).toFixed(decimals);
+  return `−${fixed}`; // U+2212 minus (aligns better than hyphen)
 }
 
 /** Percent with no trailing noise (e.g. 0.732 → "73%"). */

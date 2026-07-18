@@ -146,8 +146,15 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
       {label ? (
         <span
           className={cn(
-            'font-fw-display text-eyebrow uppercase tracking-[0.14em]',
-            isAwaiting ? 'text-text-tertiary/80' : 'text-text-tertiary',
+            'font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary',
+            // `text-text-tertiary/80` compiled to NOTHING — Tailwind can't
+            // apply a slash-opacity modifier to a custom color whose value is
+            // a bare `var(--fw-color-*)` reference, so the class silently
+            // dropped and this label fell through to whatever ancestor color
+            // was inherited. `opacity-*` is a plain (non-color) utility, so it
+            // always compiles and reliably dims the already-muted tertiary
+            // tone a touch further for the calibrating state.
+            isAwaiting && 'opacity-80',
           )}
         >
           {label}
@@ -162,8 +169,17 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
           <span
             className={cn(
               'inline-flex items-center gap-2 font-fw-mono font-semibold tabular-nums',
-              // a dim, recessive reading — never an authoritative value
-              'text-text-tertiary/70',
+              // A dim, recessive reading — never an authoritative value. Was
+              // `text-text-tertiary/70`: Tailwind cannot apply a slash-opacity
+              // modifier to a custom color backed by a bare `var(--fw-color-*)`
+              // reference, so that class compiled to NOTHING. With no color
+              // rule at all, this huge bold mono em-dash (up to the 72px
+              // `hero` size) fell through to InstrumentPanel's inherited
+              // `text-text-primary` — painting the "awaiting" placeholder as a
+              // jarring solid near-black bar instead of a dim, honest gauge.
+              // `text-text-tertiary` + the plain (non-color) `opacity-70`
+              // utility always compiles.
+              'text-text-tertiary opacity-70',
               SIZE_VALUE[size],
             )}
           >
