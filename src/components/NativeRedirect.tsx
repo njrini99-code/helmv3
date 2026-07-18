@@ -51,7 +51,11 @@ export function NativeRedirect({ to }: { to: string }) {
 
         const isAdmin = (userRow?.role as string | undefined) === 'admin';
         const dest = resolveAdminPostLoginPath(isAdmin);
-        router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
+        // Returning, already-authed user: straight to their destination. The
+        // ~3s /golf/welcome splash is reserved for FRESH sign-ins
+        // (golf-sign-in-form.tsx) — replaying it on every app open made the
+        // native cold start a five-shell cascade (#957 trace, fix 2/3).
+        router.replace(dest);
       } catch {
         // Network timeout, AbortError, or unexpected Supabase failure —
         // fall back to the caller's default so the native shell is never
