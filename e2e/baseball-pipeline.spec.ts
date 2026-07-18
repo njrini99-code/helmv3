@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAsCoach } from './helpers/auth';
+// #375 pipeline candidate ("Jordan Hayes") is seeded on the dedicated
+// "E2E Test University" team owned by testcoach@helm.test — log in as that
+// pinned account, NOT the env-driven Rini-demo coach (see helpers/auth.ts
+// E2E_FIXTURE_USERS). With the shared env-driven loginAsCoach, this board
+// rendered the Rini demo team's empty pipeline and every assertion failed.
+import { loginAsFixtureCoach } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
 /**
@@ -46,7 +51,7 @@ test.describe('Baseball Pipeline - College Coach Flow', () => {
 
   test.beforeEach(async ({ page }) => {
     try {
-      await loginAsCoach(page);
+      await loginAsFixtureCoach(page);
     } catch {
       test.skip(true, 'coach login fixture unavailable in this environment');
     }
@@ -146,7 +151,7 @@ test.describe('Baseball Pipeline - Keyboard Navigation', () => {
 
   test.beforeEach(async ({ page }) => {
     try {
-      await loginAsCoach(page);
+      await loginAsFixtureCoach(page);
     } catch {
       test.skip(true, 'coach login fixture unavailable in this environment');
     }

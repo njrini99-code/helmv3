@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAsCoach, loginAsPlayer } from './helpers/auth';
+// The seeded "E2E Prospect Camp" is owned by the #375 fixture coach
+// (testcoach@helm.test) on the dedicated "E2E Test University" team — log in
+// as those pinned accounts, NOT the env-driven Rini-demo accounts (see
+// helpers/auth.ts E2E_FIXTURE_USERS). Under the shared env-driven login the
+// coach/player never saw the seeded camp.
+import { loginAsFixtureCoach as loginAsCoach, loginAsFixturePlayer as loginAsPlayer } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
 /**
