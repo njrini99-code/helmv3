@@ -52,6 +52,7 @@ export {
   formatValue,
   deltaVsTeam,
   teamCohortText,
+  teamRelativeText,
   deriveState,
   shouldShowTeamMarker,
   deriveAriaLabel,

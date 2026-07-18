@@ -8,7 +8,7 @@
  * (`bg-white/70 backdrop-blur-xl shadow-glass`) which violates the Fairway
  * "cream, not white / matte, no glass on content" rule inside `.fairway-ds`.
  * This is the flat, matte equivalent: it REUSES ONLY the legacy pure logic
- * helpers (`toScalePct`, `formatValue`, `deltaVsTeam`, `teamCohortText`,
+ * helpers (`toScalePct`, `formatValue`, `deltaVsTeam`, `teamRelativeText`,
  * `shouldShowTeamMarker`, `deriveAriaLabel`) and the legacy `StandingBarProps`
  * surface, so data wiring is identical, but renders entirely in Fairway
  * tokens (no glass, no skeuomorphism).
@@ -30,7 +30,7 @@ import {
   toScalePct,
   formatValue,
   deltaVsTeam,
-  teamCohortText,
+  teamRelativeText,
   deriveState,
   shouldShowTeamMarker,
   deriveAriaLabel,
@@ -58,13 +58,24 @@ export function StandingStrip(props: StandingStripProps) {
   // women's baseline must NOT be drawn against a misleading men's-Tour value.
   const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
-  // EC-2: a team percentile is meaningless on a tiny roster — PERCENT_RANK()
-  // returns 0/100 for the only/worst row, so "Bottom 1% on your team" fires on
-  // a team of one. Gate the cohort caption on the SAME team_n>=5 floor the team
-  // marker uses (`showTeam`), so we never narrate a percentile we won't draw.
+  // W1 regression fix: the caption MUST derive from the same mean-relative
+  // comparison as the ↑/↓ arrow + tone above (both come from `delta`, which is
+  // `deltaVsTeam(player_value, team_avg, direction)`). The percentile-based
+  // `teamCohortText(team_pct, team_n)` this used to call can disagree with
+  // that arrow on a skewed roster — e.g. a player at 0.81 sits ABOVE the
+  // 0.65 team-mean (arrow up, "better than team") but BELOW the 50th
+  // percentile if a handful of teammates cluster just above them, so the old
+  // caption read "Below team average" under an up-arrow "better" badge. Use
+  // `teamRelativeText`, the same mean-relative helper Card/Inline/Hero use,
+  // so value + arrow + caption always agree. Gate on the SAME team_n>=5 floor
+  // the team marker uses (`showTeam`), so we never narrate a comparison we
+  // won't draw.
   const cohortText =
     props.show_cohort_text !== false && showTeam
-      ? neutralizeForCoach(teamCohortText(props.team_pct, props.team_n), props.viewer_context)
+      ? neutralizeForCoach(
+          teamRelativeText(props.player_value, props.team_avg, props.direction),
+          props.viewer_context,
+        )
       : '';
   // Bug #915: the hero marker/readout is labeled "You" for a player's own
   // view, but a coach reading a teammate's card sees the player's initials
