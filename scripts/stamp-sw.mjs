@@ -29,7 +29,12 @@ if (!process.env.VERCEL) {
   process.exit(0);
 }
 
-const buildId = (process.env.VERCEL_GIT_COMMIT_SHA ?? Date.now().toString()).slice(0, 8);
+// NOT `??`: Vercel CLI deploys without git metadata set VERCEL_GIT_COMMIT_SHA
+// to an EMPTY STRING, which passes a nullish check and stamped a bare
+// 'golfhelm-v' — identical across deploys, so installed service workers never
+// busted their caches and phones kept serving the previous build (2026-07-18).
+const sha = process.env.VERCEL_GIT_COMMIT_SHA;
+const buildId = (sha && sha.trim() ? sha : Date.now().toString()).slice(0, 8);
 
 const content = readFileSync(swPath, 'utf8');
 const updated = content.replace(
