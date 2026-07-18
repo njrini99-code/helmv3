@@ -377,13 +377,25 @@ export function FairwayCoachDashboard({
     {
       accessorKey: 'player_name',
       header: 'Player',
-      meta: { noWrap: true },
+      // A real floor (not just min-w-0 below) — see the DataTable comment on
+      // `meta.minWidth`: without it, this column's near-zero min-content (the
+      // name truncates) let the auto-layout table starve it down to a couple
+      // characters on a phone while the numeric Score/To Par/Date columns kept
+      // their natural width (audit W1 — mobile name-trunc).
+      meta: { noWrap: true, minWidth: 160 },
       cell: (ctx) => {
         const row = ctx.row.original;
         return (
-          <span className="inline-flex items-center gap-2.5">
-            <Avatar name={row.player_name} src={row.player_avatar_url} size="sm" />
-            <span className="font-medium text-text-primary">{row.player_name}</span>
+          <span className="flex min-w-0 items-center gap-2.5">
+            <Avatar
+              name={row.player_name}
+              src={row.player_avatar_url}
+              size="sm"
+              className="shrink-0"
+            />
+            <span className="min-w-0 flex-1 truncate font-medium text-text-primary">
+              {row.player_name}
+            </span>
           </span>
         );
       },
@@ -391,9 +403,11 @@ export function FairwayCoachDashboard({
     {
       accessorKey: 'course_name',
       header: 'Course',
-      meta: { noWrap: true },
+      meta: { noWrap: true, minWidth: 120 },
       cell: (ctx) => (
-        <span className="text-text-secondary">{toTitleCase(ctx.getValue() as string)}</span>
+        <span className="block truncate text-text-secondary">
+          {toTitleCase(ctx.getValue() as string)}
+        </span>
       ),
     },
     {
