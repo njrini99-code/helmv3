@@ -81,6 +81,51 @@ describe('toCoachVoice', () => {
   it('passes through empty text unchanged', () => {
     expect(toCoachVoice('', 'Ethan')).toBe('');
   });
+
+  // -------------------------------------------------------------------------
+  // Bug #943 — insight-generated (not pattern-generated) phrasing. The
+  // scrambling.ts + lag-distance-3putt.ts composite are the two reported
+  // production offenders.
+  // -------------------------------------------------------------------------
+
+  it('rewrites the scrambling "lag, not escape" bunker opener to third person', () => {
+    const text =
+      'You ESCAPE the bunker fine — 82% of your 11 sand shots reached the green — but you finish 9 ft from the hole.';
+    expect(toCoachVoice(text, 'Ethan')).toBe(
+      'Ethan escapes the bunker fine — 82% of your 11 sand shots reached the green — but you finish 9 ft from the hole.',
+    );
+  });
+
+  it('rewrites the scrambling "escape is the leak" bunker opener to third person', () => {
+    const text = "You're leaving balls in the bunker — only 40% of your 10 sand shots reached the green.";
+    expect(toCoachVoice(text, 'Ethan')).toBe(
+      "Ethan is leaving balls in the bunker — only 40% of your 10 sand shots reached the green.",
+    );
+  });
+
+  it('rewrites "not your splash" to a coach-voiced possessive', () => {
+    expect(toCoachVoice('distance control, not your splash.', 'Ethan')).toBe(
+      "distance control, not Ethan's splash.",
+    );
+  });
+
+  it('rewrites the lag-distance 3-putt composite content end to end', () => {
+    const text =
+      "Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're only making 43% from " +
+      '3-5 ft — so an estimated 57% of your long looks are turning into 3-putts. Fix the leave first, ' +
+      'then drill the comebackers so the second putt stops costing you a stroke.';
+    const voiced = toCoachVoice(text, 'Mason Rivers');
+    expect(voiced.startsWith("Mason Rivers's lag putts (15+ ft) aren't finishing")).toBe(true);
+    expect(voiced).toContain('Mason Rivers is only making 43%');
+    expect(voiced).toContain('costing Mason Rivers a stroke.');
+    expect(voiced).not.toMatch(/\bYour lag putts\b/);
+    expect(voiced).not.toMatch(/\byou're\b/i);
+    expect(voiced).not.toMatch(/costing you\b/);
+  });
+
+  it('falls back to "the player" for insight phrasing too, never fabricating a name', () => {
+    expect(toCoachVoice('costing you a stroke.', undefined)).toBe('costing the player a stroke.');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -257,5 +302,126 @@ describe('insightsToSignalRows — batch resolution forwards the SAME map to eve
     // buckets instead of collapsing every row into "Unknown player".
     const distinctNames = new Set(rows.map((r) => r.playerName).filter(Boolean));
     expect(distinctNames.size).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug #943 — insightToSignalRow coach-voices title/body using the SAME
+// resolved playerName (never a second lookup), matching the reported
+// production card ("Your lag putts…" under Mason Rivers's group header).
+// ---------------------------------------------------------------------------
+
+describe('insightToSignalRow — coach voice (bug #943)', () => {
+  it('coach-voices title/body using the resolved roster name', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        player_id: 'player-1',
+        title: 'Lag putts → 3-putt cascade',
+        content:
+          "Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're only making " +
+          "43% from 3-5 ft. Fix the leave first so the second putt stops costing you a stroke.",
+      }),
+      { 'player-1': 'Mason Rivers' },
+    );
+    expect(row.body).toContain("Mason Rivers's lag putts (15+ ft) aren't finishing");
+    expect(row.body).toContain('Mason Rivers is only making 43%');
+    expect(row.body).toContain('costing Mason Rivers a stroke');
+    expect(row.body).not.toMatch(/\bYour lag putts\b/);
+    expect(row.body).not.toMatch(/\byou're\b/i);
+  });
+
+  it('falls back to "the player" when the row carries no resolvable name — never fabricates one', () => {
+    const row = insightToSignalRow(
+      makeInsight({ player_id: 'player-not-on-roster', content: 'costing you a stroke.' }),
+    );
+    expect(row.body).toBe('costing the player a stroke.');
+  });
+
+  it('leaves already-neutral title/content unchanged (no "you"/"your" substring to rewrite)', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        player_id: 'player-1',
+        title: 'Three-putt rate is climbing',
+        content: 'Three-putts are up over the last 5 rounds.',
+      }),
+      { 'player-1': 'Mason Rivers' },
+    );
+    expect(row.title).toBe('Three-putt rate is climbing');
+    expect(row.body).toBe('Three-putts are up over the last 5 rounds.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug #944 — signal-card metric strip: sign/label inversion + missing "%".
+// ---------------------------------------------------------------------------
+
+describe('insightToSignalRow — evidence lines (bug #944 stroke-impact sign/label)', () => {
+  it('a positive strokes_impact (an insight leak, e.g. the "Lag putts → 3-putt cascade" card) renders as a NEGATIVE cost, never "gained"', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: { strokes_impact: 2.5, confidence: 0.8, sample_n: 20 } as unknown as InsightEvidence,
+      }),
+    );
+    const line = row.evidence.find((e) => e.label === 'Stroke impact');
+    expect(line?.value).toBe('-2.50/round');
+    expect(line?.gloss).toBe('meaningful · costing');
+  });
+
+  it('zero strokes_impact stays neutral (no fabricated direction)', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: { strokes_impact: 0, confidence: 0.8, sample_n: 20 } as unknown as InsightEvidence,
+      }),
+    );
+    const line = row.evidence.find((e) => e.label === 'Stroke impact');
+    expect(line?.value).toBe('0.00/round');
+    expect(line?.gloss).toBe('small · neutral');
+  });
+
+  it('a raw negative strokes_impact (not currently emitted, handled defensively) reads as a genuine gain', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: { strokes_impact: -1.2, confidence: 0.8, sample_n: 20 } as unknown as InsightEvidence,
+      }),
+    );
+    const line = row.evidence.find((e) => e.label === 'Stroke impact');
+    expect(line?.value).toBe('+1.20/round');
+    expect(line?.gloss).toBe('moderate · gained');
+  });
+});
+
+describe('insightToSignalRow — evidence lines (bug #944 missing "%" unit)', () => {
+  it('a percent comparison tick renders WITH a % suffix ("TOUR ~3% 3-PUTT RATE" bug)', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: {
+          strokes_impact: 0,
+          confidence: 0.8,
+          sample_n: 20,
+          unit: 'percent',
+          comparison_label: 'Tour ~3% 3-putt rate',
+          comparison_value: 3,
+        } as unknown as InsightEvidence,
+      }),
+    );
+    const line = row.evidence.find((e) => e.label === 'Tour ~3% 3-putt rate');
+    expect(line?.value).toBe('3%');
+  });
+
+  it('a non-percent comparison tick renders without a unit suffix, unchanged', () => {
+    const row = insightToSignalRow(
+      makeInsight({
+        evidence: {
+          strokes_impact: 0,
+          confidence: 0.8,
+          sample_n: 20,
+          unit: 'feet',
+          comparison_label: 'PGA Tour 175+ yd avg',
+          comparison_value: 45,
+        } as unknown as InsightEvidence,
+      }),
+    );
+    const line = row.evidence.find((e) => e.label === 'PGA Tour 175+ yd avg');
+    expect(line?.value).toBe('45');
   });
 });

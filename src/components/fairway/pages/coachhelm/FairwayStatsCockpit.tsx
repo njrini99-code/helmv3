@@ -131,6 +131,7 @@ import {
   type MetricRenderConfig,
 } from '@/lib/coachhelm/v3/standing/metric-config';
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { classifyTrendDelta } from '@/lib/coachhelm/trend';
 
 // CoachHelm cause/effect — REUSED VERBATIM. Returns the player's mined patterns
 // (cause = description, effect = strokeImpact, fix = recommendation), gated by
@@ -243,7 +244,7 @@ function toChartBuckets(buckets: LeakBucket[]): LeakMapBucket[] {
  * flips the success/warning direction so that, e.g., FEWER putts reads as a
  * green ▲ improvement rather than an amber ▼ regression.
  */
-function buildVitalDelta({
+export function buildVitalDelta({
   current,
   previous,
   currentRounds,
@@ -265,10 +266,16 @@ function buildVitalDelta({
   if (a === null || b === null || currentRounds <= 0 || previousRounds <= 0) return undefined;
   const change = a - b;
   // Direction is by IMPROVEMENT, not raw sign: when lower is better, a negative
-  // change (e.g. fewer putts) is an improvement → up/green.
-  const improved = goodWhenLower ? change < 0 : change > 0;
+  // change (e.g. fewer putts) is an improvement → up/green. Routed through the
+  // SAME canonical `classifyTrendDelta` the Players roster / Team Stats /
+  // Team Pulse use (#914/#945) so this readout's ▲/▼ can never disagree with
+  // the categorical verdict shown elsewhere for the same underlying change.
   const direction: ReadoutDelta['direction'] =
-    change === 0 ? 'flat' : improved ? 'up' : 'down';
+    change === 0
+      ? 'flat'
+      : classifyTrendDelta(change, { lowerIsBetter: goodWhenLower, threshold: 0 }) === 'improving'
+        ? 'up'
+        : 'down';
   const sign = change > 0 ? '+' : change < 0 ? '−' : '';
   const mag = Math.abs(change);
   const text = percent ? `${sign}${Math.round(mag)}%` : `${sign}${mag.toFixed(digits)}`;
@@ -352,6 +359,26 @@ interface DetailRow {
 /** True when every row in a detail block is the honest em-dash (no real data). */
 function allDash(rows: DetailRow[]): boolean {
   return rows.every((r) => r.value === '—');
+}
+
+/**
+ * P949 #2 — the responsive column recipe for `DetailGrid`, factored out so its
+ * breakpoints can be unit-tested against the nesting context every caller
+ * actually uses it in: every `columns={4}` DetailGrid in this file (Round
+ * scoring, Efficiency-from-lie, Putting efficiency, Personal bests) sits
+ * inside a `grid-cols-1 lg:grid-cols-2` wrapper. Jumping to 4 real columns at
+ * the SAME `lg` breakpoint the wrapper halves the row's width doubled up the
+ * squeeze — a "Scoring average" label + "74.8" value had roughly half the
+ * width doctrine assumed, so the value overlapped the next row's label
+ * ("Avg to par") with no room to wrap. Deferring the 4-col jump to `2xl`
+ * (1536px — a halved 2-col wrapper there is still a roomy ~700px+ per grid)
+ * gives every row real breathing room; below that it holds at 2 columns,
+ * which already fits comfortably inside a halved wrapper.
+ */
+export function detailGridColClass(columns: 2 | 3 | 4): string {
+  if (columns === 4) return 'sm:grid-cols-2 2xl:grid-cols-4';
+  if (columns === 3) return 'sm:grid-cols-3';
+  return 'sm:grid-cols-2';
 }
 
 /**
@@ -469,12 +496,7 @@ function DetailGrid({
    */
   scrollable?: boolean;
 }) {
-  const colClass =
-    columns === 4
-      ? 'sm:grid-cols-2 lg:grid-cols-4'
-      : columns === 3
-        ? 'sm:grid-cols-3'
-        : 'sm:grid-cols-2';
+  const colClass = detailGridColClass(columns);
   return (
     <DetailGridShell title={title} hint={hint}>
       <dl
@@ -487,7 +509,16 @@ function DetailGrid({
         {rows.map((r) => (
           <div
             key={r.label}
-            className="flex items-baseline justify-between gap-3 border-b border-border-subtle/60 pb-2 last:border-0 last:pb-0"
+            // P949 #2: `flex-wrap` is a safety net (never a JS width measurement) —
+            // every DetailGrid with columns=4 is ALSO nested inside a parent
+            // `lg:grid-cols-2` wrapper (ScoringDetail, AnalysisSummary, the
+            // Approach/Putting tabs), so the 4-col breakpoint alone (see
+            // `detailGridColClass`) already avoids doubling up with the parent's
+            // own 2-col jump. Wrapping the row too means a genuinely long
+            // label+value pair (e.g. "Scoring average" / "74.8" next to "Avg to
+            // par") drops the value to its own line instead of overlapping the
+            // neighboring cell's label when a cell is still cramped.
+            className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-border-subtle/60 pb-2 last:border-0 last:pb-0"
           >
             <dt className="font-fw-sans text-caption text-text-secondary">{r.label}</dt>
             <dd

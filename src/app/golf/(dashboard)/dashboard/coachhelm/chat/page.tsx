@@ -7,13 +7,25 @@
  */
 
 import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persistence';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { AskWorkspace, InlineNotice, Button } from '@/components/fairway';
+import { surfaceName } from '@/lib/golf/surface-registry';
 import Link from 'next/link';
+
+// #948 (4) — this route inherited the `dashboard/layout.tsx` default title
+// ("Dashboard | GolfHelm") because it never set its own `metadata`, unlike
+// its coachhelm-tab siblings (Brief/Signals/Effectiveness — see
+// `intelligence/page.tsx` / `analytics/coachhelm/page.tsx`). Sourced from
+// surface-registry.ts, matching #936/#917's fix for the Players tab.
+export const metadata: Metadata = {
+  title: `${surfaceName('ask')} | CoachHelm`,
+  description: 'Ask CoachHelm anything about your team in natural language — full conversation history.',
+};
 
 interface PageProps {
   searchParams: Promise<{ c?: string }>;

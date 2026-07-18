@@ -46,12 +46,14 @@ export {
   classifyTrendFromValues,
   TREND_COLOR,
   TREND_ARROW,
+  TrendGlyph,
 } from './TrendChip';
 export type {
   TrendChipProps,
   TrendDirection,
   GoodDirection,
   ClassifyTrendOptions,
+  TrendGlyphProps,
 } from './TrendChip';
 
 export { Sparkline } from './Sparkline';

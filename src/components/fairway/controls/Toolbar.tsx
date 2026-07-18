@@ -243,10 +243,29 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
               transition={{ duration: reduceMotion ? 0 : 0.16 }}
               className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2"
             >
-              {/* search — grows to absorb slack so the row reads as one quiet field+controls */}
-              {search ? <div className="min-w-[180px] flex-1 sm:max-w-sm">{search}</div> : null}
+              {/* search — grows to absorb slack so the row reads as one quiet
+                  field+controls. Bug #949 #8: below `lg` this still competes
+                  equally (flex-1) with the filters cluster for space, which is
+                  fine on mobile/tablet (the filters strip is a horizontal
+                  scroller there anyway). From `lg` up, pin it to a fixed
+                  comfortable width instead of growing — a search input never
+                  NEEDS more than that, and letting it keep pulling flex-grow
+                  share from `filters` was exactly what squeezed a 3-pill
+                  filter set (Severity/Status/Category) down far enough that
+                  the trailing "Status" pill clipped under the view-toggle
+                  segmented control even at wide desktop widths (>=1280px),
+                  where there was actually plenty of total room. */}
+              {search ? (
+                <div className="min-w-[180px] flex-1 sm:max-w-sm lg:w-72 lg:flex-none">{search}</div>
+              ) : null}
 
-              {/* filters — horizontally scrollable so a long set never breaks the row */}
+              {/* filters — horizontally scrollable so a long set never breaks
+                  the row. From `lg` up it's now the ONLY flex-1 item on this
+                  line (search stopped competing for the same growth share
+                  above), so it claims all the room left over from search +
+                  the trailing view-toggle/primary-action cluster — the 3-pill
+                  set fits without ever needing its scroll fallback at desktop
+                  widths. */}
               {filters ? (
                 <div
                   ref={filtersFadeRef}

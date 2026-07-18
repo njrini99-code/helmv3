@@ -255,6 +255,11 @@ export {
   type TrendDirection,
   type GoodDirection,
   type ClassifyTrendOptions,
+  // TrendGlyph: chrome-free arrow+label rendering counterpart of the
+  // canonical `@/lib/coachhelm/trend` verdict (#945) — for surfaces that need
+  // the SAME arrow/color semantics as TrendChip without its pill chrome.
+  TrendGlyph,
+  type TrendGlyphProps,
   Sparkline,
   type SparklineProps,
   EkgSparkline,

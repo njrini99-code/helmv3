@@ -189,6 +189,69 @@ function playerTrendWord(trend: 'improving' | 'stable' | 'declining'): string {
   return trend === 'improving' ? 'trending up' : trend === 'declining' ? 'trending down' : 'steady';
 }
 
+/**
+ * Categories whose "toughest yardage band" evidence is genuinely sourced from
+ * the full-swing (non-green-lie) shot curve — `teamShotAnalysis.deadZones`
+ * excludes every putt (`buildYardageCurve` skips `lieBefore === 'green'`
+ * entirely), so a yardage-band sentence only ever describes driving/approach/
+ * short-game shots. Putting and Scoring have no yardage-band representation
+ * at all; citing the yardage sentence under either is a wrong-category detail
+ * (#946 — "Toughest from 275–300 yds" appearing under Putting · 20/100).
+ */
+const YARDAGE_BAND_CATEGORY_IDS = new Set(['driving', 'approach', 'short_game']);
+export function isYardageBandCategory(categoryId: string): boolean {
+  return YARDAGE_BAND_CATEGORY_IDS.has(categoryId);
+}
+
+/** The hero's headline support sentence — presentation-only text, chosen. */
+export interface HeroSupportDetail {
+  kind: 'yardage-band' | 'lead-insight' | 'none';
+  text: string | null;
+}
+
+/**
+ * Picks the ONE supporting-evidence sentence under the hero headline,
+ * constrained to the SAME category the headline just named. The yardage-band
+ * `worstZone` sentence is only ever true for driving/approach/short-game (see
+ * `isYardageBandCategory`); for putting/scoring it falls back to that
+ * category's OWN lead insight (from `getTeamCategoryInsights`, already filed
+ * under the correct category id), and drops to nothing rather than invent a
+ * detail — matching this file's existing "no deadZones → drop the band
+ * sentence" honesty doctrine.
+ */
+export function selectHeroSupportDetail(
+  categoryId: string,
+  worstZone: { rangeStart: number; rangeEnd: number; deficit: number } | null,
+  leadInsight: CategoryInsight | null,
+): HeroSupportDetail {
+  if (isYardageBandCategory(categoryId) && worstZone) {
+    return {
+      kind: 'yardage-band',
+      text: `Toughest from ${worstZone.rangeStart}–${worstZone.rangeEnd} yds — about ${Math.abs(worstZone.deficit).toFixed(2)} of a stroke behind par there.`,
+    };
+  }
+  if (!isYardageBandCategory(categoryId) && leadInsight) {
+    return { kind: 'lead-insight', text: leadInsight.message };
+  }
+  return { kind: 'none', text: null };
+}
+
+/**
+ * The foot-strip section label naming who's "dragging" the weakest category.
+ * `needsAttention` flags a player on absolute standing, not direction — a
+ * player can be BOTH flagged AND improving (weak but trending up). Blanket-
+ * labeling that group "Dragging putting" misrepresents an improving player as
+ * a drag (#946). A uniform group keeps the single-word label (still honest);
+ * a mixed group splits it so nobody's direction is misstated.
+ */
+export function footStripLabel(categoryLabel: string, players: PlayerCategoryStat[]): string {
+  const improving = players.filter((p) => p.trend === 'improving').length;
+  const notImproving = players.length - improving;
+  if (players.length === 0 || improving === 0) return `Dragging ${categoryLabel}`;
+  if (notImproving === 0) return `Improving ${categoryLabel}`;
+  return `${notImproving} dragging ${categoryLabel} · ${improving} improving`;
+}
+
 /** Signals deep-link for a category. The team-category taxonomy calls the tee
  *  game 'driving'; evidence insights file it under 'tee' — alias at this single
  *  emit point so the deep-link lands on the right filter (the other four match). */
@@ -664,6 +727,9 @@ function WorkOnThisHero({
   const rating = weakest.rating;
   const belowMid = rating < 50;
   const midGap = Math.abs(rating - 50);
+  // Constrained to the SAME category the headline just named — never a
+  // driving/approach yardage-band detail under Putting/Scoring (#946).
+  const supportDetail = selectHeroSupportDetail(weakest.categoryId, worstZone, leadInsight);
 
   return (
     <InstrumentPanel
@@ -674,8 +740,10 @@ function WorkOnThisHero({
       className="flex flex-col gap-5"
     >
       <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-        {/* LEFT — the directive (the focal) */}
-        <div className="flex min-w-0 flex-col gap-3">
+        {/* LEFT — the directive (the focal). `justify-center` so a short
+            headline never leaves a void under the CTA when the right column
+            (the Ribbon / bar-strip card) renders taller (#946). */}
+        <div className="flex min-w-0 flex-col justify-center gap-3">
           <h3 className="font-fw-display text-h2 font-semibold leading-tight text-text-primary">
             {weakest.long} needs the most work right now.
           </h3>
@@ -692,11 +760,8 @@ function WorkOnThisHero({
             </Badge>
           </div>
 
-          {worstZone ? (
-            <p className="font-fw-sans text-body-sm text-text-secondary">
-              Toughest from {worstZone.rangeStart}–{worstZone.rangeEnd} yds — about{' '}
-              {Math.abs(worstZone.deficit).toFixed(2)} of a stroke behind par there.
-            </p>
+          {supportDetail.text ? (
+            <p className="font-fw-sans text-body-sm text-text-secondary">{supportDetail.text}</p>
           ) : null}
 
           <div className="pt-0.5">
@@ -721,6 +786,17 @@ function WorkOnThisHero({
               seriesName="Strokes vs par"
               height={180}
               minPoints={2}
+              // Stack the readout under the eyebrow/header instead of beside
+              // them (this card lives in a narrow ~0.9fr grid column — a
+              // side-by-side row can get squeezed into overlap regardless of
+              // viewport width), and name what the value/delta actually are:
+              // the curve is a YARDAGE-band spread, not a time series, so
+              // "last vs first" means farthest vs closest plotted band (#946).
+              readoutPlacement="below"
+              readoutLabels={(first, last) => ({
+                value: `Strokes vs par · ${last.x}`,
+                delta: `vs ${first.x}`,
+              })}
             />
           ) : (
             <div className="flex h-full flex-col gap-2">
@@ -741,7 +817,9 @@ function WorkOnThisHero({
           "strokes-gained still calibrating" treatment. */}
       <div className="flex flex-col gap-2 border-t border-border-subtle pt-4">
         <span className="font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
-          {sgCalibrated ? `Dragging ${weakest.long.toLowerCase()}` : 'Strokes-gained still calibrating'}
+          {sgCalibrated
+            ? footStripLabel(weakest.long.toLowerCase(), flaggedPlayers)
+            : 'Strokes-gained still calibrating'}
         </span>
         {!sgCalibrated ? (
           <p className="font-fw-sans text-body-sm text-text-secondary">
@@ -774,7 +852,11 @@ function WorkOnThisHero({
               );
             })}
           </div>
-        ) : leadInsight ? (
+        ) : leadInsight && supportDetail.kind !== 'lead-insight' ? (
+          // Only shown here when the headline support line ABOVE didn't
+          // already use this same insight (it does for putting/scoring —
+          // see selectHeroSupportDetail) — never repeat the same sentence
+          // twice on one card.
           <p className="font-fw-sans text-body-sm text-text-secondary">{leadInsight.message}</p>
         ) : (
           <p className="font-fw-sans text-body-sm text-text-secondary">
@@ -814,7 +896,7 @@ function CategoryBars({
               href={signalsHref(row.categoryId)}
               aria-label={`${row.label} ${row.rating} of 100 — open Signals`}
               className={cn(
-                'grid grid-cols-[4.5rem_1fr_auto] items-center gap-3 rounded-fw-md border border-border-subtle px-3 py-2.5',
+                'grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 rounded-fw-md border border-border-subtle px-3 py-2.5',
                 'transition-colors duration-fast ease-soft hover:bg-surface-sunken/60',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
               )}
@@ -905,7 +987,7 @@ function AspectRow({
       onClick={() => onOpen(row)}
       aria-label={`${row.label} ${row.rating} of 100 — open team aspect`}
       className={cn(
-        'grid w-full grid-cols-[4.5rem_1fr_auto_auto] items-center gap-3 rounded-fw-md border border-border-subtle px-3 py-2.5 text-left',
+        'grid w-full grid-cols-[5.5rem_1fr_auto_auto] items-center gap-3 rounded-fw-md border border-border-subtle px-3 py-2.5 text-left',
         'transition-colors duration-fast ease-soft hover:bg-surface-sunken/60',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
       )}

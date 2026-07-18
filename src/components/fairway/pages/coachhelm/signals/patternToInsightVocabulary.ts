@@ -267,21 +267,40 @@ function insightEvidenceLines(ev: InsightEvidence | null | undefined): SignalEvi
   ) {
     lines.push({
       label: ev.comparison_label,
-      value: formatComparisonValue(ev.comparison_value),
+      // Bug #944 — the comparison tick shares `ev.unit` with the measured
+      // metric (both generators and composite rules stamp them from the same
+      // scale, e.g. `unit: 'percent'` + `comparison_value: 3` for "Tour ~3%
+      // 3-putt rate"). Without the unit, a percent comparison rendered as a
+      // bare "3" — indistinguishable from a count or a stroke figure.
+      value: formatComparisonValue(ev.comparison_value, ev.unit),
     });
   }
 
-  // Stroke impact — preserve the sign (gained vs lost), same convention as the
-  // pattern adapter, so the two sources read identically.
+  // Stroke impact — bug #944 sign/label inversion. An INSIGHT's
+  // `strokes_impact` is the counterfactual "strokes recoverable per round IF
+  // this were fixed" (generator-base.ts `backfilledStrokesImpact` /
+  // composite/synthesis.ts's `backfilledCompositeStrokesImpact`, which only
+  // ever backfills from a POSITIVE `strokes_saved_per_round` and takes
+  // `Math.abs()` when borrowing across composite sources) — a NON-NEGATIVE
+  // magnitude of opportunity COST, never a "gained" strength. That is
+  // opposite the PATTERN convention this line used to share (a pattern's
+  // signed `stroke_impact` genuinely swings positive when a condition plays
+  // BETTER) — reusing it here read a real stroke-cost leak ("Lag putts →
+  // 3-putt cascade") as "+2.50/round meaningful · gained". This metric is
+  // itself lower-is-better (0 = no leak): any positive magnitude is a leak,
+  // so it renders negative/"costing". A raw negative value is not currently
+  // emitted anywhere in the v3 engine, but is handled here as the one case
+  // that legitimately reads as a genuine gain, so the sign is never fabricated.
   if (typeof ev.strokes_impact === 'number' && Number.isFinite(ev.strokes_impact)) {
     const impact = ev.strokes_impact;
     const magnitude = Math.abs(impact);
-    const signed = `${impact > 0 ? '+' : ''}${impact.toFixed(2)}`;
     const tier = magnitude >= 1.5 ? 'meaningful' : magnitude >= 0.8 ? 'moderate' : 'small';
+    const isCost = impact > 0;
+    const signed = magnitude === 0 ? magnitude.toFixed(2) : `${isCost ? '-' : '+'}${magnitude.toFixed(2)}`;
     lines.push({
       label: 'Stroke impact',
       value: `${signed}/round`,
-      gloss: `${tier} · ${impact > 0 ? 'gained' : impact < 0 ? 'lost' : 'neutral'}`,
+      gloss: `${tier} · ${magnitude === 0 ? 'neutral' : isCost ? 'costing' : 'gained'}`,
     });
   }
 
@@ -296,9 +315,11 @@ function insightEvidenceLines(ev: InsightEvidence | null | undefined): SignalEvi
   return lines;
 }
 
-/** Format a numeric comparison value without over-claiming precision. */
-function formatComparisonValue(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+/** Format a numeric comparison value without over-claiming precision, unit-
+ *  aware (bug #944 — a percent value rendered bare, e.g. "3" instead of "3%"). */
+function formatComparisonValue(value: number, unit?: InsightEvidence['unit']): string {
+  const formatted = Number.isInteger(value) ? String(value) : value.toFixed(2);
+  return unit === 'percent' ? `${formatted}%` : formatted;
 }
 
 /**
@@ -321,15 +342,21 @@ export function insightToSignalRow(
 ): SignalRow {
   const categoryLabel = titleCaseToken(insight.category) || 'Signal';
   const ev = insight.evidence;
+  const resolvedPlayerName = playerNames?.[insight.player_id] || undefined;
+  // Bug #943 — this row renders on coach-only surfaces (/alerts, /insights,
+  // /patterns — see page.tsx guards), but the generator wrote `title`/
+  // `content` for the PLAYER's own Insights tab. Coach-voice both using the
+  // SAME roster name already resolved above (never a second lookup, never a
+  // fabricated name — `toCoachVoice` falls back to "the player" when absent).
   return {
     id: insight.id,
     source: 'insights',
     priority: INSIGHT_PRIORITY_MAP[insight.priority] ?? 'medium',
-    title: insight.title,
-    body: insight.content ?? '',
+    title: toCoachVoice(insight.title, resolvedPlayerName),
+    body: toCoachVoice(insight.content ?? '', resolvedPlayerName),
     overline: `${categoryLabel} · Signal`,
     playerId: insight.player_id,
-    playerName: playerNames?.[insight.player_id] || undefined,
+    playerName: resolvedPlayerName,
     category: insight.category,
     status: insight.status,
     createdAt: insight.created_at,
@@ -361,9 +388,44 @@ export function insightToSignalRow(
 const GENERIC_COACH_DISCUSSION_RECOMMENDATION = 'Monitor this pattern and discuss with your coach.';
 
 /**
- * Rewrite a pattern's player-voiced narrative into the coach's third-person
- * voice. Falls back to "the player" when no name is available — never
- * fabricates one.
+ * Bug #943 — beyond mined PATTERN text, the v3 evidence-INSIGHT generators
+ * (short-game/putting composites especially) ALSO write their `title`/
+ * `content` in the player's second-person voice — because those generators
+ * exist to compose a sentence for the PLAYER's own Insights tab, not a coach
+ * reading someone else's card. Each entry below targets a LITERAL, known
+ * engine phrase (never a blanket you/your → possessive regex — that mangles
+ * unrelated references like "your coach", see the discussion-recommendation
+ * special-case below). Extend this list as new production phrasings surface;
+ * a phrase with no match here is simply left as-is (no silent mangling).
+ */
+const INSIGHT_VOICE_REWRITES: ReadonlyArray<{
+  match: RegExp;
+  replace: (name: string) => string;
+}> = [
+  // scrambling.ts — "lag, not the escape" branch opener.
+  { match: /\bYou ESCAPE the bunker fine\b/g, replace: (n) => `${n} escapes the bunker fine` },
+  // scrambling.ts — "escape is the leak" branch opener.
+  {
+    match: /\bYou're leaving balls in the bunker\b/g,
+    replace: (n) => `${n} is leaving balls in the bunker`,
+  },
+  // scrambling.ts — "not your splash" driver clause.
+  { match: /\byour splash\b/gi, replace: (n) => `${n}'s splash` },
+  // lag-distance-3putt.ts composite — opening clause.
+  {
+    match: /\bYour lag putts \(15\+ ft\) aren't finishing\b/g,
+    replace: (n) => `${n}'s lag putts (15+ ft) aren't finishing`,
+  },
+  // lag-distance-3putt.ts composite — "you're only making N%" clause.
+  { match: /\byou're only making\b/gi, replace: (n) => `${n} is only making` },
+  // lag-distance-3putt.ts composite — closing clause.
+  { match: /\bcosting you a stroke\b/gi, replace: (n) => `costing ${n} a stroke` },
+];
+
+/**
+ * Rewrite a pattern's OR insight's player-voiced narrative into the coach's
+ * third-person voice. Falls back to "the player" when no name is available —
+ * never fabricates one.
  */
 export function toCoachVoice(text: string, playerName: string | null | undefined): string {
   if (!text) return text;
@@ -378,7 +440,11 @@ export function toCoachVoice(text: string, playerName: string | null | undefined
   // The ONE first-person fragment `generateDescription` produces — every
   // conditional/compound/anomaly pattern description ends "…you tend to
   // score N strokes worse/better than average."
-  return text.replace(/\byou tend to\b/gi, `${name} tends to`);
+  let out = text.replace(/\byou tend to\b/gi, `${name} tends to`);
+  for (const rule of INSIGHT_VOICE_REWRITES) {
+    out = out.replace(rule.match, rule.replace(name));
+  }
+  return out;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

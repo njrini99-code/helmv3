@@ -51,6 +51,7 @@ import {
   Skeleton,
 } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { getGreeting, getTimeOfDay } from '@/lib/utils/time-of-day';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 import { HubInsightSignalCard } from '@/components/golf/player-hub/HubInsightSignalCard';
 import type {
@@ -232,8 +233,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
   // the time-of-day word resolves on the client to avoid an SSR tz mismatch.
   const [timeWord, setTimeWord] = useState('Welcome back');
   useEffect(() => {
-    const hour = new Date().getHours();
-    setTimeWord(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
+    setTimeWord(getGreeting(getTimeOfDay()));
   }, []);
 
   const hasRounds = stats.roundsPlayed > 0;

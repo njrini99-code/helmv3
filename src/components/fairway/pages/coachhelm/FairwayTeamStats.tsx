@@ -51,7 +51,11 @@ import {
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
-import { classifyTrendDelta } from '@/lib/coachhelm/trend';
+import {
+  classifyTrendDelta,
+  TREND_ARROW as CANONICAL_TREND_ARROW,
+  TREND_TEXT_TONE as CANONICAL_TREND_TEXT_TONE,
+} from '@/lib/coachhelm/trend';
 import { SCORE_TREND_THRESHOLD } from '@/lib/golf/scoring-trend';
 import { surfaceName } from '@/lib/golf/surface-registry';
 
@@ -261,16 +265,41 @@ interface TrendDisplay {
   magnitude: string | null;
 }
 
-function classifyScoringTrend(trend: number | null): TrendDisplay | null {
+export function classifyScoringTrend(trend: number | null): TrendDisplay | null {
   if (trend === null || Number.isNaN(trend)) return null;
   const canonical = classifyTrendDelta(trend, { lowerIsBetter: true, threshold: SCORE_TREND_THRESHOLD });
+  // Arrow + tone are sourced from `@/lib/coachhelm/trend`'s canonical map —
+  // the ONE place "which arrow means what" lives (#945). Previously these
+  // were hardcoded here BACKWARDS (↘ for "Improving", ↗ for "Declining" — the
+  // arrow tracked the raw scoring_trend number's sign, not the player's
+  // actual trajectory), which is why this same delta could read "Declining"
+  // here and "Improving" on the Players roster table for the identical
+  // player/rounds.
   if (canonical === 'stable') {
-    return { verdict: 'steady', label: 'Steady', cls: 'text-text-tertiary', arrow: '→', magnitude: null };
+    return {
+      verdict: 'steady',
+      label: 'Steady',
+      cls: CANONICAL_TREND_TEXT_TONE.stable,
+      arrow: CANONICAL_TREND_ARROW.stable,
+      magnitude: null,
+    };
   }
   const magnitude = Math.abs(trend).toFixed(1);
   return canonical === 'improving'
-    ? { verdict: 'improving', label: 'Improving', cls: 'text-fw-success', arrow: '↘', magnitude }
-    : { verdict: 'declining', label: 'Declining', cls: 'text-fw-warning', arrow: '↗', magnitude };
+    ? {
+        verdict: 'improving',
+        label: 'Improving',
+        cls: CANONICAL_TREND_TEXT_TONE.improving,
+        arrow: CANONICAL_TREND_ARROW.improving,
+        magnitude,
+      }
+    : {
+        verdict: 'declining',
+        label: 'Declining',
+        cls: CANONICAL_TREND_TEXT_TONE.declining,
+        arrow: CANONICAL_TREND_ARROW.declining,
+        magnitude,
+      };
 }
 
 /**
@@ -830,20 +859,20 @@ export function FairwayTeamStats({
             <TrajectoryCell
               count={trajectory.improving}
               label="Improving"
-              arrow="↘"
-              cls="text-fw-success"
+              arrow={CANONICAL_TREND_ARROW.improving}
+              cls={CANONICAL_TREND_TEXT_TONE.improving}
             />
             <TrajectoryCell
               count={trajectory.steady}
               label="Steady"
-              arrow="→"
-              cls="text-text-tertiary"
+              arrow={CANONICAL_TREND_ARROW.stable}
+              cls={CANONICAL_TREND_TEXT_TONE.stable}
             />
             <TrajectoryCell
               count={trajectory.declining}
               label="Declining"
-              arrow="↗"
-              cls="text-fw-warning"
+              arrow={CANONICAL_TREND_ARROW.declining}
+              cls={CANONICAL_TREND_TEXT_TONE.declining}
             />
           </div>
           {trajectory.unknown > 0 ? (
@@ -1023,8 +1052,10 @@ function MetricCell({ label, value }: { label: string; value: string }) {
 
 /**
  * Team-trajectory cell — a headcount toned to its verdict, mirroring MetricCell's
- * value-over-caption layout. Arrow + color match the per-player TrendCell exactly
- * (improving ↘ / fw-success, steady → / tertiary, declining ↗ / fw-warning).
+ * value-over-caption layout. Arrow + color are the canonical `@/lib/coachhelm/trend`
+ * mapping (#945) and match the per-player TrendCell exactly (improving ↗ /
+ * fw-success, steady → / tertiary, declining ↘ / fw-warning) — the arrow is
+ * ALWAYS the performance direction, never the raw scoring_trend number's sign.
  */
 function TrajectoryCell({
   count,

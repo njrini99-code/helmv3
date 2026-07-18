@@ -10,6 +10,11 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * from the token-correct Fairway Skeleton primitive (bg-surface-sunken /
  * rounded-card / border-border-subtle) — so the skeleton→content handoff is a
  * quiet fade, not a layout jump.
+ *
+ * #947 fix: eyebrow + h1 are real static text (matching
+ * `FairwayTeamStats.tsx`'s `<ViewHeader eyebrow="Team Stats" title="Team
+ * Stats" />`), not `<Skeleton>` blocks. The description (`${teamName} ·
+ * ${count} players`) stays a Skeleton — it needs the fetched roster.
  */
 export default function TeamStatsLoading() {
     return (
@@ -25,8 +30,12 @@ export default function TeamStatsLoading() {
           {/* ── MASTHEAD: ViewHeader — eyebrow · title · description · primary action ── */}
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1 space-y-3">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-9 w-48" />
+              <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
+                Team Stats
+              </p>
+              <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">
+                Team Stats
+              </h1>
               <Skeleton className="h-4 w-64 max-w-full" />
             </div>
             <Skeleton className="h-11 w-44 rounded-fw-md" />

@@ -9,6 +9,13 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
  * layout: 3 MetricCard tiles + the toolbar row + a hero InsightCard + compact
  * card rows — all in Fairway tokens (bg-canvas / rounded-card / Skeleton's
  * matte sweep) so the live feed lands without a content jump.
+ *
+ * #947 fix: eyebrow + h1 are real static text (matching
+ * `FairwayCoachHelmSignals.tsx`'s `CoachHelmShell` call for this route —
+ * default eyebrow "CoachHelm AI", `title={title ?? 'Signals'}` and this route
+ * never passes a `title` override), not `<Skeleton>` blocks — see
+ * `dashboard/intelligence/loading.tsx`'s doc comment for why this fallback,
+ * not the final render, is what was showing a blank/ghost title.
  */
 export default function Loading() {
   return (
@@ -23,7 +30,14 @@ export default function Loading() {
 
         {/* title row */}
         <div className="flex flex-col gap-2">
-          <Skeleton className="h-7 w-40" />
+          <div className="flex flex-col gap-1.5">
+            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
+              CoachHelm AI
+            </p>
+            <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">
+              Signals
+            </h1>
+          </div>
           <Skeleton className="h-4 w-72" />
         </div>
 

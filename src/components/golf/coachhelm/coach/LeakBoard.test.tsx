@@ -12,7 +12,7 @@
  * ========================================================================== */
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { LeakBoard, type LeakInsight } from './LeakBoard';
+import { LeakBoard, resolveFlameThreshold, type LeakInsight } from './LeakBoard';
 
 function makeLeak(overrides: Partial<LeakInsight> = {}): LeakInsight {
   return {
@@ -66,5 +66,64 @@ describe('LeakBoard — honest units', () => {
   it('renders the honest empty state when there are no leaks', () => {
     render(<LeakBoard insights={[]} />);
     expect(screen.getByText(/No live leaks right now/i)).toBeInTheDocument();
+  });
+});
+
+/**
+ * ============================================================================
+ * Bug #949 #4 — "high bleed" must differentiate rows, not fire on every one.
+ * The old flat 0.8 threshold was tiny next to any real category total, so
+ * −33.5, −4.4, and −1.4 all read "· high bleed" alike. `resolveFlameThreshold`
+ * now reads relative to the board's own worst category (see LeakBoard.tsx).
+ * ========================================================================== */
+describe('LeakBoard — tiered "high bleed" (bug #949 #4)', () => {
+  it('only the dominant category is flagged when totals vary widely (−33.5 vs −4.4 vs −1.4)', () => {
+    render(
+      <LeakBoard
+        insights={[
+          makeLeak({ id: 'a', playerName: 'player-1', category: 'putting', strokesImpact: 33.5 }),
+          makeLeak({ id: 'b', playerName: 'player-2', category: 'approach', strokesImpact: 4.4 }),
+          makeLeak({ id: 'c', playerName: 'player-3', category: 'tee', strokesImpact: 1.4 }),
+        ]}
+      />,
+    );
+    const flags = screen.getAllByText('high bleed', { exact: false });
+    expect(flags).toHaveLength(1);
+    // The flag sits in the putting row (−33.5), not approach or tee.
+    const puttingRow = screen.getByText('Putting').closest('div')?.parentElement;
+    expect(puttingRow?.textContent).toContain('high bleed');
+  });
+
+  it('flags nothing when every category is small and comparably sized (no fabricated severity)', () => {
+    render(
+      <LeakBoard
+        insights={[
+          makeLeak({ id: 'a', playerName: 'player-1', category: 'putting', strokesImpact: 1.2 }),
+          makeLeak({ id: 'b', playerName: 'player-2', category: 'approach', strokesImpact: 1.0 }),
+        ]}
+      />,
+    );
+    expect(screen.queryByText('high bleed', { exact: false })).toBeNull();
+  });
+
+  it('an explicit flameThreshold override still wins over the relative default', () => {
+    render(
+      <LeakBoard
+        insights={[makeLeak({ id: 'a', playerName: 'player-1', category: 'putting', strokesImpact: 1.2 })]}
+        flameThreshold={0.5}
+      />,
+    );
+    expect(screen.getByText('high bleed', { exact: false })).toBeInTheDocument();
+  });
+});
+
+describe('resolveFlameThreshold', () => {
+  it('is half the board max, with a 3-stroke floor', () => {
+    expect(resolveFlameThreshold(33.5)).toBeCloseTo(16.75);
+    expect(resolveFlameThreshold(4)).toBe(3); // half of 4 is 2, floored to 3
+  });
+
+  it('an explicit override always wins', () => {
+    expect(resolveFlameThreshold(33.5, 0.8)).toBe(0.8);
   });
 });

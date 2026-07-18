@@ -80,6 +80,34 @@ interface Row {
   y: number;
 }
 
+/**
+ * Fits a y-axis domain to the DATA, not Recharts' own default `[0, 'auto']`
+ * — that default floors every chart at 0, so a series that lives entirely in
+ * a narrow band well above zero (e.g. a golf scoring average of 74-77)
+ * renders as a near-flat line pinned to the top of a 0-80 axis, ~85% dead
+ * space. Padding is proportional to the series' own spread, with a floor so
+ * a near-flat (or single-point) series still gets visible headroom above
+ * and below the line rather than collapsing to zero height.
+ *
+ * `benchmarkValue` (a dashed reference line, e.g. team average / PGA
+ * baseline) is folded into the min/max so it's never clipped off-chart.
+ * Returns `undefined` for an empty series — callers fall back to Recharts'
+ * own `['auto', 'auto']`.
+ */
+export function computeTrendYDomain(
+  values: readonly number[],
+  benchmarkValue?: number,
+): [number, number] | undefined {
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (benchmarkValue !== undefined && Number.isFinite(benchmarkValue)) finite.push(benchmarkValue);
+  if (finite.length === 0) return undefined;
+  const min = Math.min(...finite);
+  const max = Math.max(...finite);
+  const span = max - min;
+  const pad = Math.max(span * 0.15, Math.max(Math.abs(max), 1) * 0.05);
+  return [min - pad, max + pad];
+}
+
 export function TrendChart({
   title,
   overline,
@@ -101,6 +129,11 @@ export function TrendChart({
 
   const rows: Row[] = React.useMemo(() => data.map((d) => ({ x: d.x, y: d.y })), [data]);
   const markers = React.useMemo(() => data.filter((d) => d.marker), [data]);
+
+  const yDomain = React.useMemo(
+    () => computeTrendYDomain(rows.map((r) => r.y), benchmark?.value),
+    [rows, benchmark],
+  );
 
   const resolvedState: ChartFrameState = state ?? (data.length === 0 ? 'empty' : 'ready');
 
@@ -158,6 +191,7 @@ export function TrendChart({
             width={40}
             tickFormatter={fmt}
             tickCount={5}
+            domain={yDomain ?? ['auto', 'auto']}
           />
 
           {benchmark ? (

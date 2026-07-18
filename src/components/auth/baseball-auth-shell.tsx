@@ -223,8 +223,13 @@ export function BaseballAuthShell({
 
               {children}
 
+              {/* #950 — index 1 (not 3): the header/card/footer entrance on a
+                  conversion page (the demo gate) should settle fast. Every
+                  Reveal here still runs on the shared STAGGER_STEP/DUR.ink
+                  cadence (untouched — it's reused by 200+ other surfaces),
+                  just fewer steps behind the header. */}
               {footer ? (
-                <Reveal staggerIndex={3} className="mt-6">
+                <Reveal staggerIndex={1} className="mt-6">
                   {footer}
                 </Reveal>
               ) : null}
@@ -319,7 +324,7 @@ export function AuthFooterLinks({
           href="/"
           className="mt-2 inline-flex min-h-[44px] items-center gap-1 rounded-lg px-3 py-3 -my-3 text-sm text-warm-500 transition-colors hover:text-warm-700 active:bg-warm-100/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
         >
-          ← Back to HelmLabs
+          ← Back to Helm Sports Labs
         </Link>
       ) : null}
 

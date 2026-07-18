@@ -16,6 +16,7 @@ import { PlayerWatchlist } from '../_components/PlayerWatchlist';
 import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
+import { honestRoundsDelta } from './honest-rounds-delta';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,7 +143,7 @@ async function GolfBody() {
           <KpiTile
             label="Rounds this week"
             value={r.roundsThisWeek}
-            delta={r.roundsThisWeek - r.roundsLastWeek}
+            delta={honestRoundsDelta(r.roundsByWeek, r.roundsThisWeek, r.roundsLastWeek)}
             href="/admin/golf"
             trendData={r.roundsByWeek.slice(-8).map((w) => w.count)}
           />

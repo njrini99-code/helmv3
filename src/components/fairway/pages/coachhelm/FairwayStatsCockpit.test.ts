@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toneVsBenchmark, relativeTones, skewTone } from './FairwayStatsCockpit';
+import { toneVsBenchmark, relativeTones, skewTone, buildVitalDelta, detailGridColClass } from './FairwayStatsCockpit';
 
 // ── toneVsBenchmark (P921 #2 — DetailGrid tone vs a real PGA/team baseline) ───
 
@@ -90,5 +90,101 @@ describe('skewTone', () => {
   it('respects a custom threshold', () => {
     expect(skewTone(55, 70)).toBe('neutral');
     expect(skewTone(75, 70)).toBe('warn');
+  });
+});
+
+// ── buildVitalDelta (#945 — routed through the canonical classifyTrendDelta) ──
+// The direction/sign math here must be UNCHANGED after routing the
+// improving/declining decision through `@/lib/coachhelm/trend`'s
+// classifyTrendDelta — these lock in the exact same cockpit behavior
+// ("green ▲ −7.0" for putts dropping) the issue cites as the desired rule.
+
+describe('buildVitalDelta', () => {
+  it('fewer putts (goodWhenLower) reads as an UP/green delta with the raw negative sign', () => {
+    const delta = buildVitalDelta({
+      current: 29,
+      previous: 36,
+      currentRounds: 5,
+      previousRounds: 5,
+      goodWhenLower: true,
+      digits: 1,
+    });
+    expect(delta?.direction).toBe('up');
+    expect(delta?.value).toBe(-7);
+    expect(delta?.format?.(-7)).toBe('−7.0');
+  });
+
+  it('more putts (goodWhenLower) reads as a DOWN/amber delta', () => {
+    const delta = buildVitalDelta({
+      current: 36,
+      previous: 29,
+      currentRounds: 5,
+      previousRounds: 5,
+      goodWhenLower: true,
+    });
+    expect(delta?.direction).toBe('down');
+    expect(delta?.value).toBe(7);
+  });
+
+  it('a higher fairway% (goodWhenLower false) reads as an UP/green delta', () => {
+    const delta = buildVitalDelta({
+      current: 65,
+      previous: 55,
+      currentRounds: 5,
+      previousRounds: 5,
+      percent: true,
+    });
+    expect(delta?.direction).toBe('up');
+  });
+
+  it('no change reads flat, never up or down', () => {
+    const delta = buildVitalDelta({
+      current: 30,
+      previous: 30,
+      currentRounds: 5,
+      previousRounds: 5,
+      goodWhenLower: true,
+    });
+    expect(delta?.direction).toBe('flat');
+  });
+
+  it('is honestly undefined (no fabricated delta) when either window has zero rounds', () => {
+    expect(
+      buildVitalDelta({ current: 30, previous: 32, currentRounds: 0, previousRounds: 5 }),
+    ).toBeUndefined();
+    expect(
+      buildVitalDelta({ current: 30, previous: 32, currentRounds: 5, previousRounds: 0 }),
+    ).toBeUndefined();
+  });
+
+  it('is honestly undefined when a value is null/non-finite', () => {
+    expect(
+      buildVitalDelta({ current: null, previous: 32, currentRounds: 5, previousRounds: 5 }),
+    ).toBeUndefined();
+  });
+});
+
+// ── detailGridColClass (bug #949 #2 — Round scoring "74.8" / "Avg to par" overlap) ─
+
+describe('detailGridColClass', () => {
+  it('defers the 4-col jump past the `lg` breakpoint every columns=4 caller is nested at', () => {
+    // Every columns=4 DetailGrid (Round scoring, Efficiency-from-lie, Putting
+    // efficiency, Personal bests) lives inside a `grid-cols-1 lg:grid-cols-2`
+    // wrapper. If this ever regresses back to `lg:grid-cols-4`, the 4-col grid
+    // jumps at the SAME breakpoint the wrapper halves the row's width, cutting
+    // each cell's real width roughly in half exactly when it needs the most
+    // room — the "74.8" / "Avg to par" overlap this locks against.
+    const cls = detailGridColClass(4);
+    expect(cls).not.toContain('lg:grid-cols-4');
+    expect(cls).toContain('sm:grid-cols-2');
+    expect(cls).toContain('2xl:grid-cols-4');
+  });
+
+  it('columns=3 stays a single sm breakpoint (no nested-wrapper doubling risk)', () => {
+    expect(detailGridColClass(3)).toBe('sm:grid-cols-3');
+  });
+
+  it('columns=2 (default) is the plain 2-up recipe', () => {
+    expect(detailGridColClass(2)).toBe('sm:grid-cols-2');
   });
 });

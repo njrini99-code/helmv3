@@ -104,3 +104,56 @@ export function computeSeriesTrend(
 
   return { trend: classifyTrendDelta(delta, opts), delta, hasSignal: true };
 }
+
+/* ============================================================================
+ * Canonical GLYPH/COLOR rendering for a `TrendVerdict` (#945).
+ * ----------------------------------------------------------------------------
+ * Part of #914's module was "classify a delta the same way everywhere"; part
+ * of #945 is "DRAW that verdict the same way everywhere" — before this, four
+ * surfaces each hand-rolled their own arrow-to-verdict mapping and two of them
+ * had it BACKWARDS (Team Stats trajectory tile showed ↘ for "Improving" and
+ * team player cards showed ↗ for "Declining" — the arrow tracked the metric's
+ * own raw sign, not the player's actual trajectory).
+ *
+ * THE ONE RULE every surface must render: the arrow is the PERFORMANCE
+ * direction, never the raw metric's sign —
+ *   - `improving` → up-ish arrow, success tone
+ *   - `declining` → down-ish arrow, warning tone (amber, never red)
+ *   - `stable`    → flat arrow, tertiary tone
+ *
+ * A signed metric delta (e.g. a cockpit readout's "−7.0") is a SEPARATE
+ * concern from this glyph — render that number with its own explicit sign
+ * where the raw delta itself is the point; this map only decorates the
+ * categorical verdict.
+ *
+ * Diagonal glyphs (↗/↘/→) are the canonical shape for this module's
+ * consumers (Players roster, Team Stats trajectory + player cards, Team
+ * Pulse). A surface with its own established instrument chrome (e.g. the
+ * stats cockpit's filled ▲/▼ triangles) may keep its own glyph SHAPE as long
+ * as it still resolves up=improving / down=declining through
+ * `classifyTrendDelta`/`computeSeriesTrend` — unify the semantics, not the
+ * skin.
+ * ========================================================================== */
+
+/** Canonical arrow glyph for each verdict — ALWAYS performance direction. */
+export const TREND_ARROW: Record<TrendVerdict, string> = {
+  improving: '↗',
+  stable: '→',
+  declining: '↘',
+};
+
+/** Canonical text-color Tailwind class for each verdict. Amber
+ *  (`text-fw-warning`) for declining — NEVER the destructive red, which is
+ *  reserved for true errors (DESIGN-SYSTEM honesty rule). */
+export const TREND_TEXT_TONE: Record<TrendVerdict, string> = {
+  improving: 'text-fw-success',
+  stable: 'text-text-tertiary',
+  declining: 'text-fw-warning',
+};
+
+/** Canonical plain-English label for each verdict. */
+export const TREND_LABEL: Record<TrendVerdict, string> = {
+  improving: 'Improving',
+  stable: 'Steady',
+  declining: 'Declining',
+};

@@ -73,6 +73,14 @@ export function StandingStrip(props: StandingStripProps) {
   // CF-3: SG metrics anchor to the field average (0), not a PGA Tour score.
   // Women's teams get "LPGA" instead of "PGA" for non-SG metrics.
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
+  // Bug #949 #7: an SG metric's reference value is DEFINITIONALLY 0 (the
+  // field average IS the zero point SG is computed against) — a "Field Avg
+  // 0.00" readout column can never say anything else, on every player, every
+  // team, every time. It was also a straight duplicate of the SAME "FIELD
+  // AVG" text already labeling the reference tick on the bar above. Suppress
+  // the redundant readout for SG metrics only — non-SG metrics still anchor
+  // to a genuine, informative PGA/LPGA Tour number in that third column.
+  const isFieldAvgRef = /^sg_/.test(props.metric_id);
 
   // ONE "behind-benchmark" hue: 'bad' reads as the neutral/amber system tone
   // (fw-warning) everywhere a strip renders — not red — so it never collides
@@ -121,16 +129,31 @@ export function StandingStrip(props: StandingStripProps) {
         refLabel={refLabel.toUpperCase()}
       />
 
-      {/* High-contrast 3-up readouts (You is the green hero figure) */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* High-contrast readouts (You is the green hero figure). Bug #949 #7:
+          an SG metric's reference column is dropped here — it's a constant
+          "Field Avg 0.00" (SG is computed AGAINST that zero point, so it can
+          never read anything else) that only duplicated the same "FIELD AVG"
+          text the tick above already carries. The tick stays (a useful
+          visual anchor); the redundant, unchanging number does not. Non-SG
+          metrics keep the real, informative PGA/LPGA readout. */}
+      <div className={cn('grid gap-2', isFieldAvgRef ? 'grid-cols-2' : 'grid-cols-3')}>
         <Readout label={heroLabel} value={formatValue(props.player_value, props.unit)} tone="accent" align="start" />
         {showTeam && props.team_avg !== null ? (
-          <Readout label="Team" value={formatValue(props.team_avg, props.unit)} align="center" />
+          <Readout
+            label="Team"
+            value={formatValue(props.team_avg, props.unit)}
+            align={isFieldAvgRef ? 'end' : 'center'}
+          />
         ) : (
-          <Readout label="Team" value="—" tone="muted" align="center" />
+          <Readout
+            label="Team"
+            value="—"
+            tone="muted"
+            align={isFieldAvgRef ? 'end' : 'center'}
+          />
         )}
         {/* F006: suppress the reference value too when omitted — render "—". */}
-        {props.pga_omitted ? (
+        {isFieldAvgRef ? null : props.pga_omitted ? (
           <Readout label={refLabel} value="—" tone="muted" align="end" />
         ) : (
           <Readout label={refLabel} value={formatValue(props.pga_value, props.unit)} align="end" />

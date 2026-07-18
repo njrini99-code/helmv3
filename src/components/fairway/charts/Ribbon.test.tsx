@@ -139,3 +139,128 @@ describe('Ribbon — goodDirection (score/lower-is-better trend coloring)', () =
     expect(getDeltaDirection()).toBe('flat');
   });
 });
+
+/**
+ * Regression test for #946 (Team Brief hero, fix 1/5): the panel's shared
+ * eyebrow + header + readout bezel row squeezes the eyebrow/header into an
+ * overlapping mess when it renders inside a narrow grid column (viewport-
+ * width Tailwind breakpoints don't know the panel's actual rendered width).
+ * `readoutPlacement="below"` stacks the readout under the eyebrow/header as
+ * its own block instead of sharing a row with them — a structural guarantee
+ * against the collision, independent of container width.
+ */
+describe('Ribbon — readoutPlacement (#946 bezel collision fix)', () => {
+  const YARDAGE: RibbonPoint[] = [
+    { x: '0-25y', y: -0.03 },
+    { x: '275-300y', y: -0.52 },
+  ];
+
+  it('default ("corner"): the readout renders INSIDE the shared bezel row (unchanged for existing callers)', () => {
+    render(<Ribbon title="Yardage map" overline="Last 90 days · team" data={YARDAGE} seriesName="Strokes vs par" />);
+    const bezel = document.querySelector('[data-slot="instrument-bezel"]');
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(bezel).not.toBeNull();
+    expect(readout).not.toBeNull();
+    expect(bezel!.contains(readout)).toBe(true);
+  });
+
+  it('"below": the readout renders OUTSIDE the bezel row — it can never share a flex row with the eyebrow/header', () => {
+    render(
+      <Ribbon
+        title="Yardage map"
+        overline="Last 90 days · team"
+        data={YARDAGE}
+        seriesName="Strokes vs par"
+        readoutPlacement="below"
+      />,
+    );
+    const bezel = document.querySelector('[data-slot="instrument-bezel"]');
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(bezel).not.toBeNull();
+    expect(readout).not.toBeNull();
+    expect(bezel!.contains(readout)).toBe(false);
+  });
+});
+
+/**
+ * Regression test for #946 (Team Brief hero, fix 2/5): the big value and the
+ * delta beneath it rendered with no distinguishing label ("−0.52" over an
+ * unlabeled "▼−0.55"), reading as two ambiguous near-duplicate numbers.
+ * `readoutLabels` resolves from the REAL (finite-filtered) first/last points
+ * so the caller can name both truthfully.
+ */
+describe('Ribbon — readoutLabels (#946 unlabeled delta fix)', () => {
+  const YARDAGE: RibbonPoint[] = [
+    { x: '0-25y', y: -0.03 },
+    { x: '275-300y', y: -0.52 },
+  ];
+
+  it('labels the value with the resolved LAST point and the delta with the resolved FIRST point', () => {
+    render(
+      <Ribbon
+        title="Yardage map"
+        data={YARDAGE}
+        seriesName="Strokes vs par"
+        readoutLabels={(first, last) => ({
+          value: `Strokes vs par · ${last.x}`,
+          delta: `vs ${first.x}`,
+        })}
+      />,
+    );
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(readout!.textContent).toContain('Strokes vs par · 275-300y');
+    const delta = document.querySelector('[data-slot="readout-delta"]');
+    expect(delta!.textContent).toContain('vs 0-25y');
+  });
+
+  it('without readoutLabels, the delta has no caption (unchanged default — no regression)', () => {
+    render(<Ribbon title="Yardage map" data={YARDAGE} seriesName="Strokes vs par" />);
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(readout!.textContent).toContain('Strokes vs par');
+    expect(readout!.textContent).not.toContain(' · 275-300y');
+  });
+});
+
+/**
+ * Bug #949 #1 — "Score by round" reportedly drew in ~15% of its canvas with
+ * an 11-round series (a large empty plot to the right). The x-scale is
+ * INDEX-based (evenly spaced across `points.length`, never dependent on the
+ * `x` label values), so this locks BOTH halves of the contract: the traced
+ * path's own coordinates span (near) the full plot width regardless of round
+ * count, AND the rendered `<svg>` itself is pinned to fill its container via
+ * a CSS class (not just the `width="100%"` attribute, which a class always
+ * wins over) so nothing upstream can silently constrain it to a sliver.
+ */
+describe('Ribbon — the trace + its <svg> both fill the full plot width (bug #949 #1)', () => {
+  function elevenRounds(): RibbonPoint[] {
+    return Array.from({ length: 11 }, (_, i) => ({ x: `R${i + 1}`, y: 70 + i }));
+  }
+
+  it('the <svg> is pinned block+full-width via a class, not just the width attribute', () => {
+    const { container } = render(
+      <Ribbon title="Score by round" data={elevenRounds()} seriesName="Score" />,
+    );
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(svg!.getAttribute('class')).toContain('w-full');
+    expect(svg!.getAttribute('class')).toContain('block');
+  });
+
+  it('an 11-point series traces from the left pad to the right pad of the 600-unit viewBox (no squeeze)', () => {
+    const { container } = render(
+      <Ribbon title="Score by round" data={elevenRounds()} seriesName="Score" />,
+    );
+    const line = container.querySelector('path[stroke]');
+    expect(line).not.toBeNull();
+    const d = line!.getAttribute('d') ?? '';
+    // First and last x-coordinates in the path — parse the two numbers
+    // following the leading "M" and the final "L" command.
+    const commands = d.trim().split(/\s+(?=[ML])/);
+    const firstX = Number(commands[0]?.replace(/^M\s*/, '').split(' ')[0]);
+    const lastX = Number(commands[commands.length - 1]?.replace(/^L\s*/, '').split(' ')[0]);
+    // VIEW_W is 600 with an 8px pad each side — the trace must span the vast
+    // majority of that (never collapse into ~15% ≈ 90px from the left pad).
+    expect(firstX).toBeCloseTo(8, 0);
+    expect(lastX).toBeGreaterThan(500);
+  });
+});

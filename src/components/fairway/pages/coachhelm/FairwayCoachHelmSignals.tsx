@@ -1671,9 +1671,17 @@ export function FairwayCoachHelmSignals({
               smart default narrows further). P058: when the eligible total
               exceeds the loaded set, disclose "of N" honestly rather than
               silently truncating; the footnote earns the tile its
-              completeness claim. */}
+              completeness claim.
+              Bug #949 #3: this tile and "Open {noun}" both already read the
+              SAME `allRows` for the active segment (see `summary` above), but
+              the bare "Showing" label carried no scope hint — next to "Open
+              alerts" it read as if it counted a DIFFERENT, wider population
+              (alerts + insights + patterns combined) instead of the honest
+              "13 loaded, 10 of them open" relationship. Suffixing the same
+              `SIGNAL_NOUN` the Open tile already uses makes both tiles read
+              as one obviously-related pair. */}
           <MetricCard
-            label="Showing"
+            label={`Showing ${SIGNAL_NOUN[activeSegment]}`}
             value={summary.total}
             footnote={loadedFootnote}
           />

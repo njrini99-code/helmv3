@@ -51,6 +51,19 @@ const SCHEDULED_OPPONENT = 'Riverside University';
 const COMPLETED_OPPONENT = 'Eastview College';
 
 /**
+ * Matches a game detail redirect, e.g. `/stats/games/<uuid>`.
+ *
+ * `baseball_games.id` is a Postgres `uuid` (`DEFAULT gen_random_uuid()`), so
+ * matching the UUID shape — instead of the previous loose
+ * `[a-zA-Z0-9-]+$` — structurally excludes `/stats/games/create` (issue
+ * #952): the create-form route itself is 6 letters, never a UUID, so a
+ * submit that silently hangs on the create page (no redirect at all) can no
+ * longer false-pass this assertion.
+ */
+const GAME_DETAIL_URL_RE =
+  /\/stats\/games\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
  * Service-role Supabase client for teardown-only writes (deleting rows this
  * spec itself created) — provided by scripts/e2e-supabase-admin.ts so this
  * spec never references the service-role env var directly (ast-grep rule
@@ -189,7 +202,7 @@ test.describe('Coach - Create New Game', () => {
     await page.locator('#new-game-venue').fill('E2E Created Field');
     await page.getByRole('button', { name: /Create Game/i }).click();
 
-    await expect(page).toHaveURL(/\/stats\/games\/[a-zA-Z0-9-]+$/, { timeout: 8000 });
+    await expect(page).toHaveURL(GAME_DETAIL_URL_RE, { timeout: 8000 });
     await waitForPageLoad(page);
 
     // Newly created, uncompleted game lands directly on the manual entry form.
@@ -273,7 +286,7 @@ test.describe('Coach - Manual Box Score Entry', () => {
 
     await page.getByRole('button', { name: /Save Box Score/i }).click();
 
-    await expect(page).toHaveURL(/\/stats\/games\/[a-zA-Z0-9-]+$/, { timeout: 8000 });
+    await expect(page).toHaveURL(GAME_DETAIL_URL_RE, { timeout: 8000 });
     await waitForPageLoad(page);
 
     // BoxScoreView now renders the just-completed game (read-only display —
@@ -353,7 +366,7 @@ test.describe('Coach - Games List and Box Score View', () => {
     const gameCard = page.locator('[data-testid="game-card"]', { hasText: COMPLETED_OPPONENT });
     await gameCard.getByRole('link').click();
     await waitForPageLoad(page);
-    await expect(page).toHaveURL(/\/stats\/games\/[a-zA-Z0-9-]+$/);
+    await expect(page).toHaveURL(GAME_DETAIL_URL_RE);
   });
 
   test('should display the box score view with the FINAL score and result badge', async ({ page }) => {

@@ -133,14 +133,19 @@ function DemoGateContent() {
     }
   }
 
+  // #950 — the full brand→headline→card→footer entrance used to take ~1.05s
+  // (0.5s/0.65s durations + up to a 0.55s stagger delay); a conversion page
+  // should finish composing well under 1s. Same stagger SHAPE (brand, then
+  // headline, then the card, then the footer), just tightened durations/
+  // delays so the whole sequence settles by ~0.5s.
   const motionCard = prefersReducedMotion
     ? { duration: 0 }
-    : { duration: 0.65, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] };
+    : { duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] };
 
   const motionStagger = (delay: number) =>
     prefersReducedMotion
       ? { duration: 0 }
-      : { duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] };
+      : { duration: 0.25, delay, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] };
 
   return (
     <LazyMotion features={loadFeatures}>
@@ -203,7 +208,7 @@ function DemoGateContent() {
           <m.div
             initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={motionStagger(0.1)}
+            transition={motionStagger(0.05)}
             className="text-center mb-6 sm:mb-8 max-w-[380px]"
           >
             <h1
@@ -421,7 +426,7 @@ function DemoGateContent() {
           <m.div
             initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={motionStagger(0.55)}
+            transition={motionStagger(0.25)}
             className="mt-6 flex flex-col items-center gap-3"
           >
             <p className="text-warm-600 text-sm">
