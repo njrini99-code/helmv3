@@ -7,6 +7,7 @@ import { isGoalProposal } from '@/lib/coachhelm/v3/chat/types';
 import { createGoal } from '@/app/golf/actions/v3/goals';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { Button } from '@/components/ui/button';
+import { ChatMarkdown } from './ChatMarkdown';
 import {
   enterVariants,
   enterTransition,
@@ -130,9 +131,9 @@ function Bubble({ message, prefersReducedMotion }: { message: ChatMessage; prefe
           initial={prefersReducedMotion ? false : { opacity: 0.6 }}
           animate={{ opacity: 1 }}
           transition={{ duration: DURATION.short, ease: EASE_TAP }}
-          className="max-w-[85%] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 whitespace-pre-wrap leading-relaxed"
+          className="max-w-[85%] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 leading-relaxed"
         >
-          {message.content}
+          <ChatMarkdown text={message.content ?? ''} />
         </m.div>
       );
     }
@@ -141,9 +142,9 @@ function Bubble({ message, prefersReducedMotion }: { message: ChatMessage; prefe
         initial={prefersReducedMotion ? false : { opacity: 0.6 }}
         animate={{ opacity: 1 }}
         transition={{ duration: DURATION.short, ease: EASE_TAP }}
-        className="max-w-[85%] rounded-2xl bg-cream-50 surface-hairline border px-4 py-3 text-sm text-warm-900 whitespace-pre-wrap leading-relaxed"
+        className="max-w-[85%] rounded-2xl bg-cream-50 surface-hairline border px-4 py-3 text-sm text-warm-900 leading-relaxed"
       >
-        {message.content}
+        <ChatMarkdown text={message.content ?? ''} />
       </m.div>
     );
   }
