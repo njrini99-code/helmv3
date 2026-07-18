@@ -12,6 +12,17 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
  * collapsed "Deep analysis" disclosure bar — same pattern as
  * `dashboard/insights/loading.tsx` and `FairwayBrief.tsx`'s own
  * `DeepAnalysisSkeleton` (rendered later, under the disclosure).
+ *
+ * #947 fix: the eyebrow + h1 are real static text (matching
+ * `FairwayBrief.tsx`'s `CoachHelmShell` call — `eyebrow` default "CoachHelm
+ * AI", `title={shell?.title ?? 'Team Brief'}`), not `<Skeleton>` blocks. This
+ * route is `force-dynamic` and awaits several sequential DB reads before it
+ * can render at all, so this fallback is what actually paints first on every
+ * navigation here — a generic gray bar in the title's place, live for as
+ * long as the fetch chain takes, read as a "ghost/blank title" flash when the
+ * real text finally popped in. Neither string above depends on fetched data,
+ * so there's nothing to reserve a placeholder for; only the description
+ * (data-flavored copy) stays a Skeleton.
  */
 export default function IntelligenceLoading() {
   return (
@@ -26,9 +37,13 @@ export default function IntelligenceLoading() {
 
         {/* masthead */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-7 w-48" />
+          <div className="flex flex-col gap-1.5">
+            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
+              CoachHelm AI
+            </p>
+            <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">
+              Team Brief
+            </h1>
           </div>
           <Skeleton className="h-9 w-28 rounded-fw-md" />
         </div>

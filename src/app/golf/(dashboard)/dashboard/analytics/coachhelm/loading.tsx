@@ -12,6 +12,12 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * the legacy `glass-standard` header + `Shimmer`/`ShimmerCard` tab UI, which
  * matched neither the redesigned cockpit layout nor its tokens (CLS + a
  * wrong-chrome flash on mount).
+ *
+ * #947 fix: eyebrow + h1 are real static text (matching
+ * `FairwayEffectiveness.tsx`'s `CoachHelmShell` call — default eyebrow
+ * "CoachHelm AI", `title="Is CoachHelm helping?"`), not `<Skeleton>` blocks.
+ * The description (`Last ${days} days…`) stays a Skeleton — it's the one
+ * piece that varies with the selected date range.
  */
 export default function Loading() {
   return (
@@ -20,8 +26,12 @@ export default function Loading() {
         {/* Masthead — ViewHeader silhouette (eyebrow + title + description + actions) */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-8 w-64 max-w-full" />
+            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
+              CoachHelm AI
+            </p>
+            <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">
+              Is CoachHelm helping?
+            </h1>
             <Skeleton className="h-4 w-56 max-w-full" />
           </div>
           {/* range Segmented + Refresh action cluster */}

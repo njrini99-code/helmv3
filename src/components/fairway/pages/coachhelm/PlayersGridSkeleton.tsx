@@ -20,6 +20,15 @@
  * primitive only — no legacy `surface-matte` / `warm-*` / `skeleton-shimmer`.
  * Renders inside `.fairway-ds` on a `bg-canvas` page exactly like the real
  * surface (matching the route fork's wrapper classes).
+ *
+ * #947 fix: the eyebrow + h1 ARE real static text (matching
+ * `PlayersGridView.tsx`'s `CoachHelmShell` call — default eyebrow "CoachHelm
+ * AI", `title="Players"`), not `<Skeleton>` blocks — unlike the counts below
+ * them, neither string depends on the fetch this fallback is standing in
+ * for, so there's nothing to reserve a placeholder for. Leaving them as
+ * generic gray bars was why the title appeared to "ghost" in for however
+ * long the route's data fetch took, well after the rest of the page had a
+ * plausible shape.
  * ========================================================================== */
 
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -56,8 +65,12 @@ export function PlayersGridSkeleton() {
               cluster (Segmented + primary button). */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
             <div className="flex min-w-0 flex-col gap-1.5">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-9 w-44" />
+              <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
+                CoachHelm AI
+              </p>
+              <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">
+                Players
+              </h1>
               <Skeleton className="h-4 w-80 max-w-full" />
             </div>
             <div className="flex shrink-0 items-center gap-2 sm:ml-auto sm:justify-end">

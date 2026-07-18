@@ -18,7 +18,7 @@
  * overflow surfaces.
  * ========================================================================== */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -46,6 +46,7 @@ import {
   type GolfNavBadgeCounts,
 } from '@/lib/golf/nav-registry';
 import { surfaceName, surfaceHref } from '@/lib/golf/surface-registry';
+import { isPageScrollHomeEndTarget, shouldResetScrollOnNavigate } from '@/lib/golf/scroll-behavior';
 
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { MobileNavProvider } from '@/contexts/mobile-nav-context';
@@ -328,6 +329,67 @@ function FairwayDashboardContent({
   const { mobileOpen, setMobileOpen } = useSidebar();
   const { displayDensity, showAnimations } = useAppearancePreferences();
   const role: Role = userData.role === 'coach' ? 'coach' : 'player';
+
+  // #947: reset the document scroll position to the top on a route change.
+  // This shell mounts ONCE per session (it lives in (dashboard)/layout.tsx,
+  // which persists across every sibling navigation) and the dashboard is a
+  // plain document-scrolling page (see globals.css's `overflow-x: clip`
+  // comment — no inner `overflow-y-auto` wrapper), so without this a
+  // navigation to a new route inherited whatever scrollY the PREVIOUS page
+  // was left at (Dashboard → Brief landing mid-page instead of at the top).
+  // Browser back/forward is deliberately excluded — a `popstate` listener
+  // flags the next pathname change as "the browser already restored scroll
+  // for this one", so native back-button semantics are untouched — and a
+  // destination hash (`#section`) is excluded so anchor links still work.
+  // See `src/lib/golf/scroll-behavior.ts` for the (unit-tested) decision.
+  const isPopStateRef = useRef(false);
+  useEffect(() => {
+    const onPopState = () => {
+      isPopStateRef.current = true;
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const previousPathnameRef = useRef<string | null>(null);
+  useEffect(() => {
+    const wasPopState = isPopStateRef.current;
+    isPopStateRef.current = false; // consume — good for exactly one pathname change
+    const reset = shouldResetScrollOnNavigate({
+      previousPathname: previousPathnameRef.current,
+      nextPathname: pathname,
+      isPopState: wasPopState,
+      hash: typeof window !== 'undefined' ? window.location.hash : '',
+    });
+    previousPathnameRef.current = pathname;
+    if (reset) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+
+  // #947: the dashboard content area ignored Home/End keyboard scrolling.
+  // The shell is document-scrolling (no inner `overflow-y-auto` wrapper —
+  // see the scroll-reset effect above), so this is a `window`-level listener
+  // rather than a handler scoped to one element: whatever currently has
+  // focus (a nav item, a card action, or nothing more specific than
+  // `document.body`) should still let Home/End move the page, exactly as a
+  // plain document would without any shell chrome layered over it. Native
+  // form controls and composite ARIA widgets (tabs/listbox/menu/grid/tree)
+  // that legitimately own Home/End for their own first/last-item navigation
+  // are excluded — see `isPageScrollHomeEndTarget`.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Home' && event.key !== 'End') return;
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+      if (!isPageScrollHomeEndTarget(event.target instanceof Element ? event.target : null)) return;
+      event.preventDefault();
+      window.scrollTo({
+        top: event.key === 'Home' ? 0 : document.documentElement.scrollHeight,
+        left: 0,
+        behavior: 'instant',
+      });
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   // TeamSwitcher (program heads only): renders in the glass top bar's action
   // cluster — desktop AND mobile — when the coach is a multi-team head coach.

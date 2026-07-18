@@ -194,11 +194,22 @@ export function AskWorkspace({
     >
       {/* ── The two-pane inbox: a conversation rail + a thread pane, both flat
             matte InstrumentPanels on the canvas wash. Ask is a conversation, so
-            the chrome stays calm and the chat inside stays clean + legible. ── */}
-      <div className={cn('grid grid-cols-12 items-start gap-5 md:gap-6')}>
+            the chrome stays calm and the chat inside stays clean + legible.
+            #948: the rail used to be a proportional `col-span-3` of 12 — on a
+            laptop-width viewport (not an ultra-wide monitor) that resolved to
+            ~180px, truncating every thread title down to "Can you…". A grid
+            template column with a hard `minmax(260px, 300px)` floor keeps the
+            rail readable regardless of viewport width; the thread pane takes
+            the rest (`minmax(0, 1fr)` — the `0` avoids the classic grid-blowout
+            gotcha where an unbreakable child forces the track wider). ── */}
+      <div
+        className={cn(
+          'grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(260px,300px)_minmax(0,1fr)] md:gap-6',
+        )}
+      >
         {/* ── Left: conversation rail (sticky on desktop so the thread scrolls
               independently beside a pinned inbox). ──────────────────────────── */}
-        <aside className="col-span-12 md:col-span-4 lg:col-span-3 md:sticky md:top-6">
+        <aside className="md:sticky md:top-6">
           <AskConversationRail
             conversations={conversations}
             activeId={conversationId}
@@ -208,7 +219,7 @@ export function AskWorkspace({
         </aside>
 
         {/* ── Right: thread pane (embedded ChatMessageList + ChatComposer) ─── */}
-        <div className="col-span-12 md:col-span-8 lg:col-span-9">
+        <div className="min-w-0">
           <AskThreadPane
             messages={messages}
             activeId={conversationId}

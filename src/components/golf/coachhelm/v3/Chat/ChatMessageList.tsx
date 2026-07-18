@@ -42,6 +42,18 @@ export function ChatMessageList({ messages, pending }: Props) {
   const STAGGER_WINDOW = 8;
   const staggerOffset = Math.max(0, messages.length - STAGGER_WINDOW);
 
+  // #948 — a stored thread can genuinely end on a user turn with no
+  // assistant row after it (an orphaned turn from before the send route's
+  // P1-11 idempotency/grounding fixes always persisted a reply — success,
+  // failure, or ungrounded — for every turn). Rendering nothing here left a
+  // silent ~500px void under the last question, reading as a broken page
+  // rather than a fact about the data. `pending` excludes an ACTIVE send —
+  // that case already shows the thinking-dots row below, and the send route
+  // always appends a reply (real or a visible failure) once it settles, so
+  // this only ever fires for genuinely orphaned history.
+  const lastMessage = messages[messages.length - 1];
+  const showMissingReplyNotice = !pending && lastMessage?.role === 'user';
+
   return (
     <ul role="log" aria-live="polite" className="flex flex-col gap-3">
       {messages.map((message, i) => {
@@ -60,6 +72,13 @@ export function ChatMessageList({ messages, pending }: Props) {
           </m.li>
         );
       })}
+      {showMissingReplyNotice && (
+        <li role="status">
+          <div className="max-w-[85%] rounded-2xl border border-dashed border-warm-300 bg-warm-50/60 px-4 py-3 text-sm italic text-warm-500">
+            No response recorded for this message.
+          </div>
+        </li>
+      )}
       {pending && (
         <m.li
           variants={enterVariants}

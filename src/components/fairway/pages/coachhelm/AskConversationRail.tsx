@@ -144,14 +144,19 @@ export function AskConversationRail({
 }: AskConversationRailProps) {
   const reduced = useReducedMotion() ?? false;
 
-  // ── The rail bezel: a Fraunces "Threads" eyebrow + an honest thread-count
-  //    micro-Readout (awaiting until at least one conversation exists). ────────
+  // ── The rail bezel: a Fraunces "Threads" heading (THREADS_HEADER, the
+  //    panel's `header` slot) + an honest thread-count micro-Readout in the
+  //    `readout` slot (awaiting until at least one conversation exists).
+  //    #948: the Readout used to carry its OWN `label="threads"` too, so the
+  //    bezel showed "Threads" (the heading) directly above/beside "THREADS 2"
+  //    (the readout's own uppercase label + count) — the same word rendered
+  //    twice for one piece of information. The heading already says what's
+  //    being counted; the readout needs only the bare number. ─────────────
   const count = conversations.length;
   const countReadout = (
     <Readout
       value={count}
       format={{ maximumFractionDigits: 0 }}
-      label="threads"
       size="sm"
       align="end"
       state={count > 0 ? 'live' : 'awaiting'}
