@@ -203,8 +203,20 @@ export interface FairwayStatsCockpitProps {
    * route). Drives the cold-start CTA — only the player can log a round, so a
    * coach drill-down (which omits this) gets no player-only action. Defaults
    * to false so the roster profile path stays CTA-free.
+   *
+   * ALSO drives the SG cards' audience voice (bug #915): `false` (the coach
+   * drill-down default) renders the player's name/initials instead of "You"
+   * and drops the "your team" possessive from the cohort caption.
    */
   isOwnStats?: boolean;
+  /**
+   * The player's display name — only used when `isOwnStats` is false, to
+   * label the coach-facing SG card hero marker (see `isOwnStats`). The
+   * cockpit itself has no identity lookup (see the file header note), so the
+   * caller resolves + passes this. Falls back to a generic "Player" label
+   * when omitted.
+   */
+  playerName?: string;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -308,11 +320,33 @@ function fmtInt(value: number | null | undefined): string {
   return n === null ? '—' : String(Math.round(n));
 }
 
+/**
+ * Semantic value tone — 'good' (ahead of the benchmark), 'warn' (behind it —
+ * amber, NEVER red; a stat lagging Tour/team is not an error), or 'neutral'
+ * (the default: no comparison point exists yet, or the value sits inside the
+ * dead zone). Mirrors the "ONE behind-benchmark hue" rule StandingStrip
+ * already uses (`text-fw-warning` for behind, never destructive red).
+ */
+export type DetailTone = 'good' | 'warn' | 'neutral';
+
+const TONE_VALUE_CLASS: Record<DetailTone, string> = {
+  good: 'text-fw-success',
+  warn: 'text-fw-warning',
+  neutral: 'text-text-primary',
+};
+
 /** A single label → honest value row inside a detail grid. */
 interface DetailRow {
   label: string;
   /** Preformatted, already null-guarded display string ("—" when no data). */
   value: string;
+  /**
+   * Optional semantic tone for the VALUE text only (never the whole card).
+   * Omit — or leave 'neutral' — when no real comparison exists for this row;
+   * tone is only ever derived from a genuine PGA/team baseline or an honest
+   * relative read across the row's own peers, never fabricated.
+   */
+  tone?: DetailTone;
 }
 
 /** True when every row in a detail block is the honest em-dash (no real data). */
@@ -321,21 +355,119 @@ function allDash(rows: DetailRow[]): boolean {
 }
 
 /**
+ * Compare a raw value to a real benchmark (a PGA Tour standard or a team
+ * average, both already fetched elsewhere on this page) and return a calm
+ * tone. `direction` flips which side of the benchmark reads as ahead;
+ * `deadzone` (in the metric's own units — percentage points, feet, etc.)
+ * keeps noise-level differences neutral instead of flickering good/warn.
+ * Returns 'neutral' whenever either input is missing — no comparison is
+ * ever invented.
+ */
+export function toneVsBenchmark(
+  value: number | null,
+  benchmark: number | null,
+  direction: 'higher_better' | 'lower_better',
+  deadzone = 3,
+): DetailTone {
+  if (value === null || benchmark === null) return 'neutral';
+  const diff = direction === 'higher_better' ? value - benchmark : benchmark - value;
+  if (diff > deadzone) return 'good';
+  if (diff < -deadzone) return 'warn';
+  return 'neutral';
+}
+
+/**
+ * Self-referential tone across a player's OWN band values, for boards with no
+ * external baseline available (e.g. GIR% by approach distance — the engine
+ * has no per-band PGA/team standard). The same "biggest gain / biggest leak"
+ * read the SG tab already draws across categories, applied within one board:
+ * the strongest band reads 'good', the weakest 'warn'. Needs >= 3 real values
+ * AND a meaningful spread (>= minGap) or every row stays neutral — a 2-point
+ * or barely-different set is noise, not a trend.
+ */
+export function relativeTones(values: ReadonlyArray<number | null>, minGap = 8): DetailTone[] {
+  const real = values.filter((v): v is number => v !== null);
+  if (real.length < 3) return values.map(() => 'neutral');
+  const max = Math.max(...real);
+  const min = Math.min(...real);
+  if (max - min < minGap) return values.map(() => 'neutral');
+  return values.map((v) => (v === null ? 'neutral' : v === max ? 'good' : v === min ? 'warn' : 'neutral'));
+}
+
+/**
+ * Miss-direction symmetry tone. There is no external benchmark for which way
+ * a miss "should" lean, so this reads the row's own share: a meaningfully
+ * lopsided split (>= thresholdPct of that row's own misses) warns; a roughly
+ * even split reads neutral. Never 'good' — a missed fairway is never a
+ * positive outcome, only more or less directionally biased.
+ */
+export function skewTone(sharePct: number | null, thresholdPct = 62): DetailTone {
+  if (sharePct === null) return 'neutral';
+  return sharePct >= thresholdPct ? 'warn' : 'neutral';
+}
+
+/**
+ * Shared chrome for the DetailGrid family — a title/hint header over a
+ * matte bordered Surface that STRETCHES to fill its grid row (`h-full` +
+ * `flex-1` on the Surface) so bordered cards in the same row equalize their
+ * bottoms instead of trailing off at their own content height. DetailGrid,
+ * TeeMissByClub, and GirByDistanceBoard all mount their row content into
+ * this ONE shell instead of each hand-rolling the title-block + Surface
+ * wrapper (previously three copies that could quietly drift out of sync).
+ */
+function DetailGridShell({
+  title,
+  hint,
+  surfaceClassName,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  surfaceClassName?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full flex-col gap-2">
+      <div className="flex flex-col gap-0.5 px-1">
+        <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</h4>
+        {hint ? (
+          <span className="font-fw-sans text-caption text-text-tertiary">{hint}</span>
+        ) : null}
+      </div>
+      <Surface elevation="border" padding="md" className={cn('flex-1', surfaceClassName)}>
+        {children}
+      </Surface>
+    </div>
+  );
+}
+
+/**
  * Compact honest readout grid on a sunken Surface — the Fairway-native
  * replacement for the legacy StatRow list. Each row is a label + tabular value;
- * a row with no data reads em-dash, never a fabricated 0. The whole block is
- * only rendered by callers when at least one row has data (allDash guard).
+ * a row with no data reads em-dash, never a fabricated 0. A row's `tone`
+ * (good/warn/neutral) tints ONLY the value text, never the card. The whole
+ * block is only rendered by callers when at least one row has data (allDash
+ * guard).
  */
 function DetailGrid({
   title,
   hint,
   rows,
   columns = 2,
+  scrollable = false,
 }: {
   title: string;
   hint?: string;
   rows: DetailRow[];
   columns?: 2 | 3 | 4;
+  /**
+   * Caps the row list at a fixed internal height with its own scroll — for a
+   * grid paired in the same row against a much shorter sibling (e.g. the
+   * Approach tab's "By lie" 2-row grid next to the 8-row Efficiency grid) so
+   * the taller card doesn't blow the row out of proportion. Every value stays
+   * reachable by scrolling; nothing is hidden.
+   */
+  scrollable?: boolean;
 }) {
   const colClass =
     columns === 4
@@ -344,34 +476,32 @@ function DetailGrid({
         ? 'sm:grid-cols-3'
         : 'sm:grid-cols-2';
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-0.5 px-1">
-        <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</h4>
-        {hint ? (
-          <span className="font-fw-sans text-caption text-text-tertiary">{hint}</span>
-        ) : null}
-      </div>
-      <Surface elevation="border" padding="md">
-        <dl className={cn('grid grid-cols-1 gap-x-6 gap-y-2.5', colClass)}>
-          {rows.map((r) => (
-            <div
-              key={r.label}
-              className="flex items-baseline justify-between gap-3 border-b border-border-subtle/60 pb-2 last:border-0 last:pb-0"
+    <DetailGridShell title={title} hint={hint}>
+      <dl
+        className={cn(
+          'grid grid-cols-1 gap-x-6 gap-y-2.5',
+          colClass,
+          scrollable && 'max-h-64 overflow-y-auto pr-1',
+        )}
+      >
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            className="flex items-baseline justify-between gap-3 border-b border-border-subtle/60 pb-2 last:border-0 last:pb-0"
+          >
+            <dt className="font-fw-sans text-caption text-text-secondary">{r.label}</dt>
+            <dd
+              className={cn(
+                'font-fw-mono text-body-sm font-medium tabular-nums',
+                r.value === '—' ? 'text-text-tertiary' : TONE_VALUE_CLASS[r.tone ?? 'neutral'],
+              )}
             >
-              <dt className="font-fw-sans text-caption text-text-secondary">{r.label}</dt>
-              <dd
-                className={cn(
-                  'font-fw-mono text-body-sm font-medium tabular-nums',
-                  r.value === '—' ? 'text-text-tertiary' : 'text-text-primary',
-                )}
-              >
-                {r.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </Surface>
-    </div>
+              {r.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </DetailGridShell>
   );
 }
 
@@ -384,6 +514,7 @@ function HeadlineReadout({
   hasSample,
   awaitingLabel,
   haveSamples,
+  delta,
 }: {
   value: number | null;
   format?: { maximumFractionDigits?: number; minimumFractionDigits?: number };
@@ -392,6 +523,8 @@ function HeadlineReadout({
   hasSample: boolean;
   awaitingLabel: string;
   haveSamples?: number;
+  /** Optional signed delta line (e.g. "vs prev 30d") — rendered only while live. */
+  delta?: ReadoutDelta;
 }) {
   const live = value != null && hasSample;
   return (
@@ -405,6 +538,7 @@ function HeadlineReadout({
         state={live ? 'live' : 'awaiting'}
         samples={live ? undefined : { have: haveSamples ?? 0, need: 1 }}
         awaitingLabel={awaitingLabel}
+        delta={live ? delta : undefined}
       />
     </InstrumentPanel>
   );
@@ -443,7 +577,17 @@ function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: b
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }: FairwayStatsCockpitProps) {
+export function FairwayStatsCockpit({
+  playerId,
+  className,
+  isOwnStats = false,
+  playerName,
+}: FairwayStatsCockpitProps) {
+  // Bug #915: the SG cards render in the player's own voice ("You" / "your
+  // team") by default. `isOwnStats` already tells us whether the viewer IS
+  // that player — reuse it as the StandingStrip audience signal rather than
+  // introducing a second flag callers have to keep in sync.
+  const standingViewerContext = isOwnStats ? 'self' : 'coach';
   const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
   const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
   const [standingRows, setStandingRows] = useState<PlayerStandingRow[] | null>(null);
@@ -457,7 +601,6 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showDetailed, setShowDetailed] = useState(false);
-  const [showComprehensive, setShowComprehensive] = useState(false);
 
   // ── P355 · Tab persistence — sync the active tab to the `?tab=` search param ─
   // so refresh / browser-back / deep-link all restore (and share) the user's
@@ -754,6 +897,17 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
     );
   }
 
+  // ── Vitals readouts — folded RoundsReadout/FairwaysReadout/GirReadout/
+  // PuttsReadout (four near-identical hand-rolled components) into ONE shared
+  // HeadlineReadout below; these are just their per-metric inputs. ──────────
+  const roundsVal = detailedStats?.roundsPlayed ?? 0;
+  const fairwaysPct = finite(detailedStats?.fairwayPercentage);
+  const fairwaysLive = fairwaysPct != null && (detailedStats?.fairwayOpportunities ?? 0) > 0;
+  const girPct = finite(detailedStats?.girPercentage);
+  const girLive = girPct != null && (detailedStats?.girOpportunities ?? 0) > 0;
+  const puttsPerRoundVal = finite(detailedStats?.puttsPerRound);
+  const puttsLive = puttsPerRoundVal != null && (detailedStats?.totalPutts ?? 0) > 0;
+
   return (
     <div className={cn('flex flex-col gap-10', className)}>
       {/* ════════════════ 1 · VERDICT — SG hero + synthesized read ════════════ */}
@@ -766,6 +920,8 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
         sgTotal={sgTotal}
         detailedStats={detailedStats}
         gainLeak={gainLeak}
+        standingViewerContext={standingViewerContext}
+        playerName={playerName}
         headerAction={
           <Button
             variant="secondary"
@@ -790,10 +946,39 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
       <section className="flex flex-col gap-3">
         <SectionHeading>The fundamentals</SectionHeading>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <RoundsReadout detailedStats={detailedStats} />
-          <FairwaysReadout detailedStats={detailedStats} delta={vitalsDeltas.fairways} />
-          <GirReadout detailedStats={detailedStats} delta={vitalsDeltas.gir} />
-          <PuttsReadout detailedStats={detailedStats} delta={vitalsDeltas.putts} />
+          <HeadlineReadout
+            value={roundsVal}
+            format={{ maximumFractionDigits: 0 }}
+            label="Rounds analyzed"
+            hasSample={roundsVal > 0}
+            awaitingLabel="None yet"
+          />
+          <HeadlineReadout
+            value={fairwaysPct}
+            format={{ maximumFractionDigits: 0 }}
+            unit="%"
+            label="Fairways"
+            hasSample={fairwaysLive}
+            awaitingLabel="No tee shots"
+            delta={vitalsDeltas.fairways}
+          />
+          <HeadlineReadout
+            value={girPct}
+            format={{ maximumFractionDigits: 0 }}
+            unit="%"
+            label="GIR"
+            hasSample={girLive}
+            awaitingLabel="No approaches"
+            delta={vitalsDeltas.gir}
+          />
+          <HeadlineReadout
+            value={puttsPerRoundVal}
+            format={{ maximumFractionDigits: 1 }}
+            label="Putts / round"
+            hasSample={puttsLive}
+            awaitingLabel="No putts"
+            delta={vitalsDeltas.putts}
+          />
         </div>
       </section>
 
@@ -832,8 +1017,13 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                   }
                   seriesName="Score"
                   valueFormatter={(v) => v.toFixed(1)}
+                  // Bug #915: score is lower-is-better — a falling score (an
+                  // improving trend) must render green, not the amber
+                  // "declining" default.
+                  goodDirection="down"
                 />
               </section>
+              <ScoringDetail detailedStats={detailedStats} />
             </div>
           </TabsContent>
 
@@ -866,7 +1056,7 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
 
           <TabsContent value="putting" className="px-4 py-5 sm:px-5">
             <div className="flex flex-col gap-6">
-              <PuttingLegacyDetail detailedStats={detailedStats} />
+              <PuttingLegacyDetail detailedStats={detailedStats} standing={standingByMetric} />
               {leakError ? (
                 <LeakLoadError onRetry={() => void loadAll(playerId)} retrying={loading} />
               ) : (
@@ -884,7 +1074,7 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
           </TabsContent>
 
           <TabsContent value="scrambling" className="px-4 py-5 sm:px-5">
-            <ShortGameSection detailedStats={detailedStats} />
+            <ShortGameSection detailedStats={detailedStats} standing={standingByMetric} />
           </TabsContent>
 
           <TabsContent value="strokes-gained" className="px-4 py-5 sm:px-5">
@@ -944,6 +1134,8 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                           unit={cfg.unit}
                           scale={cfg.default_scale}
                           size="card"
+                          viewer_context={standingViewerContext}
+                          player_name={playerName}
                         />
                       ))}
                     </div>
@@ -996,13 +1188,14 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                 matrixByCategory={matrixByCategory}
                 open={showDetailed}
                 onToggle={() => setShowDetailed((v) => !v)}
+                standingViewerContext={standingViewerContext}
+                playerName={playerName}
               />
               <ShotPatterns spray={sprayData} putting={detailedStats?.puttingByBreak ?? null} />
-              <ComprehensiveDetail
+              <AnalysisSummary
                 detailedStats={detailedStats}
                 trendData={trendData}
-                open={showComprehensive}
-                onToggle={() => setShowComprehensive((v) => !v)}
+                onNavigateTab={handleTabChange}
               />
             </div>
           </TabsContent>
@@ -1042,12 +1235,17 @@ function SgVerdict({
   detailedStats,
   gainLeak,
   headerAction,
+  standingViewerContext,
+  playerName,
 }: {
   sgTotal: PlayerStandingRow | null;
   detailedStats: GolfStats | null;
   gainLeak: { best: { label: string }; worst: { label: string } } | null;
   /** Rendered in the hero panel's own header bezel (top-right), e.g. the print/export control. */
   headerAction?: React.ReactNode;
+  /** Bug #915 — 'self' shows "You" on the SG card, 'coach' shows the player's name/initials. */
+  standingViewerContext: 'self' | 'coach';
+  playerName?: string;
 }) {
   const sgCfg = getMetricRenderConfig('sg_total');
   const scoringAvg = finite(detailedStats?.scoringAverage);
@@ -1097,6 +1295,8 @@ function SgVerdict({
               unit={sgCfg.unit}
               scale={sgCfg.default_scale}
               size="card"
+              viewer_context={standingViewerContext}
+              player_name={playerName}
             />
           ) : (
             <InsufficientData
@@ -1133,103 +1333,11 @@ function SgVerdict({
 
 /* ════════════════════════════════════════════════════════════════════════════
  * 2 · VITALS — micro-readouts off the REUSED getDetailedStats GolfStats.
+ * Rounds/Fairways/GIR/Putts all folded into the shared HeadlineReadout above
+ * (was four near-identical hand-rolled InstrumentPanel+Readout components —
+ * see the `roundsVal`/`fairwaysPct`/`girPct`/`puttsPerRoundVal` locals and the
+ * "The fundamentals" section in the main render).
  * ══════════════════════════════════════════════════════════════════════════ */
-function RoundsReadout({ detailedStats }: { detailedStats: GolfStats | null }) {
-  const rounds = detailedStats?.roundsPlayed ?? 0;
-  return (
-    <InstrumentPanel depth="base" padding="md" className="h-full">
-      <Readout
-        value={rounds}
-        format={{ maximumFractionDigits: 0 }}
-        label="Rounds analyzed"
-        size="md"
-        state={rounds > 0 ? 'live' : 'awaiting'}
-        samples={rounds === 0 ? { have: 0, need: 1 } : undefined}
-        awaitingLabel="None yet"
-      />
-    </InstrumentPanel>
-  );
-}
-
-function FairwaysReadout({
-  detailedStats,
-  delta,
-}: {
-  detailedStats: GolfStats | null;
-  delta?: ReadoutDelta;
-}) {
-  const pct = finite(detailedStats?.fairwayPercentage);
-  const opps = detailedStats?.fairwayOpportunities ?? 0;
-  const live = pct != null && opps > 0;
-  return (
-    <InstrumentPanel depth="base" padding="md" className="h-full">
-      <Readout
-        value={pct ?? undefined}
-        format={{ maximumFractionDigits: 0 }}
-        unit="%"
-        label="Fairways"
-        size="md"
-        state={live ? 'live' : 'awaiting'}
-        samples={live ? undefined : { have: 0, need: 1 }}
-        awaitingLabel="No tee shots"
-        delta={live ? delta : undefined}
-      />
-    </InstrumentPanel>
-  );
-}
-
-function GirReadout({
-  detailedStats,
-  delta,
-}: {
-  detailedStats: GolfStats | null;
-  delta?: ReadoutDelta;
-}) {
-  const pct = finite(detailedStats?.girPercentage);
-  const opps = detailedStats?.girOpportunities ?? 0;
-  const live = pct != null && opps > 0;
-  return (
-    <InstrumentPanel depth="base" padding="md" className="h-full">
-      <Readout
-        value={pct ?? undefined}
-        format={{ maximumFractionDigits: 0 }}
-        unit="%"
-        label="GIR"
-        size="md"
-        state={live ? 'live' : 'awaiting'}
-        samples={live ? undefined : { have: 0, need: 1 }}
-        awaitingLabel="No approaches"
-        delta={live ? delta : undefined}
-      />
-    </InstrumentPanel>
-  );
-}
-
-function PuttsReadout({
-  detailedStats,
-  delta,
-}: {
-  detailedStats: GolfStats | null;
-  delta?: ReadoutDelta;
-}) {
-  const perRound = finite(detailedStats?.puttsPerRound);
-  const putts = detailedStats?.totalPutts ?? 0;
-  const live = perRound != null && putts > 0;
-  return (
-    <InstrumentPanel depth="base" padding="md" className="h-full">
-      <Readout
-        value={perRound ?? undefined}
-        format={{ maximumFractionDigits: 1 }}
-        label="Putts / round"
-        size="md"
-        state={live ? 'live' : 'awaiting'}
-        samples={live ? undefined : { have: 0, need: 1 }}
-        awaitingLabel="No putts"
-        delta={live ? delta : undefined}
-      />
-    </InstrumentPanel>
-  );
-}
 
 /* ════════════════════════════════════════════════════════════════════════════
  * 3b · SCORING BY PAR — the outcome mix on par 3s / 4s / 5s as a stacked
@@ -1320,7 +1428,17 @@ function ScoringByPar({ data }: { data: GolfStats['scoringByPar'] }) {
  * ══════════════════════════════════════════════════════════════════════════ */
 type ScrambleCut = 'lie' | 'distance';
 
-function ShortGameSection({ detailedStats }: { detailedStats: GolfStats | null }) {
+function ShortGameSection({
+  detailedStats,
+  standing,
+}: {
+  detailedStats: GolfStats | null;
+  /** Player standing rows keyed by metric_id — carries the real PGA-Tour
+   *  baseline for the by-lie scrambling percentages (see `toneVsBenchmark`
+   *  calls below). Optional so this section still renders honestly (all
+   *  neutral) if the standing fetch hasn't landed yet. */
+  standing?: Map<string, PlayerStandingRow>;
+}) {
   const [scrambleCut, setScrambleCut] = useState<ScrambleCut>('lie');
   if (!detailedStats) return null;
   const scramblePct = finite(detailedStats.scramblingPercentage);
@@ -1329,12 +1447,28 @@ function ShortGameSection({ detailedStats }: { detailedStats: GolfStats | null }
   const sandAtt = detailedStats.sandSaveAttempts ?? 0;
   const penPerRound = finite(detailedStats.penaltiesPerRound);
   const rounds = detailedStats.roundsPlayed ?? 0;
+  const pgaFor = (metricId: string) => finite(standing?.get(metricId)?.pga_value ?? null);
 
   // By-lie + by-distance scrambling drill-in (only rows with data shown honest).
+  // Tone compares each lie's scrambling % to the matching v3 registry metric's
+  // real PGA-Tour standard (scrambling_pct_fairway/rough/sand) — the exact
+  // same quantity, so this is a genuine baseline, not an invented one.
   const byLie: DetailRow[] = [
-    { label: 'From fairway', value: fmtPct(detailedStats.scramblingPctFairway) },
-    { label: 'From rough', value: fmtPct(detailedStats.scramblingPctRough) },
-    { label: 'From sand', value: fmtPct(detailedStats.scramblingPctSand) },
+    {
+      label: 'From fairway',
+      value: fmtPct(detailedStats.scramblingPctFairway),
+      tone: toneVsBenchmark(finite(detailedStats.scramblingPctFairway), pgaFor('scrambling_pct_fairway'), 'higher_better'),
+    },
+    {
+      label: 'From rough',
+      value: fmtPct(detailedStats.scramblingPctRough),
+      tone: toneVsBenchmark(finite(detailedStats.scramblingPctRough), pgaFor('scrambling_pct_rough'), 'higher_better'),
+    },
+    {
+      label: 'From sand',
+      value: fmtPct(detailedStats.scramblingPctSand),
+      tone: toneVsBenchmark(finite(detailedStats.scramblingPctSand), pgaFor('scrambling_pct_sand'), 'higher_better'),
+    },
   ];
   const byDistance: DetailRow[] = [
     { label: '0–10 yds', value: fmtPct(detailedStats.scramblingPct0_10) },
@@ -1568,62 +1702,60 @@ function DrivingSection({ detailedStats }: { detailedStats: GolfStats | null }) 
 
 /* ── Tee-miss L/R split, by club — a small 2×2 matrix (Driver / Non-driver ×
  * Miss left % / Miss right %). Sits beside the overall miss-direction grid so
- * the per-club bias reads at a glance. Each cell em-dashes independently. ──── */
+ * the per-club bias reads at a glance. Each cell em-dashes independently.
+ * Folded into the shared DetailGridShell (was a hand-rolled title+Surface
+ * clone of DetailGrid's own wrapper). No external L/R benchmark exists, so
+ * tone reads the row's OWN symmetry — see `skewTone`. ─────────────────────── */
 function TeeMissByClub({
   rows,
 }: {
   rows: Array<{ club: string; left: number | null; right: number | null }>;
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-0.5 px-1">
-        <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">
-          Tee miss by club
-        </h4>
-        <span className="font-fw-sans text-caption text-text-tertiary">
-          Left / right miss split among missed fairways, by club.
+    <DetailGridShell
+      title="Tee miss by club"
+      hint="Left / right miss split among missed fairways, by club."
+    >
+      <div className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 gap-y-2.5">
+        <span aria-hidden />
+        <span className="text-right font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
+          Miss left
         </span>
+        <span className="text-right font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
+          Miss right
+        </span>
+        {rows.map((r, i) => {
+          const edge = i < rows.length - 1 ? 'border-b border-border-subtle/60 pb-2' : '';
+          const leftTone = skewTone(r.left);
+          const rightTone = skewTone(r.right);
+          return (
+            <div key={r.club} className="contents">
+              <span className={cn('font-fw-sans text-caption text-text-secondary', edge)}>
+                {r.club}
+              </span>
+              <span
+                className={cn(
+                  'text-right font-fw-mono text-body-sm font-medium tabular-nums',
+                  edge,
+                  r.left == null ? 'text-text-tertiary' : TONE_VALUE_CLASS[leftTone],
+                )}
+              >
+                {fmtPct(r.left)}
+              </span>
+              <span
+                className={cn(
+                  'text-right font-fw-mono text-body-sm font-medium tabular-nums',
+                  edge,
+                  r.right == null ? 'text-text-tertiary' : TONE_VALUE_CLASS[rightTone],
+                )}
+              >
+                {fmtPct(r.right)}
+              </span>
+            </div>
+          );
+        })}
       </div>
-      <Surface elevation="border" padding="md">
-        <div className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 gap-y-2.5">
-          <span aria-hidden />
-          <span className="text-right font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
-            Miss left
-          </span>
-          <span className="text-right font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
-            Miss right
-          </span>
-          {rows.map((r, i) => {
-            const edge = i < rows.length - 1 ? 'border-b border-border-subtle/60 pb-2' : '';
-            return (
-              <div key={r.club} className="contents">
-                <span className={cn('font-fw-sans text-caption text-text-secondary', edge)}>
-                  {r.club}
-                </span>
-                <span
-                  className={cn(
-                    'text-right font-fw-mono text-body-sm font-medium tabular-nums',
-                    edge,
-                    r.left == null ? 'text-text-tertiary' : 'text-text-primary',
-                  )}
-                >
-                  {fmtPct(r.left)}
-                </span>
-                <span
-                  className={cn(
-                    'text-right font-fw-mono text-body-sm font-medium tabular-nums',
-                    edge,
-                    r.right == null ? 'text-text-tertiary' : 'text-text-primary',
-                  )}
-                >
-                  {fmtPct(r.right)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </Surface>
-    </div>
+    </DetailGridShell>
   );
 }
 
@@ -1743,6 +1875,14 @@ function dominantMiss(dir: ApproachMissDir | undefined): { label: string; pct: n
   return best;
 }
 
+/**
+ * Folded into the shared DetailGridShell (was a hand-rolled title+Surface
+ * clone of DetailGrid's own wrapper). No per-band GIR% baseline is fetched
+ * anywhere on this page (the engine has no PGA/team standard per approach
+ * distance), so tone is a relative read across the player's OWN bands —
+ * `relativeTones` — the same "biggest gain / biggest leak" idea the SG tab
+ * already uses across categories, applied within this one board.
+ */
 function GirByDistanceBoard({
   bands,
   missByBand,
@@ -1752,52 +1892,52 @@ function GirByDistanceBoard({
 }) {
   const rows = bands.filter((b) => b.gir != null);
   if (rows.length === 0) return null;
+  const tones = relativeTones(rows.map((b) => b.gir));
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-0.5 px-1">
-        <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">
-          GIR by approach distance
-        </h4>
-        <span className="font-fw-sans text-caption text-text-tertiary">
-          Greens hit by distance, with where the misses tend to leak.
-        </span>
-      </div>
-      <Surface elevation="border" padding="md">
-        <ul className="flex flex-col gap-3.5">
-          {rows.map((b) => {
-            const pct = b.gir ?? 0;
-            const miss = dominantMiss(missByBand[b.missKey]);
-            return (
-              <li key={b.label} className="flex flex-col gap-1.5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-fw-sans text-caption text-text-secondary">{b.label}</span>
-                  <span className="flex items-baseline gap-2.5">
-                    {miss ? (
-                      <span className="font-fw-sans text-caption text-text-tertiary">
-                        miss: {miss.label} {Math.round(miss.pct)}%
-                      </span>
-                    ) : null}
-                    <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
-                      {fmtPct(b.gir)}
+    <DetailGridShell
+      title="GIR by approach distance"
+      hint="Greens hit by distance, with where the misses tend to leak."
+    >
+      <ul className="flex flex-col gap-3.5">
+        {rows.map((b, i) => {
+          const pct = b.gir ?? 0;
+          const miss = dominantMiss(missByBand[b.missKey]);
+          const tone = tones[i] ?? 'neutral';
+          return (
+            <li key={b.label} className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="font-fw-sans text-caption text-text-secondary">{b.label}</span>
+                <span className="flex items-baseline gap-2.5">
+                  {miss ? (
+                    <span className="font-fw-sans text-caption text-text-tertiary">
+                      miss: {miss.label} {Math.round(miss.pct)}%
                     </span>
+                  ) : null}
+                  <span
+                    className={cn(
+                      'font-fw-mono text-body-sm font-medium tabular-nums',
+                      TONE_VALUE_CLASS[tone],
+                    )}
+                  >
+                    {fmtPct(b.gir)}
                   </span>
-                </div>
+                </span>
+              </div>
+              <div
+                className="h-2 w-full overflow-hidden rounded-full bg-surface-sunken"
+                role="presentation"
+              >
                 <div
-                  className="h-2 w-full overflow-hidden rounded-full bg-surface-sunken"
-                  role="presentation"
-                >
-                  <div
-                    className="h-full rounded-full bg-accent-500"
-                    style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </Surface>
-    </div>
+                  className="h-full rounded-full bg-accent-500"
+                  style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </DetailGridShell>
   );
 }
 
@@ -1826,6 +1966,38 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
     { label: 'Par 4s', value: fmtPct(s.girPctPar4) },
     { label: 'Par 5s', value: fmtPct(s.girPctPar5) },
   ];
+  // Full breakdown — every lie/hole-type/distance band at once (moved here
+  // from the old Analysis-tab "Full shot detail" disclosure, which re-rendered
+  // these on top of what this tab already owns — P921). No PGA/team baseline
+  // exists for these bucket schemes on this page, so tone stays neutral —
+  // honest, not fabricated.
+  const girByLie: DetailRow[] = [
+    { label: 'From fairway', value: fmtPct(s.girPctFromFairway) },
+    { label: 'From rough', value: fmtPct(s.girPctFromRough) },
+    { label: 'From sand', value: fmtPct(s.girPctFromSand) },
+  ];
+  const approachByPar: DetailRow[] = [
+    { label: 'Par 3s', value: fmtFeet(s.approachProximityPar3) },
+    { label: 'Par 4s', value: fmtFeet(s.approachProximityPar4) },
+    { label: 'Par 5s', value: fmtFeet(s.approachProximityPar5) },
+  ];
+  const approachByLie: DetailRow[] = [
+    { label: 'From fairway', value: fmtFeet(s.approachProximityFairway) },
+    { label: 'From rough', value: fmtFeet(s.approachProximityRough) },
+    { label: 'From sand', value: fmtFeet(s.approachProximitySand) },
+  ];
+  const approachByDistance: DetailRow[] = [
+    { label: '30–75 yds', value: fmtFeet(s.approachProx30_75) },
+    { label: '75–100 yds', value: fmtFeet(s.approachProx75_100) },
+    { label: '100–125 yds', value: fmtFeet(s.approachProx100_125) },
+    { label: '125–150 yds', value: fmtFeet(s.approachProx125_150) },
+    { label: '150–175 yds', value: fmtFeet(s.approachProx150_175) },
+    { label: '175–200 yds', value: fmtFeet(s.approachProx175_200) },
+    { label: '200–225 yds', value: fmtFeet(s.approachProx200_225) },
+    { label: '225+ yds', value: fmtFeet(s.approachProx225Plus) },
+  ];
+  const hasFullBreakdown =
+    !allDash(girByLie) || !allDash(approachByPar) || !allDash(approachByLie) || !allDash(approachByDistance);
   const lieRows: Record<ApproachLie, DetailRow[]> = {
     fairway: [
       { label: 'GIR from fairway', value: fmtPct(s.girPctFromFairway) },
@@ -1857,7 +2029,7 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
   // across every lie and must NOT sit under the lie filter.
   const lieLabel = `${selectedLie.charAt(0).toUpperCase()}${selectedLie.slice(1)}`;
   const lieHasData = !allDash(lieRows[selectedLie]) || !allDash(approachEfficiencyRows);
-  const hasAny = hasGirBands || !allDash(girByPar) || lieHasData;
+  const hasAny = hasGirBands || !allDash(girByPar) || lieHasData || hasFullBreakdown;
   if (!hasAny) return null;
 
   return (
@@ -1911,6 +2083,10 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
                 hint="Average strokes to hole out"
                 rows={approachEfficiencyRows}
                 columns={4}
+                // The 8-row Efficiency grid paired against the 2-row lie grid —
+                // cap it to an internal scroll instead of stretching the whole
+                // row to 8 rows tall (P921 #1).
+                scrollable
               />
             ) : null}
           </div>
@@ -1922,11 +2098,47 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
           </Surface>
         )}
       </div>
+
+      {hasFullBreakdown ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5 px-1">
+            <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">
+              Full proximity &amp; GIR breakdown
+            </h4>
+            <span className="font-fw-sans text-caption text-text-tertiary">
+              Every lie and distance band at once, alongside the interactive filter above.
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {!allDash(girByLie) ? <DetailGrid title="GIR by lie" rows={girByLie} columns={3} /> : null}
+            {!allDash(approachByPar) ? (
+              <DetailGrid title="Proximity by hole type" rows={approachByPar} columns={3} />
+            ) : null}
+            {!allDash(approachByLie) ? (
+              <DetailGrid title="Proximity by lie" rows={approachByLie} columns={3} />
+            ) : null}
+            {!allDash(approachByDistance) ? (
+              <DetailGrid title="Proximity by approach distance" rows={approachByDistance} columns={4} />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
 
-function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | null }) {
+function PuttingLegacyDetail({
+  detailedStats,
+  standing,
+}: {
+  detailedStats: GolfStats | null;
+  /** Player standing rows keyed by metric_id — carries the real PGA-Tour
+   *  baseline for the 3-5/5-10/10-15/15-25/25+ ft make-rate bands and the
+   *  high/low/left/right miss-bias metrics (see `toneVsBenchmark` below).
+   *  Optional so this section still renders honestly (all neutral) if the
+   *  standing fetch hasn't landed yet. */
+  standing?: Map<string, PlayerStandingRow>;
+}) {
   const [selectedBreak, setSelectedBreak] = useState<PuttBreak>('left_to_right');
   if (!detailedStats) return null;
   const s = detailedStats;
@@ -1939,6 +2151,7 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
         : selectedBreak === 'straight'
           ? 'Straight'
           : 'Multiple breaks';
+  const pgaFor = (metricId: string) => finite(standing?.get(metricId)?.pga_value ?? null);
 
   const headline: DetailRow[] = [
     { label: 'Putts / round', value: fmtNum(s.puttsPerRound, 1) },
@@ -1949,16 +2162,23 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
     // Avg distance left after every putt (0 for makes) — the "approach putting" stat.
     { label: 'Approach putting avg', value: s.approachPuttAvgLeave !== null ? `${s.approachPuttAvgLeave.toFixed(1)} ft avg` : '—' },
   ];
+  // Tone compares each band's make% to the matching v3 registry PGA standard.
+  // The registry's bands (3-5/5-10/10-15/15-25/25+) are coarser than the
+  // engine's 9-way split, so 15-20 & 20-25 both read against the SAME
+  // 15-25ft standard, and 25-30/30-35/35+ all read against the SAME 25+ft
+  // standard — a real PGA number, just not sub-divided as finely. 0-3ft has
+  // no registry standard at all (same as the leak-map's own 0-3ft band) and
+  // stays neutral.
   const makeBands: DetailRow[] = [
     { label: '0-3 ft', value: fmtPct(s.puttMakePct0_3) },
-    { label: '3-5 ft', value: fmtPct(s.puttMakePct3_5) },
-    { label: '5-10 ft', value: fmtPct(s.puttMakePct5_10) },
-    { label: '10-15 ft', value: fmtPct(s.puttMakePct10_15) },
-    { label: '15-20 ft', value: fmtPct(s.puttMakePct15_20) },
-    { label: '20-25 ft', value: fmtPct(s.puttMakePct20_25) },
-    { label: '25-30 ft', value: fmtPct(s.puttMakePct25_30) },
-    { label: '30-35 ft', value: fmtPct(s.puttMakePct30_35) },
-    { label: '35+ ft', value: fmtPct(s.puttMakePct35Plus) },
+    { label: '3-5 ft', value: fmtPct(s.puttMakePct3_5), tone: toneVsBenchmark(finite(s.puttMakePct3_5), pgaFor('putts_made_3_5ft_pct'), 'higher_better') },
+    { label: '5-10 ft', value: fmtPct(s.puttMakePct5_10), tone: toneVsBenchmark(finite(s.puttMakePct5_10), pgaFor('putts_made_5_10ft_pct'), 'higher_better') },
+    { label: '10-15 ft', value: fmtPct(s.puttMakePct10_15), tone: toneVsBenchmark(finite(s.puttMakePct10_15), pgaFor('putts_made_10_15ft_pct'), 'higher_better') },
+    { label: '15-20 ft', value: fmtPct(s.puttMakePct15_20), tone: toneVsBenchmark(finite(s.puttMakePct15_20), pgaFor('putts_made_15_25ft_pct'), 'higher_better') },
+    { label: '20-25 ft', value: fmtPct(s.puttMakePct20_25), tone: toneVsBenchmark(finite(s.puttMakePct20_25), pgaFor('putts_made_15_25ft_pct'), 'higher_better') },
+    { label: '25-30 ft', value: fmtPct(s.puttMakePct25_30), tone: toneVsBenchmark(finite(s.puttMakePct25_30), pgaFor('putts_made_25_plus_ft_pct'), 'higher_better') },
+    { label: '30-35 ft', value: fmtPct(s.puttMakePct30_35), tone: toneVsBenchmark(finite(s.puttMakePct30_35), pgaFor('putts_made_25_plus_ft_pct'), 'higher_better') },
+    { label: '35+ ft', value: fmtPct(s.puttMakePct35Plus), tone: toneVsBenchmark(finite(s.puttMakePct35Plus), pgaFor('putts_made_25_plus_ft_pct'), 'higher_better') },
   ];
   // Approach putting: avg distance left after putts that STARTED in each band.
   // 0 for made putts; missed putts with unknown leave are excluded (null-honest).
@@ -1969,23 +2189,48 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
     const v = s.approachPuttAvgLeaveByBand[key];
     return { label, value: v !== undefined ? `${v.toFixed(1)} ft avg` : '—' };
   });
+  // Same PGA-band reuse as `makeBands` above, applied to the break-filtered
+  // figure — the baseline number is real, just not scoped to one break type.
   const breakMakeBands: DetailRow[] = [
     { label: '0-3 ft', value: fmtPct(breakStats.makePct0_3) },
-    { label: '3-5 ft', value: fmtPct(breakStats.makePct3_5) },
-    { label: '5-10 ft', value: fmtPct(breakStats.makePct5_10) },
-    { label: '10-15 ft', value: fmtPct(breakStats.makePct10_15) },
-    { label: '15-20 ft', value: fmtPct(breakStats.makePct15_20) },
-    { label: '20-25 ft', value: fmtPct(breakStats.makePct20_25) },
-    { label: '25-30 ft', value: fmtPct(breakStats.makePct25_30) },
-    { label: '30-35 ft', value: fmtPct(breakStats.makePct30_35) },
-    { label: '35+ ft', value: fmtPct(breakStats.makePct35Plus) },
+    { label: '3-5 ft', value: fmtPct(breakStats.makePct3_5), tone: toneVsBenchmark(finite(breakStats.makePct3_5), pgaFor('putts_made_3_5ft_pct'), 'higher_better') },
+    { label: '5-10 ft', value: fmtPct(breakStats.makePct5_10), tone: toneVsBenchmark(finite(breakStats.makePct5_10), pgaFor('putts_made_5_10ft_pct'), 'higher_better') },
+    { label: '10-15 ft', value: fmtPct(breakStats.makePct10_15), tone: toneVsBenchmark(finite(breakStats.makePct10_15), pgaFor('putts_made_10_15ft_pct'), 'higher_better') },
+    { label: '15-20 ft', value: fmtPct(breakStats.makePct15_20), tone: toneVsBenchmark(finite(breakStats.makePct15_20), pgaFor('putts_made_15_25ft_pct'), 'higher_better') },
+    { label: '20-25 ft', value: fmtPct(breakStats.makePct20_25), tone: toneVsBenchmark(finite(breakStats.makePct20_25), pgaFor('putts_made_15_25ft_pct'), 'higher_better') },
+    { label: '25-30 ft', value: fmtPct(breakStats.makePct25_30), tone: toneVsBenchmark(finite(breakStats.makePct25_30), pgaFor('putts_made_25_plus_ft_pct'), 'higher_better') },
+    { label: '30-35 ft', value: fmtPct(breakStats.makePct30_35), tone: toneVsBenchmark(finite(breakStats.makePct30_35), pgaFor('putts_made_25_plus_ft_pct'), 'higher_better') },
+    { label: '35+ ft', value: fmtPct(breakStats.makePct35Plus), tone: toneVsBenchmark(finite(breakStats.makePct35Plus), pgaFor('putts_made_25_plus_ft_pct'), 'higher_better') },
     { label: 'Overall make %', value: fmtPct(breakStats.overallMakePct) },
   ];
   const breakMissRows: DetailRow[] = [
     { label: 'Miss short', value: fmtPct(breakStats.missShortPct) },
-    { label: 'Low side', value: fmtPct(breakStats.missLowPct) },
-    { label: 'High side', value: fmtPct(breakStats.missHighPct) },
+    { label: 'Low side', value: fmtPct(breakStats.missLowPct), tone: toneVsBenchmark(finite(breakStats.missLowPct), pgaFor('putt_miss_bias_low_pct'), 'lower_better') },
+    { label: 'High side', value: fmtPct(breakStats.missHighPct), tone: toneVsBenchmark(finite(breakStats.missHighPct), pgaFor('putt_miss_bias_high_pct'), 'lower_better') },
   ];
+  // Overall miss direction + all-4-breaks-at-once overview — moved here from
+  // the old Analysis-tab "Full shot detail" disclosure (P921). Left/right/
+  // high/low have a real PGA standard (putt_miss_bias_*); short/long and the
+  // by-break overview don't, so those stay neutral.
+  const puttMissDir: DetailRow[] = [
+    { label: 'Miss left', value: fmtPct(s.puttMissLeftPct), tone: toneVsBenchmark(finite(s.puttMissLeftPct), pgaFor('putt_miss_bias_left_pct'), 'lower_better') },
+    { label: 'Miss right', value: fmtPct(s.puttMissRightPct), tone: toneVsBenchmark(finite(s.puttMissRightPct), pgaFor('putt_miss_bias_right_pct'), 'lower_better') },
+    { label: 'Miss short', value: fmtPct(s.puttMissShortPct) },
+    { label: 'Miss long', value: fmtPct(s.puttMissLongPct) },
+    { label: 'Under-read (low)', value: fmtPct(s.puttMissLowPct), tone: toneVsBenchmark(finite(s.puttMissLowPct), pgaFor('putt_miss_bias_low_pct'), 'lower_better') },
+    { label: 'Over-read (high)', value: fmtPct(s.puttMissHighPct), tone: toneVsBenchmark(finite(s.puttMissHighPct), pgaFor('putt_miss_bias_high_pct'), 'lower_better') },
+  ];
+  const overviewMakeRow = (label: string, b: GolfStats['puttingByBreak'][keyof GolfStats['puttingByBreak']]): DetailRow => ({
+    label,
+    value: fmtPct(b.overallMakePct),
+  });
+  const puttByBreak: DetailRow[] = [
+    overviewMakeRow('Left-to-right', s.puttingByBreak.left_to_right),
+    overviewMakeRow('Straight', s.puttingByBreak.straight),
+    overviewMakeRow('Right-to-left', s.puttingByBreak.right_to_left),
+    overviewMakeRow('Multiple breaks', s.puttingByBreak.multiple),
+  ];
+  const hasOverview = !allDash(puttMissDir) || !allDash(puttByBreak);
 
   return (
     <section className="flex flex-col gap-4">
@@ -2029,6 +2274,25 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
           <DetailGrid title={`Miss direction - ${breakLabel}`} rows={breakMissRows} columns={3} />
         ) : null}
       </div>
+
+      {hasOverview ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5 px-1">
+            <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">
+              Overall miss direction &amp; by-break overview
+            </h4>
+            <span className="font-fw-sans text-caption text-text-tertiary">
+              Every break at a glance, alongside the interactive filter above.
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {!allDash(puttMissDir) ? (
+              <DetailGrid title="Miss direction (all putts)" rows={puttMissDir} columns={3} />
+            ) : null}
+            {!allDash(puttByBreak) ? <DetailGrid title="Make % by break" rows={puttByBreak} columns={4} /> : null}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -2038,11 +2302,16 @@ function DetailedStandingsSection({
   matrixByCategory,
   open,
   onToggle,
+  standingViewerContext,
+  playerName,
 }: {
   detailedGroups: ReadonlyArray<(typeof CATEGORY_ORDER)[number]>;
   matrixByCategory: Map<string, Array<{ id: MetricId; row: PlayerStandingRow; cfg: MetricRenderConfig }>>;
   open: boolean;
   onToggle: () => void;
+  /** Bug #915 — 'self' shows "You" on each SG card, 'coach' shows the player's name/initials. */
+  standingViewerContext: 'self' | 'coach';
+  playerName?: string;
 }) {
   if (detailedGroups.length === 0) return null;
   return (
@@ -2101,6 +2370,8 @@ function DetailedStandingsSection({
                       unit={cfg.unit}
                       scale={cfg.default_scale}
                       size="card"
+                      viewer_context={standingViewerContext}
+                      player_name={playerName}
                     />
                   ))}
                 </div>
@@ -2114,112 +2385,17 @@ function DetailedStandingsSection({
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- * 6b · FULL SHOT DETAIL — one collapsed disclosure holding the heavy drill-in
- * grids that don't belong in the always-on flow: GIR by par / distance / lie,
- * approach proximity by par / lie / distance, putting make-% bands + miss
- * direction + by-break, scoring per-round / career / by-type + streaks, and the
- * personal-bests + 30-day comparison analysis readouts. Mirrors the existing
- * "Detailed standings" disclosure chrome exactly. Every grid is null-honest and
- * self-hides when its block has no data (allDash); the whole disclosure hides
- * when there is nothing to show.
+ * 3a2 · SCORING DETAIL — bests/worsts, per-round + career totals, by round
+ * type, and streaks/records. This tab is literally named Scoring, so it now
+ * owns its own breakdowns directly instead of them being buried in the old
+ * Analysis-tab "Full shot detail" disclosure (P921 #4). Every grid is
+ * null-honest and self-hides (allDash); the whole section hides when there
+ * is nothing to show.
  * ══════════════════════════════════════════════════════════════════════════ */
-function ComprehensiveDetail({
-  detailedStats,
-  trendData,
-  open,
-  onToggle,
-}: {
-  detailedStats: GolfStats | null;
-  trendData: TrendAnalysisResponse | null;
-  open: boolean;
-  onToggle: () => void;
-}) {
+function ScoringDetail({ detailedStats }: { detailedStats: GolfStats | null }) {
   if (!detailedStats) return null;
   const s = detailedStats;
 
-  // ── GIR detail ─────────────────────────────────────────────────────────────
-  const girByPar: DetailRow[] = [
-    { label: 'Par 3s', value: fmtPct(s.girPctPar3) },
-    { label: 'Par 4s', value: fmtPct(s.girPctPar4) },
-    { label: 'Par 5s', value: fmtPct(s.girPctPar5) },
-  ];
-  const girByDistance: DetailRow[] = [
-    { label: '50–75 yds', value: fmtPct(s.girPct50_75) },
-    { label: '75–100 yds', value: fmtPct(s.girPct75_100) },
-    { label: '100–125 yds', value: fmtPct(s.girPct100_125) },
-    { label: '125–150 yds', value: fmtPct(s.girPct125_150) },
-    { label: '150–175 yds', value: fmtPct(s.girPct150_175) },
-    { label: '175–200 yds', value: fmtPct(s.girPct175_200) },
-    { label: '200–225 yds', value: fmtPct(s.girPct200_225) },
-    { label: '225+ yds', value: fmtPct(s.girPct225Plus) },
-  ];
-  const girByLie: DetailRow[] = [
-    { label: 'From fairway', value: fmtPct(s.girPctFromFairway) },
-    { label: 'From rough', value: fmtPct(s.girPctFromRough) },
-    { label: 'From sand', value: fmtPct(s.girPctFromSand) },
-  ];
-
-  // ── Approach proximity detail (feet) ─────────────────────────────────────--
-  const approachByPar: DetailRow[] = [
-    { label: 'Par 3s', value: fmtFeet(s.approachProximityPar3) },
-    { label: 'Par 4s', value: fmtFeet(s.approachProximityPar4) },
-    { label: 'Par 5s', value: fmtFeet(s.approachProximityPar5) },
-  ];
-  const approachByLie: DetailRow[] = [
-    { label: 'From fairway', value: fmtFeet(s.approachProximityFairway) },
-    { label: 'From rough', value: fmtFeet(s.approachProximityRough) },
-    { label: 'From sand', value: fmtFeet(s.approachProximitySand) },
-  ];
-  const approachByDistance: DetailRow[] = [
-    { label: '30–75 yds', value: fmtFeet(s.approachProx30_75) },
-    { label: '75–100 yds', value: fmtFeet(s.approachProx75_100) },
-    { label: '100–125 yds', value: fmtFeet(s.approachProx100_125) },
-    { label: '125–150 yds', value: fmtFeet(s.approachProx125_150) },
-    { label: '150–175 yds', value: fmtFeet(s.approachProx150_175) },
-    { label: '175–200 yds', value: fmtFeet(s.approachProx175_200) },
-    { label: '200–225 yds', value: fmtFeet(s.approachProx200_225) },
-    { label: '225+ yds', value: fmtFeet(s.approachProx225Plus) },
-  ];
-
-  // ── Putting detail ─────────────────────────────────────────────────────────
-  const puttHeadline: DetailRow[] = [
-    { label: 'Putts / round', value: fmtNum(s.puttsPerRound, 1) },
-    { label: 'Putts / hole', value: fmtNum(s.puttsPerHole, 2) },
-    { label: 'Putts / GIR', value: fmtNum(s.puttsPerGir, 2) },
-    { label: '3-putts / round', value: fmtNum(s.threePuttsPerRound, 2) },
-    { label: '1-putts (total)', value: s.totalPutts > 0 ? fmtInt(s.onePuttsTotal) : '—' },
-  ];
-  const puttMakeBands: DetailRow[] = [
-    { label: '0–3 ft', value: fmtPct(s.puttMakePct0_3) },
-    { label: '3–5 ft', value: fmtPct(s.puttMakePct3_5) },
-    { label: '5–10 ft', value: fmtPct(s.puttMakePct5_10) },
-    { label: '10–15 ft', value: fmtPct(s.puttMakePct10_15) },
-    { label: '15–20 ft', value: fmtPct(s.puttMakePct15_20) },
-    { label: '20–25 ft', value: fmtPct(s.puttMakePct20_25) },
-    { label: '25–30 ft', value: fmtPct(s.puttMakePct25_30) },
-    { label: '30–35 ft', value: fmtPct(s.puttMakePct30_35) },
-    { label: '35+ ft', value: fmtPct(s.puttMakePct35Plus) },
-  ];
-  const puttMissDir: DetailRow[] = [
-    { label: 'Miss left', value: fmtPct(s.puttMissLeftPct) },
-    { label: 'Miss right', value: fmtPct(s.puttMissRightPct) },
-    { label: 'Miss short', value: fmtPct(s.puttMissShortPct) },
-    { label: 'Miss long', value: fmtPct(s.puttMissLongPct) },
-    { label: 'Under-read (low)', value: fmtPct(s.puttMissLowPct) },
-    { label: 'Over-read (high)', value: fmtPct(s.puttMissHighPct) },
-  ];
-  const breakMakeRows = (label: string, b: GolfStats['puttingByBreak'][keyof GolfStats['puttingByBreak']]): DetailRow => ({
-    label,
-    value: fmtPct(b.overallMakePct),
-  });
-  const puttByBreak: DetailRow[] = [
-    breakMakeRows('Left-to-right', s.puttingByBreak.left_to_right),
-    breakMakeRows('Straight', s.puttingByBreak.straight),
-    breakMakeRows('Right-to-left', s.puttingByBreak.right_to_left),
-    breakMakeRows('Multiple breaks', s.puttingByBreak.multiple),
-  ];
-
-  // ── Scoring detail ─────────────────────────────────────────────────────────
   const scoringBestWorst: DetailRow[] = [
     { label: 'Best round', value: fmtInt(s.bestRound) },
     { label: 'Worst round', value: fmtInt(s.worstRound) },
@@ -2265,7 +2441,58 @@ function ComprehensiveDetail({
     { label: 'Longest hole-out', value: s.longestHoleOut != null ? fmtYds(s.longestHoleOut) : '—' },
   ];
 
-  // ── Analysis (from the already-fetched trendData) ────────────────────────--
+  const hasAny = [scoringBestWorst, perRound, careerTotals, byRoundType, streaks].some((rows) => !allDash(rows));
+  if (!hasAny) return null;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5 px-1">
+        <SectionHeading as="div">Scoring detail</SectionHeading>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Bests, per-round and career totals, round type, and streaks.
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {!allDash(scoringBestWorst) ? <DetailGrid title="Round scoring" rows={scoringBestWorst} columns={4} /> : null}
+        {!allDash(perRound) ? <DetailGrid title="Per round" rows={perRound} columns={3} /> : null}
+        {!allDash(careerTotals) ? <DetailGrid title="Career totals" rows={careerTotals} columns={3} /> : null}
+        {!allDash(byRoundType) ? (
+          <DetailGrid title="Scoring by round type" hint="Average · rounds" rows={byRoundType} columns={3} />
+        ) : null}
+        {!allDash(streaks) ? <DetailGrid title="Streaks & records" rows={streaks} columns={3} /> : null}
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * 6b · ANALYSIS SUMMARY — trends + personal bests, plus quick links to the
+ * tabs that now OWN the full breakdowns (GIR/approach on Approach, putting on
+ * Putting, scoring detail on Scoring). Replaces the old "Full shot detail"
+ * disclosure, which re-rendered ~17 DetailGrids the metric tabs already
+ * (mostly) owned — the genuinely-duplicated ones were dropped, the rest moved
+ * onto their owning tab (P921 #4). What's left here is the honest summary:
+ * data with no other home (career bests, 30-day trend) plus navigation.
+ * ══════════════════════════════════════════════════════════════════════════ */
+const ANALYSIS_NAV_TABS: ReadonlyArray<{ id: (typeof STATS_TABS)[number]['id']; label: string }> = [
+  { id: 'scoring', label: 'Scoring' },
+  { id: 'driving', label: 'Driving' },
+  { id: 'approach', label: 'Approach' },
+  { id: 'putting', label: 'Putting' },
+  { id: 'scrambling', label: 'Scrambling' },
+];
+
+function AnalysisSummary({
+  detailedStats,
+  trendData,
+  onNavigateTab,
+}: {
+  detailedStats: GolfStats | null;
+  trendData: TrendAnalysisResponse | null;
+  onNavigateTab: (tab: string) => void;
+}) {
+  if (!detailedStats) return null;
+
   const pb = trendData?.personalBests ?? null;
   const personalBests: DetailRow[] = [
     { label: 'Best score', value: pb?.bestScore ? fmtInt(pb.bestScore.value) : '—' },
@@ -2310,82 +2537,57 @@ function ComprehensiveDetail({
       ]
     : [];
 
-  // Assemble the blocks that actually carry data (allDash → omit).
-  const blocks: Array<{ heading: string; grids: React.ReactNode[] }> = [];
-
-  const girGrids: React.ReactNode[] = [];
-  if (!allDash(girByPar)) girGrids.push(<DetailGrid key="gir-par" title="GIR by hole type" rows={girByPar} columns={3} />);
-  if (!allDash(girByLie)) girGrids.push(<DetailGrid key="gir-lie" title="GIR by lie" rows={girByLie} columns={3} />);
-  if (!allDash(girByDistance)) girGrids.push(<DetailGrid key="gir-dist" title="GIR by approach distance" rows={girByDistance} columns={4} />);
-  if (girGrids.length) blocks.push({ heading: 'Greens in regulation', grids: girGrids });
-
-  const approachGrids: React.ReactNode[] = [];
-  if (!allDash(approachByPar)) approachGrids.push(<DetailGrid key="ap-par" title="Proximity by hole type" rows={approachByPar} columns={3} />);
-  if (!allDash(approachByLie)) approachGrids.push(<DetailGrid key="ap-lie" title="Proximity by lie" rows={approachByLie} columns={3} />);
-  if (!allDash(approachByDistance)) approachGrids.push(<DetailGrid key="ap-dist" title="Proximity by approach distance" rows={approachByDistance} columns={4} />);
-  if (approachGrids.length) blocks.push({ heading: 'Approach proximity', grids: approachGrids });
-
-  const puttGrids: React.ReactNode[] = [];
-  if (!allDash(puttHeadline)) puttGrids.push(<DetailGrid key="pt-head" title="Putting efficiency" rows={puttHeadline} columns={4} />);
-  if (!allDash(puttMakeBands)) puttGrids.push(<DetailGrid key="pt-make" title="Make % by distance" rows={puttMakeBands} columns={3} />);
-  if (!allDash(puttMissDir)) puttGrids.push(<DetailGrid key="pt-miss" title="Miss direction" rows={puttMissDir} columns={3} />);
-  if (!allDash(puttByBreak)) puttGrids.push(<DetailGrid key="pt-break" title="Make % by break" rows={puttByBreak} columns={4} />);
-  if (puttGrids.length) blocks.push({ heading: 'Putting', grids: puttGrids });
-
-  const scoringGrids: React.ReactNode[] = [];
-  if (!allDash(scoringBestWorst)) scoringGrids.push(<DetailGrid key="sc-bw" title="Round scoring" rows={scoringBestWorst} columns={4} />);
-  if (!allDash(perRound)) scoringGrids.push(<DetailGrid key="sc-pr" title="Per round" rows={perRound} columns={3} />);
-  if (!allDash(careerTotals)) scoringGrids.push(<DetailGrid key="sc-ct" title="Career totals" rows={careerTotals} columns={3} />);
-  if (!allDash(byRoundType)) scoringGrids.push(<DetailGrid key="sc-rt" title="Scoring by round type" hint="Average · rounds" rows={byRoundType} columns={3} />);
-  if (!allDash(streaks)) scoringGrids.push(<DetailGrid key="sc-st" title="Streaks & records" rows={streaks} columns={3} />);
-  if (scoringGrids.length) blocks.push({ heading: 'Scoring', grids: scoringGrids });
-
-  const analysisGrids: React.ReactNode[] = [];
-  if (!allDash(personalBests)) analysisGrids.push(<DetailGrid key="an-pb" title="Personal bests" rows={personalBests} columns={4} />);
-  if (periodCompare.length && !allDash(periodCompare)) analysisGrids.push(<DetailGrid key="an-cmp" title="Last 30 days vs previous 30" rows={periodCompare} columns={2} />);
-  if (analysisGrids.length) blocks.push({ heading: 'Trends & bests', grids: analysisGrids });
-
-  if (blocks.length === 0) return null;
+  const hasPersonalBests = !allDash(personalBests);
+  const hasPeriodCompare = periodCompare.length > 0 && !allDash(periodCompare);
 
   return (
-    <section className="flex flex-col gap-3">
-      <Button
-        type="button"
-        variant="ghost"
-  
-        onClick={onToggle}
-        aria-expanded={open}
-        className="group h-auto min-h-0 w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left font-normal normal-case tracking-normal outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
-      >
-        <span className="flex flex-col gap-0.5">
-          <span className="font-fw-display text-body font-medium text-text-primary">
-            Full shot detail
-          </span>
-          <span className="font-fw-sans text-caption text-text-tertiary">
-            {blocks.length} {blocks.length === 1 ? 'category' : 'categories'} · GIR &amp;
-            approach by distance/lie, putting bands, scoring &amp; trends
-          </span>
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-0.5 px-1">
+        <SectionHeading as="div">Trends &amp; personal bests</SectionHeading>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Career-best marks and the last 30 days vs the 30 before.
         </span>
-        <ChevronDown
-          className={cn(
-            'h-5 w-5 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
-            open && 'rotate-180',
-          )}
-        />
-      </Button>
+      </div>
 
-      {open ? (
-        <div className="flex flex-col gap-6 pt-1">
-          {blocks.map((block) => (
-            <div key={block.heading} className="flex flex-col gap-3">
-              <h4 className="px-1 font-fw-sans text-body font-medium text-text-primary">
-                {block.heading}
-              </h4>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{block.grids}</div>
-            </div>
+      {hasPersonalBests || hasPeriodCompare ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {hasPersonalBests ? <DetailGrid title="Personal bests" rows={personalBests} columns={4} /> : null}
+          {hasPeriodCompare ? (
+            <DetailGrid title="Last 30 days vs previous 30" rows={periodCompare} columns={2} />
+          ) : null}
+        </div>
+      ) : (
+        <Surface elevation="border" padding="md">
+          <p className="font-fw-sans text-caption text-text-tertiary">
+            Personal bests and 30-day trends fill in as more rounds are logged.
+          </p>
+        </Surface>
+      )}
+
+      <Surface elevation="border" padding="md" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-0.5">
+          <h4 className="font-fw-display text-body font-medium text-text-primary">
+            Full shot detail lives on each tab
+          </h4>
+          <p className="font-fw-sans text-caption text-text-tertiary">
+            GIR, proximity, putting bands, and scoring breakdowns are on their own tab now — jump straight there.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {ANALYSIS_NAV_TABS.map((t) => (
+            <Button
+              key={t.id}
+              type="button"
+              variant="secondary"
+              size="sm"
+              rightIcon={<ArrowRight className="h-3.5 w-3.5" aria-hidden />}
+              onClick={() => onNavigateTab(t.id)}
+            >
+              {t.label}
+            </Button>
           ))}
         </div>
-      ) : null}
+      </Surface>
     </section>
   );
 }

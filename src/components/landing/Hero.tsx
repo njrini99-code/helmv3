@@ -12,6 +12,7 @@ import { submitDemoRequest } from '@/app/actions/demo-request'
 
 // Email capture — dark theme
 function EmailCapture() {
+  const shouldReduceMotion = useReducedMotion()
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -38,7 +39,7 @@ function EmailCapture() {
   if (submitted) {
     return (
       <m.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-primary-600/10 border border-primary-600/20">

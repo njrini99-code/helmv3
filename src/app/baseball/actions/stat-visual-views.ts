@@ -82,7 +82,12 @@ function normalizeVisualKey(key: string): string | null {
 
 export const getStatVisualViews = withBaseballAction(
   'getStatVisualViews',
-  FEATURE,
+  // Pure SELECT — no write a demo visitor could use to alter state another
+  // visitor would then see, so it's safe (and correct) for the shared
+  // Baseball demo coach session. Without this, the demo account hit the
+  // fail-closed default and every load threw BaseballDemoReadOnlyError,
+  // surfacing as a permanent "Saved views unavailable" toast in the gallery.
+  { ...FEATURE, demoSafe: true },
   async (
     ctx,
     input?: { playerId?: string | null },

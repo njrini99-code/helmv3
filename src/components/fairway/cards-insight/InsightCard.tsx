@@ -44,6 +44,8 @@ import {
   Sparkles,
   Info,
   Lightbulb,
+  TrendingUp,
+  TrendingDown,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -93,6 +95,13 @@ export interface InsightCardProps
   children?: ReactNode;
   /** Lead icon override. Defaults to a priority-appropriate icon. */
   icon?: ReactNode;
+  /**
+   * Recolor the icon wrap (and, unless `icon` overrides the glyph too, the
+   * default icon) by DIRECTION rather than `priority`'s severity tier (bug
+   * #915 — see `ICON_TONE`'s docstring). The wrap color always follows
+   * `iconTone` when set, even alongside a custom `icon`.
+   */
+  iconTone?: InsightIconTone;
   /** Hide the lead icon entirely. */
   hideIcon?: boolean;
   /** Evidence / supporting detail rendered in a tinted Inset (not on compact). */
@@ -189,6 +198,34 @@ export const PRIORITY: Record<InsightPriority, PriorityTone> = {
   },
 };
 
+/* -- icon tone (bug #915 — icon/accent by DIRECTION, not category) --------- */
+
+/**
+ * `priority` is a severity/urgency tier — appropriate for most signals
+ * (a critical alert IS alarming regardless of "direction"). But a mined
+ * PATTERN's priority is bucketed by |stroke_impact| magnitude alone, blind to
+ * sign — which let a high-magnitude pattern where the player plays BETTER
+ * (a strength) land in the 'high' tier (warning-orange flame) while a
+ * low-magnitude one where they play WORSE (a leak) landed in 'medium' (green
+ * sparkle): the icon read backwards from what the pattern actually means.
+ *
+ * `iconTone`, when supplied, overrides BOTH the default icon AND its
+ * background/text color independent of `priority` — so a caller with a
+ * genuinely signed metric (a pattern's stroke_impact) can make the glyph +
+ * accent agree with "is this good or bad for the player" instead of "how
+ * large is this number". `priority` keeps driving the tint bar (severity/
+ * triage ordering is still a legitimate, separate signal) and the a11y word.
+ * Omitted (the default) → fully unchanged priority-driven rendering for
+ * every other InsightCard caller.
+ */
+export type InsightIconTone = 'positive' | 'negative' | 'neutral';
+
+export const ICON_TONE: Record<InsightIconTone, { iconWrap: string; icon: LucideIcon }> = {
+  positive: { iconWrap: 'text-fw-success bg-fw-success-bg', icon: TrendingUp },
+  negative: { iconWrap: 'text-fw-warning bg-fw-warning-bg', icon: TrendingDown },
+  neutral: { iconWrap: 'text-text-secondary bg-surface-sunken', icon: Info },
+};
+
 /* -- component -------------------------------------------------------------- */
 
 const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
@@ -200,6 +237,7 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
       title,
       children,
       icon,
+      iconTone,
       hideIcon = false,
       evidence,
       actions,
@@ -220,13 +258,18 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
   ) {
     const prefersReduced = useReducedMotion();
     const tone = PRIORITY[priority];
+    // Bug #915: an explicit iconTone overrides the icon glyph AND its
+    // background/text color independent of priority — see ICON_TONE's
+    // docstring. The tint bar below stays priority-driven either way.
+    const toneOverride = iconTone ? ICON_TONE[iconTone] : null;
+    const iconWrapClass = toneOverride?.iconWrap ?? tone.iconWrap;
     const titleId = useId();
     const isHero = variant === 'hero';
     const isCompact = variant === 'compact';
 
     useHeroGlassFallback(isHero);
 
-    const LeadIcon = tone.icon;
+    const LeadIcon = toneOverride?.icon ?? tone.icon;
     const leadIcon =
       icon ?? (hideIcon ? null : <LeadIcon aria-hidden className="h-full w-full" strokeWidth={1.5} />);
 
@@ -373,7 +416,7 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
           <span
             className={cn(
               'pointer-events-none relative z-10 flex shrink-0 items-center justify-center rounded-fw-md',
-              tone.iconWrap,
+              iconWrapClass,
               isCompact ? 'h-8 w-8 p-1.5' : 'h-10 w-10 p-2',
             )}
           >

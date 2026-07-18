@@ -70,6 +70,14 @@ const PHASE1_SURFACE_COVERAGE: readonly CoverageEntry[] = [
   { table: 'baseball_stat_uploads', route: '/baseball/dashboard/import', scopeColumn: 'team_id', required: true },
   { table: 'baseball_player_stats', route: '/baseball/dashboard/stats', scopeColumn: 'team_id', required: true },
   { table: 'baseball_player_aggregates', route: '/baseball/dashboard/stats', scopeColumn: 'team_id', required: true },
+  // Populated by scripts/seed-baseball-demo-program.ts (Phase 4, #912) — a
+  // believable completed season with box-score-level stats + a recruiting
+  // board, so these moved out of INTENTIONALLY_EMPTY below once that script
+  // had a real row to point at.
+  { table: 'baseball_games', route: '/baseball/dashboard/stats/games', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_box_score_batting', route: '/baseball/dashboard/stats/games/[gameId]', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_box_score_pitching', route: '/baseball/dashboard/stats/games/[gameId]', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_watchlists', route: '/baseball/dashboard/pipeline', scopeColumn: 'coach_id', required: true },
 ] as const;
 
 const RINI_EXTRA_SURFACE_COVERAGE: readonly CoverageEntry[] = [
@@ -105,8 +113,12 @@ export const SURFACE_COVERAGE: readonly CoverageEntry[] =
  * "Intentionally-empty surfaces"). Printed for visibility, never required.
  */
 export const INTENTIONALLY_EMPTY: readonly { table: string; reason: string }[] = [
+  // baseball_watchlists moved to PHASE1_SURFACE_COVERAGE (required, scoped by
+  // coach_id) — scripts/seed-baseball-demo-program.ts (#912) now populates a
+  // recruiting board. baseball_recruiting_interests is a SEPARATE table (a
+  // different, org-scoped recruiting-interest concept the demo doesn't touch)
+  // and stays intentionally empty.
   { table: 'baseball_recruiting_interests', reason: 'demo team is a college roster; college players never activate recruiting' },
-  { table: 'baseball_watchlists', reason: 'demo team is a college roster; no recruiting pipeline to populate' },
   { table: 'baseball_decision_log', reason: 'Decision Room is a separate workflow, out of scope for this demo-coverage pass' },
   { table: 'baseball_meeting_items', reason: 'Decision Room is a separate workflow, out of scope for this demo-coverage pass' },
   { table: 'baseball_signals', reason: 'Decision Room is a separate workflow, out of scope for this demo-coverage pass' },

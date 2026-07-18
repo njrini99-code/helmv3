@@ -121,7 +121,13 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
               />
             </Surface>
           ) : (
-            <FairwayStatsCockpit playerId={resolvedPlayerId} isOwnStats={!isCoachView} />
+            <FairwayStatsCockpit
+              playerId={resolvedPlayerId}
+              isOwnStats={!isCoachView}
+              // Bug #915: label the coach-facing SG cards with the actual
+              // teammate name instead of the generic "Player" fallback.
+              playerName={isCoachView ? (playerName ?? undefined) : undefined}
+            />
           )}
         </CoachHelmShell>
       </div>

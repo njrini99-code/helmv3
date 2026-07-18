@@ -13,6 +13,8 @@ Companion docs:
   surfaces).
 - `scripts/seed-baseball-lifting-demo.ts` — Phase 2 (Helm Lifting Lab).
 - `scripts/seed-baseball-surfaces-demo.ts` — Phase 3 (this contract).
+- `scripts/seed-baseball-demo-program.ts` — Phase 4 (season + risks +
+  recruiting board; #912).
 
 ## Seed run order
 
@@ -26,6 +28,7 @@ dependency has run at least once.
 | 1 | `scripts/seed-baseball-demo.ts` | — | Org, team, coach + 8-player roster, calendar, practice plan, lift assignments (Lite), readiness, coach insights, timeline events, one `baseball_import_runs` row. |
 | 2 | `scripts/seed-baseball-lifting-demo.ts` | Phase 1 | Helm Lifting Lab: lifting-coach identity, programs/weeks/days/sections/prescriptions, sessions, set results, readiness check-ins. |
 | 3 | `scripts/seed-baseball-surfaces-demo.ts` | Phase 1 (player/coach ids only — does **not** depend on Phase 2) | Every table this contract documents below. |
+| 4 | `scripts/seed-baseball-demo-program.ts` | Phase 1 (roster + coach ids only — independent of Phases 2/3) | A believable, already-completed season (games + box scores + derived season stats), open risk flags, a recruiting board (3 fictional feeder programs + 8 recruits across all 4 active pipeline stages), a rolling lifting-session history, and more upcoming calendar events/practices. |
 
 Run them in order for a from-scratch demo team. Re-running any phase alone
 is always safe (idempotent upserts) — it just won't create anything the
@@ -40,6 +43,9 @@ DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-lif
 
 # 3. Messaging / video / tasks / strength groups / dev plans / seasons / imports / stats
 DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts --confirm
+
+# 4. Season (games + box scores) / risk flags / recruiting board / lifting history / calendar
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo-program.ts --confirm
 
 # Verify coverage (any time, read-only, no --confirm flag needed)
 DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts
@@ -127,6 +133,12 @@ named "Demo University Baseball") and its 8-player roster.
 | `baseball_stat_uploads` | `team_id`, `coach_id`, `import_run_id` | 1 completed upload linked to the Phase-3 import run | `/baseball/dashboard/import` |
 | `baseball_player_stats` | `team_id`, `coach_id`, `player_id` | 3 sessions per player (1 practice + 2 game) × 8 players = 24 rows, batting/pitching/fielding fields filled per position | `/baseball/dashboard/stats`, `/baseball/dashboard/stats/team` |
 | `baseball_player_aggregates` | `player_id`, `team_id` | 1 row per player (8 total), computed from the seeded `baseball_player_stats` rows so career/game/practice averages are internally consistent | `/baseball/dashboard/stats`, player profile |
+| `baseball_games` (Phase-4 addition) | `team_id` | 20 completed games (17 official + 3 scrimmage) spanning a full Feb–May season, deterministically simulated so scores tie exactly to the box-score lines below | `/baseball/dashboard/stats/games` |
+| `baseball_box_score_batting` / `baseball_box_score_pitching` (Phase-4 addition) | `game_id`, `player_id`, `team_id` | Per-game lines for the roster's 6 hitters + 2 pitchers across all 20 games; `baseball_player_season_stats` is then derived via `recalculate_baseball_season_stats` (never hand-authored) | `/baseball/dashboard/stats`, `/baseball/dashboard/stats/games/[gameId]` |
+| `baseball_coach_insights` (Phase-4 addition) | `team_id`, `coach_id` | 3 additional `status='active'` risk flags (a pitcher workload flag, a batting cold-streak flag, a stale-recruiting-outreach flag) | `/baseball/dashboard/command-center` |
+| `baseball_watchlists` (Phase-4 addition) | `coach_id`, `player_id` | 8 recruits across all 4 active pipeline stages (`watchlist`/`high_priority`/`offer_extended`/`committed`) | `/baseball/dashboard/pipeline`, `/baseball/dashboard/watchlist` |
+| `baseball_lift_results` (Phase-4 addition) | `team_id`, `player_id` | 8 additional sessions per player (64 total), alternating squat/bench across the last ~8 weeks | `/baseball/dashboard/performance` |
+| `baseball_events` / `baseball_practices` (Phase-4 addition) | `team_id` | 7 more upcoming events (practices, a team meeting, a fall exhibition) + 2 more published practices with blocks | `/baseball/dashboard/calendar`, `/baseball/dashboard/practice` |
 
 ## Intentionally-empty surfaces (NOT a coverage gap)
 
@@ -136,7 +148,7 @@ exit code:
 
 | Table | Why it stays empty |
 |---|---|
-| `baseball_recruiting_interests`, `baseball_watchlists` | The demo team (`player_type='college'`, `recruiting_activated=false` on every roster player) is a *college roster*, not a recruiting pipeline. College players never activate recruiting (see `CLAUDE.md` "Recruiting Activation Model"). Seeding recruiting data here would be product-incorrect, not just incomplete. |
+| `baseball_recruiting_interests` | A *separate*, org-scoped recruiting-interest concept the demo doesn't populate — not to be confused with `baseball_watchlists` (the coach's own pipeline board), which Phase 4 (`scripts/seed-baseball-demo-program.ts`, #912) now seeds with 8 recruits. The demo team's own 8 roster players remain `player_type='college'` / `recruiting_activated=false` throughout — college players never activate recruiting (see `CLAUDE.md` "Recruiting Activation Model") — only the *recruits on the board* (separate `baseball_players` rows on fictional feeder programs) have `recruiting_activated=true`. |
 | `baseball_decision_log`, `baseball_meeting_items`, `baseball_signals`, `baseball_actions` | "Decision Room" is a separate CoachHelm-adjacent workflow (`src/lib/baseball/read-models/decision-room/`) built on top of *other* already-seeded surfaces (readiness, lift, insights, games). It is out of scope for this demo-coverage pass — not audited as empty in the original stale-surface audit. |
 | `baseball_video_events` | The staff-anchored film-tagging queue (Event/Tagged/Evidence video views) is distinct from the player-uploaded `baseball_videos` library this contract seeds, and was not in the original audit's empty-table list. |
 

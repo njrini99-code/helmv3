@@ -2,8 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, Brain, ClipboardList, Users } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowRight, Brain, ClipboardList, Clock, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -14,6 +14,7 @@ import {
   isBaseballDemoAvailable,
   isBaseballDemoSession,
 } from '@/app/baseball/actions/demo-access';
+import { probeSignedIn, raceWithTimeout } from '@/lib/demo/gate-probe';
 import {
   AuthBezel,
   AuthCard,
@@ -62,6 +63,8 @@ function validateProgram(v: string): string | undefined {
 
 function DemoGateContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get('message') === 'demo_session_expired';
 
   // Form state
   const [name, setName] = useState('');
@@ -92,18 +95,28 @@ function DemoGateContent() {
   useEffect(() => {
     let active = true;
     async function checkAuth() {
+      // probeSignedIn races supabase.auth.getUser() against a hard 4s
+      // deadline and treats ANY failure — timeout, thrown error, or a
+      // refresh-token error surfaced through getUser()'s own `error` field —
+      // as signed out. Without this, a stale/expired httpOnly Supabase
+      // cookie can leave getUser()'s internal refresh hanging forever, and
+      // "Checking sign-in status" never resolves (#918).
+      const user = await probeSignedIn(supabase);
+      if (!active || !user) return;
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
         // The client can't detect the shared demo account itself (its email
-        // is a server-only secret) — verify it server-side.
-        const { isDemo } = await isBaseballDemoSession();
+        // is a server-only secret) — verify it server-side. Same hard
+        // timeout applied here: a stuck server action must not hang this
+        // check either.
+        const { isDemo } = await raceWithTimeout(isBaseballDemoSession());
         if (active && isDemo) setIsDemoSession(true);
-      } finally {
-        if (active) setCheckingAuth(false);
+      } catch {
+        // Timeout or thrown error — fall through to the form below.
       }
     }
-    void checkAuth();
+    void checkAuth().finally(() => {
+      if (active) setCheckingAuth(false);
+    });
     return () => { active = false; };
   }, [supabase]);
 
@@ -111,8 +124,15 @@ function DemoGateContent() {
     let active = true;
     async function checkAvailability() {
       try {
-        const { enabled } = await isBaseballDemoAvailable();
+        // Same hard-timeout guard as the auth check above — a stuck
+        // kill-switch read must not leave the spinner up forever. Fails
+        // open (demo treated as enabled) so a slow read shows the form
+        // instead of a permanent spinner; the real kill-switch is still
+        // enforced server-side on submit.
+        const { enabled } = await raceWithTimeout(isBaseballDemoAvailable());
         if (active) setDemoEnabled(enabled);
+      } catch {
+        if (active) setDemoEnabled(true);
       } finally {
         if (active) setCheckingAvailability(false);
       }
@@ -224,6 +244,13 @@ function DemoGateContent() {
             Tell us a bit about yourself to get instant access.
           </p>
         </div>
+
+        {/* Friendly notice when bounced here after a demo session timed out (#918) */}
+        {sessionExpired && (
+          <InkNotice ink="team" icon={Clock} role="status" className="mb-4">
+            Your demo session timed out. Enter your info again to jump right back in.
+          </InkNotice>
+        )}
 
         {checkingAuth || checkingAvailability ? (
           <div className="flex justify-center py-6">

@@ -87,16 +87,24 @@ const TableCheckbox = React.forwardRef<
   );
 });
 
-/** Sort affordance — three states (none / asc / desc) drawn with chevrons. */
+/**
+ * Sort affordance — three states (none / asc / desc) drawn with two stacked
+ * chevrons (▲ over ▼). The two SVGs must keep a visible gap between them: with
+ * NO gap (the previous `-mb-px` overlap) and both triangles the same muted
+ * color in the default unsorted state, the up-triangle's wide base and the
+ * down-triangle's wide base touch seamlessly and read as one solid diamond
+ * glyph rather than two chevrons — the stray "♦" reported on every sortable
+ * column header (#917), most visible on the right-aligned numeric columns.
+ */
 function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
   return (
-    <span aria-hidden="true" className="ml-1.5 inline-flex flex-col leading-none">
+    <span aria-hidden="true" className="ml-1.5 inline-flex flex-col gap-0.5 leading-none">
       <svg
         width="8"
         height="5"
         viewBox="0 0 8 5"
         className={cn(
-          '-mb-px transition-colors [transition-duration:180ms]',
+          'transition-colors [transition-duration:180ms]',
           dir === 'asc' ? 'text-accent-600' : 'text-text-tertiary/50',
         )}
       >

@@ -6,6 +6,12 @@ import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { computeSeriesTrend } from '@/lib/coachhelm/trend';
+import { getInsightsForCoachWithMeta } from '@/app/golf/actions/insight-delivery';
+import {
+  assembleBriefEngineInsights,
+  briefEngineCategories,
+} from '@/lib/coachhelm/v3/brief/assemble';
 import {
   samplePerPlayerRounds,
   computeTeamHealth,
@@ -22,6 +28,16 @@ export interface CategoryInsight {
   metric?: string;
   value?: number;
   benchmark?: number;
+  /** Fixes #922 (Phase 1) — set when this sentence was assembled from a real,
+   *  visibility-filtered `golf_coach_insights` engine row (via
+   *  `getInsightsForCoachWithMeta` + `assembleBriefEngineInsights`), not the
+   *  hand-written `generateCategoryInsights` template below. Presentation-only:
+   *  the UI badges an engine-backed row with its real strokes-saved figure. */
+  engineBacked?: boolean;
+  /** Realistic strokes-saved-per-round from `evidence.counterfactual`, present
+   *  only on an `engineBacked` row with a live (non-suppressed) counterfactual.
+   *  `null` on an engine-backed but diagnostic-only row; absent on a template row. */
+  strokesSavedPerRound?: number | null;
 }
 
 export interface PlayerCategoryStat {
@@ -51,6 +67,14 @@ export interface TeamCategoryInsightsResult {
   data?: {
     categories: TeamCategory[];
     teamHealth: number;
+    /**
+     * The most recent completed round's `round_date` — a plain 'YYYY-MM-DD'
+     * calendar date, NOT a full timestamp. `golf_rounds.round_date` is a
+     * DATE column with no time-of-day component; consumers must format this
+     * as a date only (see FairwayBrief's `formatAnalyzed`) and must not
+     * localize it to the viewer's timezone, which would shift the calendar
+     * date itself around midnight. '' when there is no completed round yet.
+     */
     lastAnalyzed: string;
   };
   error?: string;
@@ -189,30 +213,13 @@ function roundMetricValue(
 }
 
 /**
- * Determine trend and delta from two ordered groups of round metric values.
- * `recent` = most recent rounds, `previous` = older rounds.
+ * Minimum meaningful per-round change for a category metric to read as a
+ * trend rather than noise. Shared across all five categories — see
+ * `computeSeriesTrend` in `@/lib/coachhelm/trend` (#914's canonical trend
+ * classifier, now also consumed by the Players tab and Team Stats so a
+ * player's trend can't disagree across CoachHelm surfaces).
  */
-function computeTrend(
-  recent: number[],
-  previous: number[],
-  lowerIsBetter: boolean,
-): { trend: 'improving' | 'stable' | 'declining'; delta: number } {
-  if (recent.length === 0 || previous.length === 0) {
-    return { trend: 'stable', delta: 0 };
-  }
-  const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-  const prevAvg = previous.reduce((a, b) => a + b, 0) / previous.length;
-  const delta = recentAvg - prevAvg;
-  const threshold = 0.5; // Minimum meaningful change
-
-  if (Math.abs(delta) < threshold) {
-    return { trend: 'stable', delta };
-  }
-
-  // For "lower is better" metrics, a negative delta means improvement
-  const improving = lowerIsBetter ? delta < -threshold : delta > threshold;
-  return { trend: improving ? 'improving' : 'declining', delta };
-}
+const CATEGORY_TREND_THRESHOLD = 0.5;
 
 /**
  * Generate up to 3 insights for a category based on player data.
@@ -823,9 +830,18 @@ async function getTeamCategoryInsightsImpl(
           .map((r) => roundMetricValue(r, catDef.id))
           .filter((v): v is number => v != null);
 
-        const recentSlice = metricValues.slice(0, 5);
-        const previousSlice = metricValues.slice(5, 10);
-        const { trend, delta } = computeTrend(recentSlice, previousSlice, catDef.lowerIsBetter);
+        // Canonical trend classifier (#914): recent-5-vs-previous-5 window,
+        // shared threshold definition. minPrevious:1 preserves this category
+        // grid's existing behavior of reading a trend off a single prior
+        // round rather than requiring the stricter 3-round floor the
+        // score-trend surfaces use (Team Stats / Players tab) — a per-round
+        // category metric already has fewer, coarser samples than a
+        // per-player game-wide score series.
+        const { trend, delta } = computeSeriesTrend(metricValues, {
+          lowerIsBetter: catDef.lowerIsBetter,
+          threshold: CATEGORY_TREND_THRESHOLD,
+          minPrevious: 1,
+        });
 
         values.push(val);
         playerStats.push({
@@ -908,6 +924,43 @@ async function getTeamCategoryInsightsImpl(
       });
     }
 
+    // 5b. Fixes #922 (Phase 1) — read-time-only engine-sentence assembler.
+    // Swap the hand-written `insights[0]` template sentence for a genuine
+    // engine-backed one (evidence.counterfactual/standing on real
+    // golf_coach_insights rows) when the team has a visible engine row for
+    // that category. Reuses the EXACT same insight-delivery read path (rank +
+    // dedupe + `applyInsightVisibility`) the Signals surfaces render from, via
+    // the team-wide sweep (`getInsightsForCoachWithMeta`, no player_id — RLS
+    // scopes it to teams the coach staffs). ADDITIVE: does not touch the
+    // trend/rating math above (PR #929 territory) — only appends to
+    // `categories[].insights`. Best-effort: any failure here degrades to the
+    // template-only insights already computed, never breaks the read.
+    try {
+      const engineResult = await getInsightsForCoachWithMeta(
+        session.coach.id,
+        { categories: briefEngineCategories() },
+        supabase,
+      );
+      if (engineResult.ok) {
+        const engineByCategory = assembleBriefEngineInsights(
+          engineResult.data,
+          CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
+        );
+        for (const cat of categories) {
+          const engineInsight = engineByCategory.get(cat.id);
+          if (engineInsight) {
+            cat.insights = [engineInsight, ...cat.insights].slice(0, 3);
+          }
+        }
+      }
+    } catch (err) {
+      await logServerError(
+        `getTeamCategoryInsights engine enrichment failed (continuing with template insights): ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'getTeamCategoryInsights', featureArea: 'insights' },
+        'warning',
+      );
+    }
+
     // 6. Team health score — only categories that actually have player data
     // count (empty = insufficient data, not a perfect score). See P2-17.
     const teamHealth = computeTeamHealth(categories);
@@ -922,7 +975,14 @@ async function getTeamCategoryInsightsImpl(
       const d = typeof r.round_date === 'string' ? r.round_date : '';
       return d > max ? d : max;
     }, '');
-    const lastAnalyzed = latestRoundDate ? new Date(latestRoundDate).toISOString() : '';
+    // 2026-07-17 — #920 (fake timestamp): pass the plain 'YYYY-MM-DD' date
+    // straight through. The old `new Date(latestRoundDate).toISOString()`
+    // parsed the date-only string as UTC MIDNIGHT, and the Brief then
+    // localized that fabricated instant to the viewer's timezone — inventing
+    // a specific clock time ("8:00 PM") the round never had, and for viewers
+    // west of UTC, shifting the calendar date itself back a day. `round_date`
+    // has no time component; don't manufacture one.
+    const lastAnalyzed = latestRoundDate;
 
     return {
       success: true,

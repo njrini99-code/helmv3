@@ -61,6 +61,37 @@ function deterministicPatternId(playerId: string, signature: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
+/**
+ * Compose a natural-reading clause from 1+ condition labels (bug #915 — the
+ * template concatenation grammar). Every condition label is authored as a
+ * standalone clause fragment that already carries its own leading connector
+ * ("After 5+ days off", "In tournament", "Back-to-back rounds") — the OLD
+ * template prefixed the WHOLE join with "When " and joined multiple labels
+ * with " and ", which double-conjuncted:
+ *   "When After 5+ days off and In tournament, you tend to score…"
+ * This composer never adds a redundant leading "When", and recasts a
+ * trailing "In <round type>" label ("In tournament" / "In qualifier") as
+ * "in <round type> rounds" so it reads as a continuation of the first clause
+ * instead of a second "When"-less fragment bolted on with "and":
+ *   "After 5+ days off in tournament rounds, you tend to score…"
+ * Any other trailing label falls back to a plain lowercase-led "and" join.
+ * A single condition is returned verbatim (no "When" needed either way).
+ */
+export function joinConditionLabels(conditions: PatternCondition[]): string {
+  const labels = conditions
+    .map((c) => c.label || `${c.field} ${c.operator} ${String(c.value)}`)
+    .filter((label) => label.length > 0);
+  if (labels.length === 0) return 'Under these conditions';
+  const [first, ...rest] = labels as [string, ...string[]];
+  if (rest.length === 0) return first;
+  const recast = rest.map((label) => {
+    const roundType = /^In (.+)$/.exec(label);
+    if (roundType) return `in ${roundType[1]!.toLowerCase()} rounds`;
+    return `and ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+  });
+  return [first, ...recast].join(' ');
+}
+
 const THRESHOLDS = {
   minSupport: 0.05,      // 5% of rounds — loosened from 0.08 so 11-round players aren't starved
   minConfidence: 0.55,   // 55% confidence — kept as-is to avoid false positives
@@ -772,14 +803,12 @@ export class PatternMiner {
     _outcome: PatternOutcome,
     strokeImpact: number
   ): string {
-    const conditionText = conditions
-      .map((c) => c.label || `${c.field} ${c.operator} ${c.value}`)
-      .join(' and ');
+    const conditionText = joinConditionLabels(conditions);
 
     const direction = strokeImpact > 0 ? 'worse' : 'better';
     const impact = Math.abs(strokeImpact).toFixed(1);
 
-    return `When ${conditionText}, you tend to score ${impact} strokes ${direction} than average.`;
+    return `${conditionText}, you tend to score ${impact} strokes ${direction} than average.`;
   }
 
   /**

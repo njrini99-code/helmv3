@@ -10,11 +10,20 @@ import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
 import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { samplePerPlayerRounds } from '@/app/golf/actions/team-category-insights-helpers';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
+import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import { surfaceName } from '@/lib/golf/surface-registry';
 
 export const metadata: Metadata = {
-  title: `${surfaceName('development')} | Helm Golf`,
+  // The browser tab should match the masthead tab identity the user actually
+  // clicked ('Players', the coachhelm-tab surface-registry entry) — not the
+  // page-content identity ('Development Plans', the 'page' group entry for
+  // the SAME href). Both entries are intentional per surface-registry.ts's
+  // two-name-level design; only the <title> was still reading the wrong one (#917).
+  title: `${surfaceName('players-tab')} | Helm Golf`,
   description: 'Manage player development plans and focus areas for your team.',
 };
 
@@ -207,15 +216,63 @@ export default async function DevelopmentPlansPage({
           // area form reads to autofill the current value for the chosen stat
           // (driving distance, proximity, scrambling, sand saves, putt buckets,
           // par-N averages). All nullable — honest-empty when not tracked yet.
-          'player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+          // NOTE: trend_direction intentionally NOT selected — recent_trend is
+          // now computed below via the canonical scoring-trend classifier
+          // (#914), not the DB-trigger column (which disagreed with Team
+          // Stats' live-computed trend for the same player/rounds).
+          'player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
         )
         .in('player_id', playerIds)
     : { data: [] };
 
-  const trendOf = (raw: string | null | undefined): PlayersGridStats['recent_trend'] => {
-    if (raw === 'improving' || raw === 'declining' || raw === 'stable') return raw;
-    return null;
-  };
+  // ── Canonical scoring trend (#914) ──────────────────────────────────────
+  // The roster table's Trend column previously read
+  // `golf_player_stats_cache.trend_direction` — a DB-trigger value with its
+  // OWN window (5-vs-5) and its OWN threshold (1.0 stroke), independent of
+  // the Team Stats page's live-computed trend (5-vs-5, 0.3-stroke threshold).
+  // Same player, two different verdicts. Recompute here from the same raw
+  // rounds + the SAME canonical `computeScoringTrendFromRounds` Team Stats
+  // uses (stats/team/page.tsx), capped to each player's last 10 rounds via
+  // the same per-player sampler team-category-insights.ts uses (P448/P2-17 —
+  // a single global row cap starves less-active players of rounds).
+  const TREND_ROUNDS_PER_PLAYER = 10;
+  const trendSince = new Date();
+  trendSince.setDate(trendSince.getDate() - 365);
+  const trendSinceStr = trendSince.toISOString().split('T')[0];
+
+  const { data: trendRoundsRaw } = playerIds.length > 0
+    ? await fetchAllRowsResult<{
+        player_id: string;
+        total_score: number | null;
+        holes_played: number | null;
+      }>(
+        (from, to) => supabase
+          .from('golf_rounds')
+          .select('player_id, total_score, holes_played, round_date')
+          .in('player_id', playerIds)
+          .eq('status', 'completed')
+          .not('total_score', 'is', null)
+          .gte('round_date', trendSinceStr)
+          .order('round_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to),
+        undefined,
+        { table: 'golf_rounds', action: 'developmentPlansPage', feature: 'development_plans_coach', sport: 'golf' },
+      )
+    : { data: [] };
+
+  const trendRoundsByPlayer = new Map<string, { total_score: number | null; holes_played: number | null }[]>();
+  for (const r of samplePerPlayerRounds(trendRoundsRaw ?? [], TREND_ROUNDS_PER_PLAYER)) {
+    const list = trendRoundsByPlayer.get(r.player_id) ?? [];
+    list.push({ total_score: r.total_score, holes_played: r.holes_played });
+    trendRoundsByPlayer.set(r.player_id, list);
+  }
+
+  const recentTrendByPlayer = new Map<string, PlayersGridStats['recent_trend']>();
+  for (const pid of playerIds) {
+    const trendResult = computeScoringTrendFromRounds(trendRoundsByPlayer.get(pid) ?? []);
+    recentTrendByPlayer.set(pid, trendResult.hasSignal ? trendResult.trend : null);
+  }
 
   const gridStats: Record<string, PlayersGridStats> = {};
   for (const row of statsRows || []) {
@@ -226,7 +283,7 @@ export default async function DevelopmentPlansPage({
       fairway_pct: row.driving_accuracy_percentage ?? null,
       gir_pct: row.gir_percentage ?? null,
       best_score: row.best_round ?? null,
-      recent_trend: trendOf(row.trend_direction),
+      recent_trend: recentTrendByPlayer.get(row.player_id) ?? null,
       // Extended autofill sources (friendly keys → getMetricCurrentValue).
       driving_distance: row.driving_distance_average ?? null,
       proximity_to_hole: row.approach_proximity_average ?? null,
@@ -240,7 +297,9 @@ export default async function DevelopmentPlansPage({
       par5_avg: row.par5_average ?? null,
     };
   }
-  // Players without a cache row still render — honest empty stats, never fake 0s.
+  // Players without a cache row still render — honest empty stats, never fake
+  // 0s. `recent_trend` is still sourced live (a player can have completed
+  // rounds — and therefore a real trend — before the cache job has caught up).
   for (const pid of playerIds) {
     if (!gridStats[pid]) {
       gridStats[pid] = {
@@ -250,7 +309,7 @@ export default async function DevelopmentPlansPage({
         fairway_pct: null,
         gir_pct: null,
         best_score: null,
-        recent_trend: null,
+        recent_trend: recentTrendByPlayer.get(pid) ?? null,
       };
     }
   }
@@ -310,6 +369,20 @@ export default async function DevelopmentPlansPage({
   // Dedupe-aware causal "why their scores move" rows, keyed by player_id.
   const causalByPlayer = await getTeamCausalRelationships(teamId);
 
+  // #920 — alert_posture='silent' makes the confidence gate infinite for that
+  // player (src/app/golf/actions/insights.ts), so the CoachHelm engine keeps
+  // running but never surfaces a single insight for them. That was invisible
+  // anywhere in the coach UI. One roster-wide intent read (no N+1 — same
+  // query the Roster page already uses) lets the Players-tab roster row flag
+  // it instead of silently reading as "nothing found."
+  const coachIntents = await loadCoachIntents(coach.id);
+  const silentPostureByPlayer: Record<string, boolean> = {};
+  for (const pid of playerIds) {
+    if (coachIntents.get(pid)?.alert_posture === 'silent') {
+      silentPostureByPlayer[pid] = true;
+    }
+  }
+
   // F133: honor the ?player= deep-link from a player's insight/genome card —
   // open the grid scoped to that player, but only if the id is actually on this
   // coach's roster (never trust the raw query param).
@@ -331,6 +404,7 @@ export default async function DevelopmentPlansPage({
         goalsByPlayer={goalsByPlayer}
         playerNameById={playerNameById}
         causalByPlayer={causalByPlayer}
+        silentPostureByPlayer={silentPostureByPlayer}
         initialSelectedPlayerId={initialSelectedPlayerId}
         loadError={loadError}
       />

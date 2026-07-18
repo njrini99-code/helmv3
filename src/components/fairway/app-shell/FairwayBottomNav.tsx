@@ -125,7 +125,24 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
         className,
       )}
     >
-      <ul className="flex items-stretch justify-around">
+      {/* #905: no `justify-around`. Every column below is `flex: 1 1 0%`
+          (min-w-0 `flex-1`), so flex-grow already consumes 100% of the row's
+          width — `justify-content` only matters when there's leftover OR
+          negative free space, and with 5 honest `flex-1` columns dividing
+          an exact 320/390/430px row there never legitimately is any.
+          CORRECTION (#927): the first pass here theorized `justify-around`
+          (space-around) was falling back to `center` on overflow and
+          shifting the row's start negative — plausible-sounding, but
+          removing it left the measured "Home" [left -2, right 66] geometry
+          byte-for-byte unchanged in CI, which means it was never the actual
+          mechanism. The real cause was a global `li a` CSS rule (see
+          globals.css's "Inline link touch targets" block) unconditionally
+          margining every `<a>`-in-`<li>` app-wide, including these tabs —
+          see the `m-0` comment on each `<Link>` below for the full
+          writeup. Left here (harmless, and arguably the more predictable
+          default) rather than reverted, now that it's known NOT to be the
+          fix. */}
+      <ul className="flex items-stretch">
         {items.map((item) => {
           const active =
             item.active ??
@@ -147,15 +164,25 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
                   // `flex: 1 1 0%` on the parent `<li>`) — without it, a long
                   // label (e.g. "Development", "Messages", or a mode's
                   // exposureNoun) can force this column past its 1/5 share of
-                  // a 320/390px bar, overflowing the row by a few px. Tailwind's
-                  // `justify-around` (space-around) falls back to `center` per
-                  // the CSS Box Alignment spec whenever the line's free space
-                  // is negative, and centering an overflowing row shifts its
-                  // start point negative — the exact -2px left overhang on the
-                  // first ("Home") tab this fixes. `min-w-0` here (mirroring
-                  // the `min-w-0` already on the More button below) lets the
-                  // label's own `truncate` class actually engage instead.
-                  'group relative flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-0.5 px-1 py-1.5',
+                  // a 320/390px bar, overflowing the row by a few px.
+                  //
+                  // `m-0` (#927 real fix): globals.css's `li a` "inline link
+                  // touch target" rule (meant for prose body text) matches
+                  // this `<a>` too — it's a plain anchor inside an `<li>` —
+                  // and applies `margin: -0.375rem -0.125rem` with NO
+                  // Tailwind margin class here to out-specificity it (no
+                  // rule = no contest to win). That silently added 4px width
+                  // and shifted every tab 2px left of its true flex-computed
+                  // position; on the FIRST column that pushed the box past
+                  // the viewport's left edge — the exact "Home" [left -2,
+                  // right 66] failure, and why the earlier justify-around /
+                  // min-w-0 pass here (which never touched margin) left the
+                  // measured geometry byte-for-byte unchanged. `m-0` beats
+                  // `li a` on specificity (class > two type selectors) and
+                  // neutralizes the leak at the component level; the global
+                  // rule itself is now also scoped to exclude nav/tablist/
+                  // toolbar anchors so this class of bug can't recur here.
+                  'group relative flex min-h-[56px] min-w-0 m-0 flex-col items-center justify-center gap-0.5 px-1 py-1.5',
                   'outline-none transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
                   'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
                   active ? 'text-accent-700' : 'text-text-tertiary hover:text-text-secondary',

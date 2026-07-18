@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import NumberFlow from '@number-flow/react';
+import { useReducedMotion } from 'framer-motion';
 
 interface AnimatedNumberProps {
   value: number;
@@ -29,7 +30,11 @@ interface AnimatedNumberProps {
  *   2. **Update roll** — every subsequent value change spins to the new
  *      number with the same easing.
  *
- * Reduced-motion users get a fade swap on both (NumberFlow internal).
+ * Reduced-motion users get the value SET immediately on mount — no 0 → value
+ * roll, no stagger delay (NumberFlow's own `respectMotionPreference` already
+ * disables its internal spin, but our mount-roll charade above it was still
+ * holding the display at `0` for the stagger window, which is what read as
+ * "frozen mid-roll" under `prefers-reduced-motion`).
  */
 export function AnimatedNumber({
   value,
@@ -39,13 +44,20 @@ export function AnimatedNumber({
   className,
   staggerIndex = 0,
 }: AnimatedNumberProps) {
+  const reduced = useReducedMotion() ?? false;
   // On first mount we render `0`, then on the next tick (after an optional
   // stagger delay) we set the real value so NumberFlow rolls from 0 → value.
   // After that, internal value updates animate normally.
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState(reduced ? value : 0);
   const mountedRef = useRef(false);
 
   useEffect(() => {
+    if (reduced) {
+      // No mount roll, no stagger — final value renders instantly.
+      setDisplayValue(value);
+      mountedRef.current = true;
+      return undefined;
+    }
     if (!mountedRef.current) {
       // First mount: roll from 0 → value after a stagger delay.
       const delay = Math.max(0, staggerIndex) * 80;
@@ -58,7 +70,7 @@ export function AnimatedNumber({
     // Subsequent updates: pass through immediately.
     setDisplayValue(value);
     return undefined;
-  }, [value, staggerIndex]);
+  }, [value, staggerIndex, reduced]);
 
   return (
     <NumberFlow

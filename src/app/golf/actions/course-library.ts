@@ -27,6 +27,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import {
   normalizeName,
   isTeeComplete,
@@ -43,6 +44,7 @@ import {
 import type {
   GolfCourse,
   GolfCourseTee,
+  GolfCourseTeeHole,
   GolfCourseTeeWithHoles,
   GolfTeamSavedCourse,
   GolfTeamSavedCourseWithCourse,
@@ -104,6 +106,30 @@ async function getCoachTeam(
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   if (!teamId) return { error: 'No active team found' };
   return { userId: user.id, teamId };
+}
+
+/**
+ * True when a golf_courses row has NO human creator — i.e. it's a
+ * staff-curated shared LIBRARY course (bulk-seeded via a reviewed script,
+ * e.g. scripts/seed-course-library-scorecards.ts), not a coach/team's own
+ * contribution. `created_by_user_id` is set on every row created through the
+ * app (createCourse / contributeCourseFromRound both stamp the actor), so a
+ * null value can only mean "nobody added this — it shipped with the
+ * library." (#913 part 2 — ownership gating.)
+ *
+ * Library rows stay visible + usable by every team (tees, saves, rounds all
+ * still work normally), but must not be renamed or removed by an arbitrary
+ * coach — only a super admin may edit or remove them. Team/user-contributed
+ * courses keep the pre-existing open-contribution model unchanged.
+ */
+function isLibraryOwnedCourseRow(row: { created_by_user_id?: unknown }): boolean {
+  return row.created_by_user_id == null;
+}
+
+/** Cheap, DB-round-trip-free super-admin check (env-var allowlist), the same
+ *  pattern src/app/golf/actions/auth.ts already uses outside /admin. */
+function isActorSuperAdmin(actor: Actor): boolean {
+  return isSuperAdminUserId(actor.userId, process.env.SUPER_ADMIN_USER_IDS);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -408,6 +434,54 @@ export async function getCourseDetail(
   courseId: string,
 ): Promise<{ course: GolfCourse; tees: GolfCourseTee[] } | null> {
   return observedGetCourseDetail(courseId);
+}
+
+/**
+ * Read-only hole rows for EVERY active tee of a course, keyed by tee id
+ * (each sorted by hole_number). #913 part 3 — powers the course detail
+ * sheet's compact "Holes" summary (par row + yardage row per tee) so a coach
+ * can see the scorecard without opening tee-set edit. One extra round trip
+ * per course-detail open; deliberately a separate action from
+ * `getCourseDetail` (used by the new-round + tee-picker flows too) so those
+ * hot paths never pay for hole data they don't render.
+ */
+async function getCourseTeeHolesImpl(courseId: string): Promise<Record<string, GolfCourseTeeHole[]>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+
+  const { data: teeRows } = await supabase
+    .from('golf_course_tees')
+    .select('id')
+    .eq('course_id', courseId)
+    .is('deleted_at', null);
+  const teeIds = (teeRows ?? []).map((t) => t.id as string);
+  if (teeIds.length === 0) return {};
+
+  const { data: holeRows } = await supabase
+    .from('golf_course_tee_holes')
+    .select('*')
+    .in('tee_id', teeIds)
+    .order('hole_number');
+
+  const byTee: Record<string, GolfCourseTeeHole[]> = {};
+  for (const row of holeRows ?? []) {
+    const hole = mapTeeHoleRow(row);
+    (byTee[hole.tee_id] ??= []).push(hole);
+  }
+  return byTee;
+}
+
+const observedGetCourseTeeHoles = withAdminObserved(
+  'getCourseTeeHoles',
+  { sport: 'golf', feature: 'course_library' },
+  getCourseTeeHolesImpl,
+);
+
+export async function getCourseTeeHoles(
+  courseId: string,
+): Promise<Record<string, GolfCourseTeeHole[]>> {
+  return observedGetCourseTeeHoles(courseId);
 }
 
 /** A single tee with its hole rows (ordered by hole_number). */
@@ -834,6 +908,12 @@ async function updateCourseImpl(
     .maybeSingle();
   if (!before) return { success: false, error: 'Course not found' };
 
+  // #913 part 2 — library-owned rows (no human creator) can only be edited
+  // by a super admin; team/user-contributed courses keep open contribution.
+  if (isLibraryOwnedCourseRow(before) && !isActorSuperAdmin(actor)) {
+    return { success: false, error: 'This is a shared library course — only an admin can edit it.' };
+  }
+
   const update: CourseUpdate = {
     last_edited_by_user_id: actor.userId,
     last_edited_by_team_id: actor.teamId,
@@ -933,6 +1013,25 @@ async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Res
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
+
+  // #913 part 2 — same library-ownership gate as updateCourse. Soft-delete
+  // and restore are both writes to golf_courses.deleted_at, so they need the
+  // same guard: an arbitrary coach may not remove (or un-remove) a shared
+  // library row nobody on their team owns.
+  const { data: courseRow } = await supabase
+    .from('golf_courses')
+    .select('created_by_user_id')
+    .eq('id', courseId)
+    .maybeSingle();
+  if (!courseRow) return { success: false, error: 'Course not found' };
+  if (isLibraryOwnedCourseRow(courseRow) && !isActorSuperAdmin(actor)) {
+    return {
+      success: false,
+      error: deleted
+        ? 'This is a shared library course — only an admin can remove it.'
+        : 'This is a shared library course — only an admin can restore it.',
+    };
+  }
 
   const { error } = await supabase
     .from('golf_courses')

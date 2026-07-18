@@ -274,6 +274,14 @@ describe('global tripwire', () => {
     // flow) and `reconcileQualifierStatus` (view-time lifecycle self-heal on
     // the qualifier detail page) — both withAdminObserved-wrapped and listed
     // in FEATURE_REGISTRY's qualifiers manifest.
-    expect(total).toBe(421);
+    //
+    // 422 as of the 2026-07-17 course-library-owner-gate fix (#913, +1):
+    // course-library.ts (already 'ALL'-mapped to `course_library`) gains
+    // `getCourseTeeHoles` — a new withAdminObserved-wrapped read that powers
+    // the course detail sheet's read-only "Holes" summary. No manifest edit
+    // was needed (the file is a whole-file 'ALL' owner), so this live scan
+    // and feature-registry.test.ts's manifest-length count both move by
+    // exactly +1.
+    expect(total).toBe(422);
   });
 });

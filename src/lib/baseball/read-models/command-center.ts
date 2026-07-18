@@ -612,7 +612,19 @@ export async function getCommandCenter(
     }
   }
 
-  const playersWithData = rosterPulse.filter((p) => !p.noData).length;
+  // "On the Record" is the SAME figure as Stats Center's own KPI — both now
+  // read getStatsCenter()'s summary rather than each deriving its own count.
+  // Previously this counted `rosterPulse`'s broader box-score+practice
+  // `totalSessions`, so a team with only practice sessions logged (zero
+  // official games) showed a nonzero Command Center figure against Stats
+  // Center's honest 0 — the two surfaces drifted on what "on the record"
+  // means. `getStatsCenter()`'s `noData` is officially-recorded games/
+  // box-score events only (batting/pitching/catching/fielding/baserunning),
+  // which is what "on the record" is meant to convey; that's the one
+  // definition both surfaces now share.
+  const playersWithData = statsCenterModel.authorized
+    ? statsCenterModel.summary.playersWithData
+    : 0;
   const criticalRisks = riskFeed.filter((r) => r.severity === 'critical').length;
 
   return {

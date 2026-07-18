@@ -39,7 +39,7 @@
   "crons": [
     {
       "path": "/api/cron/coachhelm-validation",
-      "schedule": "0 6 * * 0"
+      "schedule": "15 * * * *"
     },
     {
       "path": "/api/cron/coachhelm-calibration",
@@ -47,7 +47,7 @@
     },
     {
       "path": "/api/cron/coachhelm-safety-net",
-      "schedule": "0 4 * * 0"
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/coachhelm-insight-lifecycle",

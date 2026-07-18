@@ -198,7 +198,7 @@ export default function ResetPasswordPage() {
       {/* Glass card */}
       <div className="relative z-10 w-full max-w-[420px]">
         <m.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
           className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
@@ -206,7 +206,7 @@ export default function ResetPasswordPage() {
           {/* Logo with glow effect */}
           <m.div
             className="flex flex-col items-center mb-6 sm:mb-8"
-            initial={{ opacity: 0, y: 10 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
           >
@@ -232,7 +232,7 @@ export default function ResetPasswordPage() {
           {/* Header */}
           <m.div
             className="text-center mb-6 sm:mb-8"
-            initial={{ opacity: 0, y: 10 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
@@ -250,7 +250,7 @@ export default function ResetPasswordPage() {
 
           {/* Form */}
           <m.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
           >
@@ -389,7 +389,7 @@ export default function ResetPasswordPage() {
 
         {/* Footer links */}
         <m.div
-          initial={{ opacity: 0 }}
+          initial={prefersReducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
         >

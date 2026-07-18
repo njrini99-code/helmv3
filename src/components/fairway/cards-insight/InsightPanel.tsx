@@ -54,7 +54,10 @@ import { Button, IconButton } from '../controls/button';
 import { InsufficientData } from '../feedback/InsufficientData';
 // SHARED vocabulary — the single source of truth for priority tone, imported
 // (never re-declared) so a signal looks identical scanned (card) vs read (panel).
-import { PRIORITY, type InsightPriority } from './InsightCard';
+// ICON_TONE/InsightIconTone is the bug #915 direction-by-sign override (see
+// InsightCard's docstring) — shared here for the same "must look identical
+// scanned vs read" reason.
+import { PRIORITY, ICON_TONE, type InsightPriority, type InsightIconTone } from './InsightCard';
 
 export type InsightPanelMode = 'auto' | 'sheet' | 'docked';
 
@@ -92,6 +95,13 @@ export interface InsightPanelProps {
   children?: ReactNode;
   /** Lead icon override. Defaults to the priority-appropriate icon (shared). */
   icon?: ReactNode;
+  /**
+   * Override the icon glyph + color by DIRECTION rather than `priority`'s
+   * severity tier — the SAME bug #915 override InsightCard exposes, kept in
+   * sync so a pattern's icon reads identically scanned vs read. Ignored when
+   * `icon` is also passed.
+   */
+  iconTone?: InsightIconTone;
   /** Hide the lead icon entirely. */
   hideIcon?: boolean;
   /** Right-aligned meta in the header (timestamp, source chip, confidence). */
@@ -179,6 +189,7 @@ interface PanelBodyProps
     | 'title'
     | 'children'
     | 'icon'
+    | 'iconTone'
     | 'hideIcon'
     | 'meta'
     | 'evidence'
@@ -201,6 +212,7 @@ function PanelBody({
   title,
   children,
   icon,
+  iconTone,
   hideIcon = false,
   meta,
   evidence,
@@ -215,7 +227,11 @@ function PanelBody({
   titleId,
 }: PanelBodyProps) {
   const tone = PRIORITY[priority];
-  const LeadIcon = tone.icon;
+  // Bug #915: the SAME direction-by-sign override InsightCard exposes — see
+  // its docstring. `priority` still drives the tint bar below.
+  const toneOverride = iconTone ? ICON_TONE[iconTone] : null;
+  const iconWrapClass = toneOverride?.iconWrap ?? tone.iconWrap;
+  const LeadIcon = toneOverride?.icon ?? tone.icon;
   const leadIcon =
     icon ?? (hideIcon ? null : <LeadIcon aria-hidden className="h-full w-full" strokeWidth={2} />);
 
@@ -233,7 +249,7 @@ function PanelBody({
             <span
               className={cn(
                 'flex h-11 w-11 shrink-0 items-center justify-center rounded-fw-md p-2.5',
-                tone.iconWrap,
+                iconWrapClass,
               )}
             >
               {leadIcon}
@@ -334,6 +350,7 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
       title,
       children,
       icon,
+      iconTone,
       hideIcon,
       meta,
       evidence,
@@ -368,6 +385,7 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
         overline={overline}
         title={title}
         icon={icon}
+        iconTone={iconTone}
         hideIcon={hideIcon}
         meta={meta}
         evidence={evidence}
@@ -420,6 +438,7 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
                 overline={overline}
                 title={title}
                 icon={icon}
+                iconTone={iconTone}
                 hideIcon={hideIcon}
                 meta={meta}
                 evidence={evidence}

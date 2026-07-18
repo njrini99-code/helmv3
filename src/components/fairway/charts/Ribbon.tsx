@@ -27,6 +27,7 @@ import { Readout } from '../instrument/Readout';
 import { ChartCrosshairLiveRegion, useChartCrosshair } from './ChartCrosshair';
 import { InstrumentTable, InstrumentTableToggle } from './InstrumentTable';
 import type { ChartTableData } from './ChartFrame';
+import { classifyTrend, type GoodDirection } from './TrendChip';
 import {
   TABULAR_NUMS,
   VIZ_CHROME,
@@ -63,6 +64,16 @@ export interface RibbonProps {
   minPoints?: number;
   /** Force the awaiting (dim) state. */
   awaiting?: boolean;
+  /**
+   * Which direction of the plotted value is GOOD — feeds the top-right trend
+   * delta's color + glyph via the shared `classifyTrend` (see TrendChip),
+   * the SAME classifier Sparkline/StatTile/TrendChip use. Defaults to `'up'`
+   * (unchanged behavior for higher-is-better series like SG / accuracy / GIR%).
+   * Golf SCORING is lower-is-better — pass `'down'` so a falling score (an
+   * improvement) renders the green ▲, not a false amber ▼ (bug #915: the
+   * Score-by-round trend read a −7.0 improvement as a warning-orange decline).
+   */
+  goodDirection?: GoodDirection;
   className?: string;
 }
 
@@ -80,6 +91,7 @@ export function Ribbon({
   height = 200,
   minPoints = 2,
   awaiting = false,
+  goodDirection = 'up',
   className,
 }: RibbonProps) {
   const reduced = useReducedMotion() ?? false;
@@ -165,6 +177,21 @@ export function Ribbon({
   const first = points[0];
   const last = points[points.length - 1];
   const trendDelta = first && last ? last.y - first.y : undefined;
+  // Bug #915: classify by IMPROVEMENT (goodDirection-aware), not raw sign —
+  // the same shared classifier Sparkline/StatTile/TrendChip use. Passed
+  // through explicitly as Readout's `direction` override so its own
+  // sign-only fallback (up=green/down=amber from the raw sign) never
+  // second-guesses a lower-is-better series like Score.
+  const trendVerdict =
+    typeof trendDelta === 'number' ? classifyTrend(trendDelta, { goodDirection }) : undefined;
+  const trendDirection: 'up' | 'down' | 'flat' | undefined =
+    trendVerdict === undefined
+      ? undefined
+      : trendVerdict === 'flat'
+        ? 'flat'
+        : trendVerdict === 'improving'
+          ? 'up'
+          : 'down';
 
   const ariaLabel = chartAriaLabel(
     typeof title === 'string' ? title : 'Trend',
@@ -194,6 +221,7 @@ export function Ribbon({
                   typeof trendDelta === 'number'
                     ? {
                         value: trendDelta,
+                        direction: trendDirection,
                         format: (v) => {
                           // `fmt` (the caller's valueFormatter, e.g. FairwayBrief's
                           // fmtSG) may ALREADY prefix its own +/− sign. Strip any

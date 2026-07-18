@@ -11,7 +11,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(37);
+SELECT plan(39);
 
 -- ============================================================================
 -- A. RLS enabled on every new table (5)
@@ -135,6 +135,21 @@ SELECT ok(
   EXISTS (SELECT 1 FROM pg_indexes
             WHERE schemaname='public' AND indexname='golf_team_saved_courses_team_course_uidx'),
   'unique index on (team_id, course_id) prevents duplicate team saves');
+
+-- ============================================================================
+-- J. #913 part 2 — golf_courses UPDATE is owner-or-admin gated, not wide open (2)
+--    A library row (created_by_user_id NULL) may only be edited/removed by
+--    public.is_super_admin(); a team/user-owned row keeps open contribution.
+--    See 20260717120000_course_library_owner_gate.sql.
+-- ============================================================================
+SELECT ok(
+  tests.policy_with_check_contains('public','golf_courses','golf_courses_update_authenticated','created_by_user_id'),
+  'golf_courses UPDATE WITH CHECK references created_by_user_id (owner gate, not just auth.uid())'
+);
+SELECT ok(
+  tests.policy_with_check_contains('public','golf_courses','golf_courses_update_authenticated','is_super_admin'),
+  'golf_courses UPDATE WITH CHECK carries an is_super_admin() escape hatch for library rows'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

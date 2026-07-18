@@ -2,9 +2,75 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   computeConvictionSafe,
   effectiveMinSampleSize,
+  joinConditionLabels,
   PatternMiner,
 } from '@/lib/coachhelm/v2/mining/pattern-miner';
-import type { MinedPattern } from '@/lib/coachhelm/v2/types';
+import type { MinedPattern, PatternCondition } from '@/lib/coachhelm/v2/types';
+
+// ---------------------------------------------------------------------------
+// joinConditionLabels — bug #915 template concatenation grammar
+// ---------------------------------------------------------------------------
+
+const AFTER_5_DAYS: PatternCondition = {
+  field: 'days_since_last',
+  operator: 'gte',
+  value: 5,
+  label: 'After 5+ days off',
+};
+const IN_TOURNAMENT: PatternCondition = {
+  field: 'round_type',
+  operator: 'eq',
+  value: 'tournament',
+  label: 'In tournament',
+};
+
+describe('joinConditionLabels', () => {
+  it('the reported compound pair reads as one clause, no "When X and Y" double-conjunction', () => {
+    // Regression lock for the exact reported bug: "When After 5+ days off
+    // and In tournament, …" -> "After 5+ days off in tournament rounds, …"
+    expect(joinConditionLabels([AFTER_5_DAYS, IN_TOURNAMENT])).toBe(
+      'After 5+ days off in tournament rounds',
+    );
+  });
+
+  it('a single condition is returned verbatim — no "When" prefix needed', () => {
+    expect(joinConditionLabels([AFTER_5_DAYS])).toBe('After 5+ days off');
+    expect(joinConditionLabels([IN_TOURNAMENT])).toBe('In tournament');
+  });
+
+  it('recasts a trailing "In <round type>" label as "in <round type> rounds" for ANY leading condition', () => {
+    const highPutts: PatternCondition = {
+      field: 'putts',
+      operator: 'gte',
+      value: 36,
+      label: 'High putts (36+)',
+    };
+    expect(joinConditionLabels([highPutts, IN_TOURNAMENT])).toBe(
+      'High putts (36+) in tournament rounds',
+    );
+  });
+
+  it('falls back to a lowercase-led "and" join for a non-round-type trailing label', () => {
+    const backToBack: PatternCondition = {
+      field: 'days_since_last',
+      operator: 'lte',
+      value: 1,
+      label: 'Back-to-back rounds',
+    };
+    expect(joinConditionLabels([AFTER_5_DAYS, backToBack])).toBe(
+      'After 5+ days off and back-to-back rounds',
+    );
+  });
+
+  it('falls back to field/operator/value when a condition carries no label', () => {
+    const noLabel = { field: 'putts', operator: 'gte', value: 36 } as PatternCondition;
+    expect(joinConditionLabels([noLabel])).toBe('putts gte 36');
+  });
+
+  it('never crashes on an empty condition list', () => {
+    expect(joinConditionLabels([])).toBe('Under these conditions');
+  });
+});
 
 describe('effectiveMinSampleSize (threshold scaling for low-round players)', () => {
   // TODO(plan-03): un-skip when Plan 03 (CoachHelm evidence contract) finalizes
@@ -152,6 +218,50 @@ describe('PatternMiner.toRow (Task B13 lifecycle metadata)', () => {
     expect(row.severity).toBe('medium');
     expect(row.lifecycle_state).toBe('detected');
     expect(row.source_round_ids).toEqual([]);
+  });
+});
+
+describe('PatternMiner.generateDescription (bug #915 grammar fix, end-to-end)', () => {
+  type Miner = {
+    generateDescription: (
+      conditions: PatternCondition[],
+      outcome: unknown,
+      strokeImpact: number,
+    ) => string;
+    generateRecommendation: (conditions: PatternCondition[], outcome: unknown) => string;
+  };
+
+  it('the reported compound pattern renders the fixed, single-clause sentence', () => {
+    const miner = new PatternMiner('player-1') as unknown as Miner;
+    const description = miner.generateDescription(
+      [AFTER_5_DAYS, IN_TOURNAMENT],
+      {},
+      4.7,
+    );
+    expect(description).toBe(
+      'After 5+ days off in tournament rounds, you tend to score 4.7 strokes worse than average.',
+    );
+    expect(description).not.toMatch(/^When /);
+    expect(description).not.toContain(' and In ');
+  });
+
+  it('a positive stroke_impact reads "better", never "worse"', () => {
+    const miner = new PatternMiner('player-1') as unknown as Miner;
+    const description = miner.generateDescription([AFTER_5_DAYS], {}, -1.8);
+    expect(description).toBe('After 5+ days off, you tend to score 1.8 strokes better than average.');
+  });
+
+  it('generateRecommendation is unaffected by the grammar fix (still player-voiced; the coach rewrite lives in patternToInsightVocabulary.ts)', () => {
+    const miner = new PatternMiner('player-1') as unknown as Miner;
+    expect(miner.generateRecommendation([AFTER_5_DAYS], {})).toBe(
+      'Monitor this pattern and discuss with your coach.',
+    );
+    expect(
+      miner.generateRecommendation(
+        [{ field: 'days_since_last', operator: 'gte', value: 7, label: 'After 7+ days off' }],
+        {},
+      ),
+    ).toBe('Consider a practice round before important events after extended breaks.');
   });
 });
 

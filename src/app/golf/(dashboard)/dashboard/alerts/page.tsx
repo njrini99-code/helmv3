@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { getInsightsForCoachWithMeta } from '@/app/golf/actions/insight-delivery';
+import { getTeamPlayers } from '@/app/golf/actions/roster';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals, EmptyState, Button } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -98,17 +99,28 @@ export default async function AlertsPage() {
   // so the Signals workspace paints data on the first frame instead of
   // mounting at loading=true → an always-on client fetch + skeleton flash on
   // every /alerts visit. Mirrors how /patterns already SSR-seeds initialPatterns.
-  const [countsRes, insightsRes] = await Promise.all([
+  // Roster names in the SAME round trip: the "By player" grouping resolves
+  // insight-sourced rows' `playerName` from this map (insights only carry
+  // `player_id`, never a joined name — unlike patterns, which resolve it
+  // inline via `getTeamPatterns`). Without it every insight/alert row falls
+  // back to the grouping's "Unknown player" bucket.
+  const [countsRes, insightsRes, rosterRes] = await Promise.all([
     getAlertCounts(coach.id),
     getInsightsForCoachWithMeta(coach.id, {
       limit: 100,
       priorities: ['urgent', 'high'],
     }),
+    getTeamPlayers(),
   ]);
   const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
   // Honest fallback: a DB error leaves initialInsights empty so the surface
   // falls back to its own client fetch + error handling (never a fake feed).
   const initialInsights = insightsRes.ok ? insightsRes.data : [];
+  const playerNames: Record<string, string> = {};
+  for (const p of rosterRes.data ?? []) {
+    const name = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
+    if (name) playerNames[p.id] = name;
+  }
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <FairwayCoachHelmSignals
@@ -116,6 +128,7 @@ export default async function AlertsPage() {
         teamId={teamId}
         signalSource="insights"
         initialInsights={initialInsights}
+        playerNames={playerNames}
         defaultFilter={{
           // The client filter compares against MAPPED row tones
           // (insight `urgent` → row `critical`; see patternToInsightVocabulary

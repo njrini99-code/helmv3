@@ -318,7 +318,13 @@ describe('FEATURE_REGISTRY completeness', () => {
   // `updateGolfQualifierDetails` (the previously-missing edit-qualifier flow)
   // and `reconcileQualifierStatus` (view-time lifecycle self-heal) — both new
   // withAdminObserved-wrapped exports in golf.ts.
-  it('total manifest size is exactly 421 (excludes the CRM row)', () => {
+  // 2026-07-17 course-library-owner-gate fix (#913): +1 to 422. New read
+  // action `getCourseTeeHoles` (course-library.ts) powers the course detail
+  // sheet's read-only "Holes" summary. course-library.ts is already
+  // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
+  // export is picked up by the live `scanExports` count with no manifest
+  // edit required.
+  it('total manifest size is exactly 422 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -330,7 +336,7 @@ describe('FEATURE_REGISTRY completeness', () => {
         }
       }
     }
-    expect(total).toBe(421);
+    expect(total).toBe(422);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {
