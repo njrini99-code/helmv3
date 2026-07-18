@@ -52,8 +52,8 @@ describe('DataTable — column width floor', () => {
       <DataTable<RowT> data={data} columns={columns} getRowId={(r) => r.id} enableSorting={false} />,
     );
 
-    const headerCells = container.querySelectorAll('th');
-    const bodyCells = container.querySelectorAll('tbody td');
+    const headerCells = container.querySelectorAll<HTMLElement>('th');
+    const bodyCells = container.querySelectorAll<HTMLElement>('tbody td');
 
     expect(headerCells[0]?.style.minWidth).toBe('160px');
     expect(bodyCells[0]?.style.minWidth).toBe('160px');
@@ -64,8 +64,8 @@ describe('DataTable — column width floor', () => {
       <DataTable<RowT> data={data} columns={columns} getRowId={(r) => r.id} enableSorting={false} />,
     );
 
-    const headerCells = container.querySelectorAll('th');
-    const bodyCells = container.querySelectorAll('tbody td');
+    const headerCells = container.querySelectorAll<HTMLElement>('th');
+    const bodyCells = container.querySelectorAll<HTMLElement>('tbody td');
 
     // The Score column sets no `minWidth` — it must carry NO inline width/
     // min-width at all (no TanStack 150px default hint smuggled back in).

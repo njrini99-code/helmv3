@@ -65,7 +65,7 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { derivePlayerQualifierProgress } from '../golf';
+import { derivePlayerQualifierProgress } from '../qualifier-progress';
 
 describe('derivePlayerQualifierProgress', () => {
   it('reports full progress when every round has a real qualifier_round_number', () => {

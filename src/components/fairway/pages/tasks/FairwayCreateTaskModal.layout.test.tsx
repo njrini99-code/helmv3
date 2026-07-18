@@ -35,8 +35,8 @@ vi.mock('@/components/fairway/overlays/ModalShell', () => {
   return { ModalShell: ModalShellRoot };
 });
 
-const createTaskMock = vi.fn(async () => ({ success: true, data: { taskId: 'task-1' } }));
-const setTaskReminderMock = vi.fn(async () => ({ success: true }));
+const createTaskMock = vi.fn(async (..._args: unknown[]) => ({ success: true, data: { taskId: 'task-1' } }));
+const setTaskReminderMock = vi.fn(async (..._args: unknown[]) => ({ success: true }));
 vi.mock('@/app/golf/actions/tasks', () => ({
   createTask: (...args: unknown[]) => createTaskMock(...args),
   setTaskReminder: (...args: unknown[]) => setTaskReminderMock(...args),
