@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { honestRoundsDelta } from '../page';
+import { honestRoundsDelta } from '../honest-rounds-delta';
 
 /**
  * ============================================================================
