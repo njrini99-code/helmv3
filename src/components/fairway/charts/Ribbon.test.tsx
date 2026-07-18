@@ -139,3 +139,84 @@ describe('Ribbon — goodDirection (score/lower-is-better trend coloring)', () =
     expect(getDeltaDirection()).toBe('flat');
   });
 });
+
+/**
+ * Regression test for #946 (Team Brief hero, fix 1/5): the panel's shared
+ * eyebrow + header + readout bezel row squeezes the eyebrow/header into an
+ * overlapping mess when it renders inside a narrow grid column (viewport-
+ * width Tailwind breakpoints don't know the panel's actual rendered width).
+ * `readoutPlacement="below"` stacks the readout under the eyebrow/header as
+ * its own block instead of sharing a row with them — a structural guarantee
+ * against the collision, independent of container width.
+ */
+describe('Ribbon — readoutPlacement (#946 bezel collision fix)', () => {
+  const YARDAGE: RibbonPoint[] = [
+    { x: '0-25y', y: -0.03 },
+    { x: '275-300y', y: -0.52 },
+  ];
+
+  it('default ("corner"): the readout renders INSIDE the shared bezel row (unchanged for existing callers)', () => {
+    render(<Ribbon title="Yardage map" overline="Last 90 days · team" data={YARDAGE} seriesName="Strokes vs par" />);
+    const bezel = document.querySelector('[data-slot="instrument-bezel"]');
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(bezel).not.toBeNull();
+    expect(readout).not.toBeNull();
+    expect(bezel!.contains(readout)).toBe(true);
+  });
+
+  it('"below": the readout renders OUTSIDE the bezel row — it can never share a flex row with the eyebrow/header', () => {
+    render(
+      <Ribbon
+        title="Yardage map"
+        overline="Last 90 days · team"
+        data={YARDAGE}
+        seriesName="Strokes vs par"
+        readoutPlacement="below"
+      />,
+    );
+    const bezel = document.querySelector('[data-slot="instrument-bezel"]');
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(bezel).not.toBeNull();
+    expect(readout).not.toBeNull();
+    expect(bezel!.contains(readout)).toBe(false);
+  });
+});
+
+/**
+ * Regression test for #946 (Team Brief hero, fix 2/5): the big value and the
+ * delta beneath it rendered with no distinguishing label ("−0.52" over an
+ * unlabeled "▼−0.55"), reading as two ambiguous near-duplicate numbers.
+ * `readoutLabels` resolves from the REAL (finite-filtered) first/last points
+ * so the caller can name both truthfully.
+ */
+describe('Ribbon — readoutLabels (#946 unlabeled delta fix)', () => {
+  const YARDAGE: RibbonPoint[] = [
+    { x: '0-25y', y: -0.03 },
+    { x: '275-300y', y: -0.52 },
+  ];
+
+  it('labels the value with the resolved LAST point and the delta with the resolved FIRST point', () => {
+    render(
+      <Ribbon
+        title="Yardage map"
+        data={YARDAGE}
+        seriesName="Strokes vs par"
+        readoutLabels={(first, last) => ({
+          value: `Strokes vs par · ${last.x}`,
+          delta: `vs ${first.x}`,
+        })}
+      />,
+    );
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(readout!.textContent).toContain('Strokes vs par · 275-300y');
+    const delta = document.querySelector('[data-slot="readout-delta"]');
+    expect(delta!.textContent).toContain('vs 0-25y');
+  });
+
+  it('without readoutLabels, the delta has no caption (unchanged default — no regression)', () => {
+    render(<Ribbon title="Yardage map" data={YARDAGE} seriesName="Strokes vs par" />);
+    const readout = document.querySelector('[data-slot="readout"]');
+    expect(readout!.textContent).toContain('Strokes vs par');
+    expect(readout!.textContent).not.toContain(' · 275-300y');
+  });
+});

@@ -74,6 +74,32 @@ export interface RibbonProps {
    * Score-by-round trend read a −7.0 improvement as a warning-orange decline).
    */
   goodDirection?: GoodDirection;
+  /**
+   * Where the last-value readout renders. `'corner'` (default, unchanged) uses
+   * the shared InstrumentPanel bezel's top-right slot — fine when the panel
+   * has the full row to itself. `'below'` stacks the readout under the
+   * eyebrow/header instead of beside them, for panels that render inside a
+   * narrow grid column where a side-by-side eyebrow + header + readout row can
+   * get squeezed into an overlapping mess regardless of viewport width (#946
+   * — the Team Brief hero's yardage-map card, embedded in a ~0.9fr grid
+   * column, had "LAST 90 DAYS · TEAM" collide with the readout). Stacking is a
+   * structural guarantee — the three text blocks never share a row, so they
+   * can't overlap at any width.
+   */
+  readoutPlacement?: 'corner' | 'below';
+  /**
+   * Names what the last plotted point and its delta actually represent,
+   * computed from the REAL (finite-filtered) first/last points Ribbon
+   * resolves internally. Ribbon's delta is always `last.y - first.y`; for a
+   * genuine time series that reads naturally as "current vs a prior point",
+   * but for a non-time x-axis (e.g. FairwayBrief's yardage-band curve) an
+   * unlabeled delta invites the reader to assume a time trend when it's
+   * really "farthest plotted band vs the closest one" (#946 — the hero's
+   * "−0.52" value and the unlabeled "▼−0.55" delta beneath it read as two
+   * ambiguous near-duplicate numbers). Omit for the previous unlabeled
+   * behavior (unchanged for existing callers).
+   */
+  readoutLabels?: (first: RibbonPoint, last: RibbonPoint) => { value?: React.ReactNode; delta?: string };
   className?: string;
 }
 
@@ -92,6 +118,8 @@ export function Ribbon({
   minPoints = 2,
   awaiting = false,
   goodDirection = 'up',
+  readoutPlacement = 'corner',
+  readoutLabels,
   className,
 }: RibbonProps) {
   const reduced = useReducedMotion() ?? false;
@@ -201,48 +229,59 @@ export function Ribbon({
         : 'awaiting signal'),
   );
 
+  // Resolved labels — from the REAL (finite-filtered) first/last points, so a
+  // caller can name what the value + delta actually represent (#946).
+  const resolvedLabels = first && last ? readoutLabels?.(first, last) : undefined;
+
+  const readoutNode = !isAwaiting ? (
+    <div className="flex items-center gap-2">
+      {last ? (
+        <Readout
+          value={last.y}
+          display={valueFormatter ? fmt(last.y) : undefined}
+          format={valueFormatter ? undefined : { maximumFractionDigits: 2 }}
+          size="sm"
+          align={readoutPlacement === 'below' ? 'start' : 'end'}
+          label={resolvedLabels?.value ?? seriesName}
+          delta={
+            typeof trendDelta === 'number'
+              ? {
+                  value: trendDelta,
+                  direction: trendDirection,
+                  caption: resolvedLabels?.delta,
+                  format: (v) => {
+                    // `fmt` (the caller's valueFormatter, e.g. FairwayBrief's
+                    // fmtSG) may ALREADY prefix its own +/− sign. Strip any
+                    // leading sign glyph before prepending ours, or a signed
+                    // formatter double-signs ("▼ −+0.56" instead of "▼ −0.56").
+                    const magnitude = fmt(Math.abs(v)).replace(/^[+\-−]/, '');
+                    return `${v >= 0 ? '+' : '−'}${magnitude}`;
+                  },
+                }
+              : undefined
+          }
+        />
+      ) : null}
+      {hasTable ? (
+        <InstrumentTableToggle show={showTable} onToggle={() => setShowTable((v) => !v)} />
+      ) : null}
+    </div>
+  ) : undefined;
+
   return (
     <InstrumentPanel
       depth="base"
       eyebrow={overline}
       header={title}
-      readout={
-        !isAwaiting ? (
-          <div className="flex items-center gap-2">
-            {last ? (
-              <Readout
-                value={last.y}
-                display={valueFormatter ? fmt(last.y) : undefined}
-                format={valueFormatter ? undefined : { maximumFractionDigits: 2 }}
-                size="sm"
-                align="end"
-                label={seriesName}
-                delta={
-                  typeof trendDelta === 'number'
-                    ? {
-                        value: trendDelta,
-                        direction: trendDirection,
-                        format: (v) => {
-                          // `fmt` (the caller's valueFormatter, e.g. FairwayBrief's
-                          // fmtSG) may ALREADY prefix its own +/− sign. Strip any
-                          // leading sign glyph before prepending ours, or a signed
-                          // formatter double-signs ("▼ −+0.56" instead of "▼ −0.56").
-                          const magnitude = fmt(Math.abs(v)).replace(/^[+\-−]/, '');
-                          return `${v >= 0 ? '+' : '−'}${magnitude}`;
-                        },
-                      }
-                    : undefined
-                }
-              />
-            ) : null}
-            {hasTable ? (
-              <InstrumentTableToggle show={showTable} onToggle={() => setShowTable((v) => !v)} />
-            ) : null}
-          </div>
-        ) : undefined
-      }
+      readout={readoutPlacement === 'corner' ? readoutNode : undefined}
       className={className}
     >
+      {/* 'below' placement: the readout stacks under the eyebrow/header as its
+          own block, never sharing a flex row with them — a structural
+          guarantee against the collision described in #946. */}
+      {readoutPlacement === 'below' && readoutNode ? (
+        <div className="mb-4">{readoutNode}</div>
+      ) : null}
       {showTable && hasTable ? (
         <InstrumentTable data={tableData} />
       ) : isAwaiting ? (
