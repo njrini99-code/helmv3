@@ -257,23 +257,24 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
             const isActive = t.id === resolvedId;
             const Icon = t.icon;
             return (
-              // min-w-0 (not shrink-0): #905 — at 320/390px a hub capped at
-              // ≤3 tabs (Ruling 2) can still exceed the viewport once icon +
-              // padding + a longer label ("Postgame Review", "Operations")
-              // are summed (e.g. Stats & Performance's 3 tabs measure to
-              // ~424px unshrunk at a 390px viewport). `shrink-0` gave every
-              // tab the flex item's default `min-width: auto` floor (its
-              // full unbreakable `whitespace-nowrap` label width), so the
-              // LAST tab's own bounding rect — not just the scrollable
-              // strip's content — bled past the viewport edge even though
-              // `overflow-x-auto` visually clipped it (getBoundingClientRect
-              // reflects layout position, not ancestor clipping). `min-w-0`
-              // restores the default `flex-shrink: 1` floor to zero so the
-              // label's `truncate` (below) can actually engage — tabs now
-              // shrink-to-fit inside the viewport first, falling back to the
-              // strip's horizontal scroll only once even truncated tabs
-              // don't fit (mirrors the FairwayBottomNav min-w-0 fix, #899).
-              <li key={t.id} className="relative min-w-0">
+              // flex min-w-0 (not shrink-0): #905 — at 320/390px a hub capped
+              // at ≤3 tabs (Ruling 2) can still exceed the viewport once icon
+              // + padding + a longer label ("Postgame Review", "Operations")
+              // are summed. `min-w-0` zeroes this flex item's shrink floor,
+              // but that alone is HALF the mechanism: without `flex` the li
+              // stays display:list-item, so the anchor inside is never a flex
+              // item — it keeps its natural `whitespace-nowrap` width, the
+              // label's `truncate` never gets width pressure, and the li
+              // shrinking just lets the anchor overflow it (CI forensics:
+              // strip scrollWidth 325 vs clientWidth 320 at a 320px viewport
+              // with fonts loaded — earlier green runs measured before the
+              // webfont swap and passed by a few px of fallback-font luck).
+              // `flex` makes the li the anchor's flex container so the
+              // anchor's own min-w-0 (below) lets the span truncate — tabs
+              // shrink-to-fit first, falling back to the strip's horizontal
+              // scroll only once even truncated tabs don't fit (mirrors the
+              // FairwayBottomNav min-w-0 fix, #899).
+              <li key={t.id} className="relative flex min-w-0">
                 <Link
                   href={t.href}
                   ref={(node) => {
@@ -295,7 +296,10 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
                     // on specificity and neutralizes it; the global rule is
                     // now also scoped to exclude `nav`-shaped anchors (this
                     // strip is a `<nav>`) so this can't silently recur here.
-                    'group relative inline-flex select-none items-center gap-2 whitespace-nowrap m-0',
+                    // min-w-0: as a flex item of the (now flex) li this zeroes
+                    // the min-width:auto content floor so the label span's
+                    // truncate can engage — see the li comment above.
+                    'group relative inline-flex min-w-0 select-none items-center gap-2 whitespace-nowrap m-0',
                     'rounded-t-lg px-3.5 pb-3 pt-3 text-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[color:var(--paper)]',
