@@ -39,9 +39,13 @@ export function KeyboardShortcutHint() {
 
   return (
     <div className={cn(
+      // ⌘K is meaningless on touch — stay `hidden` (no display, no overlap,
+      // no focus stop) unless the pointer is fine AND the viewport is sm+.
+      // A coarse-pointer tablet at sm+ width still stays hidden.
+      'hidden [@media(pointer:fine)_and_(min-width:640px)]:flex',
       'fixed bottom-[var(--golf-mobile-bottom-nav-offset)] left-1/2 z-30 -translate-x-1/2 lg:bottom-6',
       'bg-warm-900 text-white px-4 py-3 rounded-xl shadow-2xl',
-      'flex items-center gap-3 animate-slide-up'
+      'items-center gap-3 animate-slide-up'
     )}>
       <IconSearch size={16} className="text-warm-400" />
       <span className="text-sm">
