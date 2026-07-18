@@ -25,8 +25,16 @@ test.describe('Authentication', () => {
       // Verify we're on the dashboard
       expect(page.url()).toContain('/dashboard');
 
-      // Verify user is logged in (check for user menu or profile element)
-      await expect(page.locator('text=Dashboard')).toBeVisible({ timeout: 5000 });
+      // Verify user is logged in by asserting the authenticated dashboard chrome
+      // rendered. The command-center now surfaces the word "Dashboard" in THREE
+      // places — the sidebar nav link, the breadcrumb's current-page span, and
+      // the Fairway breadcrumb's animated (opacity-0) transition span — so the
+      // old `page.locator('text=Dashboard')` matches 3 nodes and throws a
+      // strict-mode violation. Target the sidebar nav link specifically (a
+      // role-scoped, always-visible authenticated element).
+      await expect(page.getByRole('link', { name: 'Dashboard' }).first()).toBeVisible({
+        timeout: 5000,
+      });
     });
 
     test('should successfully log in as a player', async ({ page }) => {
@@ -155,8 +163,12 @@ test.describe('Authentication', () => {
       // Try to access dashboard directly
       await page.goto('/baseball/dashboard');
 
-      // Should redirect to login
-      await page.waitForURL('**/login', { timeout: 10000 });
+      // Should redirect to login. The middleware sends unauthenticated users to
+      // `/<sport>/login?returnTo=<path>` (src/lib/supabase/middleware.ts — the
+      // returnTo preserves the intended destination), so the URL carries a query
+      // string. The bare `**/login` glob requires the URL to END at "login" and
+      // never matched this redirect; use a regex that tolerates the query string.
+      await page.waitForURL(/\/login(\?|$)/, { timeout: 10000 });
       expect(page.url()).toContain('/login');
     });
 

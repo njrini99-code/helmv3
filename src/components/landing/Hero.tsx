@@ -72,7 +72,10 @@ function EmailCapture() {
         <Button variant="primary"
           type="submit"
           disabled={loading}
-          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
+          // primary-700 (not -600): white text on primary-600 (#16a34a) is only
+          // 3.29:1 — below WCAG AA 4.5:1. primary-700 (#15803d) lands at ~5.0:1.
+          // Hover darkens (primary-800) to stay compliant in the hover state too.
+          className="px-7 py-3.5 rounded-xl bg-primary-700 hover:bg-primary-800 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -256,8 +259,16 @@ export function Hero() {
             className="relative pb-16 lg:pb-0 hidden lg:block"
           >
             <div className="lg:-mr-[25%]">
-              {/* Browser frame — desktop only */}
+              {/* Browser frame — desktop only. `inert`: this is a purely
+                 decorative fake-browser mockup (traffic lights, tab chrome, a
+                 dim URL bar, a dashboard screenshot). It has no interactive
+                 controls, and its dim chrome text (e.g. the #565656-on-#0e0e0e
+                 URL, 2.63:1) is intentionally low-contrast decoration — not
+                 content. `inert` removes it from the a11y tree so screen
+                 readers don't announce fake browser chrome, and axe-core skips
+                 it for color-contrast (its rule matcher exempts inert subtrees). */}
               <div
+                inert
                 className="relative z-10 rounded-2xl overflow-hidden max-h-[70vh] border border-white/[0.08]"
               >
                 {/* Title bar — dark chrome */}
