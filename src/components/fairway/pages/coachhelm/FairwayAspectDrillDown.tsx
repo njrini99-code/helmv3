@@ -30,7 +30,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
 import { Segmented } from '@/components/fairway/controls/segmented';
@@ -390,14 +390,21 @@ export function FairwayAspectDrillDown({
   const drillById = new Map((plan?.drills ?? []).map((d) => [d.id, d]));
 
   return (
-    <ModalShell
+    // A bottom Sheet, not a centered ModalShell (Mobile Doctrine rule 4 — every
+    // input/create flow under `md` is a bottom sheet): this panel holds FOUR
+    // stacked sections (Who/Goal/Plan/Ship), which read as an unreadably cramped
+    // centered dialog on a phone. The sheet's iOS-native half-height `peek`
+    // detent (default) opens it without slamming to full height; the coach
+    // drags up for the rest. Full-height on desktop via `mobileSide` is not
+    // needed — a right-docked panel would be a bigger behavior change than this
+    // fix calls for, so it stays a bottom sheet at every width.
+    <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      size="full"
       title={aspect.long}
       description={`${aspect.kind === 'strength' ? 'Team strength' : 'Team weakness'} · ${aspect.rating}/100`}
     >
-      <ModalShell.Body>
+      <Sheet.Body>
         <div className="flex flex-col gap-7">
           {/* ── Header chips ─────────────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2">
@@ -695,14 +702,14 @@ export function FairwayAspectDrillDown({
             </div>
           </FormSection>
         </div>
-      </ModalShell.Body>
+      </Sheet.Body>
 
-      <ModalShell.Footer>
+      <Sheet.Footer>
         <Button variant="ghost" onClick={() => onOpenChange(false)}>
           Done
         </Button>
-      </ModalShell.Footer>
-    </ModalShell>
+      </Sheet.Footer>
+    </Sheet>
   );
 }
 

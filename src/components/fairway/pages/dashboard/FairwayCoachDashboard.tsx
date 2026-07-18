@@ -1085,14 +1085,17 @@ function ActionItemsPanel({ items }: { items: ActionItem[] }) {
             {items.slice(0, 6).map((item) => {
               const isUrgent = item.priority === 'high' || item.priority === 'urgent';
               return (
-                <li key={item.id}>
+                <li key={item.id} className="min-w-0">
                   <Link
                     href={actionItemHref(item)}
-                    className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                    className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   >
+                    {/* `overflow-hidden` is the hard backstop for the title's `truncate`
+                        below — without it, a long single-line title can bleed past this
+                        row's own rounded edge instead of ellipsizing at it (#957). */}
                     <Inset
                       padding="sm"
-                      className="flex items-start gap-3 transition-colors hover:bg-surface-hover"
+                      className="flex min-w-0 items-start gap-3 overflow-hidden transition-colors hover:bg-surface-hover"
                     >
                       <span className="mt-0.5 shrink-0">
                         {item.overdue ? (
