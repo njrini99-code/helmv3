@@ -47,6 +47,17 @@ async function gotoSettled(page: Page, route: string): Promise<void> {
   // Reduced motion stabilizes geometry: entrance animations otherwise leave
   // elements mid-transform when we measure.
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  // The seeded storageState pins `sb_last_activity` (SESSION_IDLE_COOKIE in
+  // src/lib/auth/session-idle-shared.ts) at auth-setup time, so any test that
+  // starts more than SESSION_IDLE_TIMEOUT_MS (5 min) after setup is bounced
+  // to /login by the middleware idle gate before it can measure anything —
+  // the suite passes or fails on how close its runtime sits to that cliff.
+  // A viewport test simulates an ACTIVE user, so refresh the marker the same
+  // way real interaction does.
+  const baseURL = test.info().project.use.baseURL ?? 'http://localhost:3000';
+  await page.context().addCookies([
+    { name: 'sb_last_activity', value: Date.now().toString(), url: baseURL },
+  ]);
   await page.goto(route, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(250);
