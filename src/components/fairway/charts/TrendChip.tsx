@@ -27,6 +27,12 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { TABULAR_NUMS } from './theme';
+import {
+  TREND_ARROW as CANONICAL_TREND_ARROW,
+  TREND_TEXT_TONE as CANONICAL_TREND_TEXT_TONE,
+  TREND_LABEL as CANONICAL_TREND_LABEL,
+  type TrendVerdict as CanonicalTrendVerdict,
+} from '@/lib/coachhelm/trend';
 
 /* -------------------------------------------------------------------------- */
 /* The ONE shared trend classifier (exported — others import this)            */
@@ -212,3 +218,80 @@ export const TrendChip = React.forwardRef<HTMLSpanElement, TrendChipProps>(funct
     </span>
   );
 });
+
+/* -------------------------------------------------------------------------- */
+/* TrendGlyph — chrome-free rendering counterpart of the canonical            */
+/* `@/lib/coachhelm/trend` verdict (#945)                                      */
+/* -------------------------------------------------------------------------- */
+
+export interface TrendGlyphProps {
+  /**
+   * The verdict from `classifyTrendDelta`/`computeSeriesTrend`
+   * (`@/lib/coachhelm/trend`). The arrow is ALWAYS the performance
+   * direction — up-ish for improving, down-ish for declining — never the raw
+   * metric's own sign.
+   */
+  direction: CanonicalTrendVerdict;
+  /**
+   * Unsigned magnitude rendered after the verdict word (e.g. the "3.4" in
+   * "Declining 3.4"). Always WITHOUT a +/− sign — this glyph communicates
+   * direction via the arrow + verdict word; a raw SIGNED metric delta (e.g.
+   * a cockpit readout's "−7.0") is a different concern the caller renders
+   * itself. Ignored when `label` is passed, or when `direction` is
+   * `'stable'` (a flat trend has no magnitude to report).
+   */
+  magnitude?: number;
+  /** Decimal places for `magnitude`. Defaults to 1. */
+  magnitudeDigits?: number;
+  /** Verdict word override. Defaults to Improving / Steady / Declining. */
+  label?: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Chrome-free "arrow + verdict word [+ magnitude]" primitive — the rendering
+ * counterpart of the canonical `@/lib/coachhelm/trend` classifier used by the
+ * Players roster, Team Stats (trajectory + player cards), and Team Pulse.
+ * Unlike `TrendChip`, no background/padding/height is imposed, so it drops
+ * into a surface's OWN existing typography (a roster row, a player-card
+ * trend line) — unifying the SEMANTICS (which arrow means what) across
+ * surfaces without touching each surface's SKIN (size/typography stay
+ * whatever `className` supplies).
+ */
+export function TrendGlyph({
+  direction,
+  magnitude,
+  magnitudeDigits = 1,
+  label,
+  className,
+}: TrendGlyphProps) {
+  const magnitudeText =
+    magnitude != null && Number.isFinite(magnitude) && direction !== 'stable'
+      ? Math.abs(magnitude).toFixed(magnitudeDigits)
+      : null;
+  const text =
+    label ??
+    (magnitudeText != null ? (
+      <>
+        {CANONICAL_TREND_LABEL[direction]}{' '}
+        <span className="font-fw-mono tabular-nums">{magnitudeText}</span>
+      </>
+    ) : (
+      CANONICAL_TREND_LABEL[direction]
+    ));
+
+  return (
+    <span
+      data-slot="trend-glyph"
+      data-direction={direction}
+      className={cn(
+        'inline-flex items-center gap-1',
+        CANONICAL_TREND_TEXT_TONE[direction],
+        className,
+      )}
+    >
+      <span aria-hidden="true">{CANONICAL_TREND_ARROW[direction]}</span>
+      <span>{text}</span>
+    </span>
+  );
+}

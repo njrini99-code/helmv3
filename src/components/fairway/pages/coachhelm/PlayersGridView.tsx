@@ -47,7 +47,6 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { CoachHelmShell } from './CoachHelmShell';
 import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
 import { GoalsSection } from './GoalsSection';
@@ -64,6 +63,7 @@ import {
   Readout,
   SegmentBar,
   type SegmentBarPart,
+  TrendGlyph,
 } from '@/components/fairway';
 import {
   DataTable,
@@ -201,17 +201,6 @@ function playerName(p?: PlayersGridPlayer | null): string {
   if (!p) return 'Player';
   return `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
 }
-
-/** Plain-English trend display for the roster row (real recent_trend, not a
- *  fabricated series). Lower scores are better, so "declining" is the warning. */
-const TREND_DISPLAY: Record<
-  'improving' | 'declining' | 'stable',
-  { label: string; cls: string; arrow: string }
-> = {
-  improving: { label: 'Improving', cls: 'text-fw-success', arrow: '↗' },
-  declining: { label: 'Declining', cls: 'text-fw-warning', arrow: '↘' },
-  stable: { label: 'Steady', cls: 'text-text-tertiary', arrow: '→' },
-};
 
 /* ---------------------------------------------------------------------------
  * Per-player roster row (one player + their stat snapshot)
@@ -647,18 +636,12 @@ export function PlayersGridView({
           if (!t) {
             return <span className="font-fw-sans text-eyebrow text-text-tertiary">—</span>;
           }
-          const m = TREND_DISPLAY[t];
-          return (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1 font-fw-sans text-caption font-medium',
-                m.cls,
-              )}
-            >
-              <span aria-hidden>{m.arrow}</span>
-              {m.label}
-            </span>
-          );
+          // Canonical arrow/color primitive (#945) — arrow is ALWAYS the
+          // performance direction (up-ish for improving, down-ish for
+          // declining), sourced from the SAME `@/lib/coachhelm/trend` map
+          // Team Stats' trajectory tile + player cards route through, so a
+          // player can never read "Improving" here and "Declining" there.
+          return <TrendGlyph direction={t} className="font-fw-sans text-caption font-medium" />;
         },
         meta: { align: 'right' },
       },

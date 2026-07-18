@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTodayRangeForTz } from '@/lib/utils/timezone';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 
 // ============================================================================
 // TYPES
@@ -615,41 +616,38 @@ async function getCoachDashboardDataImpl(
                 },
             };
 
-            // Team pulse — per-player trend using normalized 18-hole equivalents
-            // (aligned with stats page algorithm: 3+ rounds, split-half, 1.0 threshold)
-            let bestDelta = 0;
+            // Team pulse — per-player trend via the SAME canonical
+            // `computeScoringTrendFromRounds` (5-vs-5 window, ≥3-previous-sample
+            // floor, 0.3-stroke threshold, 18-hole normalization) the Players
+            // roster table (development/page.tsx) and Team Stats trajectory tile
+            // (stats/team/page.tsx, FairwayTeamStats.tsx) route through (#914).
+            // Previously this reimplemented its OWN split-half-of-5 classifier
+            // with no "previous window" floor, landing on a DIFFERENT
+            // improving/stable/declining headcount than the two canonical
+            // surfaces for the identical underlying rounds (#945).
+            let bestImprovementDelta = 0;
             let bestMoverName = '';
             players.forEach(p => {
                 const pRounds = roundsByPlayer.get(p.id) ?? [];
-                // Normalize to 18-hole equivalents (matches stats page)
-                const pNormalized = pRounds
-                    .map(r => {
-                        if (r.total_score === null) return null;
-                        const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
-                        return Math.round(r.total_score * (18 / hp));
-                    })
-                    .filter((s): s is number => s !== null);
-                if (pNormalized.length < 3) return; // Need 3+ rounds for trend
-                const trend = computeTrend(pNormalized);
-                if (trend === 'improving') teamPulse.improving++;
-                else if (trend === 'declining') teamPulse.declining++;
+                const trendResult = computeScoringTrendFromRounds(pRounds);
+                if (!trendResult.hasSignal) return; // not enough rounds for a real verdict yet
+
+                if (trendResult.trend === 'improving') teamPulse.improving++;
+                else if (trendResult.trend === 'declining') teamPulse.declining++;
                 else teamPulse.stable++;
 
-                // Top mover
-                if (pNormalized.length >= 3) {
-                    const recent5 = pNormalized.slice(0, 5);
-                    const mid = Math.floor(recent5.length / 2);
-                    const recentAvg = recent5.slice(0, mid).reduce((a, b) => a + b, 0) / mid;
-                    const olderAvg = recent5.slice(mid).reduce((a, b) => a + b, 0) / (recent5.length - mid);
-                    const delta = olderAvg - recentAvg; // positive = improvement
-                    if (delta > bestDelta) {
-                        bestDelta = delta;
-                        bestMoverName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
-                    }
+                // Top mover — the player with the biggest improvement. The
+                // canonical delta is recentAvg − previousAvg (lower is better, so
+                // NEGATIVE = improved); flip the sign to a positive "improvement
+                // magnitude", matching what FairwayCoachDashboard renders.
+                const improvementDelta = -trendResult.delta;
+                if (improvementDelta > bestImprovementDelta) {
+                    bestImprovementDelta = improvementDelta;
+                    bestMoverName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
                 }
             });
-            if (bestMoverName && bestDelta > 0) {
-                teamPulse.topMover = { name: bestMoverName, delta: Number(bestDelta.toFixed(1)) };
+            if (bestMoverName && bestImprovementDelta > 0) {
+                teamPulse.topMover = { name: bestMoverName, delta: Number(bestImprovementDelta.toFixed(1)) };
             }
         }
     }

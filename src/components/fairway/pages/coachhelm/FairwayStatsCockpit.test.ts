@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toneVsBenchmark, relativeTones, skewTone } from './FairwayStatsCockpit';
+import { toneVsBenchmark, relativeTones, skewTone, buildVitalDelta } from './FairwayStatsCockpit';
 
 // ── toneVsBenchmark (P921 #2 — DetailGrid tone vs a real PGA/team baseline) ───
 
@@ -90,5 +90,76 @@ describe('skewTone', () => {
   it('respects a custom threshold', () => {
     expect(skewTone(55, 70)).toBe('neutral');
     expect(skewTone(75, 70)).toBe('warn');
+  });
+});
+
+// ── buildVitalDelta (#945 — routed through the canonical classifyTrendDelta) ──
+// The direction/sign math here must be UNCHANGED after routing the
+// improving/declining decision through `@/lib/coachhelm/trend`'s
+// classifyTrendDelta — these lock in the exact same cockpit behavior
+// ("green ▲ −7.0" for putts dropping) the issue cites as the desired rule.
+
+describe('buildVitalDelta', () => {
+  it('fewer putts (goodWhenLower) reads as an UP/green delta with the raw negative sign', () => {
+    const delta = buildVitalDelta({
+      current: 29,
+      previous: 36,
+      currentRounds: 5,
+      previousRounds: 5,
+      goodWhenLower: true,
+      digits: 1,
+    });
+    expect(delta?.direction).toBe('up');
+    expect(delta?.value).toBe(-7);
+    expect(delta?.format?.(-7)).toBe('−7.0');
+  });
+
+  it('more putts (goodWhenLower) reads as a DOWN/amber delta', () => {
+    const delta = buildVitalDelta({
+      current: 36,
+      previous: 29,
+      currentRounds: 5,
+      previousRounds: 5,
+      goodWhenLower: true,
+    });
+    expect(delta?.direction).toBe('down');
+    expect(delta?.value).toBe(7);
+  });
+
+  it('a higher fairway% (goodWhenLower false) reads as an UP/green delta', () => {
+    const delta = buildVitalDelta({
+      current: 65,
+      previous: 55,
+      currentRounds: 5,
+      previousRounds: 5,
+      percent: true,
+    });
+    expect(delta?.direction).toBe('up');
+  });
+
+  it('no change reads flat, never up or down', () => {
+    const delta = buildVitalDelta({
+      current: 30,
+      previous: 30,
+      currentRounds: 5,
+      previousRounds: 5,
+      goodWhenLower: true,
+    });
+    expect(delta?.direction).toBe('flat');
+  });
+
+  it('is honestly undefined (no fabricated delta) when either window has zero rounds', () => {
+    expect(
+      buildVitalDelta({ current: 30, previous: 32, currentRounds: 0, previousRounds: 5 }),
+    ).toBeUndefined();
+    expect(
+      buildVitalDelta({ current: 30, previous: 32, currentRounds: 5, previousRounds: 0 }),
+    ).toBeUndefined();
+  });
+
+  it('is honestly undefined when a value is null/non-finite', () => {
+    expect(
+      buildVitalDelta({ current: null, previous: 32, currentRounds: 5, previousRounds: 5 }),
+    ).toBeUndefined();
   });
 });

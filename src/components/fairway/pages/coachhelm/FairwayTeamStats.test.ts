@@ -7,7 +7,9 @@ import {
   rankPlayers,
   buildTeamStatsCsv,
   computeMetricLeaders,
+  classifyScoringTrend,
 } from './FairwayTeamStats';
+import { TREND_ARROW, TREND_TEXT_TONE } from '@/lib/coachhelm/trend';
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -451,5 +453,49 @@ describe('buildTeamStatsCsv', () => {
     const players = [makePlayer({ id: 'p1', first_name: 'Bob', last_name: 'Smith, Jr.' })];
     const csv = buildTeamStatsCsv(players, 'all', () => null);
     expect(csv.split('\r\n')[1]).toContain('"Bob Smith, Jr."');
+  });
+});
+
+// ============================================================================
+// classifyScoringTrend — arrow/tone MUST be the performance direction (#945)
+// ----------------------------------------------------------------------------
+// Regression for the bug this issue reports: the arrow was hardcoded
+// BACKWARDS (↘ for "Improving", ↗ for "Declining" — tracking the raw
+// scoring_trend number's sign, not the player's actual trajectory), so a
+// player could read "Declining" on the Team Stats player card and
+// "Improving" on the Players roster table for the identical delta. Assert
+// against the canonical `@/lib/coachhelm/trend` map directly so this test
+// fails if the two ever drift apart again.
+// ============================================================================
+
+describe('classifyScoringTrend', () => {
+  it('an IMPROVING trend (negative delta — lower score is better) gets the canonical improving arrow/tone', () => {
+    const t = classifyScoringTrend(-5);
+    expect(t?.verdict).toBe('improving');
+    expect(t?.arrow).toBe(TREND_ARROW.improving);
+    expect(t?.cls).toBe(TREND_TEXT_TONE.improving);
+    expect(t?.magnitude).toBe('5.0');
+  });
+
+  it('a DECLINING trend (positive delta) gets the canonical declining arrow/tone — NOT the improving one', () => {
+    const t = classifyScoringTrend(5);
+    expect(t?.verdict).toBe('declining');
+    expect(t?.arrow).toBe(TREND_ARROW.declining);
+    expect(t?.cls).toBe(TREND_TEXT_TONE.declining);
+    // The regression this guards: these must never be equal.
+    expect(t?.arrow).not.toBe(TREND_ARROW.improving);
+  });
+
+  it('a delta inside the noise threshold reads steady with the canonical flat arrow/tone', () => {
+    const t = classifyScoringTrend(0.1);
+    expect(t?.verdict).toBe('steady');
+    expect(t?.arrow).toBe(TREND_ARROW.stable);
+    expect(t?.cls).toBe(TREND_TEXT_TONE.stable);
+    expect(t?.magnitude).toBeNull();
+  });
+
+  it('returns null for a null/NaN trend (no fabricated verdict)', () => {
+    expect(classifyScoringTrend(null)).toBeNull();
+    expect(classifyScoringTrend(Number.NaN)).toBeNull();
   });
 });

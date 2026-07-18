@@ -4,6 +4,10 @@ import {
   computeSeriesTrend,
   TREND_WINDOW_SIZE,
   DEFAULT_MIN_PREVIOUS,
+  TREND_ARROW,
+  TREND_TEXT_TONE,
+  TREND_LABEL,
+  type TrendVerdict,
 } from './trend';
 
 describe('classifyTrendDelta', () => {
@@ -115,5 +119,34 @@ describe('computeSeriesTrend', () => {
     const result = computeSeriesTrend(series, { lowerIsBetter: false, threshold: 0.5 });
     expect(result.delta).toBeCloseTo(10, 10);
     expect(result.trend).toBe('improving');
+  });
+});
+
+// ============================================================================
+// Canonical glyph/tone rendering (#945) — the ONE arrow-to-verdict mapping
+// every surface (Players roster, Team Stats trajectory + player cards, Team
+// Pulse) must render through. The rule: the arrow is the PERFORMANCE
+// direction, never the raw metric's own sign.
+// ============================================================================
+
+describe('TREND_ARROW / TREND_TEXT_TONE / TREND_LABEL', () => {
+  const verdicts: TrendVerdict[] = ['improving', 'stable', 'declining'];
+
+  it('defines a glyph, tone, and label for every verdict', () => {
+    for (const v of verdicts) {
+      expect(TREND_ARROW[v]).toEqual(expect.any(String));
+      expect(TREND_TEXT_TONE[v]).toEqual(expect.any(String));
+      expect(TREND_LABEL[v]).toEqual(expect.any(String));
+    }
+  });
+
+  it('improving and declining never share an arrow or tone (the actual #945 regression)', () => {
+    expect(TREND_ARROW.improving).not.toBe(TREND_ARROW.declining);
+    expect(TREND_TEXT_TONE.improving).not.toBe(TREND_TEXT_TONE.declining);
+  });
+
+  it('declining is amber/warning, never the destructive-red error tone', () => {
+    expect(TREND_TEXT_TONE.declining).not.toMatch(/destructive|red/i);
+    expect(TREND_TEXT_TONE.declining).toContain('warning');
   });
 });

@@ -131,6 +131,7 @@ import {
   type MetricRenderConfig,
 } from '@/lib/coachhelm/v3/standing/metric-config';
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { classifyTrendDelta } from '@/lib/coachhelm/trend';
 
 // CoachHelm cause/effect — REUSED VERBATIM. Returns the player's mined patterns
 // (cause = description, effect = strokeImpact, fix = recommendation), gated by
@@ -243,7 +244,7 @@ function toChartBuckets(buckets: LeakBucket[]): LeakMapBucket[] {
  * flips the success/warning direction so that, e.g., FEWER putts reads as a
  * green ▲ improvement rather than an amber ▼ regression.
  */
-function buildVitalDelta({
+export function buildVitalDelta({
   current,
   previous,
   currentRounds,
@@ -265,10 +266,16 @@ function buildVitalDelta({
   if (a === null || b === null || currentRounds <= 0 || previousRounds <= 0) return undefined;
   const change = a - b;
   // Direction is by IMPROVEMENT, not raw sign: when lower is better, a negative
-  // change (e.g. fewer putts) is an improvement → up/green.
-  const improved = goodWhenLower ? change < 0 : change > 0;
+  // change (e.g. fewer putts) is an improvement → up/green. Routed through the
+  // SAME canonical `classifyTrendDelta` the Players roster / Team Stats /
+  // Team Pulse use (#914/#945) so this readout's ▲/▼ can never disagree with
+  // the categorical verdict shown elsewhere for the same underlying change.
   const direction: ReadoutDelta['direction'] =
-    change === 0 ? 'flat' : improved ? 'up' : 'down';
+    change === 0
+      ? 'flat'
+      : classifyTrendDelta(change, { lowerIsBetter: goodWhenLower, threshold: 0 }) === 'improving'
+        ? 'up'
+        : 'down';
   const sign = change > 0 ? '+' : change < 0 ? '−' : '';
   const mag = Math.abs(change);
   const text = percent ? `${sign}${Math.round(mag)}%` : `${sign}${mag.toFixed(digits)}`;

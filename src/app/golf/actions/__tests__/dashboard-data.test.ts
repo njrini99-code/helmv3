@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 
 // ---------------------------------------------------------------------------
 // Mock Supabase client
@@ -293,6 +294,73 @@ describe('dashboard-data server actions', () => {
       // Both round queries fetched a second page beyond the 1000-row cap
       expect(roundsChain.range).toHaveBeenCalledWith(0, 999);
       expect(roundsChain.range).toHaveBeenCalledWith(1000, 1999);
+    });
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Team Pulse parity (#945) — before this fix, Team Pulse reimplemented
+    // its own split-half-of-5 classifier and disagreed with the Players
+    // roster / Team Stats trajectory tile (both powered by the canonical
+    // `computeScoringTrendFromRounds`) for the SAME underlying rounds. This
+    // fixture feeds two players' round histories through BOTH paths — the
+    // dashboard action and the canonical function directly — and asserts
+    // they land on the identical verdict.
+    // ──────────────────────────────────────────────────────────────────────
+    it('Team Pulse classifies per-player trend via the canonical computeScoringTrendFromRounds — parity with the roster/Team Stats classifier', async () => {
+      // Rising: 5 recent rounds well below the 3 previous rounds (improving).
+      const risingRounds = [
+        { id: 'r1', player_id: 'p1', total_score: 68, score_to_par: -4, round_date: '2026-07-10', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r2', player_id: 'p1', total_score: 69, score_to_par: -3, round_date: '2026-07-08', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r3', player_id: 'p1', total_score: 70, score_to_par: -2, round_date: '2026-07-06', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r4', player_id: 'p1', total_score: 71, score_to_par: -1, round_date: '2026-07-04', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r5', player_id: 'p1', total_score: 70, score_to_par: -2, round_date: '2026-07-02', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r6', player_id: 'p1', total_score: 80, score_to_par: 8, round_date: '2026-06-20', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r7', player_id: 'p1', total_score: 82, score_to_par: 10, round_date: '2026-06-18', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r8', player_id: 'p1', total_score: 81, score_to_par: 9, round_date: '2026-06-16', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+      ];
+      // Falling: 5 recent rounds well above the 3 previous rounds (declining).
+      const fallingRounds = [
+        { id: 's1', player_id: 'p2', total_score: 82, score_to_par: 10, round_date: '2026-07-10', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's2', player_id: 'p2', total_score: 83, score_to_par: 11, round_date: '2026-07-08', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's3', player_id: 'p2', total_score: 81, score_to_par: 9, round_date: '2026-07-06', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's4', player_id: 'p2', total_score: 84, score_to_par: 12, round_date: '2026-07-04', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's5', player_id: 'p2', total_score: 80, score_to_par: 8, round_date: '2026-07-02', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's6', player_id: 'p2', total_score: 70, score_to_par: -2, round_date: '2026-06-20', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's7', player_id: 'p2', total_score: 71, score_to_par: -1, round_date: '2026-06-18', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's8', player_id: 'p2', total_score: 69, score_to_par: -3, round_date: '2026-06-16', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+      ];
+      const roundsChain = createChainableMock({ data: [...risingRounds, ...fallingRounds] });
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'golf_rounds') return roundsChain;
+        if (table === 'golf_team_members') {
+          return createChainableMock({
+            data: [
+              { player: { id: 'p1', first_name: 'Rising', last_name: 'Star', avatar_url: null } },
+              { player: { id: 'p2', first_name: 'Falling', last_name: 'Behind', avatar_url: null } },
+            ],
+          });
+        }
+        if (table === 'golf_teams') {
+          return createChainableMock({
+            singleData: { id: 'team-1', name: 'Eagles', season: '2026', join_code: 'E1', created_at: '2026-01-01' },
+          });
+        }
+        return createChainableMock();
+      });
+
+      // Parity oracle: the SAME canonical function the Players roster table
+      // and Team Stats page route through, fed the SAME per-player fixtures.
+      const risingVerdict = computeScoringTrendFromRounds(risingRounds);
+      const fallingVerdict = computeScoringTrendFromRounds(fallingRounds);
+      expect(risingVerdict.hasSignal && risingVerdict.trend).toBe('improving');
+      expect(fallingVerdict.hasSignal && fallingVerdict.trend).toBe('declining');
+
+      const result = await getCoachDashboardData('coach-1', 'user-1', 'team-1');
+
+      expect(result.teamPulse.improving).toBe(1);
+      expect(result.teamPulse.declining).toBe(1);
+      expect(result.teamPulse.stable).toBe(0);
+      expect(result.teamPulse.topMover?.name).toBe('Rising Star');
+      expect(result.teamPulse.topMover?.delta).toBeCloseTo(-risingVerdict.delta, 1);
     });
   });
 
