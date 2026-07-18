@@ -838,6 +838,7 @@ export function FairwayCalendar({
             overlays={overlays}
             focusDate={focusDate}
             nowRef={nowRef}
+            timezone={teamTimezone}
             onSelectDate={(d) => {
               setFocusDate(d);
               setView('day');
@@ -860,6 +861,7 @@ export function FairwayCalendar({
           rangeEnd={visibleWindow.end}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
+          timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
@@ -871,6 +873,7 @@ export function FairwayCalendar({
           focusDate={focusDate}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
+          timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
@@ -892,6 +895,7 @@ export function FairwayCalendar({
           events={events}
           focusDate={focusDate}
           nowRef={nowRef}
+          timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onSelectDate={(d) => {
             setFocusDate(d);
@@ -910,6 +914,7 @@ export function FairwayCalendar({
           rangeEnd={visibleWindow.end}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
+          timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
@@ -939,6 +944,7 @@ export function FairwayCalendar({
               }
             : undefined
         }
+        timezone={teamTimezone}
       />
 
       {/* ── Coach create / edit event editor (native Fairway) ─────────────────── */}

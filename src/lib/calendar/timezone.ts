@@ -60,3 +60,58 @@ export function getValidTimezone(timezone: string | null | undefined): string {
   }
   return DEFAULT_TIMEZONE;
 }
+
+/**
+ * Format an ISO timestamp as a 12-hour wall-clock time ("6:00 PM") anchored to
+ * `timezone` (falls back to DEFAULT_TIMEZONE via getValidTimezone).
+ *
+ * DETERMINISM (audit W1 — calendar times shift ~4h and disagree between the
+ * Agenda row and the Event Detail drawer for the SAME event): the previous
+ * call sites used `format(new Date(iso), 'h:mm a')` (date-fns), which reads
+ * the EXECUTING environment's own local timezone. SSR on Vercel runs in UTC
+ * while the browser (and this team) is America/New_York — the exact same
+ * start_time therefore rendered ~4-5h apart depending on whether the string
+ * came from the server-rendered HTML or a client re-render, and because
+ * those spans were marked `suppressHydrationWarning`, React never patched the
+ * server text to match — it stuck until something else forced a re-render.
+ * An explicit `timeZone` in Intl.DateTimeFormat is NOT affected by the
+ * runtime's own local zone, so server and client now always compute the
+ * identical string for the identical instant.
+ */
+export function formatEventTime(iso: string, timezone: string | null | undefined): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: getValidTimezone(timezone),
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+}
+
+/**
+ * Compact variant with no AM/PM — for tight spaces (month-grid chips) that
+ * previously used date-fns `format(date, 'h:mm')`.
+ */
+export function formatEventTimeCompact(iso: string, timezone: string | null | undefined): string {
+  return formatEventTime(iso, timezone).replace(/\s?[AP]M$/i, '');
+}
+
+/**
+ * Format an ISO timestamp as a long weekday+month+day label ("Monday, July
+ * 20") anchored to `timezone` — the date-line sibling of formatEventTime.
+ * Same determinism rationale: an evening event (e.g. 8 PM ET) is already the
+ * next UTC day, so date-fns' implicit-local `format(date, 'EEEE, MMMM d')`
+ * could disagree between an SSR (UTC) and client (ET) render of the exact
+ * same instant just as easily as the time-of-day did.
+ */
+export function formatEventDateLabel(iso: string, timezone: string | null | undefined): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: getValidTimezone(timezone),
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+}

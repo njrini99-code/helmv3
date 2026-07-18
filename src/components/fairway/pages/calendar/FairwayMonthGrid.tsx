@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { formatEventTimeCompact } from '@/lib/calendar/timezone';
 import { typeMeta } from './FairwayEventCard';
 
 /** A color-coded busy period for the coach availability overlay. */
@@ -54,6 +55,11 @@ export interface FairwayMonthGridProps {
   focusDate: Date;
   /** Parent-owned "today" (seeded from serverNow then promoted client-side). */
   nowRef?: Date;
+  /**
+   * Team's canonical IANA timezone — chip times render anchored to this zone
+   * so they agree with the Agenda row and detail drawer (audit W1: cal-tz).
+   */
+  timezone?: string | null;
   /** Coach availability overlays — when present, replace team events. */
   overlays?: ScheduleOverlay[];
   /** Click an event chip → open the Fairway detail drawer. */
@@ -88,6 +94,7 @@ export function FairwayMonthGrid({
   events,
   focusDate,
   nowRef,
+  timezone,
   overlays,
   onEventClick,
   onSelectDate,
@@ -197,8 +204,8 @@ export function FairwayMonthGrid({
                           style={{ backgroundColor: o.color.bg }}
                         />
                         {o.kind !== 'blocked' ? (
-                          <span className="mr-0.5 font-fw-mono tabular-nums opacity-70" suppressHydrationWarning>
-                            {format(new Date(o.start), 'h:mm')}
+                          <span className="mr-0.5 font-fw-mono tabular-nums opacity-70">
+                            {formatEventTimeCompact(o.start, timezone)}
                           </span>
                         ) : null}
                         <span className="truncate">{o.title}</span>
@@ -228,8 +235,8 @@ export function FairwayMonthGrid({
                       )}
                     >
                       {!e.all_day && eventStart(e) ? (
-                        <span className="mr-1 font-fw-mono tabular-nums opacity-70" suppressHydrationWarning>
-                          {format(new Date(eventStart(e)!), 'h:mm')}
+                        <span className="mr-1 font-fw-mono tabular-nums opacity-70">
+                          {formatEventTimeCompact(eventStart(e)!, timezone)}
                         </span>
                       ) : null}
                       {e.title}
