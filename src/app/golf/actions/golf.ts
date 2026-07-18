@@ -3,6 +3,7 @@
 import { randomInt } from 'crypto';
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { derivePlayerQualifierProgress } from './qualifier-progress';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
@@ -5709,16 +5710,12 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
 
         // Get rounds for this qualifier
         const qualifierRounds = (rounds || []).filter((r) => r.qualifier_id === q.id);
-        const completedRoundNumbers = qualifierRounds
-          .filter((r) => r.qualifier_round_number !== null)
-          .map((r) => r.qualifier_round_number as number)
-          .sort((a, b) => a - b);
-
-        const totalScore = qualifierRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
-        const totalToPar = qualifierRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
-        const roundsCompleted = qualifierRounds.length > 0
-          ? qualifierRounds.length
-          : (entry.rounds_completed ?? 0);
+        const { roundsCompleted, completedRoundNumbers, totalScore, totalToPar } =
+          derivePlayerQualifierProgress(qualifierRounds, {
+            roundsCompleted: entry.rounds_completed,
+            totalScore: entry.total_score,
+            totalToPar: entry.total_to_par,
+          });
         // num_rounds is a live, typed golf_qualifiers column (NOT NULL, default
         // 1) — read it directly instead of falling back to a computed guess
         // that was always roundsCompleted+1 (structurally always "one more
@@ -5739,8 +5736,8 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
           showLiveLeaderboard: true,
           roundsCompleted,
           completedRoundNumbers,
-          totalScore: qualifierRounds.length > 0 ? totalScore : (entry.total_score ?? null),
-          totalToPar: qualifierRounds.length > 0 ? totalToPar : (entry.total_to_par ?? null),
+          totalScore,
+          totalToPar,
         };
       });
 

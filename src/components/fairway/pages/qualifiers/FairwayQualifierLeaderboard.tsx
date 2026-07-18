@@ -66,6 +66,27 @@ interface FairwayQualifierLeaderboardProps {
 /** Where a scored player sits relative to the travel squad. */
 type LineupTier = 'locked' | 'bubble' | 'out' | null;
 
+/**
+ * Derive the authoritative "committed selections" Set from the
+ * `golf_qualifier_selections` fetch (audit W1 — "qual-contradict"). A FAILED
+ * fetch (RLS denial, transient network error, …) must never be conflated
+ * with "confirmed zero selections" — the old code did `sels ?? []`, which
+ * silently turned a query error into an empty-but-truthy Set, rendering
+ * EVERY entrant (including a genuine top-4) as "Not selected". Returns
+ * `null` — "we don't have a committed answer, fall back to the honest
+ * merit-tier projection" — whenever selection isn't finalized yet OR the
+ * fetch errored; only a real, successful, zero-row read means "no one is
+ * selected".
+ */
+export function deriveCommittedSelections(
+  selectionState: string | null | undefined,
+  sels: { data: Array<{ player_id: string }> | null; error: unknown },
+): Set<string> | null {
+  if (selectionState !== 'selected') return null;
+  if (sels.error) return null;
+  return new Set((sels.data ?? []).map((s) => s.player_id));
+}
+
 /** A presentation row derived from the realtime leaderboard entries. */
 interface StandingRow {
   playerId: string;
@@ -116,13 +137,15 @@ export function FairwayQualifierLeaderboard({
         return;
       }
 
-      const { data: sels } = await supabase
+      const { data: sels, error: selsError } = await supabase
         .from('golf_qualifier_selections')
         .select('player_id')
         .eq('qualifier_id', qualifierId);
 
       if (!cancelled) {
-        setCommittedSelections(new Set((sels ?? []).map((s) => s.player_id)));
+        setCommittedSelections(
+          deriveCommittedSelections(q.selection_state, { data: sels, error: selsError }),
+        );
       }
     }
 

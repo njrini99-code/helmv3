@@ -595,7 +595,12 @@ export function PlayersGridView({
             />
           );
         },
-        meta: { noWrap: true },
+        // minWidth is a real floor — PlayerIdentity's own min-w-0/truncate lets
+        // this column ellipsize gracefully, but without a floor the auto-layout
+        // table starves it toward that near-zero min-content on a phone while
+        // the Rounds/Avg score/Trend/Focus areas columns keep their natural
+        // width (audit W1 — mobile name-trunc).
+        meta: { noWrap: true, minWidth: 160 },
       },
       {
         id: 'rounds',

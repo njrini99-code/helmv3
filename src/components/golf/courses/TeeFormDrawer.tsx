@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { Button, IconButton } from '@/components/fairway/controls/button';
+import { Segmented } from '@/components/fairway/controls/segmented';
 import { useToast } from '@/components/ui/sonner';
 import { IconX, IconFlag } from '@/components/icons';
 import type { GolfCourseTeeWithHoles, GolfTeeCategory } from '@/lib/types/golf-course';
@@ -127,12 +128,18 @@ export function TeeFormDrawer({
   const [rows, setRows] = useState<HoleRow[]>(() => makeBlankRows(18));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Which nine is showing in the per-hole editor. An 18-hole tee never shows
+  // all 18 rows at once — that's what silently clipped the list with no way
+  // to reach holes 9-18 (audit W1). Reset to front whenever the sheet (re)opens
+  // or the hole count drops to 9 (a 9-hole tee has nothing to toggle).
+  const [nineView, setNineView] = useState<'front' | 'back'>('front');
 
   // Initialize / reset whenever the sheet opens or the target tee changes.
   useEffect(() => {
     if (!open) return;
     setError(null);
     setSubmitting(false);
+    setNineView('front');
 
     if (mode === 'edit' && tee) {
       const count = (tee.holes_count === 9 ? 9 : 18) as 9 | 18;
@@ -159,6 +166,7 @@ export function TeeFormDrawer({
   function changeHolesCount(next: 9 | 18) {
     setHolesCount(next);
     setRows((prev) => resizeRows(prev, next));
+    if (next === 9) setNineView('front');
   }
 
   function setPar(idx: number, par: number) {
@@ -433,72 +441,97 @@ export function TeeFormDrawer({
             </p>
           )}
 
+          {/* Front 9 / Back 9 toggle — an 18-hole tee never rendered all 18
+              rows at once well; this keeps each half short enough to see
+              without hunting for a scrollbar, and holes 10-18 reachable on
+              any viewport (audit W1). A 9-hole tee has nothing to toggle. */}
+          {holesCount === 18 && (
+            <div className="mb-3">
+              <Segmented
+                options={[
+                  { value: 'front', label: 'Front 9' },
+                  { value: 'back', label: 'Back 9' },
+                ]}
+                value={nineView}
+                onValueChange={(v) => setNineView(v as 'front' | 'back')}
+                fullWidth
+                aria-label="Holes shown"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2">
-            {rows.map((row, idx) => (
-              <div
-                key={row.holeNumber}
-                className="rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-text-tertiary">
-                    <IconFlag size={12} aria-hidden /> Hole {row.holeNumber}
-                  </span>
+            {(holesCount === 18
+              ? nineView === 'front' ? rows.slice(0, 9) : rows.slice(9, 18)
+              : rows
+            ).map((row) => {
+              const idx = row.holeNumber - 1;
+              return (
+                <div
+                  key={row.holeNumber}
+                  className="rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-text-tertiary">
+                      <IconFlag size={12} aria-hidden /> Hole {row.holeNumber}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-[auto_1fr_1fr] items-end gap-2">
+                    {/* Par */}
+                    <label className="flex flex-col gap-1">
+                      <span className="text-caption text-text-tertiary">Par</span>
+                      <select
+                        value={row.par}
+                        onChange={(e) => setPar(idx, Number(e.target.value))}
+                        aria-label={`Hole ${row.holeNumber} par`}
+                        className={cn(
+                          'min-h-[40px] w-[56px] appearance-none rounded-fw-sm border border-border-subtle bg-surface-sunken px-2 text-center text-body text-text-primary focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-primary-500/30',
+                        )}
+                      >
+                        {PAR_OPTIONS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {/* Yardage */}
+                    <label className="flex flex-col gap-1">
+                      <span className="text-caption text-text-tertiary">Yards</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={30}
+                        max={800}
+                        value={row.yardage}
+                        onChange={(e) => setYardage(idx, e.target.value)}
+                        placeholder="—"
+                        aria-label={`Hole ${row.holeNumber} yardage`}
+                        className={cn(INPUT_CLASS, 'min-h-[40px] px-2.5 py-2')}
+                      />
+                    </label>
+
+                    {/* Handicap index */}
+                    <label className="flex flex-col gap-1">
+                      <span className="text-caption text-text-tertiary">Hcp</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={18}
+                        value={row.handicapIndex}
+                        onChange={(e) => setHandicap(idx, e.target.value)}
+                        placeholder="—"
+                        aria-label={`Hole ${row.holeNumber} handicap index`}
+                        className={cn(INPUT_CLASS, 'min-h-[40px] px-2.5 py-2')}
+                      />
+                    </label>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-[auto_1fr_1fr] items-end gap-2">
-                  {/* Par */}
-                  <label className="flex flex-col gap-1">
-                    <span className="text-caption text-text-tertiary">Par</span>
-                    <select
-                      value={row.par}
-                      onChange={(e) => setPar(idx, Number(e.target.value))}
-                      aria-label={`Hole ${row.holeNumber} par`}
-                      className={cn(
-                        'min-h-[40px] w-[56px] appearance-none rounded-fw-sm border border-border-subtle bg-surface-sunken px-2 text-center text-body text-text-primary focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-primary-500/30',
-                      )}
-                    >
-                      {PAR_OPTIONS.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  {/* Yardage */}
-                  <label className="flex flex-col gap-1">
-                    <span className="text-caption text-text-tertiary">Yards</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={30}
-                      max={800}
-                      value={row.yardage}
-                      onChange={(e) => setYardage(idx, e.target.value)}
-                      placeholder="—"
-                      aria-label={`Hole ${row.holeNumber} yardage`}
-                      className={cn(INPUT_CLASS, 'min-h-[40px] px-2.5 py-2')}
-                    />
-                  </label>
-
-                  {/* Handicap index */}
-                  <label className="flex flex-col gap-1">
-                    <span className="text-caption text-text-tertiary">Hcp</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={1}
-                      max={18}
-                      value={row.handicapIndex}
-                      onChange={(e) => setHandicap(idx, e.target.value)}
-                      placeholder="—"
-                      aria-label={`Hole ${row.holeNumber} handicap index`}
-                      className={cn(INPUT_CLASS, 'min-h-[40px] px-2.5 py-2')}
-                    />
-                  </label>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

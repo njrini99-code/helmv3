@@ -1,84 +1,76 @@
 // @vitest-environment jsdom
 /**
- * ============================================================================
- * StandingStrip — SG "Field Avg 0.00" redundant column (bug #949 #7)
- * ----------------------------------------------------------------------------
- * SG metrics are computed AGAINST the field average — its reference value is
- * DEFINITIONALLY 0 on every player, every team, every render. The old 3-up
- * readout row always rendered a "Field Avg" column reading "0.00" for SG
- * metrics, which was also a straight duplicate of the SAME "FIELD AVG" text
- * already labeling the reference tick on the bar above (a triple label: tick
- * label + readout label + a value that never varies). This locks the fix:
- * the redundant readout column is dropped for SG metrics; the tick (a real
- * visual anchor) and every non-SG metric's genuine PGA/LPGA readout stay.
- * ========================================================================== */
+ * StandingStrip.tsx — regression coverage for the SG caption/arrow mismatch
+ * (audit W1).
+ *
+ * StandingStrip is the Fairway-native "matte" replacement for the legacy
+ * glass StandingBar (Card/Inline/Hero), used on the player detail Strokes
+ * Gained tab (FairwayStatsCockpit). It ships its own copy of the "vs team"
+ * caption wiring rather than delegating to a shared render, so when the
+ * legacy StandingBar/Card.tsx was fixed to derive its caption from the same
+ * mean-relative comparison as the ↑/↓ arrow, that fix never propagated here —
+ * StandingStrip kept calling the older percentile-based `teamCohortText`,
+ * which can disagree with the mean-relative arrow on a skewed roster.
+ *
+ * Concretely: player 0.81 vs team-mean 0.65 (higher_better) — 0.81 > 0.65 so
+ * the arrow is UP and reads "better than team" (delta.tone === 'good'), but a
+ * skewed team distribution can put 0.81 below the 50th team_pct percentile,
+ * so the OLD `teamCohortText(team_pct, ...)` caption read "Below team
+ * average" directly under the "better" badge.
+ */
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import { StandingStrip } from './StandingStrip';
-import type { StandingStripProps } from './StandingStrip';
+import { describe, expect, it } from 'vitest';
 
-const sgProps: StandingStripProps = {
-  metric_id: 'sg_total',
-  metric_label: 'SG: Total',
-  player_value: 0.5,
-  team_avg: 0.2,
+import { StandingStrip, type StandingStripProps } from './StandingStrip';
+
+const BASE: StandingStripProps = {
+  metric_id: 'sg_ott',
+  metric_label: 'SG: Off the Tee',
+  player_value: 0.81,
+  team_avg: 0.65,
   team_n: 8,
-  team_pct: 62,
+  // A percentile that disagrees with the mean comparison — the exact skewed-
+  // roster condition that produced the contradiction (0.81 is above the mean
+  // but the percentile rank still lands in the "Below team average" bucket).
+  team_pct: 40,
   pga_value: 0,
   direction: 'higher_better',
   unit: 'strokes',
-  scale: { min: -2, max: 2 },
+  scale: { min: -1.5, max: 1.5 },
   size: 'card',
 };
 
-const nonSgProps: StandingStripProps = {
-  metric_id: 'gir_pct',
-  metric_label: 'GIR %',
-  player_value: 62,
-  team_avg: 58,
-  team_n: 8,
-  team_pct: 70,
-  pga_value: 68,
-  direction: 'higher_better',
-  unit: 'percent',
-  scale: { min: 0, max: 100 },
-  size: 'card',
-};
+describe('StandingStrip — SG caption/arrow agreement (W1 regression)', () => {
+  it('caption agrees with the up-arrow "better than team" badge when player > team mean', () => {
+    render(<StandingStrip {...BASE} />);
 
-describe('StandingStrip — SG metrics drop the redundant Field Avg readout', () => {
-  it('renders no "Field Avg" readout value for an sg_ metric (only the tick carries the label)', () => {
-    render(<StandingStrip {...sgProps} />);
-    // The reference tick below the track still reads "FIELD AVG" (a real
-    // visual anchor showing where 0 sits) — exactly once.
-    expect(screen.getAllByText('FIELD AVG')).toHaveLength(1);
-    // The old 3rd readout's own "Field Avg" label (mixed-case DOM text —
-    // CSS `uppercase` only changes the rendering, not the text node — versus
-    // the tick's genuinely-uppercased "FIELD AVG" above) is gone entirely.
-    expect(screen.queryByText('Field Avg')).toBeNull();
-    // ...and the constant, never-varying "0.00" value it always showed no
-    // longer appears at all.
-    expect(screen.queryByText('0.00')).toBeNull();
+    // Arrow badge: player (0.81) > team mean (0.65) on a higher_better metric
+    // → up arrow, "better than team".
+    expect(screen.getByText(/↑ vs team/)).toBeTruthy();
+
+    // Caption must be mean-relative and MUST NOT contradict the arrow above.
+    expect(screen.getByText('Above team average')).toBeTruthy();
+    expect(screen.queryByText('Below team average')).toBeNull();
   });
 
-  it('still renders the real PGA readout value for a non-SG metric (genuine, informative number)', () => {
-    render(<StandingStrip {...nonSgProps} />);
-    expect(screen.getByText('68%')).toBeInTheDocument();
-    // The tick's "PGA" label appears once, plus the readout's "PGA" label —
-    // two occurrences is the intended (non-duplicate) pair: one on the track,
-    // one titling the actual number.
-    expect(screen.getAllByText('PGA').length).toBeGreaterThanOrEqual(1);
+  it('caption agrees with the down-arrow "worse than team" badge when player < team mean', () => {
+    render(<StandingStrip {...BASE} player_value={0.5} team_pct={80} />);
+
+    // Arrow: player (0.5) < team mean (0.65) on a higher_better metric → down.
+    expect(screen.getByText(/↓ vs team/)).toBeTruthy();
+
+    // Even though team_pct (80) would have read "Top quartile on your team"
+    // under the old percentile-based caption, the mean-relative caption must
+    // agree with the down arrow instead.
+    expect(screen.getByText('Below team average')).toBeTruthy();
+    expect(screen.queryByText('Above team average')).toBeNull();
+    expect(screen.queryByText(/Top quartile/)).toBeNull();
   });
 
-  it('sg metric card renders a 2-up readout row (You / Team), not 3-up', () => {
-    const { container } = render(<StandingStrip {...sgProps} />);
-    const readoutRow = container.querySelector('[data-slot="standing-strip"] .grid.gap-2');
-    expect(readoutRow?.className).toContain('grid-cols-2');
-    expect(readoutRow?.className).not.toContain('grid-cols-3');
-  });
-
-  it('non-sg metric card keeps the 3-up readout row', () => {
-    const { container } = render(<StandingStrip {...nonSgProps} />);
-    const readoutRow = container.querySelector('[data-slot="standing-strip"] .grid.gap-2');
-    expect(readoutRow?.className).toContain('grid-cols-3');
+  it('suppresses the cohort caption on a tiny roster (team marker hidden)', () => {
+    render(<StandingStrip {...BASE} team_n={2} />);
+    expect(screen.queryByText(/vs team/)).toBeNull();
+    expect(screen.queryByText('Above team average')).toBeNull();
+    expect(screen.queryByText('Below team average')).toBeNull();
   });
 });

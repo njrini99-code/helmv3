@@ -400,7 +400,16 @@ export function DataTable<TData>({
                       key={header.id}
                       scope="col"
                       aria-sort={ariaSort}
-                      style={{ width: header.getSize() ? header.getSize() : undefined }}
+                      // NOT header.getSize(): TanStack hands back a 150px
+                      // default for every column that doesn't set an explicit
+                      // `size`, and no Fairway column def ever does — so that
+                      // inline width used to apply an unintended equal-weight
+                      // hint to every `<th>`. On a narrow viewport that starved
+                      // whichever column had real min-content give (the
+                      // truncating name column) while short numeric/badge
+                      // siblings held their natural width (mobile name-trunc
+                      // bug). `meta.minWidth` is the deliberate, opt-in floor.
+                      style={meta?.minWidth ? { minWidth: meta.minWidth } : undefined}
                       className={cn(
                         m.headerCell,
                         m.cellX,
@@ -567,6 +576,11 @@ export function DataTable<TData>({
                       return (
                         <td
                           key={cell.id}
+                          // Same floor as the header (see the `<th>` comment
+                          // above) — without it the body cell can still be
+                          // squeezed thinner than the header once the browser
+                          // distributes the auto-layout table's width.
+                          style={meta?.minWidth ? { minWidth: meta.minWidth } : undefined}
                           className={cn(
                             m.cell,
                             m.cellX,

@@ -99,6 +99,13 @@ function normalizeTab(raw: string | undefined): TabId {
 export interface FairwayTeamHubProps {
   tasks: PlayerTask[];
   announcements: GolfAnnouncementMeta[];
+  /**
+   * True when the announcements fetch itself FAILED (RPC error, permission
+   * denial, transient network hiccup) — distinguishes that from a genuinely
+   * empty `announcements` array so the tab never renders the cheerful "No
+   * announcements" state over a real outage (W1 count-coherence audit).
+   */
+  announcementsLoadError?: boolean;
   trips: TripData[];
   classes: TeamHubClass[];
   /** Teammates on the player's team (the roster, folded into the hub). */
@@ -111,9 +118,24 @@ export interface FairwayTeamHubProps {
   onCompleteTask: (taskId: string) => Promise<void>;
 }
 
+/**
+ * Pure decision for the Announcements tab's branch (W1 count-coherence audit).
+ * AnnouncementsList itself already renders an honest "Couldn't load" + retry
+ * state when `loadError` is set (see hub-parts.tsx), but only if it's actually
+ * mounted — a caller that gates on `announcements.length > 0` alone skips
+ * straight to the plain "No announcements" EmptyState on a failed fetch,
+ * because a failure and a genuine empty list both arrive as `[]`. A load
+ * error must always route to AnnouncementsList so its error state can render.
+ * Exported for deterministic unit tests.
+ */
+export function showAnnouncementsList(announcementCount: number, loadError: boolean): boolean {
+  return announcementCount > 0 || loadError;
+}
+
 export function FairwayTeamHub({
   tasks,
   announcements,
+  announcementsLoadError = false,
   trips,
   classes,
   teammates,
@@ -214,10 +236,13 @@ export function FairwayTeamHub({
 
         {/* ═══════════ ANNOUNCEMENTS ═══════════ (self-contained acknowledge;
             AnnouncementsList renders null when empty, so guard with an honest
-            empty-state so the tab is never blank). */}
+            empty-state so the tab is never blank — but a LOAD FAILURE must
+            still route to AnnouncementsList (loadError) rather than the plain
+            "No announcements" state, or an outage reads as a genuinely quiet
+            team (W1 count-coherence audit). */}
         <TabsContent value="announcements">
-          {announcements.length > 0 ? (
-            <AnnouncementsList announcements={announcements} />
+          {showAnnouncementsList(announcements.length, announcementsLoadError) ? (
+            <AnnouncementsList announcements={announcements} loadError={announcementsLoadError} />
           ) : (
             <Surface padding="sm">
               <EmptyState
@@ -359,6 +384,8 @@ function ClassRow({ klass }: { klass: TeamHubClass }) {
 export interface FairwayTeamHubWrapperProps {
   tasks: PlayerTask[];
   announcements: GolfAnnouncementMeta[];
+  /** True when the announcements fetch itself failed (see FairwayTeamHubProps). */
+  announcementsLoadError?: boolean;
   trips: TripData[];
   classes: TeamHubClass[];
   teammates: FairwayPlayerRosterPlayer[];
@@ -371,6 +398,7 @@ export interface FairwayTeamHubWrapperProps {
 export function FairwayTeamHubWrapper({
   tasks: initialTasks,
   announcements,
+  announcementsLoadError = false,
   trips,
   classes,
   teammates,
@@ -423,6 +451,7 @@ export function FairwayTeamHubWrapper({
     <FairwayTeamHub
       tasks={tasks}
       announcements={announcements}
+      announcementsLoadError={announcementsLoadError}
       trips={trips}
       classes={classes}
       teammates={teammates}

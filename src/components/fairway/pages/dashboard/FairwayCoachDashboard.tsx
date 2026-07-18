@@ -38,6 +38,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   ViewHeader,
@@ -55,7 +56,7 @@ import {
   InsufficientData,
   OnboardingStep,
   OnboardingSteps,
-  TrendChart,
+  Skeleton,
   Sparkline,
   type ColumnDef,
   type TrendPoint,
@@ -97,6 +98,23 @@ import type {
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { deriveCoachSignal } from './coach-signal';
+
+// Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
+// Scoring Trend chart). recharts' ResponsiveContainer has no real size to
+// measure during SSR and falls back to a 1px-wide render; on hydration the
+// container is then re-measured and the chart re-renders at its real width.
+// That resize forces the Area/Line's entrance reveal (a clip-path keyed off
+// the computed on-screen points, so any recompute at a new width restarts it)
+// back to its 0%-revealed start — the axes/gridlines aren't animated so they
+// still draw, but the trend line itself never got a chance to finish drawing.
+// Skipping SSR for this chart avoids that guaranteed first-load resize.
+const TrendChart = nextDynamic(
+  () => import('@/components/fairway').then((m) => ({ default: m.TrendChart })),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[240px] w-full rounded-card" />,
+  },
+);
 
 /* ──────────────────────────────────────────────────────────────────────────
  * Props — identical contract to the legacy CoachDashboard
@@ -266,6 +284,19 @@ export function FairwayCoachDashboard({
     [enhancedData, stats.rosterSize],
   );
 
+  const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
+  // Memoized: TrendChart's Area/Line animate in on mount (isAnimationActive).
+  // Recomputing a brand-new array/object graph on every render (this
+  // component re-renders at least once post-mount, from the greeting effect
+  // above) hands Recharts a new `data` identity each time, which can restart
+  // the draw-on animation before it ever finishes. A stable reference lets it
+  // draw once and stay drawn. (Hook lives above the coach-without-team early
+  // return below — it must run on every render, team or not.)
+  const trendPoints: TrendPoint[] = useMemo(
+    () => (hasTrend ? teamScoringTrend!.map((p) => ({ x: p.label, y: p.value })) : []),
+    [hasTrend, teamScoringTrend],
+  );
+
   // ── COACH-WITHOUT-TEAM → onboarding funnel (not a zeroed dashboard) ──────
   if (!team) {
     return (
@@ -326,10 +357,6 @@ export function FairwayCoachDashboard({
   const girDelta = seriesDelta(girSeries);
   const puttsDelta = seriesDelta(puttsSeries);
 
-  const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
-  const trendPoints: TrendPoint[] = hasTrend
-    ? teamScoringTrend!.map((p) => ({ x: p.label, y: p.value }))
-    : [];
   const trendFirst = trendPoints[0];
   const trendLast = trendPoints[trendPoints.length - 1];
   // Only surface a directional takeaway when the swing clears noise (>= 0.75
@@ -350,13 +377,25 @@ export function FairwayCoachDashboard({
     {
       accessorKey: 'player_name',
       header: 'Player',
-      meta: { noWrap: true },
+      // A real floor (not just min-w-0 below) — see the DataTable comment on
+      // `meta.minWidth`: without it, this column's near-zero min-content (the
+      // name truncates) let the auto-layout table starve it down to a couple
+      // characters on a phone while the numeric Score/To Par/Date columns kept
+      // their natural width (audit W1 — mobile name-trunc).
+      meta: { noWrap: true, minWidth: 160 },
       cell: (ctx) => {
         const row = ctx.row.original;
         return (
-          <span className="inline-flex items-center gap-2.5">
-            <Avatar name={row.player_name} src={row.player_avatar_url} size="sm" />
-            <span className="font-medium text-text-primary">{row.player_name}</span>
+          <span className="flex min-w-0 items-center gap-2.5">
+            <Avatar
+              name={row.player_name}
+              src={row.player_avatar_url}
+              size="sm"
+              className="shrink-0"
+            />
+            <span className="min-w-0 flex-1 truncate font-medium text-text-primary">
+              {row.player_name}
+            </span>
           </span>
         );
       },
@@ -364,9 +403,11 @@ export function FairwayCoachDashboard({
     {
       accessorKey: 'course_name',
       header: 'Course',
-      meta: { noWrap: true },
+      meta: { noWrap: true, minWidth: 120 },
       cell: (ctx) => (
-        <span className="text-text-secondary">{toTitleCase(ctx.getValue() as string)}</span>
+        <span className="block truncate text-text-secondary">
+          {toTitleCase(ctx.getValue() as string)}
+        </span>
       ),
     },
     {
@@ -1047,7 +1088,9 @@ function formatRelativeDate(dateStr: string, now: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function ActionItemsPanel({ items }: { items: ActionItem[] }) {
+/** Exported for a deterministic render test (W1 count-coherence audit) — the
+ *  header count badge must always describe exactly what's rendered below it. */
+export function ActionItemsPanel({ items }: { items: ActionItem[] }) {
   // Defer relative-date computation to the client to avoid a hydration mismatch.
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
@@ -1087,8 +1130,17 @@ function ActionItemsPanel({ items }: { items: ActionItem[] }) {
         </Surface>
       ) : (
         <Surface elevation="border" padding="sm">
+          {/* W1 count-coherence audit fix: render the FULL `items` list, not a
+              slice(0, 6) — the header badge above (and the hero's "N items are
+              waiting on you" in coach-signal.ts, which sources the SAME
+              `enhancedData.actionItems` array) both state the true count, so a
+              truncated render disagreed with its own header on every team with
+              more than 6 open items. The upstream builder already bounds this
+              list (dashboard-data.ts caps tasks + announcements combined), so
+              rendering all of it is still a finite, calm digest — never an
+              unbounded list. */}
           <ul className="flex flex-col gap-2">
-            {items.slice(0, 6).map((item) => {
+            {items.map((item) => {
               const isUrgent = item.priority === 'high' || item.priority === 'urgent';
               return (
                 <li key={item.id} className="min-w-0">

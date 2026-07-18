@@ -32,6 +32,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { rsvpLockMessage } from '@/hooks/useRSVP';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
+import { formatEventTime, formatEventDateLabel } from '@/lib/calendar/timezone';
 
 // Coach-only roll-call panel — code-split so players never download it.
 const AttendancePanel = dynamic(
@@ -87,6 +88,13 @@ export interface FairwayEventDetailDrawerProps {
   onRespond?: (eventId: string, status: RSVPStatus) => Promise<RsvpRespondResult>;
   /** Coach view: opens the Fairway create/edit editor for this event. */
   onEdit?: (event: CalendarEvent) => void;
+  /**
+   * Team's canonical IANA timezone (golf_team_settings.timezone). The
+   * start/end time render anchored to this zone — NOT the runtime's own
+   * local zone — so the SAME event agrees with FairwayEventCard/agenda
+   * (audit W1: cal-tz).
+   */
+  timezone?: string | null;
 }
 
 /** Player-facing copy for the current response in locked states. */
@@ -101,16 +109,15 @@ function mapsHref(location: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
 }
 
-function formatDateLine(event: CalendarEvent): string {
+function formatDateLine(event: CalendarEvent, timezone?: string | null): string {
   const start = event.start_time || event.start_date;
   if (!start) return '';
-  const startDate = new Date(start);
-  const datePart = format(startDate, 'EEEE, MMMM d');
+  const datePart = formatEventDateLabel(start, timezone);
   if (event.all_day) return `${datePart} · All day`;
-  const startTime = format(startDate, 'h:mm a');
+  const startTime = formatEventTime(start, timezone);
   const end = event.end_time || event.end_date;
   if (!end || end === start) return `${datePart} · ${startTime}`;
-  return `${datePart} · ${startTime} – ${format(new Date(end), 'h:mm a')}`;
+  return `${datePart} · ${startTime} – ${formatEventTime(end, timezone)}`;
 }
 
 export function FairwayEventDetailDrawer({
@@ -122,6 +129,7 @@ export function FairwayEventDetailDrawer({
   rsvpSummary,
   onRespond,
   onEdit,
+  timezone,
 }: FairwayEventDetailDrawerProps) {
   const [pendingStatus, setPendingStatus] = React.useState<RSVPStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -243,7 +251,7 @@ export function FairwayEventDetailDrawer({
             </h2>
             <p className="flex items-center gap-1.5 font-fw-sans text-body-sm text-text-tertiary">
               <Clock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
-              <span suppressHydrationWarning>{formatDateLine(event)}</span>
+              <span>{formatDateLine(event, timezone)}</span>
             </p>
           </div>
 

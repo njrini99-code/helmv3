@@ -34,6 +34,17 @@ export interface FairwayColumnMeta {
   numeric?: boolean;
   /** Hint to keep this column from wrapping (e.g. names, dates). */
   noWrap?: boolean;
+  /**
+   * Floor width (px) this column can never be squeezed below, applied as a
+   * real CSS `min-width` on both the header and body cell. Give identity/name
+   * columns one of these — inside `table-layout: auto`, a sibling column's
+   * `min-w-0`-truncate content has a near-zero min-content contribution, so
+   * on a narrow viewport the auto-layout algorithm happily starves it down
+   * toward that zero floor while short numeric/badge siblings keep their
+   * natural width. A `minWidth` here is a hard floor `min-w-0` can't undo —
+   * the name still ellipsizes past it, it just can't be crushed below it.
+   */
+  minWidth?: number;
   /** Extra classes applied to every body cell in this column. */
   cellClassName?: string;
   /** Extra classes applied to this column's header cell. */

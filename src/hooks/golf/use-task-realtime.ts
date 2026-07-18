@@ -84,6 +84,45 @@ interface UseTaskRealtimeResult {
   refetch: () => Promise<void>;
 }
 
+/**
+ * Derive the task-stats summary from the SAME resolved tasks the list renders
+ * from (W1 count-coherence audit).
+ *
+ * `is_overdue` is a CROSS-CUTTING flag — a pending OR an in_progress task can
+ * be overdue, it is not a fourth status bucket alongside completed/in_progress/
+ * pending. A previous version bucketed it into an if/else-if chain with status
+ * (`else if (t.is_overdue) overdueCount++`), so an in_progress-and-overdue task
+ * counted ONLY toward in_progress_tasks and never toward overdue_tasks — the
+ * "N overdue tasks need attention" banner silently undercounted relative to
+ * the per-row overdue flag every FairwayTaskCard already renders independently
+ * from the same due-date-in-the-past predicate. Counting overdue separately
+ * (not else-if-chained) keeps both counts honest against the same rows.
+ */
+export function computeTaskStats(
+  tasks: Array<{ status: TaskStatus; is_overdue: boolean }>,
+): TaskStats {
+  let completedCount = 0;
+  let pendingCount = 0;
+  let inProgressCount = 0;
+  let overdueCount = 0;
+  for (const t of tasks) {
+    if (t.status === 'completed') completedCount++;
+    else if (t.status === 'in_progress') inProgressCount++;
+    else pendingCount++;
+
+    if (t.is_overdue) overdueCount++;
+  }
+  const totalTasks = tasks.length;
+  return {
+    total_tasks: totalTasks,
+    completed_tasks: completedCount,
+    pending_tasks: pendingCount,
+    in_progress_tasks: inProgressCount,
+    overdue_tasks: overdueCount,
+    completion_rate: totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0,
+  };
+}
+
 const EMPTY_STATS: TaskStats = {
   total_tasks: 0,
   completed_tasks: 0,
@@ -332,28 +371,8 @@ export function useTaskRealtime(
         transformedTasks = transformedTasks.filter((t) => t.status !== 'completed');
       }
 
-      // Compute stats from the resolved status of each task.
-      let completedCount = 0;
-      let pendingCount = 0;
-      let inProgressCount = 0;
-      let overdueCount = 0;
-      for (const t of transformedTasks) {
-        if (t.status === 'completed') completedCount++;
-        else if (t.status === 'in_progress') inProgressCount++;
-        else if (t.is_overdue) overdueCount++;
-        else pendingCount++;
-      }
-
       setTasks(transformedTasks);
-      const totalTasks = transformedTasks.length;
-      setStats({
-        total_tasks: totalTasks,
-        completed_tasks: completedCount,
-        pending_tasks: pendingCount,
-        in_progress_tasks: inProgressCount,
-        overdue_tasks: overdueCount,
-        completion_rate: totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0,
-      });
+      setStats(computeTaskStats(transformedTasks));
     } catch (err) {
       console.error('Error fetching tasks:', err);
       setError(err instanceof Error ? err.message : 'Failed to load tasks');

@@ -41,6 +41,9 @@ export interface FairwayAgendaViewProps {
   isCoach: boolean;
   /** eventId → player's RSVP status (player view). */
   userRsvpStatuses?: Map<string, RSVPStatus>;
+  /** Team's canonical IANA timezone — forwarded to each FairwayEventCard so
+   *  displayed times are deterministic across server/client (audit W1). */
+  timezone?: string | null;
   onEventClick?: (event: CalendarEvent) => void;
   /** Coach-only CTA on the empty range state ("New event"). */
   onCreateEvent?: () => void;
@@ -135,6 +138,7 @@ export function FairwayAgendaView({
   rangeEnd,
   isCoach,
   userRsvpStatuses,
+  timezone,
   onEventClick,
   onCreateEvent,
   nowRef,
@@ -237,6 +241,7 @@ export function FairwayAgendaView({
                   rsvpStatus={userRsvpStatuses?.get(ev.id) ?? null}
                   onClick={onEventClick}
                   isPast={bucketIsPast}
+                  timezone={timezone}
                 />
               ))}
             </div>
