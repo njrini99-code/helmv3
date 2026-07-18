@@ -33,6 +33,25 @@ function ratioLabel(numerator: number, denominator: number): string | null {
   return `${numerator} of ${denominator} (${pct}%)`;
 }
 
+/**
+ * Bug #949 #6 — the "Rounds this week" KpiTile used to pass an unconditional
+ * `delta={roundsThisWeek - roundsLastWeek}` alongside a `trendData` series
+ * that can genuinely be shorter than 2 points (a new team's first week live,
+ * or any week `roundsByWeek`'s 12-week window hasn't filled yet). StatTile's
+ * own sparkline only renders once its trend series has 2+ finite points, but
+ * `delta` had no matching gate — so the TrendChip arrow rendered ALONE, with
+ * no sparkline beneath it, whenever the week-history was thin. Gating the
+ * delta on the SAME 2-point floor keeps the arrow and its sparkline paired:
+ * neither renders without the other.
+ */
+export function honestRoundsDelta(
+  roundsByWeek: ReadonlyArray<unknown>,
+  roundsThisWeek: number,
+  roundsLastWeek: number,
+): number | undefined {
+  return roundsByWeek.length >= 2 ? roundsThisWeek - roundsLastWeek : undefined;
+}
+
 /** Ordered, human-labeled view over `RollupAFeatureAdoptionPayload` — every
  *  key in the payload has a row here, so a TS error (not a silent drop) is
  *  the failure mode if a future feature is added upstream and forgotten here. */
@@ -142,7 +161,7 @@ async function GolfBody() {
           <KpiTile
             label="Rounds this week"
             value={r.roundsThisWeek}
-            delta={r.roundsThisWeek - r.roundsLastWeek}
+            delta={honestRoundsDelta(r.roundsByWeek, r.roundsThisWeek, r.roundsLastWeek)}
             href="/admin/golf"
             trendData={r.roundsByWeek.slice(-8).map((w) => w.count)}
           />

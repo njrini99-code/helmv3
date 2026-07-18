@@ -220,3 +220,47 @@ describe('Ribbon — readoutLabels (#946 unlabeled delta fix)', () => {
     expect(readout!.textContent).not.toContain(' · 275-300y');
   });
 });
+
+/**
+ * Bug #949 #1 — "Score by round" reportedly drew in ~15% of its canvas with
+ * an 11-round series (a large empty plot to the right). The x-scale is
+ * INDEX-based (evenly spaced across `points.length`, never dependent on the
+ * `x` label values), so this locks BOTH halves of the contract: the traced
+ * path's own coordinates span (near) the full plot width regardless of round
+ * count, AND the rendered `<svg>` itself is pinned to fill its container via
+ * a CSS class (not just the `width="100%"` attribute, which a class always
+ * wins over) so nothing upstream can silently constrain it to a sliver.
+ */
+describe('Ribbon — the trace + its <svg> both fill the full plot width (bug #949 #1)', () => {
+  function elevenRounds(): RibbonPoint[] {
+    return Array.from({ length: 11 }, (_, i) => ({ x: `R${i + 1}`, y: 70 + i }));
+  }
+
+  it('the <svg> is pinned block+full-width via a class, not just the width attribute', () => {
+    const { container } = render(
+      <Ribbon title="Score by round" data={elevenRounds()} seriesName="Score" />,
+    );
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(svg!.getAttribute('class')).toContain('w-full');
+    expect(svg!.getAttribute('class')).toContain('block');
+  });
+
+  it('an 11-point series traces from the left pad to the right pad of the 600-unit viewBox (no squeeze)', () => {
+    const { container } = render(
+      <Ribbon title="Score by round" data={elevenRounds()} seriesName="Score" />,
+    );
+    const line = container.querySelector('path[stroke]');
+    expect(line).not.toBeNull();
+    const d = line!.getAttribute('d') ?? '';
+    // First and last x-coordinates in the path — parse the two numbers
+    // following the leading "M" and the final "L" command.
+    const commands = d.trim().split(/\s+(?=[ML])/);
+    const firstX = Number(commands[0]?.replace(/^M\s*/, '').split(' ')[0]);
+    const lastX = Number(commands[commands.length - 1]?.replace(/^L\s*/, '').split(' ')[0]);
+    // VIEW_W is 600 with an 8px pad each side — the trace must span the vast
+    // majority of that (never collapse into ~15% ≈ 90px from the left pad).
+    expect(firstX).toBeCloseTo(8, 0);
+    expect(lastX).toBeGreaterThan(500);
+  });
+});

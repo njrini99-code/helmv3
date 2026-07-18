@@ -411,17 +411,33 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
         <Sheet
           open={open}
           onOpenChange={onOpenChange}
-          // resolvedMode === 'sheet' only happens when !isWide (narrow /
-          // phone-class viewport) — doctrine rule 4 requires a bottom sheet
-          // here, never the desktop-only docked side="right" panel (which
+          // resolvedMode === 'sheet' only happens when !isWide UNDER mode="auto"
+          // (narrow / phone-class viewport) — doctrine rule 4 requires a bottom
+          // sheet here, never the desktop-only docked side="right" panel (which
           // was rendering centered/clipped on phone, same defect class as
-          // FairwayNewMessageSheet).
+          // FairwayNewMessageSheet). BUT both real callers (FairwayCoachHelm
+          // Signals, FairwayPlayerCoachHelm) pass the explicit mode="sheet" —
+          // not "auto" — so this branch also renders on WIDE desktop viewports,
+          // where the comment's premise doesn't hold.
+          //
+          // Bug #949 #5: on those wide viewports the sheet's own `side="bottom"`
+          // class (`inset-x-0 bottom-0` — full-width by design, the same as
+          // every OTHER `side="bottom"` Sheet in this codebase) collided with
+          // the `w-[min(32rem,…)]` override below: left, right, AND width all
+          // pinned at once is CSS's classic over-constrained absolute-position
+          // case, which resolves by discarding `left` (LTR) and flush-fitting
+          // the box to `right:0` at that width — a narrow ~32rem panel
+          // corner-docked instead of the roomy bottom sheet every sibling Sheet
+          // renders, its evidence/actions squeezed into a sliver next to a wall
+          // of empty canvas. Dropping the width override (this was the ONLY
+          // `side="bottom"` Sheet in the app that set one) restores the normal,
+          // un-conflicting full-width bottom sheet.
           side="bottom"
           title={typeof title === 'string' ? title : 'Signal'}
           description={
             typeof overline === 'string' ? overline : undefined
           }
-          className={cn('w-[min(32rem,calc(100vw-2rem))]', className)}
+          className={className}
         >
           <Sheet.Body>
             {/* priority rail — the same tint vocabulary as the card's tint bar */}

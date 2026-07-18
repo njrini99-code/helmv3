@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toneVsBenchmark, relativeTones, skewTone, buildVitalDelta } from './FairwayStatsCockpit';
+import { toneVsBenchmark, relativeTones, skewTone, buildVitalDelta, detailGridColClass } from './FairwayStatsCockpit';
 
 // ── toneVsBenchmark (P921 #2 — DetailGrid tone vs a real PGA/team baseline) ───
 
@@ -161,5 +161,30 @@ describe('buildVitalDelta', () => {
     expect(
       buildVitalDelta({ current: null, previous: 32, currentRounds: 5, previousRounds: 5 }),
     ).toBeUndefined();
+  });
+});
+
+// ── detailGridColClass (bug #949 #2 — Round scoring "74.8" / "Avg to par" overlap) ─
+
+describe('detailGridColClass', () => {
+  it('defers the 4-col jump past the `lg` breakpoint every columns=4 caller is nested at', () => {
+    // Every columns=4 DetailGrid (Round scoring, Efficiency-from-lie, Putting
+    // efficiency, Personal bests) lives inside a `grid-cols-1 lg:grid-cols-2`
+    // wrapper. If this ever regresses back to `lg:grid-cols-4`, the 4-col grid
+    // jumps at the SAME breakpoint the wrapper halves the row's width, cutting
+    // each cell's real width roughly in half exactly when it needs the most
+    // room — the "74.8" / "Avg to par" overlap this locks against.
+    const cls = detailGridColClass(4);
+    expect(cls).not.toContain('lg:grid-cols-4');
+    expect(cls).toContain('sm:grid-cols-2');
+    expect(cls).toContain('2xl:grid-cols-4');
+  });
+
+  it('columns=3 stays a single sm breakpoint (no nested-wrapper doubling risk)', () => {
+    expect(detailGridColClass(3)).toBe('sm:grid-cols-3');
+  });
+
+  it('columns=2 (default) is the plain 2-up recipe', () => {
+    expect(detailGridColClass(2)).toBe('sm:grid-cols-2');
   });
 });

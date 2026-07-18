@@ -311,6 +311,15 @@ export function Ribbon({
               width="100%"
               height={height}
               preserveAspectRatio="none"
+              // P949 #1: the SVG's rendered width relied ONLY on the `width="100%"`
+              // presentation attribute — correct per the CSS/SVG2 spec (percentages
+              // resolve against the containing block, same as `w-full` on the wrapper
+              // above), but a CSS class wins over a plain attribute in every engine
+              // and is the more defensive way to pin it: `block w-full` guarantees the
+              // trace always fills its instrument's width to match the x-domain (11
+              // rounds spanning the FULL plot, not squeezed into a corner) regardless
+              // of how the SVG is embedded by a future caller.
+              className="block w-full"
               aria-hidden
             >
               <defs>

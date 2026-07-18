@@ -42,10 +42,34 @@ export interface LeakInsight {
 
 export interface LeakBoardProps {
   insights: LeakInsight[];
-  /** Summed total strokes (across every leak in the category) at or above
-   *  which it's flagged a high bleed. NOT a per-round rate. */
+  /**
+   * Summed total strokes (across every leak in the category) at or above
+   * which it's flagged a high bleed. NOT a per-round rate. Omit to use the
+   * board's own honest, RELATIVE default (see `resolveFlameThreshold`) —
+   * a flat absolute number can't scale between a light week (every category
+   * under 2 strokes) and a heavy one (categories in the 30s), so a fixed
+   * 0.8 tripped on literally every row regardless of magnitude (bug #949 #4:
+   * −33.5, −4.4, and −1.4 all read "· high bleed" alike).
+   */
   flameThreshold?: number;
   className?: string;
+}
+
+/**
+ * Bug #949 #4 — the "high bleed" flag must actually differentiate rows, not
+ * fire on every one of them. A flat threshold (the old default, 0.8) is
+ * useless: it's tiny next to a genuinely bad category (−33.5) but would ALSO
+ * flag a quiet week where nothing has crossed 2 strokes. Since there's no
+ * external "how much bleed is a lot" standard (mirrors `relativeTones`'
+ * self-referential read elsewhere in this codebase for the same reason),
+ * "high" is read RELATIVE to this board's own worst category: at least half
+ * of the biggest bleed shown, with a 3-stroke floor so a lone small leak in
+ * an otherwise-quiet board never earns the label just for being the largest
+ * of a small pack.
+ */
+export function resolveFlameThreshold(maxTotal: number, override?: number): number {
+  if (typeof override === 'number') return override;
+  return Math.max(maxTotal * 0.5, 3);
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -77,7 +101,7 @@ interface LeakRow {
   players: Set<string>;
 }
 
-export function LeakBoard({ insights, flameThreshold = 0.8, className }: LeakBoardProps) {
+export function LeakBoard({ insights, flameThreshold, className }: LeakBoardProps) {
   const groups = new Map<string, LeakRow>();
   for (const i of insights) {
     const key = (i.category ?? 'other').toLowerCase();
@@ -104,6 +128,7 @@ export function LeakBoard({ insights, flameThreshold = 0.8, className }: LeakBoa
 
   const maxTotal = rows.reduce((m, r) => Math.max(m, r.total), 0) || 1;
   const totalPlayers = new Set(insights.map((i) => i.playerName).filter(Boolean)).size;
+  const threshold = resolveFlameThreshold(maxTotal, flameThreshold);
 
   return (
     <InstrumentPanel
@@ -121,7 +146,7 @@ export function LeakBoard({ insights, flameThreshold = 0.8, className }: LeakBoa
 
         <div className="space-y-3">
           {rows.map((r) => {
-            const hot = r.total >= flameThreshold;
+            const hot = r.total >= threshold;
             return (
               <div key={r.label} className="space-y-1">
                 <div className="flex items-baseline justify-between gap-3">

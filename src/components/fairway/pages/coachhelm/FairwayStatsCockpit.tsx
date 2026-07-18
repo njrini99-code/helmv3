@@ -362,6 +362,26 @@ function allDash(rows: DetailRow[]): boolean {
 }
 
 /**
+ * P949 #2 — the responsive column recipe for `DetailGrid`, factored out so its
+ * breakpoints can be unit-tested against the nesting context every caller
+ * actually uses it in: every `columns={4}` DetailGrid in this file (Round
+ * scoring, Efficiency-from-lie, Putting efficiency, Personal bests) sits
+ * inside a `grid-cols-1 lg:grid-cols-2` wrapper. Jumping to 4 real columns at
+ * the SAME `lg` breakpoint the wrapper halves the row's width doubled up the
+ * squeeze — a "Scoring average" label + "74.8" value had roughly half the
+ * width doctrine assumed, so the value overlapped the next row's label
+ * ("Avg to par") with no room to wrap. Deferring the 4-col jump to `2xl`
+ * (1536px — a halved 2-col wrapper there is still a roomy ~700px+ per grid)
+ * gives every row real breathing room; below that it holds at 2 columns,
+ * which already fits comfortably inside a halved wrapper.
+ */
+export function detailGridColClass(columns: 2 | 3 | 4): string {
+  if (columns === 4) return 'sm:grid-cols-2 2xl:grid-cols-4';
+  if (columns === 3) return 'sm:grid-cols-3';
+  return 'sm:grid-cols-2';
+}
+
+/**
  * Compare a raw value to a real benchmark (a PGA Tour standard or a team
  * average, both already fetched elsewhere on this page) and return a calm
  * tone. `direction` flips which side of the benchmark reads as ahead;
@@ -476,12 +496,7 @@ function DetailGrid({
    */
   scrollable?: boolean;
 }) {
-  const colClass =
-    columns === 4
-      ? 'sm:grid-cols-2 lg:grid-cols-4'
-      : columns === 3
-        ? 'sm:grid-cols-3'
-        : 'sm:grid-cols-2';
+  const colClass = detailGridColClass(columns);
   return (
     <DetailGridShell title={title} hint={hint}>
       <dl
@@ -494,7 +509,16 @@ function DetailGrid({
         {rows.map((r) => (
           <div
             key={r.label}
-            className="flex items-baseline justify-between gap-3 border-b border-border-subtle/60 pb-2 last:border-0 last:pb-0"
+            // P949 #2: `flex-wrap` is a safety net (never a JS width measurement) —
+            // every DetailGrid with columns=4 is ALSO nested inside a parent
+            // `lg:grid-cols-2` wrapper (ScoringDetail, AnalysisSummary, the
+            // Approach/Putting tabs), so the 4-col breakpoint alone (see
+            // `detailGridColClass`) already avoids doubling up with the parent's
+            // own 2-col jump. Wrapping the row too means a genuinely long
+            // label+value pair (e.g. "Scoring average" / "74.8" next to "Avg to
+            // par") drops the value to its own line instead of overlapping the
+            // neighboring cell's label when a cell is still cramped.
+            className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-border-subtle/60 pb-2 last:border-0 last:pb-0"
           >
             <dt className="font-fw-sans text-caption text-text-secondary">{r.label}</dt>
             <dd
