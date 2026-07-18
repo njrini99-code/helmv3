@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PaperCard } from '@/components/baseball/living-annual';
 import { InlineNotice } from '@/components/fairway';
+import { toast } from '@/components/ui/sonner';
 
 interface NewGameClientProps {
   teamId: string;
@@ -38,20 +39,38 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
     setSaving(true);
     setError(null);
 
-    const result = await createGame(teamId, {
-      game_date: gameDate,
-      game_type: gameType,
-      opponent_name: opponentName || undefined,
-      location: location || undefined,
-      home_away: homeAway,
-      event_time: eventTime || undefined,
-      create_calendar_event: createCalendarEvent,
-    });
+    try {
+      const result = await createGame(teamId, {
+        game_date: gameDate,
+        game_type: gameType,
+        opponent_name: opponentName || undefined,
+        location: location || undefined,
+        home_away: homeAway,
+        event_time: eventTime || undefined,
+        create_calendar_event: createCalendarEvent,
+      });
 
-    if (result.success && result.data) {
-      router.push(`/baseball/dashboard/stats/games/${result.data.id}`);
-    } else {
+      if (result.success && result.data) {
+        router.push(`/baseball/dashboard/stats/games/${result.data.id}`);
+        return;
+      }
+
       setError(result.error ?? 'Failed to create game');
+      setSaving(false);
+    } catch (err) {
+      // createGame is server-side wrapped (withBaseballAction has its own
+      // top-level try/catch) and should always RESOLVE to a
+      // CreateGameResult — but the client-side call is a network round trip
+      // to invoke the server action, which CAN reject outright (dropped
+      // connection, server restart mid-request, aborted navigation). Before
+      // this fix nothing caught that rejection: `saving` stayed true
+      // forever, the submit button stayed disabled at "Creating…", and the
+      // coach got no feedback at all (issue #952). Form state (all the typed
+      // fields above) is untouched either way, so the coach can just retry.
+      const message =
+        err instanceof Error ? err.message : 'Failed to create game. Please try again.';
+      setError(message);
+      toast.error('Could not create game', { description: message });
       setSaving(false);
     }
   }
