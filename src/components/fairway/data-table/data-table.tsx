@@ -47,7 +47,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { alignClass, densityMetrics } from './density';
-import { DataTableSkeleton } from './data-table-skeleton';
+import { DataTableSkeleton, DataTableSkeletonCards } from './data-table-skeleton';
 import { DataTableEmpty, DataTableError } from './data-table-states';
 import type { DataTableDensity, DataTableRowAction } from './types';
 
@@ -180,6 +180,51 @@ function RowActions<TData>({
   );
 }
 
+/**
+ * One row of the mobile-card render path (below `sm`) — the whole card gets
+ * the SAME click/keyboard affordance as the desktop `<tr role="button">`
+ * (§7.1 interactive-state contract), so the fix that recomposes a table into
+ * native cards on the phone never trades away row navigation. Content is
+ * entirely supplied by the caller's `mobileCard` render prop — this wrapper
+ * only owns the tap target, hover tint, and focus ring.
+ */
+function MobileCardRow<TData>({
+  row,
+  onRowClick,
+  children,
+}: {
+  row: Row<TData>;
+  onRowClick?: (data: TData, row: Row<TData>) => void;
+  children: React.ReactNode;
+}) {
+  const clickable = !!onRowClick;
+  return (
+    <div
+      className={cn(
+        'relative transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
+        clickable && 'cursor-pointer active:bg-surface-tint',
+        clickable &&
+          'focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-accent-500',
+      )}
+      {...(clickable
+        ? {
+            role: 'button',
+            tabIndex: 0,
+            onClick: () => onRowClick(row.original, row),
+            onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onRowClick(row.original, row);
+              }
+            },
+          }
+        : {})}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------------- */
 /* Props                                                                      */
 /* ------------------------------------------------------------------------- */
@@ -218,6 +263,18 @@ export interface DataTableProps<TData> {
 
   /** Whole-row click handler. Adds row affordances (cursor, hover, keyboard). */
   onRowClick?: (data: TData, row: Row<TData>) => void;
+
+  /**
+   * Recompose this table as native cards below `sm` instead of a squeezed,
+   * horizontally-scrolling `<table>` (the "desktop table on a phone" tell —
+   * audit W2). When provided, the table renders TWICE: the ordinary `<table>`
+   * from `sm:` up (unchanged), and one card per row — rendered by this
+   * function — below it. Reuses the SAME data/loading/error/empty state and
+   * the SAME `onRowClick` navigation; only the visual shape changes per
+   * viewport. Omit to keep the table as the only rendering (current default
+   * for every existing consumer).
+   */
+  mobileCard?: (row: Row<TData>) => React.ReactNode;
 
   /** Loading → shape-matched skeleton (never a spinner). */
   loading?: boolean;
@@ -264,6 +321,7 @@ export function DataTable<TData>({
   getRowId,
   rowActions,
   onRowClick,
+  mobileCard,
   loading = false,
   loadingRows = 6,
   error = null,
@@ -321,6 +379,40 @@ export function DataTable<TData>({
   const rows = table.getRowModel().rows;
   const showEmpty = !loading && !error && rows.length === 0;
 
+  // Hoisted once so the desktop `<td>` cell and the mobile-card path (below)
+  // render the identical default message — never two states that could drift.
+  const errorNode =
+    errorState ?? (
+      <DataTableError
+        title="Couldn’t load this data"
+        description={typeof error === 'string' ? error : undefined}
+        action={
+          onRetry ? (
+            <Button
+              type="button"
+              variant="outline"
+              haptic="none"
+              onClick={onRetry}
+              className={cn(
+                'inline-flex h-9 min-h-0 items-center rounded-full border border-border-strong bg-surface px-4',
+                'text-label text-text-primary',
+                'transition-all [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
+                'hover:shadow-soft hover:border-border-strong',
+                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
+                'active:translate-y-[0.5px]',
+              )}
+            >
+              Try again
+            </Button>
+          ) : undefined
+        }
+      />
+    );
+  const emptyNode =
+    emptyState ?? (
+      <DataTableEmpty title="Nothing here yet" description="There’s no data to show in this view." />
+    );
+
   return (
     <section
       className={cn(
@@ -336,9 +428,15 @@ export function DataTable<TData>({
         </div>
       ) : null}
 
-      {/* tabIndex on the scroll region is intentional — allows keyboard users to scroll the table */}
+      {/* tabIndex on the scroll region is intentional — allows keyboard users to scroll the table.
+          Hidden below `sm` ONLY when a `mobileCard` render path is supplied — every existing
+          consumer that doesn't pass one keeps the exact table-at-every-width behavior. */}
       <div
-        className={cn('w-full overflow-x-auto overflow-y-auto', containerClassName)}
+        className={cn(
+          'w-full overflow-x-auto overflow-y-auto',
+          mobileCard && 'hidden sm:block',
+          containerClassName,
+        )}
         // Roving focus for keyboard users scrolling a long grid.
         role="region"
         aria-label={ariaLabel ?? 'Data table'}
@@ -475,32 +573,7 @@ export function DataTable<TData>({
             {!loading && error && (
               <tr>
                 <td colSpan={totalColSpan} className="p-0">
-                  {errorState ?? (
-                    <DataTableError
-                      title="Couldn’t load this data"
-                      description={typeof error === 'string' ? error : undefined}
-                      action={
-                        onRetry ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            haptic="none"
-                            onClick={onRetry}
-                            className={cn(
-                              'inline-flex h-9 min-h-0 items-center rounded-full border border-border-strong bg-surface px-4',
-                              'text-label text-text-primary',
-                              'transition-all [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-                              'hover:shadow-soft hover:border-border-strong',
-                              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
-                              'active:translate-y-[0.5px]',
-                            )}
-                          >
-                            Try again
-                          </Button>
-                        ) : undefined
-                      }
-                    />
-                  )}
+                  {errorNode}
                 </td>
               </tr>
             )}
@@ -509,12 +582,7 @@ export function DataTable<TData>({
             {showEmpty && (
               <tr>
                 <td colSpan={totalColSpan} className="p-0">
-                  {emptyState ?? (
-                    <DataTableEmpty
-                      title="Nothing here yet"
-                      description="There’s no data to show in this view."
-                    />
-                  )}
+                  {emptyNode}
                 </td>
               </tr>
             )}
@@ -608,6 +676,36 @@ export function DataTable<TData>({
           </tbody>
         </table>
       </div>
+
+      {/* ---- Mobile-card render path (below `sm`) — the audit W2 fix ----
+          A raw <table> squeezed into overflow-x-auto reads as broken on a
+          phone: 2-3 of N columns visible, no scroll affordance, desktop
+          content just clipped. When `mobileCard` is supplied, this renders
+          ONE native card per row instead — same data, same loading/error/
+          empty states, same onRowClick navigation. */}
+      {mobileCard && (
+        <div className="sm:hidden" aria-busy={loading || undefined}>
+          {loading ? (
+            <DataTableSkeletonCards rows={loadingRows} />
+          ) : error ? (
+            errorNode
+          ) : showEmpty ? (
+            emptyNode
+          ) : (
+            <div
+              role="region"
+              aria-label={ariaLabel ?? 'Data table'}
+              className="flex flex-col divide-y divide-border-subtle border-t border-border-subtle"
+            >
+              {rows.map((row) => (
+                <MobileCardRow key={row.id} row={row} onRowClick={onRowClick}>
+                  {mobileCard(row)}
+                </MobileCardRow>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

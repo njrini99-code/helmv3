@@ -75,3 +75,72 @@ describe('DataTable — column width floor', () => {
     expect(bodyCells[1]?.style.minWidth).toBe('');
   });
 });
+
+/**
+ * ============================================================================
+ * DataTable — mobileCard render path (audit W2)
+ * ----------------------------------------------------------------------------
+ * A raw <table> dropped into overflow-x-auto reads as broken on a phone: only
+ * 2-3 of N columns fit, no scroll affordance. The optional `mobileCard` prop
+ * recomposes the same rows as native cards below `sm` — this locks that (a)
+ * opting in hides the desktop `<table>` below `sm` and renders exactly one
+ * card per row via the caller's render function, and (b) every EXISTING
+ * consumer that doesn't pass `mobileCard` gets byte-identical markup (no
+ * `hidden` class smuggled onto the table, no stray mobile block in the DOM).
+ * ========================================================================== */
+describe('DataTable — mobileCard render path', () => {
+  it('hides the desktop table below `sm` and renders one card per row via mobileCard', () => {
+    const { container } = render(
+      <DataTable<RowT>
+        data={data}
+        columns={columns}
+        getRowId={(r) => r.id}
+        enableSorting={false}
+        mobileCard={(row) => <span data-testid="mobile-card">{row.original.name}</span>}
+      />,
+    );
+
+    // The scroll container that owns the <table> must be hidden below `sm`.
+    const scrollRegion = container.querySelector('table')?.parentElement;
+    expect(scrollRegion?.className).toContain('hidden');
+    expect(scrollRegion?.className).toContain('sm:block');
+
+    // Exactly one mobile card per data row, rendered via the caller's function
+    // (not a clipped subset of table columns) — same real data as the (still
+    // present, CSS-hidden) desktop table, not a placeholder.
+    const cards = container.querySelectorAll('[data-testid="mobile-card"]');
+    expect(cards).toHaveLength(data.length);
+    expect(cards[0]?.textContent).toBe('Alexandra Christopherson');
+  });
+
+  it('omits the mobile-card block and the hidden-table class when mobileCard is not passed', () => {
+    const { container } = render(
+      <DataTable<RowT> data={data} columns={columns} getRowId={(r) => r.id} enableSorting={false} />,
+    );
+
+    const scrollRegion = container.querySelector('table')?.parentElement;
+    expect(scrollRegion?.className).not.toContain('hidden');
+    expect(scrollRegion?.className).not.toContain('sm:block');
+    expect(container.querySelector('[data-testid="mobile-card"]')).toBeNull();
+  });
+
+  it('renders a card-shaped skeleton (no table rows) for the mobile path while loading', () => {
+    const { container } = render(
+      <DataTable<RowT>
+        data={data}
+        columns={columns}
+        getRowId={(r) => r.id}
+        enableSorting={false}
+        loading
+        loadingRows={3}
+        mobileCard={(row) => <span data-testid="mobile-card">{row.original.name}</span>}
+      />,
+    );
+
+    // No real row content leaks through while loading, on either path.
+    expect(container.querySelector('[data-testid="mobile-card"]')).toBeNull();
+    // The mobile skeleton renders shape-matched shimmer blocks, not <tr>s.
+    const mobileBlock = container.querySelector('.sm\\:hidden');
+    expect(mobileBlock?.querySelectorAll('tr').length ?? 0).toBe(0);
+  });
+});

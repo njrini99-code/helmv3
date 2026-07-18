@@ -93,3 +93,28 @@ export function DataTableSkeleton({
     </>
   );
 }
+
+/**
+ * Card-shaped loading skeleton for the `mobileCard` render path (below `sm`).
+ * NOT table rows — a leading avatar-shaped circle + two text bars + a trailing
+ * chip-shaped bar, matching the general "identity + detail + figure" shape
+ * every mobileCard consumer's real content takes (round card, roster card,
+ * etc.). Deterministic widths (no Math.random) so SSR + client agree.
+ */
+export function DataTableSkeletonCards({ rows = 6 }: { rows?: number }) {
+  const widths = ['w-2/3', 'w-1/2', 'w-3/5', 'w-2/5'];
+  return (
+    <div className="flex flex-col divide-y divide-border-subtle border-t border-border-subtle">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-1 py-3">
+          <span aria-hidden="true" className="block size-9 shrink-0 rounded-full bg-surface-sunken" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <Bar className={widths[i % widths.length]} />
+            <Bar className="w-1/3" />
+          </div>
+          <Bar className="h-6 w-12 shrink-0 rounded-fw-sm" />
+        </div>
+      ))}
+    </div>
+  );
+}
