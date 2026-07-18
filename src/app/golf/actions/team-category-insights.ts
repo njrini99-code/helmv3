@@ -942,9 +942,18 @@ async function getTeamCategoryInsightsImpl(
         supabase,
       );
       if (engineResult.ok) {
+        // Bug #943 — coach-voice the engine row's content using the SAME
+        // roster map already built above for `playerStats` (never a second
+        // lookup). `player_id -> display name`, mirroring the shape
+        // `insightsToSignalRows` takes on the Signals surface.
+        const playerNamesForVoice: Record<string, string> = {};
+        for (const [pid, info] of playerInfoMap) {
+          playerNamesForVoice[pid] = info.name;
+        }
         const engineByCategory = assembleBriefEngineInsights(
           engineResult.data,
           CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
+          playerNamesForVoice,
         );
         for (const cat of categories) {
           const engineInsight = engineByCategory.get(cat.id);

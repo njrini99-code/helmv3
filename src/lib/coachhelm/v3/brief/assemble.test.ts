@@ -187,3 +187,52 @@ describe('assembleBriefEngineInsights', () => {
     expect(out.size).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bug #943 — the Brief's category row renders `evidence.message`, built from
+// the engine row's `content`. That content is written in the player's
+// second-person voice, but this row is coach-only (Team Brief has no player
+// surface) — so it must be coach-voiced with the SAME roster name the caller
+// (`getTeamCategoryInsights`) already resolves for `playerStats`.
+// ---------------------------------------------------------------------------
+
+describe('assembleBriefEngineInsights — coach voice (bug #943)', () => {
+  test('coach-voices the row content using the resolved playerName', () => {
+    const rows = [
+      row({
+        id: 'm1',
+        category: 'putting',
+        strokesSaved: 0.5,
+        content: "Your lag putts (15+ ft) aren't finishing, so it stops costing you a stroke.",
+        playerId: 'player-9',
+      }),
+    ];
+    const out = assembleBriefEngineInsights(rows, CATEGORIES, { 'player-9': 'Mason Rivers' });
+    const msg = out.get('putting')?.message ?? '';
+    expect(msg).toContain("Mason Rivers's lag putts (15+ ft) aren't finishing");
+    expect(msg).toContain('costing Mason Rivers a stroke');
+    expect(msg).not.toMatch(/\bYour lag putts\b/);
+  });
+
+  test('falls back to "the player" when no playerNames map is supplied (back-compat)', () => {
+    const rows = [
+      row({ id: 'm2', category: 'putting', strokesSaved: 0.5, content: 'costing you a stroke.' }),
+    ];
+    const out = assembleBriefEngineInsights(rows, CATEGORIES);
+    expect(out.get('putting')?.message).toContain('costing the player a stroke.');
+  });
+
+  test('falls back to "the player" when the roster map has no entry for this row\'s player_id', () => {
+    const rows = [
+      row({
+        id: 'm3',
+        category: 'putting',
+        strokesSaved: 0.5,
+        content: 'costing you a stroke.',
+        playerId: 'player-not-on-roster',
+      }),
+    ];
+    const out = assembleBriefEngineInsights(rows, CATEGORIES, { 'player-9': 'Mason Rivers' });
+    expect(out.get('putting')?.message).toContain('costing the player a stroke.');
+  });
+});

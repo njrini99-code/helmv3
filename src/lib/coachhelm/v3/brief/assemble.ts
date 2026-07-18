@@ -28,6 +28,7 @@ import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { AssembledEvidence } from '@/lib/coachhelm/v3/themes/types';
 import { sanitizeProse } from '@/lib/coachhelm/v3/themes/assemble';
+import { toCoachVoice } from '@/components/fairway/pages/coachhelm/signals/patternToInsightVocabulary';
 
 /** The Brief's category shape — just the two fields this module needs. */
 export interface BriefCategoryDef {
@@ -99,10 +100,19 @@ function formatStrokes(v: number): string {
  * read path the Signals surfaces use). Because that array is already best-first,
  * the FIRST row matching a category's mapped `InsightCategory` IS that
  * category's top signal — no re-ranking happens here.
+ *
+ * `playerNames` is an OPTIONAL `player_id -> display name` lookup (the SAME
+ * roster map the caller already resolves for its own `playerStats` — see
+ * `getTeamCategoryInsights`'s `playerInfoMap`). Bug #943: this row renders
+ * exclusively on the coach's Team Brief, but the row's `content` was written
+ * player-first-person (e.g. a scrambling/lag-putt composite's "You ESCAPE the
+ * bunker fine…", "…costing you a stroke."). Without a name, `toCoachVoice`
+ * falls back to "the player" — never a fabricated name.
  */
 export function assembleBriefEngineInsights(
   rankedRows: readonly EvidenceInsight[],
   categories: readonly BriefCategoryDef[],
+  playerNames?: Record<string, string>,
 ): Map<string, BriefEngineInsight> {
   const out = new Map<string, BriefEngineInsight>();
 
@@ -120,7 +130,7 @@ export function assembleBriefEngineInsights(
         ? cf.strokes_saved_per_round
         : null;
 
-    const prose = sanitizeProse(top.content);
+    const prose = toCoachVoice(sanitizeProse(top.content), playerNames?.[top.player_id]);
     const label = cat.label.toLowerCase();
     const message =
       strokesSaved != null
