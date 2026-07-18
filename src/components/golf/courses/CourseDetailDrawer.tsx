@@ -584,64 +584,71 @@ function TeeRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-fw-md border bg-surface px-4 py-3',
+        // Stacked on mobile (name row, then a wrapping action row below it —
+        // so a long tee name never sits under the action buttons) and back to
+        // a single inline row from sm+ where there's room for both.
+        'flex flex-col gap-3 rounded-fw-md border bg-surface px-4 py-3 sm:flex-row sm:items-center',
         isDefault ? 'border-primary-300 ring-1 ring-primary-200' : 'border-border-subtle',
       )}
     >
-      <span
-        aria-hidden
-        className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
-      >
-        <IconFlag size={16} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-fw-sans text-body font-medium text-text-primary">{tee.tee_name}</span>
-          {cat && (
-            <span className="rounded-full bg-surface-sunken px-2 py-0.5 text-caption font-medium text-text-secondary">
-              {cat}
-            </span>
-          )}
-          {isDefault && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-700">
-              <IconCheck size={11} aria-hidden /> Team default
-            </span>
-          )}
-          {tee.is_draft && (
-            <span className="rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium text-warning">
-              Draft · partial of {tee.holes_count} holes
-            </span>
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span
+          aria-hidden
+          className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
+        >
+          <IconFlag size={16} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-fw-sans text-body font-medium text-text-primary">{tee.tee_name}</span>
+            {cat && (
+              <span className="rounded-full bg-surface-sunken px-2 py-0.5 text-caption font-medium text-text-secondary">
+                {cat}
+              </span>
+            )}
+            {isDefault && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-700">
+                <IconCheck size={11} aria-hidden /> Team default
+              </span>
+            )}
+            {tee.is_draft && (
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium text-warning">
+                Draft · partial of {tee.holes_count} holes
+              </span>
+            )}
+          </div>
+          {facts.length > 0 && (
+            <p className="mt-0.5 truncate text-caption text-text-tertiary">{facts.join(' · ')}</p>
           )}
         </div>
-        {facts.length > 0 && (
-          <p className="mt-0.5 truncate text-caption text-text-tertiary">{facts.join(' · ')}</p>
+      </div>
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:ml-auto">
+        {canManageTeam && onSetDefault && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onSetDefault}
+            busy={settingDefault}
+            aria-pressed={isDefault}
+            aria-label={isDefault ? `Clear ${tee.tee_name} as team default tee` : `Set ${tee.tee_name} as team default tee`}
+          >
+            {isDefault ? 'Default' : 'Set default'}
+          </Button>
+        )}
+        <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit ${tee.tee_name}`}>
+          <IconPencil size={14} aria-hidden /> Edit
+        </Button>
+        {canDelete && onDelete && (
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={onDelete}
+            aria-label={`Delete ${tee.tee_name} tee set`}
+          >
+            <IconTrash size={14} aria-hidden />
+          </Button>
         )}
       </div>
-      {canManageTeam && onSetDefault && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onSetDefault}
-          busy={settingDefault}
-          aria-pressed={isDefault}
-          aria-label={isDefault ? `Clear ${tee.tee_name} as team default tee` : `Set ${tee.tee_name} as team default tee`}
-        >
-          {isDefault ? 'Default' : 'Set default'}
-        </Button>
-      )}
-      <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit ${tee.tee_name}`}>
-        <IconPencil size={14} aria-hidden /> Edit
-      </Button>
-      {canDelete && onDelete && (
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={onDelete}
-          aria-label={`Delete ${tee.tee_name} tee set`}
-        >
-          <IconTrash size={14} aria-hidden />
-        </Button>
-      )}
     </div>
   );
 }
