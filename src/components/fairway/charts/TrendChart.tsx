@@ -229,7 +229,22 @@ export function TrendChart({
               fill={`url(#${VIZ_DEFS.areaGradient})`}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0, fill: VIZ_COLOR.accent }}
-              isAnimationActive
+              // "auto" (recharts' own default — NOT the same as omitting the
+              // prop's hardcoded former value of bare `true`, which forced the
+              // entrance reveal on regardless). `true` disabled Recharts'
+              // built-in `Global.isSsr` / `prefers-reduced-motion` guard, so
+              // the reveal (a clip-path keyed to the on-screen point
+              // positions) always engaged — including for the server-rendered
+              // first paint, where those positions are a ResponsiveContainer
+              // fallback width, not the real one. The client remeasures and
+              // re-renders at the real width immediately after, which resets
+              // that same reveal before it ever finishes: axes/gridlines
+              // aren't part of the clip and still draw, but the line stayed
+              // at its 0%-revealed start. "auto" defers to Recharts to skip
+              // the reveal during SSR and for reduced-motion, so the series
+              // always ends up either fully drawn or animating in once, never
+              // stuck mid-reveal.
+              isAnimationActive="auto"
               animationDuration={VIZ_REVEAL_MS}
             />
           ) : (
@@ -241,7 +256,7 @@ export function TrendChart({
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0, fill: VIZ_COLOR.accent }}
-              isAnimationActive
+              isAnimationActive="auto"
               animationDuration={VIZ_REVEAL_MS}
             />
           )}

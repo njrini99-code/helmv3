@@ -38,6 +38,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   ViewHeader,
@@ -55,7 +56,7 @@ import {
   InsufficientData,
   OnboardingStep,
   OnboardingSteps,
-  TrendChart,
+  Skeleton,
   Sparkline,
   type ColumnDef,
   type TrendPoint,
@@ -97,6 +98,23 @@ import type {
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { deriveCoachSignal } from './coach-signal';
+
+// Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
+// Scoring Trend chart). recharts' ResponsiveContainer has no real size to
+// measure during SSR and falls back to a 1px-wide render; on hydration the
+// container is then re-measured and the chart re-renders at its real width.
+// That resize forces the Area/Line's entrance reveal (a clip-path keyed off
+// the computed on-screen points, so any recompute at a new width restarts it)
+// back to its 0%-revealed start — the axes/gridlines aren't animated so they
+// still draw, but the trend line itself never got a chance to finish drawing.
+// Skipping SSR for this chart avoids that guaranteed first-load resize.
+const TrendChart = nextDynamic(
+  () => import('@/components/fairway').then((m) => ({ default: m.TrendChart })),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[240px] w-full rounded-card" />,
+  },
+);
 
 /* ──────────────────────────────────────────────────────────────────────────
  * Props — identical contract to the legacy CoachDashboard
@@ -266,6 +284,19 @@ export function FairwayCoachDashboard({
     [enhancedData, stats.rosterSize],
   );
 
+  const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
+  // Memoized: TrendChart's Area/Line animate in on mount (isAnimationActive).
+  // Recomputing a brand-new array/object graph on every render (this
+  // component re-renders at least once post-mount, from the greeting effect
+  // above) hands Recharts a new `data` identity each time, which can restart
+  // the draw-on animation before it ever finishes. A stable reference lets it
+  // draw once and stay drawn. (Hook lives above the coach-without-team early
+  // return below — it must run on every render, team or not.)
+  const trendPoints: TrendPoint[] = useMemo(
+    () => (hasTrend ? teamScoringTrend!.map((p) => ({ x: p.label, y: p.value })) : []),
+    [hasTrend, teamScoringTrend],
+  );
+
   // ── COACH-WITHOUT-TEAM → onboarding funnel (not a zeroed dashboard) ──────
   if (!team) {
     return (
@@ -326,10 +357,6 @@ export function FairwayCoachDashboard({
   const girDelta = seriesDelta(girSeries);
   const puttsDelta = seriesDelta(puttsSeries);
 
-  const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
-  const trendPoints: TrendPoint[] = hasTrend
-    ? teamScoringTrend!.map((p) => ({ x: p.label, y: p.value }))
-    : [];
   const trendFirst = trendPoints[0];
   const trendLast = trendPoints[trendPoints.length - 1];
   // Only surface a directional takeaway when the swing clears noise (>= 0.75
