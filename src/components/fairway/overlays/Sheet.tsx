@@ -85,12 +85,28 @@ export interface SheetProps {
   /** Optional snap points for a partial-height bottom sheet, e.g. [0.4, 1]. */
   snapPoints?: (number | string)[];
   /**
-   * iOS-native half-height detent for `side='bottom'` sheets. When `true` (the
-   * default for bottom sheets), the sheet opens to a 50% detent the user can
-   * drag up to full height — instead of slamming to full height on open.
-   * Ignored when explicit `snapPoints` are passed, when `side !== 'bottom'`,
-   * or when set to `false` (restores the old full-height behavior).
-   * @default true (bottom sheets only)
+   * OPT-IN iOS-native half-height detent for `side='bottom'` sheets. When
+   * `true`, the sheet opens to a 50% detent the user can drag up to full
+   * height, via vaul's numeric `snapPoints`.
+   *
+   * Defaults to `false` — audit W2: vaul's fraction snap points compute their
+   * translateY offset from the VIEWPORT height (`window.innerHeight`), on the
+   * assumption the drawer itself renders at ~that height. This primitive
+   * instead sizes bottom sheets to their CONTENT (shrink-wrap, capped by
+   * `max-h-[88dvh]`, per SIDE_CLASS.bottom) — a deliberately shorter box for
+   * anything but a near-full-height sheet. Combining the two produced the
+   * reported bug: the peek-state offset overshoots/undershoots the real
+   * content height, leaving screen-heights of dead space, AND — since vaul's
+   * own CSS forces the scrim to `opacity: 0` at every snap point except the
+   * final ("full") one — the page underneath rendered completely un-scrimmed
+   * until the user dragged all the way up. Every current consumer had
+   * already discovered this and opted out by hand (`peek={false}`); this
+   * flips the primitive's default to match instead of trusting each new
+   * consumer to remember the workaround. Only re-enable for a sheet whose
+   * content genuinely fills most of the viewport — otherwise you'll
+   * reproduce the exact bug this default now prevents.
+   * Ignored when explicit `snapPoints` are passed or when `side !== 'bottom'`.
+   * @default false
    */
   peek?: boolean;
   /** Whether the sheet is dismissible by drag / scrim. Default true. */
@@ -133,13 +149,13 @@ function SheetRoot({
   const handleVisible =
     showHandle ?? (resolvedSide === 'bottom' || resolvedSide === 'top');
 
-  // iOS-native detents: bottom sheets open to a half-height peek the user can
-  // drag up. Explicit `snapPoints` always win; `peek={false}` opts out back to
-  // full-height. vaul manages the active snap point uncontrolled, so consumers
-  // need no extra wiring — purely additive.
+  // iOS-native detents: OPT-IN. `peek={true}` on a bottom sheet asks for the
+  // vaul half-height-drag-to-full behavior via numeric snapPoints; explicit
+  // `snapPoints` always win over `peek`. Defaults to off (see `peek` doc
+  // comment — audit W2 content-vs-viewport height mismatch).
   const resolvedSnapPoints =
     snapPoints ??
-    (resolvedSide === 'bottom' && peek !== false ? [0.5, 1] : undefined);
+    (resolvedSide === 'bottom' && peek === true ? [0.5, 1] : undefined);
 
   return (
     <Drawer.Root
