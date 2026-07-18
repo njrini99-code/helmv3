@@ -221,8 +221,18 @@ function setsEqual(a: Set<string>, b: Set<string>): boolean {
  * column forced eyebrow labels like "ESTIMATED 3-PUTT RATE (15+ FT)" to wrap
  * one word per line. From `sm` up, the original column grid (3-up on the
  * feed card, 2-up in the narrower panel) is unchanged.
+ *
+ * The mobile row's value column (`dd`) is capped at `max-w-[45%]` (audit W2):
+ * it previously carried an unconditional `shrink-0` with NO ceiling, while the
+ * label (`dt`) had no floor beyond `min-w-0` — so a wide value+gloss (e.g. a
+ * pattern's "high · costing" gloss beside a signed stroke figure) could claim
+ * however much of the row it wanted, squeezing a genuinely long label (like
+ * the example above) down to a sliver and forcing it across many more lines
+ * than the row's own gap could visually separate from the value beside it.
+ * Capping `dd` guarantees `dt` always keeps the majority share of the row, so
+ * a long label wraps to a reasonable couple of lines instead of collapsing.
  */
-function EvidenceList({
+export function EvidenceList({
   items,
   columns,
 }: {
@@ -244,7 +254,7 @@ function EvidenceList({
           <dt className="min-w-0 font-fw-sans text-eyebrow uppercase text-text-tertiary">
             {e.label}
           </dt>
-          <dd className="shrink-0 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:text-left">
+          <dd className="max-w-[45%] shrink-0 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:max-w-none sm:text-left">
             {e.value}
             {e.gloss ? (
               <span className="ml-1 font-fw-sans text-caption text-text-tertiary">{e.gloss}</span>
@@ -1715,23 +1725,33 @@ export function FairwayCoachHelmSignals({
         />
 
         {/* honest summary tiles — never fabricate a 0%; show counts only.
-            Compact 3-up even on mobile so the triage feed isn't pushed below
-            the fold by three full-width stacked cards (premium-polish pass).
-            All three tiles are scoped to the ACTIVE sub-tab's own data (its
-            own fetch/state) — the label now says so explicitly ("Open
+            2-up on phone (the 3rd tile spans the full second row), 3-up from
+            `sm:` up. A fixed 3-up grid at EVERY width (the prior layout) gave
+            each phone-width tile ~110px — not enough room for a label like
+            "Showing patterns" or "Urgent + high", which truncated identically
+            on Alerts/Insights/Patterns (all 3 share this one header). 2-up
+            roughly triples the per-tile width at phone size; `labelLines={2}`
+            is a defensive second line (rather than a hard ellipsis) for the
+            rare case a label still doesn't fit on one line (e.g. the smallest
+            phones). All three tiles are scoped to the ACTIVE sub-tab's own
+            data (its own fetch/state) — the label says so explicitly ("Open
             alerts" on /alerts, "Open insights" on /insights, "Open patterns"
             on /patterns) instead of a generic "Open signals" that read as if
             it were a stable team-wide number, silently re-scoping as the
             coach switched tabs. */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <MetricCard label={`Open ${SIGNAL_NOUN[activeSegment]}`} value={summary.open} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <MetricCard
+            label={`Open ${SIGNAL_NOUN[activeSegment]}`}
+            value={summary.open}
+            labelLines={2}
+          />
           {/* P035: no `goodDirection` here — it only colors a `delta` chip, and
               there is no delta on this tile, so it was a dead no-op prop.
               Scoped to the SAME open rows as the tile before it (see the
               `summary` useMemo above), so this can never read higher than
               "Open" — it's a severity breakdown OF the open count, not an
               independent count across every loaded row regardless of status. */}
-          <MetricCard label="Urgent + high" value={summary.urgent} />
+          <MetricCard label="Urgent + high" value={summary.urgent} labelLines={2} />
           {/* "Showing" (not "Loaded" — dev-speak a coach shouldn't have to
               parse, and not "Total", which over-claims completeness when more
               are eligible than loaded: the read caps at limit:100 and the
@@ -1746,11 +1766,15 @@ export function FairwayCoachHelmSignals({
               (alerts + insights + patterns combined) instead of the honest
               "13 loaded, 10 of them open" relationship. Suffixing the same
               `SIGNAL_NOUN` the Open tile already uses makes both tiles read
-              as one obviously-related pair. */}
+              as one obviously-related pair. Spans both phone columns (its own
+              full row) since it also carries the "of N" footnote — the
+              longest content of the three tiles gets the most room. */}
           <MetricCard
             label={`Showing ${SIGNAL_NOUN[activeSegment]}`}
             value={summary.total}
             footnote={loadedFootnote}
+            labelLines={2}
+            className="col-span-2 sm:col-span-1"
           />
         </div>
 

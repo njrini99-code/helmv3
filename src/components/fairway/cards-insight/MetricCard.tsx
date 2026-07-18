@@ -95,6 +95,17 @@ export interface MetricCardProps
   /** Tile density. `compact` tightens padding + drops the value one step for
    *  dense 5/6-up KPI grids. Ignored when `variant='hero'`. Default `default`. */
   density?: MetricCardDensity;
+  /**
+   * How many lines the uppercase eyebrow `label` may wrap onto before it's cut
+   * off. `1` (default) is the original single-line ellipsis truncation —
+   * unchanged for every existing caller. `2` lets a longer/compound label
+   * (e.g. "Showing patterns") wrap onto a second line instead of clipping
+   * mid-word at narrow tile widths, and reserves a fixed 2-line-tall slot
+   * (`min-h-8`, matching the eyebrow token's 16px line-height) so sibling
+   * tiles in the same row keep their values aligned regardless of how many
+   * lines any one label actually needs.
+   */
+  labelLines?: 1 | 2;
   /** Adds hover/active affordances (lift + drift). Default false (calm). */
   interactive?: boolean;
   /** Loading → shape-matched skeleton (never a spinner). */
@@ -154,6 +165,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       icon,
       variant = 'default',
       density = 'default',
+      labelLines = 1,
       interactive = false,
       loading = false,
       empty = false,
@@ -242,7 +254,18 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       <div ref={ref} className={base} {...interactiveProps} {...rest}>
         {/* header: overline label + optional icon */}
         <div className="flex items-start justify-between gap-3">
-          <span className="min-w-0 truncate font-fw-sans text-eyebrow uppercase text-text-tertiary">
+          <span
+            className={cn(
+              'min-w-0 font-fw-sans text-eyebrow uppercase text-text-tertiary',
+              labelLines === 2
+                ? // Wrap up to 2 lines instead of a hard single-line ellipsis —
+                  // the fixed `min-h-8` (16px eyebrow line-height × 2) reserves
+                  // the same slot whether a given tile's label needs 1 or 2
+                  // lines, so sibling tiles in the same KPI row stay aligned.
+                  'line-clamp-2 min-h-8 break-words'
+                : 'truncate',
+            )}
+          >
             {label}
           </span>
           {icon ? (
