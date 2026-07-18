@@ -129,7 +129,7 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             row to keep mobile parity (the snapshot the cards hid). Honest: each
             stat shows only when its real value is present. */}
         {hasAnyMicroStat && (
-          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 font-fw-mono text-caption tabular-nums text-text-secondary md:hidden">
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-fw-mono text-caption tabular-nums text-text-secondary md:hidden">
             {putts !== null && <span>P{putts}</span>}
             {fir !== null && (
               <>
@@ -188,7 +188,18 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
         )}
       </div>
 
-      {/* Coach: player avatar + name */}
+      {/* Coach: player avatar + name. The name text is `md:`-only — on mobile
+          this block is `flex-shrink-0` (it never yields width to its
+          siblings), so at a 390px viewport a long player name (up to the
+          96px cap) plus the Date/Score columns' own fixed widths squeezed
+          the "Course + type" column down to ~50px: too narrow for even one
+          Putts/FIR/GIR chip, so the mobile condensed stat line's own
+          `flex-wrap` (already correct) had almost nothing to wrap WITH and
+          rendered every chip on its own line (audit W2 — pill-flow). The
+          Avatar alone already carries the player's name accessibly (its own
+          `alt`/`sr-only` fallback), so hiding the redundant text label below
+          `md` is a lossless a11y trade that gives the stat line back its
+          own line. */}
       {userRole === 'coach' && round.player && (
         <div className="flex flex-shrink-0 items-center gap-1.5">
           <Avatar
@@ -198,7 +209,7 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             className="flex-shrink-0"
           />
           {playerName && (
-            <span className="max-w-[96px] truncate font-fw-sans text-body-sm font-medium text-warm-700">
+            <span className="hidden max-w-[96px] truncate font-fw-sans text-body-sm font-medium text-warm-700 md:inline-block">
               {playerName}
             </span>
           )}

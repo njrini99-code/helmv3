@@ -50,3 +50,53 @@ describe('ActionItemsPanel — count/render coherence', () => {
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 });
+
+/**
+ * ============================================================================
+ * ActionItemsPanel — row sized by container, not by content length (audit W2)
+ * ----------------------------------------------------------------------------
+ * Regression guard for the "task-preview rows measure wider than the 390px
+ * viewport (offscreenX=true)" finding: a long task title ("Complete Swing
+ * Mechanics Self-Assessment Video", 41 chars) was previously sized by its own
+ * content instead of its row, so it rendered up to 437px wide on a 390px
+ * viewport with no wrap/ellipsis. The fix (already shipped, #957) chains
+ * `min-w-0` through every flex/grid boundary the title sits inside — `<li>` →
+ * `<Inset>` → the title's own flex column — with `truncate` as the visible
+ * ellipsis and `overflow-hidden` as the hard backstop. jsdom has no layout
+ * engine, so this can't assert a literal pixel width; it asserts the
+ * class-level contract that makes that width impossible in a real browser.
+ * ========================================================================== */
+describe('ActionItemsPanel — long titles are sized by their row, not their content', () => {
+  it('applies truncate to a long task title so it ellipsizes instead of forcing the row wider', () => {
+    const longTitle = 'Complete Swing Mechanics Self-Assessment Video';
+    render(
+      <ActionItemsPanel
+        items={[{ id: 'long-1', type: 'task', title: longTitle, date: '2026-06-13', overdue: true }]}
+      />,
+    );
+
+    const title = screen.getByText(longTitle);
+    expect(title.className).toMatch(/\btruncate\b/);
+  });
+
+  it('chains min-w-0 from the <li> down to the title\'s own flex column (the floor `truncate` needs to bite)', () => {
+    const longTitle = 'Submit Spring Invitational Travel Preferences Form';
+    render(
+      <ActionItemsPanel items={[{ id: 'long-2', type: 'task', title: longTitle, date: '2026-06-11' }]}
+      />,
+    );
+
+    const title = screen.getByText(longTitle);
+    const listItem = title.closest('li');
+    expect(listItem).not.toBeNull();
+    expect(listItem!.className).toMatch(/\bmin-w-0\b/);
+
+    // The title's direct flex wrapper (icon-adjacent column) must also carry
+    // min-w-0 + flex-1 — without it, `truncate` on the title span has no
+    // shrinkable ancestor to truncate against and silently does nothing.
+    const flexColumn = title.parentElement;
+    expect(flexColumn).not.toBeNull();
+    expect(flexColumn!.className).toMatch(/\bmin-w-0\b/);
+    expect(flexColumn!.className).toMatch(/\bflex-1\b/);
+  });
+});
