@@ -79,6 +79,7 @@ import {
   IconAlertCircle,
 } from '@/components/icons';
 import { formatTimeInTz, getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
+import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import {
   Users as LucideUsers,
   Flag as LucideFlag,
@@ -214,16 +215,18 @@ export function FairwayCoachDashboard({
   const [greeting, setGreeting] = useState(`Welcome back, ${firstName}`);
   useEffect(() => {
     const tz = tzForGreeting || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    let part = 'day';
     try {
       const hour = getCurrentDecimalHourInTz(tz);
-      part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+      // #950 — the old `< 12` morning / `< 17` afternoon / else evening
+      // scheme called 1am "Good morning, {name}". timeOfDayForHour applies
+      // the same sane 4-bucket scheme (incl. a "Welcome back" late-night
+      // bucket) that src/lib/utils/time-of-day.ts and src/lib/entry/
+      // greeting.ts already use.
+      setGreeting(`${getGreeting(timeOfDayForHour(hour))}, ${firstName}`);
     } catch {
       // Intl/timezone unavailable — keep the time-neutral welcome.
       setGreeting(`Welcome back, ${firstName}`);
-      return;
     }
-    setGreeting(`Good ${part}, ${firstName}`);
   }, [tzForGreeting, firstName]);
 
   // PRESERVED LOGIC: range change keeps the force-dynamic ?range re-fetch

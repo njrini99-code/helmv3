@@ -261,30 +261,35 @@ export function CourseDetailDrawer({
               >
                 <IconX size={18} aria-hidden />
               </button>
-              {/* photo controls */}
-              <div className="absolute left-3 top-3 flex gap-2">
-                {/* eslint-disable-next-line helm/no-raw-button -- glass overlay control on the hero image */}
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading || !course}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-caption font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
-                >
-                  <IconUpload size={13} aria-hidden /> {uploading ? 'Uploading…' : course?.image_url ? 'Replace' : 'Add photo'}
-                </button>
-                {course?.image_url && (
-                  // eslint-disable-next-line helm/no-raw-button -- glass overlay control on the hero image
+              {/* photo controls — #935 gates setCourseImageUrl/removeCourseImage
+                  (both delegate to updateCourse) to super admins on a
+                  library-owned course, so hide these client-side too rather
+                  than let a non-admin hit a guaranteed-to-fail upload. */}
+              {canEditCourse && (
+                <div className="absolute left-3 top-3 flex gap-2">
+                  {/* eslint-disable-next-line helm/no-raw-button -- glass overlay control on the hero image */}
                   <button
                     type="button"
-                    onClick={() => setRemovePhotoConfirm(true)}
-                    disabled={pending}
-                    aria-label="Remove photo"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading || !course}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-caption font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
                   >
-                    <IconTrash size={13} aria-hidden />
+                    <IconUpload size={13} aria-hidden /> {uploading ? 'Uploading…' : course?.image_url ? 'Replace' : 'Add photo'}
                   </button>
-                )}
-              </div>
+                  {course?.image_url && (
+                    // eslint-disable-next-line helm/no-raw-button -- glass overlay control on the hero image
+                    <button
+                      type="button"
+                      onClick={() => setRemovePhotoConfirm(true)}
+                      disabled={pending}
+                      aria-label="Remove photo"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
+                    >
+                      <IconTrash size={13} aria-hidden />
+                    </button>
+                  )}
+                </div>
+              )}
               { }
               <input
                 ref={fileRef}
@@ -692,7 +697,11 @@ function HoleValuesRow({
   valueClassName?: string;
 }) {
   return (
-    <div className="flex items-center gap-0.5">
+    // gap-1 (not gap-0.5) + a wider w-8 value column — a 3-digit yardage
+    // (tabular-nums) at text-caption otherwise sits flush against its
+    // neighbor with almost no visual gutter, reading as one run-together
+    // digit string ("415545400185…") instead of a column-aligned row.
+    <div className="flex items-center gap-1">
       <span
         className={cn(
           'w-9 flex-shrink-0 text-caption font-medium text-text-secondary',
@@ -706,7 +715,7 @@ function HoleValuesRow({
         <span
           key={i}
           className={cn(
-            'w-7 flex-shrink-0 text-center text-caption tabular-nums text-text-secondary',
+            'w-8 flex-shrink-0 whitespace-nowrap text-center text-caption tabular-nums text-text-secondary',
             valueClassName,
           )}
         >

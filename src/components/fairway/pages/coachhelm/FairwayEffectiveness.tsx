@@ -844,7 +844,7 @@ function OutcomesInstrument({
  * call land 70% of the time" (the summary calibrationScore); it dims to
  * calibrating while no confidence band has enough resolved predictions.
  * ─────────────────────────────────────────────────────────────────────────── */
-function CalibrationInstrument({ data }: { data?: PredictionPerformanceData }) {
+export function CalibrationInstrument({ data }: { data?: PredictionPerformanceData }) {
   const resolved = data?.summary.validatedPredictions ?? 0;
   const calibration = data?.summary.calibrationScore ?? 0;
   const anyBucketReady =
@@ -868,7 +868,12 @@ function CalibrationInstrument({ data }: { data?: PredictionPerformanceData }) {
         samples={dialSamples >= BUCKET_MIN_RESOLVED ? undefined : { have: resolved, need: BUCKET_MIN_RESOLVED }}
         awaitingLabel="Calibrating"
       />
-      {/* The recessed resolved-count sub-readout. */}
+      {/* The recessed resolved-count sub-readout. Its "need" MUST match the
+          dial above's (BUCKET_MIN_RESOLVED) — both readouts are starved on
+          the exact same `resolved` count, so showing two different
+          denominators here (this used GAUGE_MIN_RESOLVED) read as "0 of 5"
+          stacked directly above "0 of 2" — a mixed-counter calibrating state
+          for what a coach reads as one progress bar toward one goal. */}
       <InstrumentPanel depth="inset" padding="sm" className="w-full">
         <Readout
           value={resolved}
@@ -877,7 +882,7 @@ function CalibrationInstrument({ data }: { data?: PredictionPerformanceData }) {
           label="Predictions resolved"
           size="md"
           state={resolved > 0 ? 'live' : 'awaiting'}
-          samples={resolved === 0 ? { have: 0, need: GAUGE_MIN_RESOLVED } : undefined}
+          samples={resolved === 0 ? { have: 0, need: BUCKET_MIN_RESOLVED } : undefined}
           awaitingLabel="Awaiting predictions"
         />
       </InstrumentPanel>

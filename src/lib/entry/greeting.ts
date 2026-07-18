@@ -73,11 +73,19 @@ export function setRememberedFirstName(firstName: string): void {
  * Time-of-day greeting, personalized with a remembered first name when
  * known (family rule #6: "'Good morning' / 'Good evening' + remembered
  * first name via localStorage: 'Welcome back, Nick'").
+ *
+ * Four buckets (#950 — the old `< 12` morning / `< 18` afternoon / else
+ * evening scheme called 1am "Good morning."): 5-11 morning, 11-17
+ * afternoon, 17-22 evening, 22-5 late night. Late night gets the same
+ * time-neutral "Welcome back." used elsewhere (src/lib/utils/time-of-day.ts)
+ * rather than an invented "Good ___ night" — it reads naturally at any
+ * late hour and doesn't collide in tone with the personalized branch above.
  */
 export function getGreeting(firstName: string | null, date: Date = new Date()): string {
   if (firstName) return `Welcome back, ${firstName}.`;
   const hour = date.getHours();
-  if (hour < 12) return 'Good morning.';
-  if (hour < 18) return 'Good afternoon.';
-  return 'Good evening.';
+  if (hour >= 5 && hour < 11) return 'Good morning.';
+  if (hour >= 11 && hour < 17) return 'Good afternoon.';
+  if (hour >= 17 && hour < 22) return 'Good evening.';
+  return 'Welcome back.';
 }

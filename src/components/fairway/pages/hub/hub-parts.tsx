@@ -50,6 +50,7 @@ import {
   InlineNotice,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
+import { getGreeting, getTimeOfDay } from '@/lib/utils/time-of-day';
 import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
 import { useToast } from '@/components/ui/sonner';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -115,8 +116,7 @@ export interface EventInvite {
 export function useTimeWord(): string {
   const [timeWord, setTimeWord] = useState('Welcome back');
   useEffect(() => {
-    const hour = new Date().getHours();
-    setTimeWord(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
+    setTimeWord(getGreeting(getTimeOfDay()));
   }, []);
   return timeWord;
 }

@@ -40,9 +40,14 @@ const statusDotColors = {
   offline: 'bg-warm-300',
 };
 
-function getInitials(name: string): string {
+export function getInitials(name: string): string {
   if (!name || !name.trim()) return '?';
-  const names = name.trim().split(' ').filter(n => n.length > 0);
+  // Strip anything that isn't a letter/space/apostrophe/hyphen BEFORE
+  // splitting into words — a display name like "Coach (Demo)" otherwise
+  // tokenizes to ["Coach", "(Demo)"], and the last token's first character
+  // is "(", producing "C(" instead of two real letters.
+  const cleaned = name.replace(/[^\p{L}\s'-]+/gu, ' ').trim();
+  const names = cleaned.split(/\s+/).filter(n => n.length > 0);
   if (names.length === 0) return '?';
   const firstName = names[0];
   const lastName = names[names.length - 1];

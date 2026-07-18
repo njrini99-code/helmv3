@@ -339,8 +339,8 @@ function DeltaChip({
 }) {
   const direction = resolveDirection(delta);
   const tone = deltaTone(direction, goodDirection);
-  const Icon =
-    direction === 'up' ? ArrowUpRight : direction === 'down' ? ArrowDownRight : Minus;
+  const isFlat = direction === 'neutral';
+  const Icon = direction === 'up' ? ArrowUpRight : direction === 'down' ? ArrowDownRight : Minus;
 
   return (
     <span className="inline-flex items-center gap-1.5">
@@ -355,15 +355,25 @@ function DeltaChip({
         )}
         style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
       >
-        <Icon aria-hidden className="h-3 w-3" strokeWidth={1.5} />
-        <NumberFlow
-          value={delta.value}
-          prefix={delta.prefix}
-          suffix={delta.suffix}
-          format={format}
-          animated={!prefersReduced}
-          respectMotionPreference
-        />
+        {isFlat ? (
+          // No real movement (delta.value === 0) — a Minus glyph next to a
+          // literal "0%" read as a stray "— 0%" (#950). Say "Flat" instead of
+          // pairing a dash icon with a zero value that isn't really a number
+          // worth reading.
+          <span className="font-fw-sans normal-case tracking-normal">Flat</span>
+        ) : (
+          <>
+            <Icon aria-hidden className="h-3 w-3" strokeWidth={1.5} />
+            <NumberFlow
+              value={delta.value}
+              prefix={delta.prefix}
+              suffix={delta.suffix}
+              format={format}
+              animated={!prefersReduced}
+              respectMotionPreference
+            />
+          </>
+        )}
       </motion.span>
       {delta.label ? (
         <span className="font-fw-sans text-caption text-text-tertiary">

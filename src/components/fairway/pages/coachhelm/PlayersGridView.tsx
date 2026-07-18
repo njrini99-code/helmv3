@@ -713,7 +713,12 @@ export function PlayersGridView({
             <IconChevronRight size={16} aria-hidden />
           </span>
         ),
-        meta: { align: 'right', cellClassName: 'w-8' },
+        // `w-8` (32px) left ZERO content width once the table's own shared
+        // px-4 (16px/side) cell padding is applied — 32px width - 32px
+        // padding = 0px for the 16px chevron, so it clipped at the table's
+        // right edge on every row. w-14 (56px) gives the icon real room
+        // (56 - 32 = 24px) inside the same padding (#950).
+        meta: { align: 'right', cellClassName: 'w-14' },
       },
     ],
     [goalsByPlayer, silentPostureByPlayer],

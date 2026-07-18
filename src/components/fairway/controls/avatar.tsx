@@ -68,9 +68,14 @@ const statusLabel: Record<AvatarStatus, string> = {
   offline: 'Offline',
 };
 
-function initialsFromName(name?: string | null): string {
+export function initialsFromName(name?: string | null): string {
   if (!name) return '';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  // Strip anything that isn't a letter/space/apostrophe/hyphen before
+  // tokenizing — a display name like "Coach (Demo)" otherwise splits to
+  // ["Coach", "(Demo)"], and the last token's first character is "(",
+  // producing "C(" instead of two real letters (#950).
+  const cleaned = name.replace(/[^\p{L}\s'-]+/gu, ' ').trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '';
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
