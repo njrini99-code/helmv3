@@ -105,7 +105,7 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
 
     // The card's identity row is its own (unlabeled) button — the FIRST button
     // in the card, ahead of the two named action buttons already asserted.
-    const [openAreasButton] = screen.getAllByRole('button');
+    const openAreasButton = screen.getAllByRole('button')[0]!;
     await user.click(openAreasButton);
     expect(onOpenAreas).toHaveBeenCalledTimes(1);
   });
