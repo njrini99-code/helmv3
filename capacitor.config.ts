@@ -5,8 +5,14 @@ const config: CapacitorConfig = {
   appName: 'Helm Sports Labs',
   webDir: 'public',
   server: {
-    // Point to the app (not the marketing landing page)
-    url: 'https://www.helmsportslabs.com/golf/login',
+    // Point to the app (not the marketing landing page). /golf/dashboard, not
+    // /golf/login: an already-authed player at /login gets client-bounced
+    // login → welcome (deliberate ~3s splash) → dashboard, painting five
+    // sequential shells on every cold start. Landing on the dashboard lets
+    // middleware pass authed users straight through (one skeleton) and 307s
+    // signed-out users to /golf/login?returnTo=... server-side. Matches the
+    // PWA manifest's start_url.
+    url: 'https://www.helmsportslabs.com/golf/dashboard',
     cleartext: false,
     allowNavigation: ['*.helmsportslabs.com', 'helmsportslabs.com'],
   },
