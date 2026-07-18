@@ -48,6 +48,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import { Check, X, Target, ChevronDown, ChevronRight, RefreshCw, SlidersHorizontal, User } from 'lucide-react';
 
 import { CoachHelmShell } from './CoachHelmShell';
@@ -210,6 +211,49 @@ function setsEqual(a: Set<string>, b: Set<string>): boolean {
 /* ───────────────────────────────────────────────────────────────────────────
  * Filter vocabularies (the ONE coherent system replacing 3 mechanisms)
  * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The ONE evidence renderer, shared by the feed card and the open-signal
+ * InsightPanel — the panel previously carried its own copy of this markup and
+ * silently missed the phone fix (#957 review). Below `sm` it is a stack of
+ * label⇄value rows (label left, value right): a column grid at ~150px per
+ * column forced eyebrow labels like "ESTIMATED 3-PUTT RATE (15+ FT)" to wrap
+ * one word per line. From `sm` up, the original column grid (3-up on the
+ * feed card, 2-up in the narrower panel) is unchanged.
+ */
+function EvidenceList({
+  items,
+  columns,
+}: {
+  items: ReadonlyArray<{ label: string; value: string; gloss?: string }>;
+  columns: 2 | 3;
+}) {
+  return (
+    <dl
+      className={cn(
+        'flex flex-col gap-2 sm:grid sm:gap-x-6',
+        columns === 3 ? 'sm:grid-cols-3 sm:gap-y-1.5' : 'sm:grid-cols-2 sm:gap-y-2',
+      )}
+    >
+      {items.map((e) => (
+        <div
+          key={e.label}
+          className="flex items-baseline justify-between gap-x-4 sm:flex-col sm:justify-start"
+        >
+          <dt className="min-w-0 font-fw-sans text-eyebrow uppercase text-text-tertiary">
+            {e.label}
+          </dt>
+          <dd className="shrink-0 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:text-left">
+            {e.value}
+            {e.gloss ? (
+              <span className="ml-1 font-fw-sans text-caption text-text-tertiary">{e.gloss}</span>
+            ) : null}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 const SEVERITY_OPTIONS: ToolbarFilterOption[] = [
   { value: 'critical', label: 'Critical' },
@@ -1372,25 +1416,7 @@ export function FairwayCoachHelmSignals({
   const renderCard = useCallback(
     (row: SignalRow, opts?: { hero?: boolean; compact?: boolean }) => {
       const evidenceNode =
-        row.evidence.length > 0 ? (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3">
-            {row.evidence.map((e) => (
-              <div key={e.label} className="flex flex-col">
-                <dt className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
-                  {e.label}
-                </dt>
-                <dd className="font-fw-mono text-body-sm tabular-nums text-text-primary">
-                  {e.value}
-                  {e.gloss ? (
-                    <span className="ml-1 font-fw-sans text-caption text-text-tertiary">
-                      {e.gloss}
-                    </span>
-                  ) : null}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        ) : undefined;
+        row.evidence.length > 0 ? <EvidenceList items={row.evidence} columns={3} /> : undefined;
 
       // Multi-select is wired ONLY on the insights/alerts surface, where the
       // bulk-action bar (Acknowledge/Resolve/Dismiss/Export) exists. Patterns
@@ -2072,23 +2098,7 @@ export function FairwayCoachHelmSignals({
           meta={openRow.confidenceWord ?? undefined}
           evidence={
             openRow.evidence.length > 0 ? (
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2">
-                {openRow.evidence.map((e) => (
-                  <div key={e.label} className="flex flex-col">
-                    <dt className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
-                      {e.label}
-                    </dt>
-                    <dd className="font-fw-mono text-body-sm tabular-nums text-text-primary">
-                      {e.value}
-                      {e.gloss ? (
-                        <span className="ml-1 font-fw-sans text-caption text-text-tertiary">
-                          {e.gloss}
-                        </span>
-                      ) : null}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
+              <EvidenceList items={openRow.evidence} columns={2} />
             ) : undefined
           }
           evidenceLabel={openRow.evidence.length > 0 ? 'Why this surfaced' : undefined}

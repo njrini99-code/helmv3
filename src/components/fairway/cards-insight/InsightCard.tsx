@@ -285,7 +285,12 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
       // action cluster drops BELOW the title row (no horizontal overflow / title
       // crush at 360px) and sits inline on the right from `sm:` up.
       isCompact ? 'gap-x-3 gap-y-2 p-4 flex-wrap items-center' : 'gap-4',
-      !isCompact && (isHero ? 'p-8' : 'p-6'),
+      // Hero padding steps down on phone (#957) — at a fixed `p-8` + the h2
+      // title + body-lg narrative below, this ONE card consumed nearly the
+      // full first viewport on a phone-width dashboard, reading as the
+      // "vibe-coded, one long card" tell (Mobile Doctrine rule 11) instead of
+      // the first section in a composed page. `sm:` and up is unchanged.
+      !isCompact && (isHero ? 'p-6 sm:p-8' : 'p-6'),
       // interactivity — visual lift only on the container; the focus ring + the
       // actual keyboard/click affordance live on the overlay <button> (so the
       // ring follows the focusable element, and the card has-focus-within still
@@ -445,8 +450,11 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
                 id={titleId}
                 className={cn(
                   'min-w-0 text-text-primary',
+                  // Hero title steps down a size on phone (#957) — see the
+                  // shell-padding comment above; same "one card ate the first
+                  // viewport" fix, applied to the loudest element in it.
                   isHero
-                    ? 'font-fw-display text-h2 font-medium tracking-[-0.005em]'
+                    ? 'font-fw-display text-h3 sm:text-h2 font-medium tracking-[-0.005em]'
                     : isCompact
                       ? 'font-fw-sans text-body font-semibold leading-snug'
                       : 'font-fw-sans text-h3 font-semibold',
@@ -469,7 +477,7 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
             <div
               className={cn(
                 'font-fw-sans text-text-secondary',
-                isHero ? 'text-body-lg leading-relaxed' : 'text-body',
+                isHero ? 'text-body sm:text-body-lg leading-relaxed' : 'text-body',
                 isCompact && 'line-clamp-1',
               )}
             >

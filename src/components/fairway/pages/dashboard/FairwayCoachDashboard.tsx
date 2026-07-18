@@ -390,8 +390,14 @@ export function FairwayCoachDashboard({
     },
   ];
 
+  // overflow-x-clip on the page root (not -hidden: clip doesn't create a
+  // scroll container, so sticky children keep working) — hard guarantee that
+  // no wide child (a table, an unbroken string, a wide chart) can ever
+  // stretch the page past the viewport; the owner's phone showed every
+  // full-width card running past the screen edge when one sibling went wide
+  // (#957).
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-5 py-8 md:gap-10 md:px-8 md:py-10">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 overflow-x-clip px-5 py-8 md:gap-10 md:px-8 md:py-10">
       {/* ── 1 · MASTHEAD — single h1 + promoted action cluster ─────────────── */}
       <ViewHeader
         eyebrow="Coach Dashboard"
@@ -1085,14 +1091,17 @@ function ActionItemsPanel({ items }: { items: ActionItem[] }) {
             {items.slice(0, 6).map((item) => {
               const isUrgent = item.priority === 'high' || item.priority === 'urgent';
               return (
-                <li key={item.id}>
+                <li key={item.id} className="min-w-0">
                   <Link
                     href={actionItemHref(item)}
-                    className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                    className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   >
+                    {/* `overflow-hidden` is the hard backstop for the title's `truncate`
+                        below — without it, a long single-line title can bleed past this
+                        row's own rounded edge instead of ellipsizing at it (#957). */}
                     <Inset
                       padding="sm"
-                      className="flex items-start gap-3 transition-colors hover:bg-surface-hover"
+                      className="flex min-w-0 items-start gap-3 overflow-hidden transition-colors hover:bg-surface-hover"
                     >
                       <span className="mt-0.5 shrink-0">
                         {item.overdue ? (

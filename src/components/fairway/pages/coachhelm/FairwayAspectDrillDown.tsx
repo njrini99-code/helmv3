@@ -30,7 +30,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
 import { Segmented } from '@/components/fairway/controls/segmented';
@@ -125,10 +125,11 @@ export function FairwayAspectDrillDown({
 }: FairwayAspectDrillDownProps) {
   const router = useRouter();
 
-  // Retain the last non-null aspect so the ModalShell stays mounted through its
-  // exit tween after the parent clears `aspect` on close — AnimatePresence can
-  // only animate out while still mounted (mirrors FocusAreaModal). `aspectProp`
-  // drives it (flicker-free open); `lastAspect` only covers the closing frame.
+  // Retain the last non-null aspect so the Sheet stays mounted through its
+  // exit tween after the parent clears `aspect` on close — vaul can only
+  // animate out while still mounted (mirrors FocusAreaModal's pattern).
+  // `aspectProp` drives it (flicker-free open); `lastAspect` only covers the
+  // closing frame.
   const [lastAspect, setLastAspect] = React.useState<AspectDrillDownTarget | null>(aspectProp);
   React.useEffect(() => {
     if (aspectProp) setLastAspect(aspectProp);
@@ -390,14 +391,29 @@ export function FairwayAspectDrillDown({
   const drillById = new Map((plan?.drills ?? []).map((d) => [d.id, d]));
 
   return (
-    <ModalShell
+    // A Sheet, not a centered ModalShell (Mobile Doctrine rule 4 — every
+    // input/create flow under `md` is a bottom sheet): this panel holds FOUR
+    // stacked sections (Who/Goal/Plan/Ship), which read as an unreadably cramped
+    // centered dialog on a phone. `side="right" mobileSide="bottom"` is the
+    // Sheet API's designed pairing for exactly this panel shape: a docked
+    // right column on desktop (a plain `side="bottom"` here stretched the
+    // sheet edge-to-edge across wide viewports — #959-review finding), the
+    // native bottom sheet under `md`. `peek={false}` like every other
+    // bottom-sheet consumer in the app (MoreNavSheet, broadcast/new-message,
+    // announcements): the vaul snap-point path has no production consumer and
+    // its translate math assumes a fixed-height panel our content-sized
+    // sheets don't have. The sheet opens to content height, capped with the
+    // body scrolling.
+    <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      size="full"
+      side="right"
+      mobileSide="bottom"
+      peek={false}
       title={aspect.long}
       description={`${aspect.kind === 'strength' ? 'Team strength' : 'Team weakness'} · ${aspect.rating}/100`}
     >
-      <ModalShell.Body>
+      <Sheet.Body>
         <div className="flex flex-col gap-7">
           {/* ── Header chips ─────────────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2">
@@ -695,14 +711,14 @@ export function FairwayAspectDrillDown({
             </div>
           </FormSection>
         </div>
-      </ModalShell.Body>
+      </Sheet.Body>
 
-      <ModalShell.Footer>
+      <Sheet.Footer>
         <Button variant="ghost" onClick={() => onOpenChange(false)}>
           Done
         </Button>
-      </ModalShell.Footer>
-    </ModalShell>
+      </Sheet.Footer>
+    </Sheet>
   );
 }
 

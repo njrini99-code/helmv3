@@ -275,7 +275,14 @@ const SheetBody = React.forwardRef<
     ref={ref}
     data-slot="sheet-body"
     className={cn(
-      'flex-1 overflow-y-auto px-6 py-2 font-fw-sans text-body text-text-secondary',
+      // `flex-auto min-h-0`, NOT `flex-1`: defensive parity with
+      // ModalShell.Body, where iOS Safari resolved flex-1's percentage basis
+      // (0%) against the panel's intrinsic-keyword height as 0 and collapsed
+      // the body (full story there). Sheets size with plain auto height and
+      // haven't shown the collapse, but content-based basis + min-h-0 gives
+      // the same layout without ever depending on how an engine resolves a
+      // percentage basis against an indefinite height.
+      'min-h-0 flex-auto overflow-y-auto px-6 py-2 font-fw-sans text-body text-text-secondary',
       // When the body is the last child it owns the bottom edge → keep its
       // content clear of the iOS home indicator.
       'first:pt-6 last:pb-[max(1.5rem,env(safe-area-inset-bottom))]',

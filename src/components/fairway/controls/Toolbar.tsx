@@ -59,9 +59,19 @@ import { PopoverPanel } from '../overlays/PopoverPanel';
  * Warm cream-glass recipe (self-contained, built from locked --fw-glass-* tokens)
  * Used ONLY when the row is sticky-stuck or hosting the bulk bar (the two
  * §4.3-approved chrome slots). Matte at rest never touches this.
+ *
+ * `--fw-glass-bg-strong` (88% tint), not the 74% `--fw-glass-bg` — a stuck
+ * toolbar sits directly over live scrolling body copy (unlike a card-level
+ * glass surface with more breathing room beneath it), and at 74% + the
+ * `saturate(190%)` refraction the scrolled text was reading straight through
+ * the pills, unreadable (#957). `--fw-glass-bg-strong` is the same token the
+ * modal/command-palette tier already uses for exactly this "must stay legible
+ * over content" case. No `blur()` is added — that's still the mobile
+ * scrolling-chrome perf rule (Mobile Doctrine's performance floor); only the
+ * opacity of the existing tint changes, which is effectively free.
  * ─────────────────────────────────────────────────────────────────────────── */
 const STUCK_GLASS_STYLE: CSSProperties = {
-  backgroundColor: 'var(--fw-glass-bg)',
+  backgroundColor: 'var(--fw-glass-bg-strong)',
   backdropFilter: 'saturate(var(--fw-glass-saturate))',
   WebkitBackdropFilter: 'saturate(var(--fw-glass-saturate))',
   borderColor: 'var(--fw-glass-border)',
@@ -243,40 +253,62 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
               transition={{ duration: reduceMotion ? 0 : 0.16 }}
               className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2"
             >
-              {/* search — grows to absorb slack so the row reads as one quiet
-                  field+controls. Bug #949 #8: below `lg` this still competes
-                  equally (flex-1) with the filters cluster for space, which is
-                  fine on mobile/tablet (the filters strip is a horizontal
-                  scroller there anyway). From `lg` up, pin it to a fixed
-                  comfortable width instead of growing — a search input never
-                  NEEDS more than that, and letting it keep pulling flex-grow
-                  share from `filters` was exactly what squeezed a 3-pill
-                  filter set (Severity/Status/Category) down far enough that
-                  the trailing "Status" pill clipped under the view-toggle
-                  segmented control even at wide desktop widths (>=1280px),
-                  where there was actually plenty of total room. */}
+              {/* Below `sm` the row re-composes into stacked full-width lines
+                  (#957 — at phone width, search, three filter pills, a
+                  segmented view toggle AND the action buttons cannot share
+                  flex-wrap lines without something clipping mid-word at the
+                  viewport edge, which is exactly what shipped):
+                    line 1 · search, full width
+                    line 2 · the filter-pill scroll strip, full width
+                    line 3 · view toggle + actions, pinned right
+                  Deliberately NO `order` utilities: source order already reads
+                  top-to-bottom/left-to-right at every width, so DOM order,
+                  tab order, and visual order stay identical (a #959-review
+                  finding — an earlier draft reordered lines with `order-*`,
+                  which sent keyboard focus visually backwards on phones).
+                  From `sm` up the basis overrides reset and the original
+                  single-line composition is byte-identical.
+
+                  search — grows to absorb slack so the row reads as one quiet
+                  field+controls. From `sm` up: Bug #949 #8 — below `lg` it
+                  competes equally (flex-1) with the filters cluster for space
+                  (fine on tablet, the filters strip scrolls there too). From
+                  `lg` up, pin it to a fixed comfortable width instead of
+                  growing — a search input never NEEDS more than that, and
+                  letting it keep pulling flex-grow share from `filters` was
+                  exactly what squeezed a 3-pill filter set (Severity/Status/
+                  Category) down far enough that the trailing "Status" pill
+                  clipped under the view-toggle segmented control even at wide
+                  desktop widths (>=1280px), where there was actually plenty of
+                  total room. */}
               {search ? (
-                <div className="min-w-[180px] flex-1 sm:max-w-sm lg:w-72 lg:flex-none">{search}</div>
+                <div className="min-w-0 basis-full sm:min-w-[180px] sm:flex-1 sm:max-w-sm lg:w-72 lg:flex-none">
+                  {search}
+                </div>
               ) : null}
 
               {/* filters — horizontally scrollable so a long set never breaks
-                  the row. From `lg` up it's now the ONLY flex-1 item on this
-                  line (search stopped competing for the same growth share
-                  above), so it claims all the room left over from search +
-                  the trailing view-toggle/primary-action cluster — the 3-pill
-                  set fits without ever needing its scroll fallback at desktop
-                  widths. */}
+                  the row. Below `sm` it is its own full-width line, so the
+                  scroller gets the whole viewport to work with. From `lg` up
+                  it's the ONLY flex-1 item on its line (search stopped
+                  competing for the same growth share above), so it claims all
+                  the room left over from search + the trailing cluster — the
+                  3-pill set fits without ever needing its scroll fallback at
+                  desktop widths. */}
               {filters ? (
                 <div
                   ref={filtersFadeRef}
                   style={filtersFadeStyle}
-                  className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  className="flex min-w-0 grow-0 basis-full items-center gap-2 overflow-x-auto sm:grow sm:basis-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   {filters}
                 </div>
               ) : null}
 
-              {/* trailing cluster — view toggle + primary action, always far-right */}
+              {/* trailing cluster — view toggle + primary action. Far-right on
+                  its shared desktop line; the right-pinned last line on phone
+                  (search and filters each took a full line above, so ml-auto
+                  starts this cluster on a fresh line and pushes it right). */}
               {(viewToggle || primaryAction) && (
                 <div className="ml-auto flex flex-shrink-0 items-center gap-2">
                   {viewToggle}
