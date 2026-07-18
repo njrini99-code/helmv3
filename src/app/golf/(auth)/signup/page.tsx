@@ -174,7 +174,10 @@ export default function SignupPage() {
                 </div>
                 <Button variant="primary"
                   type="submit"
-                  className="w-full h-12 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 active:bg-primary-800 transition-colors"
+                  // primary-700 (not -600): white text on primary-600 (#16a34a)
+                  // is only 3.29:1 — below WCAG AA 4.5:1. primary-700 (#15803d)
+                  // lands at ~5.0:1. Hover/active darken further to stay compliant.
+                  className="w-full h-12 rounded-xl bg-primary-700 text-white font-semibold hover:bg-primary-800 active:bg-primary-900 transition-colors"
                 >
                   Continue
                 </Button>

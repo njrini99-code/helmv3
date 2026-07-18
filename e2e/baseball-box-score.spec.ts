@@ -1,6 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { getE2eAdminClient } from '../scripts/e2e-supabase-admin';
-import { loginAsCoach, loginAsPlayer } from './helpers/auth';
+// #375 fixtures live on the dedicated "E2E Test University" team owned by
+// testcoach@helm.test / testplayer@helm.test — log in as those pinned
+// accounts, NOT the env-driven Rini-demo accounts (see helpers/auth.ts
+// E2E_FIXTURE_USERS for the full rationale).
+import { loginAsFixtureCoach, loginAsFixturePlayer } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
 /**
@@ -81,7 +85,7 @@ async function deleteGamesAndEvents(
 
 async function loginCoachOrSkip(page: Page) {
   try {
-    await loginAsCoach(page);
+    await loginAsFixtureCoach(page);
   } catch {
     test.skip(true, 'coach login fixture unavailable in this environment');
   }
@@ -89,7 +93,7 @@ async function loginCoachOrSkip(page: Page) {
 
 async function loginPlayerOrSkip(page: Page) {
   try {
-    await loginAsPlayer(page);
+    await loginAsFixturePlayer(page);
   } catch {
     test.skip(true, 'player login fixture unavailable in this environment');
   }

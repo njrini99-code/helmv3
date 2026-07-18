@@ -81,14 +81,22 @@ test.describe('BaseballHelm seeded smoke — route wiring (anonymous)', () => {
     });
   }
 
-  // /baseball/player/today is a deliberate exception (see PlayerTodayTeamless):
-  // an anonymous / teamless visitor lands on a 200 "join a team" terminal
-  // rather than a redirect. Assert that honest terminal renders — NOT a
-  // redirect, and NOT real player data.
-  test('anonymous visitor to /baseball/player/today sees the teamless terminal, not real data', async ({ page }) => {
+  // /baseball/player/today: the PlayerTodayTeamless "join a team" terminal is
+  // now reserved for an AUTHENTICATED-but-teamless player (see the page's
+  // HONESTY v12 docstring — it exists to avoid an onboarding redirect loop for
+  // a signed-in player who skipped team selection). An ANONYMOUS visitor (no
+  // session) is bounced to the auth wall by the (player-dashboard) route group
+  // layout, exactly like every other AUTH_WALL_ROUTE above — which is the
+  // correct secure behaviour and what actually renders (the old assertion of a
+  // 200 terminal for an anonymous visitor was stale). Assert the redirect and
+  // that no real player data leaks.
+  test('anonymous visitor to /baseball/player/today is bounced to the auth wall', async ({ page }) => {
     const resp = await page.goto('/baseball/player/today', { waitUntil: 'domcontentloaded' });
     expect(resp?.status() ?? 0).toBeLessThan(500);
-    await expect(page.getByText('Join a team to unlock Today')).toBeVisible({ timeout: 10000 });
+    const url = page.url();
+    const onAuthWall =
+      url.includes('/login') || url.includes('/signup') || url.includes('/baseball/login');
+    expect(onAuthWall, 'expected anonymous /baseball/player/today to redirect to login').toBe(true);
     await expect(page.getByText('No player profile on this team')).toHaveCount(0);
   });
 });
@@ -167,9 +175,15 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     await waitForPageLoad(page);
     await expect(page.getByText('No games yet')).toHaveCount(0);
 
-    const seededGameLink = page.getByRole('link', {
-      name: new RegExp(`Open game vs ${BASEBALL_SEED_MANIFEST.completedGame.opponentName}`, 'i'),
-    });
+    // Target the manifest's specific completed game by its deterministic id,
+    // NOT by opponent name: the seed produces MULTIPLE past games and more
+    // than one can share the same opponent ("Coastal State" appears on both a
+    // May and a July game), so a name-based `getByRole('link', ...)` matched 2
+    // elements and tripped strict mode. The game-card link's href is the
+    // stable, unique anchor.
+    const seededGameLink = page.locator(
+      `a[data-testid="game-card"][href$="/baseball/dashboard/stats/games/${BASEBALL_SEED_MANIFEST.completedGame.id}"]`,
+    );
     await expect(seededGameLink).toBeVisible({ timeout: 10000 });
     await seededGameLink.click();
     await expect(page).toHaveURL(new RegExp(`/baseball/dashboard/stats/games/${BASEBALL_SEED_MANIFEST.completedGame.id}$`));

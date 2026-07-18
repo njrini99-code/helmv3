@@ -66,6 +66,51 @@ export async function loginAsPlayer(page: Page) {
 }
 
 /**
+ * The dedicated #375 e2e-fixture accounts.
+ *
+ * scripts/seed-baseball-e2e.ts seeds a self-contained team ("E2E Test
+ * University Baseball") owned by these HARD-CODED accounts and force-resets
+ * their passwords every run — the box-score / pipeline / camps specs assert
+ * that team's deterministic fixtures (Riverside/Eastview games, the "Jordan
+ * Hayes" pipeline candidate, the "E2E Prospect Camp").
+ *
+ * WHY THIS EXISTS (do not fold back into TEST_USERS): the seeded-smoke lane
+ * (#382) repoints `TEST_USERS` at the Rini University Baseball DEMO coach via
+ * E2E_BASEBALL_COACH_EMAIL. When that env var is set (as it is in CI),
+ * `loginAsCoach`/`loginAsPlayer` log into the Rini demo team — NOT the
+ * "E2E Test University" team the #375 fixtures live on — so every #375-fixture
+ * assertion saw an empty/foreign team and failed (pipeline board empty,
+ * seeded games absent). These credential-pinned helpers keep the #375 lane
+ * pointed at its own seeded team regardless of the demo-lane env override.
+ * Keep the values in sync with COACH_EMAIL/PASSWORD + PLAYER_EMAIL/PASSWORD in
+ * scripts/seed-baseball-e2e.ts.
+ */
+export const E2E_FIXTURE_USERS = {
+  coach: { email: 'testcoach@helm.test', password: 'TestCoach123!' },
+  player: { email: 'testplayer@helm.test', password: 'TestPlayer123!' },
+} as const;
+
+/** Log in as the #375 seed's dedicated fixture COACH (testcoach@helm.test). */
+export async function loginAsFixtureCoach(page: Page) {
+  await page.goto('/baseball/login');
+  await page.fill('input[name="email"]', E2E_FIXTURE_USERS.coach.email);
+  await page.fill('input[name="password"]', E2E_FIXTURE_USERS.coach.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL('**/dashboard/**');
+}
+
+/** Log in as the #375 seed's dedicated fixture PLAYER (testplayer@helm.test). */
+export async function loginAsFixturePlayer(page: Page) {
+  await page.goto('/baseball/login');
+  await page.fill('input[name="email"]', E2E_FIXTURE_USERS.player.email);
+  await page.fill('input[name="password"]', E2E_FIXTURE_USERS.player.password);
+  await page.click('button[type="submit"]');
+  // Players land on /baseball/player/*, coaches on /baseball/dashboard/* — use
+  // the shared post-login URL contract (mirrors loginAsPlayer above).
+  await page.waitForURL(SUCCESS_URL_RE);
+}
+
+/**
  * Helper to log out
  */
 export async function logout(page: Page) {
