@@ -390,8 +390,14 @@ export function FairwayCoachDashboard({
     },
   ];
 
+  // overflow-x-clip on the page root (not -hidden: clip doesn't create a
+  // scroll container, so sticky children keep working) — hard guarantee that
+  // no wide child (a table, an unbroken string, a wide chart) can ever
+  // stretch the page past the viewport; the owner's phone showed every
+  // full-width card running past the screen edge when one sibling went wide
+  // (#957).
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-5 py-8 md:gap-10 md:px-8 md:py-10">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 overflow-x-clip px-5 py-8 md:gap-10 md:px-8 md:py-10">
       {/* ── 1 · MASTHEAD — single h1 + promoted action cluster ─────────────── */}
       <ViewHeader
         eyebrow="Coach Dashboard"

@@ -275,7 +275,17 @@ const ModalBody = React.forwardRef<
     ref={ref}
     data-slot="modal-shell-body"
     className={cn(
-      'flex-1 overflow-y-auto px-6 py-2 font-fw-sans text-body text-text-secondary',
+      // `flex-auto min-h-0`, NOT `flex-1`: the panel column is `h-fit`
+      // (height: fit-content), and iOS Safari resolves flex-1's percentage
+      // basis (0%) against that as a literal 0 — the body rendered ~0px tall,
+      // its content clipped to a sliver, on iPhone while desktop engines
+      // sized it from content (owner report 2026-07-18: the aspect drill-down
+      // showed title + a clipped chip strip + Done and nothing else; Sheet
+      // bodies — plain auto-height, no h-fit — never collapsed). `flex-auto`
+      // sizes from content in every engine, then shrinks (min-h-0) into the
+      // panel's max-h cap where overflow-y-auto takes over — identical layout
+      // where it already worked, unbroken on iOS.
+      'min-h-0 flex-auto overflow-y-auto px-6 py-2 font-fw-sans text-body text-text-secondary',
       // breathing room when there is no header/footer
       'first:pt-6 last:pb-6',
       className,

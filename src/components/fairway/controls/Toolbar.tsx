@@ -253,19 +253,22 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
               transition={{ duration: reduceMotion ? 0 : 0.16 }}
               className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2"
             >
-              {/* search — grows to absorb slack so the row reads as one quiet
-                  field+controls. Below `sm` (#957) it takes the FULL row on
-                  its own line — a phone-width row doesn't have enough width
-                  for search AND the filter pills to both compete via flex-1
-                  without squeezing the pills into a hard, un-fadeable clip at
-                  the viewport edge (no scroll affordance visible, just a
-                  mid-word cutoff). Giving search the whole first line pushes
-                  `filters` onto its own line via flex-wrap, where the
-                  horizontal scroller gets the full viewport width to work
-                  with. From `sm` up, unchanged: Bug #949 #8 — below `lg` it
-                  still competes equally (flex-1) with the filters cluster for
-                  space (fine on tablet, the filters strip scrolls there too).
-                  From `lg` up, pin it to a fixed comfortable width instead of
+              {/* Below `sm` the row re-composes into two deliberate lines via
+                  `order` + `basis` (#957 — at phone width, search, three filter
+                  pills, a segmented view toggle AND the action buttons cannot
+                  share flex-wrap lines without something clipping mid-word at
+                  the viewport edge, which is exactly what shipped):
+                    line 1 · search (grows) + the compact action cluster
+                    line 2 · ONE full-width horizontal scroll strip holding the
+                            view toggle and the filter pills together
+                  From `sm` up the order utilities all reset and the original
+                  single-line composition is byte-identical.
+
+                  search — grows to absorb slack so the row reads as one quiet
+                  field+controls. From `sm` up: Bug #949 #8 — below `lg` it
+                  competes equally (flex-1) with the filters cluster for space
+                  (fine on tablet, the filters strip scrolls there too). From
+                  `lg` up, pin it to a fixed comfortable width instead of
                   growing — a search input never NEEDS more than that, and
                   letting it keep pulling flex-grow share from `filters` was
                   exactly what squeezed a 3-pill filter set (Severity/Status/
@@ -274,30 +277,37 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
                   desktop widths (>=1280px), where there was actually plenty of
                   total room. */}
               {search ? (
-                <div className="w-full sm:w-auto sm:min-w-[180px] sm:flex-1 sm:max-w-sm lg:w-72 lg:flex-none">{search}</div>
+                <div className="order-1 min-w-[140px] flex-1 sm:order-none sm:min-w-[180px] sm:max-w-sm lg:w-72 lg:flex-none">
+                  {search}
+                </div>
               ) : null}
 
               {/* filters — horizontally scrollable so a long set never breaks
-                  the row. From `lg` up it's now the ONLY flex-1 item on this
-                  line (search stopped competing for the same growth share
-                  above), so it claims all the room left over from search +
-                  the trailing view-toggle/primary-action cluster — the 3-pill
-                  set fits without ever needing its scroll fallback at desktop
-                  widths. */}
-              {filters ? (
+                  the row. Below `sm` it is the full-width second line and also
+                  hosts the view toggle (leading, so the strip scans as
+                  "mode, then narrowing"). From `lg` up it's the ONLY flex-1
+                  item on its line (search stopped competing for the same
+                  growth share above), so it claims all the room left over from
+                  search + the trailing cluster — the 3-pill set fits without
+                  ever needing its scroll fallback at desktop widths. */}
+              {(filters || viewToggle) ? (
                 <div
                   ref={filtersFadeRef}
                   style={filtersFadeStyle}
-                  className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  className="order-3 flex basis-full items-center gap-2 overflow-x-auto min-w-0 grow-0 sm:order-none sm:basis-0 sm:grow [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
+                  {/* phone-only home for the view toggle; display:none from `sm`
+                      keeps the duplicate out of the tab order and the a11y tree */}
+                  {viewToggle ? <div className="shrink-0 sm:hidden">{viewToggle}</div> : null}
                   {filters}
                 </div>
               ) : null}
 
-              {/* trailing cluster — view toggle + primary action, always far-right */}
+              {/* trailing cluster — view toggle + primary action, always far-right.
+                  On phone the view toggle lives in the scroll strip above instead. */}
               {(viewToggle || primaryAction) && (
-                <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-                  {viewToggle}
+                <div className="order-2 ml-auto flex flex-shrink-0 items-center gap-2 sm:order-none">
+                  {viewToggle ? <div className="hidden sm:block">{viewToggle}</div> : null}
                   {primaryAction}
                 </div>
               )}

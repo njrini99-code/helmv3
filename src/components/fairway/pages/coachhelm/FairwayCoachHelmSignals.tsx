@@ -1373,13 +1373,21 @@ export function FairwayCoachHelmSignals({
     (row: SignalRow, opts?: { hero?: boolean; compact?: boolean }) => {
       const evidenceNode =
         row.evidence.length > 0 ? (
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3">
+          // Below `sm` this is a stack of label⇄value rows (label left, value
+          // right), not a column grid — two ~150px columns forced eyebrow
+          // labels like "ESTIMATED 3-PUTT RATE (15+ FT)" to wrap one word per
+          // line at phone width (#957). From `sm` up, the original 3-column
+          // grid is unchanged.
+          <dl className="flex flex-col gap-2 sm:grid sm:grid-cols-3 sm:gap-x-6 sm:gap-y-1.5">
             {row.evidence.map((e) => (
-              <div key={e.label} className="flex flex-col">
-                <dt className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+              <div
+                key={e.label}
+                className="flex items-baseline justify-between gap-x-4 sm:flex-col sm:justify-start"
+              >
+                <dt className="min-w-0 font-fw-sans text-eyebrow uppercase text-text-tertiary">
                   {e.label}
                 </dt>
-                <dd className="font-fw-mono text-body-sm tabular-nums text-text-primary">
+                <dd className="shrink-0 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:text-left">
                   {e.value}
                   {e.gloss ? (
                     <span className="ml-1 font-fw-sans text-caption text-text-tertiary">

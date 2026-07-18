@@ -34,7 +34,7 @@ describe('Toolbar — search stops competing with filters for growth at lg+', ()
     expect(searchWrapper!.className).toContain('lg:w-72');
   });
 
-  it('the filters wrapper stays the only flex-1 grower on the row (absorbs desktop leftover space)', () => {
+  it('the filters wrapper stays the only grower on the row from `sm` up (absorbs desktop leftover space)', () => {
     const { container } = render(
       <Toolbar
         search={<input aria-label="search" />}
@@ -42,9 +42,40 @@ describe('Toolbar — search stops competing with filters for growth at lg+', ()
         viewToggle={<button>Feed</button>}
       />,
     );
-    const filtersWrapper = container.querySelector('button')?.parentElement;
+    // The filters strip is the scroll container (the only overflow-x-auto
+    // element in the row) — don't reach it via the first <button>, which is
+    // now the strip's phone-only view-toggle slot, not a filter pill.
+    const filtersWrapper = container.querySelector('[class*="overflow-x-auto"]');
     expect(filtersWrapper).not.toBeNull();
-    expect(filtersWrapper!.className).toContain('flex-1');
+    expect(filtersWrapper!.className).toContain('sm:grow');
+    expect(filtersWrapper!.className).toContain('sm:basis-0');
     expect(filtersWrapper!.className).toContain('min-w-0');
+  });
+
+  it('below `sm` the strip is the full-width second line and hosts the view toggle', () => {
+    const { container } = render(
+      <Toolbar
+        search={<input aria-label="search" />}
+        filters={<button>Severity</button>}
+        viewToggle={<button data-testid="toggle">Feed</button>}
+      />,
+    );
+    // Phone composition (#957): line 1 = search + actions, line 2 = one
+    // full-width scroll strip (view toggle + filter pills together). The strip
+    // must take its own line (basis-full + order-3) and must not grow on it.
+    const strip = container.querySelector('[class*="overflow-x-auto"]')!;
+    expect(strip.className).toContain('basis-full');
+    expect(strip.className).toContain('order-3');
+    // The view toggle renders in BOTH homes: phone slot inside the strip
+    // (hidden from `sm` up), desktop slot in the trailing cluster (hidden
+    // below `sm`) — exactly one is ever displayed.
+    const toggles = container.querySelectorAll('[data-testid="toggle"]');
+    expect(toggles).toHaveLength(2);
+    const phoneSlot = toggles[0]!.parentElement!;
+    const desktopSlot = toggles[1]!.parentElement!;
+    expect(strip.contains(phoneSlot)).toBe(true);
+    expect(phoneSlot.className).toContain('sm:hidden');
+    expect(desktopSlot.className).toContain('hidden');
+    expect(desktopSlot.className).toContain('sm:block');
   });
 });

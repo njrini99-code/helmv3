@@ -393,14 +393,16 @@ export function FairwayAspectDrillDown({
     // A bottom Sheet, not a centered ModalShell (Mobile Doctrine rule 4 — every
     // input/create flow under `md` is a bottom sheet): this panel holds FOUR
     // stacked sections (Who/Goal/Plan/Ship), which read as an unreadably cramped
-    // centered dialog on a phone. The sheet's iOS-native half-height `peek`
-    // detent (default) opens it without slamming to full height; the coach
-    // drags up for the rest. Full-height on desktop via `mobileSide` is not
-    // needed — a right-docked panel would be a bigger behavior change than this
-    // fix calls for, so it stays a bottom sheet at every width.
+    // centered dialog on a phone. `peek={false}` like every other bottom-sheet
+    // consumer in the app (MoreNavSheet, broadcast/new-message, announcements):
+    // the vaul snap-point path has no production consumer and its translate
+    // math assumes a fixed-height panel our content-sized sheets don't have —
+    // this is a fix PR, not the place to debut that path. The sheet opens to
+    // content height, capped at 88dvh with the body scrolling.
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      peek={false}
       title={aspect.long}
       description={`${aspect.kind === 'strength' ? 'Team strength' : 'Team weakness'} · ${aspect.rating}/100`}
     >
