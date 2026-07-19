@@ -151,12 +151,20 @@ export function FairwayTripDetail({
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
               <div className="min-w-0">
-                <h2 className="truncate font-fw-display text-h3 font-medium tracking-[-0.01em] text-text-primary">
+                {/* #87 — this header is already full-width (Surface spans the
+                    whole detail column), so a long trip name/destination has
+                    room to breathe; `truncate` was clipping it mid-word for
+                    no layout reason. Wrap instead: the h2 wraps as a block
+                    naturally, and the destination line switches from a rigid
+                    single-row flex to `flex-wrap` so a long destination drops
+                    the separator + transport label to their own line rather
+                    than clipping. */}
+                <h2 className="break-words font-fw-display text-h3 font-medium tracking-[-0.01em] text-text-primary">
                   {itinerary.event_name}
                 </h2>
-                <p className="mt-0.5 flex items-center gap-1.5 font-fw-sans text-body-sm text-text-secondary">
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-fw-sans text-body-sm text-text-secondary">
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-text-tertiary" aria-hidden />
-                  <span className="truncate">{itinerary.destination}</span>
+                  <span className="break-words">{itinerary.destination}</span>
                   <span aria-hidden className="text-text-tertiary">·</span>
                   <span className="text-text-tertiary">
                     {TRANSPORT_LABEL[itinerary.transportation_type]}
