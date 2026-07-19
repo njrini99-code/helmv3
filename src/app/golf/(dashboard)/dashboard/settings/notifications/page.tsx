@@ -1,7 +1,14 @@
 /**
  * W42 — per-category notification preferences settings.
  *
- * /dashboard/settings/notifications · player-only.
+ * /dashboard/settings/notifications · player-only. The per-category channel
+ * matrix lives on `golf_player_notification_state`, a player-scoped table —
+ * there is no coach equivalent of this screen. Coaches already have a real,
+ * working Notifications control (top-level delivery preferences, writing
+ * `users.notification_preferences`) on the general Settings page — see
+ * `NotificationsPanel` in `FairwaySettingsGeneral.tsx`. Rendering an
+ * explanatory near-empty card here for coaches was a dead end; redirect to
+ * that working surface instead (audit W4 — no blank pages).
  */
 
 import { redirect } from 'next/navigation';
@@ -19,26 +26,7 @@ export const metadata: Metadata = {
 export default async function NotificationPrefsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
-  if (!session.player) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <div className="mx-auto w-full max-w-[760px] px-4 py-6 pb-24 md:px-6 md:py-8">
-          <div className="rounded-2xl border border-border-subtle bg-surface p-5">
-            <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
-              Settings
-            </p>
-            <h1 className="mt-2 font-fw-display text-h2 text-text-primary">
-              Notifications
-            </h1>
-            <p className="mt-2 font-fw-sans text-body-sm text-text-secondary">
-              Per-category notification controls are currently tied to a player profile.
-              Coach notification preferences are handled through team and CoachHelm settings.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!session.player) redirect('/golf/dashboard/settings');
 
   const sb = await createClient();
   const { data: row } = await sb
