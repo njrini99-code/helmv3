@@ -986,7 +986,7 @@ export function patternImpactLabels(patterns: ImpactfulPattern[]): string[] {
         ? `${snippet.slice(0, 28)}…`
         : snippet
       : `pattern ${n}`;
-    return `${p.playerName} — ${differentiator}`;
+    return `${p.playerName} (${differentiator})`;
   });
 }
 

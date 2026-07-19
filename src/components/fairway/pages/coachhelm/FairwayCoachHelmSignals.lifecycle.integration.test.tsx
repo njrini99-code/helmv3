@@ -20,6 +20,19 @@
  * → Dismiss → a third insight → Focus area (promote). One PATTERN walks
  * create(seed) → Confirm (validate) → Resolve. Every server action is a
  * `vi.fn()` so the test can assert on call args, not just presence.
+ *
+ * Round-2 addition (adversarial-review gap): every case above rendered with
+ * `signalSource="insights"` and NO `defaultFilter`, which is the /insights
+ * route, not /alerts. Both routes share this same `signalSource='insights'`
+ * data source (see the component's own top-of-file comment) — /alerts is
+ * discriminated ONLY by seeding a non-empty `defaultFilter.severity` (the
+ * component derives `activeSegment === 'alerts'` from exactly that, never a
+ * pathname sniff). Since the write-lifecycle wiring (Acknowledge/Dismiss/
+ * Focus area) is shared code between both routes, the insight cases above
+ * already exercise it — but nothing had asserted the ALERTS segment
+ * specifically end to end, so a regression that broke lifecycle actions only
+ * when reached via /alerts (e.g. a future change gating an action on
+ * `activeSegment`) could still slip through. The suite below closes that.
  * ========================================================================== */
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -337,6 +350,108 @@ describe('FairwayCoachHelmSignals — write-lifecycle integration (bug #189)', (
     });
     await waitFor(() => {
       expect(screen.queryByText(/Resolve me/i)).not.toBeInTheDocument();
+    });
+  });
+
+  /* ── ALERTS segment specifically (round-2 addition — see file header) ──── */
+
+  it('ALERTS segment: renders as /alerts (not /insights) via the seeded severity filter', async () => {
+    await act(async () => {
+      render(
+        <FairwayCoachHelmSignals
+          coachId="coach-1"
+          teamId="team-1"
+          signalSource="insights"
+          // This is the ONLY discriminator between /alerts and /insights (see
+          // the component's own `activeSegment` derivation) — a non-empty
+          // seeded severity is what makes this render the Alerts segment.
+          defaultFilter={{ severity: ['critical', 'high'] }}
+          initialInsights={[makeInsight({ id: 'alert-scope-check', priority: 'high' })]}
+          playerNames={PLAYER_NAMES}
+        />,
+      );
+    });
+
+    // The honest summary tiles (bug #4/#184) read their label off the SAME
+    // `activeSegment` this test is targeting — "Open alerts" only renders
+    // when the component actually resolved to the alerts segment.
+    expect(screen.getByText('Open alerts')).toBeInTheDocument();
+  });
+
+  it('alert: Acknowledge calls acknowledgeInsight(id) and removes the row optimistically', async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      render(
+        <FairwayCoachHelmSignals
+          coachId="coach-1"
+          teamId="team-1"
+          signalSource="insights"
+          defaultFilter={{ severity: ['critical', 'high'] }}
+          initialInsights={[
+            makeInsight({ id: 'alert-ack-1', title: 'Ack this alert', priority: 'high' }),
+          ]}
+          playerNames={PLAYER_NAMES}
+        />,
+      );
+    });
+
+    expect(screen.getByText('Open alerts')).toBeInTheDocument();
+    expect(screen.getByText('Ack this alert')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Acknowledge/i }));
+
+    await waitFor(() => {
+      expect(acknowledgeInsight).toHaveBeenCalledWith('alert-ack-1');
+    });
+    await waitFor(() => {
+      expect(screen.queryByText('Ack this alert')).not.toBeInTheDocument();
+    });
+  });
+
+  it('alert: Focus area PROMOTES the alert — createFocusAreaFromInsight is called and the coach is routed to Development', async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      render(
+        <FairwayCoachHelmSignals
+          coachId="coach-1"
+          teamId="team-1"
+          signalSource="insights"
+          defaultFilter={{ severity: ['critical', 'high'] }}
+          initialInsights={[
+            makeInsight({
+              id: 'alert-promote-1',
+              title: 'Promote this alert',
+              content: 'Body text',
+              category: 'putting',
+              player_id: 'player-1',
+              // 'urgent' is the raw EvidenceInsight priority that maps to the
+              // 'critical' SignalRow/severity-filter bucket (see
+              // INSIGHT_PRIORITY_MAP in signals/patternToInsightVocabulary.ts)
+              // — 'critical' itself is not a valid raw insight priority.
+              priority: 'urgent',
+            }),
+          ]}
+          playerNames={PLAYER_NAMES}
+        />,
+      );
+    });
+
+    expect(screen.getByText('Open alerts')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Focus/i }));
+
+    await waitFor(() => {
+      expect(createFocusAreaFromInsight).toHaveBeenCalledWith(
+        expect.objectContaining({
+          insight_id: 'alert-promote-1',
+          player_id: 'player-1',
+          coach_id: 'coach-1',
+          title: 'Promote this alert',
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/golf/dashboard/development');
     });
   });
 });

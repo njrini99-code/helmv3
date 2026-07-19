@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   IconChevronRight,
   IconTarget,
@@ -94,12 +95,35 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
             {focusArea.description}
           </p>
 
-          {focusArea.target_improvement && (
+          {focusArea.target_improvement ? (
             <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50/65 text-primary-700 text-caption font-medium rounded-full">
               <IconTarget size={11} className="text-primary-600" />
               {focusArea.target_improvement}
             </div>
-          )}
+          ) : onClick ? (
+            // Bug #58/#75 parity: this read-only card used to leave a focus
+            // area with no target as a dead placeholder-less gap (no visible
+            // affordance at all), so a player just saw a description with
+            // nothing to do next — and every such row stayed that way
+            // indefinitely since there was no way to act on it here. Give it
+            // a real, tappable CTA wired to the SAME handler the whole card
+            // already uses (My Development is where a target actually gets
+            // set), gated on `onClick` being wired so it's never a dead
+            // button. `stopPropagation` avoids double-firing the parent
+            // card's own onClick.
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<IconTarget size={11} />}
+              className="mt-2.5 h-auto min-h-0 rounded-full border border-dashed border-warm-300 bg-transparent px-3 py-1 text-caption font-medium text-warm-600 hover:border-primary-400 hover:bg-primary-50/50 hover:text-primary-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+            >
+              Set a target
+            </Button>
+          ) : null}
 
           {focusArea.specific_drills && focusArea.specific_drills.length > 0 && (
             <p className="text-caption text-warm-400 mt-2">
