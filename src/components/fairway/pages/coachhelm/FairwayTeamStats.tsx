@@ -757,7 +757,7 @@ export function FairwayTeamStats({
       <ViewHeader
         eyebrow="Team Stats"
         title="Team Stats"
-        description={`${teamName} · ${players.length} player${players.length !== 1 ? 's' : ''}`}
+        description={`Every number for ${teamName}'s ${players.length} player${players.length !== 1 ? 's' : ''}: ranked, tracked, and measured against Tour.`}
         secondaryActions={
           <Button asChild variant="ghost" size="md">
             <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
@@ -1081,13 +1081,26 @@ function TrajectoryCell({
   );
 }
 
-/** Scoring-trend chip — arrow + verdict, colored by improving/declining/steady. */
+/**
+ * Scoring-trend chip — arrow + verdict, colored by improving/declining/steady.
+ *
+ * #104: the value row previously had no width floor of its own inside the
+ * 2/4-col metric grid — a CSS grid item's default min-width is `auto`
+ * (its max-content size), so a long "↘ Declining 3.2" run could force the
+ * grid track wider than the card, spilling the text past the rounded
+ * border instead of wrapping/clipping inside it. `min-w-0` lets this cell
+ * shrink to its track's actual width; `flex-wrap` lets the arrow/label/
+ * magnitude drop to a second line instead of overflowing when they still
+ * don't fit on one.
+ */
 function TrendCell({ trend }: { trend: number | null }) {
   const t = classifyScoringTrend(trend);
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       {t ? (
-        <span className={`inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium ${t.cls}`}>
+        <span
+          className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 font-fw-sans text-body-sm font-medium ${t.cls}`}
+        >
           <span aria-hidden>{t.arrow}</span>
           {t.label}
           {t.magnitude ? (

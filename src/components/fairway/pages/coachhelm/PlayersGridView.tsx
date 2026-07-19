@@ -70,7 +70,7 @@ import {
   type ColumnDef,
 } from '@/components/fairway/data-table';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
-import { Button } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -399,11 +399,17 @@ export function PlayersGridView({
 
   /* ---- create / edit handlers (the shared modal owns the form) ---- */
 
-  function openCreate(playerId?: string) {
-    setEditing(null);
-    setCreatePlayerId(playerId ?? selectedPlayerId ?? '');
-    setCreateOpen(true);
-  }
+  // useCallback (not a plain function) so the roster columns' useMemo — which
+  // now calls openCreate from the static row-actions cell (#191/#200) — isn't
+  // forced to rebuild every render.
+  const openCreate = React.useCallback(
+    (playerId?: string) => {
+      setEditing(null);
+      setCreatePlayerId(playerId ?? selectedPlayerId ?? '');
+      setCreateOpen(true);
+    },
+    [selectedPlayerId],
+  );
 
   function openEdit(fa: FocusAreaCardData) {
     setEditing(fa as PlayersGridFocusArea);
@@ -703,30 +709,57 @@ export function PlayersGridView({
         },
       },
       {
-        // Per-row NAVIGATE affordance — a trailing chevron that signals the row
-        // itself opens the player's scoped focus-area view (recognition over
-        // recall, Nielsen #6). The whole row is the click target (DataTable
-        // onRowClick); this is the visible "what does clicking do" cue so the
-        // affordance isn't buried in the table caption. Not a separate button
-        // (the row owns the click) — aria-hidden, so screen readers get the
-        // row's role="button" + name, not a duplicate control.
-        id: 'view',
-        header: () => <span className="sr-only">Open scoped focus areas</span>,
+        // Row actions — STATIC, always-visible icon buttons (#191/#200). This
+        // used to be DataTable's built-in `rowActions` slot, which is
+        // `opacity-0` at rest and only reaches `opacity-100` via
+        // `group-hover/row` or `group-focus-within/row` — a mouse-driven
+        // reveal with no static affordance for a keyboard-only or
+        // screen-reader user scanning the table (the desktop analog of the
+        // mobile hover-only bug the W2 fix already solved for RosterPlayerCard
+        // below). Rendering them as an ordinary column cell instead means
+        // they're always in the accessibility tree AND always painted —
+        // reachable by Tab, readable by a screen reader, with no hover or
+        // focus-within gate. `stopPropagation` keeps them from also firing the
+        // row's own onRowClick.
+        id: 'actions',
+        header: () => <span className="sr-only">Row actions</span>,
         enableSorting: false,
-        cell: () => (
-          <span className="flex items-center justify-end text-text-tertiary">
-            <IconChevronRight size={16} aria-hidden />
-          </span>
-        ),
-        // `w-8` (32px) left ZERO content width once the table's own shared
-        // px-4 (16px/side) cell padding is applied — 32px width - 32px
-        // padding = 0px for the 16px chevron, so it clipped at the table's
-        // right edge on every row. w-14 (56px) gives the icon real room
-        // (56 - 32 = 24px) inside the same padding (#950).
-        meta: { align: 'right', cellClassName: 'w-14' },
+        cell: ({ row }) => {
+          const p = row.original.player;
+          const name = playerName(p);
+          return (
+            <div className="flex items-center justify-end gap-1">
+              <IconButton
+                variant="ghost"
+                size="sm"
+                aria-label={`Add focus area for ${name}`}
+                title="Add focus area"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCreate(p.id);
+                }}
+              >
+                <IconPlus size={16} aria-hidden />
+              </IconButton>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                aria-label={`View ${name}'s genome`}
+                title="View genome"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/golf/dashboard/players/${p.id}/genome`);
+                }}
+              >
+                <IconChevronRight size={16} aria-hidden />
+              </IconButton>
+            </div>
+          );
+        },
+        meta: { align: 'right', cellClassName: 'w-24' },
       },
     ],
-    [goalsByPlayer, silentPostureByPlayer],
+    [goalsByPlayer, silentPostureByPlayer, openCreate, router],
   );
 
   /* ---- roster empty state (shared by the mobile card list + the desktop
@@ -869,20 +902,6 @@ export function PlayersGridView({
                   setSelectedPlayerId(r.player.id);
                   setView('areas');
                 }}
-                rowActions={[
-                  {
-                    id: 'add',
-                    label: 'Add focus area',
-                    icon: <IconPlus size={16} />,
-                    onSelect: (r) => openCreate(r.player.id),
-                  },
-                  {
-                    id: 'genome',
-                    label: 'View genome',
-                    icon: <IconChevronRight size={16} />,
-                    onSelect: (r) => router.push(`/golf/dashboard/players/${r.player.id}/genome`),
-                  },
-                ]}
                 emptyState={rosterEmptyState}
               />
             </div>
