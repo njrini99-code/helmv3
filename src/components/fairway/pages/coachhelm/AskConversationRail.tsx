@@ -98,8 +98,22 @@ const THREADS_HEADER = (
   </h3>
 );
 
-/** Relative date — only ever called with a real ISO string (never fabricated). */
-function formatRelativeDate(iso: string): string {
+/**
+ * Relative date — only ever called with a real ISO string (never fabricated).
+ *
+ * Hydration fix (React #418, fires on every load of /golf/dashboard/coachhelm/
+ * chat): the `>7d` branch used to call `toLocaleDateString(undefined, {...})`
+ * — an UNPINNED locale + timezone. `undefined` resolves to the SERVER
+ * process's locale/TZ during SSR and the BROWSER's during client hydration,
+ * so a thread updated near a day boundary rendered a DIFFERENT calendar day
+ * server-side vs client-side (the same "Jun 1" vs "May 28" class of bug
+ * already fixed for calendar times in FairwayBrief.formatAnalyzed — see that
+ * file's header). Anchoring both the locale AND the timeZone explicitly
+ * (`en-US` / `UTC`) makes the string deterministic across SSR and the
+ * client, since it no longer depends on either environment's ambient
+ * settings. See AskConversationRail.formatRelativeDate.test.ts.
+ */
+export function formatRelativeDate(iso: string): string {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
   const diffMs = Date.now() - then;
@@ -108,7 +122,7 @@ function formatRelativeDate(iso: string): string {
   if (diffMs < 60 * 60 * 1000) return `${Math.floor(diffMs / (60 * 1000))}m`;
   if (diffMs < day) return `${Math.floor(diffMs / (60 * 60 * 1000))}h`;
   if (diffMs < 7 * day) return `${Math.floor(diffMs / day)}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 /** The origin context chip — only rendered when the data exists. */
