@@ -1153,9 +1153,9 @@ function ActionItemRow({ item, now }: { item: ActionItem; now: Date | null }) {
         href={actionItemHref(item)}
         className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
       >
-        {/* `overflow-hidden` is the hard backstop for the title's `truncate`
-            below — without it, a long single-line title can bleed past this
-            row's own rounded edge instead of ellipsizing at it (#957). */}
+        {/* `overflow-hidden` is the hard backstop for the row's own rounded
+            edge — a long title can still bleed past it (#957); the title's
+            OWN clipping is now `line-clamp-2` (see below), not `truncate`. */}
         <Inset
           padding="sm"
           className="flex min-w-0 items-start gap-3 overflow-hidden transition-colors hover:bg-surface-hover"
@@ -1172,9 +1172,19 @@ function ActionItemRow({ item, now }: { item: ActionItem; now: Date | null }) {
             )}
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-1">
+            {/* audit #47: a single-line `truncate` here clipped mid-word with
+                no ellipsis on narrow mobile widths — `truncate`'s ellipsis
+                depends on the element resolving to a block box, and this span
+                sits directly inside a row that also wraps the date/badge
+                beneath it, so the clip landed with no visible affordance.
+                `whitespace-normal break-words` lets a long title wrap onto a
+                second line at word boundaries (only breaking mid-word as a
+                last resort, never as the default), and `line-clamp-2` caps it
+                at two lines with a real ellipsis if it's still too long —
+                never a bare mid-word cut. */}
             <span
               className={cn(
-                'truncate font-fw-sans text-body font-medium',
+                'line-clamp-2 whitespace-normal break-words font-fw-sans text-body font-medium',
                 item.overdue ? 'text-fw-danger' : 'text-text-primary',
               )}
             >

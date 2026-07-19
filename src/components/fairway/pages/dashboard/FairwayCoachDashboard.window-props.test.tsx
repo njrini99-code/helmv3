@@ -11,22 +11,54 @@
  * file scope) and already scopes `teamScoringTrend` / `topPlayers` /
  * `teamPulse` to the selected `dateRange` via `dateCutoff`.
  *
- * This locks the CONTRACT this component owns: given two different payloads —
- * standing in for the two different window queries' results — the rendered
- * Team Pulse and Top Performers panels show DIFFERENT data, and the
- * Performance Trend region reacts to a different `teamScoringTrend` (the
- * hasTrend gate flips the whole region between the real chart and the
- * insufficient-data fallback). A regression that re-introduces stale state
- * (e.g. caching `data`/`enhancedData` in `useState` seeded only from the
- * initial props) would freeze these panels exactly as the bug report
- * describes, and this test would catch it.
+ * This locks the TWO HALVES of the contract this component owns:
+ *
+ *   1. Given two different payloads — standing in for the two different
+ *      window queries' results — the rendered Team Pulse and Top Performers
+ *      panels show DIFFERENT data, and the Performance Trend region reacts to
+ *      a different `teamScoringTrend` (the hasTrend gate flips the whole
+ *      region between the real chart and the insufficient-data fallback). A
+ *      regression that re-introduces stale state (e.g. caching
+ *      `data`/`enhancedData` in `useState` seeded only from the initial
+ *      props) would freeze these panels exactly as the bug report describes.
+ *
+ *   2. Clicking a DIFFERENT Segmented option threads a DISTINCT `?range=`
+ *      value to `router.push` for each selection — the last-mile wiring this
+ *      component owns before the (verified, out-of-file-scope) server-side
+ *      `dateCutoff` refetch in dashboard-data.ts takes over. A regression
+ *      that hardcodes the pushed URL, or reads a stale closed-over `range`
+ *      instead of the just-clicked value, would push the SAME url for both
+ *      7D and 30D — the exact "pixel-identical regardless of selection"
+ *      symptom, one step earlier in the pipeline than half (1) covers.
  * ========================================================================== */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { FairwayCoachDashboard } from './FairwayCoachDashboard';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import type { CoachDashboardPayload } from '@/app/golf/actions/dashboard-data';
+
+// Override the global `next/navigation` mock (src/test/setup.tsx) with a
+// STABLE `push` spy shared across every `useRouter()` call in this file — the
+// global mock returns a brand-new `push: vi.fn()` on every call, which would
+// make it impossible to assert "two distinct pushes from the SAME router"
+// across the re-renders a click triggers (each render would otherwise call
+// `useRouter()` again and get a fresh, disconnected spy).
+const mockPush = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
+}));
 
 function baseData(overrides: Partial<CoachDashboardData> = {}): CoachDashboardData {
   return {
@@ -128,5 +160,54 @@ describe('FairwayCoachDashboard — window (7D/30D) props actually drive the ren
     });
     render(<FairwayCoachDashboard data={threeMonthsOfData} enhancedData={basePayload()} joinRequests={[]} />);
     expect(screen.queryByText('Trend appears as rounds build')).not.toBeInTheDocument();
+  });
+});
+
+describe('FairwayCoachDashboard — clicking the window Segmented threads a DISTINCT range to the URL (audit #54)', () => {
+  beforeEach(() => {
+    mockPush.mockClear();
+  });
+
+  it('pushes a genuinely different ?range= for 7D than for 30D (not the same url twice)', async () => {
+    const user = userEvent.setup();
+    render(
+      <FairwayCoachDashboard
+        data={baseData()}
+        enhancedData={basePayload()}
+        dateRange="all"
+        joinRequests={[]}
+      />,
+    );
+
+    await user.click(screen.getByRole('radio', { name: '7D' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/golf/dashboard?range=7d');
+
+    await user.click(screen.getByRole('radio', { name: '30D' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/golf/dashboard?range=30d');
+
+    // The two pushes must be genuinely distinct calls/args — a regression
+    // that re-pushes the SAME range regardless of which segment was clicked
+    // (e.g. a stale closed-over `range` instead of the just-clicked value)
+    // would reproduce "pixel-identical regardless of selection" one step
+    // upstream of the props-driven-render contract locked in above: this
+    // component would never even ASK the server for the other window's data.
+    const calls = mockPush.mock.calls.map((c) => c[0]);
+    expect(calls).toEqual(['/golf/dashboard?range=7d', '/golf/dashboard?range=30d']);
+    expect(calls[0]).not.toBe(calls[1]);
+  });
+
+  it('pushes the bare route (no ?range=) when switching back to All', async () => {
+    const user = userEvent.setup();
+    render(
+      <FairwayCoachDashboard
+        data={baseData()}
+        enhancedData={basePayload()}
+        dateRange="30d"
+        joinRequests={[]}
+      />,
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'All' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/golf/dashboard');
   });
 });
