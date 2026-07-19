@@ -237,7 +237,10 @@ export function FairwayTasks({
     if (!now) return 0;
     return tasks.filter((t) => {
       if (t.status !== 'active' || !t.due_date) return false;
-      return new Date(t.due_date).toDateString() === now.toDateString();
+      // P295 — local-safe date-only parse (see parseDueDate below); a raw
+      // `new Date(t.due_date)` here reads a date-only due_date as UTC
+      // midnight and under-counts "due today" by a day in US timezones.
+      return parseDueDate(t.due_date).toDateString() === now.toDateString();
     }).length;
   }, [tasks, now]);
 
@@ -277,7 +280,8 @@ export function FairwayTasks({
       const isOverdueRow = (t: FairwayTask) =>
         t.status !== 'completed' &&
         !!t.due_date &&
-        new Date(t.due_date) < now;
+        // P295 — same local-safe parse as everywhere else in this file.
+        parseDueDate(t.due_date) < now;
       return [...matched].sort((a, b) => Number(isOverdueRow(b)) - Number(isOverdueRow(a)));
     }
     return matched;
@@ -663,8 +667,31 @@ function reminderTone(
   return 'upcoming';
 }
 
+/**
+ * P295 — parse a stored `due_date` LOCAL-safe. A pure date-only value
+ * ("YYYY-MM-DD", no time/offset) is what `createTask` stores, and
+ * `new Date('YYYY-MM-DD')` parses that as UTC-midnight per the ECMA-262 date
+ * time string spec — NOT local midnight. In any negative-UTC-offset zone
+ * (all of the US) that instant falls on the PREVIOUS local calendar day, so a
+ * due date of "today" reads back as "yesterday" and a Today/Tomorrow label
+ * flips a day early. Every due-date read in this file must go through this
+ * helper (never `new Date(due_date)` directly) so the list card, the
+ * masthead's "due today" count, and the overdue/sort checks all agree on the
+ * same calendar day. Exported for the regression test. A full timestamp
+ * (already carrying a time component) parses exactly as `new Date` would —
+ * only the bare date-only case needs the local-construction fix.
+ */
+export function parseDueDate(dueDate: string): Date {
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dueDate);
+  if (dateOnlyMatch) {
+    const [, y, m, d] = dateOnlyMatch;
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  }
+  return new Date(dueDate);
+}
+
 function formatDueLabel(dateString: string, now: Date | null): string {
-  const date = new Date(dateString);
+  const date = parseDueDate(dateString);
   if (!now) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
@@ -744,7 +771,12 @@ function FairwayTaskCard({
   const isOverdue =
     !!now &&
     !!task.due_date &&
-    new Date(task.due_date) < now &&
+    // P295 — local-safe parse: `new Date(task.due_date)` reads a date-only
+    // due_date as UTC midnight, which under negative UTC offsets (all of the
+    // US) resolves to the PREVIOUS local day — the same bug that used to
+    // make this card's due label disagree with the masthead's "due today"
+    // count for the identical stored value.
+    parseDueDate(task.due_date) < now &&
     completionRate < 100 &&
     displayStatus !== 'completed';
 
