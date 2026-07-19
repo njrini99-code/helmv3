@@ -84,7 +84,7 @@ describe('StandingStrip — "You" badge vs "TEAM" label overlap (mobile audit sc
     // engine, so this pins the *structural* contract that prevents the
     // collision (two stacked flow boxes, not a proximity threshold) rather
     // than asserting pixel positions.
-    const { container } = render(<StandingStrip {...BASE} player_value={BASE.team_avg} />);
+    const { container } = render(<StandingStrip {...BASE} player_value={BASE.team_avg ?? 0} />);
 
     const badgeTier = container.querySelector('[data-slot="you-badge-tier"]');
     const trackTier = container.querySelector('[data-slot="track-tier"]');
