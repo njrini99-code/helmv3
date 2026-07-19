@@ -32,6 +32,7 @@ import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Badge, Chip } from '@/components/fairway/controls/badge';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { formatToPar } from '@/lib/golf/format-to-par';
+import { formatDateOnlyWeekdayShort, formatDateOnlyShort } from '@/lib/golf/date-only';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 
 // Re-exported so FairwayRoundRow (the ledger-row alternative) and any other
@@ -65,9 +66,16 @@ export function getRoundTypeLabel(type: string | null): string {
   }
 }
 
+// round_date is a DATE column ('YYYY-MM-DD'). `new Date(iso).toLocaleDateString()`
+// with no timeZone pin parses that as UTC midnight then reads it back in the
+// LOCAL timezone, printing the previous calendar day west of UTC (#916's
+// class of bug — FairwayRoundRow already routes through the shared
+// date-only helper for exactly this reason; this card fell out of sync with
+// it, so the SAME round could show a different date on the card vs the row).
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const weekday = formatDateOnlyWeekdayShort(iso);
+  const md = formatDateOnlyShort(iso);
+  return weekday === '—' || md === '—' ? '—' : `${weekday}, ${md}`;
 }
 
 export interface FairwayRoundCardProps {

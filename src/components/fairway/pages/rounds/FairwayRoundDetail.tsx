@@ -53,11 +53,11 @@ import {
   Readout,
   Surface,
   Inset,
-  Sparkline,
   SegmentBar,
   EmptyState,
   Button,
 } from '@/components/fairway';
+import { classifyTrend, TREND_COLOR } from '@/components/fairway/charts/TrendChip';
 import { cn } from '@/lib/utils';
 import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
 
@@ -240,6 +240,22 @@ export function FairwayRoundDetail({
     }
     return counts;
   }, [orderedHoles]);
+
+  // Bug #134/#149: SegmentBar's `primary="good"` auto-pick grabs the FIRST
+  // good-tone part (Eagles), so a typical round with zero eagles led with
+  // "0% eagles" as its single biggest, boldest number — the least
+  // informative figure available. Pick the most informative NON-ZERO bucket
+  // instead, in descending order of how notable it is: an actual eagle is
+  // rare and worth calling out; failing that, birdies; failing that, pars
+  // (the bulk of an ordinary round, still a real positive figure); only a
+  // rough round with neither falls back to bogeys/double+.
+  const heroSegmentIndex = useMemo(() => {
+    if (distribution.eagle > 0) return 0;
+    if (distribution.birdie > 0) return 1;
+    if (distribution.par > 0) return 2;
+    if (distribution.bogey > 0) return 3;
+    return 4;
+  }, [distribution]);
 
   // ── Pulse: rolling score-to-par across the round ────────────────────────────
   // Prefer the persisted momentumData; otherwise recompute the cumulative
@@ -454,13 +470,25 @@ export function FairwayRoundDetail({
             title="Scoring distribution"
             overline="By hole"
             takeaway="How the round broke down by score relative to par."
-            primary="good"
+            primary={heroSegmentIndex}
             parts={[
               { label: 'Eagles', value: distribution.eagle, tone: 'good' },
               { label: 'Birdies', value: distribution.birdie, tone: 'good' },
               { label: 'Pars', value: distribution.par, tone: 'neutral' },
+              // Bug #133: Bogeys and Double+ both carried `tone: 'caution'`,
+              // which resolves to the SAME warning color for both — the
+              // legend listed them as distinct entries but the bar itself
+              // rendered them as one undifferentiated amber block. Double+ is
+              // strictly worse than a single bogey, so it gets a deeper,
+              // still-amber (never red/danger — that hue is reserved for true
+              // errors) shade via an explicit color override, keeping both
+              // segments visually distinct while staying in the warm family.
               { label: 'Bogeys', value: distribution.bogey, tone: 'caution' },
-              { label: 'Double+', value: distribution.double, tone: 'caution' },
+              {
+                label: 'Double+',
+                value: distribution.double,
+                color: 'color-mix(in oklch, var(--fw-color-warning) 55%, var(--fw-color-warm-800))',
+              },
             ]}
           />
         ) : null}
@@ -474,15 +502,8 @@ export function FairwayRoundDetail({
             as="section"
           >
             <div className="flex items-center justify-between gap-5">
-              <div className="min-w-0 overflow-x-auto">
-                <Sparkline
-                  data={pulseSeries}
-                  goodDirection="down"
-                  width={520}
-                  height={64}
-                  strokeWidth={2}
-                  label="Rolling score to par"
-                />
+              <div className="min-w-0 flex-1 overflow-x-auto">
+                <PulseTrace series={pulseSeries} />
               </div>
               <div className="shrink-0">
                 <Readout
@@ -544,6 +565,94 @@ export function FairwayRoundDetail({
         </section>
       </div>
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * PulseTrace — the rolling score-to-par line, drawn PLAINLY (bug #28).
+ * ----------------------------------------------------------------------------
+ * The shared `Sparkline` primitive (charts/Sparkline.tsx) gates its stroke
+ * reveal behind framer-motion's `useInView` — a scroll-triggered
+ * strokeDasharray animation from `pathLength: 0`. For a chart that renders
+ * ALREADY inside the viewport at first paint (the Pulse panel sits directly
+ * under the full 18-hole scorecard, not scrolled far below the fold), that
+ * once-only intersection check can settle before layout/hydration finishes
+ * measuring the real position, leaving the line frozen at `pathLength: 0` —
+ * invisible — while its end-dot (gated on the exact same `inView` flag)
+ * still manages to paint once mounted, i.e. exactly the reported "empty
+ * chart, tiny dot" symptom. A post-round recap's headline chart should never
+ * depend on scroll-timing to become visible, so this draws the trace once,
+ * plainly, with no viewport gating at all — same math as Sparkline's
+ * `toPoints`, same shared trend color vocabulary (TrendChip's
+ * `classifyTrend`/`TREND_COLOR`), just no reveal to get stuck.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+function PulseTrace({
+  series,
+  width = 520,
+  height = 64,
+  strokeWidth = 2,
+}: {
+  series: number[];
+  width?: number;
+  height?: number;
+  strokeWidth?: number;
+}) {
+  const values = series.filter((v): v is number => Number.isFinite(v));
+  if (values.length < 2) return null;
+
+  const pad = Math.max(2, strokeWidth);
+  const innerW = Math.max(1, width - pad * 2);
+  const innerH = Math.max(1, height - pad * 2);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min;
+  const stepX = innerW / (values.length - 1);
+
+  const coords = values.map((v, i) => {
+    const x = pad + i * stepX;
+    // flat series → center vertically (avoids a divide-by-zero baseline)
+    const norm = span === 0 ? 0.5 : (v - min) / span;
+    // SVG y grows downward; a higher (worse, less-negative) to-par sits lower
+    const y = pad + (1 - norm) * innerH;
+    return { x, y };
+  });
+  const points = coords.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+  const last = coords[coords.length - 1]!;
+
+  const first = values[0] as number;
+  const latest = values[values.length - 1] as number;
+  // Golf is lower-is-better: a falling rolling score-to-par is `improving`.
+  const verdict = classifyTrend(latest - first, { goodDirection: 'down' });
+  const color = TREND_COLOR[verdict];
+  const summary = `Rolling score to par: ${verdict} over ${values.length} holes, from ${formatToPar(first)} to ${formatToPar(latest)}.`;
+
+  return (
+    <span
+      data-slot="pulse-trace"
+      role="img"
+      aria-label={summary}
+      className="inline-block align-middle"
+      style={{ width, height }}
+    >
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        fill="none"
+        aria-hidden="true"
+        className="overflow-visible"
+      >
+        <polyline
+          points={points}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx={last.x} cy={last.y} r={strokeWidth + 1.5} fill={color} />
+      </svg>
+    </span>
   );
 }
 

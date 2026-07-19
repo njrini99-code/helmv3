@@ -58,6 +58,7 @@ import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
 import { FairwayUnsyncedRoundBanner } from './FairwayUnsyncedRoundBanner';
+import { parseDateOnly, dateOnlyToUtcDate, type DateOnlyParts } from '@/lib/golf/date-only';
 
 // ── Types ────────────────────────────────────────────────────────────────--
 
@@ -114,29 +115,52 @@ type Grouping = 'month' | 'week';
 type RoundFilter = 'all' | 'practice' | 'qualifier' | 'tournament';
 
 // ── Date helpers (mirror the legacy grouping logic) ─────────────────────────
+//
+// #139: `round_date` is a DATE column ('YYYY-MM-DD'). `new Date(iso)` parses
+// that as UTC midnight; reading it back via `.getFullYear()`/`.getMonth()`/
+// `toLocaleDateString()` with no `timeZone: 'UTC'` pin uses the LOCAL
+// timezone, printing the PREVIOUS calendar day in every US timezone (#916's
+// class of bug). This library grouped rounds by month/week using exactly
+// that unsafe round-trip, so a round could land in a different month/week
+// bucket here than the identical-looking date the Recent Rounds widget (and
+// this file's own FairwayRoundRow, which already goes through the shared
+// date-only helper) showed for the SAME round. Every grouping/range helper
+// below now parses the raw Y/M/D digits directly and formats pinned to UTC.
 
-function getMonthKey(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+function getMonthKey(iso: string): string {
+  const parts = parseDateOnly(iso);
+  if (!parts) return 'Unknown';
+  return dateOnlyToUtcDate(parts).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
-/** Monday of the ISO week the date falls in. */
-function getWeekStart(d: Date): Date {
-  const out = new Date(d);
-  out.setHours(0, 0, 0, 0);
-  const day = out.getDay() || 7; // Sunday → 7
-  if (day !== 1) out.setDate(out.getDate() - (day - 1));
-  return out;
+/** Monday (UTC) of the ISO week the date falls in, or `null` for unparseable input. */
+function getWeekStart(iso: string): Date | null {
+  const parts = parseDateOnly(iso);
+  if (!parts) return null;
+  const d = dateOnlyToUtcDate(parts);
+  const day = d.getUTCDay() || 7; // Sunday → 7
+  if (day !== 1) d.setUTCDate(d.getUTCDate() - (day - 1));
+  return d;
 }
 
-function getWeekKey(date: Date): string {
-  const start = getWeekStart(date);
+function getWeekKey(iso: string): string {
+  const start = getWeekStart(iso);
+  if (!start) return 'Unknown';
   const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  const sameMonth = start.getMonth() === end.getMonth();
-  const startLabel = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  end.setUTCDate(end.getUTCDate() + 6);
+  const sameMonth = start.getUTCMonth() === end.getUTCMonth();
+  const startLabel = start.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
   const endLabel = sameMonth
-    ? String(end.getDate())
-    : end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    ? String(end.getUTCDate())
+    : end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   return `${startLabel} – ${endLabel}`;
 }
 
@@ -158,26 +182,28 @@ function normalizedScore(round: RoundLibraryRound): number | null {
 /** Honest month range over the rounds, e.g. "Jan–Apr 2026" or "Apr 2026". */
 function honestRange(rounds: RoundLibraryRound[]): string | null {
   const dates = rounds
-    .map((r) => new Date(r.round_date))
-    .filter((d) => !Number.isNaN(d.getTime()))
+    .map((r) => parseDateOnly(r.round_date))
+    .filter((p): p is DateOnlyParts => p !== null)
+    .map(dateOnlyToUtcDate)
     .sort((a, b) => a.getTime() - b.getTime());
   if (dates.length === 0) return null;
   const first = dates[0]!;
   const last = dates[dates.length - 1]!;
   const sameMonth =
-    first.getFullYear() === last.getFullYear() && first.getMonth() === last.getMonth();
+    first.getUTCFullYear() === last.getUTCFullYear() && first.getUTCMonth() === last.getUTCMonth();
   if (sameMonth) {
-    return first.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    return first.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
   }
-  const sameYear = first.getFullYear() === last.getFullYear();
-  const firstLabel = first.toLocaleDateString('en-US', { month: 'short' });
+  const sameYear = first.getUTCFullYear() === last.getUTCFullYear();
+  const firstLabel = first.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
   const lastLabel = last.toLocaleDateString('en-US', {
     month: 'short',
     year: 'numeric',
+    timeZone: 'UTC',
   });
   return sameYear
     ? `${firstLabel}–${lastLabel}`
-    : `${first.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} – ${lastLabel}`;
+    : `${first.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })} – ${lastLabel}`;
 }
 
 // ── Per-month summary (label + honest mini-stats + Sparkline) ───────────────
@@ -214,8 +240,39 @@ export function FairwayRoundsLibrary({
   const [search, setSearch] = React.useState<string>('');
 
   const isCoach = userRole === 'coach';
+
+  // #129/#145 — dedupe pixel-identical "in progress" drafts before they ever
+  // reach the banner. Multiple in-progress rows for the same course/hole/type
+  // (an emergency-save retry, a double-tap on "New round", etc.) render as
+  // indistinguishable clutter above the real history with no way to tell them
+  // apart. This is a DISPLAY-layer resolve only — it never deletes anything
+  // server-side (Golf's no-destructive-writes rule); it just keeps the single
+  // most-recently-updated draft per distinct (course, current hole, holes
+  // target, round type) fingerprint so a player sees ONE resumable card per
+  // actual in-progress attempt.
+  const dedupedInProgressRounds = React.useMemo(() => {
+    const bestByKey = new Map<string, RoundLibraryRound>();
+    for (const r of inProgressRounds) {
+      const key = [
+        r.course_name ?? '',
+        r.current_hole ?? 0,
+        r.holes_played ?? 18,
+        r.round_type ?? '',
+      ].join('|');
+      const existing = bestByKey.get(key);
+      if (!existing) {
+        bestByKey.set(key, r);
+        continue;
+      }
+      const existingTs = existing.updated_at ?? existing.created_at ?? '';
+      const candidateTs = r.updated_at ?? r.created_at ?? '';
+      if (candidateTs > existingTs) bestByKey.set(key, r);
+    }
+    return Array.from(bestByKey.values());
+  }, [inProgressRounds]);
+
   // Coaches NEVER get the in-progress section or the New-round CTA.
-  const showUnfinished = !isCoach && inProgressRounds.length > 0;
+  const showUnfinished = !isCoach && dedupedInProgressRounds.length > 0;
 
   // P210 — coach-only player roster derived from the rounds in memory. Built as
   // de-duped, alphabetically-sorted options so a coach can scope to one player.
@@ -294,12 +351,13 @@ export function FairwayRoundsLibrary({
   const grouped = React.useMemo(() => {
     const map: Record<string, { label: string; rounds: RoundLibraryRound[] }> = {};
     for (const r of filteredRounds) {
-      const d = new Date(r.round_date);
+      const parts = parseDateOnly(r.round_date);
+      if (!parts) continue;
       const key =
         grouping === 'month'
-          ? `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`
-          : `${d.getFullYear()}-${String(getWeekStart(d).getTime())}`;
-      const label = grouping === 'month' ? getMonthKey(d) : getWeekKey(d);
+          ? `${parts.year}-${String(parts.month).padStart(2, '0')}`
+          : `${parts.year}-${String(getWeekStart(r.round_date)?.getTime() ?? 0)}`;
+      const label = grouping === 'month' ? getMonthKey(r.round_date) : getWeekKey(r.round_date);
       if (!map[key]) map[key] = { label, rounds: [] };
       map[key]!.rounds.push(r);
     }
@@ -316,7 +374,10 @@ export function FairwayRoundsLibrary({
       rounds
         .filter((r) => r.total_score !== null && r.total_score > 0)
         .slice()
-        .sort((a, b) => new Date(a.round_date).getTime() - new Date(b.round_date).getTime()),
+        // round_date is a bare 'YYYY-MM-DD' — lexicographic string comparison
+        // IS chronological order for that format, and sidesteps any
+        // timezone-dependent Date parsing entirely (#139).
+        .sort((a, b) => a.round_date.localeCompare(b.round_date)),
     [rounds],
   );
   const scoreSeries = React.useMemo(
@@ -415,6 +476,10 @@ export function FairwayRoundsLibrary({
           required={3}
           className="bg-surface border border-border-subtle shadow-flat"
         />
+        {/* Bug #33: 5 tiles in a mobile `grid-cols-2` grid lay out 2 / 2 / 1 —
+            a lone orphaned tile on its own half-width row, with a dead gap
+            beside it. Spanning this last tile full-width below `md` turns
+            that into an even 2×2 + one full-width closer instead. */}
         <StatTile
           label="% under par"
           value={starved ? undefined : stats!.underParPct}
@@ -428,7 +493,7 @@ export function FairwayRoundsLibrary({
           unit="rounds"
           current={stats?.totalRounds ?? 0}
           required={3}
-          className="bg-surface border border-border-subtle shadow-flat"
+          className="col-span-2 bg-surface border border-border-subtle shadow-flat md:col-span-1"
         />
       </div>
 
@@ -456,14 +521,14 @@ export function FairwayRoundsLibrary({
       )}
 
       {/* ── 1. (player only) In-progress banner ───────────────────────────--*/}
-      {showUnfinished && <FairwayUnfinishedBanner rounds={inProgressRounds} />}
+      {showUnfinished && <FairwayUnfinishedBanner rounds={dedupedInProgressRounds} />}
 
       {/* ── 1b. (player only) Never-synced device recovery breadcrumb ──────--*/}
       {/* Surfaces a `_new` localStorage round that never reached the server
           (hard-offline session → boot). Self-suppresses when a SERVER
           in-progress round exists, so it never duplicates the banner above. */}
       {!isCoach && (
-        <FairwayUnsyncedRoundBanner hasServerInProgress={inProgressRounds.length > 0} />
+        <FairwayUnsyncedRoundBanner hasServerInProgress={dedupedInProgressRounds.length > 0} />
       )}
 
       {/* ── Honest empty: zero completed rounds ───────────────────────────--*/}
@@ -532,8 +597,17 @@ export function FairwayRoundsLibrary({
               </div>
             </div>
 
-            {/* Type pills + Month/Week toggle. */}
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Type pills + Month/Week toggle.
+                Bug #148: pills + the `ml-auto` toggle used to share ONE
+                `flex-wrap` row, so once the 4 pills overflowed onto a second
+                line (a lopsided 3+1), the toggle — still pinned to the FIRST
+                line by `ml-auto` — stranded itself with a dead gap where the
+                4th pill should have been. Splitting them into their own
+                `flex-wrap` groups inside a row that only becomes `sm:flex-row`
+                lets the pills wrap evenly across full-width lines on mobile,
+                and drops the toggle to its own full-width line below them
+                instead of getting wedged onto the pills' first line. */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
                 {(['all', 'practice', 'qualifier', 'tournament'] as RoundFilter[]).map((f) => (
                   <FilterPill
@@ -548,7 +622,7 @@ export function FairwayRoundsLibrary({
                   </FilterPill>
                 ))}
               </div>
-              <div className="ml-auto">
+              <div className="shrink-0">
                 <Segmented<Grouping>
                   size="sm"
                   aria-label="Group rounds by"
