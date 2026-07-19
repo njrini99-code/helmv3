@@ -488,6 +488,21 @@ export function FairwayBrief({
     : [];
   const weakestLeadInsight = weakest?.cat?.insights[0] ?? null;
 
+  // ── Honesty guard #2: the per-round strokes-gained-vs-par numbers (the
+  //    shot-analysis avgSG / dead-zone deficit that feed the Ribbon and the
+  //    "worst category" read) can come back with impossible magnitudes when the
+  //    loader feeds cumulative/season SG into a per-round benchmark — e.g.
+  //    −37.11, which even names the team's BEST putter as worst. When ANY of
+  //    those true-SG numbers is out of the plausible per-round band the
+  //    worst-category read is uncalibrated, so we dim the focal hero to the
+  //    EXISTING "awaiting" instrument and hedge the foot strip rather than
+  //    assert an authoritative weakness. PRESENTATION-ONLY; loader untouched.
+  const sgVsParSamples: number[] = [
+    ...curve.map((b) => b.avgSG),
+    ...deadZones.map((z) => z.deficit),
+  ];
+  const isSgCalibrated = !sgVsParSamples.some((v) => isImplausibleSG(v));
+
   // ── Content-dedup (W3 audit): does the hero ABOVE already show the weakest
   //    category's lead-insight sentence (headline support text, or the foot
   //    strip's own honest fallback)? If so, the Category Detail row for that
@@ -505,21 +520,6 @@ export function FairwayBrief({
         ? weakestLeadInsight.id
         : null
       : null;
-
-  // ── Honesty guard #2: the per-round strokes-gained-vs-par numbers (the
-  //    shot-analysis avgSG / dead-zone deficit that feed the Ribbon and the
-  //    "worst category" read) can come back with impossible magnitudes when the
-  //    loader feeds cumulative/season SG into a per-round benchmark — e.g.
-  //    −37.11, which even names the team's BEST putter as worst. When ANY of
-  //    those true-SG numbers is out of the plausible per-round band the
-  //    worst-category read is uncalibrated, so we dim the focal hero to the
-  //    EXISTING "awaiting" instrument and hedge the foot strip rather than
-  //    assert an authoritative weakness. PRESENTATION-ONLY; loader untouched.
-  const sgVsParSamples: number[] = [
-    ...curve.map((b) => b.avgSG),
-    ...deadZones.map((z) => z.deficit),
-  ];
-  const isSgCalibrated = !sgVsParSamples.some((v) => isImplausibleSG(v));
 
   // DISTINCT players needing attention across categories — NOT a sum of each
   // category's attentionCount. A player can be flagged in 2+ categories (e.g.
