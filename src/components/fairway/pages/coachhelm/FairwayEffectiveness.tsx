@@ -1232,8 +1232,11 @@ function PredictionsCalibrationFull({
 }
 
 /* INSIGHTS — the TRUST drill-down. Leads with the ledger-backed trust band +
-   per-insight table (P1-12), then the by-type effectiveness chart. */
-function InsightEffectivenessSection({
+   per-insight table (P1-12), then the by-type effectiveness chart. Exported
+   for unit testing only (mirrors the `CalibrationInstrument` export above —
+   the "one honest empty-state pattern" regression test renders this
+   directly rather than the whole `FairwayEffectiveness` page). */
+export function InsightEffectivenessSection({
   data,
   trust,
 }: {
@@ -1254,42 +1257,41 @@ function InsightEffectivenessSection({
       <InsightTrustBand trust={trust} />
       <InsightTrustTable trust={trust} />
 
-      {/* ── By-type effectiveness — honest until outcomes exist. ── */}
+      {/* ── By-type effectiveness — honest until outcomes exist. ──
+          ONE empty-state surface, not two: this used to stack a bare
+          `ChartCard state="insufficient-data"` box directly above a second,
+          richer `InsufficientData` panel — both saying "no outcomes
+          recorded yet" for the exact same `outcomesMeasured === 0` check, a
+          split-personality "no data" moment on one page. `InsufficientData`
+          (with its progress meter + CTA) is the SAME honest pattern
+          `OutcomesInstrument` and `PatternImpactDeck` already use elsewhere
+          on this page, so it's also the one kept here. */}
       {outcomesMeasured === 0 ? (
-        <div className="flex flex-col gap-6">
-          <ChartCard
-            title="Insight effectiveness"
-            subtitle="How well insights translate into recorded outcomes"
-            state="insufficient-data"
-            stateMessage="Outcome tracking not yet enabled — record focus-area outcomes to measure effectiveness."
-            height={200}
-          />
-          <Surface padding="md">
-            <div className="flex flex-col gap-3">
-              <InsufficientData
-                title="Effectiveness is not measured yet"
-                description={
-                  generated > 0
-                    ? `${generated} insights have surfaced, but none has a recorded outcome yet. Effectiveness becomes meaningful once coaches mark focus areas improved / no change / worsened.`
-                    : 'No insights have surfaced in this window yet.'
-                }
-                unit="recorded outcomes"
-                current={0}
-                required={1}
-              />
-              <div className="flex justify-center">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  asChild
-                  rightIcon={<ArrowRight className="h-4 w-4" />}
-                >
-                  <Link href="/golf/dashboard/development">Go to Players to record outcomes</Link>
-                </Button>
-              </div>
+        <Surface padding="md">
+          <div className="flex flex-col gap-3">
+            <InsufficientData
+              title="Effectiveness is not measured yet"
+              description={
+                generated > 0
+                  ? `${generated} insights have surfaced, but none has a recorded outcome yet. Effectiveness becomes meaningful once coaches mark focus areas improved / no change / worsened.`
+                  : 'No insights have surfaced in this window yet.'
+              }
+              unit="recorded outcomes"
+              current={0}
+              required={1}
+            />
+            <div className="flex justify-center">
+              <Button
+                variant="secondary"
+                size="sm"
+                asChild
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+              >
+                <Link href="/golf/dashboard/development">Go to Players to record outcomes</Link>
+              </Button>
             </div>
-          </Surface>
-        </div>
+          </div>
+        </Surface>
       ) : (
         <BarCompare
           title="Effectiveness by insight type"

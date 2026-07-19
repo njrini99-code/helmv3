@@ -206,7 +206,7 @@ function playerName(p?: PlayersGridPlayer | null): string {
  * Per-player roster row (one player + their stat snapshot)
  * ------------------------------------------------------------------------- */
 
-interface RosterRow {
+export interface RosterRow {
   player: PlayersGridPlayer;
   stats: PlayersGridStats | undefined;
   activeCount: number;
@@ -729,6 +729,26 @@ export function PlayersGridView({
     [goalsByPlayer, silentPostureByPlayer],
   );
 
+  /* ---- roster empty state (shared by the mobile card list + the desktop
+         DataTable's own emptyState slot — one definition, two render sites). ---- */
+  const rosterEmptyState = loadError ? (
+    // P099 — when the load failed, an empty roster is a SYMPTOM of the
+    // failure, not a real "no players" state. Show an honest error empty
+    // (the top-of-page InlineNotice carries the detail) instead of the
+    // cheerful add-players prompt that would mask it.
+    <EmptyState
+      icon={LucideTarget}
+      title="Couldn't load the roster"
+      description="We hit an error loading your players. Try refreshing the page."
+    />
+  ) : (
+    <EmptyState
+      icon={LucideTarget}
+      title="No players on the active roster"
+      description="Add players to your team to assign development focus areas."
+    />
+  );
+
   /* ---- header actions ---- */
 
   const headerActions = (
@@ -803,54 +823,69 @@ export function PlayersGridView({
                 Tap a player to scope their focus areas
               </p>
             </div>
-            {/* The DataTable owns its OWN bordered matte surface (rounded-card +
-                border-border-subtle + bg-surface). No outer Surface wrapper —
-                wrapping it would nest two bordered/rounded panels (a faint double
-                hairline). */}
-            <DataTable<RosterRow>
-              data={rosterRows}
-              columns={columns}
-              density="comfortable"
-              getRowId={(r) => r.player.id}
-              ariaLabel="Team roster with development snapshot"
-              onRowClick={(r) => {
-                setSelectedPlayerId(r.player.id);
-                setView('areas');
-              }}
-              rowActions={[
-                {
-                  id: 'add',
-                  label: 'Add focus area',
-                  icon: <IconPlus size={16} />,
-                  onSelect: (r) => openCreate(r.player.id),
-                },
-                {
-                  id: 'genome',
-                  label: 'View genome',
-                  icon: <IconChevronRight size={16} />,
-                  onSelect: (r) => router.push(`/golf/dashboard/players/${r.player.id}/genome`),
-                },
-              ]}
-              emptyState={
-                loadError ? (
-                  /* P099 — when the load failed, an empty roster is a SYMPTOM of
-                     the failure, not a real "no players" state. Show an honest
-                     error empty (the top-of-page InlineNotice carries the detail)
-                     instead of the cheerful add-players prompt that would mask it. */
-                  <EmptyState
-                    icon={LucideTarget}
-                    title="Couldn't load the roster"
-                    description="We hit an error loading your players. Try refreshing the page."
+            {/* MOBILE (< sm) — native player cards: identity + avg score + trend,
+                with "Add focus area" / "View genome" as always-visible tap
+                targets. A desktop DataTable squeezed to a 390px viewport
+                clipped the Focus-status / Add-focus-area / View-genome columns
+                off-screen entirely, and DataTable's row actions only reveal on
+                hover/focus-within — unreachable without a pointer (audit W2).
+                Desktop keeps the dense table (below) unchanged. */}
+            <div className="flex flex-col gap-3 sm:hidden">
+              {rosterRows.length === 0 ? (
+                <div className="rounded-card border border-border-subtle bg-surface">
+                  {rosterEmptyState}
+                </div>
+              ) : (
+                rosterRows.map((row) => (
+                  <RosterPlayerCard
+                    key={row.player.id}
+                    row={row}
+                    muted={!!silentPostureByPlayer[row.player.id]}
+                    onOpenAreas={() => {
+                      setSelectedPlayerId(row.player.id);
+                      setView('areas');
+                    }}
+                    onAddFocusArea={() => openCreate(row.player.id)}
+                    onViewGenome={() =>
+                      router.push(`/golf/dashboard/players/${row.player.id}/genome`)
+                    }
                   />
-                ) : (
-                  <EmptyState
-                    icon={LucideTarget}
-                    title="No players on the active roster"
-                    description="Add players to your team to assign development focus areas."
-                  />
-                )
-              }
-            />
+                ))
+              )}
+            </div>
+
+            {/* DESKTOP (sm+) — the dense DataTable. It owns its OWN bordered
+                matte surface (rounded-card + border-border-subtle + bg-surface).
+                No outer Surface wrapper — wrapping it would nest two
+                bordered/rounded panels (a faint double hairline). */}
+            <div className="hidden sm:block">
+              <DataTable<RosterRow>
+                data={rosterRows}
+                columns={columns}
+                density="comfortable"
+                getRowId={(r) => r.player.id}
+                ariaLabel="Team roster with development snapshot"
+                onRowClick={(r) => {
+                  setSelectedPlayerId(r.player.id);
+                  setView('areas');
+                }}
+                rowActions={[
+                  {
+                    id: 'add',
+                    label: 'Add focus area',
+                    icon: <IconPlus size={16} />,
+                    onSelect: (r) => openCreate(r.player.id),
+                  },
+                  {
+                    id: 'genome',
+                    label: 'View genome',
+                    icon: <IconChevronRight size={16} />,
+                    onSelect: (r) => router.push(`/golf/dashboard/players/${r.player.id}/genome`),
+                  },
+                ]}
+                emptyState={rosterEmptyState}
+              />
+            </div>
           </section>
         ) : (
           <div className="flex flex-col gap-6">
@@ -1053,6 +1088,107 @@ export function PlayersGridView({
         </ModalShell.Footer>
       </ModalShell>
     </CoachHelmShell>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * RosterPlayerCard — the phone-native roster row (< sm). Recomposed for the
+ * phone rather than a squeezed desktop table: identity + avg score + trend
+ * lead the card, and "Add focus area" / "View genome" render as their own
+ * always-visible tap targets below a divider — not a hover-revealed action
+ * column that a touch pointer can never trigger (audit W2).
+ * ------------------------------------------------------------------------- */
+
+export function RosterPlayerCard({
+  row,
+  muted,
+  onOpenAreas,
+  onAddFocusArea,
+  onViewGenome,
+}: {
+  row: RosterRow;
+  muted: boolean;
+  onOpenAreas: () => void;
+  onAddFocusArea: () => void;
+  onViewGenome: () => void;
+}) {
+  const { player, stats } = row;
+  const metaText =
+    `${player.graduation_year ? `'${String(player.graduation_year).slice(-2)}` : ''}` +
+    `${
+      player.handicap != null
+        ? `${player.graduation_year ? ' · ' : ''}${player.handicap < 0 ? '+' : ''}${Math.abs(player.handicap)} HCP`
+        : ''
+    }`;
+  const trend = stats?.recent_trend ?? null;
+
+  return (
+    <div className="flex flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4">
+      {/* eslint-disable-next-line helm/no-raw-button -- wraps the composed
+          PlayerIdentity row (avatar + name + meta + trailing stat/trend);
+          the Fairway <Button> CHILDREN CONTRACT requires a single child and
+          can't host this multi-node row. */}
+      <button
+        type="button"
+        onClick={onOpenAreas}
+        className="flex w-full items-center justify-between gap-3 rounded-fw-sm text-left transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] active:translate-y-[0.5px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+      >
+        <PlayerIdentity
+          name={playerName(player)}
+          avatarUrl={player.avatar_url}
+          size="sm"
+          meta={metaText || undefined}
+          nameAddon={
+            muted ? (
+              <Badge
+                tone="neutral"
+                variant="outline"
+                size="sm"
+                title="Alert posture is set to Silent for this player — CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+              >
+                Insights muted
+              </Badge>
+            ) : undefined
+          }
+          trailing={
+            <div className="flex items-center gap-2">
+              {stats?.avg_score != null ? (
+                <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">
+                  {stats.avg_score}
+                </span>
+              ) : (
+                <span className="font-fw-sans text-eyebrow text-text-tertiary">—</span>
+              )}
+              {trend ? (
+                <TrendGlyph direction={trend} className="font-fw-sans text-caption font-medium" />
+              ) : null}
+              <IconChevronRight size={16} className="text-text-tertiary" aria-hidden />
+            </div>
+          }
+        />
+      </button>
+
+      <div className="flex items-center gap-2 border-t border-border-subtle pt-3">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="flex-1"
+          leftIcon={<IconPlus size={15} />}
+          onClick={onAddFocusArea}
+        >
+          Add focus area
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="flex-1"
+          rightIcon={<IconChevronRight size={15} />}
+          onClick={onViewGenome}
+        >
+          View genome
+        </Button>
+      </div>
+    </div>
   );
 }
 

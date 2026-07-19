@@ -49,6 +49,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Check, X, Target, ChevronDown, ChevronRight, RefreshCw, SlidersHorizontal, User } from 'lucide-react';
 
 import { CoachHelmShell } from './CoachHelmShell';
@@ -220,8 +221,18 @@ function setsEqual(a: Set<string>, b: Set<string>): boolean {
  * column forced eyebrow labels like "ESTIMATED 3-PUTT RATE (15+ FT)" to wrap
  * one word per line. From `sm` up, the original column grid (3-up on the
  * feed card, 2-up in the narrower panel) is unchanged.
+ *
+ * The mobile row's value column (`dd`) is capped at `max-w-[45%]` (audit W2):
+ * it previously carried an unconditional `shrink-0` with NO ceiling, while the
+ * label (`dt`) had no floor beyond `min-w-0` — so a wide value+gloss (e.g. a
+ * pattern's "high · costing" gloss beside a signed stroke figure) could claim
+ * however much of the row it wanted, squeezing a genuinely long label (like
+ * the example above) down to a sliver and forcing it across many more lines
+ * than the row's own gap could visually separate from the value beside it.
+ * Capping `dd` guarantees `dt` always keeps the majority share of the row, so
+ * a long label wraps to a reasonable couple of lines instead of collapsing.
  */
-function EvidenceList({
+export function EvidenceList({
   items,
   columns,
 }: {
@@ -243,7 +254,7 @@ function EvidenceList({
           <dt className="min-w-0 font-fw-sans text-eyebrow uppercase text-text-tertiary">
             {e.label}
           </dt>
-          <dd className="shrink-0 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:text-left">
+          <dd className="max-w-[45%] shrink-0 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:max-w-none sm:text-left">
             {e.value}
             {e.gloss ? (
               <span className="ml-1 font-fw-sans text-caption text-text-tertiary">{e.gloss}</span>
@@ -442,6 +453,42 @@ export function FairwayCoachHelmSignals({
   const [view, setView] = useState<SignalsView>(
     (sp.view as SignalsView) ?? defaultFilter?.view ?? (isPatterns ? 'grouped' : 'feed'),
   );
+
+  /* -- W2: mobile triage default (audit finding) --------------------------
+        The bare fallback above (`isPatterns ? 'grouped' : 'feed'`) is what
+        /alerts renders with — /insights and /patterns both already pin an
+        explicit `defaultFilter.view` ('table' / 'grouped'), so this is the
+        ONE default a coach actually hits unmodified. On a phone, 'feed'
+        combined with the default `groupBy: 'player'` still renders each
+        player's group as FULL InsightCards (evidence Inset + 3 full-weight
+        buttons) — a reading assignment, not a triage list (the audited
+        ~31,000px / 37-screen Signals feed). The `table`/`grouped` presets
+        already render the dense one-line-row treatment this needs; the fix
+        is choosing THAT by default under `sm`, not inventing a new one.
+
+        `useMediaQuery` is SSR-safe (server snapshot = false, mobile-first —
+        see AppShell's identical usage): the very first paint on an actual
+        phone already matches (no correction needed), and on an actual
+        desktop viewport React corrects the value synchronously BEFORE paint,
+        so this never produces a hydration mismatch or a visible flash on
+        either device class.
+
+        The override only ever applies to the UNTOUCHED default: a `?view=`
+        in the URL, a route's own `defaultFilter.view`, or the coach tapping
+        ANY option in the toolbar (`viewTouched`) all take precedence
+        permanently for the rest of the session — the existing toggle keeps
+        working exactly as before, on every viewport. */
+  const isCompactViewport = !useMediaQuery('(min-width: 640px)');
+  const [viewTouched, setViewTouched] = useState(false);
+  const hasExplicitViewPreset = Boolean(sp.view || defaultFilter?.view);
+  const mobileTriageDefaultActive =
+    isCompactViewport && !hasExplicitViewPreset && !viewTouched;
+  /** The view every RENDER decision (grouping/compact/hero + the toolbar's
+   *  own highlighted option) reads. `view` itself stays the coach's true,
+   *  URL-synced preference — `displayView` only ever diverges from it while
+   *  `mobileTriageDefaultActive` is active, and collapses back to `view` the
+   *  instant that stops being true. */
+  const displayView: SignalsView = mobileTriageDefaultActive ? 'grouped' : view;
 
   /* Grouping axis — the coach can swap player↔category from the toolbar. The
      insights triage workspace groups by player by default so a coach scans by
@@ -1153,6 +1200,9 @@ export function FairwayCoachHelmSignals({
   };
 
   const onViewChange = (v: SignalsView) => {
+    // The coach has now made an explicit choice — the mobile triage default
+    // (`mobileTriageDefaultActive`) must never override it again this session.
+    setViewTouched(true);
     setView(v);
     syncUrl({ view: v });
   };
@@ -1259,7 +1309,8 @@ export function FairwayCoachHelmSignals({
   // While the smart-default shortlist is active, render it FLAT — a curated
   // cross-player triage list fragments badly grouped one-row-per-player.
   const grouped =
-    !smartDefaultActive && (view === 'grouped' || (view === 'feed' && groupBy !== 'none'));
+    !smartDefaultActive &&
+    (displayView === 'grouped' || (displayView === 'feed' && groupBy !== 'none'));
   const groups = useMemo(() => {
     if (groupBy === 'none' || !grouped) return null;
     const map = new Map<string, SignalRow[]>();
@@ -1674,23 +1725,33 @@ export function FairwayCoachHelmSignals({
         />
 
         {/* honest summary tiles — never fabricate a 0%; show counts only.
-            Compact 3-up even on mobile so the triage feed isn't pushed below
-            the fold by three full-width stacked cards (premium-polish pass).
-            All three tiles are scoped to the ACTIVE sub-tab's own data (its
-            own fetch/state) — the label now says so explicitly ("Open
+            2-up on phone (the 3rd tile spans the full second row), 3-up from
+            `sm:` up. A fixed 3-up grid at EVERY width (the prior layout) gave
+            each phone-width tile ~110px — not enough room for a label like
+            "Showing patterns" or "Urgent + high", which truncated identically
+            on Alerts/Insights/Patterns (all 3 share this one header). 2-up
+            roughly triples the per-tile width at phone size; `labelLines={2}`
+            is a defensive second line (rather than a hard ellipsis) for the
+            rare case a label still doesn't fit on one line (e.g. the smallest
+            phones). All three tiles are scoped to the ACTIVE sub-tab's own
+            data (its own fetch/state) — the label says so explicitly ("Open
             alerts" on /alerts, "Open insights" on /insights, "Open patterns"
             on /patterns) instead of a generic "Open signals" that read as if
             it were a stable team-wide number, silently re-scoping as the
             coach switched tabs. */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <MetricCard label={`Open ${SIGNAL_NOUN[activeSegment]}`} value={summary.open} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <MetricCard
+            label={`Open ${SIGNAL_NOUN[activeSegment]}`}
+            value={summary.open}
+            labelLines={2}
+          />
           {/* P035: no `goodDirection` here — it only colors a `delta` chip, and
               there is no delta on this tile, so it was a dead no-op prop.
               Scoped to the SAME open rows as the tile before it (see the
               `summary` useMemo above), so this can never read higher than
               "Open" — it's a severity breakdown OF the open count, not an
               independent count across every loaded row regardless of status. */}
-          <MetricCard label="Urgent + high" value={summary.urgent} />
+          <MetricCard label="Urgent + high" value={summary.urgent} labelLines={2} />
           {/* "Showing" (not "Loaded" — dev-speak a coach shouldn't have to
               parse, and not "Total", which over-claims completeness when more
               are eligible than loaded: the read caps at limit:100 and the
@@ -1705,11 +1766,15 @@ export function FairwayCoachHelmSignals({
               (alerts + insights + patterns combined) instead of the honest
               "13 loaded, 10 of them open" relationship. Suffixing the same
               `SIGNAL_NOUN` the Open tile already uses makes both tiles read
-              as one obviously-related pair. */}
+              as one obviously-related pair. Spans both phone columns (its own
+              full row) since it also carries the "of N" footnote — the
+              longest content of the three tiles gets the most room. */}
           <MetricCard
             label={`Showing ${SIGNAL_NOUN[activeSegment]}`}
             value={summary.total}
             footnote={loadedFootnote}
+            labelLines={2}
+            className="col-span-2 sm:col-span-1"
           />
         </div>
 
@@ -1743,7 +1808,7 @@ export function FairwayCoachHelmSignals({
             syncUrl({ category: new Set() });
           }}
           viewOptions={VIEW_OPTIONS}
-          view={view}
+          view={displayView}
           onViewChange={onViewChange}
           appliedChips={appliedChips}
           onExport={!isPatterns ? handleExport : undefined}
@@ -1906,7 +1971,7 @@ export function FairwayCoachHelmSignals({
                 Compact view `grouped` is always false, so the segmented control
                 would change state with zero visible effect (dead UI). Hide it
                 there (and while the smart-default flat shortlist is active). */}
-            {!smartDefaultActive && view !== 'table' ? (
+            {!smartDefaultActive && displayView !== 'table' ? (
               <div className="flex items-center gap-3">
                 <span className="font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
                   Group
@@ -2037,10 +2102,12 @@ export function FairwayCoachHelmSignals({
                   <div id={sectionId} className="flex flex-col gap-3">
                     {visible.map((r, ri) =>
                       // the single hero card sits at the very top of the workspace
-                      // (feed only); the dedicated grouped view stays dense/compact.
-                      gi === 0 && ri === 0 && view === 'feed'
+                      // (feed only); the dedicated grouped view — and the mobile
+                      // triage default (`displayView`, see above) — stays dense/
+                      // compact, so a phone never gets a hero-then-full-card group.
+                      gi === 0 && ri === 0 && displayView === 'feed'
                         ? renderCard(r, { hero: true })
-                        : renderCard(r, { compact: view === 'grouped' }),
+                        : renderCard(r, { compact: displayView === 'grouped' }),
                     )}
                   </div>
                   {overflow > 0 ? (
@@ -2066,7 +2133,7 @@ export function FairwayCoachHelmSignals({
               );
             })}
           </div>
-        ) : view === 'table' ? (
+        ) : displayView === 'table' ? (
           <div className="flex flex-col gap-2">
             {rows.map((r) => renderCard(r, { compact: true }))}
           </div>

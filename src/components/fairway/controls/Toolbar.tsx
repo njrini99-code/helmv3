@@ -26,8 +26,16 @@
  * controls group never depends on the overlays CSS module being loaded.
  *
  * The bulk-action bar (slot: `bulkActions`) is "transient floating chrome"
- * (allow-list #5 — the "X selected" bar): it materializes in place of the row's
- * controls when `selectedCount > 0`, on the same warm glass, and is what the
+ * (allow-list #5 — the "X selected" bar): when `selectedCount > 0` it DOCKS to
+ * the bottom edge of the viewport (`fixed inset-x-0 bottom-0`, the same
+ * viewport-relative technique the Sheet primitive uses for its own bottom
+ * edge), on the same warm glass. It no longer swaps in PLACE of the row's own
+ * controls (search/filters/view-toggle) — that used to hide them for the
+ * whole time a coach had rows selected, and on a long scrolled list the
+ * in-place swap "stuck" wherever the toolbar's own (short) box happened to be
+ * rather than at a real screen edge, reading as a floating mid-page bar that
+ * covered list content. Docking it to the bottom means it never competes with
+ * the filter row for space and always lands at a real edge. This is what the
  * Signals surface wires to the (currently dead-coded) alerts.ts bulk actions.
  *
  * Slots:  search · filters · viewToggle · primaryAction · bulkActions
@@ -102,12 +110,12 @@ export interface ToolbarProps {
   appliedChips?: ReactNode;
   /**
    * The bulk-action cluster (Button/IconButton row). When `selectedCount > 0`
-   * this slot REPLACES the row's controls with the floating "X selected" chrome
-   * bar. This is the slot the Signals surface wires to the dead-coded alerts.ts
-   * bulk actions.
+   * this renders inside a bar DOCKED to the bottom edge of the viewport,
+   * separate from (never replacing) the row's own controls. This is the slot
+   * the Signals surface wires to the dead-coded alerts.ts bulk actions.
    */
   bulkActions?: ReactNode;
-  /** Number of currently-selected rows. >0 swaps in the bulk-action bar. */
+  /** Number of currently-selected rows. >0 shows the docked bulk-action bar. */
   selectedCount?: number;
   /** Label for the bulk bar's leading count (e.g. "signal"). Default "selected". */
   selectionNoun?: string;
@@ -178,9 +186,12 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
     return () => io.disconnect();
   }, [sticky, stickyTop]);
 
-  // The row carries the warm glass when STUCK (sticky slot) OR while the bulk
-  // bar is up (transient chrome slot). Otherwise it stays fully matte.
-  const onGlass = (sticky && stuck) || hasSelection;
+  // The row carries the warm glass only when STUCK (sticky slot). The bulk
+  // bar is no longer rendered inside this row (it docks to the bottom edge
+  // below), so a live selection no longer has anything to do with THIS row's
+  // material — the filter controls stay matte-at-rest exactly as when nothing
+  // is selected.
+  const onGlass = sticky && stuck;
 
   // One merged style: sticky offset/z-index (always when sticky) + the warm
   // glass tint/edge tokens (only when on-glass). Matte at rest carries no inline
@@ -219,15 +230,107 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
           className,
         )}
       >
-        <AnimatePresence initial={false} mode="wait">
-          {hasSelection ? (
-            <motion.div
-              key="bulk"
-              initial={reduceMotion ? false : { opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
-              transition={{ duration: reduceMotion ? 0 : 0.18, ease: [0.22, 0.61, 0.36, 1] }}
-              className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2"
+        {/* The row's own controls — ALWAYS rendered, selecting or not. A live
+            selection no longer swaps this away (that hid search/filters for
+            the whole time a coach had rows picked); the bulk bar below is an
+            ADDITIONAL, separately-docked element instead of a replacement. */}
+        <div className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2">
+          {/* Below `sm` the row re-composes into stacked full-width lines
+              (#957 — at phone width, search, three filter pills, a
+              segmented view toggle AND the action buttons cannot share
+              flex-wrap lines without something clipping mid-word at the
+              viewport edge, which is exactly what shipped):
+                line 1 · search, full width
+                line 2 · the filter-pill scroll strip, full width
+                line 3 · view toggle + actions, pinned right
+              Deliberately NO `order` utilities: source order already reads
+              top-to-bottom/left-to-right at every width, so DOM order,
+              tab order, and visual order stay identical (a #959-review
+              finding — an earlier draft reordered lines with `order-*`,
+              which sent keyboard focus visually backwards on phones).
+              From `sm` up the basis overrides reset and the original
+              single-line composition is byte-identical.
+
+              search — grows to absorb slack so the row reads as one quiet
+              field+controls. From `sm` up: Bug #949 #8 — below `lg` it
+              competes equally (flex-1) with the filters cluster for space
+              (fine on tablet, the filters strip scrolls there too). From
+              `lg` up, pin it to a fixed comfortable width instead of
+              growing — a search input never NEEDS more than that, and
+              letting it keep pulling flex-grow share from `filters` was
+              exactly what squeezed a 3-pill filter set (Severity/Status/
+              Category) down far enough that the trailing "Status" pill
+              clipped under the view-toggle segmented control even at wide
+              desktop widths (>=1280px), where there was actually plenty of
+              total room. */}
+          {search ? (
+            <div className="min-w-0 basis-full sm:min-w-[180px] sm:flex-1 sm:max-w-sm lg:w-72 lg:flex-none">
+              {search}
+            </div>
+          ) : null}
+
+          {/* filters — horizontally scrollable so a long set never breaks
+              the row. Below `sm` it is its own full-width line, so the
+              scroller gets the whole viewport to work with. From `lg` up
+              it's the ONLY flex-1 item on its line (search stopped
+              competing for the same growth share above), so it claims all
+              the room left over from search + the trailing cluster — the
+              3-pill set fits without ever needing its scroll fallback at
+              desktop widths. */}
+          {filters ? (
+            <div
+              ref={filtersFadeRef}
+              style={filtersFadeStyle}
+              className="flex min-w-0 grow-0 basis-full items-center gap-2 overflow-x-auto sm:grow sm:basis-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {filters}
+            </div>
+          ) : null}
+
+          {/* trailing cluster — view toggle + primary action. Far-right on
+              its shared desktop line; the right-pinned last line on phone
+              (search and filters each took a full line above, so ml-auto
+              starts this cluster on a fresh line and pushes it right). */}
+          {(viewToggle || primaryAction) && (
+            <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+              {viewToggle}
+              {primaryAction}
+            </div>
+          )}
+        </div>
+
+        {/* Applied-filter chips — quiet recall line below the row (only when set) */}
+        {appliedChips ? (
+          <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle px-3 py-2">
+            <span className="font-fw-sans text-caption text-text-tertiary">Filtering by</span>
+            {appliedChips}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Bulk-action bar — DOCKS to the bottom edge of the viewport instead of
+          swapping into the row above (which used to "float" wherever that
+          short row's own box happened to sit on a long scrolled page, reading
+          as chrome stuck mid-list rather than at a real screen edge). `fixed
+          inset-x-0 bottom-0` is the same viewport-relative technique the Sheet
+          primitive uses for its own bottom edge, so it always lands there
+          regardless of scroll position or how tall this Toolbar's own box is.
+          The inner column matches CoachHelmShell's own `max-w-[1200px]`
+          reading width so the bar's content aligns with the page above it. */}
+      <AnimatePresence>
+        {hasSelection ? (
+          <motion.div
+            key="bulk-dock"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+            transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 0.61, 0.36, 1] }}
+            className="fixed inset-x-0 bottom-0 z-30 border-t shadow-raise"
+            style={STUCK_GLASS_STYLE}
+          >
+            <div
+              className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-3 px-4 py-3 md:px-6"
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
             >
               <StatusPill tone="accent" dot={false} size="md" className="font-fw-mono tabular-nums">
                 {/* aria-live so SR users hear the selection count change */}
@@ -243,90 +346,10 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
                   Clear
                 </Button>
               ) : null}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="controls"
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: reduceMotion ? 0 : 0.16 }}
-              className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2"
-            >
-              {/* Below `sm` the row re-composes into stacked full-width lines
-                  (#957 — at phone width, search, three filter pills, a
-                  segmented view toggle AND the action buttons cannot share
-                  flex-wrap lines without something clipping mid-word at the
-                  viewport edge, which is exactly what shipped):
-                    line 1 · search, full width
-                    line 2 · the filter-pill scroll strip, full width
-                    line 3 · view toggle + actions, pinned right
-                  Deliberately NO `order` utilities: source order already reads
-                  top-to-bottom/left-to-right at every width, so DOM order,
-                  tab order, and visual order stay identical (a #959-review
-                  finding — an earlier draft reordered lines with `order-*`,
-                  which sent keyboard focus visually backwards on phones).
-                  From `sm` up the basis overrides reset and the original
-                  single-line composition is byte-identical.
-
-                  search — grows to absorb slack so the row reads as one quiet
-                  field+controls. From `sm` up: Bug #949 #8 — below `lg` it
-                  competes equally (flex-1) with the filters cluster for space
-                  (fine on tablet, the filters strip scrolls there too). From
-                  `lg` up, pin it to a fixed comfortable width instead of
-                  growing — a search input never NEEDS more than that, and
-                  letting it keep pulling flex-grow share from `filters` was
-                  exactly what squeezed a 3-pill filter set (Severity/Status/
-                  Category) down far enough that the trailing "Status" pill
-                  clipped under the view-toggle segmented control even at wide
-                  desktop widths (>=1280px), where there was actually plenty of
-                  total room. */}
-              {search ? (
-                <div className="min-w-0 basis-full sm:min-w-[180px] sm:flex-1 sm:max-w-sm lg:w-72 lg:flex-none">
-                  {search}
-                </div>
-              ) : null}
-
-              {/* filters — horizontally scrollable so a long set never breaks
-                  the row. Below `sm` it is its own full-width line, so the
-                  scroller gets the whole viewport to work with. From `lg` up
-                  it's the ONLY flex-1 item on its line (search stopped
-                  competing for the same growth share above), so it claims all
-                  the room left over from search + the trailing cluster — the
-                  3-pill set fits without ever needing its scroll fallback at
-                  desktop widths. */}
-              {filters ? (
-                <div
-                  ref={filtersFadeRef}
-                  style={filtersFadeStyle}
-                  className="flex min-w-0 grow-0 basis-full items-center gap-2 overflow-x-auto sm:grow sm:basis-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                >
-                  {filters}
-                </div>
-              ) : null}
-
-              {/* trailing cluster — view toggle + primary action. Far-right on
-                  its shared desktop line; the right-pinned last line on phone
-                  (search and filters each took a full line above, so ml-auto
-                  starts this cluster on a fresh line and pushes it right). */}
-              {(viewToggle || primaryAction) && (
-                <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-                  {viewToggle}
-                  {primaryAction}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Applied-filter chips — quiet recall line below the row (only when set) */}
-        {appliedChips && !hasSelection ? (
-          <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle px-3 py-2">
-            <span className="font-fw-sans text-caption text-text-tertiary">Filtering by</span>
-            {appliedChips}
-          </div>
+            </div>
+          </motion.div>
         ) : null}
-      </div>
+      </AnimatePresence>
     </>
   );
 });

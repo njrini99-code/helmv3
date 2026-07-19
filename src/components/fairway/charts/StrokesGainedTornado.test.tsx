@@ -59,3 +59,50 @@ describe('StrokesGainedTornado — duplicate-label collision guard', () => {
     expect(new Set(ys).size).toBe(2);
   });
 });
+
+/** Isolates just the axis-tick `<text>` nodes (the sparse `text-anchor="middle"`
+ *  labels below the plot) from the per-row category labels and value
+ *  annotations, which anchor `start`/`end` and keep their own fixed format. */
+function axisTickLabels(container: HTMLElement): string[] {
+  return Array.from(container.querySelectorAll('text[text-anchor="middle"]')).map(
+    (el) => el.textContent ?? '',
+  );
+}
+
+describe('StrokesGainedTornado — x-axis ticks never collapse into raw/duplicate labels', () => {
+  it('a small-magnitude "niced" domain gets enough decimals that adjacent ticks stay distinct', () => {
+    // Peak ~0.05 → niced domain [-0.06, 0.06] with a 0.02 step. A FIXED
+    // 1-decimal display (the old behavior) rounds -0.02 and 0.02 to the
+    // indistinguishable "−0.0" / "+0.0" — a raw, unrounded-reading artifact
+    // right around the zero benchmark. The tick label's own decimal count
+    // must now track the scale's actual step.
+    const data: SGCategory[] = [
+      { label: 'Putting read', value: 0.05 },
+      { label: 'Wedge distance', value: -0.03 },
+    ];
+    const { container } = render(<TornadoInner width={400} height={220} data={data} />);
+    const ticks = axisTickLabels(container);
+
+    expect(ticks.length).toBeGreaterThan(1);
+    // No tick label may read as a signed, garbled near-zero.
+    expect(ticks).not.toContain('−0.0');
+    expect(ticks).not.toContain('+0.0');
+    // Every tick must be visually distinct from every other tick.
+    expect(new Set(ticks).size).toBe(ticks.length);
+  });
+
+  it('a normal-magnitude domain still renders clean whole ticks (no unnecessary ".0")', () => {
+    const data: SGCategory[] = [
+      { label: 'Off the tee', value: 2.3 },
+      { label: 'Approach', value: -1.1 },
+    ];
+    const { container } = render(<TornadoInner width={400} height={220} data={data} />);
+    const ticks = axisTickLabels(container);
+    // The niced domain for this peak (~2.3 * 1.15) is [-3, 3] with a step of
+    // 1 — ticks should read as clean whole numbers, not "+1.0" noise.
+    expect(ticks).toContain('0');
+    expect(ticks).toContain('+3');
+    expect(ticks).toContain('−3');
+    expect(new Set(ticks).size).toBe(ticks.length);
+  });
+});

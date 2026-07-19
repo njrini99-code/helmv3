@@ -40,6 +40,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import type { Row } from '@tanstack/react-table';
 import {
   ViewHeader,
   Surface,
@@ -431,6 +432,41 @@ export function FairwayCoachDashboard({
     },
   ];
 
+  // Recent-rounds MOBILE CARD (below `sm`) — audit W2: the raw <table> above
+  // only shows Player+Course on a phone (Score/To Par/Date clip out of the
+  // overflow-x-auto box with no scroll affordance — reads as broken). Below
+  // `sm`, <DataTable mobileCard> renders this instead: player identity +
+  // score PROMINENT, course + date secondary, to-par as a tone chip — the
+  // same digest, recomposed as a native row instead of a squeezed table.
+  // Plain function (not useCallback): it runs below the coach-without-team
+  // early return above, so it can't be a hook (rules-of-hooks) — and
+  // `roundColumns` right above it is already unmemoized for the same reason.
+  function renderRoundMobileCard(row: Row<RoundRow>) {
+    const r = row.original;
+    const tone = r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral';
+    return (
+      <div className="flex items-center gap-3 px-4 py-3">
+        <Avatar name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+            {r.player_name}
+          </p>
+          <p className="mt-0.5 truncate font-fw-sans text-caption text-text-tertiary">
+            {toTitleCase(r.course_name)} · {shortDate(r.round_date)}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="font-fw-display text-h3 font-medium leading-none tabular-nums text-text-primary">
+            {r.total_score}
+          </span>
+          <StatusPill tone={tone} size="sm" dot={false} className="font-fw-mono tabular-nums">
+            {formatToPar(r.total_to_par)}
+          </StatusPill>
+        </div>
+      </div>
+    );
+  }
+
   // overflow-x-clip on the page root (not -hidden: clip doesn't create a
   // scroll container, so sticky children keep working) — hard guarantee that
   // no wide child (a table, an unbroken string, a wide chart) can ever
@@ -709,6 +745,7 @@ export function FairwayCoachDashboard({
           <DataTable<RoundRow>
             data={recentRounds.slice(0, 8)}
             columns={roundColumns}
+            mobileCard={renderRoundMobileCard}
             ariaLabel="Recent team rounds"
             getRowId={(r) => r.id}
             density="comfortable"

@@ -53,3 +53,34 @@ describe('MetricCard delta chip', () => {
     expect(screen.getByText('-2')).toBeInTheDocument();
   });
 });
+
+/**
+ * ============================================================================
+ * MetricCard label wrap — `labelLines` (audit W2, signals-header)
+ * ----------------------------------------------------------------------------
+ * A 3-up KPI grid at phone width (e.g. Signals' "Open / Urgent / Showing"
+ * header) gives each tile too little room for a longer eyebrow label
+ * ("Showing patterns") under the default single-line `truncate` — it clips
+ * to an ellipsis identically on every tile at narrow widths. `labelLines={2}`
+ * lets the label wrap onto a second line instead, with a reserved 2-line
+ * slot so sibling tiles stay aligned regardless of how many lines any one
+ * label actually uses.
+ * ========================================================================== */
+describe('MetricCard label wrap (labelLines)', () => {
+  it('defaults to the original single-line ellipsis truncation (unchanged for existing callers)', () => {
+    const { container } = render(<MetricCard label="Showing patterns" value={5} />);
+    const label = screen.getByText('Showing patterns');
+    expect(label.className).toContain('truncate');
+    expect(label.className).not.toContain('line-clamp-2');
+    // No reserved-height class fights the default single-line layout.
+    expect(container.querySelector('.min-h-8')).toBeNull();
+  });
+
+  it('labelLines={2} wraps instead of truncating, and reserves a 2-line slot', () => {
+    render(<MetricCard label="Showing patterns" value={5} labelLines={2} />);
+    const label = screen.getByText('Showing patterns');
+    expect(label.className).not.toContain('truncate');
+    expect(label.className).toContain('line-clamp-2');
+    expect(label.className).toContain('min-h-8');
+  });
+});

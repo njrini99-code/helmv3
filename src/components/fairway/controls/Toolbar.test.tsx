@@ -15,7 +15,7 @@
  * a fixed width from `lg` up (rather than letting it keep growing) hands all
  * the desktop-tier leftover space to `filters` instead.
  * ========================================================================== */
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Toolbar } from './Toolbar';
 
@@ -76,5 +76,73 @@ describe('Toolbar — search stops competing with filters for growth at lg+', ()
     const trailing = container.querySelector('[data-testid="toggle"]')!.parentElement!;
     expect(trailing.className).toContain('ml-auto');
     expect(trailing.className).not.toMatch(/(?:^|\s)order-/);
+  });
+});
+
+/**
+ * ============================================================================
+ * Toolbar bulk-action bar — docks to the bottom edge (audit W2)
+ * ----------------------------------------------------------------------------
+ * The bulk-action bar used to swap IN PLACE of the row's own controls when
+ * `selectedCount > 0` — on a long scrolled list that swap "stuck" wherever the
+ * toolbar's own (short) box happened to sit rather than at a real screen
+ * edge, reading as chrome floating mid-page over list content instead of
+ * docked to an edge. It also hid search/filters for the whole time a coach
+ * had rows selected. Fix: the bulk bar is now a SEPARATE, `fixed
+ * inset-x-0 bottom-0` element (the same viewport-relative technique the
+ * Sheet primitive uses for its own bottom edge) that renders ALONGSIDE — not
+ * instead of — the row's controls.
+ * ========================================================================== */
+describe('Toolbar bulk-action bar — bottom-docked, not swapped in place', () => {
+  it('the row keeps its own controls (search) visible even while rows are selected', () => {
+    render(
+      <Toolbar
+        search={<input aria-label="search" />}
+        filters={<button>Severity</button>}
+        selectedCount={2}
+        bulkActions={<button>Acknowledge</button>}
+      />,
+    );
+    // Previously the "controls" row was replaced entirely by the bulk bar —
+    // the search field disappeared for as long as a selection was active.
+    expect(screen.getByLabelText('search')).toBeInTheDocument();
+  });
+
+  it('the bulk-action bar is a separate element fixed to the bottom edge of the viewport', () => {
+    const { container } = render(
+      <Toolbar
+        search={<input aria-label="search" />}
+        selectedCount={3}
+        selectionNoun="signal"
+        bulkActions={<button>Resolve</button>}
+      />,
+    );
+    const resolveButton = screen.getByText('Resolve');
+    const dockedBar = resolveButton.closest('[class*="fixed"]');
+    expect(dockedBar).not.toBeNull();
+    expect(dockedBar!.className).toContain('inset-x-0');
+    expect(dockedBar!.className).toContain('bottom-0');
+    // It is NOT inside the same box as the search input — a distinct,
+    // separately-docked bar, not an in-place swap of the controls row.
+    const searchWrapper = container.querySelector('input')!.closest('[role="toolbar"]')!;
+    expect(searchWrapper.contains(dockedBar)).toBe(false);
+  });
+
+  it('renders the selection count and a Clear affordance inside the docked bar', () => {
+    render(
+      <Toolbar
+        selectedCount={4}
+        selectionNoun="signal"
+        bulkActions={<button>Dismiss</button>}
+        onClearSelection={() => {}}
+      />,
+    );
+    expect(screen.getByText('4 signals')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
+  });
+
+  it('renders no bulk bar at all when nothing is selected', () => {
+    render(<Toolbar search={<input aria-label="search" />} selectedCount={0} />);
+    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 });
