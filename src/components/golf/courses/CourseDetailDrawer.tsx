@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
-import { CourseImage } from './CourseImage';
+import { CourseImage, formatCourseName } from './CourseImage';
 import { CourseFormDrawer } from './CourseFormDrawer';
 import { TeeFormDrawer } from './TeeFormDrawer';
 import { Button } from '@/components/fairway/controls/button';
@@ -247,8 +247,30 @@ export function CourseDetailDrawer({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="sm:mx-auto sm:max-w-2xl sm:rounded-fw-lg">
-          <DrawerTitle className="sr-only">{course?.name ?? 'Course details'}</DrawerTitle>
+        <DrawerContent
+          className={cn(
+            'sm:mx-auto sm:max-w-2xl sm:rounded-fw-lg',
+            // #94 — the vaul primitive is a mobile bottom-sheet (drag handle +
+            // matte surface-stone chrome) that's correct at phone width but
+            // wrong at desktop, where it should read as the ModalShell
+            // cream-glass modal language instead. This component owns only
+            // its own instance (the shared Drawer primitive stays untouched
+            // for the other sheets that DO want the mobile-sheet look at every
+            // width, e.g. CourseFormDrawer/TeeFormDrawer), so the override
+            // lives here via arbitrary sm: variants rather than editing the
+            // primitive. Utilities always win over the primitive's
+            // `@layer components` surface-stone/rounded-t-3xl, regardless of
+            // className order, because Tailwind emits the utilities layer last.
+            'sm:[&>div:first-child]:hidden',
+            'sm:[background:var(--fw-glass-bg-strong)]',
+            'sm:[backdrop-filter:blur(var(--fw-blur-strong))_saturate(150%)]',
+            'sm:[-webkit-backdrop-filter:blur(var(--fw-blur-strong))_saturate(150%)]',
+            'sm:[border:1px_solid_var(--fw-glass-border)]',
+            'sm:[box-shadow:var(--fw-shadow-modal)]',
+          )}
+        >
+
+          <DrawerTitle className="sr-only">{course ? formatCourseName(course.name) : 'Course details'}</DrawerTitle>
 
           <div className="max-h-[88vh] overflow-y-auto">
             {/* Hero */}
@@ -309,7 +331,7 @@ export function CourseDetailDrawer({
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-fw-display text-title-2 font-semibold tracking-tight text-white drop-shadow-sm">
-                    {course?.name ?? (loadError ? 'Couldn’t load course' : 'Loading…')}
+                    {course ? formatCourseName(course.name) : (loadError ? 'Couldn’t load course' : 'Loading…')}
                   </h2>
                   {isLibraryOwned && (
                     <span

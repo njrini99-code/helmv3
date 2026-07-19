@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { CourseImage } from './CourseImage';
+import { CourseImage, formatCourseName } from './CourseImage';
 import { IconMapPin, IconFlag, IconStar, IconChevronRight, IconArrowRight } from '@/components/icons';
 import type { GolfCourse } from '@/lib/types/golf-course';
 
@@ -43,6 +43,10 @@ export function CourseCard({
   const location = locationLabel(course);
   const teeLabel =
     typeof teeCount === 'number' ? `${teeCount} ${teeCount === 1 ? 'tee' : 'tees'}` : null;
+  // #157 — normalize display casing so a card never looks out of place next
+  // to properly-cased siblings (import/enrichment data is sometimes ALL CAPS
+  // or all-lowercase).
+  const displayName = formatCourseName(course.name);
 
   const handle = () => onSelect?.(course.id);
 
@@ -52,7 +56,7 @@ export function CourseCard({
       <button
         type="button"
         onClick={handle}
-        aria-label={`Open ${course.name}`}
+        aria-label={`Open ${displayName}`}
         className={cn(
           'group relative block w-full overflow-hidden rounded-[1.5rem] text-left',
           'shadow-soft ring-1 ring-black/[0.06]',
@@ -92,7 +96,7 @@ export function CourseCard({
           {/* Bottom content */}
           <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5">
             <h3 className="line-clamp-2 font-fw-display text-title-3 font-semibold leading-tight tracking-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.55)] sm:text-title-2">
-              {course.name}
+              {displayName}
             </h3>
             {location && (
               <p className="mt-1 inline-flex items-center gap-1.5 font-fw-sans text-caption text-white/85 [text-shadow:0_1px_3px_rgba(0,0,0,0.45)] sm:mt-1.5 sm:text-body-sm">
@@ -125,7 +129,7 @@ export function CourseCard({
     <button
       type="button"
       onClick={handle}
-      aria-label={`Open ${course.name}`}
+      aria-label={`Open ${displayName}`}
       className={cn(
         'group relative flex w-full flex-col overflow-hidden rounded-fw-card text-left',
         'bg-surface border border-border-subtle shadow-flat',
@@ -153,7 +157,7 @@ export function CourseCard({
       <div className="flex flex-1 items-center gap-2 px-4 py-3">
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-fw-sans text-body font-semibold tracking-[-0.01em] text-text-primary">
-            {course.name}
+            {displayName}
           </h3>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0 text-caption text-text-tertiary">
             {location && (

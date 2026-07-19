@@ -26,6 +26,7 @@ import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { formatCourseName } from '@/components/golf/courses/CourseImage';
 import type { RecentPlayedCourse } from '@/app/golf/actions/golf';
 
 export interface FairwayRecentCoursesProps {
@@ -88,7 +89,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
                 type="button"
                 variant="ghost"
                 onClick={() => onTap(c)}
-                aria-label={`Start new round at ${c.courseName}`}
+                aria-label={`Start new round at ${formatCourseName(c.courseName)}`}
                 className="group block h-full min-h-0 w-[190px] rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left font-normal shadow-flat transition-colors hover:border-accent-500 hover:bg-accent-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
               >
                 <span className="flex h-full w-full flex-col gap-2">
@@ -103,7 +104,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
                     )}
                   </span>
                   <span className="line-clamp-2 block font-fw-sans text-body-sm font-medium leading-tight text-text-primary">
-                    {c.courseName}
+                    {formatCourseName(c.courseName)}
                   </span>
                   <span className="mt-auto flex items-center gap-1 truncate font-fw-sans text-caption text-text-tertiary">
                     {loc ? (
@@ -127,7 +128,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
         onOpenChange={(next) => {
           if (!next) setPending(null);
         }}
-        title={pending ? `Start a new round at ${pending.courseName}?` : 'Start a new round?'}
+        title={pending ? `Start a new round at ${formatCourseName(pending.courseName)}?` : 'Start a new round?'}
         description={pending ? subtitle(pending) : undefined}
       >
         {pending && (
