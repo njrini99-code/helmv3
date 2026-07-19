@@ -14,7 +14,7 @@
  *                (no team data — detected as themeStrokesPerRound ==
  *                tourGapPerRound) the primary is honestly framed "to Tour"
  *                instead. A secondary, smaller line surfaces the raw vs-Tour
- *                ceiling ("{g} to Tour ceiling") only when the Tour gap exceeds
+ *                ceiling ("{g} from Tour") only when the Tour gap exceeds
  *                the realistic team gain — NEVER framed as "strokes you're
  *                losing." Below: the cause cascade (CauseRow[]).
  *   • strength — green success-toned pill + "Strength — gaining ~{x}
@@ -22,10 +22,17 @@
  *   • thin     — muted stub: "Not enough data yet — log more rounds (or tag
  *                your putt misses) to unlock this." The scaffold is NEVER blank.
  *
- * The magnitude pill reuses the `CauseEffectCard` pill style from
- * `FairwayStatsCockpit.tsx` verbatim: `bg-fw-warning-bg text-fw-warning` +
- * TrendingDown for a leak, `bg-fw-success-bg text-fw-success` + TrendingUp for
- * a strength.
+ * The eyebrow (category label) is only rendered when it says something the
+ * headline doesn't already — when the two are identical text (case-
+ * insensitive, e.g. a `thin`/no-magnitude card where the headline IS the
+ * category label), the eyebrow is dropped rather than repeating it verbatim.
+ *
+ * The magnitude pill reuses the `CauseEffectCard` pill placement from
+ * `FairwayStatsCockpit.tsx`: `bg-fw-warning-bg text-fw-warning` + TrendingDown
+ * for a leak, `bg-fw-success-bg text-fw-success` + TrendingUp for a strength.
+ * Copy is human prose in `font-fw-sans` (tabular-nums on the digits only) —
+ * NOT `font-fw-mono` debug notation (no `≈`, no `/rd`, no parenthetical
+ * ceiling note cramped onto the same line).
  *
  * PRESENTATION ONLY — no data fetch, no server action. The "make it a plan"
  * handler is injected and threaded down to each {@link CauseRow}.
@@ -121,6 +128,12 @@ export function ThemeCard({
       ? `${displayLabel} — ~${magnitude} strokes/round ${primaryTarget}`
       : displayLabel;
 
+  // Duplicate eyebrow/title guard — a `thin`/no-magnitude card's headline IS
+  // the category label verbatim, so showing both reads as the card repeating
+  // itself. Drop the eyebrow in that case; keep it whenever the headline says
+  // something more (the quantified leak/strength copy above).
+  const eyebrowRedundant = headline.trim().toLowerCase() === displayLabel.trim().toLowerCase();
+
   // Secondary, smaller honest line: the raw vs-Tour ceiling. Only shown for a
   // quantified leak where the Tour gap is materially larger than the realistic
   // team gain — context for "how far the very top is," NEVER a "losing X"
@@ -140,22 +153,24 @@ export function ThemeCard({
       {/* Header — eyebrow label + headline + magnitude pill */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-            {displayLabel}
-          </span>
+          {!eyebrowRedundant ? (
+            <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+              {displayLabel}
+            </span>
+          ) : null}
           <h3 className="font-fw-display text-body-lg font-medium leading-snug text-text-primary">
             {headline}
           </h3>
           {showTourCeiling ? (
-            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-              {tourGapPerRound.toFixed(1)} to Tour ceiling
+            <span className="font-fw-sans text-caption text-text-tertiary">
+              <span className="tabular-nums">{tourGapPerRound.toFixed(1)}</span> from Tour
             </span>
           ) : null}
           {/* PLAY G — SG trend chip (recent vs prior rounds). Honest: shown only
               when a trend exists. SG up = improving = green. */}
           {trendChip ? (
             <span
-              className={`inline-flex w-fit items-center gap-1 font-fw-mono text-caption font-medium tabular-nums ${trendChip.cls}`}
+              className={`inline-flex w-fit items-center gap-1 font-fw-sans text-caption font-medium ${trendChip.cls}`}
               data-slot="fairway-theme-trend"
               data-trend-direction={trend?.direction}
             >
@@ -169,21 +184,25 @@ export function ThemeCard({
           ) : null}
         </div>
 
-        {/* Magnitude pill — same chrome as the cockpit CauseEffectCard pill. */}
+        {/* Magnitude pill — same placement as the cockpit CauseEffectCard pill,
+            human sans-serif prose (not mono debug notation). flex-wrap + no
+            flex-shrink-0 on the icon lets it size to content instead of
+            clipping on narrow screens. */}
         {(isLeak || isStrength) && hasMagnitude ? (
           <span
             className={
               isStrength
-                ? 'inline-flex w-fit flex-shrink-0 items-center gap-1.5 rounded-full bg-fw-success-bg px-2.5 py-1 font-fw-mono text-caption font-medium tabular-nums text-fw-success'
-                : 'inline-flex w-fit flex-shrink-0 items-center gap-1.5 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-mono text-caption font-medium tabular-nums text-fw-warning'
+                ? 'inline-flex w-fit max-w-full flex-shrink-0 flex-wrap items-center gap-1.5 rounded-full bg-fw-success-bg px-2.5 py-1 font-fw-sans text-caption font-medium text-fw-success'
+                : 'inline-flex w-fit max-w-full flex-shrink-0 flex-wrap items-center gap-1.5 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-sans text-caption font-medium text-fw-warning'
             }
           >
             {isStrength ? (
-              <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+              <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
             ) : (
-              <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+              <TrendingDown className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
             )}
-            {isStrength ? `+${magnitude}` : `≈ ${magnitude}`} / round
+            <span className="tabular-nums">{isStrength ? `+${magnitude}` : magnitude}</span>
+            <span>strokes/round</span>
           </span>
         ) : null}
       </div>

@@ -10,20 +10,28 @@
  * `FairwayStatsCockpit.tsx`). Plain CSS transition only — NO per-row
  * framer-motion (the Signals scroll-perf lesson).
  *
- * Collapsed: cause.title + an honest strokes pill (`≈{realistic}/rd to team
- * avg`, with a smaller `({tour} to Tour)` ceiling note when the Tour gap is
- * larger) UNLESS the counterfactual is suppressed — then a neutral,
- * player-legible "Tendency" chip with NO fabricated number (a directional read,
- * not a leak). When the team fraction fell back to 1 (no team data — detected as
- * strokesSavedPerRound == tourGapPerRound) the pill is honestly labeled "to
- * Tour" instead of "to team avg," and the redundant ceiling note is hidden.
+ * Collapsed: title + chevron sit on their own row (chevron never competes with
+ * pill text for space); the strokes pill sits on a second, wrapping row below
+ * so nothing clips. Honest strokes pill copy is human prose — "{realistic}
+ * strokes/round from your team average," with a smaller, un-bracketed "{tour}
+ * from Tour" ceiling note alongside when the Tour gap is larger — UNLESS the
+ * counterfactual is suppressed, in which case a neutral, player-legible
+ * "Tendency" chip with NO fabricated number (a directional read, not a leak).
+ * When the team fraction fell back to 1 (no team data — detected as
+ * strokesSavedPerRound == tourGapPerRound) the pill honestly reads "from Tour"
+ * instead of "from your team average," and the redundant ceiling note is
+ * hidden. No `≈`, no `/rd` shorthand, no mono font — this is prose, not a
+ * data table.
  *
  * Expanded:
  *   • for a suppressed/Tendency cause, a short caption explaining it's a
  *     directional read with no reliable stroke estimate yet
- *   • cause.content as prose
- *   • ROOT DRIVERS — each driver's title + prose as a nested matte sub-row
- *     ('composite' source labelled as the synthesized root driver)
+ *   • cause.content as prose, capped to its first ~2 sentences with a "Read
+ *     more" disclosure (real button, aria-expanded) revealing the rest —
+ *     nothing is deleted, just not all shown at once
+ *   • ROOT DRIVERS — each driver's title + prose as a nested `Inset` well (a
+ *     tint step, not a bordered card-in-card — 'composite' source labelled as
+ *     the synthesized root driver)
  *   • DEVELOPMENT PLAN LEAF — the drills as simple Fairway chips (drills from
  *     the cause + any collected from drivers, de-duped by drill_id)
  *   • "Make it a plan" CTA — a Fairway Button (sm), enabled per the role rules
@@ -47,11 +55,11 @@
  * ADDITIVE — new file under the Fairway tree. Renders inside `.fairway-ds`.
  * ========================================================================== */
 
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { ChevronDown, Target } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Surface, Button } from '@/components/fairway';
+import { Inset, Button } from '@/components/fairway';
 import type {
   CauseNode,
   DriverLeaf,
@@ -105,6 +113,26 @@ function driverSourceLabel(source: RootDriver['source']): string {
   }
 }
 
+/** Always-visible cap on `cause.content` before the "Read more" disclosure. */
+const PREVIEW_SENTENCE_COUNT = 2;
+
+/**
+ * Split cause prose into sentences for the always-visible / "Read more" cap.
+ * Splits on whitespace that follows a terminator (`.` `!` `?`) and precedes a
+ * capital letter or open-paren — a typical sentence start. Decimal numbers
+ * (e.g. "28%") have no whitespace to split on, so they're safe. Presentation-
+ * only approximation, not a real sentence parser — worst case the preview
+ * boundary lands a little early or late; the full text is always one tap away.
+ */
+function splitSentences(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  return trimmed
+    .split(/(?<=[.!?])\s+(?=[A-Z(])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
@@ -117,10 +145,18 @@ export function CauseRow({
   defaultOpen = false,
 }: CauseRowProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [contentExpanded, setContentExpanded] = useState(false);
   const panelId = useId();
 
   const drills = collectDrills(cause);
   const hasDrill = drills.length > 0;
+
+  // "Read more" cap on cause.content — see splitSentences() above. Only the
+  // truncated PREVIEW is ever derived text; once there's nothing more to
+  // reveal (or the reader expands it), the original string renders verbatim.
+  const contentSentences = useMemo(() => splitSentences(cause.content), [cause.content]);
+  const hasMoreContent = contentSentences.length > PREVIEW_SENTENCE_COUNT;
+  const contentPreview = contentSentences.slice(0, PREVIEW_SENTENCE_COUNT).join(' ');
 
   // Suppressed counterfactual → no reliable stroke estimate. We surface it as a
   // legible "Tendency" (directional read), never a fabricated number, and we
@@ -140,14 +176,14 @@ export function CauseRow({
   // the primary number; when the raw Tour gap is larger, append it as a smaller
   // ceiling note (never framed as "strokes you're losing"). When the team
   // fraction fell back to 1 (no team reference), the realistic value equals the
-  // raw Tour gap — detect that and label the primary "to Tour" honestly, hiding
+  // raw Tour gap — detect that and label the primary "from Tour" honestly, hiding
   // the now-redundant ceiling note.
   const strokes = cause.strokesSavedPerRound;
   const tourGap = cause.tourGapPerRound;
   const showStrokesPill = !suppressed && strokes > 0;
   const toTourOnly =
     tourGap != null && tourGap.toFixed(1) === strokes.toFixed(1);
-  const primaryLabel = toTourOnly ? 'to Tour' : 'to team avg';
+  const primaryLabel = toTourOnly ? 'from Tour' : 'from your team average';
   const showTourCeiling = !toTourOnly && tourGap != null && tourGap > strokes;
 
   return (
@@ -156,7 +192,10 @@ export function CauseRow({
       data-slot="fairway-cause-row"
       data-cause-id={cause.insight_id}
     >
-      {/* Disclosure header — matches the cockpit ComprehensiveDetail toggle. */}
+      {/* Disclosure header — matches the cockpit ComprehensiveDetail toggle.
+          Title + chevron on their own row so the chevron never competes with
+          the pill for space; the pill (and ceiling note) sit on a second,
+          wrapping row below so long human copy never clips. */}
       <Button
         type="button"
         variant="ghost"
@@ -165,33 +204,36 @@ export function CauseRow({
         aria-controls={panelId}
         className="group block h-auto min-h-0 w-full rounded-card border border-border-subtle bg-surface px-4 py-3 text-left font-normal outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
-        <span className="flex w-full items-center justify-between gap-3">
-          <span className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="flex w-full flex-col gap-2 whitespace-normal">
+          <span className="flex w-full items-center justify-between gap-3">
             <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
               {cause.title}
             </span>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
+                open && 'rotate-180',
+              )}
+              aria-hidden
+            />
+          </span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {showStrokesPill ? (
-              <span className="inline-flex w-fit flex-shrink-0 items-center gap-1 rounded-full bg-fw-warning-bg px-2 py-0.5 font-fw-mono text-eyebrow font-medium tabular-nums text-fw-warning">
-                ≈{strokes.toFixed(1)}/rd {primaryLabel}
-                {showTourCeiling && tourGap != null ? (
-                  <span className="font-normal text-fw-warning/70">
-                    ({tourGap.toFixed(1)} to Tour)
-                  </span>
-                ) : null}
+              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-sans text-eyebrow font-medium text-fw-warning">
+                <span className="tabular-nums">{strokes.toFixed(1)}</span>
+                <span>strokes/round {primaryLabel}</span>
               </span>
             ) : (
-              <span className="inline-flex w-fit flex-shrink-0 items-center rounded-full bg-inset px-2 py-0.5 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+              <span className="inline-flex w-fit items-center rounded-full bg-inset px-2 py-0.5 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
                 Tendency
               </span>
             )}
+            {showTourCeiling && tourGap != null ? (
+              <span className="font-fw-sans text-eyebrow text-text-tertiary">
+                <span className="tabular-nums">{tourGap.toFixed(1)}</span> from Tour
+              </span>
+            ) : null}
           </span>
-          <ChevronDown
-            className={cn(
-              'h-4 w-4 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
-              open && 'rotate-180',
-            )}
-            aria-hidden
-          />
         </span>
       </Button>
 
@@ -207,21 +249,36 @@ export function CauseRow({
             </p>
           ) : null}
 
-          {/* Cause prose */}
+          {/* Cause prose — capped to ~2 sentences with a "Read more" disclosure.
+              Nothing is deleted; the full text is one tap away. */}
           {cause.content ? (
-            <p className="font-fw-sans text-body-sm leading-relaxed text-text-secondary">
-              {cause.content}
-            </p>
+            <div className="flex flex-col gap-2">
+              <p className="font-fw-sans text-body-sm leading-relaxed text-text-secondary">
+                {hasMoreContent && !contentExpanded ? contentPreview : cause.content}
+              </p>
+              {hasMoreContent ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-fit self-start"
+                  aria-expanded={contentExpanded}
+                  onClick={() => setContentExpanded((v) => !v)}
+                >
+                  {contentExpanded ? 'Show less' : 'Read more'}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
 
-          {/* Root drivers — nested matte sub-rows */}
+          {/* Root drivers — nested Inset wells (a tint step, not a bordered
+              card-in-card competing with the CauseRow's own chrome). */}
           {cause.drivers.length > 0 ? (
             <div className="flex flex-col gap-2">
               {cause.drivers.map((driver, i) => (
-                <Surface
+                <Inset
                   key={`${cause.insight_id}-driver-${i}`}
-                  elevation="border"
-                  padding="md"
+                  padding="sm"
                   className="flex flex-col gap-1.5"
                 >
                   <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
@@ -237,7 +294,7 @@ export function CauseRow({
                       {driver.prose}
                     </p>
                   ) : null}
-                </Surface>
+                </Inset>
               ))}
             </div>
           ) : null}
