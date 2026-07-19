@@ -101,6 +101,20 @@ async function getActor(
  * saving a round with a not-yet-cataloged course/tee is legitimate additive
  * catalog growth, not "managing the library", and that path calls the
  * `*Core`-equivalent (skipCoachGate) entry points directly. (#36/#187)
+ *
+ * FLAGGED DEVIATION (not silently decided): a fully-literal reading of the
+ * #36/#187 acceptance text says a player "cannot INSERT" golf_courses /
+ * golf_course_tees / golf_course_tee_holes. INSERT is intentionally left
+ * open at BOTH layers (RLS: 20260719120000_course_library_role_scoping.sql;
+ * app: this gate is skipped via skipCoachGate) specifically so
+ * contributeCourseFromRound keeps working — every write in this file,
+ * including that one, runs through the same user-context (RLS-bound)
+ * Supabase client, with no service-role/SECURITY DEFINER bypass for that
+ * flow. Treating "add a not-yet-cataloged row" the same as "edit/remove an
+ * existing row" would be a scope call beyond what #36/#187 actually
+ * reported (any authenticated player editing/removing ANY row). This is
+ * called out explicitly here, in the migration, and in the round-2 PR
+ * description pending an explicit owner confirmation — it is not assumed.
  */
 function requireCoachActor(actor: Actor): string | null {
   if (actor.isCoach || isActorSuperAdmin(actor)) return null;

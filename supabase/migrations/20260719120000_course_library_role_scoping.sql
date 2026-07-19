@@ -45,13 +45,44 @@
 -- depth (see courses.ts).
 --
 -- Existing pgTAP contracts this migration must NOT break
--- (supabase/tests/rls/golf_course_library.sql, out of this fix's scope):
---   • golf_courses_update_authenticated WITH CHECK must still reference both
---     `created_by_user_id` and `is_super_admin` (section J) — preserved by
---     ANDing the new is_golf_coach() predicate in rather than replacing the
---     existing expression.
---   • golf_course_tees_update WITH CHECK must still reference
---     `last_edited_by_user_id` (section F) — preserved the same way.
+-- (supabase/tests/rls/golf_course_library.sql, out of this fix's scope —
+-- referenced here by ASSERTION, not by section letter, since letter labels
+-- rot the moment that file gains or loses a section):
+--   • the assertion "golf_courses UPDATE WITH CHECK references
+--     created_by_user_id (owner gate, not just auth.uid())" and the sibling
+--     assertion that it also carries an is_super_admin() escape hatch —
+--     preserved by ANDing the new is_golf_coach() predicate in rather than
+--     replacing the existing expression.
+--   • the assertion "tees update WITH CHECK references
+--     last_edited_by_user_id" — preserved the same way.
+--
+-- NEW behavioral RLS coverage for #36/#187 itself lives in a SEPARATE file,
+-- supabase/tests/rls/golf_course_library_write_scoping.sql — it seeds a real
+-- coach + a real player and impersonates each via SET LOCAL role +
+-- request.jwt.claims to prove UPDATE on golf_courses/golf_course_tees and
+-- UPDATE+DELETE on golf_course_tee_holes are actually rejected for a player
+-- at the database layer (not just that the policy text mentions the right
+-- column names, which the Phase-1 suite above already covered and this
+-- migration does not disturb).
+--
+-- DEVIATION FROM A FULLY-LITERAL READING OF THE ACCEPTANCE TEXT — FLAGGED,
+-- NOT SILENTLY DECIDED: the acceptance text for this fix says a player
+-- "cannot INSERT/UPDATE" any of the three tables. INSERT is INTENTIONALLY
+-- LEFT OPEN here (unchanged from Phase 1) on all three — see the "WHY
+-- UPDATE/DELETE ONLY, NOT INSERT" note below. Locking INSERT to coach-only
+-- at the RLS layer would break contributeCourseFromRound's live, in-use
+-- player round-contribution path (src/app/golf/actions/course-library.ts),
+-- because that path runs its INSERT through the same user-context (RLS-bound)
+-- Supabase client as every other action here — there is no service-role or
+-- SECURITY DEFINER bypass in this file for that flow. Treating "grow the
+-- catalog with a new, not-yet-cataloged course/tee" the same as "edit or
+-- remove an existing row" is a product-scoping call, not an implementation
+-- detail, and this migration takes the position that only the latter is what
+-- #36/#187 actually flagged as the vulnerability (any authenticated player
+-- editing/removing ANY row) — the former was never reported as exploitable
+-- harm. This needs an explicit owner confirmation before it's treated as
+-- fully closed against the literal acceptance text; it is called out again
+-- in the round-2 PR description for that reason.
 --
 -- Idempotent: safe to re-run.
 -- ============================================================================
