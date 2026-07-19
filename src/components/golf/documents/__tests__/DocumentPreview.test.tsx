@@ -12,6 +12,12 @@
 //     version-insert that silently failed at upload time) — an honest
 //     emptiness, not a technical failure. getPreviewUrl now signals this via
 //     `noContent: true` and the modal renders a calm, distinct empty state.
+//  3. (P11) The modal's own chrome (scrim, panel surface, radius, close
+//     button) was the plain shadcn `Dialog`/`DialogContent` primitive —
+//     white-glass and off-system next to the Fairway pages it's opened
+//     from. Rebuilt on `ModalShell` (the ONE Fairway modal: `.fw-glass-strong`
+//     panel, warm scrim, green focus ring) so the preview reads as part of
+//     the same app instead of a foreign overlay dropped on top of it.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -89,5 +95,24 @@ describe('DocumentPreview (#w4-document-preview)', () => {
       expect(screen.getByText(/preview unavailable/i)).toBeInTheDocument();
     });
     expect(screen.queryByText(/no preview available/i)).not.toBeInTheDocument();
+  });
+
+  it('uses the ModalShell (Fairway cream-glass) chrome, not the plain shadcn Dialog (P11)', async () => {
+    getPreviewUrlMock.mockResolvedValue({
+      data: { url: 'https://signed.example/doc.pdf', mimeType: 'application/pdf' },
+      error: null,
+    });
+
+    render(<DocumentPreview golfDocument={baseDoc} open onOpenChange={() => {}} />);
+
+    await waitFor(() => {
+      // ModalShell stamps its panel with data-slot="modal-shell" and scopes
+      // it `.fairway-ds` for the warm tokens — the shadcn Dialog did neither.
+      expect(document.querySelector('[data-slot="modal-shell"]')).toBeInTheDocument();
+    });
+    expect(document.querySelector('.fairway-ds')).toBeInTheDocument();
+    // The title still reaches an accessible name even though the visual
+    // header is hand-rolled (hideTitle) rather than ModalShell's own.
+    expect(screen.getByRole('dialog', { name: baseDoc.title })).toBeInTheDocument();
   });
 });
