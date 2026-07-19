@@ -3,7 +3,15 @@
  * FairwayTeamInfo — "My tasks" widget: priority + overdue coherence (#161/#172)
  * ----------------------------------------------------------------------------
  * #161 — the widget must show the same HIGH/MEDIUM priority flag the
- *   canonical Tasks page shows for the identical underlying task.
+ *   canonical Tasks page shows for the identical underlying task. Root cause:
+ *   `golf_tasks.priority` is an unvalidated free-text column (DB column
+ *   default is 'medium'; the create-task action defaults to 'normal'; no
+ *   CHECK constraint enforces casing) — so the SAME conceptual priority can
+ *   reach this widget as 'high', 'High', or ' HIGH ' depending on which write
+ *   path produced the row. Comparing with a bare `===` against a lowercase
+ *   literal silently drops any differently-cased/whitespace row: the pill
+ *   either fails to render at all, or renders in the wrong (non-urgent) tone.
+ *   The casing/normalization tests below pin that down.
  * #172 — the widget must visually flag an overdue task the same way the
  *   canonical Tasks page / Team Hub Tasks tab do: a StatusPill "Overdue".
  * Both assertions render the SAME task list a real caller would pass (from
@@ -44,6 +52,65 @@ describe('FairwayTeamInfo — My tasks widget', () => {
     );
 
     expect(screen.getByText(/high/i)).toBeInTheDocument();
+  });
+
+  it('flags a task with a capitalized/whitespace-padded priority the same as its lowercase equivalent (#161 casing/normalization)', () => {
+    render(
+      <FairwayTeamInfo
+        {...baseProps([
+          {
+            id: 'task-1b',
+            title: 'Submit medical waiver',
+            description: null,
+            due_date: '2099-01-01',
+            status: 'pending',
+            priority: ' High ', // e.g. a row written outside the normal create-task path
+          },
+        ])}
+      />,
+    );
+
+    // Same urgent (danger-tone) pill the lowercase 'high' case renders — the
+    // widget must not silently hide/mis-tone a differently-cased value.
+    expect(screen.getByText(/high/i)).toBeInTheDocument();
+  });
+
+  it('renders the DB column default "medium" as a (non-urgent) priority pill, not as "no priority"', () => {
+    render(
+      <FairwayTeamInfo
+        {...baseProps([
+          {
+            id: 'task-1c',
+            title: 'Log practice round',
+            description: null,
+            due_date: '2099-01-01',
+            status: 'pending',
+            priority: 'MEDIUM',
+          },
+        ])}
+      />,
+    );
+
+    expect(screen.getByText(/medium/i)).toBeInTheDocument();
+  });
+
+  it('treats "Normal" (capitalized) the same as "normal" — no priority pill shown', () => {
+    render(
+      <FairwayTeamInfo
+        {...baseProps([
+          {
+            id: 'task-1d',
+            title: 'Check in with coach',
+            description: null,
+            due_date: '2099-01-01',
+            status: 'pending',
+            priority: 'Normal',
+          },
+        ])}
+      />,
+    );
+
+    expect(screen.queryByText(/normal/i)).toBeNull();
   });
 
   it('flags a past-due, incomplete task with an "Overdue" pill (#172)', async () => {

@@ -322,10 +322,19 @@ export function FairwayTeamInfo({
           ) : (
             <div className="flex flex-col gap-2">
               {pendingTasks.slice(0, 3).map((task) => {
-                const showPriority =
-                  task.priority && task.priority !== 'normal';
-                const urgent =
-                  task.priority === 'high' || task.priority === 'urgent';
+                // #161 — golf_tasks.priority is a free-text column (DB default
+                // 'medium', app writes 'normal'/'high'/'urgent'/'low'/etc, and
+                // it's never validated by a CHECK constraint), so a value like
+                // "High" or " Urgent " can reach this widget with different
+                // casing/whitespace than the lowercase literals below. Without
+                // normalizing first, `task.priority === 'high'` silently misses
+                // those rows: the pill either doesn't render at all or renders
+                // in the wrong tone, breaking parity with any other consumer of
+                // the same task row. Normalize once and compare/display off the
+                // normalized value everywhere.
+                const priority = task.priority?.trim().toLowerCase() || null;
+                const showPriority = !!priority && priority !== 'normal';
+                const urgent = priority === 'high' || priority === 'urgent';
                 // Same overdue rule as the canonical Tasks page (FairwayTasks)
                 // and Team Hub's Tasks tab (TaskRow): a real due date in the
                 // past on a task that isn't complete.
@@ -351,7 +360,13 @@ export function FairwayTeamInfo({
                           <p
                             className={cn(
                               'mt-1 font-fw-sans text-caption',
-                              isOverdue ? 'font-semibold text-fw-danger' : 'text-text-tertiary',
+                              // isOverdue resolves one tick after first paint
+                              // (deferred `now`, see above) — fade the red
+                              // treatment in instead of letting it hard-pop
+                              // once `now` lands (mustFix #3).
+                              isOverdue
+                                ? 'animate-fade-in font-semibold text-fw-danger'
+                                : 'text-text-tertiary',
                             )}
                             suppressHydrationWarning
                           >
@@ -365,7 +380,7 @@ export function FairwayTeamInfo({
                       </div>
                       <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
                         {isOverdue ? (
-                          <StatusPill tone="danger" size="sm" dot>
+                          <StatusPill tone="danger" size="sm" dot className="animate-fade-in">
                             Overdue
                           </StatusPill>
                         ) : null}
@@ -376,7 +391,7 @@ export function FairwayTeamInfo({
                             dot={false}
                             className="uppercase tracking-[0.06em]"
                           >
-                            {task.priority}
+                            {priority}
                           </StatusPill>
                         ) : null}
                       </div>
