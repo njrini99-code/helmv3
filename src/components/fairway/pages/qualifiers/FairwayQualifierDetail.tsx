@@ -30,6 +30,7 @@
  * route page. Renders inside the `.fairway-ds` scope on a bg-canvas page.
  * ========================================================================== */
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ChartNoAxesColumn, ListChecks, Flag } from 'lucide-react';
 
@@ -107,9 +108,21 @@ export interface FairwayQualifierDetailProps {
  * Date / status formatting (presentation only)
  * ──────────────────────────────────────────────────────────────────────── */
 
-function formatDate(dateStr: string | null): string {
+/**
+ * Format a bare ISO date ("YYYY-MM-DD") for display. Parsed as **local**
+ * midnight, not `new Date(dateStr)` — that treats a date-only string as UTC
+ * midnight, so a timezone behind UTC (any US zone) reads it back as the PRIOR
+ * calendar day. That off-by-one also produces a hydration mismatch: the
+ * server (commonly UTC) and the browser (the viewer's local zone) format the
+ * same UTC instant into two different calendar days (#30/#126). Matches
+ * `FairwayMyQualifiers.tsx`'s local-safe parse so a qualifier's date agrees
+ * across every surface it's shown on.
+ */
+export function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  const [y, m, d] = (dateStr.split('T')[0] ?? dateStr).split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -253,6 +266,13 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
   const hasAnyCompletedRound =
     maxRoundNumber > 0 && breakdown.some(([, data]) => data.rounds.length > 0);
 
+  // P31 — "Rounds submitted" starts from the route page's server snapshot,
+  // then re-syncs to the Leaderboard's own live feed the moment it reports in
+  // (same data the leaderboard below renders from), so the two never visibly
+  // disagree even when a round posts between the page load and now.
+  const [liveRoundsSubmitted, setLiveRoundsSubmitted] = useState<number | null>(null);
+  const displayedRoundsSubmitted = liveRoundsSubmitted ?? roundsSubmitted;
+
   return (
     <div className="mx-auto w-full max-w-[1100px] px-5 py-8 md:px-8 md:py-10">
       {/* Quiet back link — replaces the legacy MobileNavHeader + Breadcrumb */}
@@ -305,7 +325,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
               <DetailItem label="Dates" value={dateRange(startDate, endDate)} numeric />
               <DetailItem label="Entry deadline" value={formatDate(entryDeadline)} numeric />
               <DetailItem label="Entrants" value={String(entrantCount)} numeric />
-              <DetailItem label="Rounds submitted" value={String(roundsSubmitted)} numeric />
+              <DetailItem label="Rounds submitted" value={String(displayedRoundsSubmitted)} numeric />
               {courseName ? <DetailItem label="Course" value={courseName} /> : null}
               {spotsAvailable !== null ? (
                 <DetailItem label="Spots" value={String(spotsAvailable)} numeric />
@@ -338,6 +358,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
           entrantCount={entrantCount}
           selectionSlotsTotal={selectionSlotsTotal}
           selectionSlotsCoachPick={selectionSlotsCoachPick}
+          onRoundsSubmittedChange={setLiveRoundsSubmitted}
         />
 
         {/* 4 · COACH-only round-by-round breakdown */}
@@ -354,6 +375,16 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
             <Surface.Body>
               {hasAnyCompletedRound ? (
                 <RoundBreakdownTable breakdown={breakdown} maxRoundNumber={maxRoundNumber} />
+              ) : status === 'completed' ? (
+                // #91 — a completed qualifier with zero rounds is CLOSED, not
+                // "yet to happen". The forward-looking "yet" copy reads as a
+                // bug once the event has already ended.
+                <EmptyState
+                  variant="subtle"
+                  icon={ChartNoAxesColumn}
+                  title="Completed — no rounds were recorded"
+                  description="This qualifier closed before any per-round scores were posted."
+                />
               ) : (
                 // FIX the all-dash bug: an honest empty state, NOT 7 all-dash rows.
                 <EmptyState
