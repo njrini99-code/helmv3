@@ -211,35 +211,50 @@ function StripTrack({
   const pga = pgaPct !== null ? clampPct(pgaPct) : null;
   const team = teamPct !== null ? clampPct(teamPct) : null;
   return (
-    <div className="relative px-1 pt-8 pb-7">
-      {/* Floating green "You" value badge above the hero marker */}
-      <div
-        className="absolute top-1 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-500 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
-        style={{ left: `${you}%` }}
-      >
-        {youValue}
+    <div className="relative px-1 pb-7">
+      {/* Tier 1 — the floating green "You" value badge gets its OWN row in
+          normal document flow, strictly above the tick-label tier below.
+          Previously the badge was absolutely positioned inside the same
+          box as the track's tick labels (just a top offset apart), so
+          whenever youPct and teamPct landed close together the badge
+          visually swallowed the "TEAM" above-bar label (only a stray
+          letter would peek out from behind the pill). Two stacked flow
+          boxes can never overlap regardless of how close the two markers
+          are — this is a structural guarantee, not a distance threshold. */}
+      <div className="relative h-7" data-slot="you-badge-tier">
+        <div
+          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-500 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
+          style={{ left: `${you}%` }}
+        >
+          {youValue}
+        </div>
       </div>
 
-      {/* The track — defined ring so it reads against the card */}
-      <div className="relative h-2.5 w-full rounded-full bg-inset ring-1 ring-inset ring-border-strong">
-        {/* Reference tick — black, high contrast (PGA, or "FIELD AVG" for SG).
-            Label goes BELOW the bar so it never collides with the TEAM label.
-            F006: omitted entirely when the anchor is suppressed (pga === null). */}
-        {pga !== null ? (
-          <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label={refLabel} labelSide="below" />
-        ) : null}
-        {/* Team tick — mid grey (omitted in cold-start).
-            Label goes ABOVE the bar so it can never overwrite the reference label
-            even when the two ticks land within a few pixels of each other. */}
-        {team !== null ? (
-          <Tick leftPct={team} barClass="bg-text-tertiary" labelClass="text-text-tertiary" label="TEAM" labelSide="above" />
-        ) : null}
-        {/* You — the green hero dot, drawn last so it sits on top */}
-        <span
-          className="absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500 shadow-soft ring-[3px] ring-surface"
-          style={{ left: `${you}%` }}
-          aria-hidden="true"
-        />
+      {/* Tier 2 — headroom for the "TEAM" above-bar label, then the track
+          itself. Lives below tier 1 in flow, so it (and the TEAM label
+          inside it) is always clear of the You badge. */}
+      <div className="relative pt-7" data-slot="track-tier">
+        {/* The track — defined ring so it reads against the card */}
+        <div className="relative h-2.5 w-full rounded-full bg-inset ring-1 ring-inset ring-border-strong">
+          {/* Reference tick — black, high contrast (PGA, or "FIELD AVG" for SG).
+              Label goes BELOW the bar so it never collides with the TEAM label.
+              F006: omitted entirely when the anchor is suppressed (pga === null). */}
+          {pga !== null ? (
+            <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label={refLabel} labelSide="below" />
+          ) : null}
+          {/* Team tick — mid grey (omitted in cold-start).
+              Label goes ABOVE the bar so it can never overwrite the reference label
+              even when the two ticks land within a few pixels of each other. */}
+          {team !== null ? (
+            <Tick leftPct={team} barClass="bg-text-tertiary" labelClass="text-text-tertiary" label="TEAM" labelSide="above" />
+          ) : null}
+          {/* You — the green hero dot, drawn last so it sits on top */}
+          <span
+            className="absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500 shadow-soft ring-[3px] ring-surface"
+            style={{ left: `${you}%` }}
+            aria-hidden="true"
+          />
+        </div>
       </div>
     </div>
   );

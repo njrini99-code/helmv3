@@ -18,7 +18,7 @@
  * so the OLD `teamCohortText(team_pct, ...)` caption read "Below team
  * average" directly under the "better" badge.
  */
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { StandingStrip, type StandingStripProps } from './StandingStrip';
@@ -72,5 +72,33 @@ describe('StandingStrip — SG caption/arrow agreement (W1 regression)', () => {
     expect(screen.queryByText(/vs team/)).toBeNull();
     expect(screen.queryByText('Above team average')).toBeNull();
     expect(screen.queryByText('Below team average')).toBeNull();
+  });
+});
+
+describe('StandingStrip — "You" badge vs "TEAM" label overlap (mobile audit screenshot)', () => {
+  it('keeps the floating "You" value badge and the "TEAM" tick label in separate, non-overlapping flow tiers', () => {
+    // Worst case: player_value === team_avg, so the You marker and the Team
+    // marker sit at the EXACT same horizontal position — the scenario that
+    // used to make the green "You" badge visually swallow the "TEAM" label
+    // behind it (only a stray letter peeking out). jsdom has no layout
+    // engine, so this pins the *structural* contract that prevents the
+    // collision (two stacked flow boxes, not a proximity threshold) rather
+    // than asserting pixel positions.
+    const { container } = render(<StandingStrip {...BASE} player_value={BASE.team_avg ?? 0} />);
+
+    const badgeTier = container.querySelector('[data-slot="you-badge-tier"]');
+    const trackTier = container.querySelector('[data-slot="track-tier"]');
+    expect(badgeTier).toBeTruthy();
+    expect(trackTier).toBeTruthy();
+
+    // The badge tier must be the track tier's immediately-preceding sibling —
+    // i.e. they stack in normal document flow, one strictly above the other —
+    // instead of both floating inside the same absolutely-positioned box.
+    expect(badgeTier!.nextElementSibling).toBe(trackTier);
+
+    // The "TEAM" label renders only inside the track tier, never inside the
+    // badge tier — so it can never be hidden behind the "You" badge.
+    expect(within(badgeTier as HTMLElement).queryByText('TEAM')).toBeNull();
+    expect(within(trackTier as HTMLElement).getByText('TEAM')).toBeTruthy();
   });
 });

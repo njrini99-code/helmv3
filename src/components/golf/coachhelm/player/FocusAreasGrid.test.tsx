@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { FocusAreasGrid } from './FocusAreasGrid';
 
@@ -150,5 +150,65 @@ describe('FocusAreasGrid · P2-18 unit integrity', () => {
 
     expect(screen.getByText('strokes/round')).toBeInTheDocument();
     expect(screen.getByText('-0.5')).toBeInTheDocument();
+  });
+});
+
+/**
+ * ============================================================================
+ * FocusAreasGrid — interactive card must be a BLOCK button, not a collapsed
+ * icon box (prod regression: overlapping columns on mobile)
+ * ----------------------------------------------------------------------------
+ * The interactive card (always taken when a real onAreaClick is wired) was
+ * wrapped in <IconButton>, whose size-md forced `inline-flex items-center
+ * justify-center w-11 h-11` — crushing the whole vertical card (badge, name,
+ * big number, bar, recommendation, View details) into a 44px icon-sized flex
+ * box, so every element overlapped. jsdom has no layout engine, so this pins
+ * the class-level contract that makes the collapse impossible: the card is a
+ * real <button> that stacks its content as a block, and every content piece is
+ * actually present in that one stacked card.
+ * ========================================================================== */
+describe('FocusAreasGrid — interactive card layout (mobile collapse regression)', () => {
+  function renderInteractive() {
+    return render(
+      <FocusAreasGrid
+        onAreaClick={vi.fn()}
+        focusAreas={[
+          {
+            area: 'Approach 150-175',
+            strokesGained: -0.9,
+            unit: 'strokes/round',
+            trend: 'stable',
+            recommendation: 'Monitor approach dispersion this month.',
+          },
+        ]}
+      />,
+    );
+  }
+
+  it('renders the interactive card as a <button>, never an inline-flex icon box', () => {
+    renderInteractive();
+    const card = screen.getByRole('button', { name: /Focus area: Approach 150-175/i });
+    expect(card.tagName).toBe('BUTTON');
+    // Block layout is the contract that keeps the stack from collapsing.
+    expect(card.className).toMatch(/\bblock\b/);
+    expect(card.className).toMatch(/\bw-full\b/);
+    // The exact collapse-causing utilities must never reappear on this card.
+    expect(card.className).not.toMatch(/\binline-flex\b/);
+    expect(card.className).not.toMatch(/\bjustify-center\b/);
+    expect(card.className).not.toMatch(/\b[hw]-11\b/);
+  });
+
+  it('keeps every stacked content piece present inside the one card', () => {
+    renderInteractive();
+    const card = screen.getByRole('button', { name: /Focus area: Approach 150-175/i });
+    // Name, trend label, rating + unit, recommendation, and the details hint
+    // all live in the same stacked card — proof the layout did not drop or
+    // overlap-hide any element.
+    expect(within(card).getByText('Approach 150-175')).toBeInTheDocument();
+    expect(within(card).getByText('Stable')).toBeInTheDocument();
+    expect(within(card).getByText('-0.9')).toBeInTheDocument();
+    expect(within(card).getByText('strokes/round')).toBeInTheDocument();
+    expect(within(card).getByText('Monitor approach dispersion this month.')).toBeInTheDocument();
+    expect(within(card).getByText('View details')).toBeInTheDocument();
   });
 });
