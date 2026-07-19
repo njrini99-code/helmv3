@@ -1088,6 +1088,34 @@ function AspectRow({
   );
 }
 
+/**
+ * PulseStrip's meta caption — player count + an optional "need attention"
+ * clause + an optional freshness clause, joined ` · `. Isolated as a pure
+ * function (rather than inline JSX) so the "omit rather than mislead"
+ * freshness contract — the whole point of audit W3's freshness-honesty
+ * finding — is pinned by a DIRECT test at the render-assembly layer, not
+ * just at `formatAnalyzed` in isolation. This composition was silently
+ * dropped once already during cross-PR merge conflict resolution (#925/#929,
+ * restored in 09f13c0b), regressing to a fabricated-timestamp label in the
+ * interim — a render-layer test closes that gap so it can't happen again
+ * unnoticed.
+ *
+ * `lastAnalyzed` here is the ALREADY-FORMATTED (`formatAnalyzed`) date-only
+ * label, or '' when there's no completed round to honestly anchor the
+ * freshness claim to (never a raw date/timestamp) — the clause is omitted
+ * entirely in that case rather than showing a misleading stamp.
+ */
+export function pulseMetaLine(
+  playerCount: number,
+  attention: number,
+  lastAnalyzed: string,
+): string {
+  const parts = [`${playerCount} active ${playerCount === 1 ? 'player' : 'players'}`];
+  if (attention > 0) parts.push(`${attention} need attention`);
+  if (lastAnalyzed) parts.push(`updated ${lastAnalyzed}`);
+  return parts.join(' · ');
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
  * PulseStrip — the DEMOTED team read (was the twin-60px hero). One slim line:
  * composite + health as small inline Readouts + a muted meta line.
@@ -1130,9 +1158,7 @@ function PulseStrip({
           label="Health · out of 100"
         />
         <span className="font-fw-sans text-caption text-text-tertiary">
-          {playerCount} active {playerCount === 1 ? 'player' : 'players'}
-          {attention > 0 ? ` · ${attention} need attention` : ''}
-          {lastAnalyzed ? ` · updated ${lastAnalyzed}` : ''}
+          {pulseMetaLine(playerCount, attention, lastAnalyzed)}
         </span>
       </div>
     </InstrumentPanel>
