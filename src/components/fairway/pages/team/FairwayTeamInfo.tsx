@@ -19,6 +19,7 @@
  * legacy classes, no surface-matte / surface-stone.
  * ========================================================================== */
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Users } from 'lucide-react';
 
@@ -179,6 +180,14 @@ export function FairwayTeamInfo({
   const completedTasks = tasks.filter((t) => t.status === 'completed');
   const rosterCount = roster.length;
 
+  // Deferred to client (day-granularity `now`) so overdue detection matches
+  // the canonical Tasks page's isOverdue check without a hydration mismatch
+  // (P172 — this widget previously never flagged overdue tasks at all, while
+  // the canonical /dashboard/tasks page and Team Hub's Tasks tab both render
+  // a bold red "Overdue" pill for the identical underlying task).
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => setNow(new Date()), []);
+
   // P371 — when EVERY region is empty the page would otherwise be a passive
   // dead-end (all four EmptyStates with no next action). Surface ONE contextual
   // escape to the player Team Hub so a wholly-empty page still has somewhere to
@@ -317,6 +326,11 @@ export function FairwayTeamInfo({
                   task.priority && task.priority !== 'normal';
                 const urgent =
                   task.priority === 'high' || task.priority === 'urgent';
+                // Same overdue rule as the canonical Tasks page (FairwayTasks)
+                // and Team Hub's Tasks tab (TaskRow): a real due date in the
+                // past on a task that isn't complete.
+                const isOverdue =
+                  !!now && !!task.due_date && new Date(task.due_date) < now;
                 return (
                   <Surface key={task.id} elevation="border" padding="md">
                     <div className="flex items-start gap-3">
@@ -334,7 +348,13 @@ export function FairwayTeamInfo({
                           </p>
                         ) : null}
                         {task.due_date ? (
-                          <p className="mt-1 font-fw-sans text-caption text-text-tertiary">
+                          <p
+                            className={cn(
+                              'mt-1 font-fw-sans text-caption',
+                              isOverdue ? 'font-semibold text-fw-danger' : 'text-text-tertiary',
+                            )}
+                            suppressHydrationWarning
+                          >
                             Due{' '}
                             {new Date(task.due_date).toLocaleDateString(undefined, {
                               month: 'short',
@@ -343,16 +363,23 @@ export function FairwayTeamInfo({
                           </p>
                         ) : null}
                       </div>
-                      {showPriority ? (
-                        <StatusPill
-                          tone={urgent ? 'danger' : 'neutral'}
-                          size="sm"
-                          dot={false}
-                          className="flex-shrink-0 uppercase tracking-[0.06em]"
-                        >
-                          {task.priority}
-                        </StatusPill>
-                      ) : null}
+                      <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+                        {isOverdue ? (
+                          <StatusPill tone="danger" size="sm" dot>
+                            Overdue
+                          </StatusPill>
+                        ) : null}
+                        {showPriority ? (
+                          <StatusPill
+                            tone={urgent ? 'danger' : 'neutral'}
+                            size="sm"
+                            dot={false}
+                            className="uppercase tracking-[0.06em]"
+                          >
+                            {task.priority}
+                          </StatusPill>
+                        ) : null}
+                      </div>
                     </div>
                   </Surface>
                 );
