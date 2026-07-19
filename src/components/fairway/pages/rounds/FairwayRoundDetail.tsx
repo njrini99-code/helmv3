@@ -43,6 +43,7 @@
  * ========================================================================== */
 
 import { useMemo } from 'react';
+import { cleanCourseName } from '@/lib/golf/course-name';
 import Link from 'next/link';
 
 import {
@@ -152,7 +153,11 @@ function roundTypeLabel(roundType: string | null): string {
 
 /** Strip trailing club/course suffixes for a tighter masthead title. */
 function shortCourse(name: string | null): string {
-  return name?.replace(/\s+(Golf\s+(Course|Club)|Country\s+Club|GC|CC)$/i, '').trim() || 'Round';
+  return (
+    cleanCourseName(name)
+      .replace(/\s+(Golf\s+(Course|Club)|Country\s+Club|GC|CC)$/i, '')
+      .trim() || 'Round'
+  );
 }
 
 /** A scored hole vs its par → a scoring-distribution bucket. */
