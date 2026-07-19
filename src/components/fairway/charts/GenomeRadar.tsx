@@ -96,11 +96,28 @@ export function GenomeRadar({
         minHeight={height}
         initialDimension={{ width: 1, height }}
       >
-        <RadarChart data={data} outerRadius="72%" margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+        <RadarChart
+          data={data}
+          outerRadius="56%"
+          // Generous margin (NOT the outerRadius%) is what actually reserves the
+          // label ring — recharts' maxRadius = min(width - L - R, height - T - B) / 2,
+          // so shrinking the plot via margin (rather than clipping) leaves real
+          // room for axis labels like "Back-9 stamina" / "Par-3 performance" to
+          // sit fully inside the SVG instead of running off the edge.
+          margin={{ top: 20, right: 28, bottom: 20, left: 28 }}
+        >
           <PolarGrid stroke={VIZ_CHROME.grid} />
           <PolarAngleAxis
             dataKey="label"
-            tick={{ fill: VIZ_COLOR.textTertiary, fontSize: VIZ_FONT.tickSize, fontFamily: VIZ_FONT.numeric }}
+            tick={{
+              fill: VIZ_COLOR.textTertiary,
+              fontSize: VIZ_FONT.tickSize,
+              fontFamily: VIZ_FONT.numeric,
+              // recharts' <Text> auto-wraps to as many lines as needed within
+              // this width — no truncation/ellipsis, just real multi-line space
+              // for long dimension labels ("Driver usage", "Par-3 performance").
+              width: 62,
+            }}
           />
           <PolarRadiusAxis
             domain={[0, max]}
