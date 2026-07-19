@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { IconButton } from '@/components/ui/button';
 import {
   IconTarget,
   IconTrendingUp,
@@ -254,17 +253,33 @@ function FocusAreaCard({
 }) {
   const interactive = !!onClick;
 
+  // `block` + `text-left` are load-bearing: this card stacks its children
+  // vertically (badge, name, rating, bar, recommendation). It must NEVER be an
+  // inline-flex/centered box, or the whole stack collapses into overlapping row
+  // content (the IconButton regression: size-md forced `inline-flex
+  // items-center justify-center w-11 h-11`, crushing the card into a 44px icon
+  // box). Both the button and the Link fallback share this block layout.
   const sharedClassName = cn(
-    'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
+    'relative block w-full p-4 rounded-xl border text-left transition-all duration-200',
     'surface-matte',
     interactive && 'hover:bg-cream-50/92 hover:shadow-lg hover:-translate-y-0.5 group cursor-pointer'
   );
 
   if (interactive) {
+    // <Button>/<IconButton> both force `inline-flex items-center justify-center`
+    // on a fixed-size box; this is a stacked block CARD, and that centering is
+    // exactly what collapsed it into overlapping columns in prod. A raw block
+    // <button> is the correct primitive here.
     return (
-      <IconButton variant="default" aria-label="Focus Area Card Content" onClick={onClick} className={sharedClassName}>
+      // eslint-disable-next-line helm/no-raw-button -- stacked card, see note above
+      <button
+        type="button"
+        aria-label={`Focus area: ${formatAreaName(focusArea.area)}`}
+        onClick={onClick}
+        className={sharedClassName}
+      >
         <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
-      </IconButton>
+      </button>
     );
   }
 
