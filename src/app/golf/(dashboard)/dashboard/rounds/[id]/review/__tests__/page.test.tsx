@@ -84,7 +84,24 @@ vi.mock('framer-motion', async () => {
   };
 });
 
-const roundRow = {
+// `let` (not `const`) so individual tests (#109 course-name casing, #34
+// hole-jump nav) can swap in a different row shape before rendering — the
+// `golf_rounds` mock below reads this variable at call time, not a snapshot.
+let roundRow: {
+  id: string;
+  player_id: string;
+  course_name: string | null;
+  round_date: string;
+  total_score: number | null;
+  score_to_par: number | null;
+  total_putts: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  holes_played: number | null;
+  holes: Array<{ hole_number: number; score: number | null; par: number | null; yardage: number | null }>;
+} = {
   id: 'round-1',
   player_id: 'player-1',
   course_name: 'Pinehurst No. 2',
@@ -244,5 +261,58 @@ describe('RoundReviewPage — stats comparison inputs', () => {
       avgPutts: 33,
     });
     expect(capturedStatsProps?.teamAvg).toBeNull();
+  });
+});
+
+const DEFAULT_ROUND_ROW = { ...roundRow };
+
+describe('RoundReviewPage — course-name casing (#109) + hole-jump nav (#34)', () => {
+  beforeEach(() => {
+    capturedStatsProps = null;
+    roundRow = { ...DEFAULT_ROUND_ROW };
+  });
+
+  it('title-cases an all-lowercase course name like every sibling course row', async () => {
+    roundRow = { ...DEFAULT_ROUND_ROW, course_name: 'pine lakes' };
+
+    const { getByRole } = render(
+      <GolfUserProvider
+        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
+      >
+        <RoundReviewPage />
+      </GolfUserProvider>,
+    );
+
+    // The ViewHeader title (an <h1>, present on both the loading and loaded
+    // surfaces) renders the display-cased name, never the raw lowercase
+    // value stored on the round.
+    await waitFor(() => {
+      expect(getByRole('heading', { level: 1 }).textContent).toBe('Pine Lakes');
+    });
+  });
+
+  it('renders a 1-18 hole-jump chip for every hole instead of only a scroll', async () => {
+    roundRow = {
+      ...DEFAULT_ROUND_ROW,
+      holes: Array.from({ length: 18 }, (_, i) => ({
+        hole_number: i + 1,
+        score: 4,
+        par: 4,
+        yardage: 380,
+      })),
+    };
+
+    const { findByRole, getByRole } = render(
+      <GolfUserProvider
+        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
+      >
+        <RoundReviewPage />
+      </GolfUserProvider>,
+    );
+
+    await findByRole('button', { name: 'Jump to hole 1' });
+    for (let hole = 1; hole <= 18; hole++) {
+      expect(getByRole('button', { name: `Jump to hole ${hole}` })).toBeInTheDocument();
+    }
   });
 });
