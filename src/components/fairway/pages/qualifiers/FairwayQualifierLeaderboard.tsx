@@ -260,7 +260,7 @@ export function FairwayQualifierLeaderboard({
           <EmptyState
             variant="subtle"
             icon={Flag}
-            title="Completed — no rounds were recorded"
+            title="Completed: no rounds were recorded"
             description={
               entrantCount > 0
                 ? `${entrantCount} player${entrantCount === 1 ? '' : 's'} entered, but no rounds were posted before this qualifier closed.`

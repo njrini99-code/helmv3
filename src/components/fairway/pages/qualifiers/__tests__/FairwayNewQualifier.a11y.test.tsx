@@ -46,13 +46,24 @@ describe('FairwayNewQualifier — form control accessible names (P192)', () => {
     }
   });
 
-  it('gives every numeric stepper field a non-empty accessible name via its FormField', () => {
+  it('gives every numeric stepper field a real accessible name via aria-labelledby', () => {
     render(<FairwayNewQualifier players={players} />);
-    // NumberField renders its value as a text input (role="textbox"); the 3
-    // numeric fields are Rounds, Squad size, Coach's picks.
+    // NumberField renders its value as a native text input (role="textbox");
+    // the 3 numeric fields are Rounds, Squad size, Coach's picks. Assert the
+    // actual accessible-name wiring on the rendered input — not just that the
+    // label text renders somewhere on the page, which would pass even if the
+    // input and label were never associated (matches the rigor of the date
+    // input check above).
     const numericLabels = ['Rounds', 'Squad size', "Coach's picks"];
     for (const label of numericLabels) {
-      expect(screen.getByText(label)).toBeTruthy();
+      const input = screen.getByRole('textbox', { name: label });
+      expect(input).toBeTruthy();
+      const labelledBy = input.getAttribute('aria-labelledby');
+      expect(labelledBy).toBeTruthy();
+      expect(document.getElementById(labelledBy as string)).toBeTruthy();
     }
+
+    const numericInputs = document.querySelectorAll('input[data-slot="number-field-input"]');
+    expect(numericInputs.length).toBe(numericLabels.length);
   });
 });
