@@ -32,6 +32,20 @@
  * No loader/schema change: snippet + origin chips render only when the route
  * supplies them (residual decisions #3). Coach-gated Ask stays coach-gated —
  * the gate lives on the route + endpoints, not here.
+ *
+ * KNOWN GAP, DELIBERATELY OUT OF SCOPE HERE (#76 — AI states the wrong player
+ * count, e.g. "all 6 players" against a 7-player roster): this workspace never
+ * assembles roster/player-count context — it only renders `messages` it is
+ * handed. The count the model states comes from `get_team_overview` in
+ * src/lib/coachhelm/v3/chat/tools.ts, which silently `.filter()`s out any
+ * `golf_team_members` row whose joined `golf_players` record comes back
+ * null/malformed before counting — so a roster member with a missing/broken
+ * player join is dropped from the count with no signal to the agent or the
+ * coach. That file is outside this package's owned files (see round-2 task
+ * scope); fixing it needs its own change (surface a `total_roster_size`
+ * distinct from `players.length` returned to the model, or fail loud instead
+ * of silently filtering) plus a regression test asserting the tool's returned
+ * count matches `SELECT count(*) ... WHERE status = 'active'` for the team.
  * ========================================================================== */
 
 import * as React from 'react';
