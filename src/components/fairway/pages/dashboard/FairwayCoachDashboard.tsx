@@ -1044,14 +1044,14 @@ function TodayPanel({
           calendar to see the full schedule.
         </InlineNotice>
       ) : events.length === 0 ? (
-        <Surface elevation="border" padding="md">
-          <EmptyState
-            variant="subtle"
-            icon={LucideCalendar}
-            title="Clear schedule today"
-            description="No events on the books — a good window for practice or recovery."
-          />
-        </Surface>
+        // Right-sized for the COMMON case (audit #64): most days have nothing
+        // on the books, so a clear schedule is the everyday state, not an
+        // edge case — it no longer spends a full monolithic EmptyState card
+        // (icon + title + description) on that. A single quiet InlineNotice
+        // row says the same thing at the size the message actually needs.
+        <InlineNotice tone="info" icon={LucideCalendar} title="Clear schedule today">
+          A good window for practice or recovery.
+        </InlineNotice>
       ) : (
         <Surface elevation="border" padding="sm">
           <ul className="flex flex-col gap-2">

@@ -351,7 +351,17 @@ export function GenomeFingerprintTeaser({
           </Button>
         }
       />
-      <div className="-mt-2 flex-1">
+      {/* `[&_svg]:overflow-visible` (audit #170): recharts' ResponsiveContainer
+          renders a plain `<svg>`, and every non-root `<svg>` gets `overflow:
+          hidden` from the browser's own UA stylesheet — so a polar axis label
+          positioned past the SVG's own width (e.g. "Approach" at the radar's
+          east spoke, on a narrow card) is clipped hard at that box edge
+          ("Approach" → "Approac") with nothing in this component's own CSS
+          asking for that. Nothing else in this single-series radar relies on
+          SVG clipping (no clip-path reveal here), so overriding it to visible
+          only lets the label text render in full — it doesn't affect the
+          Radar/PolarGrid geometry itself. */}
+      <div className="-mt-2 flex-1 [&_svg]:overflow-visible">
         <GenomeRadar
           title={null as unknown as React.ReactNode}
           data={axes}

@@ -499,9 +499,15 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   Scoring trend
                 </SectionTitle>
                 <Surface padding="md">
+                  {/* title omitted (audit #169): the SectionTitle above already
+                      renders "Scoring trend" as the page-level heading — passing
+                      the SAME text into ChartFrame's own `truncate`-d h3 gave the
+                      card a second, redundant "Scoring trend" that then clipped
+                      to "Scoring tre…" once the header row's ViewToggle button
+                      squeezed it. Same null-title pattern already used by
+                      GenomeFingerprintTeaser below for the identical reason. */}
                   <TrendChart
-                    title="Scoring trend"
-                    overline="Last rounds"
+                    title={null}
                     data={trendPoints}
                     state={trendPoints.length >= 2 ? 'ready' : 'insufficient-data'}
                     height={240}
