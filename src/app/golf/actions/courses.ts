@@ -316,12 +316,10 @@ async function updateCourseImpl(
     }
   }
 
-  // Update holes if provided
-  if (data.holes) {
-    // Delete existing holes and re-insert
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('golf_course_holes').delete().eq('course_id', courseId);
-
+  // Update holes if provided — upsert then prune, never a destructive
+  // delete-before-insert (a transient failure between the two would wipe the
+  // course's holes with no recovery). See "GolfHelm — no destructive writes".
+  if (data.holes && data.holes.length > 0) {
     const holesData = data.holes.map(hole => ({
       course_id: courseId,
       hole_number: hole.holeNumber,
@@ -330,7 +328,27 @@ async function updateCourseImpl(
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('golf_course_holes').insert(holesData);
+    const { error: holesError } = await (supabase as any)
+      .from('golf_course_holes')
+      .upsert(holesData, { onConflict: 'course_id,hole_number' });
+    if (holesError) {
+      await logServerError(`updateCourse holes upsert failed: ${holesError.message}`, {
+        action: 'updateCourse',
+        featureArea: 'courses',
+        extra: { courseId, errorCode: holesError.code },
+      });
+      return { success: false, error: 'Failed to update course holes' };
+    }
+
+    // Prune holes no longer in the set (e.g. 18 -> 9) AFTER the upsert, so the
+    // course never passes through a zero-hole state.
+    const keptNumbers = data.holes.map((h) => h.holeNumber);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('golf_course_holes')
+      .delete()
+      .eq('course_id', courseId)
+      .not('hole_number', 'in', `(${keptNumbers.join(',')})`);
 
     // Update par total
     const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
