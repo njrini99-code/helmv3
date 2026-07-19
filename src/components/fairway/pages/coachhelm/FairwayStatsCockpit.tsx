@@ -295,6 +295,45 @@ function formatSg(value: number | null): string {
   return value > 0 ? `+${fixed}` : `−${fixed}`;
 }
 
+export interface GainLeakItem {
+  label: string;
+  value: number;
+}
+
+export interface GainLeakResult {
+  best: GainLeakItem;
+  worst: GainLeakItem;
+  /** True only when `best.value` is a genuine gain (> 0 vs the Tour baseline). */
+  bestIsGain: boolean;
+  /** True only when `worst.value` is a genuine loss (< 0 vs the Tour baseline). */
+  worstIsLeak: boolean;
+}
+
+/**
+ * Pick the strongest / weakest SG category by value, then classify EACH
+ * against the Tour-baseline zero point — SG's genuine sign boundary — not
+ * by rank alone. Rank-only selection (max always labeled "gain", min always
+ * labeled "leak") mislabels a player who is below Tour in every category:
+ * the max of four negatives is still a stroke COST vs the field, never a
+ * gain, so it must not render as one (same bug class as #944 — see
+ * `insightEvidenceLines` above, which fixed the identical valence mismatch
+ * for insight cards). Symmetrically, the min of four positives is still a
+ * genuine (if small) GAIN, never a leak. Needs >= 2 distinct-label values.
+ */
+export function computeGainLeak(
+  scored: ReadonlyArray<GainLeakItem>,
+): GainLeakResult | null {
+  if (scored.length < 2) return null;
+  let best = scored[0]!;
+  let worst = scored[0]!;
+  for (const s of scored) {
+    if (s.value > best.value) best = s;
+    if (s.value < worst.value) worst = s;
+  }
+  if (best.label === worst.label) return null;
+  return { best, worst, bestIsGain: best.value > 0, worstIsLeak: worst.value < 0 };
+}
+
 /* ── Honest display formatters (em-dash for null, never a fabricated 0) ─────── */
 
 /** Percent to 0 dp, e.g. "62%". Null/non-finite → em-dash. */
@@ -754,21 +793,15 @@ export function FairwayStatsCockpit({
     [standingByMetric],
   );
 
-  // Biggest gain / biggest leak across the four SG categories (SG is
-  // higher-better, so max value = strength, min = leak). Needs ≥2 to compare.
+  // Biggest gain / biggest leak across the four SG categories. See
+  // `computeGainLeak` for why this is sign-classified against the Tour
+  // baseline, not just ranked (SG is higher-better, so max = strongest,
+  // min = weakest — but "strongest" is only a real GAIN if it's > 0).
   const gainLeak = useMemo(() => {
     const scored = sgCategoryItems
       .map((it) => ({ label: it.cfg.display_label, value: finite(it.row.player_value) }))
       .filter((x): x is { label: string; value: number } => x.value !== null);
-    if (scored.length < 2) return null;
-    let best = scored[0]!;
-    let worst = scored[0]!;
-    for (const s of scored) {
-      if (s.value > best.value) best = s;
-      if (s.value < worst.value) worst = s;
-    }
-    if (best.label === worst.label) return null;
-    return { best, worst };
+    return computeGainLeak(scored);
   }, [sgCategoryItems]);
 
   // Tornado data for the SG tab — the same four category values, shaped for
@@ -1117,20 +1150,24 @@ export function FairwayStatsCockpit({
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                       {/* W6 polish: the best-value column across the four SG
                           categories gets the green-ruled leader treatment.
-                          Biggest gain/leak now share the SAME atom (both
-                          RuledLeaderStat) — leak stays plain-graphite (no
-                          `leader`) rather than an ad hoc warning-colored span,
-                          so the pair reads as one consistent callout. */}
+                          Biggest gain/leak share the SAME atom (both
+                          RuledLeaderStat). Valence fix (audit W3): the label
+                          AND the green `leader` treatment must track the
+                          value's actual SIGN vs the Tour baseline, not just
+                          its rank — a below-Tour value is never a "gain" no
+                          matter how it ranks among the other three, and a
+                          above-Tour value is never a "leak". */}
                       <RuledLeaderStat
-                        label="Biggest gain"
+                        label={gainLeak.bestIsGain ? 'Biggest gain' : 'Smallest loss'}
                         value={`${formatSg(gainLeak.best.value)} · ${gainLeak.best.label.replace(/^SG:\s*/i, '')}`}
                         size="compact"
-                        leader
+                        leader={gainLeak.bestIsGain}
                       />
                       <RuledLeaderStat
-                        label="Biggest leak"
+                        label={gainLeak.worstIsLeak ? 'Biggest leak' : 'Smallest gain'}
                         value={`${formatSg(gainLeak.worst.value)} · ${gainLeak.worst.label.replace(/^SG:\s*/i, '')}`}
                         size="compact"
+                        leader={!gainLeak.worstIsLeak}
                       />
                     </div>
                   ) : null}
@@ -1271,7 +1308,7 @@ function SgVerdict({
 }: {
   sgTotal: PlayerStandingRow | null;
   detailedStats: GolfStats | null;
-  gainLeak: { best: { label: string }; worst: { label: string } } | null;
+  gainLeak: Pick<GainLeakResult, 'best' | 'worst' | 'bestIsGain' | 'worstIsLeak'> | null;
   /** Rendered in the hero panel's own header bezel (top-right), e.g. the print/export control. */
   headerAction?: React.ReactNode;
   /** Bug #915 — 'self' shows "You" on the SG card, 'coach' shows the player's name/initials. */
@@ -1293,7 +1330,16 @@ function SgVerdict({
       // Strip the "SG: " metric-id prefix so the prose reads "around the green",
       // not "sg: around the green".
       const cleanLabel = (l: string) => l.toLowerCase().replace(/^sg:\s*/, '');
-      return `${head}. Strongest in ${cleanLabel(gainLeak.best.label)}; leaking most in ${cleanLabel(gainLeak.worst.label)}.`;
+      // Valence fix (audit W3): "leaking most" is only true when the weakest
+      // category is actually below Tour (worstIsLeak) — a player gaining in
+      // every category has a SMALLEST gain, never a leak, in that slot.
+      const bestPhrase = gainLeak.bestIsGain
+        ? `Strongest in ${cleanLabel(gainLeak.best.label)}`
+        : `Least behind in ${cleanLabel(gainLeak.best.label)}`;
+      const worstPhrase = gainLeak.worstIsLeak
+        ? `leaking most in ${cleanLabel(gainLeak.worst.label)}`
+        : `smallest gain in ${cleanLabel(gainLeak.worst.label)}`;
+      return `${head}. ${bestPhrase}; ${worstPhrase}.`;
     }
     return `${head}.`;
   })();
