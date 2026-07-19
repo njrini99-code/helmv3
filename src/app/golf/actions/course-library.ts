@@ -66,7 +66,7 @@ function revalidateLibrary() {
 // Actor / team resolution
 // ─────────────────────────────────────────────────────────────────────────────
 
-type Actor = { userId: string; teamId: string | null };
+type Actor = { userId: string; teamId: string | null; isCoach: boolean };
 
 /** Authenticated user + best-effort attribution team (coach's active team). */
 async function getActor(
@@ -86,7 +86,25 @@ async function getActor(
   if (coach) {
     teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   }
-  return { userId: user.id, teamId };
+  return { userId: user.id, teamId, isCoach: Boolean(coach) };
+}
+
+/**
+ * Course-library MANAGEMENT gate (Decision-1 option A — coach-open,
+ * player-blocked; commit bc8b8372 already hides the create/edit/delete UI
+ * controls from players in CourseLibraryClient.tsx and CourseDetailDrawer.tsx).
+ * Returns an error string when the actor may NOT create/edit/delete a course,
+ * tee, or tee's hole set; null when the actor is allowed to proceed. A super
+ * admin always passes, matching the existing library-owned-row escape hatch.
+ *
+ * NOT applied to the `contributeCourseFromRound` growth path — a player
+ * saving a round with a not-yet-cataloged course/tee is legitimate additive
+ * catalog growth, not "managing the library", and that path calls the
+ * `*Core`-equivalent (skipCoachGate) entry points directly. (#36/#187)
+ */
+function requireCoachActor(actor: Actor): string | null {
+  if (actor.isCoach || isActorSuperAdmin(actor)) return null;
+  return 'Only coaches can manage the course library';
 }
 
 /** Resolve the caller's active team AS A COACH (team-library management gate). */
@@ -789,10 +807,15 @@ export interface CreateCourseInput {
  */
 async function createCourseImpl(
   input: CreateCourseInput,
+  opts: { skipCoachGate?: boolean } = {},
 ): Promise<Result<{ course: GolfCourse; deduped: boolean }>> {
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
+  if (!opts.skipCoachGate) {
+    const gateError = requireCoachActor(actor);
+    if (gateError) return { success: false, error: gateError };
+  }
 
   const name = input.name?.trim();
   if (!name) return { success: false, error: 'Course name is required' };
@@ -899,6 +922,8 @@ async function updateCourseImpl(
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
+  const gateError = requireCoachActor(actor);
+  if (gateError) return { success: false, error: gateError };
 
   const { data: before } = await supabase
     .from('golf_courses')
@@ -1013,6 +1038,8 @@ async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Res
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
+  const gateError = requireCoachActor(actor);
+  if (gateError) return { success: false, error: gateError };
 
   // #913 part 2 — same library-ownership gate as updateCourse. Soft-delete
   // and restore are both writes to golf_courses.deleted_at, so they need the
@@ -1143,10 +1170,15 @@ export interface CreateTeeInput {
 async function createTeeImpl(
   courseId: string,
   input: CreateTeeInput,
+  opts: { skipCoachGate?: boolean } = {},
 ): Promise<Result<GolfCourseTeeWithHoles>> {
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
+  if (!opts.skipCoachGate) {
+    const gateError = requireCoachActor(actor);
+    if (gateError) return { success: false, error: gateError };
+  }
 
   const teeName = input.teeName?.trim();
   if (!teeName) return { success: false, error: 'Tee name is required' };
@@ -1266,13 +1298,15 @@ async function contributeCourseFromRoundImpl(
   const name = input.courseName?.trim();
   if (!name) return { success: false, error: 'Course name is required' };
 
-  // 1) Dedup-create the facility (createCourse returns the existing row on a name match).
-  const courseRes = await createCourse({
-    name,
-    city: input.city ?? null,
-    state: input.state ?? null,
-    source: 'round',
-  });
+  // 1) Dedup-create the facility (createCourseImpl returns the existing row on a
+  //    name match). Calls the ungated impl directly (skipCoachGate) — this is
+  //    additive catalog growth from a player's own saved round, NOT "managing
+  //    the library" (Decision-1 option A only blocks the latter for players;
+  //    see requireCoachActor above and #36/#187).
+  const courseRes = await createCourseImpl(
+    { name, city: input.city ?? null, state: input.state ?? null, source: 'round' },
+    { skipCoachGate: true },
+  );
   if (!courseRes.success) return courseRes;
   const courseId = courseRes.data.course.id;
 
@@ -1288,19 +1322,23 @@ async function contributeCourseFromRoundImpl(
   const match = (existingTees ?? []).find((t) => (t.normalized_tee_name as string) === normTee);
   if (match) return { success: true, data: { courseId, teeId: match.id as string } };
 
-  const teeRes = await createTee(courseId, {
-    teeName,
-    courseRating: input.courseRating ?? null,
-    slopeRating: input.slopeRating ?? null,
-    holesCount: input.holes.length === 9 ? 9 : 18,
-    source: 'round',
-    holes: input.holes.map((h) => ({
-      holeNumber: h.holeNumber,
-      par: h.par,
-      // A round may leave yardage at 0 ("not entered") — keep the catalog honest.
-      yardage: typeof h.yardage === 'number' && h.yardage > 0 ? h.yardage : null,
-    })),
-  });
+  const teeRes = await createTeeImpl(
+    courseId,
+    {
+      teeName,
+      courseRating: input.courseRating ?? null,
+      slopeRating: input.slopeRating ?? null,
+      holesCount: input.holes.length === 9 ? 9 : 18,
+      source: 'round',
+      holes: input.holes.map((h) => ({
+        holeNumber: h.holeNumber,
+        par: h.par,
+        // A round may leave yardage at 0 ("not entered") — keep the catalog honest.
+        yardage: typeof h.yardage === 'number' && h.yardage > 0 ? h.yardage : null,
+      })),
+    },
+    { skipCoachGate: true },
+  );
   // The facility link is what matters; a tee failure (incl. a race 23505) leaves
   // the course contributed with teeId null rather than failing the whole call.
   return { success: true, data: { courseId, teeId: teeRes.success ? teeRes.data.id : null } };
@@ -1341,6 +1379,8 @@ async function updateTeeImpl(
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
+  const gateError = requireCoachActor(actor);
+  if (gateError) return { success: false, error: gateError };
 
   const { data: before } = await supabase
     .from('golf_course_tees').select('*').eq('id', teeId).is('deleted_at', null).maybeSingle();
@@ -1481,6 +1521,8 @@ async function setTeeDeleted(teeId: string, deleted: boolean): Promise<Result<vo
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
+  const gateError = requireCoachActor(actor);
+  if (gateError) return { success: false, error: gateError };
 
   const { error } = await supabase
     .from('golf_course_tees')
