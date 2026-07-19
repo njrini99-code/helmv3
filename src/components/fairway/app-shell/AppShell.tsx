@@ -324,6 +324,20 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   return (
     <div
       ref={ref}
+      // #18/#196: `MoreNavSheet` (vaul, `modal`) already marks this whole
+      // subtree `aria-hidden` while open — Radix's built-in `hideOthers` does
+      // that automatically — but `aria-hidden` alone only removes a subtree
+      // from the ACCESSIBILITY tree; it does neither block Tab from focusing
+      // an element inside it nor stop it from being hit-tested by a pointer
+      // that lands outside the sheet's own scrim/content (e.g. a `position:
+      // fixed` element with its own stacking context). `inert` (native,
+      // supported since React 19 as a real DOM prop) additionally removes the
+      // subtree from the tab order AND from hit-testing — the SAME guarantee
+      // the (Radix-Dialog-based) Create Task Dialog already gets for free.
+      // `MoreNavSheet`'s own rendered content lives in vaul's own body-level
+      // portal, entirely OUTSIDE this div, so making this wrapper inert never
+      // reaches into the sheet itself.
+      inert={mobileOpen || undefined}
       className={cn(
         FAIRWAY_SCOPE,
         'relative min-h-dvh w-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary antialiased',

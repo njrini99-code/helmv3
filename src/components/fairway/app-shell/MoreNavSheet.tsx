@@ -90,7 +90,11 @@ function OverflowRow({ item, active, Link }: OverflowRowProps) {
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex min-h-[56px] items-center gap-3 rounded-fw-md px-4 py-2',
+        // #177: `w-full overflow-hidden` — the row must never measure wider
+        // than its sheet, even transiently (e.g. a badge/description longer
+        // than expected before `truncate` can clip it). `min-w-0` lets the
+        // flex child below actually shrink instead of pushing the row wide.
+        'flex w-full min-h-[56px] min-w-0 items-center gap-3 overflow-hidden rounded-fw-md px-4 py-2',
         'transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
         active ? 'bg-surface-sunken text-accent-700' : 'text-text-secondary hover:bg-surface-sunken/60',
       )}
@@ -106,7 +110,7 @@ function OverflowRow({ item, active, Link }: OverflowRowProps) {
           className={cn('flex-shrink-0', active ? 'text-accent-700' : 'text-text-secondary')}
         />
       </span>
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1 overflow-hidden">
         <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
           {item.label}
         </span>
@@ -119,7 +123,7 @@ function OverflowRow({ item, active, Link }: OverflowRowProps) {
       {typeof item.badge === 'number' && item.badge > 0 ? (
         <span
           className={cn(
-            'flex-shrink-0 min-w-[20px] rounded-full px-1.5 py-0.5 text-center',
+            'flex-shrink-0 min-w-[20px] max-w-[48px] truncate rounded-full px-1.5 py-0.5 text-center',
             'bg-accent-600 font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent',
           )}
         >
@@ -168,7 +172,12 @@ export const MoreNavSheet = memo(function MoreNavSheet({
           <Link
             href={settingsHref}
             className={cn(
-              'mb-2 flex items-center gap-3 rounded-fw-md px-2 py-2.5',
+              // #178: explicit 44px floor (WCAG 2.2 AA 2.5.8) — the row's
+              // rendered height happens to clear it today (Avatar `md` +
+              // padding) but that was incidental, not guaranteed; make it
+              // explicit like `OverflowRow`'s `min-h-[56px]` and
+              // `MoreSheetFooter`'s `min-h-[44px]`.
+              'mb-2 flex min-h-[44px] w-full min-w-0 items-center gap-3 overflow-hidden rounded-fw-md px-2 py-2.5',
               'transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none hover:bg-surface-sunken',
             )}
           >
