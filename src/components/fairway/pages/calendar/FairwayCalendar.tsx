@@ -58,6 +58,7 @@ import {
   endOfMonth,
   addDays,
   addMonths,
+  isSameDay,
 } from 'date-fns';
 import { CalendarPlus, RefreshCw } from 'lucide-react';
 import { Segmented, Sheet, Button as FwButton, Skeleton, fairwayToast } from '@/components/fairway';
@@ -610,8 +611,20 @@ export function FairwayCalendar({
     total: number;
   } | null>(null);
 
-  // Count of events in the visible window (for the hero status line).
+  // Count of events in the visible window (for the hero status line). Day
+  // view is special-cased: `visibleWindow` for 'day' reuses the WEEK range
+  // (a fetch-buffer implementation detail — see visibleWindow above), but the
+  // Day body (FairwayAgendaView mode="day") only ever shows `focusDate`'s own
+  // events, so the hero count must match what's actually on screen instead of
+  // silently counting the whole week (mustFix #4).
   const windowCount = React.useMemo(() => {
+    if (view === 'day') {
+      return events.filter((e) => {
+        const s = e.start_date || e.start_time;
+        if (!s) return false;
+        return isSameDay(new Date(s), focusDate);
+      }).length;
+    }
     const startMs = visibleWindow.start.getTime();
     const endMs = visibleWindow.end.getTime() + 24 * 60 * 60 * 1000 - 1;
     return events.filter((e) => {
@@ -620,7 +633,7 @@ export function FairwayCalendar({
       const t = new Date(s).getTime();
       return t >= startMs && t <= endMs;
     }).length;
-  }, [events, visibleWindow]);
+  }, [events, visibleWindow, view, focusDate]);
 
   // Upcoming count — derived from the SAME canonical `events` list as
   // `windowCount` (finding #37/#166/#185/#83). The server-computed
@@ -854,6 +867,7 @@ export function FairwayCalendar({
         windowCount={windowCount}
         isMonthView={view === 'month'}
         isAgendaView={isAgenda}
+        isDayView={isDay}
         isCoach={isCoach}
         onNavigate={navigate}
         onSelectDate={(d) => setFocusDate(d)}

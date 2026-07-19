@@ -54,4 +54,21 @@ describe('FairwayCalendarHero — status line grammar', () => {
     expect(line).not.toContain('this in view');
     expect(line).not.toContain('this this');
   });
+
+  // mustFix #4: Day view had no branch of its own and fell through to the
+  // "week" label (the Day lens' internal fetch buffer reuses the week
+  // range), so a single-day window was mislabeled "this week".
+  it('labels the single-day lens "today", never falling through to "this week"', () => {
+    const { container } = renderHero({ isMonthView: false, isAgendaView: false, isDayView: true });
+    const line = container.textContent ?? '';
+    expect(line).toContain('2 today');
+    expect(line).not.toContain('this week');
+    expect(line).not.toContain('this this');
+  });
+
+  it('still labels the week lens "this week" when isDayView is explicitly false', () => {
+    const { container } = renderHero({ isMonthView: false, isAgendaView: false, isDayView: false });
+    const line = container.textContent ?? '';
+    expect(line).toContain('2 this week');
+  });
 });

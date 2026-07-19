@@ -151,6 +151,40 @@ export function FairwayAgendaView({
 
   const totalEvents = buckets.reduce((sum, b) => sum + b.events.length, 0);
 
+  // ── Anchor scroll to today/next-upcoming on genuine navigation ─────────────
+  // Range mode's window spans months back AND forward (up to ±3 for Agenda),
+  // so with no anchor the DOM's natural scroll position is simply the TOP of
+  // the list — the oldest bucket in range, which can easily be six-plus weeks
+  // in the past. That reads as "the event list skips to a stale event"
+  // because a real near-term event is buried below a wall of history the
+  // user never asked to see first. We anchor to the first bucket at/after
+  // today whenever the visible range actually changes (not on every data
+  // refresh — `navKey` below is deliberately narrower than `buckets`' own
+  // deps so a realtime-triggered refetch mid-read can't yank the scroll
+  // position back to the anchor).
+  const bucketNodesRef = React.useRef<Map<string, HTMLElement>>(new Map());
+  const lastAnchoredNavKeyRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (mode !== 'range') return;
+    const navKey = [
+      mode,
+      focusDate.getTime(),
+      rangeStart?.getTime() ?? '',
+      rangeEnd?.getTime() ?? '',
+    ].join('|');
+    if (lastAnchoredNavKeyRef.current === navKey) return;
+    lastAnchoredNavKeyRef.current = navKey;
+    if (!nowRef) return;
+    const todayStart = startOfDay(nowRef);
+    const anchorBucket = buckets.find((b) => !isBefore(b.date, todayStart));
+    if (!anchorBucket) return; // all-past range (e.g. the honest-empty demo) — top is correct.
+    const node = bucketNodesRef.current.get(anchorBucket.key);
+    if (node && typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({ block: 'start' });
+    }
+  }, [mode, focusDate, rangeStart, rangeEnd, nowRef, buckets]);
+
   // ── HONEST-EMPTY: range mode, zero events ──────────────────────────────────
   if (mode === 'range' && totalEvents === 0) {
     return (
@@ -215,7 +249,14 @@ export function FairwayAgendaView({
           ? !bucketIsToday && isBefore(bucket.date, startOfDay(nowRef))
           : false;
         return (
-          <section key={bucket.key} aria-label={bucket.label}>
+          <section
+            key={bucket.key}
+            aria-label={bucket.label}
+            ref={(el) => {
+              if (el) bucketNodesRef.current.set(bucket.key, el);
+              else bucketNodesRef.current.delete(bucket.key);
+            }}
+          >
             {/* Day header — eyebrow rule + count. */}
             <div className="mb-3 flex items-center gap-3">
               <p
