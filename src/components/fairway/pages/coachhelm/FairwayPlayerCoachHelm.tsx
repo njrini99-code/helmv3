@@ -8,8 +8,10 @@
  * premium performance COCKPIT, not a stack of equal cards. The data-viz IS the
  * hero art. A PRESENTATION + LAYOUT rebuild ONLY: it imports + reuses the
  * EXISTING loaders/feedback handlers verbatim and keeps the heavy V3 panels
- * (HeroNarrativeCard / FocusAreasGrid / PerformancePrediction / CompositeRating
- * Card / TrendDashboard / ShotAnalysisCard / WhatIfPanel) mounted UNCHANGED.
+ * (HeroNarrativeCard / FocusAreasGrid / CompositeRatingCard / TrendDashboard /
+ * ShotAnalysisCard / WhatIfPanel) mounted UNCHANGED. The forecast is read ONCE
+ * (the cockpit's PredictionInstrument); the old standalone PerformancePrediction
+ * panel below was the same read twice and was removed.
  *
  * ── THE READ (organized, clearly-ranked, live) — FLAT APPLE ─────────────────
  *   PRIMARY (focal, flat matte) — "Your edge this week": the top evidence
@@ -28,11 +30,13 @@
  *   soon" tease — premium B1/B2: every visible control does something).
  *   SECONDARY rail — the PERFORMANCE-PREDICTION readout cluster: a big mono
  *     Readout of the predicted scoring number + a flat model-confidence Readout
- *     (NO dial). The reused PerformancePrediction panel sits below it as the
- *     fuller read (UNCHANGED).
+ *     (NO dial). This is the page's ONLY forecast surface.
  *   FLAT CHART — the GAME-STRENGTH radar (GenomeRadar) built from the real shot-
  *     analytics snapshot (driving / approach / around-green / putting), rendered
  *     BARE inside its panel. Honest awaiting when the rounds aren't there yet.
+ *   THIN-DATA COLLAPSE — when there is no forecast AND no analyzed rounds, the
+ *     secondary rail + micro-readouts fold into ONE honest "cockpit warming up"
+ *     panel instead of six empty instruments; the focal insight hero stays lead.
  *   TERTIARY foot row — micro Readouts: rounds analyzed, fairways %, GIR %,
  *     putts / round — each honest-awaiting when starved (never a fake 0).
  *
@@ -104,10 +108,7 @@ import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 // PRESERVED reused components (V3 panels) — embedded UNCHANGED. They own their
 // own inputs/handlers (what-if simulation, shot analysis, prediction render).
 import { HeroNarrativeCard } from '@/components/golf/coachhelm/v3/HeroNarrativeCard';
-import {
-  PerformancePrediction,
-  FocusAreasGrid,
-} from '@/components/golf/coachhelm/player';
+import { FocusAreasGrid } from '@/components/golf/coachhelm/player';
 // Focus-area detail sheet helpers — reused verbatim from FocusAreasGrid so the
 // expanded read renders the SAME formatted name + native-unit value as the
 // card (conn-golf-player Finding 1: the card's fallback Link used to dead-end
@@ -316,6 +317,17 @@ export function FairwayPlayerCoachHelm({
   const hasRounds = data.recentRounds.length > 0;
   const shot = initialShotAnalytics ?? null;
 
+  // Cockpit "liveness" — the shot cockpit (forecast readout, shot-mix radar,
+  // micro-readouts) only earns its floor space when there is REAL shot / forecast
+  // signal. For a thin-data player all six of those panels read "awaiting",
+  // turning the top of the page into a stack of empty instruments. When there is
+  // no forecast AND no analyzed rounds, we collapse them to ONE honest "warming
+  // up" panel and drop the empty micro-readout row entirely — the focal insight
+  // hero (which has real signal) stays the star.
+  const shotLive = !!shot && shot.roundsAnalyzed > 0;
+  const predictionLive = finite(data.prediction?.predictedValue) != null;
+  const cockpitLive = shotLive || predictionLive;
+
   /* ── Feedback handler — PRESERVED rateInsightAsPlayer round-trip + toasts ── */
   const handleRate = useCallback(
     async (
@@ -505,19 +517,26 @@ export function FairwayPlayerCoachHelm({
                     standingByMetric={standingByMetric}
                   />
                 }
-                secondary={[
-                  <PredictionInstrument
-                    key="prediction"
-                    data={data}
-                  />,
-                  <StrengthRadarInstrument key="strength" shot={shot} />,
-                ]}
-                tertiary={[
-                  <RoundsReadout key="rounds" shot={shot} />,
-                  <FairwaysReadout key="fairways" shot={shot} />,
-                  <GirReadout key="gir" shot={shot} />,
-                  <PuttsReadout key="putts" shot={shot} />,
-                ]}
+                secondary={
+                  cockpitLive
+                    ? [
+                        <PredictionInstrument key="prediction" data={data} />,
+                        <StrengthRadarInstrument key="strength" shot={shot} />,
+                      ]
+                    : [<CockpitWarmingInstrument key="warming" hasRounds={hasRounds} />]
+                }
+                // Micro-readouts only earn the foot row once there IS shot data;
+                // an all-awaiting row of "no putts / no drives" reads as broken.
+                tertiary={
+                  shotLive
+                    ? [
+                        <RoundsReadout key="rounds" shot={shot} />,
+                        <FairwaysReadout key="fairways" shot={shot} />,
+                        <GirReadout key="gir" shot={shot} />,
+                        <PuttsReadout key="putts" shot={shot} />,
+                      ]
+                    : undefined
+                }
               />
 
               {/* ════════════ THE FEED — hierarchical THEMES (flag on + present)
@@ -594,27 +613,24 @@ export function FairwayPlayerCoachHelm({
                 </section>
               ) : null}
 
-              {/* ════════════ FOCUS AREAS + the fuller prediction read ══════════ */}
-              <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                <div className="min-w-0 lg:col-span-7">
-                  <section id="focus-areas" className="scroll-mt-24">
-                    {/* Reused (own honest empty state) — onAreaClick now opens a
-                        real detail sheet below instead of the card's dead-end
-                        same-page anchor fallback (conn-golf-player Finding 1). */}
-                    <FocusAreasGrid
-                      focusAreas={data.focusAreas}
-                      onAreaClick={setOpenFocusArea}
-                    />
-                  </section>
-                </div>
-                <div className="min-w-0 lg:col-span-5">
-                  {/* Reused unchanged — owns the fuller prediction presentation. */}
-                  <PerformancePrediction
-                    prediction={data.prediction}
-                    playerState={data.playerState}
+              {/* ════════════ FOCUS AREAS — full width ══════════════════════════
+                    The forecast used to sit beside this in a 7/5 split, but the
+                    cockpit's PredictionInstrument already owns "next-round
+                    forecast" — a second prediction panel here was the same read
+                    twice (and, for a thin-data player, the same EMPTY read twice).
+                    Focus Areas now takes the full width; the section is omitted
+                    entirely when there are none (no hollow "nothing yet" card —
+                    the insight feed already carries "what to work on"). ═════════ */}
+              {data.focusAreas.length > 0 ? (
+                <section id="focus-areas" className="scroll-mt-24">
+                  {/* Reused (own honest empty state) — onAreaClick opens a real
+                      detail sheet below (conn-golf-player Finding 1). */}
+                  <FocusAreasGrid
+                    focusAreas={data.focusAreas}
+                    onAreaClick={setOpenFocusArea}
                   />
-                </div>
-              </section>
+                </section>
+              ) : null}
 
               {/* ════════════════ TERTIARY — game profile + trends ══════════════ */}
               <section>
@@ -1103,11 +1119,36 @@ function EdgeInstrument({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
+ * COCKPIT WARMING — the ONE honest panel that stands in for the whole shot
+ * cockpit (forecast + shot-mix radar + micro-readouts) while a player has no
+ * tracked-shot signal yet. Replaces a stack of six separate "awaiting" panels
+ * that made the top of the page read as broken/hollow.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function CockpitWarmingInstrument({ hasRounds }: { hasRounds: boolean }) {
+  return (
+    <InstrumentPanel
+      depth="base"
+      header="Your shot cockpit"
+      as="section"
+      className="flex h-full flex-col"
+    >
+      <InsufficientData
+        compact
+        title="Warming up"
+        description={
+          hasRounds
+            ? 'Your next-round forecast and shot-mix radar sharpen as more tracked rounds come through.'
+            : 'Log a few tracked rounds and your forecast, shot-mix radar, and fairway / GIR / putting readouts fill in here.'
+        }
+      />
+    </InstrumentPanel>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
  * SECONDARY — the PERFORMANCE-PREDICTION readout cluster. A big mono Readout of
  * the predicted scoring number + a FLAT model-confidence Readout (NO dial) on a
- * base flat panel. Honest awaiting when there is no prediction yet (never a
- * fabricated score). The fuller reused PerformancePrediction panel renders
- * separately below the cluster (UNCHANGED).
+ * base flat panel. Honest awaiting when there is no prediction yet.
  * ─────────────────────────────────────────────────────────────────────────── */
 function PredictionInstrument({ data }: { data: PlayerCoachHelmDashboardData }) {
   const pred = data.prediction;
