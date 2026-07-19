@@ -3,6 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getWhatsNewForCoach } from '@/app/golf/actions/whats-new';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayWhatsNew } from '@/components/fairway/pages/whats-new';
+import { FeatureUnavailable } from '@/components/fairway';
 
 // ============================================================================
 // METADATA
@@ -19,22 +20,36 @@ export const metadata = {
 
 export default async function WhatsNewPage() {
   const session = await getGolfSessionProfile();
-  if (!session) {
-    // `redirect()` throws a NEXT_REDIRECT digest — this never falls through —
-    // but the explicit `return` keeps the coach-only fetch below structurally
-    // unreachable for a signed-out request even if a future refactor (a test
-    // double, an intermediate try/catch) ever changes that invariant (#201).
-    redirect('/golf/login');
-    return null;
-  }
+  if (!session) redirect('/golf/login');
 
-  const { coach } = session;
+  const { coach, player } = session;
   if (!coach) {
-    // Player session — this is a coach-only feature. Same defensive `return`:
-    // `getWhatsNewForCoach()` below assumes a coach caller, so it must never
-    // execute for a player regardless of how `redirect()` is invoked.
-    redirect("/golf/dashboard?message=What%27s+New+is+a+coach-only+feature");
-    return null;
+    // Player session — this is a coach-only feature. #201 root cause: this
+    // branch used to `redirect('/golf/dashboard?message=…')` — a cross-page
+    // hop whose query-string explanation the destination `/golf/dashboard`
+    // route (`searchParams: Promise<{ range?: string }>`) never reads, so the
+    // "coach-only feature" message silently vanished, and redirecting a
+    // player away to the full dashboard (its own heavy data fetch: cached
+    // dashboard payload, hub summary, join requests) opened a second,
+    // unrelated render path where a real error could surface before the hop
+    // finished. Every OTHER coach-only page in this app (Patterns, Insights,
+    // Development) already solves "player hit a coach page" by rendering
+    // `<FeatureUnavailable>` IN PLACE instead of redirecting — same route,
+    // same request, nothing new to fetch or render, message always visible.
+    // Adopting that proven pattern here removes the redirect (and whatever
+    // it was crashing on) entirely rather than papering over it.
+    return (
+      <FeatureUnavailable
+        title="What's New"
+        message={
+          player
+            ? "What's New is a coach-only feature. Players can see their own activity from CoachHelm."
+            : 'No coach or player profile found. Please complete onboarding.'
+        }
+        actionHref={player ? '/golf/dashboard/coachhelm' : '/golf/dashboard'}
+        actionLabel={player ? 'Open CoachHelm' : 'Back to Dashboard'}
+      />
+    );
   }
 
   const result = await getWhatsNewForCoach();

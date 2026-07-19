@@ -24,7 +24,6 @@ const SECTIONS: readonly NavSection[] = [
     heading: 'Operations',
     items: [
       {
-        id: 'tasks',
         label: LONG_LABEL,
         description: LONG_DESCRIPTION,
         href: '/golf/dashboard/tasks',

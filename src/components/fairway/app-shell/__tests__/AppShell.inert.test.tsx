@@ -16,7 +16,7 @@ import { AppShell } from '../AppShell';
 import type { NavSection } from '../types';
 
 const SECTIONS: readonly NavSection[] = [
-  { items: [{ id: 'home', label: 'Home', href: '/home', icon: () => null }] },
+  { items: [{ label: 'Home', href: '/home', icon: () => null }] },
 ];
 
 // Force the mobile (`!isDesktop`) branch, which is what mounts `MoreNavSheet`.
