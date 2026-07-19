@@ -209,8 +209,11 @@ export interface GolfStats {
   // distribution of missed-green approaches by direction. Compound misses count toward
   // both axes (e.g. short_left → short and left), matching the overall aggregate's logic.
   // Bands with no missed approaches are omitted. Each component is null when no misses
-  // landed in that band (record key absent rather than a zeroed entry).
-  approachMissByBand: Record<string, { short: number | null; long: number | null; left: number | null; right: number | null }>;
+  // landed in that band (record key absent rather than a zeroed entry). `total` is the
+  // real count of missed approaches this band's percentages are computed over — the
+  // sample size a consumer needs to render an honest "n=" annotation (mirrors the
+  // Putting tab's heatmap, which annotates every cell with its own n).
+  approachMissByBand: Record<string, { short: number | null; long: number | null; left: number | null; right: number | null; total: number }>;
 
   // Putting
   totalPutts: number;
@@ -2532,6 +2535,7 @@ function aggregateRoundStats(rounds: Array<{
       long: safePercent(acc.long, acc.total),
       left: safePercent(acc.left, acc.total),
       right: safePercent(acc.right, acc.total),
+      total: acc.total,
     };
   }
 

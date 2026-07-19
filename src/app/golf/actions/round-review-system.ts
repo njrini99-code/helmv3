@@ -812,7 +812,10 @@ function determineGrade(
 /**
  * Generate full review content from round data + shot data
  */
-function generateReviewContent(
+// Exported for regression coverage on the recommendation copy (#150) — every
+// pushed recommendation must read as a spoken coach sentence, never a
+// colon-prefixed internal-looking label.
+export function generateReviewContent(
   round: RoundData,
   holes: HoleBreakdown[],
   playerAvgs: ComparisonAverages | null,
@@ -1205,7 +1208,7 @@ function generateReviewContent(
           : 'Focus on speed control and reading break inside 15 feet.'
       }`,
     });
-    recommendations.push('Lag putting drill: hit 10 putts from 30ft, all must stop within 3ft of the hole');
+    recommendations.push('On the practice green, hit 10 lag putts from 30 feet and get each one to stop within 3 feet of the hole');
   }
   if (doublePlusHoles.length > 0) {
     const dbHoles = doublePlusHoles.map(h => {
