@@ -33,9 +33,16 @@ interface ShotRow extends ShotInput {
 interface Props {
   roundId: string;
   holes: HoleRow[];
+  /**
+   * Fired once the shot ledger resolves, with whether any shot-level data
+   * exists. The caller uses this to gate shot-dependent affordances (e.g. the
+   * "Jump to hole" chip nav, whose scroll targets only exist when cards render)
+   * so they never ship as dead controls for a scorecard-only round.
+   */
+  onShotsLoaded?: (hasShots: boolean) => void;
 }
 
-export function HoleByHoleShotPaths({ roundId, holes }: Props) {
+export function HoleByHoleShotPaths({ roundId, holes, onShotsLoaded }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [shots, setShots] = useState<ShotRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +82,12 @@ export function HoleByHoleShotPaths({ roundId, holes }: Props) {
   }, [shots]);
 
   const hasAnyShots = (shots?.length ?? 0) > 0;
+
+  // Tell the caller whether shot-level data exists, once the ledger resolves,
+  // so shot-dependent affordances can gate on it instead of rendering dead.
+  useEffect(() => {
+    if (shots !== null) onShotsLoaded?.(hasAnyShots);
+  }, [shots, hasAnyShots, onShotsLoaded]);
 
   return (
     <section>

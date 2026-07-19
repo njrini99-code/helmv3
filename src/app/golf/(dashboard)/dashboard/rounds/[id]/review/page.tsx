@@ -612,6 +612,10 @@ export default function RoundReviewPage() {
   // it lets a 1-18 chip nav scroll straight to any hole without reaching
   // into that component's internals.
   const holeSectionRef = useRef<HTMLDivElement>(null);
+  // The "Jump to hole" chips scroll to per-hole shot cards that only exist once
+  // shot-level data loads; gate them on this so they never ship as dead
+  // controls for a scorecard-only round (HoleByHoleShotPaths reports it).
+  const [holeShotsAvailable, setHoleShotsAvailable] = useState(false);
   const scrollToHole = useCallback((holeNumber: number) => {
     const container = holeSectionRef.current;
     if (!container || !round?.holes) return;
@@ -962,24 +966,30 @@ export default function RoundReviewPage() {
             straight to any hole instead of scrolling the whole grid. */}
         {round.holes && round.holes.length > 0 && (
           <div className="space-y-3">
-            <div>
-              <FwEyebrow as="h2">Jump to hole</FwEyebrow>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {round.holes.map((h) => (
-                  <FwSelectablePill
-                    key={h.hole_number}
-                    shape="round"
-                    onClick={() => scrollToHole(h.hole_number)}
-                    aria-label={`Jump to hole ${h.hole_number}`}
-                    className="h-8 min-w-[32px] px-0"
-                  >
-                    {h.hole_number}
-                  </FwSelectablePill>
-                ))}
+            {holeShotsAvailable && (
+              <div>
+                <FwEyebrow as="h2">Jump to hole</FwEyebrow>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {round.holes.map((h) => (
+                    <FwSelectablePill
+                      key={h.hole_number}
+                      shape="round"
+                      onClick={() => scrollToHole(h.hole_number)}
+                      aria-label={`Jump to hole ${h.hole_number}`}
+                      className="h-8 min-w-[32px] px-0"
+                    >
+                      {h.hole_number}
+                    </FwSelectablePill>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <div ref={holeSectionRef}>
-              <HoleByHoleShotPaths roundId={roundId} holes={round.holes} />
+              <HoleByHoleShotPaths
+                roundId={roundId}
+                holes={round.holes}
+                onShotsLoaded={setHoleShotsAvailable}
+              />
             </div>
           </div>
         )}
