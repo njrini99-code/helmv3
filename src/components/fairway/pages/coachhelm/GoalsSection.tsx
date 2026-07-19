@@ -155,10 +155,11 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
           Target {targetText} · {suggestion.suggested_window_days}-day window
         </p>
       </div>
+      {/* Touch target: md (44px min-height) unconditionally — not sm, which is
+          only 44px behind a `(pointer: coarse)` media query (mustFix #194). */}
       <div className="flex shrink-0 items-center gap-1">
         <Button
           variant="secondary"
-          size="sm"
           busy={isPending}
           disabled={isPending}
           onClick={() =>
@@ -169,7 +170,6 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
         </Button>
         <Button
           variant="ghost"
-          size="sm"
           busy={isPending}
           disabled={isPending}
           onClick={() =>
@@ -238,7 +238,8 @@ function GoalHero({
       eyebrow="Your one thing"
       header={goalDisplayLabel(goal)}
       readout={onCreate ? (
-        <Button variant="secondary" size="sm" onClick={onCreate}>
+        // Touch target: md (44px min-height) unconditionally (mustFix #194).
+        <Button variant="secondary" onClick={onCreate}>
           Set another
         </Button>
       ) : undefined}
@@ -306,29 +307,39 @@ export function GoalsSection({
   // the coach surface (many players) keeps the plain active-goal count.
   const priority = role === 'player' ? pickPriorityGoal(activeGoals) : null;
 
+  // Touch target: md (44px min-height) unconditionally — not sm, which is
+  // only 44px behind a `(pointer: coarse)` media query (mustFix #194).
   const setGoalButton = (
-    <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+    <Button variant="primary" onClick={() => setCreateOpen(true)}>
       Set a goal
     </Button>
   );
 
   return (
     <section data-slot="goals-section" className="flex flex-col gap-6">
-      {/* Header — "Your one thing" hero (player, ≥1 active) or the count readout */}
+      {/* Header — "Your one thing" hero (player, ≥1 active) or the count
+          readout (coach, or a defensive fallback if a caller ever hands this
+          component goals whose state disagrees with `activeGoals`' own
+          contract). The header is gated on `hasGoals`: it must NEVER claim
+          "Goals in flight" over a zero count — that reads as a real, moving
+          plan when there is none, directly contradicting the honest
+          EmptyState rendered right below it (mustFix #118/#125). When there
+          are zero active goals, this hero is skipped entirely and the
+          EmptyState below is the ONE honest empty-state read. */}
       {priority ? (
         <GoalHero
           data={priority}
           totalActive={activeCount}
           onCreate={canCreate ? () => setCreateOpen(true) : undefined}
         />
-      ) : (
+      ) : hasGoals ? (
         <InstrumentPanel
           depth="raised"
           tone="accent"
           padding="lg"
           eyebrow="Goals"
           header="Goals in flight"
-          readout={canCreate && hasGoals ? setGoalButton : undefined}
+          readout={canCreate ? setGoalButton : undefined}
           as="div"
         >
           <Readout
@@ -337,12 +348,10 @@ export function GoalsSection({
             label="Active goals"
             unit={activeCount === 1 ? 'goal' : 'goals'}
             size="hero"
-            state={hasGoals ? 'live' : 'awaiting'}
-            samples={hasGoals ? undefined : { have: 0, need: 1 }}
-            awaitingLabel={role === 'coach' ? 'None assigned' : 'None set'}
+            state="live"
           />
         </InstrumentPanel>
-      )}
+      ) : null}
 
       {/* Active goals — grid, or an honest empty state */}
       {hasGoals ? (

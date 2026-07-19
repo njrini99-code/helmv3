@@ -64,14 +64,13 @@ import {
   type FocusAreaCardData,
 } from './FocusAreaCard';
 import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
-import { getAreaType, type AreaAutoFillStats } from './areaTypes';
+import { getAreaType, formatTargetMetricLabel, type AreaAutoFillStats } from './areaTypes';
 import { IconPlus } from '@/components/icons';
 import { GoalsSection, type GoalSuggestionView } from './GoalsSection';
 import { CausalWhyPanel } from './CausalWhyPanel';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import type { FairwayGoalCardData } from './FairwayGoalCard';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 // PRESERVED WRITE ACTIONS — imported UNCHANGED (the same actions
 // LogProgressButton / MarkCompleteButton called). We re-skin the trigger UI
@@ -95,21 +94,11 @@ import {
 
 /* ───────────────────────────────────────────────────────────────────────────
  * formatTargetMetricLabel — a raw `target_metric` is a snake_case DB metric
- * identifier (e.g. `putts_made_5_10ft_pct`); it must NEVER render verbatim in
- * player-facing copy (mustFix #202/#60). Prefer the canonical registry's
- * human display_label; fall back to a title-cased de-snake so an unregistered
- * or custom metric string still never leaks its raw key.
+ * identifier (e.g. `putts_made_5_10ft_pct`) or a legacy catalog label; it must
+ * NEVER render verbatim in player-facing copy (mustFix #202/#60). Shared with
+ * FocusAreaCard.tsx (same page's dense per-area rows) via areaTypes.ts so the
+ * two never drift — see the JSDoc there for the full resolution order.
  * ────────────────────────────────────────────────────────────────────────── */
-function formatTargetMetricLabel(targetMetric: string | null | undefined): string | null {
-  if (!targetMetric) return null;
-  const cfg = getMetricRenderConfig(targetMetric);
-  if (cfg) return cfg.display_label;
-  return targetMetric
-    .split('_')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the PRE-COMPUTED partition the route page already builds.

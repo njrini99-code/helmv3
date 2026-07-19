@@ -244,7 +244,11 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
     >
       {/* Header — title + state pill */}
       <div className="mb-2 flex items-start justify-between gap-3">
-        <h3 className="min-w-0 truncate font-fw-display text-body-lg font-medium text-text-primary">
+        {/* line-clamp (not truncate) — a truncated single line clipped titles
+            like "Recent wins" cards' longer goal names mid-word; wrapping up
+            to 2 lines shows the full title for every realistic length
+            (mustFix: FairwayGoalCard.tsx:247 title truncation). */}
+        <h3 className="min-w-0 line-clamp-2 font-fw-display text-body-lg font-medium text-text-primary">
           {goalDisplayTitle(goal, cfg)}
         </h3>
         <StatusPill tone={pill.tone} size="sm" className="shrink-0">
