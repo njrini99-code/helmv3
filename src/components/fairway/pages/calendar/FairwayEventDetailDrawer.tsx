@@ -255,6 +255,22 @@ export function FairwayEventDetailDrawer({
             </p>
           </div>
 
+          {/* Coach: edit this event — moved up next to the header (finding
+              #52). A long roster in AttendancePanel below could push this
+              action below the fold on a coach's first scroll, so it no
+              longer waits at the very bottom of the drawer's content. */}
+          {isCoach && onEdit ? (
+            <Button
+              variant="secondary"
+              size="md"
+              fullWidth
+              leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
+              onClick={() => onEdit(event)}
+            >
+              Edit event
+            </Button>
+          ) : null}
+
           {/* Location — taps through to Maps. */}
           {event.location ? (
             <a
@@ -343,19 +359,6 @@ export function FairwayEventDetailDrawer({
               (AttendancePanel contract: { eventId, teamId, canManage }.) */}
           {isCoach && event.team_id ? (
             <AttendancePanel eventId={event.id} teamId={event.team_id} canManage />
-          ) : null}
-
-          {/* Coach: edit this event in the native Fairway editor. */}
-          {isCoach && onEdit && event ? (
-            <Button
-              variant="secondary"
-              size="md"
-              fullWidth
-              leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
-              onClick={() => onEdit(event)}
-            >
-              Edit event
-            </Button>
           ) : null}
 
           {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent.

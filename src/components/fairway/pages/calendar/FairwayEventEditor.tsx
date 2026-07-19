@@ -83,13 +83,23 @@ export interface FairwayEventEditorProps {
   event: CalendarEvent | null;
   isCoach: boolean;
   onSave: (data: GolfEventFormData) => Promise<void>;
+  /** Soft-cancel (status → 'cancelled', RSVPs kept, attendees notified). */
   onDelete?: (scope?: RecurringEditScope) => Promise<void>;
   /**
    * Restore a soft-cancelled event (status back to confirmed). When the
-   * event is cancelled, editing is disabled and this is the only action
-   * offered. Optional — the affordance only renders when wired.
+   * event is cancelled, editing is disabled and this is one of the two
+   * actions offered (alongside `onDeletePermanently`). Optional — the
+   * affordance only renders when wired.
    */
   onRestore?: () => Promise<void>;
+  /**
+   * Permanently erase a cancelled event (deleteGolfEventPermanently — a hard
+   * DELETE that also removes every RSVP/attendance row; server-gated to
+   * already-cancelled events). Only offered once the event is cancelled, next
+   * to Restore — cancel and permanently-delete are now one coherent two-step
+   * story instead of a single ambiguous control. Optional — hidden when unwired.
+   */
+  onDeletePermanently?: () => Promise<void>;
   isSaving: boolean;
   teamPlayers?: TeamPlayer[];
   currentUserId?: string;
@@ -171,6 +181,7 @@ export function FairwayEventEditor({
   onSave,
   onDelete,
   onRestore,
+  onDeletePermanently,
   isSaving,
   teamPlayers = [],
   currentUserId,
@@ -194,7 +205,15 @@ export function FairwayEventEditor({
   const [formData, setFormData] = React.useState<GolfEventFormData>(DEFAULT_FORM);
   const [error, setError] = React.useState<string | null>(null);
   const [conflicts, setConflicts] = React.useState<ConflictData | null>(null);
-  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  // Two DISTINCT destructive confirms, matching weight (a real ModalShell
+  // confirm dialog with consequence copy — same pattern as Delete Task),
+  // never a bare inline tap-to-confirm:
+  //   - pendingCancelConfirm  → soft-cancel a one-off event (onDelete()).
+  //   - pendingHardDeleteConfirm → permanently erase an already-cancelled
+  //     event (onDeletePermanently) — the previously-unwired
+  //     deleteGolfEventPermanently action now has a real entry point.
+  const [pendingCancelConfirm, setPendingCancelConfirm] = React.useState(false);
+  const [pendingHardDeleteConfirm, setPendingHardDeleteConfirm] = React.useState(false);
   // Existing golf_event_attendance baseline for the event being edited.
   // null = not hydrated (loading or failed) — removals are NEVER computed
   // against a null baseline, so a slow/failed fetch can't wipe attendees.
@@ -255,7 +274,8 @@ export function FairwayEventEditor({
       setFormData({ ...DEFAULT_FORM, startDate: getTodayDate() });
     }
     setError(null);
-    setConfirmingDelete(false);
+    setPendingCancelConfirm(false);
+    setPendingHardDeleteConfirm(false);
     setConflicts(null);
   }, [open, event, isCreating]);
 
@@ -435,20 +455,39 @@ export function FairwayEventEditor({
     }
   };
 
-  const handleDelete = async () => {
+  // Series events already get consequence-copy per scope in the scope picker
+  // (submitWithScope); one-off events get a real confirm modal below instead
+  // of a bare inline "Tap to confirm" toggle (finding #45/#113/#181).
+  const handleDelete = () => {
     if (!onDelete) return;
     setError(null);
     if (isInSeries) {
       setPendingScopeAction('delete');
       return;
     }
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
+    setPendingCancelConfirm(true);
+  };
+
+  const confirmCancelEvent = async () => {
+    if (!onDelete) return;
+    setError(null);
     try {
       await onDelete();
+      setPendingCancelConfirm(false);
     } catch (err) {
+      setPendingCancelConfirm(false);
+      setError(err instanceof Error ? err.message : 'Failed to cancel event');
+    }
+  };
+
+  const confirmHardDelete = async () => {
+    if (!onDeletePermanently) return;
+    setError(null);
+    try {
+      await onDeletePermanently();
+      setPendingHardDeleteConfirm(false);
+    } catch (err) {
+      setPendingHardDeleteConfirm(false);
       setError(err instanceof Error ? err.message : 'Failed to delete event');
     }
   };
@@ -482,7 +521,15 @@ export function FairwayEventEditor({
     setConflicts(null);
   };
 
-  const initials = (p: TeamPlayer) => `${p.first_name?.[0] ?? ''}${p.last_name?.[0] ?? ''}`.toUpperCase() || '—';
+  // Same robust first-letter extraction as FairwayCalendarMemberRail's
+  // `initials` (finding #85) — skips a "(Captain)"/"(C)" role-tag suffix and
+  // any other leading non-letter character instead of grabbing name[0] raw.
+  const firstLetter = (name: string | null | undefined): string => {
+    if (!name) return '';
+    const match = name.replace(/\(.*?\)/g, '').match(/\p{L}/u);
+    return match ? match[0] : '';
+  };
+  const initials = (p: TeamPlayer) => `${firstLetter(p.first_name)}${firstLetter(p.last_name)}`.toUpperCase() || '—';
 
   // Soft-cancelled events are read-only — the only offered action is
   // Restore (when wired). Re-cancelling is a no-op, so Delete is hidden too.
@@ -491,6 +538,7 @@ export function FairwayEventEditor({
   const attendeesLoading = attendeeHydration === 'loading';
 
   return (
+    <>
     <ModalShell
       open={open}
       onOpenChange={(o) => {
@@ -567,26 +615,39 @@ export function FairwayEventEditor({
             ) : null}
 
             {/* Cancelled banner — soft-cancel lifecycle. Editing is disabled;
-                the only action offered is Restore (when wired). */}
+                the two coherent next steps are Restore (undo the cancel) or
+                permanently delete (the server-gated hard delete — only
+                allowed once cancelled, or with zero attendance). Previously
+                deleteGolfEventPermanently had no UI entry point at all. */}
             {isCancelled ? (
               <div
                 role="status"
-                className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-3"
+                className="flex flex-col gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-3"
               >
                 <span className="flex items-center gap-2 font-fw-sans text-body-sm text-text-secondary">
                   <Ban className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
                   This event is cancelled. Editing is disabled.
                 </span>
-                {isCoach && onRestore ? (
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    onClick={handleRestore}
-                    disabled={isSaving}
-                    className="flex-shrink-0"
-                  >
-                    Restore event
-                  </Button>
+                {isCoach && (onRestore || onDeletePermanently) ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {onRestore ? (
+                      <Button variant="secondary" type="button" onClick={handleRestore} disabled={isSaving}>
+                        Restore event
+                      </Button>
+                    ) : null}
+                    {onDeletePermanently ? (
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={() => setPendingHardDeleteConfirm(true)}
+                        disabled={isSaving}
+                        leftIcon={<Trash2 className="h-4 w-4" />}
+                        className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+                      >
+                        Delete permanently
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             ) : null}
@@ -1071,14 +1132,14 @@ export function FairwayEventEditor({
                 cancelled event — re-cancelling is a no-op. */}
             {!isCreating && onDelete && !isCancelled ? (
               <Button
-                variant={confirmingDelete ? 'danger' : 'ghost'}
+                variant="ghost"
                 type="button"
                 onClick={handleDelete}
                 disabled={isSaving}
                 leftIcon={<Trash2 className="h-4 w-4" />}
                 className="sm:mr-auto"
               >
-                {confirmingDelete ? 'Tap to confirm' : isInSeries ? 'Delete' : 'Cancel event'}
+                {isInSeries ? 'Delete' : 'Cancel event'}
               </Button>
             ) : null}
             <Button variant="secondary" type="button" onClick={onClose} disabled={isSaving}>
@@ -1093,6 +1154,76 @@ export function FairwayEventEditor({
         </>
       )}
     </ModalShell>
+
+      {/* Cancel-event confirm — real weight, consequence copy, matches the
+          Delete Task confirm dialog (title + description + ghost/danger
+          footer), never a bare inline toggle (finding #45/#113/#181). */}
+      {onDelete ? (
+        <ModalShell
+          open={pendingCancelConfirm}
+          onOpenChange={(o) => {
+            if (!o && !isSaving) setPendingCancelConfirm(false);
+          }}
+          size="sm"
+          title="Cancel this event?"
+          description={
+            <>
+              Cancel <span className="font-medium text-text-primary">{formData.title || 'this event'}</span>?
+              Attendees are notified and every RSVP is kept. You can restore it later from the cancelled state.
+            </>
+          }
+        >
+          <ModalShell.Footer>
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setPendingCancelConfirm(false)}
+              disabled={isSaving}
+            >
+              Keep event
+            </Button>
+            <Button variant="danger" type="button" busy={isSaving} onClick={confirmCancelEvent}>
+              Cancel event
+            </Button>
+          </ModalShell.Footer>
+        </ModalShell>
+      ) : null}
+
+      {/* Permanent-delete confirm — only reachable once the event is already
+          cancelled (matches the server's deleteGolfEventPermanently gate).
+          Highest-weight copy: this is the one truly irreversible action. */}
+      {onDeletePermanently ? (
+        <ModalShell
+          open={pendingHardDeleteConfirm}
+          onOpenChange={(o) => {
+            if (!o && !isSaving) setPendingHardDeleteConfirm(false);
+          }}
+          size="sm"
+          title="Delete this event permanently?"
+          description={
+            <>
+              Permanently delete{' '}
+              <span className="font-medium text-text-primary">{formData.title || 'this event'}</span>? Every
+              RSVP and attendance record for it is erased forever. This can&apos;t be undone.
+            </>
+          }
+        >
+          <ModalShell.Footer>
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setPendingHardDeleteConfirm(false)}
+              disabled={isSaving}
+            >
+              Keep event
+            </Button>
+            <Button variant="danger" type="button" busy={isSaving} onClick={confirmHardDelete}>
+              Delete permanently
+            </Button>
+          </ModalShell.Footer>
+        </ModalShell>
+      ) : null}
+    </>
   );
 }
 

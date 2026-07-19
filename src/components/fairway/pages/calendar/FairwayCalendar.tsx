@@ -126,6 +126,26 @@ function toLocalMidnight(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+/**
+ * ONE canonical, deterministic ordering for the merged event list (finding
+ * #37/#166/#185/#83). `useCalendarRangeEvents` merges the server payload with
+ * client-fetched pages into a Map whose iteration order depends on WHICH
+ * fetch happened to land first — not on the event data itself — so two
+ * events sharing an identical `start_time` could trade places from one
+ * render to the next, even across an "identical" reload. Sorting by start
+ * time with an explicit id tie-break makes the order a pure function of the
+ * data, independent of fetch/merge timing. Exported standalone so it's
+ * unit-testable without mounting the full orchestrator.
+ */
+export function sortEventsStably(list: readonly CalendarEvent[]): CalendarEvent[] {
+  return [...list].sort((a, b) => {
+    const aT = new Date(a.start_time || a.start_date).getTime();
+    const bT = new Date(b.start_time || b.start_date).getTime();
+    if (aT !== bT) return aT - bT;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+}
+
 const VIEW_OPTIONS: ReadonlyArray<{ value: ViewId; label: string }> = [
   { value: 'day', label: 'Day' },
   { value: 'week', label: 'Week' },
@@ -138,7 +158,11 @@ export function FairwayCalendar({
   teamMembers,
   isCoach,
   teamTimezone,
-  upcomingCount,
+  // Superseded by `liveUpcomingCount` below (derived from the same canonical
+  // `events` list `windowCount` reads) — kept in the prop contract only for
+  // the caller's SSR-first-paint API; the underscore satisfies the lint
+  // ratchet's unused-vars ignore pattern.
+  upcomingCount: _upcomingCount,
   serverNow,
   currentUserId,
   teamId,
@@ -194,10 +218,11 @@ export function FairwayCalendar({
   // the hook keyed on teamId ONLY — no leave/join per navigation — and the
   // visible range is refetched on every (re)subscribe (audit #25).
   const {
-    events,
+    events: rangeEvents,
     isLoadingRange,
     rangeError,
     retryRange,
+    refetchVisibleRange,
   } = useCalendarRangeEvents({
     teamId: teamId ?? initialEvents[0]?.team_id ?? null,
     initialEvents,
@@ -208,6 +233,20 @@ export function FairwayCalendar({
     realtime: true,
     onRealtimeEvent: () => router.refresh(),
   });
+
+  // ── ONE canonical, deterministically-ordered event list (finding #37/#166/
+  //    #185/#83) ────────────────────────────────────────────────────────────
+  // The range hook merges the server payload with client-fetched pages into a
+  // Map whose iteration order depends on WHICH request happened to land first
+  // (fetch timing, not event data) — two events sharing an identical
+  // start_time could therefore trade places from one render to the next, even
+  // across an "identical" reload, because Array.prototype.sort is stable and
+  // preserves whatever order it was handed. Every consumer below (hero
+  // counts, day strip density, agenda buckets, month grid, the "most
+  // imminent un-RSVP'd" pick) now reads this ONE re-sorted, id-tie-broken
+  // list instead of the raw hook output, so ties always resolve the same way
+  // regardless of fetch/merge timing.
+  const events = React.useMemo(() => sortEventsStably(rangeEvents), [rangeEvents]);
 
   // ── Coach availability filter (avatar rail → overlay player schedules) ──────
   // Multi-select up to 8 (color-coded). Empty = "All" (team calendar). When
@@ -435,6 +474,13 @@ export function FairwayCalendar({
           }
         }
         router.refresh();
+        // Force-refetch the visible client range too (finding #37/#166/#185/
+        // #83): router.refresh() alone re-renders the server component, but
+        // this mutation's OWN edit can land outside that fresh SSR window
+        // (e.g. moved far in the future) while the client range-fetch cache
+        // still holds the pre-edit row. Without this, the stale row only
+        // clears once a laggy realtime echo of the same write arrives.
+        refetchVisibleRange();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
@@ -446,7 +492,7 @@ export function FairwayCalendar({
         setIsSavingEvent(false);
       }
     },
-    [editorEvent, router, visibleWindow],
+    [editorEvent, router, visibleWindow, refetchVisibleRange],
   );
 
   // Restore (un-cancel) a soft-cancelled event. Flips status back to
@@ -464,6 +510,7 @@ export function FairwayCalendar({
       setEditorOpen(false);
       setEditorEvent(null);
       router.refresh();
+      refetchVisibleRange();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
@@ -474,7 +521,7 @@ export function FairwayCalendar({
     } finally {
       setIsSavingEvent(false);
     }
-  }, [editorEvent, router]);
+  }, [editorEvent, router, refetchVisibleRange]);
 
   const handleDeleteEvent = React.useCallback(
     async (scope?: RecurringEditScope) => {
@@ -496,6 +543,13 @@ export function FairwayCalendar({
         setEditorOpen(false);
         setEditorEvent(null);
         router.refresh();
+        // Force-refetch the visible client range too (finding #37/#166/#185/
+        // #83): router.refresh() alone re-renders the server component, but
+        // this mutation's OWN edit can land outside that fresh SSR window
+        // (e.g. moved far in the future) while the client range-fetch cache
+        // still holds the pre-edit row. Without this, the stale row only
+        // clears once a laggy realtime echo of the same write arrives.
+        refetchVisibleRange();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
@@ -507,8 +561,36 @@ export function FairwayCalendar({
         setIsSavingEvent(false);
       }
     },
-    [editorEvent, router],
+    [editorEvent, router, refetchVisibleRange],
   );
+
+  // Permanently erase an already-cancelled event (deleteGolfEventPermanently
+  // — server-gated to cancelled-or-zero-attendance events). Previously this
+  // action existed but had NO UI entry point; it's now wired behind the
+  // editor's "Delete permanently" confirm (finding #45/#113/#181).
+  const handlePermanentDelete = React.useCallback(async () => {
+    if (!editorEvent) return;
+    setIsSavingEvent(true);
+    try {
+      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/golf');
+      const result = await deleteGolfEventPermanently(editorEvent.id);
+      if (!result.success) throw new Error(result.error || 'Failed to delete event permanently');
+      fairwayToast.success('Event deleted permanently');
+      setEditorOpen(false);
+      setEditorEvent(null);
+      router.refresh();
+      refetchVisibleRange();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+        window.location.reload();
+        return;
+      }
+      throw err;
+    } finally {
+      setIsSavingEvent(false);
+    }
+  }, [editorEvent, router, refetchVisibleRange]);
 
   // ── ICS "Add to phone" sheet — reachable for BOTH roles incl. mobile. ──────
   const [subscribeOpen, setSubscribeOpen] = React.useState(false);
@@ -539,6 +621,24 @@ export function FairwayCalendar({
       return t >= startMs && t <= endMs;
     }).length;
   }, [events, visibleWindow]);
+
+  // Upcoming count — derived from the SAME canonical `events` list as
+  // `windowCount` (finding #37/#166/#185/#83). The server-computed
+  // `upcomingCount` prop is a SEPARATE read of the same underlying table at a
+  // slightly different instant (its own count query vs. this page's own
+  // fetch+merge), so the hero previously showed two numbers that could each
+  // change independently — one canonical read path now feeds both. `nowRef`
+  // starts equal to `serverNow` (hydration-safe: identical on the first
+  // client render, so no SSR/CSR mismatch), then promotes to the real client
+  // clock exactly like every other "now" in this surface.
+  const liveUpcomingCount = React.useMemo(() => {
+    const nowMs = nowRef.getTime();
+    return events.filter((e) => {
+      const s = e.start_time || e.start_date;
+      if (!s) return false;
+      return new Date(s).getTime() >= nowMs;
+    }).length;
+  }, [events, nowRef]);
 
   // ── Navigation ──────────────────────────────────────────────────────────────
   const navigate = React.useCallback(
@@ -750,7 +850,7 @@ export function FairwayCalendar({
         selectedDate={focusDate}
         events={events}
         nowRef={nowRef}
-        upcomingCount={upcomingCount}
+        upcomingCount={liveUpcomingCount}
         windowCount={windowCount}
         isMonthView={view === 'month'}
         isAgendaView={isAgenda}
@@ -957,6 +1057,7 @@ export function FairwayCalendar({
           onSave={handleSaveEvent}
           onDelete={handleDeleteEvent}
           onRestore={handleRestoreEvent}
+          onDeletePermanently={handlePermanentDelete}
           isSaving={isSavingEvent}
           teamPlayers={teamMembers}
           currentUserId={currentUserId}

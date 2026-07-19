@@ -81,7 +81,11 @@ export function FairwayCalendarHero({
   const monthTitle = format(focusDate, 'MMMM yyyy');
   const focusIsToday = isSameDay(focusDate, nowRef);
   // Agenda lens spans ±3 months — "this week/month" is misleading; use "in view".
-  const windowLabel = isAgendaView ? 'in view' : isMonthView ? 'this month' : 'this week';
+  // NOTE: `windowLabel` is the noun ONLY ("week"/"month"/"in view") — the
+  // sentence below prepends its own "this "/no-prefix, so a value like "this
+  // week" here would render "X upcoming · Y this this week" (findings
+  // #84/#106/#155/#165/#12/#80).
+  const windowLabel = isAgendaView ? 'in view' : isMonthView ? 'month' : 'week';
 
   return (
     // The ONE hero plinth — a warm matte Surface (bg-surface), shadow elevation
@@ -105,7 +109,7 @@ export function FairwayCalendarHero({
               <span className="font-fw-mono tabular-nums">{upcomingCount}</span>
               {' upcoming · '}
               <span className="font-fw-mono tabular-nums">{windowCount}</span>
-              {` this ${windowLabel}`}
+              {isAgendaView ? ` ${windowLabel}` : ` this ${windowLabel}`}
             </p>
           ) : (
             <p className="font-fw-sans text-body-lg leading-[1.5] text-text-tertiary">

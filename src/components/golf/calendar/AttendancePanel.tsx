@@ -109,29 +109,49 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
-    getAttendanceReport(eventId).then((res) => {
-      if (cancelled) return;
-      if (res.success && res.data) {
-        setRows(
-          res.data.attendance.map((record) => ({
-            playerId: record.player_id,
-            name: rowName(record),
-            jersey: record.player?.jersey_number ?? null,
-            rsvp: record.status,
-            mark: markFromRecord(record),
-          })),
-        );
-        setViewerPlayerId(res.data.viewerPlayerId);
-      } else {
-        setLoadError(res.error ?? 'Failed to load attendance');
+    getAttendanceReport(eventId)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && res.data) {
+          setRows(
+            res.data.attendance.map((record) => ({
+              playerId: record.player_id,
+              name: rowName(record),
+              jersey: record.player?.jersey_number ?? null,
+              rsvp: record.status,
+              mark: markFromRecord(record),
+            })),
+          );
+          setViewerPlayerId(res.data.viewerPlayerId);
+        } else {
+          setLoadError(res.error ?? 'Failed to load attendance');
+          logError(
+            new Error(res.error ?? 'Failed to load attendance'),
+            { component: 'AttendancePanel', action: 'load-attendance-report', sport: 'golf', eventId, teamId },
+            'medium'
+          );
+        }
+      })
+      .catch((err) => {
+        // The per-player roster is a SEPARATE query path from the drawer's
+        // aggregate RSVP tally (getEventRSVP) — a thrown rejection here must
+        // never leave the panel silently blank/stuck-loading while the tally
+        // above it renders fine (finding #9). Without this .catch, a thrown
+        // exception (vs. a `{ success: false }` result) left `loading` true
+        // forever — an infinite skeleton with no honest error, indistinguishable
+        // from a stuck network request.
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : 'Failed to load attendance';
+        setLoadError(message);
         logError(
-          new Error(res.error ?? 'Failed to load attendance'),
+          err instanceof Error ? err : new Error(message),
           { component: 'AttendancePanel', action: 'load-attendance-report', sport: 'golf', eventId, teamId },
           'medium'
         );
-      }
-      setLoading(false);
-    });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };

@@ -133,6 +133,25 @@ describe('AttendancePanel states', () => {
     expect(await screen.findByText('Nick Rini')).toBeTruthy();
     expect(getAttendanceReport).toHaveBeenCalledTimes(2);
   });
+
+  // Finding #9: the per-player attendance list is a SEPARATE query path from
+  // the drawer's aggregate RSVP tally — a THROWN rejection (not a `{ success:
+  // false }` result) must surface its own honest error/retry instead of an
+  // infinite skeleton (the missing `.catch` previously left `loading` true
+  // forever on any thrown exception).
+  it('shows its own error and retry when the report query rejects outright', async () => {
+    getAttendanceReport
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(reportOk(twoPlayerRoster()));
+    renderPanel();
+
+    expect(await screen.findByRole('button', { name: /Try again/ })).toBeTruthy();
+    expect(screen.queryByTestId('attendance-skeleton')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
+    expect(await screen.findByText('Nick Rini')).toBeTruthy();
+    expect(getAttendanceReport).toHaveBeenCalledTimes(2);
+  });
 });
 
 // ---------------------------------------------------------------------------
