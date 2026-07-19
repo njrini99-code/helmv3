@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   getGolfSessionProfile: vi.fn(),
-  maybeSingle: vi.fn(async () => ({ data: null })),
+  maybeSingle: vi.fn(async (): Promise<{ data: unknown }> => ({ data: null })),
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
