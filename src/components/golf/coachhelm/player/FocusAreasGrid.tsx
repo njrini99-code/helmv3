@@ -343,7 +343,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
         <EmptyState
           variant="minimal"
           icon={<IconTarget size={20} />}
-          description="No focus areas identified yet — complete more rounds to unlock personalized focus areas."
+          description="No focus areas identified yet. Complete more rounds to unlock personalized focus areas."
         />
       </Card>
     );
@@ -373,12 +373,14 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
           const seenRecommendations = new Set<string>();
           return focusAreas.map((area, index) => (
             // #974 (folds in [22]) — `area.area` alone collided when the
-            // upstream generator emitted two rows for the same band name;
-            // duplicate React keys make reconciliation reuse the wrong DOM
-            // node across re-renders, which is exactly how a priority badge
-            // (derived from `index` at render time) can visibly repeat a
-            // number and skip another after the list changes. Index-qualify
-            // the key so every row is always unique.
+            // upstream generator emitted two rows for the same band name.
+            // The priority badge itself is derived from `index` at render
+            // time, not from the key, so a duplicate key isn't a confirmed
+            // cause of the observed "duplicate 1/skip 3" badge sequence.
+            // Regardless, duplicate React keys are their own defensive bug
+            // (React can reuse/misreconcile DOM nodes across re-renders on a
+            // changing list) and are worth eliminating on their own merits.
+            // Index-qualify the key so every row is always unique.
             <FocusAreaCard
               key={`${area.area}-${index}`}
               focusArea={area}

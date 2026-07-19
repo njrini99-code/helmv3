@@ -727,7 +727,7 @@ export function FairwayPlayerCoachHelm({
                         title={expectedEmptyStateCopy(v3EmptyCodes.profile)?.title ?? 'Game profile warming up'}
                         description={
                           expectedEmptyStateCopy(v3EmptyCodes.profile)?.description ??
-                          'Your composite rating builds off the rounds you log — a few more and it fills in.'
+                          'Your composite rating builds off the rounds you log, a few more and it fills in.'
                         }
                         unit="rounds"
                       />

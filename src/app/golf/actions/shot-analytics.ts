@@ -832,7 +832,7 @@ async function getPlayerShotAnalyticsImpl(
 
     // Sand save — dedicated check, was previously invisible to primaryWeakness
     if (aroundGreenStats.sandSavePct !== null && aroundGreenStats.sandSavePct < 30 && aroundGreenStats.totalShots > 3) {
-      insights.push(`Sand save rate of ${aroundGreenStats.sandSavePct}% — bunker play needs attention.`);
+      insights.push(`Sand save rate of ${aroundGreenStats.sandSavePct}% suggests bunker play needs attention.`);
       weaknessCandidates.push({
         label: `Sand saves (${aroundGreenStats.sandSavePct}%)`,
         severity: aroundGreenStats.sandSavePct < 15 ? 3 : 2,

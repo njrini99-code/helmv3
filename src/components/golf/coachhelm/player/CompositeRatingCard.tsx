@@ -161,7 +161,7 @@ function CompositeRatingCardImpl({
           <InsufficientData
             compact
             title="Category breakdown warming up"
-            description="Not enough team data to differentiate these yet — the composite above is still real."
+            description="Not enough team data to differentiate these yet. The composite above is still real."
             unit="teammates"
           />
         ) : (

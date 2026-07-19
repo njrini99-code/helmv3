@@ -102,3 +102,23 @@ describe('StandingStrip — "You" badge vs "TEAM" label overlap (mobile audit sc
     expect(within(trackTier as HTMLElement).getByText('TEAM')).toBeTruthy();
   });
 });
+
+describe('StandingStrip — metric title wraps instead of truncating (finding [120])', () => {
+  it('renders the full title text with no ellipsis-causing `truncate` class', () => {
+    const longLabel = 'SG: Off the Tee (Long Approaches, 190-220 yards)';
+    const { container } = render(<StandingStrip {...BASE} metric_label={longLabel} />);
+
+    const title = container.querySelector('h4');
+    expect(title).toBeTruthy();
+    // The full label — including its distinguishing suffix — must be present
+    // in the DOM. A `truncate` (single-line ellipsis) class visually clips
+    // overflow via CSS, but doesn't remove text from the DOM, so this alone
+    // doesn't prove the bug; the class assertion below does.
+    expect(title!.textContent).toBe(longLabel);
+    // `truncate` (Tailwind's `overflow:hidden;text-overflow:ellipsis;
+    // white-space:nowrap`) is exactly what silently swallows a label's
+    // distinguishing suffix — assert it's gone in favor of wrapping.
+    expect(title!.className).not.toContain('truncate');
+    expect(title!.className).toContain('break-words');
+  });
+});
