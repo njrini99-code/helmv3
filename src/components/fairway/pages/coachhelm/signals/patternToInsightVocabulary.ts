@@ -354,7 +354,20 @@ export function insightToSignalRow(
     priority: INSIGHT_PRIORITY_MAP[insight.priority] ?? 'medium',
     title: toCoachVoice(insight.title, resolvedPlayerName),
     body: toCoachVoice(insight.content ?? '', resolvedPlayerName),
-    overline: `${categoryLabel} · Signal`,
+    // Content-dedup (W3 audit) — the engine's title/content is a TEMPLATE:
+    // two players who cross the same threshold (e.g. the same lag-putt leak)
+    // legitimately get the same generated sentence, because the generator
+    // narrates the CONDITION, not the individual (deferred engine-side half
+    // of #944 — not re-litigated here, no generator/prose change). The flat/
+    // ungrouped feed (`FairwayCoachHelmSignals`'s smart-default cross-player
+    // view) renders cards with no player-name header at all, so two such
+    // cards were visually INDISTINGUISHABLE — reading as a duplicate-content
+    // bug rather than two real, separate findings. Leading the overline with
+    // the resolved roster name (never fabricated — falls back to the
+    // original category-only label when absent) makes identical content
+    // honestly per-player instead of collapsing two coaching subjects into
+    // one indistinguishable card.
+    overline: resolvedPlayerName ? `${resolvedPlayerName} · ${categoryLabel}` : `${categoryLabel} · Signal`,
     playerId: insight.player_id,
     playerName: resolvedPlayerName,
     category: insight.category,
@@ -569,7 +582,12 @@ export function patternToSignalRow(pattern: ExtendedPattern): SignalRow {
     priority: derivePatternPriority(pattern.patternType, pattern.strokeImpact),
     title: patternHeadline(pattern),
     body: patternBody(pattern),
-    overline: `${categoryLabel} · Pattern`,
+    // Content-dedup (W3 audit) — same rationale as `insightToSignalRow`'s
+    // overline above: two players sharing the same mined condition
+    // legitimately get the same headline/body, so the flat feed needs the
+    // real (never fabricated) player name to read as two distinct findings
+    // rather than one duplicated card.
+    overline: pattern.playerName ? `${pattern.playerName} · ${categoryLabel}` : `${categoryLabel} · Pattern`,
     playerId: pattern.playerId,
     playerName: pattern.playerName,
     category: pattern.patternType,

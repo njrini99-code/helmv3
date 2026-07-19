@@ -425,3 +425,57 @@ describe('insightToSignalRow — evidence lines (bug #944 missing "%" unit)', ()
     expect(line?.value).toBe('45');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Content-dedup audit (W3) — deferred engine-side half of #944: two players
+// who cross the same generated-content threshold (e.g. the same lag-putt
+// leak) legitimately get the SAME templated title/body — the generator
+// narrates the CONDITION, not the individual, and this fix does not touch
+// that generator. The bug is that the flat/ungrouped Signals feed
+// (`FairwayCoachHelmSignals`'s smart-default cross-player view) renders those
+// cards with NO player-name header at all, so two word-identical cards were
+// visually indistinguishable — reading as a duplicate-content bug instead of
+// two real, separate per-player findings. The overline must lead with the
+// resolved (never fabricated) roster name so identical content still reads
+// honestly as two distinct cards.
+// ---------------------------------------------------------------------------
+
+describe('insightToSignalRow — overline carries the player name (content-dedup audit)', () => {
+  it('two players who genuinely produce the SAME templated title/body still render distinguishable cards', () => {
+    const sharedTitle = 'Lag putts → 3-putt cascade';
+    const sharedContent = 'Lag putts (15+ ft) are leaking strokes at nearly double the team rate.';
+    const dylan = insightToSignalRow(
+      makeInsight({ id: 'a', player_id: 'p-dylan', category: 'putting', title: sharedTitle, content: sharedContent }),
+      { 'p-dylan': 'Dylan Chen' },
+    );
+    const mason = insightToSignalRow(
+      makeInsight({ id: 'b', player_id: 'p-mason', category: 'putting', title: sharedTitle, content: sharedContent }),
+      { 'p-mason': 'Mason Rivers' },
+    );
+    // The underlying generated content is genuinely, honestly identical —
+    // this fix does not fabricate per-player numbers to force it to differ.
+    expect(dylan.title).toBe(mason.title);
+    expect(dylan.body).toBe(mason.body);
+    // But the card itself must never be indistinguishable between the two.
+    expect(dylan.overline).toBe('Dylan Chen · Putting');
+    expect(mason.overline).toBe('Mason Rivers · Putting');
+    expect(dylan.overline).not.toBe(mason.overline);
+  });
+
+  it('falls back to the category-only overline when no roster name resolves — never fabricates one', () => {
+    const row = insightToSignalRow(makeInsight({ player_id: 'player-not-on-roster', category: 'putting' }));
+    expect(row.overline).toBe('Putting · Signal');
+  });
+});
+
+describe('patternToSignalRow — overline carries the player name (content-dedup audit)', () => {
+  it('leads with the pattern\'s resolved playerName', () => {
+    const row = patternToSignalRow(makePattern({ playerName: 'Ethan Rodriguez', patternType: 'compound' }));
+    expect(row.overline).toBe('Ethan Rodriguez · Compound');
+  });
+
+  it('falls back to the category-only overline when playerName is absent — never fabricates one', () => {
+    const row = patternToSignalRow(makePattern({ playerName: undefined, patternType: 'compound' }));
+    expect(row.overline).toBe('Compound · Pattern');
+  });
+});
