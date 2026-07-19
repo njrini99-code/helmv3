@@ -6,6 +6,7 @@ import {
   buildVitalDelta,
   detailGridColClass,
   computeGainLeak,
+  dominantMiss,
 } from './FairwayStatsCockpit';
 
 // ── toneVsBenchmark (P921 #2 — DetailGrid tone vs a real PGA/team baseline) ───
@@ -263,5 +264,28 @@ describe('detailGridColClass', () => {
 
   it('columns=2 (default) is the plain 2-up recipe', () => {
     expect(detailGridColClass(2)).toBe('sm:grid-cols-2');
+  });
+});
+
+// ── dominantMiss (#136 — GIR-by-distance miss tag carries its sample size) ────
+
+describe('dominantMiss', () => {
+  it('picks the largest miss share and carries the band\'s real sample size', () => {
+    const result = dominantMiss({ short: 60, long: 20, left: 10, right: 10, total: 12 });
+    expect(result).toEqual({ label: 'Short', pct: 60, n: 12 });
+  });
+
+  it('returns null when the band has no miss data at all', () => {
+    expect(dominantMiss(undefined)).toBeNull();
+  });
+
+  it('ignores non-finite components when picking the dominant direction', () => {
+    const result = dominantMiss({ short: null, long: 45, left: null, right: 30, total: 8 });
+    expect(result).toEqual({ label: 'Long', pct: 45, n: 8 });
+  });
+
+  it('n reflects the total sample even when it is small (never fabricated)', () => {
+    const result = dominantMiss({ short: 100, long: null, left: null, right: null, total: 1 });
+    expect(result).toEqual({ label: 'Short', pct: 100, n: 1 });
   });
 });

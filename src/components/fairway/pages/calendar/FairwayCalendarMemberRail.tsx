@@ -14,6 +14,8 @@
  * Selection state is parent-owned; this is presentation only.
  * ========================================================================== */
 
+import * as React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PLAYER_COLORS, type TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
@@ -26,8 +28,21 @@ export interface FairwayCalendarMemberRailProps {
   onSelect: (ids: string[]) => void;
 }
 
+// First LETTER of a name field, skipping any parenthetical suffix (e.g. a
+// "(Captain)"/"(C)" role tag some rosters store inline) and any other
+// leading non-letter character — a raw `name?.[0]` picks up the suffix's
+// opening "(" verbatim, rendering a garbled chip like "C(" instead of two
+// clean initials (finding #85).
+function firstLetter(name: string | null | undefined): string {
+  if (!name) return '';
+  const withoutParens = name.replace(/\(.*?\)/g, '');
+  const match = withoutParens.match(/\p{L}/u);
+  return match ? match[0] : '';
+}
+
 function initials(m: TeamMember): string {
-  return `${m.first_name?.[0] ?? ''}${m.last_name?.[0] ?? ''}`.toUpperCase() || '—';
+  const result = `${firstLetter(m.first_name)}${firstLetter(m.last_name)}`.toUpperCase();
+  return result || '—';
 }
 function fullName(m: TeamMember): string {
   return `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || 'Team member';
@@ -57,6 +72,34 @@ export function FairwayCalendarMemberRail({
   selectedPlayerIds,
   onSelect,
 }: FairwayCalendarMemberRailProps) {
+  // Scroll affordance (finding #123) — `scrollbar-hide` removes the native
+  // scrollbar with NO other visual cue that the pill row continues past the
+  // viewport edge, so it reads as a hard, flush cutoff rather than a
+  // scrollable list. Track scroll position and fade in a small edge chevron
+  // whenever there's more content in that direction.
+  const scrollerRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  const updateScrollAffordance = React.useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  React.useEffect(() => {
+    updateScrollAffordance();
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateScrollAffordance, { passive: true });
+    window.addEventListener('resize', updateScrollAffordance);
+    return () => {
+      el.removeEventListener('scroll', updateScrollAffordance);
+      window.removeEventListener('resize', updateScrollAffordance);
+    };
+  }, [updateScrollAffordance, teamMembers.length]);
+
   if (teamMembers.length === 0) return null;
 
   const allSelected = selectedPlayerIds.length === 0;
@@ -71,7 +114,33 @@ export function FairwayCalendarMemberRail({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+      <div className="relative">
+        {canScrollLeft ? (
+          <span
+            aria-hidden
+            data-testid="rail-scroll-left"
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-7 items-center justify-start"
+          >
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-surface shadow-flat ring-1 ring-border-subtle">
+              <ChevronLeft className="h-3 w-3 text-text-tertiary" />
+            </span>
+          </span>
+        ) : null}
+        {canScrollRight ? (
+          <span
+            aria-hidden
+            data-testid="rail-scroll-right"
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-7 items-center justify-end"
+          >
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-surface shadow-flat ring-1 ring-border-subtle">
+              <ChevronRight className="h-3 w-3 text-text-tertiary" />
+            </span>
+          </span>
+        ) : null}
+        <div
+          ref={scrollerRef}
+          className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5"
+        >
         {/* ALL */}
         <Button
           type="button"
@@ -135,6 +204,7 @@ export function FairwayCalendarMemberRail({
             </Button>
           );
         })}
+        </div>
       </div>
 
       {/* Legend / clear */}

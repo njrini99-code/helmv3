@@ -46,6 +46,21 @@ interface SearchResult {
   type: 'coach' | 'player';
 }
 
+// P158: a role label (a job title like "Head Coach") is not a name. Some
+// coach records were seeded with the title copied into `full_name` (a
+// data/labeling collision upstream), which then rendered as this row's NAME
+// line — identical to the real title-holder's subtitle line one row over, so
+// the list appeared to have two "Head Coach" entries. Detect the collision
+// and fall back to an honest, clearly-generic label instead of parroting a
+// role string back as if it were a person's name.
+export const ROLE_LABEL_PATTERN = /^(head|assistant|associate|interim|volunteer)?\s*coach$/i;
+
+export function resolveCoachName(fullName: string | null | undefined): string {
+  const trimmed = (fullName ?? '').trim();
+  if (!trimmed || ROLE_LABEL_PATTERN.test(trimmed)) return 'Coaching staff';
+  return trimmed;
+}
+
 export interface FairwayNewMessageSheetProps {
   isOpen: boolean;
   onClose: () => void;
@@ -162,7 +177,7 @@ export function FairwayNewMessageSheet({
               .map((c) => ({
                 id: c.id,
                 userId: c.user_id,
-                name: c.full_name || 'Coach',
+                name: resolveCoachName(c.full_name),
                 subtitle: c.title || 'Golf Coach',
                 avatar: c.avatar_url,
                 type: 'coach' as const,
@@ -207,7 +222,17 @@ export function FairwayNewMessageSheet({
               }));
           }
 
-          setResults([...coachResults, ...teammateResults]);
+          // Dedupe by userId — belt-and-suspenders against the same person
+          // (e.g. a coach who is also a team member) appearing in both lists.
+          const combined = [...coachResults, ...teammateResults];
+          const seen = new Set<string>();
+          const deduped = combined.filter((r) => {
+            if (seen.has(r.userId)) return false;
+            seen.add(r.userId);
+            return true;
+          });
+
+          setResults(deduped);
         }
       } catch {
         setResults([]);

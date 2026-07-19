@@ -46,6 +46,7 @@ import {
 } from '@/components/icons';
 import { Skeleton } from '@/components/fairway/feedback';
 import { CourseCard } from '@/components/golf/courses/CourseCard';
+import { formatCourseName } from '@/components/golf/courses/CourseImage';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
 import { TeeFormDrawer } from '@/components/golf/courses/TeeFormDrawer';
 import { TeePickRow, SkeletonRows } from '@/components/golf/courses/TeePickerDrawer';
@@ -80,7 +81,12 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const [courses, setCourses] = useState<GolfCourse[]>([]);     // full shared library
   const [recent, setRecent] = useState<GolfCourse[]>([]);       // this player's recently played
   const [team, setTeam] = useState<GolfCourse[]>([]);           // the team's saved courses
-  const [loadingCourses, setLoadingCourses] = useState(false);
+  // #146 — starts true (not false) so the very first paint after opening
+  // shows the shelf skeleton instead of one frame of the wrong state (the
+  // library/recent/team feeds are all still empty arrays at that point, so a
+  // `false` initial value briefly rendered the "No courses yet" empty state,
+  // or a blank void, ahead of the real skeleton the loading effect turns on).
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const [query, setQuery] = useState('');
 
   const [selected, setSelected] = useState<GolfCourse | null>(null);
@@ -196,7 +202,7 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
     await selectCourse(fresh);
   }, [refreshCourses, selectCourse]);
 
-  const heroTitle = stage === 'tees' && selected ? selected.name : 'Choose a course';
+  const heroTitle = stage === 'tees' && selected ? formatCourseName(selected.name) : 'Choose a course';
   const heroDesc = stage === 'tees'
     ? 'Pick the tee set you played — it pre-fills your pars and yardages.'
     : 'Pick from your library, or add a new course in seconds.';
@@ -225,7 +231,7 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
           )}
         >
           <DrawerTitle className="sr-only">
-            {stage === 'tees' && selected ? `Choose a tee at ${selected.name}` : 'Choose a course'}
+            {stage === 'tees' && selected ? `Choose a tee at ${formatCourseName(selected.name)}` : 'Choose a course'}
           </DrawerTitle>
 
           {/* Close — always reachable; backs out to the setup screen. */}
@@ -551,7 +557,7 @@ function CourseCarousel({
             {...enter(i)}
             role="group"
             aria-roledescription="slide"
-            aria-label={`${course.name}, ${i + 1} of ${count}`}
+            aria-label={`${formatCourseName(course.name)}, ${i + 1} of ${count}`}
             className={slideCls}
           >
             <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />

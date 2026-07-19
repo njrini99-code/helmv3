@@ -1,63 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
-import { IconX, IconSearch } from '@/components/icons';
-import { IconButton } from '@/components/ui/button';
-
-const STORAGE_KEY = 'helm-shortcut-hint-dismissed';
-
+/**
+ * KeyboardShortcutHint — RETIRED (audit round 2, mustFix #1/#2).
+ *
+ * This used to render a "Press ⌘K for quick actions" pill, gated to
+ * desktop (`pointer:fine` + `md`+). Round-1 fixed its breakpoint/overlap/
+ * dismiss bugs, but the adversarial re-review correctly called out that it
+ * was ALWAYS duplicate UI: `FairwayTopBar` already renders a persistent,
+ * fully-wired "⌘K" search button at the exact same `md`+ breakpoint
+ * (`src/components/fairway/app-shell/FairwayTopBar.tsx`'s `onSearchOpen`
+ * button, wired to `CommandPalette` via `FairwayDashboardShell`), and
+ * `CommandPalette.tsx` itself installs a GLOBAL `keydown` listener for
+ * `⌘K`/`Ctrl+K` that works regardless of any pill or button being on
+ * screen. Shipping this floating pill alongside that button was two
+ * competing surfaces advertising the same shortcut — "a duplicate/
+ * contradictory UI, not a fix" per the review — and no amount of
+ * repositioning it removes the duplication.
+ *
+ * Root-cause fix: retire the pill outright rather than reconciling two
+ * affordances into one. The component is kept (not deleted) as a
+ * guaranteed-inert no-op so its existing import in
+ * `FairwayDashboardShell.tsx` (out of this ticket's file scope) keeps
+ * compiling without a second, unrelated edit — it simply renders nothing,
+ * every render, unconditionally. If a future ticket wants a fresh
+ * first-run nudge for ⌘K, it should extend `FairwayTopBar`'s own button
+ * (e.g. a one-time pulse/tooltip anchored to it) rather than reintroduce a
+ * second floating surface.
+ */
 export function KeyboardShortcutHint() {
-  const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(true);
-
-  useEffect(() => {
-    // Check if user has dismissed this hint
-    const wasDismissed = localStorage.getItem(STORAGE_KEY) === 'true';
-    setDismissed(wasDismissed);
-
-    if (!wasDismissed) {
-      // Show after a short delay
-      const timer = setTimeout(() => setVisible(true), 2000);
-      // Auto-hide after 8 seconds
-      const hideTimer = setTimeout(() => setVisible(false), 10000);
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(hideTimer);
-      };
-    }
-    return undefined;
-  }, []);
-
-  const handleDismiss = () => {
-    setVisible(false);
-    setDismissed(true);
-    localStorage.setItem(STORAGE_KEY, 'true');
-  };
-
-  if (dismissed || !visible) return null;
-
-  return (
-    <div className={cn(
-      // ⌘K is meaningless on touch — stay `hidden` (no display, no overlap,
-      // no focus stop) unless the pointer is fine AND the viewport is sm+.
-      // A coarse-pointer tablet at sm+ width still stays hidden.
-      'hidden [@media(pointer:fine)_and_(min-width:640px)]:flex',
-      'fixed bottom-[var(--golf-mobile-bottom-nav-offset)] left-1/2 z-30 -translate-x-1/2 lg:bottom-6',
-      'bg-warm-900 text-white px-4 py-3 rounded-xl shadow-2xl',
-      'items-center gap-3 animate-slide-up'
-    )}>
-      <IconSearch size={16} className="text-warm-400" />
-      <span className="text-sm">
-        Press <kbd className="px-1.5 py-0.5 bg-warm-800 rounded text-xs mx-1">⌘K</kbd> for quick actions
-      </span>
-      <IconButton variant="default"
-        onClick={handleDismiss}
-        className="p-1 hover:bg-warm-800 rounded transition-colors"
-        aria-label="Dismiss hint"
-      >
-        <IconX size={14} aria-hidden="true" />
-      </IconButton>
-    </div>
-  );
+  return null;
 }

@@ -64,7 +64,7 @@ import {
   type FocusAreaCardData,
 } from './FocusAreaCard';
 import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
-import { getAreaType, type AreaAutoFillStats } from './areaTypes';
+import { getAreaType, formatTargetMetricLabel, type AreaAutoFillStats } from './areaTypes';
 import { IconPlus } from '@/components/icons';
 import { GoalsSection, type GoalSuggestionView } from './GoalsSection';
 import { CausalWhyPanel } from './CausalWhyPanel';
@@ -91,6 +91,14 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from '@/components/ui/drawer';
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * formatTargetMetricLabel — a raw `target_metric` is a snake_case DB metric
+ * identifier (e.g. `putts_made_5_10ft_pct`) or a legacy catalog label; it must
+ * NEVER render verbatim in player-facing copy (mustFix #202/#60). Shared with
+ * FocusAreaCard.tsx (same page's dense per-area rows) via areaTypes.ts so the
+ * two never drift — see the JSDoc there for the full resolution order.
+ * ────────────────────────────────────────────────────────────────────────── */
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the PRE-COMPUTED partition the route page already builds.
@@ -170,7 +178,9 @@ function LogProgressDrawer({
   const currentValue = fa?.current_value ?? null;
   const targetValue = fa?.target_value ?? null;
   const targetMetric = fa?.target_metric ?? null;
-  const metricLabel = targetMetric || 'Progress';
+  // Human display label — NEVER the raw snake_case metric identifier
+  // (mustFix #202/#60: raw DB key leaking into player-facing copy).
+  const metricLabel = formatTargetMetricLabel(targetMetric) || 'Progress';
 
   // Largest plausible measurement for any tracked golf metric (scores, yards,
   // putts, percentages). Anything beyond this is a fat-finger, not a real value.
@@ -275,9 +285,9 @@ function LogProgressDrawer({
               {targetValue != null && (
                 <span className="font-normal text-text-tertiary"> / {targetValue}</span>
               )}
-              {targetMetric && (
+              {metricLabel && metricLabel !== 'Progress' && (
                 <span className="ml-2 font-fw-sans text-eyebrow text-text-tertiary">
-                  {targetMetric}
+                  {metricLabel}
                 </span>
               )}
             </div>
@@ -508,13 +518,16 @@ export function FairwayMyDevelopment({
   // (when empty, the empty-state owns the single obvious next action).
   const headerActions = (
     <div className="flex items-center gap-2">
+      {/* Touch target: md (44px min-height) — not sm — every action button on
+          this page must clear the 44px guideline unconditionally, not only on
+          coarse pointers (mustFix #194). */}
       {total > 0 ? (
-        <Button asChild variant="secondary" size="sm">
+        <Button asChild variant="secondary">
           <Link href="/golf/dashboard/messages">Message coach</Link>
         </Button>
       ) : null}
       {canCreateOwn ? (
-        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+        <Button variant="primary" onClick={() => setCreateOpen(true)}>
           <IconPlus size={16} />
           New focus area
         </Button>
@@ -547,7 +560,7 @@ export function FairwayMyDevelopment({
               tone="danger"
               title="Couldn't load your plans"
               action={
-                <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
+                <Button variant="secondary" onClick={() => router.refresh()}>
                   Retry
                 </Button>
               }
@@ -748,6 +761,8 @@ function ProposedAreaCard({
   const area = getAreaType(focusArea.area_type);
   const hasTarget =
     focusArea.target_metric != null && focusArea.target_value != null;
+  // Human label — NEVER the raw snake_case metric identifier (mustFix #202/#60).
+  const targetMetricLabel = formatTargetMetricLabel(focusArea.target_metric);
   return (
     <Surface padding="md" className="flex flex-col gap-3">
       <div className="flex items-start gap-3">
@@ -767,7 +782,7 @@ function ProposedAreaCard({
             <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
               Target:{' '}
               <span className="font-fw-mono tabular-nums text-text-secondary">
-                {focusArea.target_metric}
+                {targetMetricLabel}
               </span>{' '}
               →{' '}
               <span className="font-fw-mono tabular-nums text-text-primary">
@@ -777,11 +792,12 @@ function ProposedAreaCard({
           ) : null}
         </div>
       </div>
+      {/* Touch target: md (44px min-height) — not sm (mustFix #194). */}
       <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={onDecline} disabled={deciding}>
+        <Button variant="ghost" onClick={onDecline} disabled={deciding}>
           Decline
         </Button>
-        <Button variant="primary" size="sm" busy={deciding} onClick={onAccept}>
+        <Button variant="primary" busy={deciding} onClick={onAccept}>
           Accept
         </Button>
       </div>

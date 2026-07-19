@@ -475,6 +475,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {players.map((p) => {
                 const isSel = selected.includes(p.id);
+                const playerName = `${p.first_name} ${p.last_name}`.trim() || 'Player';
                 return (
                   <label
                     key={p.id}
@@ -485,13 +486,24 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                         : 'border-border-subtle bg-surface hover:border-border-strong',
                     )}
                   >
-                    <Checkbox checked={isSel} onCheckedChange={() => toggle(p.id)} />
+                    {/* This roster checkbox is NOT wrapped in a FormField (no
+                        Field.Root in scope), so Base UI's Checkbox never
+                        receives a `labelId` to set `aria-labelledby` from —
+                        it renders with an EMPTY accessible name even though a
+                        sighted user reads the player's name right next to it
+                        (P192). An explicit `aria-label` makes the name
+                        authoritative regardless of Field context. */}
+                    <Checkbox
+                      checked={isSel}
+                      onCheckedChange={() => toggle(p.id)}
+                      aria-label={playerName}
+                    />
                     {/* Shared identity (avatar falls back to initials — this
                         roster has no avatar_url) so an entered player reads the
                         same here as on the roster/messages/CoachHelm surfaces;
                         the checkbox stays the selection affordance. */}
                     <PlayerIdentity
-                      name={`${p.first_name} ${p.last_name}`.trim() || 'Player'}
+                      name={playerName}
                       size="sm"
                       nameClassName={isSel ? 'text-accent-700' : undefined}
                     />

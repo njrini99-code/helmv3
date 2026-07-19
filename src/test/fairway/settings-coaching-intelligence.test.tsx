@@ -183,7 +183,6 @@ vi.mock('@/components/golf/coachhelm/settings', () => ({
   SensitivitySlider: () => <div />,
   ThresholdSlider: ({ label }: { label?: string }) => <div>{label}</div>,
   WeightDistributor: weightDistributorMock,
-  AlertTypeToggles: () => <div />,
 }));
 
 describe('FairwaySettingsCoachingIntelligence', () => {
@@ -264,14 +263,14 @@ describe('FairwaySettingsCoachingIntelligence', () => {
     expect(saveCoachingPhilosophyMock).not.toHaveBeenCalled();
   });
 
-  // ── P078 — the dead "Bubble Zone" threshold slider must NOT render ────────
-  it('does not render the Bubble Zone threshold slider (P078: zero engine consumers)', async () => {
+  // ── B17 — all 3 documented "Fine-tune Thresholds" sliders must render ─────
+  it('renders all 3 documented Fine-tune Thresholds sliders, including Bubble Zone', async () => {
     await renderPage();
 
     await screen.findByText('Decline Threshold');
     expect(screen.getByText('Decline Threshold')).toBeInTheDocument();
     expect(screen.getByText('Pressure Gap')).toBeInTheDocument();
-    expect(screen.queryByText('Bubble Zone')).not.toBeInTheDocument();
+    expect(screen.getByText('Bubble Zone')).toBeInTheDocument();
   });
 
   // ── P079 — the Comparison Weighting section + stub distributor must be gone ─
@@ -281,6 +280,27 @@ describe('FairwaySettingsCoachingIntelligence', () => {
     await screen.findByText('Decline Threshold');
     expect(screen.queryByText('Comparison Weighting')).not.toBeInTheDocument();
     expect(weightDistributorMock).not.toHaveBeenCalled();
+  });
+
+  // ── B16 — Active Alerts cards must expose an accessible switch, not a bare
+  //    checkbox-role card (the Fairway Switch test double renders a real
+  //    <button> with aria-pressed, standing in for the Base UI switch role) ──
+  it('renders every Active Alerts toggle as an accessible switch control', async () => {
+    await renderPage();
+
+    // Let the coachId resolution (which remounts CoachingIntelligenceBody via
+    // its `key`) settle FIRST — clicking a control before that remount fires
+    // clicks a node React is about to detach, and the click is lost.
+    await screen.findByText('Decline Threshold');
+
+    // One of each group's alerts, by its documented label (@/lib/coachhelm/types).
+    const scoringDecline = screen.getByRole('button', { name: 'Scoring decline' });
+    expect(scoringDecline).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(scoringDecline);
+    await waitFor(() => {
+      expect(saveMock).toHaveBeenCalledWith({ alertScoringDecline: false }, { revalidate: true });
+    });
   });
 
   // ── P083 — explicit back affordance to the settings index ─────────────────

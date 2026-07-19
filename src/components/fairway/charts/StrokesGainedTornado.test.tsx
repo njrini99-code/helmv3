@@ -18,7 +18,7 @@
  * ========================================================================== */
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { TornadoInner, type SGCategory } from './StrokesGainedTornado';
+import { TornadoInner, estimateLabelWidth, type SGCategory } from './StrokesGainedTornado';
 
 describe('StrokesGainedTornado — duplicate-label collision guard', () => {
   it('two rows sharing the SAME label render on DISTINCT y positions (never collide)', () => {
@@ -100,6 +100,109 @@ describe('StrokesGainedTornado — x-axis ticks never collapse into raw/duplicat
     const ticks = axisTickLabels(container);
     // The niced domain for this peak (~2.3 * 1.15) is [-3, 3] with a step of
     // 1 — ticks should read as clean whole numbers, not "+1.0" noise.
+    expect(ticks).toContain('0');
+    expect(ticks).toContain('+3');
+    expect(ticks).toContain('−3');
+    expect(new Set(ticks).size).toBe(ticks.length);
+  });
+});
+
+/**
+ * ============================================================================
+ * #111 — category label / own-value / x-axis-tick collision guards
+ * ----------------------------------------------------------------------------
+ * Two DISTINCT geometry bugs reported live alongside the two correctly-
+ * rendering LeakMap charts on the same FairwayTeamStats page:
+ *
+ *  1. A row's signed value annotation renders just past its own bar tip. At
+ *     the domain's extreme (a tight/zero-headroom `domainMax`, a real caller
+ *     path) that annotation's own text width could carry it PAST x = 0 —
+ *     landing on top of the SAME row's category label in the left gutter.
+ *  2. `xScale.ticks(5)` is a request, not a guarantee: for small-magnitude
+ *     data it can hand back 7 ticks whose decimal labels ("−0.06"/"−0.04"/…)
+ *     are individually wider than the pixel gap between them, so adjacent
+ *     digits visually merge into one unreadable run.
+ *
+ * jsdom has no `getBBox` (real SVG layout), so both guards work from the
+ * SAME geometry the component itself computes — parsed `x`/`y` attributes
+ * plus the shared `estimateLabelWidth` heuristic — rather than a DOM bbox.
+ * ========================================================================== */
+describe('StrokesGainedTornado — #111 value-annotation stays clear of its own category label', () => {
+  it('an extreme value at a tight (zero-headroom) domainMax never bleeds its annotation past x = 0', () => {
+    // domainMax === the exact peak (no auto 1.15 headroom) is the worst case:
+    // the bar's tip lands EXACTLY on the plot's reserved inset boundary.
+    const data: SGCategory[] = [
+      { label: 'Around the Green', value: -15 },
+      { label: 'Putting', value: 4.2 },
+    ];
+    const { container } = render(
+      <TornadoInner width={500} height={260} data={data} domainMax={15} />,
+    );
+    const texts = Array.from(container.querySelectorAll('text'));
+    const valueLabel = texts.find((el) => el.textContent === '−15.00');
+    expect(valueLabel).toBeDefined();
+
+    const x = Number(valueLabel!.getAttribute('x'));
+    const textAnchor = valueLabel!.getAttribute('text-anchor');
+    expect(textAnchor).toBe('end'); // anchors AWAY from the bar, toward x = 0
+    const width = estimateLabelWidth('−15.00', 11);
+    const leftEdge = x - width;
+
+    // The category-label gutter lives at x <= -12 (local, Group-offset)
+    // coordinates. The value annotation's own left edge must stay clear of
+    // it — a regression back to an un-inset `range: [0, innerW]` would push
+    // this leftEdge negative, overlapping the row's own label.
+    expect(leftEdge).toBeGreaterThan(0);
+  });
+
+  it('a mid-range value still renders its annotation with normal clearance (no regression)', () => {
+    const data: SGCategory[] = [
+      { label: 'Off the tee', value: 1.2 },
+      { label: 'Approach', value: -0.6 },
+    ];
+    const { container } = render(<TornadoInner width={500} height={220} data={data} />);
+    const texts = Array.from(container.querySelectorAll('text'));
+    const valueLabel = texts.find((el) => el.textContent === '+1.20');
+    expect(valueLabel).toBeDefined();
+    expect(Number(valueLabel!.getAttribute('x'))).toBeGreaterThan(0);
+  });
+});
+
+describe('StrokesGainedTornado — #111 x-axis tick labels never overlap', () => {
+  it('a small-magnitude domain (many candidate ticks, wide decimal labels) renders only ticks with real breathing room between them', () => {
+    const data: SGCategory[] = [
+      { label: 'Putting read', value: 0.05 },
+      { label: 'Wedge distance', value: -0.03 },
+    ];
+    // A NARROW plot (worst case for cramped ticks) — the exact geometry that
+    // used to render "−0.06" and "−0.04" close enough to visually merge.
+    const { container } = render(<TornadoInner width={400} height={220} data={data} />);
+    const tickTexts = Array.from(
+      container.querySelectorAll('text[text-anchor="middle"]'),
+    ).sort((a, b) => Number(a.getAttribute('x')) - Number(b.getAttribute('x')));
+
+    expect(tickTexts.length).toBeGreaterThan(1);
+
+    for (let i = 1; i < tickTexts.length; i++) {
+      const prev = tickTexts[i - 1]!;
+      const curr = tickTexts[i]!;
+      const prevX = Number(prev.getAttribute('x'));
+      const currX = Number(curr.getAttribute('x'));
+      const prevRightEdge = prevX + estimateLabelWidth(prev.textContent ?? '', 11) / 2;
+      const currLeftEdge = currX - estimateLabelWidth(curr.textContent ?? '', 11) / 2;
+      // Every KEPT tick must have visible daylight from its neighbor — the
+      // literal guarantee that fixes "digits merge into unreadable text".
+      expect(currLeftEdge).toBeGreaterThanOrEqual(prevRightEdge);
+    }
+  });
+
+  it('a normal-magnitude domain at a comfortable width keeps every one of its whole-number ticks (no over-thinning)', () => {
+    const data: SGCategory[] = [
+      { label: 'Off the tee', value: 2.3 },
+      { label: 'Approach', value: -1.1 },
+    ];
+    const { container } = render(<TornadoInner width={900} height={220} data={data} />);
+    const ticks = axisTickLabels(container);
     expect(ticks).toContain('0');
     expect(ticks).toContain('+3');
     expect(ticks).toContain('−3');

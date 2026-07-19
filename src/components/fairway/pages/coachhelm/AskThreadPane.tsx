@@ -126,7 +126,13 @@ export function AskThreadPane({
           embedded ChatMessageList is UNCHANGED. */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto bg-surface px-4 py-5 sm:px-5"
+        // #63: the trailing message used to run straight up against the
+        // composer track below with no real breathing room (an even `py-5`
+        // reads as "no bottom spacing" once the last bubble's own shadow/
+        // radius is accounted for). Bottom padding is intentionally DEEPER
+        // than top so the newest message always has clear air above the
+        // input bar, matching the composer's own `p-3` + safe-area inset.
+        className="flex-1 overflow-y-auto bg-surface px-4 pt-5 pb-8 sm:px-5"
       >
         {isEmptyThread ? (
           <EmptyState

@@ -12,7 +12,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useEffect } from 'react';
 import { render, waitFor } from '@testing-library/react';
+
+// Whether the mocked HoleByHoleShotPaths reports shot-level data exists (#34):
+// the "Jump to hole" nav is gated on it, so tests flip this to exercise both
+// the shots-present (nav visible) and scorecard-only (nav hidden) states.
+const mockShotState = vi.hoisted(() => ({ hasShots: true }));
 
 // --- Captured props from the stubbed RoundStatsComparison -----------------
 
@@ -84,7 +90,24 @@ vi.mock('framer-motion', async () => {
   };
 });
 
-const roundRow = {
+// `let` (not `const`) so individual tests (#109 course-name casing, #34
+// hole-jump nav) can swap in a different row shape before rendering — the
+// `golf_rounds` mock below reads this variable at call time, not a snapshot.
+let roundRow: {
+  id: string;
+  player_id: string;
+  course_name: string | null;
+  round_date: string;
+  total_score: number | null;
+  score_to_par: number | null;
+  total_putts: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  holes_played: number | null;
+  holes: Array<{ hole_number: number; score: number | null; par: number | null; yardage: number | null }>;
+} = {
   id: 'round-1',
   player_id: 'player-1',
   course_name: 'Pinehurst No. 2',
@@ -180,7 +203,14 @@ vi.mock('@/components/golf/coachhelm/round-review', () => ({
 }));
 
 vi.mock('@/components/golf/coachhelm/round-review/HoleByHoleShotPaths', () => ({
-  HoleByHoleShotPaths: () => <div data-testid="shot-paths" />,
+  HoleByHoleShotPaths: ({ onShotsLoaded }: { onShotsLoaded?: (hasShots: boolean) => void }) => {
+    // Mirror the real component: report shot availability once "loaded" so the
+    // page can gate the hole-jump nav.
+    useEffect(() => {
+      onShotsLoaded?.(mockShotState.hasShots);
+    }, [onShotsLoaded]);
+    return <div data-testid="shot-paths" />;
+  },
 }));
 
 vi.mock('@/components/golf/coachhelm/PromoteToFocusAreaButton', () => ({
@@ -244,5 +274,89 @@ describe('RoundReviewPage — stats comparison inputs', () => {
       avgPutts: 33,
     });
     expect(capturedStatsProps?.teamAvg).toBeNull();
+  });
+});
+
+const DEFAULT_ROUND_ROW = { ...roundRow };
+
+describe('RoundReviewPage — course-name casing (#109) + hole-jump nav (#34)', () => {
+  beforeEach(() => {
+    capturedStatsProps = null;
+    roundRow = { ...DEFAULT_ROUND_ROW };
+    mockShotState.hasShots = true;
+  });
+
+  it('title-cases an all-lowercase course name like every sibling course row', async () => {
+    roundRow = { ...DEFAULT_ROUND_ROW, course_name: 'pine lakes' };
+
+    const { getByRole } = render(
+      <GolfUserProvider
+        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
+      >
+        <RoundReviewPage />
+      </GolfUserProvider>,
+    );
+
+    // The ViewHeader title (an <h1>, present on both the loading and loaded
+    // surfaces) renders the display-cased name, never the raw lowercase
+    // value stored on the round.
+    await waitFor(() => {
+      expect(getByRole('heading', { level: 1 }).textContent).toBe('Pine Lakes');
+    });
+  });
+
+  it('renders a 1-18 hole-jump chip for every hole when shot data exists', async () => {
+    mockShotState.hasShots = true;
+    roundRow = {
+      ...DEFAULT_ROUND_ROW,
+      holes: Array.from({ length: 18 }, (_, i) => ({
+        hole_number: i + 1,
+        score: 4,
+        par: 4,
+        yardage: 380,
+      })),
+    };
+
+    const { findByRole, getByRole } = render(
+      <GolfUserProvider
+        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
+      >
+        <RoundReviewPage />
+      </GolfUserProvider>,
+    );
+
+    await findByRole('button', { name: 'Jump to hole 1' });
+    for (let hole = 1; hole <= 18; hole++) {
+      expect(getByRole('button', { name: `Jump to hole ${hole}` })).toBeInTheDocument();
+    }
+  });
+
+  // #34 dead-control guard: the hole-jump chips scroll to per-hole shot cards
+  // that only exist when shot-level data was logged. For a scorecard-only round
+  // (no shots) the nav must NOT render, or every pill is a silent no-op.
+  it('hides the hole-jump nav for a scorecard-only round (no shot data)', async () => {
+    mockShotState.hasShots = false;
+    roundRow = {
+      ...DEFAULT_ROUND_ROW,
+      holes: Array.from({ length: 18 }, (_, i) => ({
+        hole_number: i + 1,
+        score: 4,
+        par: 4,
+        yardage: 380,
+      })),
+    };
+
+    const { findByTestId, queryByRole } = render(
+      <GolfUserProvider
+        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
+      >
+        <RoundReviewPage />
+      </GolfUserProvider>,
+    );
+
+    // The shot-paths section still renders (it shows its own "no shot data"
+    // message); only the jump nav is withheld.
+    await findByTestId('shot-paths');
+    expect(queryByRole('button', { name: 'Jump to hole 1' })).toBeNull();
   });
 });

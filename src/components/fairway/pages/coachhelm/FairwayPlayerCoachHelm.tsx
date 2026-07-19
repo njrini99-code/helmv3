@@ -503,8 +503,53 @@ export function FairwayPlayerCoachHelm({
             </Surface>
           ) : (
             <div className="flex flex-col gap-10">
+              {/* [119] — lightweight in-page section anchors. This page reads
+                  as one ~10-screen scroll with no way to jump; a small pill row
+                  of anchors (only for sections that actually render — a link to
+                  an empty/absent section would be a dead jump) gives a way to
+                  skip straight to Focus areas / Overview / Deep dive without
+                  scrolling past the feed every time. */}
+              <nav aria-label="Jump to section" className="flex flex-wrap items-center gap-2">
+                <a
+                  href="#cockpit"
+                  className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-caption font-medium text-text-secondary hover:text-text-primary"
+                >
+                  Cockpit
+                </a>
+                {(isThemesEnabled() && themes.length > 0) || secondaryDeduped.length > 0 ? (
+                  <a
+                    href="#coachhelm-feed"
+                    className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-caption font-medium text-text-secondary hover:text-text-primary"
+                  >
+                    {isThemesEnabled() && themes.length > 0 ? 'Themes' : 'Insights'}
+                  </a>
+                ) : null}
+                {data.focusAreas.length > 0 ? (
+                  <a
+                    href="#focus-areas"
+                    className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-caption font-medium text-text-secondary hover:text-text-primary"
+                  >
+                    Focus areas
+                  </a>
+                ) : null}
+                <a
+                  href="#performance-overview"
+                  className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-caption font-medium text-text-secondary hover:text-text-primary"
+                >
+                  Overview
+                </a>
+                <a
+                  href="#coachhelm-deep-dive-section"
+                  className="rounded-full border border-border-subtle bg-surface px-3 py-1 text-caption font-medium text-text-secondary hover:text-text-primary"
+                >
+                  Deep dive
+                </a>
+              </nav>
+
               {/* ════════════════ THE COCKPIT — the focal instrument cluster ════ */}
               <InstrumentCluster
+                id="cockpit"
+                className="scroll-mt-24"
                 ariaLabel="Your CoachHelm cockpit"
                 balance="focal"
                 tertiaryColumns={4}
@@ -543,7 +588,7 @@ export function FairwayPlayerCoachHelm({
                     REPLACE the flat secondary feed; otherwise the flat feed is
                     the kill-switch + empty-themes fallback (kept verbatim). ════ */}
               {isThemesEnabled() && themes.length > 0 ? (
-                <section className="flex flex-col gap-3" data-slot="coachhelm-themes">
+                <section id="coachhelm-feed" className="scroll-mt-24 flex flex-col gap-3" data-slot="coachhelm-themes">
                   <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
                     Themes to work on
                   </h3>
@@ -556,7 +601,7 @@ export function FairwayPlayerCoachHelm({
                   />
                 </section>
               ) : secondaryDeduped.length > 0 ? (
-                <section className="flex flex-col gap-3">
+                <section id="coachhelm-feed" className="scroll-mt-24 flex flex-col gap-3">
                   <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
                     {topInsight ? 'More for you' : 'Your insights'}
                   </h3>
@@ -633,7 +678,7 @@ export function FairwayPlayerCoachHelm({
               ) : null}
 
               {/* ════════════════ TERTIARY — game profile + trends ══════════════ */}
-              <section>
+              <section id="performance-overview" className="scroll-mt-24">
                 <h3 className="mb-3 px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
                   Performance overview
                 </h3>
@@ -682,7 +727,7 @@ export function FairwayPlayerCoachHelm({
                         title={expectedEmptyStateCopy(v3EmptyCodes.profile)?.title ?? 'Game profile warming up'}
                         description={
                           expectedEmptyStateCopy(v3EmptyCodes.profile)?.description ??
-                          'Your composite rating builds off the rounds you log — a few more and it fills in.'
+                          'Your composite rating builds off the rounds you log, a few more and it fills in.'
                         }
                         unit="rounds"
                       />
@@ -711,7 +756,7 @@ export function FairwayPlayerCoachHelm({
               </section>
 
               {/* ════════════════ DETAIL — collapsible deep dive ════════════════ */}
-              <section>
+              <section id="coachhelm-deep-dive-section" className="scroll-mt-24">
                 <Surface
                   as="button"
                   interactive

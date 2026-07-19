@@ -43,7 +43,18 @@ vi.mock('@/app/golf/actions/stats-leak-maps', () => ({
     success: true,
     data: { playerId: 'p1', putting: [], approach: [], roundsIncluded: 20 },
   })),
-  getPlayerStandingRows: vi.fn(async () => ({ success: true, data: [] })),
+  // Real PGA benchmarks for two putt-distance bands (#135 regression fixture):
+  // 3-5ft (STATS.puttMakePct3_5 = 70) meaningfully AHEAD of a 55 benchmark
+  // ('good'), 5-10ft (STATS.puttMakePct5_10 = 40) meaningfully BEHIND a 55
+  // benchmark ('warn') — giving the Putting tab's make-rate grids both tones
+  // the color legend needs to explain.
+  getPlayerStandingRows: vi.fn(async () => ({
+    success: true,
+    data: [
+      { metric_id: 'putts_made_3_5ft_pct', player_value: 70, team_avg: null, team_n: 0, team_pct: null, pga_value: 55, pga_delta: null },
+      { metric_id: 'putts_made_5_10ft_pct', player_value: 40, team_avg: null, team_n: 0, team_pct: null, pga_value: 55, pga_delta: null },
+    ],
+  })),
 }));
 vi.mock('@/app/golf/actions/insights', () => ({
   getPlayerPatterns: vi.fn(async () => ({ success: true, patterns: [] })),
@@ -171,7 +182,11 @@ const STATS: GolfStats = {
   approachMissLongLeftPct: 10,
   approachMissLongRightPct: 10,
   approachMissTotal: 140,
-  approachMissByBand: {},
+  // #136 fixture: the 150-175yd band (girPct150_175 = 55 below) has 12 real
+  // missed approaches behind it, dominant miss "Short" at 60% — the GIR-by-
+  // distance board's miss tag must annotate this with its own sample size
+  // (n=12), matching the Putting tab heatmap's per-cell `n=` discipline.
+  approachMissByBand: { '150_175': { short: 60, long: 20, left: 10, right: 10, total: 12 } },
   totalPutts: 620,
   puttsPerRound: 31,
   puttsPerHole: 1.72,
@@ -364,5 +379,37 @@ describe('FairwayStatsCockpit — tab switching (audit W4)', () => {
     expect(replaceStateSpy).toHaveBeenCalled();
     const lastCallUrl = String(replaceStateSpy.mock.calls.at(-1)?.[2] ?? '');
     expect(lastCallUrl).toContain('tab=analysis');
+  });
+
+  // ── #135 / #136 ──────────────────────────────────────────────────────────
+  it('Approach tab: GIR-by-distance miss tag shows its sample size, like the Putting heatmap does', async () => {
+    const user = userEvent.setup();
+    render(<FairwayStatsCockpit playerId="player-1" />);
+
+    await screen.findByText('Scoring trend');
+    await user.click(screen.getByRole('tab', { name: 'Approach' }));
+
+    const panel = screen.getByRole('tabpanel');
+    // The 150-175yd band's dominant miss ("Short 60%") must carry the SAME
+    // real sample size (n=12) the fixture's approachMissByBand total encodes
+    // — never a fabricated or missing count.
+    expect(within(panel).getByText(/miss: Short 60% \(n=12\)/)).toBeInTheDocument();
+  });
+
+  it('Putting tab: a color legend explains the make-rate tones actually painted', async () => {
+    const user = userEvent.setup();
+    render(<FairwayStatsCockpit playerId="player-1" />);
+
+    await screen.findByText('Scoring trend');
+    await user.click(screen.getByRole('tab', { name: 'Putting' }));
+
+    const panel = screen.getByRole('tabpanel');
+    // The fixture's standing rows put the 3-5ft band 'good' and the 5-10ft
+    // band 'warn' (see the getPlayerStandingRows mock above) — the legend
+    // must be present and describe both real tones plus the neutral case.
+    expect(within(panel).getByRole('note', { name: 'Color legend' })).toBeInTheDocument();
+    expect(within(panel).getByText(/Ahead of PGA Tour/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Behind PGA Tour/)).toBeInTheDocument();
+    expect(within(panel).getByText(/No meaningful gap/)).toBeInTheDocument();
   });
 });

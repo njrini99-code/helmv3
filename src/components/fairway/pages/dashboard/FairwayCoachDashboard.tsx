@@ -100,6 +100,7 @@ import type {
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { deriveCoachSignal } from './coach-signal';
 import { buildCoachAttentionCounts, splitActionItems } from './attention-queue';
+import { parseDueDate } from '@/components/fairway/pages/tasks/FairwayTasks';
 
 // Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
 // Scoring Trend chart). recharts' ResponsiveContainer has no real size to
@@ -1044,14 +1045,14 @@ function TodayPanel({
           calendar to see the full schedule.
         </InlineNotice>
       ) : events.length === 0 ? (
-        <Surface elevation="border" padding="md">
-          <EmptyState
-            variant="subtle"
-            icon={LucideCalendar}
-            title="Clear schedule today"
-            description="No events on the books — a good window for practice or recovery."
-          />
-        </Surface>
+        // Right-sized for the COMMON case (audit #64): most days have nothing
+        // on the books, so a clear schedule is the everyday state, not an
+        // edge case — it no longer spends a full monolithic EmptyState card
+        // (icon + title + description) on that. A single quiet InlineNotice
+        // row says the same thing at the size the message actually needs.
+        <InlineNotice tone="info" icon={LucideCalendar} title="Clear schedule today">
+          A good window for practice or recovery.
+        </InlineNotice>
       ) : (
         <Surface elevation="border" padding="sm">
           <ul className="flex flex-col gap-2">
@@ -1127,7 +1128,15 @@ function actionItemHref(item: ActionItem): string {
 
 function formatRelativeDate(dateStr: string, now: Date): string {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  // P295-DASH — same local-safe date-only parse the Tasks page uses
+  // (parseDueDate, imported from FairwayTasks). A bare "YYYY-MM-DD" task
+  // due_date read via a raw `new Date(dateStr)` parses as UTC midnight, which
+  // in any negative-UTC-offset zone (all of the US) resolves to the PREVIOUS
+  // local calendar day — so a task due "today" showed "Yesterday" here in
+  // Action Items while the Tasks list/detail (already fixed) correctly said
+  // "Today" for the identical stored due_date. Routing this call site through
+  // the same helper keeps every surface honest about the same value.
+  const date = parseDueDate(dateStr);
   if (Number.isNaN(date.getTime())) return '';
   const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
   if (diffDays < 0) {
@@ -1153,9 +1162,9 @@ function ActionItemRow({ item, now }: { item: ActionItem; now: Date | null }) {
         href={actionItemHref(item)}
         className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
       >
-        {/* `overflow-hidden` is the hard backstop for the title's `truncate`
-            below — without it, a long single-line title can bleed past this
-            row's own rounded edge instead of ellipsizing at it (#957). */}
+        {/* `overflow-hidden` is the hard backstop for the row's own rounded
+            edge — a long title can still bleed past it (#957); the title's
+            OWN clipping is now `line-clamp-2` (see below), not `truncate`. */}
         <Inset
           padding="sm"
           className="flex min-w-0 items-start gap-3 overflow-hidden transition-colors hover:bg-surface-hover"
@@ -1172,9 +1181,19 @@ function ActionItemRow({ item, now }: { item: ActionItem; now: Date | null }) {
             )}
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-1">
+            {/* audit #47: a single-line `truncate` here clipped mid-word with
+                no ellipsis on narrow mobile widths — `truncate`'s ellipsis
+                depends on the element resolving to a block box, and this span
+                sits directly inside a row that also wraps the date/badge
+                beneath it, so the clip landed with no visible affordance.
+                `whitespace-normal break-words` lets a long title wrap onto a
+                second line at word boundaries (only breaking mid-word as a
+                last resort, never as the default), and `line-clamp-2` caps it
+                at two lines with a real ellipsis if it's still too long —
+                never a bare mid-word cut. */}
             <span
               className={cn(
-                'truncate font-fw-sans text-body font-medium',
+                'line-clamp-2 whitespace-normal break-words font-fw-sans text-body font-medium',
                 item.overdue ? 'text-fw-danger' : 'text-text-primary',
               )}
             >

@@ -39,11 +39,24 @@ import {
 // uses) now live in a pure, icon-free lib module so the server tracker can
 // import them without pulling React. Re-exported below so existing
 // `./areaTypes` importers (modal, cards, index, tests) keep their import path.
+// `findMetric` is ALSO bound locally (not just re-exported) so
+// isLowerIsBetter / formatTargetMetricLabel below can call it directly.
 import type {
   AreaAutoFillStats,
   MetricDirection,
   MetricCatalogEntry,
   FocusWindowRound,
+} from '@/lib/coachhelm/focus-areas/catalog';
+import {
+  METRIC_CATALOG,
+  metricsForArea,
+  findMetric,
+  readMetricValue,
+  suggestTarget,
+  formatMetricValue,
+  WINDOWABLE_FOCUS_METRIC_KEYS,
+  isWindowableFocusMetric,
+  aggregateFocusMetric,
 } from '@/lib/coachhelm/focus-areas/catalog';
 export type { AreaAutoFillStats, MetricDirection, MetricCatalogEntry, FocusWindowRound };
 export {
@@ -56,7 +69,12 @@ export {
   WINDOWABLE_FOCUS_METRIC_KEYS,
   isWindowableFocusMetric,
   aggregateFocusMetric,
-} from '@/lib/coachhelm/focus-areas/catalog';
+};
+// The v3 canonical metric registry (sg_*, putts_made_5_10ft_pct, etc.) — the
+// OTHER metric vocabulary a focus area's target_metric can carry (a coach can
+// target either a legacy catalog label or a v3 metric id). Pure data lookup,
+// no React/DOM, safe for this icon-free shared module.
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 
 /* ---------------------------------------------------------------------------
  * Types
@@ -278,10 +296,65 @@ export const LOWER_IS_BETTER_KEYWORDS = [
   'three_putt',
 ] as const;
 
-/** Whether a target metric is "lower is better" (substring match, case-insensitive). */
+/**
+ * Whether a target metric is "lower is better" — a real direction lookup
+ * against the canonical registries, NOT a naive keyword guess.
+ *
+ * A bare substring match on "putt" false-positives on MAKE-rate metrics like
+ * `putts_made_5_10ft_pct` or "1-Putt %" — making more putts is better (higher
+ * is better), even though the string contains "putt" (mustFix: direction
+ * flipped for putts-made/percentage-made metrics).
+ *
+ * Resolution order:
+ *   1. The v3 canonical metric registry (`getMetricRenderConfig`) — covers
+ *      registered metric ids (`sg_putting`, `putts_made_5_10ft_pct`, …), the
+ *      authoritative source when the target_metric matches one exactly.
+ *   2. The focus-area metric catalog (`findMetric`) — covers the legacy
+ *      display-label vocabulary ("Putts Per Round", "1-Putt %", "3-Putt %", …)
+ *      by stable key OR label, case-insensitive.
+ *   3. A genuinely unregistered / custom metric (free text in an "Other"
+ *      area) — fall back to the keyword heuristic, but guard the exact
+ *      false-positive that motivated this fix: a "___ made ___" / "___ hit
+ *      ___" / "___ accuracy" phrasing is a make-rate (higher is better) even
+ *      when it contains a lower-is-better keyword.
+ */
 export function isLowerIsBetter(targetMetric: string | null | undefined): boolean {
-  const m = (targetMetric ?? '').toLowerCase();
+  if (!targetMetric) return false;
+
+  const v3Cfg = getMetricRenderConfig(targetMetric);
+  if (v3Cfg) return v3Cfg.direction === 'lower_better';
+
+  const catalogEntry = findMetric(targetMetric);
+  if (catalogEntry) return catalogEntry.direction === 'lower';
+
+  const m = targetMetric.toLowerCase();
+  if (/\bmade\b|\bhit\b|\baccuracy\b/.test(m)) return false;
   return LOWER_IS_BETTER_KEYWORDS.some((kw) => m.includes(kw));
+}
+
+/**
+ * Human display label for a `target_metric` — a raw `target_metric` is a
+ * snake_case DB metric identifier (e.g. `putts_made_5_10ft_pct`) or a legacy
+ * catalog label (e.g. `Putts Per Round`); it must NEVER render verbatim in
+ * player/coach-facing copy (mustFix #202/#60). Resolution mirrors
+ * {@link isLowerIsBetter}: the v3 canonical registry's human display_label
+ * first, then the focus-area catalog's label, then a title-cased de-snake so
+ * an unregistered or custom metric string still never leaks its raw key.
+ */
+export function formatTargetMetricLabel(targetMetric: string | null | undefined): string | null {
+  if (!targetMetric) return null;
+
+  const v3Cfg = getMetricRenderConfig(targetMetric);
+  if (v3Cfg) return v3Cfg.display_label;
+
+  const catalogEntry = findMetric(targetMetric);
+  if (catalogEntry) return catalogEntry.label;
+
+  return targetMetric
+    .split('_')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 /**

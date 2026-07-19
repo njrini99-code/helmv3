@@ -239,7 +239,15 @@ export function FairwayTeamHub({
             empty-state so the tab is never blank — but a LOAD FAILURE must
             still route to AnnouncementsList (loadError) rather than the plain
             "No announcements" state, or an outage reads as a genuinely quiet
-            team (W1 count-coherence audit). */}
+            team (W1 count-coherence audit).
+              P152 — this tab's data comes from get_player_hub_announcements(),
+            which (server-side, outside this component) hard-windows to posts
+            published in the last 30 days. The dedicated /dashboard/announcements
+            page has no such window, so a team with older posts can legitimately
+            show 4 there and 0 here — that is NOT a bug in this component, it's
+            two different server queries. Rather than let the empty state imply
+            "your coach has never posted", the copy is honest about the 30-day
+            scope and always offers a way to the full history. */}
         <TabsContent value="announcements">
           {showAnnouncementsList(announcements.length, announcementsLoadError) ? (
             <AnnouncementsList announcements={announcements} loadError={announcementsLoadError} />
@@ -248,8 +256,13 @@ export function FairwayTeamHub({
               <EmptyState
                 variant="subtle"
                 icon={Megaphone}
-                title="No announcements"
-                description="Team announcements from your coach will show up here."
+                title="No recent announcements"
+                description="Nothing posted in the last 30 days. Older announcements from your coach still live on the full Announcements page."
+                action={
+                  <Button asChild variant="secondary" size="sm" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                    <Link href="/golf/dashboard/announcements">View all announcements</Link>
+                  </Button>
+                }
               />
             </Surface>
           )}

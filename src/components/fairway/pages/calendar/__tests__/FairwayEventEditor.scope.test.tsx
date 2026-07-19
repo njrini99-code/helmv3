@@ -7,7 +7,7 @@
  * that cascade-wipes the series.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import * as React from 'react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { Button as UIButton } from '@/components/ui/button';
@@ -16,10 +16,17 @@ vi.mock('@/components/fairway/overlays/ModalShell', () => {
   interface ShellProps {
     open: boolean;
     title?: string;
+    description?: React.ReactNode;
     children?: React.ReactNode;
   }
-  function ModalShellRoot({ open, title, children }: ShellProps) {
-    return open ? <div role="dialog" aria-label={title}>{children}</div> : null;
+  function ModalShellRoot({ open, title, description, children }: ShellProps) {
+    return open ? (
+      <div role="dialog" aria-label={title}>
+        {title ? <h2>{title}</h2> : null}
+        {description ? <p>{description}</p> : null}
+        {children}
+      </div>
+    ) : null;
   }
   ModalShellRoot.Body = function Body({ children }: { children?: React.ReactNode }) {
     return <div>{children}</div>;
@@ -151,15 +158,31 @@ describe('FairwayEventEditor — series scope picker', () => {
     });
   });
 
-  it('one-off events keep the plain soft-cancel confirm flow (no scope picker)', async () => {
-    renderEditor(makeSeriesEvent({ parent_event_id: null, recurrence_rule: null }));
+  it('one-off events open a real cancel-confirm dialog (no bare inline toggle, no scope picker)', async () => {
+    const { onDelete } = renderEditor(makeSeriesEvent({ parent_event_id: null, recurrence_rule: null }));
 
     // One-off deletes are a SOFT CANCEL, so the affordance reads "Cancel event".
     fireEvent.click(screen.getByText('Cancel event'));
 
+    // A real ModalShell confirm with consequence copy (finding #45/#113/#181)
+    // — not a bare inline "Tap to confirm" toggle, and not the series picker.
     await waitFor(() => {
-      expect(screen.getByText('Tap to confirm')).toBeInTheDocument();
+      expect(screen.getByText('Cancel this event?')).toBeInTheDocument();
     });
+    expect(screen.getByText(/Attendees are notified/)).toBeInTheDocument();
     expect(screen.queryByText('Delete recurring event')).not.toBeInTheDocument();
+    expect(onDelete).not.toHaveBeenCalled();
+
+    // Confirming the dialog calls the actual soft-cancel.
+    fireEvent.click(screen.getByText('Keep event'));
+    expect(screen.queryByText('Cancel this event?')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Cancel event'));
+    await waitFor(() => {
+      expect(screen.getByText('Cancel this event?')).toBeInTheDocument();
+    });
+    const dialog = screen.getByRole('dialog', { name: 'Cancel this event?' });
+    fireEvent.click(within(dialog).getByText('Cancel event'));
+    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
   });
 });

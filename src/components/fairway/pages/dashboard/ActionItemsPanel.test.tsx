@@ -110,13 +110,20 @@ describe('ActionItemsPanel — announcements are informational, not backlog', ()
  * content instead of its row, so it rendered up to 437px wide on a 390px
  * viewport with no wrap/ellipsis. The fix (already shipped, #957) chains
  * `min-w-0` through every flex/grid boundary the title sits inside — `<li>` →
- * `<Inset>` → the title's own flex column — with `truncate` as the visible
- * ellipsis and `overflow-hidden` as the hard backstop. jsdom has no layout
- * engine, so this can't assert a literal pixel width; it asserts the
- * class-level contract that makes that width impossible in a real browser.
+ * `<Inset>` → the title's own flex column. jsdom has no layout engine, so this
+ * can't assert a literal pixel width; it asserts the class-level contract that
+ * makes that width impossible in a real browser.
+ *
+ * audit #47 (round 2): the title's OWN clipping used to be a single-line
+ * `truncate`, which on a narrow mobile width was observed cutting mid-word
+ * with no ellipsis affordance (the span sits directly inside a row that also
+ * wraps its date/badge line beneath it, so the clip landed silently). The
+ * title now wraps at word boundaries (`whitespace-normal break-words`) and
+ * caps at two lines with a real ellipsis (`line-clamp-2`) instead of a bare
+ * single-line `truncate` — never a mid-word cut with no affordance.
  * ========================================================================== */
 describe('ActionItemsPanel — long titles are sized by their row, not their content', () => {
-  it('applies truncate to a long task title so it ellipsizes instead of forcing the row wider', () => {
+  it('wraps a long task title at word boundaries and clamps to 2 lines, never a bare mid-word truncate', () => {
     const longTitle = 'Complete Swing Mechanics Self-Assessment Video';
     render(
       <ActionItemsPanel
@@ -125,10 +132,18 @@ describe('ActionItemsPanel — long titles are sized by their row, not their con
     );
 
     const title = screen.getByText(longTitle);
-    expect(title.className).toMatch(/\btruncate\b/);
+    // `whitespace-normal` (wraps at word boundaries, the opposite of the old
+    // single-line `truncate`'s `white-space: nowrap`) + `break-words` (only
+    // breaks mid-word as a last resort, never by default) + `line-clamp-2`
+    // (a real ellipsis if it's still too long after wrapping).
+    expect(title.className).toMatch(/\bwhitespace-normal\b/);
+    expect(title.className).toMatch(/\bbreak-words\b/);
+    expect(title.className).toMatch(/\bline-clamp-2\b/);
+    // The old single-line-only contract must be gone.
+    expect(title.className).not.toMatch(/\btruncate\b/);
   });
 
-  it('chains min-w-0 from the <li> down to the title\'s own flex column (the floor `truncate` needs to bite)', () => {
+  it('chains min-w-0 from the <li> down to the title\'s own flex column (the floor line-clamp needs to bite)', () => {
     const longTitle = 'Submit Spring Invitational Travel Preferences Form';
     render(
       <ActionItemsPanel items={[{ id: 'long-2', type: 'task', title: longTitle, date: '2026-06-11' }]}
@@ -141,8 +156,9 @@ describe('ActionItemsPanel — long titles are sized by their row, not their con
     expect(listItem!.className).toMatch(/\bmin-w-0\b/);
 
     // The title's direct flex wrapper (icon-adjacent column) must also carry
-    // min-w-0 + flex-1 — without it, `truncate` on the title span has no
-    // shrinkable ancestor to truncate against and silently does nothing.
+    // min-w-0 + flex-1 — without it, the title span has no shrinkable
+    // ancestor to wrap/clamp against and silently renders at full content
+    // width instead.
     const flexColumn = title.parentElement;
     expect(flexColumn).not.toBeNull();
     expect(flexColumn!.className).toMatch(/\bmin-w-0\b/);

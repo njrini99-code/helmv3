@@ -1263,37 +1263,71 @@ export function FairwayCoachHelmSignals({
      whenever a few of those loaded rows were already acknowledged/resolved —
      e.g. 13 urgent+high vs 10 open, reading as if there were MORE urgent
      signals than open ones). This also now matches the shell badge's own
-     semantics (`getAlertCounts().counts.critical` — open urgent+high only). */
+     semantics (`getAlertCounts().counts.critical` — open urgent+high only).
+
+     Bug #4/#184: all three tiles are now scoped to `rows` — the SAME final
+     list (toolbar filters + smart-default cap applied) the coach sees
+     rendered below — not `allRows` (every loaded row for the segment,
+     ignoring the toolbar). Reading `allRows` here let the tiles disagree with
+     both each other's "Showing" claim and the actual card list the instant
+     ANY toolbar filter/search/smart-default was active (e.g. "Showing 42"
+     while only 6 filtered cards render). Scoping all three to `rows` means
+     the tiles always describe exactly what's on screen, in every filter
+     state — the "Open"/"Urgent + high" subset relationship still holds
+     because both are still derived from the very same array. */
   const summary = useMemo(() => {
-    const openRows = allRows.filter(
+    const openRows = rows.filter(
       (r) => r.status === 'active' || r.status === 'Detected' || r.status === 'Confirmed',
     );
     const urgent = openRows.filter(
       (r) => r.priority === 'critical' || r.priority === 'high',
     ).length;
-    return { total: allRows.length, open: openRows.length, urgent };
-  }, [allRows]);
+    return { total: rows.length, open: openRows.length, urgent };
+  }, [rows]);
 
   /* P058: honest "of N" footnote on the Loaded tile when the true eligible set
      exceeds what's loaded. Insights cap at limit:100 (eligibleTotal is the full
      post-rank/dedupe count); patterns cap at the read limit (patternCounts.capped
      means more were eligible than returned). Only render the footnote when there
-     IS a known overflow — otherwise the value already IS complete. */
+     IS a known overflow — otherwise the value already IS complete.
+
+     Bug #4/#184: `eligibleTotal`/`patternCounts.capped` describe a SERVER-side
+     overflow (more rows exist than the fetch limit returned) — a totally
+     different pool than the coach's own toolbar filter/smart-default, which
+     narrows `rows` on purpose. Once "Showing" reads `rows.length` (the
+     rendered count), the footnote must only fire when NOTHING is narrowing
+     that count client-side (`noExplicitFilter && !smartDefaultActive`,
+     i.e. `rows` still equals the full loaded set) — otherwise "Showing 6 of
+     42" would misreport the 42 as reachable by clearing the (nonexistent)
+     narrowing, when it actually requires a full server re-fetch. */
   const loadedFootnote = useMemo<string | undefined>(() => {
     if (isPatterns) {
       // "capped at N" (not "showing first N") — the tile label itself is
       // "Showing", so pairing it with a footnote that repeats the word read
       // as a stutter ("SHOWING 5 / showing first 5").
-      if (patternCounts?.capped) {
+      if (patternCounts?.capped && noExplicitFilter && !smartDefaultActive) {
         return `capped at ${summary.total}`;
       }
       return undefined;
     }
-    if (eligibleTotal != null && eligibleTotal > allRows.length) {
+    if (
+      noExplicitFilter &&
+      !smartDefaultActive &&
+      eligibleTotal != null &&
+      eligibleTotal > allRows.length
+    ) {
       return `of ${eligibleTotal}`;
     }
     return undefined;
-  }, [isPatterns, patternCounts, eligibleTotal, allRows.length, summary.total]);
+  }, [
+    isPatterns,
+    patternCounts,
+    eligibleTotal,
+    allRows.length,
+    noExplicitFilter,
+    smartDefaultActive,
+    summary.total,
+  ]);
 
   /** The sub-tab noun the KPI tiles are scoped to — each tile already reflects
    *  ONLY the active segment's own data (its own fetch/state), so the fix is

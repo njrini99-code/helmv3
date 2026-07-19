@@ -78,8 +78,19 @@ export interface FairwayQualifiersProps {
   qualifiers: GolfQualifier[];
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+/**
+ * Format a bare ISO date ("YYYY-MM-DD") for display. Parsed as **local**
+ * midnight, not `new Date(dateStr)` — that treats a date-only string as UTC
+ * midnight, so a timezone behind UTC (any US zone) reads it back as the PRIOR
+ * calendar day, and server (UTC) vs. client (local) render two different
+ * calendar days for the same value — a hydration mismatch (#30/#126). Matches
+ * `FairwayMyQualifiers.tsx` / `FairwayQualifierDetail.tsx`'s local-safe parse
+ * so a qualifier's date agrees across every surface it's shown on.
+ */
+export function formatDate(dateStr: string): string {
+  const [y, m, d] = (dateStr.split('T')[0] ?? dateStr).split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

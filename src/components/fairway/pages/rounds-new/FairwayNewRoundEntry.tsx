@@ -28,6 +28,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { formatCourseName } from '@/components/golf/courses/CourseImage';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Button as UIButton } from '@/components/ui/button';
@@ -325,14 +326,18 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   // a recent quick-pick). The configs are an editable baseline for THIS round —
   // edits flow out via onHolesSave and never touch the shared catalog.
   const seededHoles = seedInitialHoles(props.preloadedHoleConfigs, props.holesPerRound, props.nineSelection);
-  const baselineLabel = seededHoles ? (props.setupData.courseName || 'this course') : undefined;
+  // #157 (round 2) — display-only formatting; the raw value stays wired to the
+  // editable "Course name *" input further down so a coach's own typing is
+  // never fought mid-edit.
+  const formattedCourseName = props.setupData.courseName ? formatCourseName(props.setupData.courseName) : '';
+  const baselineLabel = seededHoles ? (formattedCourseName || 'this course') : undefined;
   if (step === 'holes') {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
         <m.div {...enter(0)}>
           <CockpitBand
             step="holes"
-            eyebrow={`New round${props.setupData.courseName ? ` · ${props.setupData.courseName}` : ''}`}
+            eyebrow={`New round${formattedCourseName ? ` · ${formattedCourseName}` : ''}`}
             title={seededHoles ? 'Review the scorecard.' : 'Configure the holes.'}
             description={
               seededHoles
@@ -342,7 +347,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           />
         </m.div>
         <FairwayHoleConfig
-          courseName={props.setupData.courseName}
+          courseName={formattedCourseName}
           initialHoles={seededHoles}
           baselineLabel={baselineLabel}
           onSave={props.onHolesSave}
@@ -362,13 +367,13 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
         <m.div {...enter(0)}>
           <CockpitBand
             step="holes"
-            eyebrow={`New round${props.setupData.courseName ? ` · ${props.setupData.courseName}` : ''}`}
+            eyebrow={`New round${formattedCourseName ? ` · ${formattedCourseName}` : ''}`}
             title="Review the scorecard."
             description="These pars and yardages come from the course you picked — tweak any hole, then start tracking."
           />
         </m.div>
         <FairwayHoleConfig
-          courseName={props.setupData.courseName}
+          courseName={formattedCourseName}
           initialHoles={seededHoles}
           baselineLabel={baselineLabel}
           onSave={props.onHolesSave}
@@ -522,7 +527,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                                     </span>
                                   )}
                                   <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                                    {course.courseName}
+                                    {formatCourseName(course.courseName)}
                                   </p>
                                 </div>
                                 <div className="mt-1 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
@@ -574,7 +579,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       Change
                     </Button>
                   </div>
-                  <p className="font-fw-display text-body font-medium text-text-primary">{setupData.courseName}</p>
+                  <p className="font-fw-display text-body font-medium text-text-primary">{formatCourseName(setupData.courseName)}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-caption text-text-tertiary">
                     {setupData.courseCity && (
                       <span className="flex items-center gap-1">
@@ -599,7 +604,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       Change
                     </Button>
                   </div>
-                  <p className="font-fw-display text-body font-medium text-text-primary">{selectedCourse.courseName}</p>
+                  <p className="font-fw-display text-body font-medium text-text-primary">{formatCourseName(selectedCourse.courseName)}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-caption text-text-tertiary">
                     {selectedCourse.courseCity && (
                       <span className="flex items-center gap-1">
@@ -767,7 +772,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                           {q.courseName && (
                             <span className="flex items-center gap-1 truncate">
                               <MapPin className="h-3 w-3" />
-                              {q.courseName}
+                              {formatCourseName(q.courseName)}
                             </span>
                           )}
                           <span className="tabular-nums">

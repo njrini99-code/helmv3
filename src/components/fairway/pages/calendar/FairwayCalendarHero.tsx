@@ -48,6 +48,12 @@ export interface FairwayCalendarHeroProps {
   isMonthView: boolean;
   /** Whether the active lens is the agenda (wide range — label changes to "in view"). */
   isAgendaView?: boolean;
+  /**
+   * Whether the active lens is the single-day view. Falling through to the
+   * `week` label here (as this used to) mislabels a one-day window as
+   * "this week" — a fixed-window fetch buffer leaking into user-facing copy.
+   */
+  isDayView?: boolean;
   isCoach: boolean;
   /** Prev / Today / Next. */
   onNavigate: (direction: 'prev' | 'next' | 'today') => void;
@@ -72,6 +78,7 @@ export function FairwayCalendarHero({
   windowCount,
   isMonthView,
   isAgendaView = false,
+  isDayView = false,
   isCoach,
   onNavigate,
   onSelectDate,
@@ -81,7 +88,21 @@ export function FairwayCalendarHero({
   const monthTitle = format(focusDate, 'MMMM yyyy');
   const focusIsToday = isSameDay(focusDate, nowRef);
   // Agenda lens spans ±3 months — "this week/month" is misleading; use "in view".
-  const windowLabel = isAgendaView ? 'in view' : isMonthView ? 'this month' : 'this week';
+  // Each lens owns its OWN full phrase (not a noun the sentence re-prefixes
+  // with "this ") so there is no seam where a second "this" can sneak in
+  // (findings #84/#106/#155/#165/#12/#80) and no fallthrough where an
+  // un-handled lens silently inherits another lens's wording. Day view
+  // previously had no branch here at all and fell through to "week"
+  // (mislabeling a single-day window as "this week") because the fetch
+  // buffer for Day reuses the week range internally — that internal
+  // implementation detail must never leak into this label.
+  const windowLabel = isAgendaView
+    ? 'in view'
+    : isMonthView
+      ? 'this month'
+      : isDayView
+        ? 'today'
+        : 'this week';
 
   return (
     // The ONE hero plinth — a warm matte Surface (bg-surface), shadow elevation
@@ -105,7 +126,7 @@ export function FairwayCalendarHero({
               <span className="font-fw-mono tabular-nums">{upcomingCount}</span>
               {' upcoming · '}
               <span className="font-fw-mono tabular-nums">{windowCount}</span>
-              {` this ${windowLabel}`}
+              {` ${windowLabel}`}
             </p>
           ) : (
             <p className="font-fw-sans text-body-lg leading-[1.5] text-text-tertiary">

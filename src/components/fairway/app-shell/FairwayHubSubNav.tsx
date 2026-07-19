@@ -35,6 +35,7 @@ import { usePathname } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import type { GolfSubTab } from '@/lib/golf/nav-registry';
 
 export interface FairwayHubSubNavProps {
@@ -65,6 +66,16 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
   const pathname = usePathname();
   const reactId = React.useId();
   const underlineLayoutId = `fw-hub-subnav-underline-${reactId}`;
+
+  // Scroll affordance (#167/#180): this strip has no per-tab wrap or clip —
+  // `whitespace-nowrap` + `overflow-x-auto` already let a tab's full label
+  // scroll into view rather than clipping mid-word — but with the scrollbar
+  // hidden (`[scrollbar-width:none]`) there was previously zero visual signal
+  // that more tabs exist off-screen. `useScrollFade` supplies the same
+  // real alpha `mask-image` edge-bleed used by ViewHeader's segment strip and
+  // StatStrip's rail — it fades only the edge(s) that actually have hidden
+  // content (none at rest if every tab fits).
+  const { ref: fadeRef, fadeStyle } = useScrollFade<HTMLUListElement>('x');
 
   const resolved = resolveActiveTabId(pathname, tabs) ?? tabs[0]?.id ?? null;
 
@@ -124,7 +135,11 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
       )}
     >
       {/* A real navigation list of route links — NOT a tablist (WCAG 2.2 4.1.2). */}
-      <ul className="flex items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul
+        ref={fadeRef}
+        style={fadeStyle}
+        className="flex items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {tabs.map((t, i) => {
           const isActive = t.id === resolved;
           const Icon = t.icon;

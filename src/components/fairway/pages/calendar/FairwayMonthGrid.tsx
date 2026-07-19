@@ -195,7 +195,7 @@ export function FairwayMonthGrid({
                       <span
                         key={o.id}
                         title={`${o.playerName} · ${o.title}`}
-                        className="flex items-center gap-1 truncate rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
+                        className="flex min-w-0 items-center gap-1 rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
                         style={{ backgroundColor: o.color.light }}
                       >
                         <span
@@ -204,11 +204,11 @@ export function FairwayMonthGrid({
                           style={{ backgroundColor: o.color.bg }}
                         />
                         {o.kind !== 'blocked' ? (
-                          <span className="mr-0.5 font-fw-mono tabular-nums opacity-70">
+                          <span className="mr-0.5 flex-shrink-0 font-fw-mono tabular-nums opacity-70">
                             {formatEventTimeCompact(o.start, timezone)}
                           </span>
                         ) : null}
-                        <span className="truncate">{o.title}</span>
+                        <span className="min-w-0 flex-1 truncate">{o.title}</span>
                       </span>
                     );
                   }
@@ -229,17 +229,26 @@ export function FairwayMonthGrid({
                       onClick={onEventClick ? () => onEventClick(e) : undefined}
                       title={isCancelled ? `${e.title} (cancelled)` : e.title}
                       className={cn(
-                        'block h-auto min-h-0 truncate rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
+                        // `flex` + `min-w-0` (NOT `block`) — the Button base
+                        // is already `inline-flex`, and a bare `truncate` on
+                        // a flex row with two text children (the time badge
+                        // + the title) can't establish a shrinkable ellipsis
+                        // target: the title text node got squeezed to a
+                        // single character before the container's own
+                        // overflow:hidden kicked in (finding #86). Giving the
+                        // row an explicit flex layout and letting ONLY the
+                        // title span shrink/truncate fixes it.
+                        'flex h-auto min-h-0 w-full min-w-0 items-center gap-1 rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
                         isCancelled ? TONE_CHIP.danger : TONE_CHIP[tone],
                         isCancelled && 'line-through decoration-2',
                       )}
                     >
                       {!e.all_day && eventStart(e) ? (
-                        <span className="mr-1 font-fw-mono tabular-nums opacity-70">
+                        <span className="flex-shrink-0 font-fw-mono tabular-nums opacity-70">
                           {formatEventTimeCompact(eventStart(e)!, timezone)}
                         </span>
                       ) : null}
-                      {e.title}
+                      <span className="min-w-0 flex-1 truncate">{e.title}</span>
                     </Button>
                   );
                 })}

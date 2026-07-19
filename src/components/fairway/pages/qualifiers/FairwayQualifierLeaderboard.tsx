@@ -61,6 +61,17 @@ interface FairwayQualifierLeaderboardProps {
    * their spot on merit. Mirrors the coach-side QualifyingBoard math.
    */
   selectionSlotsCoachPick?: number;
+  /**
+   * P31 — the Detail page's "Rounds submitted" summary tile is computed by a
+   * SEPARATE server query (`golf_rounds` filtered `status='completed'` at
+   * request time) than this component's live `useQualifierRealtime` feed, so
+   * the two can visibly disagree ("Rounds Submitted: 0" over a leaderboard
+   * showing every entrant with a posted round) whenever a round lands between
+   * the page's initial fetch and now. Reporting OUR live total back up lets
+   * the parent tile re-sync to the SAME data the leaderboard below it is
+   * already showing, instead of trusting a snapshot that can go stale.
+   */
+  onRoundsSubmittedChange?: (roundsSubmitted: number) => void;
 }
 
 /** Where a scored player sits relative to the travel squad. */
@@ -107,6 +118,7 @@ export function FairwayQualifierLeaderboard({
   entrantCount,
   selectionSlotsTotal = 0,
   selectionSlotsCoachPick = 0,
+  onRoundsSubmittedChange,
 }: FairwayQualifierLeaderboardProps) {
   // VERBATIM: same hook, same realtime subscription as the legacy leaderboard.
   const { leaderboard: entries, qualifier, loading, error } = useQualifierRealtime(qualifierId);
@@ -206,8 +218,22 @@ export function FairwayQualifierLeaderboard({
     });
   }, [entries]);
 
+  // P31 — report OUR live rounds-submitted total (sum of each player's
+  // completed-round count) up to the parent so its summary tile can re-sync
+  // to the SAME feed this leaderboard renders from, instead of the separate
+  // server snapshot it was built from at request time.
+  useEffect(() => {
+    if (!onRoundsSubmittedChange || !entries) return;
+    const liveTotal = entries.reduce((sum, e) => sum + e.rounds_completed, 0);
+    onRoundsSubmittedChange(liveTotal);
+  }, [entries, onRoundsSubmittedChange]);
+
   const anyScored = rows.some((r) => r.hasScore);
   const isLive = qualifier?.status === 'in_progress';
+  // #91 — a `completed` qualifier with zero scored rounds is NOT "awaiting"
+  // anything; that copy is forward-looking and reads as a bug on a closed
+  // event. Read the honest completed-with-no-data state instead.
+  const isCompleted = qualifier?.status === 'completed';
 
   return (
     <Surface aria-label="Qualifier leaderboard">
@@ -228,6 +254,19 @@ export function FairwayQualifierLeaderboard({
           <InlineNotice tone="danger" title="Couldn't load the leaderboard">
             {error}
           </InlineNotice>
+        ) : !anyScored && isCompleted ? (
+          // #91 — completed-with-no-data reads as COMPLETED, never a
+          // forward-looking "awaiting" message (the event already ended).
+          <EmptyState
+            variant="subtle"
+            icon={Flag}
+            title="Completed: no rounds were recorded"
+            description={
+              entrantCount > 0
+                ? `${entrantCount} player${entrantCount === 1 ? '' : 's'} entered, but no rounds were posted before this qualifier closed.`
+                : 'This qualifier closed with no rounds posted.'
+            }
+          />
         ) : !anyScored ? (
           // HONEST pre-event hero state — no fabricated rows, no 'E', no zeros.
           <EmptyState
@@ -307,7 +346,88 @@ function StandingsTable({
   };
 
   return (
-    <div className="overflow-x-auto overscroll-x-contain">
+    <div>
+      {/* P29 — phone: card rows carry ALL FOUR competitive columns (Rounds,
+          Avg, Total, To par), never silently dropped behind a scroll a phone
+          user has no affordance to discover. Rule 8 (card, not a squeezed
+          table) — matches FairwayQualifierDetail's RoundBreakdownTable. */}
+      <ul className="divide-y divide-border-subtle md:hidden">
+        {decorated.map(({ row, scoredRank: rank }) => {
+          const leader = row.position === 1;
+          const tier = tierFor(rank);
+          const badge = committedSelections
+            ? committedSelections.has(row.playerId)
+              ? { tone: 'success' as FwStatusTone, label: 'Selected' }
+              : { tone: 'neutral' as FwStatusTone, label: 'Not selected' }
+            : tier === 'locked' || tier === 'bubble'
+              ? TIER_BADGE[tier]
+              : null;
+          return (
+            <Fragment key={row.playerId}>
+              <li className={cn('flex flex-col gap-2.5 py-3 first:pt-0 last:pb-0', leader && 'bg-accent-50/60')}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span
+                      className={cn(
+                        'w-6 shrink-0 text-right font-fw-mono text-body-sm tabular-nums',
+                        leader ? 'font-medium text-accent-700' : 'text-text-tertiary',
+                      )}
+                    >
+                      {row.position === null ? '—' : `${row.isTied ? 'T' : ''}${row.position}`}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <Link
+                        href={`/golf/dashboard/stats?player=${row.playerId}`}
+                        className={cn(
+                          'truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                          tier === 'out' && 'text-text-secondary',
+                        )}
+                      >
+                        {row.playerName}
+                      </Link>
+                      {badge ? (
+                        <StatusPill tone={badge.tone} size="sm" className="ml-2 inline-flex flex-shrink-0 align-middle">
+                          {badge.label}
+                        </StatusPill>
+                      ) : null}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 rounded-fw-md bg-surface-sunken px-3 py-2">
+                  <StatCell label="Rounds">
+                    {row.roundsCompleted > 0 ? row.roundsCompleted : '—'}
+                  </StatCell>
+                  <StatCell label="Avg">
+                    {row.averageScore !== null ? row.averageScore.toFixed(1) : '—'}
+                  </StatCell>
+                  <StatCell label="Total">
+                    {row.hasScore && row.totalScore !== null ? row.totalScore : '—'}
+                  </StatCell>
+                </div>
+                <p
+                  className={cn(
+                    'text-right font-fw-mono text-body-sm tabular-nums',
+                    row.hasScore && row.totalToPar !== null && row.totalToPar < 0
+                      ? 'text-accent-700'
+                      : 'text-text-secondary',
+                  )}
+                >
+                  {formatToPar(row.totalToPar)} <span className="text-text-tertiary">to par</span>
+                </p>
+              </li>
+              {drawTopScoreLine && rank === topScoreLine ? (
+                <CutLineCard tone="accent" label={`Top-score line · ${topScoreLine} auto-qualify`} />
+              ) : null}
+              {drawTravelLine && rank === travelLine ? (
+                <CutLineCard tone="muted" label={`Travel cut · top ${travelLine} make the trip`} />
+              ) : null}
+            </Fragment>
+          );
+        })}
+      </ul>
+
+      {/* Desktop (md+) — the flat matte table, unchanged. */}
+      <div className="hidden overflow-x-auto overscroll-x-contain md:block">
       <table className="w-full border-collapse font-fw-sans text-body">
         <thead>
           <tr className="border-b border-border-strong text-left">
@@ -415,8 +535,10 @@ function StandingsTable({
           })}
         </tbody>
       </table>
+      </div>
 
-      {/* Honest ranking-basis caption */}
+      {/* Honest ranking-basis caption — shared by both the phone card list
+          and the desktop table. */}
       <p className="mt-3 px-0.5 font-fw-sans text-caption text-text-tertiary">
         Ranked by cumulative to-par, lowest first. Every completed round counts.
         {travelLine > 0
@@ -428,6 +550,40 @@ function StandingsTable({
           : ''}
       </p>
     </div>
+  );
+}
+
+/** A single stat cell inside the phone card's 3-up Rounds/Avg/Total row. */
+function StatCell({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
+        {label}
+      </span>
+      <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/** Phone equivalent of `CutLineRow` — a labelled rule between card rows. */
+function CutLineCard({ tone, label }: { tone: 'accent' | 'muted'; label: string }) {
+  const ruleClass = tone === 'accent' ? 'bg-accent-300' : 'bg-border-strong';
+  const textClass = tone === 'accent' ? 'text-accent-700' : 'text-text-tertiary';
+  return (
+    <li aria-hidden="true" className="flex items-center gap-2.5 py-1.5">
+      <span className={cn('h-px flex-1', ruleClass)} />
+      <span
+        className={cn(
+          'whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em]',
+          textClass,
+        )}
+      >
+        {label}
+      </span>
+      <span className={cn('h-px flex-1', ruleClass)} />
+    </li>
   );
 }
 

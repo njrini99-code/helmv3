@@ -575,6 +575,36 @@ function DetailGrid({
   );
 }
 
+/**
+ * Color key for the tone-colored make-rate values a `DetailGrid` can paint
+ * (#135) — swatches reuse the EXACT same `TONE_VALUE_CLASS` tokens the grid
+ * cells render with, so the legend can never drift out of sync with what a
+ * viewer actually sees colored. `benchmarkLabel` names the comparison point
+ * (e.g. "PGA Tour") so "ahead" / "behind" reads concretely instead of vaguely.
+ */
+function ToneLegend({ benchmarkLabel = 'PGA Tour' }: { benchmarkLabel?: string }) {
+  return (
+    <div
+      role="note"
+      aria-label="Color legend"
+      className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 font-fw-sans text-caption text-text-tertiary"
+    >
+      <span className="flex items-center gap-1.5">
+        <span className={cn('h-2 w-2 rounded-full', 'bg-fw-success')} aria-hidden />
+        Ahead of {benchmarkLabel}
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className={cn('h-2 w-2 rounded-full', 'bg-fw-warning')} aria-hidden />
+        Behind {benchmarkLabel}
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full border border-border-subtle" aria-hidden />
+        No meaningful gap
+      </span>
+    </div>
+  );
+}
+
 /** Headline micro-readout (mirrors the Vitals readouts' exact guard pattern). */
 function HeadlineReadout({
   value,
@@ -1951,17 +1981,28 @@ function ToggleChip<T extends string>({
  * ══════════════════════════════════════════════════════════════════════════ */
 type GirBand = { label: string; gir: number | null; missKey: string };
 
-type ApproachMissDir = { short: number | null; long: number | null; left: number | null; right: number | null };
+type ApproachMissDir = {
+  short: number | null;
+  long: number | null;
+  left: number | null;
+  right: number | null;
+  /** Real count of missed approaches this band's miss-% is computed over. */
+  total: number;
+};
 
-const MISS_DIR_LABELS: ReadonlyArray<{ key: keyof ApproachMissDir; label: string }> = [
+const MISS_DIR_LABELS: ReadonlyArray<{ key: 'short' | 'long' | 'left' | 'right'; label: string }> = [
   { key: 'short', label: 'Short' },
   { key: 'long', label: 'Long' },
   { key: 'left', label: 'Left' },
   { key: 'right', label: 'Right' },
 ];
 
-/** The single largest miss direction for a band, or null when no miss data. */
-function dominantMiss(dir: ApproachMissDir | undefined): { label: string; pct: number } | null {
+/** The single largest miss direction for a band, or null when no miss data.
+ *  Carries `n` — the band's real missed-approach sample size — so the caller
+ *  can annotate the tag with an honest "(n=X)", the same never-color/value-
+ *  alone discipline the Putting tab's heatmap already applies via its own
+ *  `n=` cell annotation (#136). */
+export function dominantMiss(dir: ApproachMissDir | undefined): { label: string; pct: number; n: number } | null {
   if (!dir) return null;
   let best: { label: string; pct: number } | null = null;
   for (const { key, label } of MISS_DIR_LABELS) {
@@ -1969,7 +2010,7 @@ function dominantMiss(dir: ApproachMissDir | undefined): { label: string; pct: n
     if (v === null) continue;
     if (best === null || v > best.pct) best = { label, pct: v };
   }
-  return best;
+  return best ? { ...best, n: dir.total } : null;
 }
 
 /**
@@ -2008,7 +2049,7 @@ function GirByDistanceBoard({
                 <span className="flex items-baseline gap-2.5">
                   {miss ? (
                     <span className="font-fw-sans text-caption text-text-tertiary">
-                      miss: {miss.label} {Math.round(miss.pct)}%
+                      miss: {miss.label} {Math.round(miss.pct)}% (n={miss.n})
                     </span>
                   ) : null}
                   <span
@@ -2328,6 +2369,13 @@ function PuttingLegacyDetail({
     overviewMakeRow('Multiple breaks', s.puttingByBreak.multiple),
   ];
   const hasOverview = !allDash(puttMissDir) || !allDash(puttByBreak);
+  // #135: a legend only earns its place on screen when a make-rate grid
+  // below has actually painted a real ahead/behind color — an all-neutral
+  // render (no PGA baseline resolved yet, or every band inside the dead
+  // zone) has nothing for the legend to explain.
+  const hasMakeRateTone =
+    makeBands.some((r) => r.tone === 'good' || r.tone === 'warn') ||
+    breakMakeBands.some((r) => r.tone === 'good' || r.tone === 'warn');
 
   return (
     <section className="flex flex-col gap-4">
@@ -2337,6 +2385,8 @@ function PuttingLegacyDetail({
           Make rate and putt distances by band — filter by the break you faced.
         </span>
       </div>
+
+      {hasMakeRateTone ? <ToneLegend benchmarkLabel="PGA Tour" /> : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {!allDash(headline) ? <DetailGrid title="Putting efficiency" rows={headline} columns={4} /> : null}

@@ -19,7 +19,10 @@
  *     single-thread demo where everything is read).
  *   • last-message preview decodes through the SAME decodeMessageContent the
  *     legacy row used; falls back to "No messages yet" when truly empty.
- *   • the thread-count readout reads `awaiting` until at least one conversation.
+ *   • no big-numeral thread-count readout lives here — the masthead
+ *     (FairwayMessages' ViewHeader meta) is the ONE place the conversation
+ *     count renders, so the empty state shows exactly one honest widget
+ *     (EmptyState) instead of stacking a second, contradictory zero gauge.
  *
  * PRESENTATION + ORGANIZATION ONLY: no data fetching, no send logic, no schema
  * change. It renders the rows useGolfConversations() produced, passed down by
@@ -39,7 +42,7 @@ import { Input } from '@/components/fairway/forms/Input';
 import { Button } from '@/components/fairway/controls/button';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { Badge } from '@/components/fairway/controls/badge';
-import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
+import { InstrumentPanel } from '@/components/fairway/instrument';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -312,19 +315,13 @@ export function MessageConversationRail({
     else onSelect(result.conversationId);
   };
 
-  const count = conversations.length;
-  const countReadout = (
-    <Readout
-      value={count}
-      format={{ maximumFractionDigits: 0 }}
-      label={count === 1 ? 'conversation' : 'conversations'}
-      size="sm"
-      align="end"
-      state={count > 0 ? 'live' : 'awaiting'}
-      samples={count === 0 ? { have: 0, need: 1 } : undefined}
-      awaitingLabel="None yet"
-    />
-  );
+  // P162/P97/P105: the ONE authoritative conversation count already renders in
+  // the page masthead (ViewHeader meta, just above this rail). A second big
+  // mono numeral readout here duplicated that line AND, in the zero-state,
+  // stacked a contradictory "awaiting signal — 0 of 1" gauge directly beside
+  // the honest "No conversations yet" EmptyState — two zero-state widgets
+  // disagreeing in the same card. The rail's panel header carries no count
+  // of its own now; the masthead is the single source of truth for it.
 
   if (loading) {
     return (
@@ -390,7 +387,6 @@ export function MessageConversationRail({
         depth="base"
         padding="md"
         header="Conversations"
-        readout={countReadout}
         className={cn('flex flex-col', className)}
       >
         <EmptyState
@@ -426,7 +422,6 @@ export function MessageConversationRail({
       depth="base"
       padding="md"
       header="Conversations"
-      readout={countReadout}
       aria-label="Conversations"
       className={cn('flex flex-col', className)}
     >

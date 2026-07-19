@@ -57,6 +57,30 @@ const LABEL_GUTTER = 126;
 const VALUE_GUTTER = 56;
 const MARGIN = { top: 8, right: VALUE_GUTTER, bottom: 22, left: LABEL_GUTTER };
 
+/**
+ * #111: a row's OWN signed value annotation ("−12.34") sits just past its bar
+ * tip (`valX ± 6`), textAnchor'd AWAY from x = 0. When a bar's value lands
+ * near the domain's extreme — a real case whenever a caller passes a tight
+ * `domainMax` (no auto 1.15 headroom) or the data itself peaks the axis —
+ * that annotation's own width can carry it PAST x = 0 (colliding with the
+ * category label in the left gutter) or past innerW (past the right VALUE
+ * gutter). Reserving this inset on both ends of the plotting range guarantees
+ * clearance for the longest realistic annotation ("−12.34", 6 glyphs at
+ * tickSize/600-weight) regardless of how tight the domain padding is.
+ */
+const VALUE_INSET = 56;
+
+/**
+ * Rough width (px) of a short SVG number label at the given font size — good
+ * enough to reason about tick/annotation collision without real DOM layout
+ * (`getBBox` isn't implemented in jsdom, and this must also work in SSR).
+ * Exported for the colocated regression test, which asserts on this same
+ * geometry rather than a real (unavailable-in-jsdom) bounding box.
+ */
+export function estimateLabelWidth(label: string, fontSize: number): number {
+  return label.length * fontSize * 0.62;
+}
+
 export function StrokesGainedTornado({
   title = 'Strokes Gained',
   overline,
@@ -130,6 +154,39 @@ function tickDecimals(ticks: readonly number[]): number {
 }
 
 /**
+ * #111: `xScale.ticks(5)` is a REQUEST, not a guarantee — d3's tick algorithm
+ * can return more ticks than asked for a "nicer" step (a small-magnitude
+ * pattern set niced to a 0.02 step returns 7 ticks, e.g. "−0.06"/"−0.04"/…).
+ * Combined with formatted labels wide enough to need decimals, those 7 ticks
+ * can render closer together than their own label width — the digits visibly
+ * merge ("−0.06−0.04" reading as one garbled run).
+ *
+ * This walks the candidate ticks left→right and keeps only the ones whose
+ * estimated label footprint has real breathing room from the last KEPT
+ * tick's footprint — a provable, width-independent guarantee that no two
+ * rendered tick labels can ever overlap, however many ticks the scale hands
+ * back or however narrow the plot gets.
+ */
+function selectNonOverlappingTicks(
+  ticks: readonly number[],
+  xScale: (v: number) => number,
+  decimals: number,
+): number[] {
+  const MIN_TICK_GAP = 6;
+  const kept: number[] = [];
+  let lastRightEdge = -Infinity;
+  for (const t of ticks) {
+    const cx = xScale(t);
+    const w = estimateLabelWidth(formatSigned(t, decimals), VIZ_FONT.tickSize);
+    const leftEdge = cx - w / 2;
+    if (leftEdge < lastRightEdge + MIN_TICK_GAP) continue;
+    kept.push(t);
+    lastRightEdge = cx + w / 2;
+  }
+  return kept;
+}
+
+/**
  * Exported for unit testing only — the parent `StrokesGainedTornado` always
  * mounts this through `<ParentSize>`, which needs real DOM layout. Rendering
  * `TornadoInner` directly with explicit `width`/`height` lets a test assert
@@ -155,9 +212,19 @@ export function TornadoInner({
     return v === 0 ? 1 : v;
   }, [data, domainMax]);
 
+  // #111: inset both ends of the plotting range so a value annotation at the
+  // domain's extreme always has room to render without crossing x = 0 (into
+  // the category-label gutter) or innerW (past the value gutter) — halved on
+  // a plot too narrow to afford the full inset rather than going negative.
+  const plotInset = Math.min(VALUE_INSET, innerW / 2);
   const xScale = React.useMemo(
-    () => scaleLinear<number>({ domain: [-bound, bound], range: [0, innerW], nice: true }),
-    [bound, innerW],
+    () =>
+      scaleLinear<number>({
+        domain: [-bound, bound],
+        range: [plotInset, innerW - plotInset],
+        nice: true,
+      }),
+    [bound, innerW, plotInset],
   );
 
   // Keyed by ROW INDEX, never by `d.label`. Two rows can legitimately share a
@@ -180,8 +247,9 @@ export function TornadoInner({
 
   const zeroX = xScale(0);
   const barH = yScale.bandwidth();
-  const xTicks = xScale.ticks(5);
-  const xTickDecimals = tickDecimals(xTicks);
+  const rawXTicks = xScale.ticks(5);
+  const xTickDecimals = tickDecimals(rawXTicks);
+  const xTicks = selectNonOverlappingTicks(rawXTicks, xScale, xTickDecimals);
 
   return (
     <svg width={width} height={height} aria-hidden>

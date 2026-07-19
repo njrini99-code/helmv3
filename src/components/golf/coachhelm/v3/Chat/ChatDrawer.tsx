@@ -195,7 +195,12 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                 </div>
               </header>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-warm-50/40">
+              {/* #63: the trailing message used to run straight up against the
+                  ChatComposer below with no real bottom spacing (an even
+                  `py-4` reads as none once the last bubble's own radius/shadow
+                  is accounted for). Bottom padding is deeper than top so the
+                  newest reply always has clear air above the input bar. */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-4 pb-7 bg-warm-50/40">
                 {messages.length === 0 && !pending && (
                   <m.div
                     variants={enterVariants}

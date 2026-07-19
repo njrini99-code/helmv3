@@ -4,20 +4,23 @@
  * ============================================================================
  * Fairway · Rounds · FairwayRoundRow — ONE round as a ledger row
  * ----------------------------------------------------------------------------
- * The month-ledger row (the scannable alternative to FairwayRoundCard). The
- * whole row is a Link to the round detail — rounds stay clickable. Each row
- * shows its quick stats inline (the "snapshot" the wall-of-cards hid): score +
- * score-to-par pill, and Putts / FIR% / GIR% from real columns. On hover the
- * row tints (bg-surface-tint) and a chevron slides in — premium feedback, NO
- * layout shift.
+ * The month-ledger row — the ONLY per-round tile FairwayRoundsLibrary renders
+ * (the earlier card-tile alternative, FairwayRoundCard, was unreachable dead
+ * code and has been reduced to a shared-helpers module — see that file's
+ * header). The whole row is a Link to the round detail — rounds stay
+ * clickable. Each row shows its quick stats inline (the "snapshot" the
+ * wall-of-cards hid): score + score-to-par pill, and Putts / FIR% / GIR% from
+ * real columns. On hover the row tints (bg-surface-tint) and a chevron slides
+ * in — premium feedback, NO layout shift.
  *
  * HONESTY: no fabricated zeros. FIR/GIR are shown only when the possible-count
  * is present and > 0; when NOTHING is loggable the stat cluster reads an honest
  * "No stats logged" instead of "— — —".
  *
- * Reuses the card's pure helpers (scoreToParTone / formatToPar /
- * getRoundTypeLabel) so the score grading + labels match the card exactly.
- * Rendered only inside FairwayRoundsLibrary's month blocks (.fairway-ds).
+ * Reuses the shared pure helpers (scoreToParTone / formatToPar /
+ * getRoundTypeLabel) from FairwayRoundCard.tsx so the score grading + labels
+ * stay consistent across every rounds surface. Rendered only inside
+ * FairwayRoundsLibrary's month blocks (.fairway-ds).
  * ========================================================================== */
 
 import Link from 'next/link';

@@ -86,6 +86,7 @@ import {
   getAreaType,
   getProgressPercent,
   isLowerIsBetter,
+  formatTargetMetricLabel,
 } from './areaTypes';
 
 /* ---------------------------------------------------------------------------
@@ -390,12 +391,16 @@ function ProgressMeter({
   const pct = getProgressPercent(current, target, metric);
   const lowerBetter = isLowerIsBetter(metric);
   const met = pct >= 100;
+  // Human label — NEVER the raw snake_case metric identifier (mustFix #202/#60;
+  // this is the same leak formatTargetMetricLabel already closed on the
+  // log-progress drawer + prescribed-area chip, just missed here originally).
+  const metricLabel = formatTargetMetricLabel(metric) ?? 'Progress';
 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between font-fw-sans text-body-sm">
         <span className="font-medium text-text-secondary">
-          {metric || 'Progress'}
+          {metricLabel}
           {lowerBetter ? (
             <span className="ml-1.5 font-fw-sans text-eyebrow font-normal text-text-tertiary">
               lower is better
@@ -424,7 +429,7 @@ function ProgressMeter({
         tone={met ? 'done' : 'active'}
         animateIn
         reduced={reduced}
-        label={`${metric || 'Progress'}: ${pct}% toward target`}
+        label={`${metricLabel}: ${pct}% toward target`}
       />
     </div>
   );
@@ -639,9 +644,11 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             {/* Reopen — recovers from an accidental / premature completion. Quiet
                 ghost so it never competes with the "Complete" status pill. */}
             {typeof onReopen === 'function' ? (
+              // Touch target: md (44px min-height) unconditionally — not sm,
+              // which is only 44px behind a `(pointer: coarse)` media query
+              // (mustFix #194).
               <Button
                 variant="ghost"
-                size="sm"
                 busy={reopening}
                 leftIcon={<IconRotateCcw size={14} />}
                 onClick={() => onReopen(focusArea)}
@@ -816,6 +823,24 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   <span>Due {timeframe}</span>
                 </p>
               ) : null}
+              {/* Bug #58: the placeholder used to be a dead end — a coach reading
+                  "No target set yet" had no way to act on it from the card
+                  itself, and had to hunt for the separate Edit button below (which
+                  is easy to miss once several cards repeat the identical
+                  placeholder). Give it its OWN inline call-to-action that opens the
+                  same edit flow (`onEdit`), gated the same way the Edit button
+                  already is — coach role + a wired handler — so this never renders
+                  a button that does nothing. */}
+              {showEdit ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<IconTarget size={15} />}
+                  onClick={() => onEdit!(focusArea)}
+                >
+                  Set a target
+                </Button>
+              ) : null}
             </Inset>
           )}
 
@@ -848,10 +873,12 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           {/* Actions — role-gated. Outcome capture lives in its own row above. */}
           {(showEdit || showLogProgress || showComplete || showDelete) && (
             <div className="flex flex-wrap items-center gap-2 pt-1">
+              {/* Touch target: md (44px min-height) unconditionally — not sm,
+                  which is only 44px behind a `(pointer: coarse)` media query
+                  (mustFix #194). */}
               {showLogProgress ? (
                 <Button
                   variant="secondary"
-                  size="sm"
                   leftIcon={<IconTarget size={15} />}
                   onClick={() => onLogProgress!(focusArea)}
                 >
@@ -861,7 +888,6 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               {showComplete ? (
                 <Button
                   variant="primary"
-                  size="sm"
                   busy={completing}
                   leftIcon={<IconCheckCircle2 size={15} />}
                   onClick={() => onComplete!(focusArea)}

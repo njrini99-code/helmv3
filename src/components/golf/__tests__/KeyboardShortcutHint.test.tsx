@@ -1,77 +1,51 @@
 /**
- * KeyboardShortcutHint — pointer/viewport gating (audit W1).
+ * KeyboardShortcutHint — RETIRED (audit round 2, mustFix #1/#2).
  *
- * ⌘K is meaningless on touch. The pill must render `hidden` (no display, no
- * overlap over real content, no stray focus stop) everywhere except when the
- * pointer is fine AND the viewport is `sm`+, gated via a single combined
- * arbitrary media variant rather than an unconditional `flex`.
+ * Round 1 fixed the pill's breakpoint/positioning/dismiss bugs (#27/#107/
+ * #115/#190/#121), but the re-review correctly flagged it as permanently
+ * duplicate UI: `FairwayTopBar` already renders a persistent, wired "⌘K"
+ * search button at the SAME `md`+ breakpoint, and `CommandPalette.tsx`
+ * installs a global `keydown` listener for `⌘K`/`Ctrl+K` independent of any
+ * pill or button. Shipping both was "a duplicate/contradictory UI, not a
+ * fix" — so the component is now retired to an unconditional no-op rather
+ * than repositioned. These tests pin that retirement: it must render
+ * nothing, on every call, with no DOM footprint, no timers, no
+ * sessionStorage access — nothing left over from the old floating pill for
+ * a future edit to accidentally resurrect.
  */
-import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render } from '@testing-library/react';
 import { KeyboardShortcutHint } from '../KeyboardShortcutHint';
 
-// ---------------------------------------------------------------------------
-// In-memory localStorage polyfill — the jsdom-provided globalThis.localStorage
-// in this repo's setup doesn't expose a callable `clear()` (same fix as
-// HubInsightSignalCard.test.tsx), so install a minimal callable stub first.
-// ---------------------------------------------------------------------------
-beforeAll(() => {
-  const store = new Map<string, string>();
-  const stub: Storage = {
-    get length() {
-      return store.size;
-    },
-    key(index: number): string | null {
-      return Array.from(store.keys())[index] ?? null;
-    },
-    getItem(key: string): string | null {
-      return store.has(key) ? store.get(key)! : null;
-    },
-    setItem(key: string, value: string): void {
-      store.set(key, String(value));
-    },
-    removeItem(key: string): void {
-      store.delete(key);
-    },
-    clear(): void {
-      store.clear();
-    },
-  };
-  Object.defineProperty(window, 'localStorage', { value: stub, configurable: true });
-  Object.defineProperty(globalThis, 'localStorage', { value: stub, configurable: true });
-});
-
-describe('KeyboardShortcutHint — pointer/viewport gating', () => {
+describe('KeyboardShortcutHint — retired to a no-op (round 2)', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    localStorage.clear();
-  });
-
-  afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('stays `hidden` by default and only opts into display via a combined pointer:fine + sm+ media variant', () => {
+  it('renders nothing', () => {
     const { container } = render(<KeyboardShortcutHint />);
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    const pill = container.firstElementChild;
-    expect(pill).not.toBeNull();
-    expect(pill?.className).toContain('hidden');
-    expect(pill?.className).toContain('[@media(pointer:fine)_and_(min-width:640px)]:flex');
+    expect(container.firstElementChild).toBeNull();
+    expect(container.innerHTML).toBe('');
   });
 
-  it('never carries an unconditional `flex` (that would win the display cascade on touch/mobile too)', () => {
-    const { container } = render(<KeyboardShortcutHint />);
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+  it('never touches sessionStorage — no dismiss state, no first-run nudge, nothing to persist', () => {
+    const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
-    const pill = container.firstElementChild;
-    // Matches the bare utility class only — not the media-scoped variant,
-    // which legitimately contains "]:flex" as a substring.
-    expect(pill?.className.split(/\s+/)).not.toContain('flex');
+    render(<KeyboardShortcutHint />);
+
+    expect(getItemSpy).not.toHaveBeenCalled();
+    expect(setItemSpy).not.toHaveBeenCalled();
+
+    getItemSpy.mockRestore();
+    setItemSpy.mockRestore();
+  });
+
+  it('stays empty even after advancing timers — no delayed show/auto-hide behavior survives the retirement', () => {
+    vi.useFakeTimers();
+    const { container } = render(<KeyboardShortcutHint />);
+    vi.advanceTimersByTime(20000);
+    expect(container.firstElementChild).toBeNull();
+    vi.useRealTimers();
   });
 });

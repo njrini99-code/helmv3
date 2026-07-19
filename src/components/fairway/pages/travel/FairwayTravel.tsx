@@ -379,7 +379,7 @@ export function FairwayTravel({
           </Surface>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
           {/* ── Itinerary list ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-3 lg:col-span-1">
             <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
@@ -396,8 +396,24 @@ export function FairwayTravel({
             ))}
           </div>
 
-          {/* ── Detail panel ───────────────────────────────────────────── */}
-          <div ref={detailPanelRef} className="lg:col-span-2">
+          {/* ── Detail panel ───────────────────────────────────────────────
+              #173: `lg:items-start` above (on the grid) + `lg:self-start`
+              here stop this column from being CSS-Grid `stretch`-ed to match
+              the trip list's height. Without that, a long trip list stretched
+              this column's Surface to match, and both the populated detail
+              AND the "Select a trip" empty state (each vertically centered
+              inside their own Surface) rendered at that stretched height's
+              MIDPOINT — often well past one viewport height down the page.
+              On first paint (scrolled to top) that put the pane below the
+              fold entirely; scrolled to the bottom of a long list it was
+              already scrolled PAST. Either way it read as "orphaned" —
+              never reliably in view, and on shorter viewports landing right
+              at the bottom safe-area the mobile bottom nav also clears.
+              `lg:sticky lg:top-6` pins it near the top of the viewport on
+              desktop instead (mirrors FairwayTasks's templates rail), so it —
+              and the real detail view once a trip IS selected — stay visible
+              the whole time the list scrolls beside them. ─────────────────── */}
+          <div ref={detailPanelRef} className="lg:col-span-2 lg:sticky lg:top-6 lg:self-start">
             {selected ? (
               <FairwayTripDetail
                 itinerary={selected}

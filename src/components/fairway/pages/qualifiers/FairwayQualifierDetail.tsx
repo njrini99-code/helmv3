@@ -30,6 +30,7 @@
  * route page. Renders inside the `.fairway-ds` scope on a bg-canvas page.
  * ========================================================================== */
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ChartNoAxesColumn, ListChecks, Flag } from 'lucide-react';
 
@@ -107,9 +108,21 @@ export interface FairwayQualifierDetailProps {
  * Date / status formatting (presentation only)
  * ──────────────────────────────────────────────────────────────────────── */
 
-function formatDate(dateStr: string | null): string {
+/**
+ * Format a bare ISO date ("YYYY-MM-DD") for display. Parsed as **local**
+ * midnight, not `new Date(dateStr)` — that treats a date-only string as UTC
+ * midnight, so a timezone behind UTC (any US zone) reads it back as the PRIOR
+ * calendar day. That off-by-one also produces a hydration mismatch: the
+ * server (commonly UTC) and the browser (the viewer's local zone) format the
+ * same UTC instant into two different calendar days (#30/#126). Matches
+ * `FairwayMyQualifiers.tsx`'s local-safe parse so a qualifier's date agrees
+ * across every surface it's shown on.
+ */
+export function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  const [y, m, d] = (dateStr.split('T')[0] ?? dateStr).split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -253,6 +266,13 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
   const hasAnyCompletedRound =
     maxRoundNumber > 0 && breakdown.some(([, data]) => data.rounds.length > 0);
 
+  // P31 — "Rounds submitted" starts from the route page's server snapshot,
+  // then re-syncs to the Leaderboard's own live feed the moment it reports in
+  // (same data the leaderboard below renders from), so the two never visibly
+  // disagree even when a round posts between the page load and now.
+  const [liveRoundsSubmitted, setLiveRoundsSubmitted] = useState<number | null>(null);
+  const displayedRoundsSubmitted = liveRoundsSubmitted ?? roundsSubmitted;
+
   return (
     <div className="mx-auto w-full max-w-[1100px] px-5 py-8 md:px-8 md:py-10">
       {/* Quiet back link — replaces the legacy MobileNavHeader + Breadcrumb */}
@@ -305,7 +325,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
               <DetailItem label="Dates" value={dateRange(startDate, endDate)} numeric />
               <DetailItem label="Entry deadline" value={formatDate(entryDeadline)} numeric />
               <DetailItem label="Entrants" value={String(entrantCount)} numeric />
-              <DetailItem label="Rounds submitted" value={String(roundsSubmitted)} numeric />
+              <DetailItem label="Rounds submitted" value={String(displayedRoundsSubmitted)} numeric />
               {courseName ? <DetailItem label="Course" value={courseName} /> : null}
               {spotsAvailable !== null ? (
                 <DetailItem label="Spots" value={String(spotsAvailable)} numeric />
@@ -338,6 +358,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
           entrantCount={entrantCount}
           selectionSlotsTotal={selectionSlotsTotal}
           selectionSlotsCoachPick={selectionSlotsCoachPick}
+          onRoundsSubmittedChange={setLiveRoundsSubmitted}
         />
 
         {/* 4 · COACH-only round-by-round breakdown */}
@@ -354,6 +375,16 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
             <Surface.Body>
               {hasAnyCompletedRound ? (
                 <RoundBreakdownTable breakdown={breakdown} maxRoundNumber={maxRoundNumber} />
+              ) : status === 'completed' ? (
+                // #91 — a completed qualifier with zero rounds is CLOSED, not
+                // "yet to happen". The forward-looking "yet" copy reads as a
+                // bug once the event has already ended.
+                <EmptyState
+                  variant="subtle"
+                  icon={ChartNoAxesColumn}
+                  title="Completed: no rounds were recorded"
+                  description="This qualifier closed before any per-round scores were posted."
+                />
               ) : (
                 // FIX the all-dash bug: an honest empty state, NOT 7 all-dash rows.
                 <EmptyState
@@ -371,6 +402,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         {isCoach ? (
           <SelectionsStrip
             qualifierId={qualifierId}
+            status={status}
             selectionState={selectionState}
             selectionSlotsTotal={selectionSlotsTotal}
             selectionsCount={selectionsCount}
@@ -671,11 +703,13 @@ function RoundCoursesSection({
 
 function SelectionsStrip({
   qualifierId,
+  status,
   selectionState,
   selectionSlotsTotal,
   selectionsCount,
 }: {
   qualifierId: string;
+  status: string;
   selectionState: string;
   selectionSlotsTotal: number;
   selectionsCount: number;
@@ -683,33 +717,55 @@ function SelectionsStrip({
   const notStarted = selectionState === 'open' && selectionsCount === 0;
   const href = `/golf/dashboard/coachhelm/qualifying/${qualifierId}`;
 
+  // #89 — `status` (the play lifecycle: upcoming/in_progress/completed) and
+  // `selectionState` (the roster workflow: open/scoring/closed/selected) are
+  // two independent state machines (see qualifier-status.ts header comment
+  // and FairwayQualifyingWorkspace.tsx's own "SEPARATE state machine" note).
+  // A coach who reads "Completed" in the masthead above, then opens the
+  // Selection Workspace and lands on "Open · accepting entries" for the SAME
+  // qualifier, sees nothing here warning them the two track separately. This
+  // can't fully reconcile the two surfaces (the Workspace's own state-bar
+  // label lives outside this component), but it stops the mismatch from
+  // reading as a silent bug by naming it before the coach clicks through.
+  const playCompletedSelectionPending = status === 'completed' && selectionState !== 'selected';
+
   return (
-    <Surface aria-label="Selections" elevation="border" className={cn(notStarted && 'bg-surface-sunken')}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span
-            aria-hidden="true"
-            className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-sunken text-text-tertiary"
-          >
-            <ListChecks className="h-4 w-4" strokeWidth={1.75} />
-          </span>
-          <div className="min-w-0 space-y-1">
-            <p className="font-fw-sans text-body font-medium text-text-primary">
-              {notStarted
-                ? 'Selections not started'
-                : `${selectionsCount} of ${selectionSlotsTotal} selected`}
-            </p>
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              {notStarted
-                ? 'Open the selection workspace to begin picking qualifiers.'
-                : `Selection state: ${selectionState.replace(/_/g, ' ')}.`}
-            </p>
+    <div className="flex flex-col gap-3">
+      <Surface aria-label="Selections" elevation="border" className={cn(notStarted && 'bg-surface-sunken')}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span
+              aria-hidden="true"
+              className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-sunken text-text-tertiary"
+            >
+              <ListChecks className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 space-y-1">
+              <p className="font-fw-sans text-body font-medium text-text-primary">
+                {notStarted
+                  ? 'Selections not started'
+                  : `${selectionsCount} of ${selectionSlotsTotal} selected`}
+              </p>
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                {notStarted
+                  ? 'Open the selection workspace to begin picking qualifiers.'
+                  : `Selection state: ${selectionState.replace(/_/g, ' ')}.`}
+              </p>
+            </div>
           </div>
+          <Button asChild variant="ghost" size="sm" className="shrink-0">
+            <Link href={href}>Open selection workspace</Link>
+          </Button>
         </div>
-        <Button asChild variant="ghost" size="sm" className="shrink-0">
-          <Link href={href}>Open selection workspace</Link>
-        </Button>
-      </div>
-    </Surface>
+      </Surface>
+      {playCompletedSelectionPending ? (
+        <InlineNotice tone="warning" title="Selection workflow hasn't caught up">
+          This qualifier's play status is <strong>Completed</strong>, but the roster
+          selection state is still <strong>{selectionState.replace(/_/g, ' ')}</strong>: these
+          track separately. Open the selection workspace to confirm or finalize the travel
+          squad.
+        </InlineNotice>
+      ) : null}
+    </div>
   );
 }

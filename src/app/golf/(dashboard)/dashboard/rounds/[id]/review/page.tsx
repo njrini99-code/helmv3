@@ -9,7 +9,7 @@
 
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
@@ -50,6 +50,7 @@ import {
   Skeleton as FwSkeleton,
   Surface as FwSurface,
   Eyebrow as FwEyebrow,
+  SelectablePill as FwSelectablePill,
 } from '@/components/fairway';
 import { Flag as LucideFlag } from 'lucide-react';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
@@ -58,6 +59,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { cleanCourseName } from '@/lib/golf/course-name';
 
 // ============================================================================
 // CODE-SPLIT BELOW-THE-FOLD PANELS
@@ -192,6 +194,33 @@ function mapCategoryToAreaType(input: string | null | undefined): string {
   if (v.includes('chip') || v.includes('short') || v.includes('scramble') || v.includes('sand')) return 'short_game';
   if (v.includes('mental') || v.includes('pressure') || v.includes('course')) return 'mental_game';
   return 'other';
+}
+
+/** Minor words a title-cased course name keeps lowercase after the first
+ *  word (mirrors the helper in FairwayCoachDashboard.tsx). */
+const COURSE_NAME_MINOR_WORDS = new Set([
+  'a', 'an', 'the', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'up', 'and', 'as', 'but', 'or', 'nor',
+]);
+
+/** Display-normalize a course name for every render call site on this page
+ *  (#109): strips QA-suffix disambiguation parentheticals via the shared
+ *  `cleanCourseName`, then title-cases a name that was entered in
+ *  all-lowercase (e.g. "pine lakes" -> "Pine Lakes") so it renders
+ *  consistently with every sibling course-name row elsewhere in the app.
+ *  Already mixed-case words (e.g. "TPC", "No.") are left untouched — the
+ *  check is per-word, so it's safe to run on already-cased strings. */
+function displayCourseName(name: string | null | undefined): string {
+  const cleaned = cleanCourseName(name);
+  if (!cleaned) return '';
+  return cleaned
+    .split(' ')
+    .map((word, i) => {
+      if (!word) return word;
+      if (word !== word.toLowerCase()) return word;
+      if (i > 0 && COURSE_NAME_MINOR_WORDS.has(word.toLowerCase())) return word.toLowerCase();
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
 }
 
 /** Deterministic 1-sentence opener used as the LLM round-review
@@ -573,6 +602,29 @@ export default function RoundReviewPage() {
     });
   }, [storedReview?.id, viewedMarked]);
 
+  // Hole-jump nav (#34): the shot-reconstruction section renders one card
+  // per hole and can run tens of thousands of px tall on mobile with no way
+  // to skip to a specific hole. `HoleByHoleShotPaths` lays its cards out in
+  // the same ascending hole-number order as this page's own `round.holes`
+  // (sorted once on fetch, above), inside a grid whose per-hole cards share
+  // a stable `max-w-[240px]` marker class both before AND after the shot
+  // ledger loads (the loading skeleton uses the same class) — so matching on
+  // it lets a 1-18 chip nav scroll straight to any hole without reaching
+  // into that component's internals.
+  const holeSectionRef = useRef<HTMLDivElement>(null);
+  // The "Jump to hole" chips scroll to per-hole shot cards that only exist once
+  // shot-level data loads; gate them on this so they never ship as dead
+  // controls for a scorecard-only round (HoleByHoleShotPaths reports it).
+  const [holeShotsAvailable, setHoleShotsAvailable] = useState(false);
+  const scrollToHole = useCallback((holeNumber: number) => {
+    const container = holeSectionRef.current;
+    if (!container || !round?.holes) return;
+    const index = round.holes.findIndex((h) => h.hole_number === holeNumber);
+    if (index < 0) return;
+    const cards = container.querySelectorAll<HTMLElement>('[class*="max-w-[240px]"]');
+    cards[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [round?.holes]);
+
   // Handle share with coach
   const handleShare = async () => {
     if (!storedReview) return;
@@ -630,7 +682,7 @@ export default function RoundReviewPage() {
         <div className="mx-auto w-full max-w-2xl px-5 py-8 md:px-8 md:py-10">
           <FwViewHeader
             eyebrow="Round Review"
-            title={round?.course_name ?? 'Round Review'}
+            title={displayCourseName(round?.course_name) || 'Round Review'}
             description="Your CoachHelm analysis for this round."
             primaryAction={
               <FwButton
@@ -784,7 +836,7 @@ export default function RoundReviewPage() {
             fallbackText={buildRoundReviewFallback(
               round.total_score,
               roundScoreToPar,
-              round.course_name,
+              displayCourseName(round.course_name) || null,
             )}
           />
         )}
@@ -793,7 +845,7 @@ export default function RoundReviewPage() {
         {storedReview && storedReview.review_content && (
           <RoundReviewDisplay
             review={storedReview.review_content}
-            courseName={round.course_name ?? undefined}
+            courseName={displayCourseName(round.course_name) || undefined}
             roundDate={round.round_date}
             score={round.total_score ?? undefined}
             scoreToPar={round.score_to_par ?? undefined}
@@ -909,9 +961,37 @@ export default function RoundReviewPage() {
           />
         )}
 
-        {/* Hole-by-hole shot path grid — data-driven (golf_shots). */}
+        {/* Hole-by-hole shot path grid — data-driven (golf_shots). A 1-18
+            chip nav (#34) sits above the section so a player can skip
+            straight to any hole instead of scrolling the whole grid. */}
         {round.holes && round.holes.length > 0 && (
-          <HoleByHoleShotPaths roundId={roundId} holes={round.holes} />
+          <div className="space-y-3">
+            {holeShotsAvailable && (
+              <div>
+                <FwEyebrow as="h2">Jump to hole</FwEyebrow>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {round.holes.map((h) => (
+                    <FwSelectablePill
+                      key={h.hole_number}
+                      shape="round"
+                      onClick={() => scrollToHole(h.hole_number)}
+                      aria-label={`Jump to hole ${h.hole_number}`}
+                      className="h-8 min-w-[32px] px-0"
+                    >
+                      {h.hole_number}
+                    </FwSelectablePill>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div ref={holeSectionRef}>
+              <HoleByHoleShotPaths
+                roundId={roundId}
+                holes={round.holes}
+                onShotsLoaded={setHoleShotsAvailable}
+              />
+            </div>
+          </div>
         )}
 
         {/* V2 narrative — hero + AI prose + collapsed supporting insights. */}
@@ -957,7 +1037,7 @@ export default function RoundReviewPage() {
                 suggestedTitle={promoteSuggestion.title}
                 suggestedDescription={promoteSuggestion.description}
                 suggestedAreaType={promoteSuggestion.areaType}
-                reviewContext={round.course_name ?? undefined}
+                reviewContext={displayCourseName(round.course_name) || undefined}
                 className="flex-shrink-0"
               />
             </FwSurface>
@@ -982,7 +1062,7 @@ export default function RoundReviewPage() {
         >
           <FwViewHeader
             eyebrow="Round Review"
-            title={round.course_name ?? 'Round Review'}
+            title={displayCourseName(round.course_name) || 'Round Review'}
             description="Your CoachHelm analysis for this round."
             meta={
               isV2Enabled && v2Review ? (

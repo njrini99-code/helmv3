@@ -110,9 +110,17 @@ export function StandingStrip(props: StandingStripProps) {
       data-state={state}
       className="rounded-card border border-border-subtle bg-surface p-4 shadow-soft"
     >
-      {/* Header: label + vs-team delta as a colored pill (green = better) */}
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <h4 className="truncate font-fw-display text-body font-semibold tracking-[-0.01em] text-text-primary">
+      {/* Header: label + vs-team delta as a colored pill (green = better).
+          finding [120] — the title used `truncate` (single-line ellipsis),
+          which silently swallowed a metric label's distinguishing suffix
+          (e.g. two labels that only differ in their trailing qualifier
+          collapsed to the same visible ellipsis). Wrap instead: `min-w-0`
+          lets the title shrink inside the flex row, `break-words` lets a
+          long label wrap onto a second line rather than clip, and the row
+          switches to `items-start` so a wrapped two-line title doesn't
+          vertically center-crush the delta pill beside it. */}
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <h4 className="min-w-0 flex-1 break-words font-fw-display text-body font-semibold tracking-[-0.01em] text-text-primary">
           {props.metric_label}
         </h4>
         {showTeam ? (

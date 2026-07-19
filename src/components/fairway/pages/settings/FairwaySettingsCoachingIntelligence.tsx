@@ -14,7 +14,7 @@
  *   • useGolfUser().teamId (cookie-aware ACTIVE team)     — '@/contexts/golf-user-context'
  *   • THRESHOLD_RANGES                                    — '@/lib/coachhelm/constants'
  *   • the SAME editor widgets (PriorityRanker / SensitivitySlider / ThresholdSlider
- *     / WeightDistributor / AlertTypeToggles) — '@/components/golf/coachhelm/settings'
+ *     / WeightDistributor) — '@/components/golf/coachhelm/settings'
  *
  * Priority/sensitivity/toggles flush immediately; thresholds + weights debounce.
  * The hook persists the patch once and triggers downstream revalidation. No
@@ -22,7 +22,10 @@
  *
  * Toasts: this surface autosaves like the legacy page (it shows a "Saving…" /
  * "Saved" indicator), so it does NOT introduce new toasts. Tokens / primitives
- * ONLY for the chrome; the interactive editors are reused as-is.
+ * ONLY for the chrome; the interactive editors are reused as-is EXCEPT Active
+ * Alerts (B16) — that section is rendered directly with the Fairway `Switch`
+ * primitive instead of the shared AlertTypeToggles editor, whose cards use a
+ * plain Checkbox role instead of an accessible switch role.
  * ========================================================================== */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -34,10 +37,9 @@ import {
   PriorityRanker,
   SensitivitySlider,
   ThresholdSlider,
-  AlertTypeToggles,
 } from '@/components/golf/coachhelm/settings';
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
-import type { CoachPhilosophy } from '@/lib/coachhelm/types';
+import { ALERT_GROUPS, type CoachPhilosophy } from '@/lib/coachhelm/types';
 import {
   getOrCreateTeamCoachHelmSettings,
   getTeamCoachHelmAccess,
@@ -57,10 +59,15 @@ type PriorityValues = Pick<
   | 'priorityCourseManagement'
   | 'priorityMentalGame'
 >;
-// P078/P079 — bubbleZoneRange + the comparison weights are persisted by the CRUD
-// allowlist but their UI controls are HIDDEN until the engine consumes them, so
-// neither WeightValues nor a bubbleZoneRange threshold key is wired here.
-type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold';
+// P079 — the comparison weights are persisted by the CRUD allowlist but their
+// UI control (WeightDistributor) is HIDDEN until the roster-comparison engine
+// consumes golf_coachhelm_coach_weights, so no WeightValues type is wired here.
+// B17: bubbleZoneRange WAS suppressed here too (P078), but that left only 2 of
+// the 3 documented "Fine-tune Thresholds" sliders rendering — a real, shipped
+// control silently missing from the settings surface. The value is still
+// persisted (CRUD allowlist), so restoring the slider loses no data; it just
+// stops hiding a control the page's own copy ("Fine-tune Thresholds") promises.
+type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold' | 'bubbleZoneRange';
 type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
@@ -74,7 +81,7 @@ function CoachingIntelligenceFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
       {/* P083 — explicit back affordance to the settings index (Nielsen #3
           user-control/freedom + #4 consistency). The eyebrow "Settings" below is
           decorative; this is the real escape on a deep sub-page. Present on every
@@ -362,16 +369,27 @@ function CoachingIntelligenceBody({
               &ldquo;Needs Attention&rdquo; flags.
             </p>
           </div>
-          <PriorityRanker
-            values={{
-              priorityBallStriking: philosophy.priorityBallStriking,
-              priorityShortGame: philosophy.priorityShortGame,
-              priorityPutting: philosophy.priorityPutting,
-              priorityCourseManagement: philosophy.priorityCourseManagement,
-              priorityMentalGame: philosophy.priorityMentalGame,
-            }}
-            onChange={handlePriorityChange}
-          />
+          {/* B179: PriorityRanker's row hard-truncates each metric's
+              description (`.truncate` on a `min-w-0 flex-1` cell squeezed
+              between a 44px drag handle, rank badge, icon and priority bar) —
+              at 390px that leaves a meaningless one- or two-word fragment.
+              PriorityRanker is a shared, reused-as-is legacy editor (see file
+              header), so override its one `.truncate` cell from here instead
+              of touching the shared component: let the subtitle wrap onto a
+              second line (an explicitly acceptable resolution) rather than
+              cut it. */}
+          <div className="[&_.truncate]:overflow-visible [&_.truncate]:whitespace-normal [&_.truncate]:text-clip">
+            <PriorityRanker
+              values={{
+                priorityBallStriking: philosophy.priorityBallStriking,
+                priorityShortGame: philosophy.priorityShortGame,
+                priorityPutting: philosophy.priorityPutting,
+                priorityCourseManagement: philosophy.priorityCourseManagement,
+                priorityMentalGame: philosophy.priorityMentalGame,
+              }}
+              onChange={handlePriorityChange}
+            />
+          </div>
         </Surface>
 
         {/* Alert Sensitivity */}
@@ -414,14 +432,20 @@ function CoachingIntelligenceBody({
               {...THRESHOLD_RANGES.pressureGapThreshold}
               unit="strokes"
             />
-            {/* P078 — the "Bubble Zone" threshold slider is HIDDEN. It persisted
-                golf_coach_philosophy.bubble_zone_range but had ZERO engine
-                consumers (the orchestrator reads the alert_bubble_player TOGGLE
-                but never this range), so dragging it changed nothing in the
-                product — a placebo control. Suppressed the same way
-                WeightDistributor was, until a bubble-player detector actually
-                consumes the range. The value is still persisted by the CRUD
-                allowlist, so no data is lost when it's restored. */}
+            <div className="h-px bg-border-subtle" />
+            {/* B17: restored — this is 1 of the 3 sliders the section's own
+                copy ("Fine-tune Thresholds... specific triggers for different
+                types of alerts") documents. Still persists
+                golf_coach_philosophy.bubble_zone_range via the same CRUD
+                allowlist/debounced save as the other two; see ThresholdKey. */}
+            <ThresholdSlider
+              label="Bubble Zone"
+              description="Strokes-gained range around the qualifying cutoff that flags a player as a bubble movement."
+              value={philosophy.bubbleZoneRange}
+              onChange={(v) => handleThresholdChange('bubbleZoneRange', v)}
+              {...THRESHOLD_RANGES.bubbleZoneRange}
+              unit="sg"
+            />
           </div>
         </Surface>
 
@@ -441,7 +465,35 @@ function CoachingIntelligenceBody({
               Select which types of automated insights you want to receive.
             </p>
           </div>
-          <AlertTypeToggles values={philosophy} onChange={handleAlertToggle} />
+          {/* B16: rendered directly with the Fairway `Switch` primitive (a real
+              switch role/aria-checked via Base UI) instead of delegating to
+              the shared AlertTypeToggles editor, whose cards are plain
+              `Checkbox`-role controls — axe flags a checked on/off toggle
+              styled as a card without an accessible switch role. */}
+          <div className="space-y-6">
+            {ALERT_GROUPS.map((group) => (
+              <div key={group.title}>
+                <h3 className="mb-3 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary opacity-80">
+                  {group.title}
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {group.alerts.map((alert) => (
+                    <div
+                      key={alert.key}
+                      className="flex items-center justify-between gap-3 rounded-fw-sm border border-border-subtle bg-surface p-3 transition-colors hover:border-border-strong"
+                    >
+                      <span className="font-fw-sans text-body-sm text-text-primary">{alert.label}</span>
+                      <Switch
+                        checked={!!philosophy[alert.key]}
+                        onCheckedChange={(checked) => handleAlertToggle(alert.key, checked)}
+                        aria-label={alert.label}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </Surface>
 
         {/* Team CoachHelm master switch */}

@@ -149,8 +149,12 @@ export function FairwayMyGameProfile({
               >
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:items-center">
                   <div className="w-full min-w-0">
+                    {/* Non-redundant chart title: the page H1 already reads
+                        "{firstName}'s genome" and the InstrumentPanel header
+                        already reads "Genome" — repeating a truncated variant
+                        of either here read as a broken duplicate (#20/#124). */}
                     <GenomeRadar
-                      title={`${firstName}'s shape`}
+                      title="Score by dimension"
                       seriesName="Score"
                       data={axes}
                       max={100}

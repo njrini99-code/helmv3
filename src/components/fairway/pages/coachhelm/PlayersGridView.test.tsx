@@ -17,10 +17,36 @@
  * present buttons — never nested inside a <table> where they'd be subject to
  * the table's auto-layout squeeze — and that each calls its own handler.
  * ========================================================================== */
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
-import { RosterPlayerCard, type RosterRow } from './PlayersGridView';
+import { PlayersGridView, RosterPlayerCard, type RosterRow } from './PlayersGridView';
+
+// ── shell — pure chrome (nav rail, breadcrumb, title). Not the SUT below. ──
+vi.mock('./CoachHelmShell', () => ({
+  CoachHelmShell: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
+
+// ── the create/edit modal is closed by default in every test below; stub it
+//    out so mounting PlayersGridView doesn't drag in its own form-lifecycle
+//    dependency tree for a suite that never opens it. ──────────────────────
+vi.mock('./FocusAreaModal', () => ({
+  FocusAreaModal: () => null,
+}));
+
+// ── every server action PlayersGridView imports — none are invoked by simply
+//    mounting the roster (they only fire from user interactions this suite
+//    doesn't exercise), stubbed so the import itself resolves in jsdom. ────
+vi.mock('@/app/golf/actions/development', () => ({
+  createFocusArea: vi.fn(),
+  updateFocusArea: vi.fn(),
+  completeFocusArea: vi.fn(),
+  deleteFocusArea: vi.fn(),
+  updateFocusAreaProgress: vi.fn(),
+  recordFocusAreaOutcome: vi.fn(),
+  reactivateFocusArea: vi.fn(),
+}));
 
 function makeRow(overrides: Partial<RosterRow['player']> = {}): RosterRow {
   return {
@@ -132,5 +158,79 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
       />,
     );
     expect(screen.getByText('Insights muted')).toBeInTheDocument();
+  });
+});
+
+/* ---------------------------------------------------------------------------
+ * PlayersGridView — desktop DataTable row actions are static (#191/#200)
+ * ---------------------------------------------------------------------------
+ * Bug: the desktop `sm+` roster table (intentionally left unchanged by the
+ * mobile-card W2 fix above) passed "Add focus area" / "View genome" through
+ * DataTable's built-in `rowActions` slot, which renders `opacity-0` at rest
+ * and only reaches `opacity-100` via `group-hover/row` or
+ * `group-focus-within/row` — a mouse-hover reveal with no STATIC affordance
+ * for a non-mouse desktop user (keyboard-only or screen-reader) scanning the
+ * table cold, before any row has focus.
+ *
+ * Fix: those two actions now render as an ordinary column cell (real
+ * `IconButton`s, no opacity-gating CSS) — always painted, always in the
+ * accessibility tree, reachable by Tab with no hover or prior focus needed.
+ * ------------------------------------------------------------------------- */
+describe('PlayersGridView — desktop roster table row actions are always visible', () => {
+  const basePlayer = {
+    id: 'p1',
+    first_name: 'Jordan',
+    last_name: 'Lee',
+    avatar_url: null,
+    graduation_year: 2027,
+    handicap: 2,
+    hometown: null,
+    state: null,
+  };
+
+  function renderGrid() {
+    return render(
+      <PlayersGridView
+        players={[basePlayer]}
+        focusAreas={[]}
+        coachId="coach-1"
+        playerStats={{}}
+      />,
+    );
+  }
+
+  it('renders "Add focus area" / "View genome" as real, always-visible buttons inside the desktop table', () => {
+    renderGrid();
+
+    const table = screen.getByRole('table');
+    const addButton = within(table).getByRole('button', { name: "Add focus area for Jordan Lee" });
+    const genomeButton = within(table).getByRole('button', { name: "View Jordan Lee's genome" });
+
+    // Real controls, inside the <table> (the desktop path this bug is scoped
+    // to) — never opacity-gated on rest, unlike the DataTable `rowActions`
+    // treatment they replace.
+    expect(addButton.className).not.toMatch(/opacity-0/);
+    expect(genomeButton.className).not.toMatch(/opacity-0/);
+    expect(addButton.className).not.toMatch(/group-hover/);
+    expect(genomeButton.className).not.toMatch(/group-hover/);
+  });
+
+  it('reaches both row actions via Tab with no prior hover/focus on the row', async () => {
+    const user = userEvent.setup();
+    renderGrid();
+
+    const table = screen.getByRole('table');
+    const addButton = within(table).getByRole('button', { name: "Add focus area for Jordan Lee" });
+    const genomeButton = within(table).getByRole('button', { name: "View Jordan Lee's genome" });
+
+    // Tab through the document until each action is reached — no hover event
+    // is ever dispatched, mirroring a keyboard-only or screen-reader user.
+    for (let i = 0; i < 30 && document.activeElement !== addButton; i += 1) {
+      await user.tab();
+    }
+    expect(document.activeElement).toBe(addButton);
+
+    await user.tab();
+    expect(document.activeElement).toBe(genomeButton);
   });
 });

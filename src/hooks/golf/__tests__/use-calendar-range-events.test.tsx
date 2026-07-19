@@ -30,7 +30,17 @@ let nextResults: Array<{ data: unknown[] | null; error: { message: string } | nu
 function makeChain(record: QueryRecord) {
   const result = nextResults.shift() ?? { data: [], error: null };
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'neq', 'gte', 'lte', 'order', 'limit', 'range']) {
+  for (const method of [
+    'select',
+    'eq',
+    'neq',
+    'gte',
+    'lte',
+    'order',
+    'limit',
+    'range',
+    'abortSignal',
+  ]) {
     chain[method] = (...args: unknown[]) => {
       record.calls.push({ method, args });
       return chain;
@@ -42,11 +52,60 @@ function makeChain(record: QueryRecord) {
   return chain;
 }
 
+/**
+ * Deferred query — a chain whose `.then()` doesn't settle until the test
+ * explicitly calls `resolve(...)`. Used to prove two overlapping fetches
+ * resolve OUT OF ORDER without the result the test doesn't want winning.
+ */
+function deferredChain(record: QueryRecord) {
+  let resolveFn!: (v: { data: unknown[] | null; error: { message: string } | null }) => void;
+  const promise = new Promise<{ data: unknown[] | null; error: { message: string } | null }>(
+    (res) => {
+      resolveFn = res;
+    },
+  );
+  const chain: Record<string, unknown> = {};
+  for (const method of [
+    'select',
+    'eq',
+    'neq',
+    'gte',
+    'lte',
+    'order',
+    'limit',
+    'range',
+    'abortSignal',
+  ]) {
+    chain[method] = (...args: unknown[]) => {
+      record.calls.push({ method, args });
+      return chain;
+    };
+  }
+  (chain as { then: (resolve: (v: unknown) => void) => Promise<unknown> }).then = (resolve) =>
+    promise.then(resolve);
+  return { chain, resolve: resolveFn };
+}
+
+/**
+ * Queue of pending "resolve" callbacks captured as each deferred query is
+ * built, in the order `from().select()...` is actually called (FIFO) — a
+ * test enqueues a slot, waits for the dispatch it cares about to happen, then
+ * resolves in whatever order it wants to prove is safe.
+ */
+let deferredResolvers: Array<(v: { data: unknown[] | null; error: { message: string } | null }) => void> = [];
+let useDeferredForNextN = 0;
+
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     from: (table: string) => {
       const record: QueryRecord = { table, calls: [] };
       queryLog.push(record);
+      if (useDeferredForNextN > 0) {
+        useDeferredForNextN -= 1;
+        const { chain, resolve } = deferredChain(record);
+        deferredResolvers.push(resolve);
+        return chain;
+      }
       return makeChain(record);
     },
     channel: () => {
@@ -102,6 +161,8 @@ describe('useCalendarRangeEvents', () => {
   beforeEach(() => {
     queryLog.length = 0;
     nextResults = [];
+    deferredResolvers = [];
+    useDeferredForNextN = 0;
   });
 
   it('does NOT fetch when the visible range is inside the server-loaded window', async () => {
@@ -233,6 +294,108 @@ describe('useCalendarRangeEvents', () => {
     await act(async () => {});
     expect(queryLog).toHaveLength(0);
     expect(result.current.events).toEqual([]);
+  });
+
+  // ── mustFix #1: root-cause the times/counts flip ──────────────────────────
+  it('never lets a fresh client-fetched row be discarded in favor of an unchanged, stale server payload (#37/#166/#185/#83)', async () => {
+    // Reproduces the exact reported symptom: `initialEvents` is a page render
+    // that can be up to 30s stale, while this hook's own range fetch reads
+    // golf_events live. The OLD "server payload always wins on id ties" rule
+    // meant a just-edited event's time could flip back to the stale value on
+    // every render as long as `initialEvents` hadn't ALSO been refreshed —
+    // even though the fresher client fetch already landed.
+    const now = Date.now();
+    const staleIso = new Date(now).toISOString(); // what the page rendered
+    const freshIso = new Date(now + 3 * 60 * 60 * 1000).toISOString(); // rescheduled +3h, per a live DB read
+    const farFuture = now + 150 * DAY_MS;
+
+    // The client fetch's buffered window covers 'a' too (±1 month buffer
+    // around the visible range easily reaches back to `now`+3h in this test;
+    // what matters is the row for id 'a' the fetch itself returns).
+    nextResults = [{ data: [makeRow('a', freshIso)], error: null }];
+
+    const initialEvents = [makeEvent('a', staleIso)];
+    const { result, rerender } = renderHook(
+      ({ start, end }: { start: Date; end: Date }) =>
+        useCalendarRangeEvents({
+          teamId: 'team-1',
+          initialEvents, // SAME reference for the whole test — no router.refresh() happens
+          visibleStart: start,
+          visibleEnd: end,
+          loadedStart: new Date(now - 90 * DAY_MS).toISOString(),
+          loadedEnd: new Date(now + 90 * DAY_MS).toISOString(),
+        }),
+      { initialProps: { start: new Date(now), end: new Date(now + 6 * DAY_MS) } },
+    );
+
+    expect(result.current.events.find((e) => e.id === 'a')?.start_time).toBe(staleIso);
+
+    // Navigate outside the loaded window — dispatches the live client fetch.
+    rerender({ start: new Date(farFuture), end: new Date(farFuture + 6 * DAY_MS) });
+
+    await waitFor(() => {
+      expect(result.current.events.find((e) => e.id === 'a')?.start_time).toBe(freshIso);
+    });
+    // `initialEvents` never changed — the fresh fetch's value must stick,
+    // not get silently reset back to the stale prop on the next render.
+    rerender({ start: new Date(farFuture), end: new Date(farFuture + 6 * DAY_MS) });
+    expect(result.current.events.find((e) => e.id === 'a')?.start_time).toBe(freshIso);
+  });
+
+  it('an older in-flight fetch response can never overwrite a newer one (request-epoch guard)', async () => {
+    const now = Date.now();
+    const rangeAStart = now + 150 * DAY_MS;
+    const rangeBStart = now + 300 * DAY_MS;
+
+    useDeferredForNextN = 2;
+
+    const { result, rerender } = renderHook(
+      ({ start, end }: { start: Date; end: Date }) =>
+        useCalendarRangeEvents({
+          teamId: 'team-1',
+          initialEvents: [],
+          visibleStart: start,
+          visibleEnd: end,
+          loadedStart: new Date(now - 90 * DAY_MS).toISOString(),
+          loadedEnd: new Date(now + 90 * DAY_MS).toISOString(),
+        }),
+      { initialProps: { start: new Date(rangeAStart), end: new Date(rangeAStart + 6 * DAY_MS) } },
+    );
+
+    await waitFor(() => expect(deferredResolvers).toHaveLength(1)); // fetch A dispatched
+
+    // Navigate to a second, non-overlapping range BEFORE fetch A resolves —
+    // this is the "two overlapping range fetches" scenario: A is still
+    // in-flight when B is dispatched.
+    rerender({ start: new Date(rangeBStart), end: new Date(rangeBStart + 6 * DAY_MS) });
+    await waitFor(() => expect(deferredResolvers).toHaveLength(2)); // fetch B dispatched
+
+    const resolveA = deferredResolvers[0]!;
+    const resolveB = deferredResolvers[1]!;
+
+    // Resolve OUT OF ORDER: the NEWER request (B) lands first, then the
+    // OLDER, now-superseded request (A) finally resolves with conflicting
+    // data for the same id.
+    await act(async () => {
+      resolveB({ data: [makeRow('x', new Date(rangeBStart).toISOString())], error: null });
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(result.current.events.some((e) => e.id === 'x')).toBe(true);
+    });
+
+    await act(async () => {
+      resolveA({ data: [makeRow('x', new Date(rangeAStart).toISOString())], error: null });
+      await Promise.resolve();
+    });
+
+    // B's result must still be what's rendered — A's late arrival (for a
+    // range the user has already navigated away from) must never win.
+    expect(result.current.events.find((e) => e.id === 'x')?.start_time).toBe(
+      new Date(rangeBStart).toISOString(),
+    );
+    expect(result.current.isLoadingRange).toBe(false);
+    expect(result.current.rangeError).toBeNull();
   });
 });
 

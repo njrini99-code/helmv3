@@ -85,7 +85,7 @@ function statusConfig(status: string): { tone: FwStatusTone; label: string; puls
  * midnight rather than `new Date(dateStr)` (which treats date-only strings as
  * UTC midnight and reads as the prior calendar day in US timezones).
  */
-function formatDate(dateStr: string): string {
+export function formatDate(dateStr: string): string {
   const [y, m, d] = (dateStr.split('T')[0] ?? dateStr).split('-').map(Number);
   if (!y || !m || !d) return dateStr;
   return new Date(y, m - 1, d).toLocaleDateString('en-US', {

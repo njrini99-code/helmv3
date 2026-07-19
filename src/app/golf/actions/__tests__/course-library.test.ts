@@ -13,10 +13,24 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, softDeleteCourse, getCourseTeeHoles, contributeCourseFromRound, listCoursesStrict, getCourseTeeCountsStrict, getTeamSavedCoursesStrict } from '../course-library';
+import { createCourse, createTee, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, softDeleteCourse, getCourseTeeHoles, contributeCourseFromRound, listCoursesStrict, getCourseTeeCountsStrict, getTeamSavedCoursesStrict } from '../course-library';
+
+/** A caller WITH a golf_coaches row — passes the course-library-write-scoping coach gate. */
+const asCoach = { maybeSingle: { data: { id: 'co1', organization_id: 'org1' }, error: null } };
+/** A caller with NO golf_coaches row — a player; blocked by the coach gate. */
+const asPlayer = { maybeSingle: { data: null, error: null } };
 
 // ── A scriptable, chainable Supabase query-builder mock ──────────────────────
-type Scripted = { maybeSingle?: unknown; single?: unknown; resolve?: unknown };
+type Scripted = {
+  maybeSingle?: unknown;
+  /** When a single scripted answer isn't enough (the same table is queried
+   *  for two different things in one call — e.g. createCourseImpl's dedup
+   *  check THEN createTeeImpl's course-exists check), consumed in order;
+   *  the last entry repeats once exhausted. */
+  maybeSingleSequence?: unknown[];
+  single?: unknown;
+  resolve?: unknown;
+};
 
 function tableBuilder(scripted: Scripted = {}) {
   const calls: Record<string, unknown[][]> = {};
@@ -26,7 +40,15 @@ function tableBuilder(scripted: Scripted = {}) {
   for (const m of ['select', 'eq', 'is', 'in', 'or', 'order', 'range', 'limit', 'not', 'insert', 'upsert', 'update', 'delete']) {
     b[m] = vi.fn(record(m));
   }
-  b.maybeSingle = vi.fn(async () => scripted.maybeSingle ?? { data: null, error: null });
+  let maybeSingleCallIndex = 0;
+  b.maybeSingle = vi.fn(async () => {
+    if (scripted.maybeSingleSequence) {
+      const i = Math.min(maybeSingleCallIndex, scripted.maybeSingleSequence.length - 1);
+      maybeSingleCallIndex += 1;
+      return scripted.maybeSingleSequence[i] ?? { data: null, error: null };
+    }
+    return scripted.maybeSingle ?? { data: null, error: null };
+  });
   b.single = vi.fn(async () => scripted.single ?? { data: null, error: null });
   // Thenable: awaiting the builder (insert/update/delete without .single()) resolves here.
   b.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) =>
@@ -55,11 +77,24 @@ describe('createCourse', () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
+  it('rejects a non-coach (player) caller with an explicit auth error — even called directly (#36/#187)', async () => {
+    const courses = tableBuilder();
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder(asPlayer),
+      golf_courses: courses,
+    });
+
+    const res = await createCourse({ name: 'Bandon Dunes' });
+
+    expect(res).toEqual({ success: false, error: 'Only coaches can manage the course library' });
+    expect(courses._calls.insert).toBeUndefined();
+  });
+
   it('DEDUPES to an existing active course instead of inserting a duplicate', async () => {
     const existing = { id: 'c-existing', name: 'Pinehurst No. 2', normalized_name: 'pinehurst 2', par: 72 };
     const courses = tableBuilder({ maybeSingle: { data: existing, error: null } });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
     });
 
@@ -79,7 +114,7 @@ describe('createCourse', () => {
     const courses = tableBuilder({ maybeSingle: { data: null, error: null }, single: { data: created, error: null } });
     const history = tableBuilder({ resolve: { data: null, error: null } });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
       golf_course_edit_history: history,
     });
@@ -101,6 +136,22 @@ describe('createCourse', () => {
     expect(historyPayload.edited_by_user_id).toBe('u1');
 
     expect(revalidatePath).toHaveBeenCalled();
+  });
+});
+
+describe('createTee', () => {
+  it('rejects a non-coach (player) caller with an explicit auth error — even called directly (#36/#187)', async () => {
+    const tees = tableBuilder();
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder(asPlayer),
+      golf_courses: tableBuilder({ maybeSingle: { data: { id: 'c1' }, error: null } }),
+      golf_course_tees: tees,
+    });
+
+    const res = await createTee('c1', { teeName: 'Blue', holes: [] });
+
+    expect(res).toEqual({ success: false, error: 'Only coaches can manage the course library' });
+    expect(tees._calls.insert).toBeUndefined();
   });
 });
 
@@ -221,7 +272,7 @@ describe('Phase 5 — unique normalized_name index: 23505 collision handling', (
       single: { data: null, error: { code: '23505', message: 'duplicate key' } }, // the update collides
     });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
     });
 
@@ -237,7 +288,7 @@ describe('Phase 5 — unique normalized_name index: 23505 collision handling', (
       resolve: { data: null, error: { code: '23505', message: 'duplicate key' } },
     });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
     });
 
@@ -282,6 +333,42 @@ describe('contributeCourseFromRound — grow the cloud catalog from a saved roun
     const res = await contributeCourseFromRound({ courseName: '   ', holes: [] });
     expect(res).toEqual({ success: false, error: 'Course name is required' });
     expect(courses._calls.insert).toBeUndefined();
+  });
+
+  it('still lets a NON-COACH PLAYER insert a brand-new course + tee (#36/#187 regression guard: the coach gate on createCourse/createTee must not break round-time catalog growth)', async () => {
+    const created = { id: 'c-new', name: 'Whistling Straits', normalized_name: 'whistling straits', par: 72 };
+    const courses = tableBuilder({
+      // 1st .maybeSingle(): createCourseImpl's dedup check — no hit, genuinely new.
+      // 2nd .maybeSingle(): createTeeImpl's "does this course exist" check — yes.
+      maybeSingleSequence: [{ data: null, error: null }, { data: created, error: null }],
+      single: { data: created, error: null },
+    });
+    const tees = tableBuilder({
+      resolve: { data: [], error: null }, // no existing tee of this name — genuinely new
+      single: { data: { id: 't-new', tee_name: 'Blue', normalized_tee_name: 'blue' }, error: null },
+      // reused by getTeeWithHoles' reload (same table, .maybeSingle()) after insert
+      maybeSingle: { data: { id: 't-new', tee_name: 'Blue', normalized_tee_name: 'blue' }, error: null },
+    });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder(asPlayer), // NOT a coach
+      golf_courses: courses,
+      golf_course_tees: tees,
+      golf_course_tee_holes: tableBuilder({ resolve: { data: null, error: null } }),
+      golf_course_tee_edit_history: tableBuilder({ resolve: { data: null, error: null } }),
+    });
+
+    const res = await contributeCourseFromRound({
+      courseName: 'Whistling Straits',
+      teeName: 'Blue',
+      holes: [{ holeNumber: 1, par: 4, yardage: 400 }],
+    });
+
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.courseId).toBe('c-new');
+    // The whole point: unlike a direct createCourse()/createTee() call, this
+    // player-authored insert is NOT rejected by the coach gate.
+    expect(courses._calls.insert).toBeDefined();
+    expect(tees._calls.insert).toBeDefined();
   });
 });
 
@@ -328,7 +415,7 @@ describe('updateTee — destructive-write guard', () => {
   it('refuses to wipe the hole set when given holes: [] (never reaches a delete)', async () => {
     const tees = tableBuilder({ maybeSingle: { data: { id: 't1', holes_count: 18, deleted_at: null }, error: null } });
     const client = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_course_tees: tees,
     });
     currentClient = client;
@@ -338,6 +425,19 @@ describe('updateTee — destructive-write guard', () => {
     expect(res).toEqual({ success: false, error: 'At least one valid hole is required to replace the hole set' });
     // The early return must prevent ever touching the holes table.
     expect(client.from).not.toHaveBeenCalledWith('golf_course_tee_holes');
+  });
+
+  it('rejects a non-coach (player) caller with an explicit auth error (#36/#187)', async () => {
+    const tees = tableBuilder({ maybeSingle: { data: { id: 't1', holes_count: 18, deleted_at: null }, error: null } });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder(asPlayer),
+      golf_course_tees: tees,
+    });
+
+    const res = await updateTee('t1', { teeName: 'Renamed' });
+
+    expect(res).toEqual({ success: false, error: 'Only coaches can manage the course library' });
+    expect(tees._calls.update).toBeUndefined();
   });
 });
 
@@ -353,7 +453,7 @@ describe('#913 part 2 — library-owned courses require a super admin to edit/re
     };
     const courses = tableBuilder({ maybeSingle: { data: before, error: null } });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
     });
 
@@ -395,7 +495,7 @@ describe('#913 part 2 — library-owned courses require a super admin to edit/re
       single: { data: after, error: null },
     });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
       golf_course_edit_history: tableBuilder({ resolve: { data: null, error: null } }),
     });
@@ -409,7 +509,7 @@ describe('#913 part 2 — library-owned courses require a super admin to edit/re
       maybeSingle: { data: { id: 'c1', created_by_user_id: null }, error: null },
     });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
     });
 
@@ -441,7 +541,7 @@ describe('#913 part 2 — library-owned courses require a super admin to edit/re
       resolve: { data: null, error: null },
     });
     currentClient = makeClient({ id: 'u1' }, {
-      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_coaches: tableBuilder(asCoach),
       golf_courses: courses,
       golf_course_edit_history: tableBuilder({ resolve: { data: null, error: null } }),
     });

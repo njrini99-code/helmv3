@@ -131,26 +131,53 @@ export interface FocusAreaModalProps {
   onSubmit: (payload: FocusAreaModalSubmit) => Promise<{ success: boolean; error?: string }>;
 }
 
+/**
+ * Build the form's starting state.
+ *
+ * Bug #59: on a fresh CREATE (no `initial`), the "Measurable target" section
+ * used to open with `target_metric: ''` — no stat card highlighted, no unit,
+ * both the Current/Target NumberFields blank with nothing to distinguish them
+ * from decoration. It read as if the section had no real inputs at all. Fix:
+ * mirror what `selectArea` already does when a coach/player manually changes
+ * the category — pre-select the first catalog metric for the DEFAULT area
+ * type up front, so the section always opens with one stat card active and
+ * both value fields carrying a real unit (and a real value, when the
+ * player's stats have one). Editing keeps using the caller's resolved
+ * `initial` values untouched.
+ */
 function buildInitialForm(
   playerId: string | undefined,
   initial: FocusAreaModalInitial | undefined,
+  stats: AreaAutoFillStats | undefined,
 ): FocusAreaForm {
   const base: FocusAreaForm = { ...EMPTY_FORM, player_id: playerId ?? '' };
-  if (!initial) return base;
+  if (initial) {
+    return {
+      player_id: initial.player_id ?? base.player_id,
+      area_type: initial.area_type || 'driving',
+      title: initial.title || '',
+      description: initial.description || '',
+      target_metric: initial.target_metric || '',
+      current_value: initial.current_value != null ? String(initial.current_value) : '',
+      target_value: initial.target_value != null ? String(initial.target_value) : '',
+      target_kind:
+        initial.target_kind === 'date' || initial.target_kind === 'rounds'
+          ? initial.target_kind
+          : 'none',
+      target_date: initial.target_date || '',
+      target_rounds: initial.target_rounds != null ? String(initial.target_rounds) : '',
+    };
+  }
+
+  const first = metricsForArea(base.area_type)[0];
+  if (!first) return base;
+  const cur = readMetricValue(first, stats);
+  const tgt = suggestTarget(first, cur);
   return {
-    player_id: initial.player_id ?? base.player_id,
-    area_type: initial.area_type || 'driving',
-    title: initial.title || '',
-    description: initial.description || '',
-    target_metric: initial.target_metric || '',
-    current_value: initial.current_value != null ? String(initial.current_value) : '',
-    target_value: initial.target_value != null ? String(initial.target_value) : '',
-    target_kind:
-      initial.target_kind === 'date' || initial.target_kind === 'rounds'
-        ? initial.target_kind
-        : 'none',
-    target_date: initial.target_date || '',
-    target_rounds: initial.target_rounds != null ? String(initial.target_rounds) : '',
+    ...base,
+    target_metric: first.key,
+    current_value: cur == null ? '' : String(cur),
+    target_value: tgt == null ? '' : String(tgt),
   };
 }
 
@@ -166,7 +193,7 @@ export function FocusAreaModal({
   onSubmit,
 }: FocusAreaModalProps) {
   const [form, setForm] = React.useState<FocusAreaForm>(() =>
-    buildInitialForm(playerId, initial),
+    buildInitialForm(playerId, initial, playerId ? playerStats[playerId] : undefined),
   );
   const [saving, setSaving] = React.useState(false);
 
@@ -174,11 +201,11 @@ export function FocusAreaModal({
   const wasOpen = React.useRef(open);
   React.useEffect(() => {
     if (open && !wasOpen.current) {
-      setForm(buildInitialForm(playerId, initial));
+      setForm(buildInitialForm(playerId, initial, playerId ? playerStats[playerId] : undefined));
       setConfirmingDiscard(false);
     }
     wasOpen.current = open;
-    // initial/playerId are snapshotted at open; intentionally not deps.
+    // initial/playerId/playerStats are snapshotted at open; intentionally not deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -201,7 +228,11 @@ export function FocusAreaModal({
 
   // Which catalog metric (if any) the current target_metric resolves to — drives
   // the active card highlight (resolves a stored label OR key).
-  const selectedKey = findMetric(form.target_metric)?.key ?? null;
+  const selectedMetric = findMetric(form.target_metric);
+  const selectedKey = selectedMetric?.key ?? null;
+  // Unit of the currently-selected catalog metric (yds/%/ft/putts/strokes),
+  // shown inside the Current/Target NumberFields (#59).
+  const selectedMetricUnit = selectedMetric?.unit ?? '';
   // "Custom mode": a non-empty metric that ISN'T in the catalog, or the user
   // explicitly chose Custom. Reveals the free-text input.
   const [customMode, setCustomMode] = React.useState(false);
@@ -576,6 +607,11 @@ export function FocusAreaModal({
                   onValueChange={(v) =>
                     setForm((prev) => ({ ...prev, current_value: v == null ? '' : String(v) }))
                   }
+                  // #59: an empty NumberField with no unit reads as decoration,
+                  // not an input — showing the metric's real unit (yds/%/ft/
+                  // putts/strokes) makes clear this box is tied to a specific,
+                  // pickable stat even before any value is entered.
+                  unit={selectedMetricUnit || undefined}
                 />
               </FormField>
               <FormField label="Target value" showOptional>
@@ -584,6 +620,7 @@ export function FocusAreaModal({
                   onValueChange={(v) =>
                     setForm((prev) => ({ ...prev, target_value: v == null ? '' : String(v) }))
                   }
+                  unit={selectedMetricUnit || undefined}
                 />
                 {suggested != null && String(suggested) !== form.target_value ? (
                   // Inline text affordance to apply the suggested target.

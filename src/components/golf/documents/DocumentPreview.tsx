@@ -1,13 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { ModalShell, Button } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { getPreviewStrategy, formatFileSize, type GolfDocument, type DocumentVersion } from '@/lib/types/golf';
 import { getPreviewUrl, getTextFileContent } from '@/app/golf/actions/documents';
@@ -161,7 +155,7 @@ export function DocumentPreview({
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <Loader2Icon className="h-12 w-12 animate-spin text-text-tertiary mx-auto mb-4" />
-            <p className="text-text-secondary">Loading preview...</p>
+            <p className="font-fw-sans text-body text-text-secondary">Loading preview...</p>
           </div>
         </div>
       );
@@ -175,8 +169,8 @@ export function DocumentPreview({
       return (
         <div className="flex flex-col items-center justify-center h-[40vh]">
           <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
-          <p className="text-lg font-medium mb-2">{fileName}</p>
-          <p className="text-text-tertiary text-sm text-center max-w-sm">
+          <p className="font-fw-sans text-body-lg font-medium text-text-primary mb-2">{fileName}</p>
+          <p className="font-fw-sans text-body-sm text-text-tertiary text-center max-w-sm">
             No preview available. This file doesn&apos;t have any content yet.
           </p>
         </div>
@@ -188,16 +182,14 @@ export function DocumentPreview({
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center max-w-md">
             <AlertCircleIcon className="h-12 w-12 text-fw-danger mx-auto mb-4" />
-            <p className="text-fw-danger font-medium mb-2">Preview unavailable</p>
-            <p className="text-text-tertiary text-sm mb-4">{error}</p>
+            <p className="font-fw-sans text-body font-medium text-fw-danger mb-2">Preview unavailable</p>
+            <p className="font-fw-sans text-body-sm text-text-tertiary mb-4">{error}</p>
             <div className="flex gap-2 justify-center">
-              <Button variant="secondary" onClick={handleDownload}>
-                <DownloadIcon className="h-4 w-4 mr-2" />
+              <Button variant="secondary" leftIcon={<DownloadIcon className="h-4 w-4" />} onClick={handleDownload}>
                 Download
               </Button>
               {previewUrl && (
-                <Button variant="secondary" onClick={handleOpenExternal}>
-                  <ExternalLinkIcon className="h-4 w-4 mr-2" />
+                <Button variant="secondary" leftIcon={<ExternalLinkIcon className="h-4 w-4" />} onClick={handleOpenExternal}>
                   Open in Browser
                 </Button>
               )}
@@ -210,7 +202,7 @@ export function DocumentPreview({
     if (!previewUrl) {
       return (
         <div className="flex items-center justify-center h-[60vh]">
-          <p className="text-text-secondary">No preview available</p>
+          <p className="font-fw-sans text-body text-text-secondary">No preview available</p>
         </div>
       );
     }
@@ -265,7 +257,7 @@ export function DocumentPreview({
         if (mimeType.startsWith('video/')) {
           return (
             <div className="flex flex-col h-[70vh]">
-              <div className="flex-1 flex items-center justify-center bg-inset rounded-md overflow-hidden">
+              <div className="flex-1 flex items-center justify-center bg-surface-sunken rounded-fw-md overflow-hidden">
                 {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video
                   src={previewUrl}
@@ -277,8 +269,7 @@ export function DocumentPreview({
                 </video>
               </div>
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="secondary" size="sm" onClick={handleDownload}>
-                  <DownloadIcon className="h-4 w-4 mr-2" />
+                <Button variant="secondary" size="sm" leftIcon={<DownloadIcon className="h-4 w-4" />} onClick={handleDownload}>
                   Download
                 </Button>
               </div>
@@ -290,13 +281,12 @@ export function DocumentPreview({
           return (
             <div className="flex flex-col items-center justify-center h-[40vh]">
               <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
-              <p className="text-lg font-medium mb-4">{fileName}</p>
+              <p className="font-fw-sans text-body-lg font-medium text-text-primary mb-4">{fileName}</p>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <audio src={previewUrl} controls className="w-full max-w-md mb-4">
                 Your browser does not support the audio element.
               </audio>
-              <Button variant="secondary" size="sm" onClick={handleDownload}>
-                <DownloadIcon className="h-4 w-4 mr-2" />
+              <Button variant="secondary" size="sm" leftIcon={<DownloadIcon className="h-4 w-4" />} onClick={handleDownload}>
                 Download
               </Button>
             </div>
@@ -311,16 +301,14 @@ export function DocumentPreview({
           <div className="h-[70vh]">
             <div className="flex flex-col h-full">
               <div className="flex justify-end gap-2 mb-2">
-                <Button variant="secondary" size="sm" onClick={handleDownload}>
-                  <DownloadIcon className="h-4 w-4 mr-2" />
+                <Button variant="secondary" size="sm" leftIcon={<DownloadIcon className="h-4 w-4" />} onClick={handleDownload}>
                   Download
                 </Button>
-                <Button variant="secondary" size="sm" onClick={handleOpenExternal}>
-                  <ExternalLinkIcon className="h-4 w-4 mr-2" />
+                <Button variant="secondary" size="sm" leftIcon={<ExternalLinkIcon className="h-4 w-4" />} onClick={handleOpenExternal}>
                   Open External
                 </Button>
               </div>
-              <div className="flex-1 border border-border-subtle rounded-md overflow-hidden">
+              <div className="flex-1 border border-border-subtle rounded-fw-md overflow-hidden">
                 <iframe
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`}
                   className="w-full h-full border-0"
@@ -341,20 +329,18 @@ export function DocumentPreview({
     return (
       <div className="flex flex-col items-center justify-center h-[40vh]">
         <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
-        <p className="text-lg font-medium mb-2">{fileName}</p>
-        <p className="text-sm text-text-tertiary mb-4">
+        <p className="font-fw-sans text-body-lg font-medium text-text-primary mb-2">{fileName}</p>
+        <p className="font-fw-sans text-body-sm text-text-tertiary mb-4">
           {formatFileSize(fileSize)}
         </p>
-        <p className="text-sm text-text-tertiary mb-4">
+        <p className="font-fw-sans text-body-sm text-text-tertiary mb-4">
           Preview not available for this file type
         </p>
         <div className="flex gap-2">
-          <Button onClick={handleDownload}>
-            <DownloadIcon className="h-4 w-4 mr-2" />
+          <Button leftIcon={<DownloadIcon className="h-4 w-4" />} onClick={handleDownload}>
             Download
           </Button>
-          <Button variant="secondary" onClick={handleOpenExternal}>
-            <ExternalLinkIcon className="h-4 w-4 mr-2" />
+          <Button variant="secondary" leftIcon={<ExternalLinkIcon className="h-4 w-4" />} onClick={handleOpenExternal}>
             Open in Browser
           </Button>
         </div>
@@ -365,39 +351,41 @@ export function DocumentPreview({
   if (!golfDocument) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-[100vw] sm:max-w-5xl h-[100dvh] sm:h-[90vh] rounded-none sm:rounded-lg flex flex-col p-0"
-      >
-        {/* Header — DialogContent already renders its own close affordance
-            (DialogPrimitive.Close, absolute top-right); this block used to
-            render a SECOND close Button on top of it, so the modal showed two
-            overlapping X's. Don't re-add one here — pr-10 just keeps the
-            title/metadata from running under the built-in close hit-target. */}
-        <DialogHeader className="px-6 py-4 pr-10 border-b border-border-subtle flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <FileTypeIcon mimeType={mimeType} className="h-6 w-6" />
-            <div>
-              <DialogTitle className="text-lg">{golfDocument.title}</DialogTitle>
-              <div className="flex items-center gap-2 text-sm text-text-tertiary mt-1">
-                <span>{formatFileSize(fileSize)}</span>
-                {version && (
-                  <>
-                    <span>•</span>
-                    <span className="font-medium">v{version.version_number}</span>
-                  </>
-                )}
-                {/* Version display removed - current_version not available in schema */}
-              </div>
-            </div>
+    <ModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      size="full"
+      title={golfDocument.title}
+      hideTitle
+      className="h-[calc(100dvh-4rem)] max-w-[min(70rem,calc(100vw-2rem))] sm:h-[90vh]"
+    >
+      {/* Header — the primitive's own close affordance (top-right) is the
+          ONLY close control; this block used to render a SECOND close Button
+          on top of it, so the modal showed two overlapping X's (W4 audit).
+          Don't re-add one here — pr-14 just keeps the title/metadata from
+          running under the built-in close hit-target. */}
+      <div className="flex items-center gap-3 px-6 pt-6 pb-4 pr-14 border-b border-border-subtle flex-shrink-0">
+        <FileTypeIcon mimeType={mimeType} className="h-6 w-6" />
+        <div className="min-w-0">
+          <h2 className="truncate font-fw-display text-h3 font-medium text-text-primary">
+            {golfDocument.title}
+          </h2>
+          <div className="flex items-center gap-2 font-fw-sans text-body-sm text-text-tertiary mt-1">
+            <span className="tabular-nums">{formatFileSize(fileSize)}</span>
+            {version && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="font-medium tabular-nums">v{version.version_number}</span>
+              </>
+            )}
           </div>
-        </DialogHeader>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-4">
-          {renderPreview()}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      {/* Content */}
+      <ModalShell.Body className="flex-1 px-6 py-4">
+        {renderPreview()}
+      </ModalShell.Body>
+    </ModalShell>
   );
 }
