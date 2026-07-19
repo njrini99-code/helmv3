@@ -258,8 +258,8 @@ async function getPlayerShotAnalyticsImpl(
 
     // Calculate date ranges
     const now = new Date();
-    const periodStart = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
-    const previousPeriodStart = new Date(periodStart.getTime() - periodDays * 24 * 60 * 60 * 1000);
+    let effectivePeriodDays = periodDays;
+    let periodStart = new Date(now.getTime() - effectivePeriodDays * 24 * 60 * 60 * 1000);
 
     // Get rounds from current period
     const { data: roundsData } = await supabase
@@ -270,7 +270,38 @@ async function getPlayerShotAnalyticsImpl(
       .gte('round_date', periodStart.toISOString().split('T')[0])
       .order('round_date', { ascending: false });
 
-    const rounds = (roundsData || []) as RoundRow[];
+    let rounds = (roundsData || []) as RoundRow[];
+
+    // #972 root-cause fix: the deep-dive ShotAnalysisCard reads its shot
+    // context from getPlayerShotContext (coachhelm-data.ts), which defaults
+    // to a 90-day lookback. This loader was called with a hardcoded 30-day
+    // window from the dashboard route, so a player who last played 31-89
+    // days ago showed real Dead Zones / Resilience / Scramble Rate in the
+    // deep dive while this loader reported roundsAnalyzed: 0 ("no rounds") —
+    // two loaders, two windows, same page, same player. Widen ONCE to the
+    // same 90-day window before honestly giving up, and report the WINDOW
+    // THAT ACTUALLY PRODUCED THE DATA (`periodDays` below) so any "Warming
+    // up" copy downstream reflects true scope instead of the narrower ask.
+    const WIDENED_FALLBACK_PERIOD_DAYS = 90;
+    if (rounds.length === 0 && effectivePeriodDays < WIDENED_FALLBACK_PERIOD_DAYS) {
+      const widenedStart = new Date(now.getTime() - WIDENED_FALLBACK_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+      const { data: widenedRoundsData } = await supabase
+        .from('golf_rounds')
+        .select('id, round_date, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, total_score, holes_played')
+        .eq('player_id', playerId)
+        .eq('status', 'completed')
+        .gte('round_date', widenedStart.toISOString().split('T')[0])
+        .order('round_date', { ascending: false });
+
+      const widenedRounds = (widenedRoundsData || []) as RoundRow[];
+      if (widenedRounds.length > 0) {
+        rounds = widenedRounds;
+        effectivePeriodDays = WIDENED_FALLBACK_PERIOD_DAYS;
+        periodStart = widenedStart;
+      }
+    }
+
+    const previousPeriodStart = new Date(periodStart.getTime() - effectivePeriodDays * 24 * 60 * 60 * 1000);
 
     // Get rounds from previous period for trends
     const { data: previousRoundsData } = await supabase
@@ -285,9 +316,10 @@ async function getPlayerShotAnalyticsImpl(
 
     if (rounds.length === 0) {
       // Expected empty state, not a failure — a player with no completed
-      // rounds in the lookback window. The stable code keeps the soft-failure
-      // observer from logging it at error severity (observed live 2026-07-11
-      // as admin_events fingerprint 5d6c2abb on /golf/dashboard/coachhelm).
+      // rounds in the lookback window (even after the 90-day widening
+      // above). The stable code keeps the soft-failure observer from
+      // logging it at error severity (observed live 2026-07-11 as
+      // admin_events fingerprint 5d6c2abb on /golf/dashboard/coachhelm).
       return {
         success: false,
         error: 'No rounds found in the selected period',
@@ -839,7 +871,7 @@ async function getPlayerShotAnalyticsImpl(
         playerId,
         playerName,
         analyzedAt: new Date().toISOString(),
-        periodDays,
+        periodDays: effectivePeriodDays,
         roundsAnalyzed: rounds.length,
         teeStats,
         approachStats,

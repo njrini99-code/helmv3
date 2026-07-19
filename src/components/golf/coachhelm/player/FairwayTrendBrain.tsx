@@ -64,17 +64,17 @@ type Tone = 'good' | 'bad' | 'neutral';
 const VERDICT: Record<string, { line: string; tone: Tone }> = {
   strong_improving: { line: 'Your scoring is genuinely trending up', tone: 'good' },
   strong_declining: { line: 'Your scoring is sliding', tone: 'bad' },
-  short_term_dip: { line: 'A recent dip — most likely noise', tone: 'neutral' },
-  short_term_spike: { line: 'A hot patch — enjoy it, but it may cool', tone: 'neutral' },
+  short_term_dip: { line: 'A recent dip, most likely noise', tone: 'neutral' },
+  short_term_spike: { line: 'A hot patch: enjoy it, but it may cool', tone: 'neutral' },
   trajectory_change: { line: 'Your trajectory just shifted', tone: 'neutral' },
-  mixed: { line: 'Mixed signals — too early to call', tone: 'neutral' },
+  mixed: { line: 'Mixed signals, too early to call', tone: 'neutral' },
   stable: { line: 'Holding steady', tone: 'neutral' },
 };
 
 const WINDOW_META: Record<TrendWindow['name'], { label: string; rounds: string; note?: string }> = {
   slow: { label: 'Long range', rounds: 'up to 25 rounds', note: 'the real signal' },
   medium: { label: 'Medium', rounds: 'up to 12 rounds' },
-  fast: { label: 'Recent', rounds: 'last 5 rounds', note: 'small sample — noisy' },
+  fast: { label: 'Recent', rounds: 'last 5 rounds', note: 'small sample, noisy' },
 };
 
 const DIR: Record<TrendWindow['direction'], { glyph: string; tone: Tone; label: string }> = {
@@ -104,9 +104,44 @@ function deriveTrust(windows: TrendWindow[]): { label: string; tone: Tone; note:
     return { label: 'Confirmed', tone: 'good', note: 'every window agrees and the long window is solid' };
   }
   if (!allAgree) {
-    return { label: 'Forming', tone: 'neutral', note: 'windows disagree — not settled yet' };
+    return { label: 'Forming', tone: 'neutral', note: 'windows disagree, not settled yet' };
   }
   return { label: 'Building history', tone: 'neutral', note: 'not enough long-range rounds to confirm' };
+}
+
+/**
+ * #971 — reconcile the headline VERDICT against an ongoing streak so the card
+ * never asserts a directional read (e.g. "sliding") while a same-direction-
+ * contradicting streak is printed right below it (e.g. an ongoing HOT streak).
+ * A verdict whose tone flatly contradicts the live ongoing streak isn't wrong
+ * math, it's an incomplete read — downgrade to the honest "mixed" line rather
+ * than let the headline and the footer argue with each other in one render.
+ */
+export function reconcileVerdict(
+  verdict: { line: string; tone: Tone },
+  ongoingStreaks: Array<{ type: 'hot' | 'cold' }>,
+): { line: string; tone: Tone } {
+  const contradicts = ongoingStreaks.some(
+    (s) =>
+      (verdict.tone === 'bad' && s.type === 'hot') ||
+      (verdict.tone === 'good' && s.type === 'cold'),
+  );
+  return contradicts ? VERDICT.mixed! : verdict;
+}
+
+/**
+ * #971 — a streak's `magnitude` (streak-detector.ts `detectStreaks`) is the
+ * CUMULATIVE deviation summed across every round in the streak, not a
+ * per-round figure. Rendering it raw as "N strokes below your average" reads
+ * as an implausible per-round number (e.g. a 4-round streak summing to 23.5
+ * strokes). Average it over the streak length for an honest per-round read,
+ * then clamp to a plausible per-round ceiling — golf per-round deviations
+ * this large would themselves indicate a data problem, not a genuine signal.
+ */
+const MAX_PLAUSIBLE_STROKES_PER_ROUND = 12;
+export function perRoundStreakMagnitude(magnitude: number, length: number): number {
+  const perRound = length > 0 ? Math.abs(magnitude) / length : Math.abs(magnitude);
+  return Math.min(perRound, MAX_PLAUSIBLE_STROKES_PER_ROUND);
 }
 
 const TRUST_CHIP: Record<Tone, string> = {
@@ -121,24 +156,28 @@ function WindowRow({ window }: { window: TrendWindow }) {
   const confPct = Math.round(Math.max(0, Math.min(1, window.confidence)) * 100);
   const isLong = window.name === 'slow';
 
+  // #971 — the old single flex row packed label / direction / confidence into
+  // three fixed-width columns that collided at 390px once the "small sample,
+  // noisy" note wrapped. Two stacked rows (label+confidence, then direction+
+  // note) let every piece wrap on its own line without overlapping siblings.
   return (
-    <div className={cn('flex items-center gap-3', !isLong && 'opacity-90')}>
-      <div className="w-28 shrink-0">
+    <div className={cn('space-y-1', !isLong && 'opacity-90')}>
+      <div className="flex items-baseline justify-between gap-2">
         <p className={cn('text-body-sm', isLong ? 'font-medium text-text-primary' : 'text-text-secondary')}>
           {meta.label}
         </p>
-        <p className="text-caption text-text-tertiary">{meta.rounds}</p>
+        <span className="shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary">{confPct}%</span>
       </div>
-      <div className={cn('flex flex-1 items-center gap-1.5', TONE_TEXT[dir.tone])}>
+      <div className={cn('flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5', TONE_TEXT[dir.tone])}>
         <span aria-hidden className="text-body font-medium leading-none">
           {dir.glyph}
         </span>
         <span className="text-body-sm font-medium">{dir.label}</span>
+        <span className="text-caption font-normal text-text-tertiary">{meta.rounds}</span>
         {meta.note ? (
-          <span className="ml-1 text-caption font-normal text-text-tertiary">· {meta.note}</span>
+          <span className="text-caption font-normal text-text-tertiary">· {meta.note}</span>
         ) : null}
       </div>
-      <span className="shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary">{confPct}%</span>
     </div>
   );
 }
@@ -167,7 +206,7 @@ export function FairwayTrendBrain({
     );
   }
 
-  const verdict =
+  const rawVerdict =
     VERDICT[resolvedTrends!.signal] ??
     ({ line: resolvedTrends!.description || 'Trend read', tone: 'neutral' } as { line: string; tone: Tone });
   const trust = deriveTrust(windows);
@@ -177,6 +216,9 @@ export function FairwayTrendBrain({
     .map((n) => windows.find((w) => w.name === n))
     .filter((w): w is TrendWindow => Boolean(w));
   const ongoing = resolvedStreaks.filter((s) => s.isOngoing);
+  // #971 — never assert a declining/improving headline that an ongoing
+  // streak directly contradicts in the same render.
+  const verdict = reconcileVerdict(rawVerdict, ongoing);
 
   return (
     <InstrumentPanel
@@ -201,7 +243,7 @@ export function FairwayTrendBrain({
           <h4 className={cn('font-fw-display text-h3 font-semibold leading-snug', TONE_TEXT[verdict.tone])}>
             {verdict.line}
           </h4>
-          <p className="text-caption text-text-tertiary">Based on raw scoring — not course-adjusted.</p>
+          <p className="text-caption text-text-tertiary">Based on raw scoring, not course-adjusted.</p>
         </div>
 
         {/* windows */}
@@ -217,17 +259,21 @@ export function FairwayTrendBrain({
             {ongoing.map((s, i) => {
               const tone: Tone = s.type === 'hot' ? 'good' : 'bad';
               const short = s.length <= 3;
+              // #971 — per-round average (not the raw cumulative magnitude),
+              // clamped to a plausible per-round ceiling. See
+              // perRoundStreakMagnitude for the root-cause note.
+              const perRound = perRoundStreakMagnitude(Number(s.magnitude ?? 0), s.length);
               return (
                 <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-body-sm">
                   <span className={cn('font-medium', TONE_TEXT[tone])}>
                     {s.length}-round {s.type} streak
                   </span>
                   <span className="text-text-tertiary">
-                    {Math.abs(Number(s.magnitude ?? 0)).toFixed(1)} strokes{' '}
+                    {perRound.toFixed(1)} strokes/round{' '}
                     {s.type === 'hot' ? 'below' : 'above'} your average
                   </span>
                   {short ? (
-                    <span className="text-caption text-text-tertiary">· short — could be noise</span>
+                    <span className="text-caption text-text-tertiary">· short, could be noise</span>
                   ) : null}
                 </div>
               );

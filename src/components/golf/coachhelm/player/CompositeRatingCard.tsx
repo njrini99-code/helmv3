@@ -1,16 +1,37 @@
 'use client';
 
+/**
+ * ============================================================================
+ * CompositeRatingCard — GAME STRENGTH (Fairway rebuild, #969/#970/#973)
+ * ----------------------------------------------------------------------------
+ * #969 — this card used to be the last piece of legacy chrome (`Card
+ * variant="overlay"`, a bespoke inline SVG ring, ad-hoc bar divs) sitting right
+ * next to the Fairway-rebuilt FairwayTrendBrain in the same "Performance
+ * overview" grid row. Rebuilt in the Fairway kit — InstrumentPanel bezel, the
+ * `Dial` mini-gauge primitive, TrendChip — so the row reads as one cockpit
+ * instead of a redesigned card beside an unchanged one.
+ *
+ * #970 — the old ring drew its TRACK with `stroke-warm-100`, which is
+ * near-invisible against the cream surface, so a partial fill read as a
+ * floating broken arc rather than a gauge. `Dial` always renders a visible
+ * faint track (`opacity-16` on `text-tertiary`) regardless of value — the fix
+ * is structural (the primitive itself), not a color tweak.
+ *
+ * #973 — `getPlayerProfile` (coachhelm-data.ts) falls back to
+ * `computeCategoryRatings({})` when there isn't enough team data to normalize
+ * z-scores, which hard-codes EVERY category to exactly 50 (z-score.ts). That
+ * midpoint default is a legitimate honest fallback upstream, but plotting five
+ * bars that all land on 50 LOOKS like a real, differentiated breakdown when
+ * it's actually "we don't know yet." Detect that exact signature client-side
+ * and swap the bars for an honest InsufficientData panel instead.
+ * ========================================================================== */
+
 import { memo } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
-import {
-  IconTrendingUp,
-  IconTrendingDown,
-  IconMinus,
-  IconInfo,
-} from '@/components/icons';
+import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
+import { Dial } from '@/components/fairway/charts/Dial';
+import { TrendChip, type TrendDirection } from '@/components/fairway/charts/TrendChip';
+import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
 
 interface CompositeRatingCardProps {
   // Typed props (used when data is pre-parsed)
@@ -29,6 +50,7 @@ interface CompositeRatingCardProps {
   profileData?: Record<string, any>;
   playerState?: string;
   playerName?: string;
+  className?: string;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -39,47 +61,36 @@ const categoryLabels: Record<string, string> = {
   scoring: 'Scoring',
 };
 
-// P157 single-accent: this card renders inside the Fairway `.fairway-ds` premium
-// scope (FairwayPlayerCoachHelm Overview), which mandates ONE green. The two
-// former green tiers (emerald ≥80 + primary ≥60) were a second accent. Both now
-// resolve to the locked Fairway helm-green accent scale (a darker accent-600 for
-// the top tier, accent-500 below it — same hue, never a second green). amber/red
-// stay as honest warning/danger STATUS tones for the degraded tiers, not accents.
-function getRatingColor(value: number): string {
-  if (value >= 80) return 'text-accent-600';
-  if (value >= 60) return 'text-accent-500';
-  if (value >= 40) return 'text-amber-500';
-  return 'text-red-500';
+// #973 — the exact signature of computeCategoryRatings({})'s all-50 default
+// (z-score.ts). A tiny epsilon guards against float noise while still being
+// tight enough that a genuinely-computed spread (which would essentially
+// never land every category within a few tenths of 50) never false-positives.
+const MIDPOINT_DEFAULT = 50;
+const MIDPOINT_EPSILON = 0.5;
+
+function isMidpointDefault(categories: Record<string, number>): boolean {
+  const values = Object.values(categories);
+  if (values.length === 0) return false;
+  return values.every((v) => Math.abs(v - MIDPOINT_DEFAULT) < MIDPOINT_EPSILON);
 }
 
-function getRingColor(value: number): string {
-  if (value >= 80) return 'stroke-accent-600';
-  if (value >= 60) return 'stroke-accent-500';
-  if (value >= 40) return 'stroke-amber-500';
-  return 'stroke-red-500';
-}
-
-function getBarColor(value: number): string {
-  if (value >= 80) return 'bg-accent-600';
+function categoryBarColor(value: number): string {
   if (value >= 60) return 'bg-accent-500';
-  if (value >= 40) return 'bg-amber-500';
-  return 'bg-red-500';
+  if (value >= 40) return 'bg-fw-warning';
+  return 'bg-fw-danger';
 }
 
-function getBarBgColor(value: number): string {
-  if (value >= 80) return 'bg-accent-100';
-  if (value >= 60) return 'bg-accent-100';
-  if (value >= 40) return 'bg-amber-100';
-  return 'bg-red-100';
+function categoryValueColor(value: number): string {
+  if (value >= 60) return 'text-fw-success';
+  if (value >= 40) return 'text-fw-warning';
+  return 'text-fw-danger';
 }
 
-const trendConfig = {
-  // P157 single-accent: "Improving" uses the locked Fairway accent (was a second
-  // green via primary-600). stable/declining stay neutral/danger status tones.
-  improving: { icon: IconTrendingUp, color: 'text-accent-600', label: 'Improving' },
-  stable: { icon: IconMinus, color: 'text-warm-400', label: 'Stable' },
-  declining: { icon: IconTrendingDown, color: 'text-red-500', label: 'Declining' },
-};
+// The old card's 3-way 'stable' → maps onto the shared TrendChip vocabulary's
+// 'flat'; 'improving'/'declining' pass through unchanged.
+function toTrendDirection(direction: 'improving' | 'stable' | 'declining'): TrendDirection {
+  return direction === 'stable' ? 'flat' : direction;
+}
 
 function CompositeRatingCardImpl({
   composite,
@@ -89,8 +100,8 @@ function CompositeRatingCardImpl({
   profileData,
   playerState: _playerState,
   playerName: _playerName,
+  className,
 }: CompositeRatingCardProps) {
-  const prefersReducedMotion = useReducedMotion();
   // Resolve props: prefer typed props, fall back to parsing from profileData
   const resolvedComposite = composite ?? (profileData?.composite as number | undefined);
   const resolvedCategories = categories ?? (profileData?.categories as typeof categories | undefined);
@@ -99,139 +110,97 @@ function CompositeRatingCardImpl({
 
   // Show empty state when no real data exists (avoids contradictory 0 composite / 50 categories)
   const hasData = resolvedComposite != null || resolvedCategories != null;
+
   if (!hasData) {
     return (
-      <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600" />
-        <div className="flex flex-col items-center gap-2 py-6">
-          <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
-            Game Strength
-          </p>
-          <EmptyState
-            variant="minimal"
-            icon={<IconInfo size={20} />}
-            description="Not enough data yet. Complete more rounds to unlock your game rating."
-          />
-        </div>
-      </Card>
+      <InstrumentPanel depth="base" className={className} eyebrow="Game Strength">
+        <InsufficientData
+          title="Game strength warming up"
+          description="Complete more rounds to unlock your composite rating."
+          unit="rounds"
+        />
+      </InstrumentPanel>
     );
   }
 
   const displayComposite = Math.max(0, Math.min(100, Number(resolvedComposite ?? 0)));
   const displayCategories = resolvedCategories ?? { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
-
-  const circumference = 2 * Math.PI * 54;
-  const strokeDashoffset = circumference - (displayComposite / 100) * circumference;
+  const categoriesAreMidpointDefault = isMidpointDefault(displayCategories);
 
   return (
-    <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600" />
-
+    <InstrumentPanel
+      depth="base"
+      className={className}
+      eyebrow="Game Strength"
+      readout={
+        resolvedTrend ? (
+          <TrendChip
+            direction={toTrendDirection(resolvedTrend.direction)}
+            label={
+              <>
+                {Number(resolvedTrend.delta ?? 0) > 0 ? '+' : ''}
+                {Number(resolvedTrend.delta ?? 0).toFixed(1)} / 30d
+              </>
+            }
+            numeric
+          />
+        ) : undefined
+      }
+    >
       <div className="flex flex-col items-center gap-6">
-        {/* Header */}
-        <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
-          Game Strength
-        </p>
+        <Dial
+          label="Composite"
+          value={displayComposite / 100}
+          benchmark={0.6}
+          goodDirection="up"
+          valueFormatter={(v) => Math.round(v * 100).toString()}
+          size={176}
+        />
 
-        {/* Composite ring */}
-        <m.div
-          className="relative flex items-center justify-center"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: 'easeOut' })}
-        >
-          <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
-            <circle
-              cx="70"
-              cy="70"
-              r="54"
-              fill="none"
-              strokeWidth="8"
-              className="stroke-warm-100"
-            />
-            <m.circle
-              cx="70"
-              cy="70"
-              r="54"
-              fill="none"
-              strokeWidth="8"
-              strokeLinecap="round"
-              className={getRingColor(displayComposite)}
-              strokeDasharray={circumference}
-              initial={{ strokeDashoffset: circumference }}
-              animate={{ strokeDashoffset }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, ease: 'easeOut', delay: 0.2 })}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn('text-display font-light tabular-nums tracking-[-0.025em] leading-none', getRatingColor(displayComposite))}>
-              {Math.round(displayComposite)}
-            </span>
-            <span className="mt-0.5 text-eyebrow font-medium uppercase tracking-wider text-warm-400">
-              / 100
-            </span>
-          </div>
-        </m.div>
-
-        {/* Trend indicator */}
-        {resolvedTrend && (
-          <m.div
-            className={cn('flex items-center gap-1.5 text-sm font-medium', trendConfig[resolvedTrend.direction].color)}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6 })}
-          >
-            {(() => {
-              const TrendIcon = trendConfig[resolvedTrend.direction].icon;
-              return <TrendIcon size={16} />;
-            })()}
-            <span>
-              {trendConfig[resolvedTrend.direction].label}{' '}
-              <span className="tabular-nums">
-                {Number(resolvedTrend.delta ?? 0) > 0 ? '+' : ''}{Number(resolvedTrend.delta ?? 0).toFixed(1)}
-              </span>{' '}
-              over 30 days
-            </span>
-          </m.div>
-        )}
-
-        {/* Category bars */}
-        <div className="w-full space-y-3">
-          {(Object.entries(displayCategories) as [keyof typeof displayCategories, number][])
-            .filter(([key]) => key in categoryLabels)
-            .map(([key, value], i) => (
-              <div
-                key={key}
-                className="flex items-center gap-3"
-              >
-                <span className="text-sm font-medium text-warm-700 w-24 shrink-0">
-                  {categoryLabels[key]}
-                </span>
-                <div className={cn('flex-1 h-2.5 rounded-full overflow-clip', getBarBgColor(value))}>
-                  <m.div
-                    className={cn('h-full rounded-full', getBarColor(value))}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(Math.max(value, 0), 100)}%` }}
-                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.1 + i * 0.04, ease: [0.25, 0.1, 0.25, 1] })}
-                  />
-                </div>
-                <span className="text-sm font-medium text-warm-900 tabular-nums w-8 text-right">
-                  {Math.round(value)}
-                </span>
-                {resolvedPercentiles?.[key] && (
-                  <span className="text-xs text-warm-400 tabular-nums w-16 text-right">
-                    {resolvedPercentiles[key].team}th %ile
+        {categoriesAreMidpointDefault ? (
+          <InsufficientData
+            compact
+            title="Category breakdown warming up"
+            description="Not enough team data to differentiate these yet — the composite above is still real."
+            unit="teammates"
+          />
+        ) : (
+          <div className="w-full space-y-3">
+            {(Object.entries(displayCategories) as [keyof typeof displayCategories, number][])
+              .filter(([key]) => key in categoryLabels)
+              .map(([key, value]) => (
+                <div key={key} className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 text-body-sm text-text-secondary">
+                    {categoryLabels[key]}
                   </span>
-                )}
-              </div>
-            )
-          )}
-        </div>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-sunken">
+                    <div
+                      className={cn('h-full rounded-full', categoryBarColor(value))}
+                      style={{ width: `${Math.min(Math.max(value, 0), 100)}%` }}
+                    />
+                  </div>
+                  <span
+                    className={cn(
+                      'w-8 shrink-0 text-right font-fw-mono text-body-sm tabular-nums',
+                      categoryValueColor(value),
+                    )}
+                  >
+                    {Math.round(value)}
+                  </span>
+                  {resolvedPercentiles?.[key] ? (
+                    <span className="w-16 shrink-0 text-right font-fw-mono text-caption tabular-nums text-text-tertiary">
+                      {resolvedPercentiles[key].team}th %ile
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+          </div>
+        )}
       </div>
-    </Card>
+    </InstrumentPanel>
   );
 }
 
-// Memoized export — prevents unnecessary re-animation of the SVG ring when
+// Memoized export — prevents unnecessary re-animation of the dial when
 // the parent dashboard re-renders but the rating data is unchanged.
 export const CompositeRatingCard = memo(CompositeRatingCardImpl);

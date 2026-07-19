@@ -167,6 +167,84 @@ describe('FocusAreasGrid · P2-18 unit integrity', () => {
  * real <button> that stacks its content as a block, and every content piece is
  * actually present in that one stacked card.
  * ========================================================================== */
+/**
+ * ============================================================================
+ * #974 — no two Focus Areas show identical recommendation text; a "yd from
+ * target" row never shows a nonsensical literal "0"; priority badges are
+ * derived from a stable per-render index (never a duplicate-key collision).
+ * ========================================================================== */
+describe('FocusAreasGrid · #974 recommendation + headline honesty', () => {
+  it('falls back to a band-specific recommendation when two areas share the identical sentence', () => {
+    render(
+      <FocusAreasGrid
+        focusAreas={[
+          {
+            area: 'Short 50-100',
+            strokesGained: -1.2,
+            value: 24,
+            unit: 'yd from target',
+            trend: 'declining',
+            recommendation: 'Work on distance control.',
+          },
+          {
+            area: 'Long 190-220',
+            strokesGained: -0.9,
+            value: 18,
+            unit: 'yd from target',
+            trend: 'declining',
+            recommendation: 'Work on distance control.',
+          },
+        ]}
+      />,
+    );
+
+    // The first card keeps the upstream sentence verbatim.
+    expect(screen.getByText('Work on distance control.')).toBeInTheDocument();
+    // The second card, sharing the identical sentence, must NOT render it a
+    // second time — it gets a band-specific fallback naming its own area.
+    expect(screen.queryAllByText('Work on distance control.')).toHaveLength(1);
+    expect(screen.getByText(/Long 190-220 shots/i)).toBeInTheDocument();
+  });
+
+  it('never renders a literal "0" headline for a yd-from-target row (says "--" instead)', () => {
+    render(
+      <FocusAreasGrid
+        focusAreas={[
+          {
+            area: 'Short 50-100',
+            strokesGained: -1.2,
+            value: 0,
+            unit: 'yd from target',
+            trend: 'declining',
+            recommendation: 'Tighten wedge distances.',
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+    expect(screen.getByText('--')).toBeInTheDocument();
+  });
+
+  it('gives every rendered card a unique key even when two areas share the same name', () => {
+    // Duplicate `area` strings used to collide on `key={area.area}`; assert
+    // both rows still render distinctly (index-qualified key) rather than
+    // React silently dropping/merging one.
+    render(
+      <FocusAreasGrid
+        focusAreas={[
+          { area: 'Putting', strokesGained: -0.5, trend: 'declining', recommendation: 'Rec A.' },
+          { area: 'Putting', strokesGained: -0.3, trend: 'stable', recommendation: 'Rec B.' },
+        ]}
+      />,
+    );
+
+    expect(screen.getAllByText('Putting')).toHaveLength(2);
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+});
+
 describe('FocusAreasGrid — interactive card layout (mobile collapse regression)', () => {
   function renderInteractive() {
     return render(

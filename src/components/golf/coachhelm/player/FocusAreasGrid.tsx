@@ -111,8 +111,13 @@ export function resolveDisplay(focusArea: FocusArea): FocusAreaDisplay {
 
   if (unit === 'yd from target') {
     const yards = Number(focusArea.value ?? Math.abs(focusArea.strokesGained * 10));
+    // #974 — a flagged focus area with a genuine "0 yd from target" headline
+    // is a contradiction (0 error would mean this band isn't a problem at
+    // all), so it's a data/rounding artifact, not a real reading. Say less
+    // rather than assert a nonsensical number.
+    const isPlausible = Number.isFinite(yards) && yards > 0;
     return {
-      text: Number.isFinite(yards) ? Math.round(yards).toString() : '--',
+      text: isPlausible ? Math.round(yards).toString() : '--',
       unitLabel: 'yd from target',
       color: 'text-amber-600',
       showStrokesBar: false,
@@ -145,14 +150,33 @@ export function resolveDisplay(focusArea: FocusArea): FocusAreaDisplay {
   };
 }
 
+// #974 — two different bands (e.g. "Short 50-100" and "Long 190-220") were
+// rendering the IDENTICAL generic recommendation sentence from the upstream
+// generator. Detect a recommendation that's a verbatim repeat of an earlier
+// card in the same grid and fall back to a band-specific line built from the
+// area's own name, rather than let a second card silently parrot the first.
+function dedupedRecommendation(
+  focusArea: FocusArea,
+  seenRecommendations: Set<string>,
+): string {
+  const raw = (focusArea.recommendation ?? '').trim();
+  if (!raw || seenRecommendations.has(raw)) {
+    return `Prioritize dedicated practice reps for your ${formatAreaName(focusArea.area).toLowerCase()} shots, this band is dragging strokes independent of any general tip above.`;
+  }
+  seenRecommendations.add(raw);
+  return raw;
+}
+
 function FocusAreaCardContent({
   focusArea,
   index,
   interactive,
+  recommendation,
 }: {
   focusArea: FocusArea;
   index: number;
   interactive: boolean;
+  recommendation: string;
 }) {
   const prefersReducedMotion = useReducedMotion();
   const trendConfig = getTrendConfig(focusArea.trend);
@@ -228,7 +252,7 @@ function FocusAreaCardContent({
 
       {/* Recommendation snippet */}
       <p className="text-xs text-warm-500 line-clamp-2 mb-2">
-        {focusArea.recommendation}
+        {recommendation}
       </p>
 
       {/* View details hint (only when interactive) */}
@@ -245,10 +269,12 @@ function FocusAreaCardContent({
 function FocusAreaCard({
   focusArea,
   index,
+  recommendation,
   onClick,
 }: {
   focusArea: FocusArea;
   index: number;
+  recommendation: string;
   onClick?: () => void;
 }) {
   const interactive = !!onClick;
@@ -278,7 +304,7 @@ function FocusAreaCard({
         onClick={onClick}
         className={sharedClassName}
       >
-        <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
+        <FocusAreaCardContent focusArea={focusArea} index={index} interactive recommendation={recommendation} />
       </button>
     );
   }
@@ -293,7 +319,7 @@ function FocusAreaCard({
   // details" hint rendered even on this non-interactive fallback card).
   return (
     <Link href="/golf/dashboard/coachhelm#focus-areas" className={sharedClassName}>
-      <FocusAreaCardContent focusArea={focusArea} index={index} interactive={interactive} />
+      <FocusAreaCardContent focusArea={focusArea} index={index} interactive={interactive} recommendation={recommendation} />
     </Link>
   );
 }
@@ -338,16 +364,30 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
         </div>
       </div>
 
-      {/* Grid of focus areas — 2-up at most so cards don't crush inside narrow columns */}
+      {/* Grid of focus areas — 2-up at most so cards don't crush inside narrow columns.
+          #974 — `seenRecommendations` is built ONCE per render, in array order, so
+          the FIRST card to use a given sentence keeps it verbatim and any LATER
+          card repeating it verbatim gets a band-specific fallback instead. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {focusAreas.map((area, index) => (
-          <FocusAreaCard
-            key={area.area}
-            focusArea={area}
-            index={index}
-            onClick={onAreaClick ? () => onAreaClick(area) : undefined}
-          />
-        ))}
+        {(() => {
+          const seenRecommendations = new Set<string>();
+          return focusAreas.map((area, index) => (
+            // #974 (folds in [22]) — `area.area` alone collided when the
+            // upstream generator emitted two rows for the same band name;
+            // duplicate React keys make reconciliation reuse the wrong DOM
+            // node across re-renders, which is exactly how a priority badge
+            // (derived from `index` at render time) can visibly repeat a
+            // number and skip another after the list changes. Index-qualify
+            // the key so every row is always unique.
+            <FocusAreaCard
+              key={`${area.area}-${index}`}
+              focusArea={area}
+              index={index}
+              recommendation={dedupedRecommendation(area, seenRecommendations)}
+              onClick={onAreaClick ? () => onAreaClick(area) : undefined}
+            />
+          ));
+        })()}
       </div>
 
       {/* Legend */}
