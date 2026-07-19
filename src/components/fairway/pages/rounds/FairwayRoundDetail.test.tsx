@@ -4,7 +4,7 @@
  * #133 (Bogey/Double+ color merge), and #134/#149 (least-informative hero stat)
  * ========================================================================== */
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 
 import { FairwayRoundDetail } from './FairwayRoundDetail';
 import type { RoundDetailRound, RoundHoleRow } from './FairwayRoundDetail';
@@ -193,5 +193,50 @@ describe('FairwayRoundDetail — #134/#149 hero stat picks the most informative 
     );
 
     expect(screen.getByText('pars')).toBeInTheDocument();
+  });
+});
+
+describe('FairwayRoundDetail — #130 scoring-distribution chart/table toggle label always matches the current view', () => {
+  it('reads "View as table" while the chart shows, and switches to an unambiguous ' +
+    '"View chart" (never "View instrument") once toggled to the table', () => {
+    const { container } = render(
+      <FairwayRoundDetail
+        round={makeRound()}
+        holes={makeHoles()}
+        aiRecap={null}
+        reviewStats={null}
+        playerName="Nick Rini"
+        isCoach={false}
+        viewerIsOwner
+      />,
+    );
+
+    // Scope every query to the scoring-distribution instrument specifically —
+    // the Scorecard section above it renders its OWN <table> elements, so an
+    // unscoped `getByRole('table')` would be ambiguous.
+    const panel = container.querySelector('[data-slot="scoring-distribution"]');
+    expect(panel).not.toBeNull();
+    const scoped = within(panel as HTMLElement);
+
+    const toggle = scoped.getByRole('button', { name: 'View as table' });
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    // The chart body (the legend list) is showing, not the table.
+    expect(scoped.queryByRole('table')).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    // The table is now showing — the toggle must name the CURRENT view's
+    // escape hatch unambiguously. The shared InstrumentTableToggle's stock
+    // "View instrument" copy must never appear here.
+    expect(scoped.getByRole('table')).toBeInTheDocument();
+    const backToggle = scoped.getByRole('button', { name: 'View chart' });
+    expect(backToggle).toBeInTheDocument();
+    expect(backToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(scoped.queryByText('View instrument')).not.toBeInTheDocument();
+
+    fireEvent.click(backToggle);
+    expect(scoped.getByRole('button', { name: 'View as table' })).toBeInTheDocument();
+    expect(scoped.queryByRole('table')).not.toBeInTheDocument();
   });
 });

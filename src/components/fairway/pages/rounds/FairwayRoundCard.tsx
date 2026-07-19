@@ -1,44 +1,34 @@
-'use client';
-
 /**
  * ============================================================================
- * Fairway · Rounds · FairwayRoundCard — ONE round in the library
+ * Fairway · Rounds · FairwayRoundCard — SHARED round-tile pure helpers
  * ----------------------------------------------------------------------------
- * The redesigned round tile (re-skin of the legacy RoundCardV2). Built from the
- * Fairway interactive `Surface` (matte cream — NEVER bg-white), the whole card
- * is a Link to the round detail. It carries:
+ * This file used to also export a `FairwayRoundCard` component (a card tile
+ * alternative to the ledger row). Audit finding (round-2 mustFix #4): that
+ * component was NEVER rendered anywhere — `FairwayRoundsLibrary` renders only
+ * `FairwayRoundRow` for its history list, so `FairwayRoundCard` was dead code.
+ * Worse, an earlier round of work "fixed" bug #139 (date off-by-one) inside
+ * that unreachable component's local `formatDate`, which gave false
+ * confidence that the date bug was resolved on a surface nothing ever
+ * mounted — `FairwayRoundRow` (the row that IS rendered) already had its own
+ * correct fix via the shared `@/lib/golf/date-only` helpers, entirely
+ * independent of this file's dead `formatDate`.
  *
- *   • the score (Numeric, tabular) + a color-graded score-to-par via StatusPill
- *     (accent under par · neutral E · AMBER over par — amber, NEVER red)
- *   • a type Chip, the date, course + city, a holes Badge
- *   • a best-of-period accent rail down the left edge
- *   • a hover/focus-reveal micro-stat row (Putts / FIR% / GIR% from real columns
- *     — FIR/GIR computed only when the possible-count > 0; an HONEST "No stats
- *     logged" line when every micro-stat is null)
- *   • (coach view only) a Fairway Avatar of the player who logged the round
- *
- * HONESTY: no fabricated zeros. FIR/GIR are omitted (not shown as 0%) when the
- * denominator is missing or zero; the micro-row falls back to a plain honest
- * "No stats logged" sentence when nothing real is loggable.
- *
- * ADDITIVE + GATED — rendered only inside the FairwayRoundsLibrary behind the
- * isRedesignEnabled() fork on the rounds route. Renders inside `.fairway-ds`.
+ * Deleted: the `FairwayRoundCard` component, its Props interface, its local
+ * `formatDate`, and the `MicroStat` sub-component — none reachable from any
+ * route. Kept: the three PURE helpers `FairwayRoundRow` genuinely imports
+ * from this file (`scoreToParTone`, `getRoundTypeLabel`, and the re-exported
+ * `formatToPar`), so nothing importing THIS file breaks. If a card-grid view
+ * is wanted again, build it against these helpers rather than resurrecting
+ * dead code — and wire it into `FairwayRoundsLibrary`'s render path so a fix
+ * here can never again ship unreachable.
  * ========================================================================== */
 
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { Surface } from '@/components/fairway/surfaces/surface';
-import { StatusPill } from '@/components/fairway/controls/status-pill';
-import { Badge, Chip } from '@/components/fairway/controls/badge';
-import { Avatar } from '@/components/fairway/controls/avatar';
 import { formatToPar } from '@/lib/golf/format-to-par';
-import { formatDateOnlyWeekdayShort, formatDateOnlyShort } from '@/lib/golf/date-only';
-import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 
-// Re-exported so FairwayRoundRow (the ledger-row alternative) and any other
-// rounds-list consumer keep importing the score-to-par formatter from here —
-// the shared implementation now lives in @/lib/golf/format-to-par so the
-// round hero, the card, and the ledger row all render the same Unicode minus.
+// Re-exported so FairwayRoundRow (the ledger row that actually renders) keeps
+// importing the score-to-par formatter from here — the shared implementation
+// now lives in @/lib/golf/format-to-par so the round hero, the row, and any
+// future card all render the same Unicode minus.
 export { formatToPar };
 
 /** Score-to-par tone: under par = accent, level = neutral, over par = amber. */
@@ -64,186 +54,4 @@ export function getRoundTypeLabel(type: string | null): string {
     default:
       return type ? type.replace(/_/g, ' ') : 'Round';
   }
-}
-
-// round_date is a DATE column ('YYYY-MM-DD'). `new Date(iso).toLocaleDateString()`
-// with no timeZone pin parses that as UTC midnight then reads it back in the
-// LOCAL timezone, printing the previous calendar day west of UTC (#916's
-// class of bug — FairwayRoundRow already routes through the shared
-// date-only helper for exactly this reason; this card fell out of sync with
-// it, so the SAME round could show a different date on the card vs the row).
-function formatDate(iso: string): string {
-  const weekday = formatDateOnlyWeekdayShort(iso);
-  const md = formatDateOnlyShort(iso);
-  return weekday === '—' || md === '—' ? '—' : `${weekday}, ${md}`;
-}
-
-export interface FairwayRoundCardProps {
-  round: RoundLibraryRound;
-  /** Marks the lowest score-to-par card in its period — gets the accent rail. */
-  isBestOfPeriod: boolean;
-  userRole: 'coach' | 'player';
-}
-
-/** One round in the library. Whole card links to the round detail. */
-export function FairwayRoundCard({ round, isBestOfPeriod, userRole }: FairwayRoundCardProps) {
-  const stp = round.score_to_par ?? 0;
-  const hasToPar = round.score_to_par !== null;
-  const tone = scoreToParTone(stp);
-  const holesPlayed = round.holes_played ?? 18;
-  const playerName = round.player
-    ? `${round.player.first_name || ''} ${round.player.last_name || ''}`.trim()
-    : '';
-
-  // Micro-stats — FIR / GIR are HONEST: computed only when the possible-count
-  // is present and > 0 (never a fabricated 0%).
-  const fir =
-    round.total_fairways !== null && round.total_fairways > 0 && round.total_fairways_hit !== null
-      ? Math.round((round.total_fairways_hit / round.total_fairways) * 100)
-      : null;
-  const gir =
-    round.total_gir_possible !== null &&
-    round.total_gir_possible > 0 &&
-    round.total_gir !== null
-      ? Math.round((round.total_gir / round.total_gir_possible) * 100)
-      : null;
-  const hasPutts = round.total_putts !== null;
-  const hasAnyMicroStat = hasPutts || fir !== null || gir !== null;
-
-  // A bare state code with no city ("Va") reads as a stray, unlabeled
-  // fragment — only render a location when there's an actual city to anchor
-  // it (course_state alone is dropped, not shown bare).
-  const city = round.course_city
-    ? [round.course_city, round.course_state].filter(Boolean).join(', ')
-    : null;
-
-  return (
-    <Link
-      href={`/golf/dashboard/rounds/${round.id}`}
-      className="group/card block rounded-card outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-    >
-      <Surface interactive padding="none" className="overflow-hidden">
-      {/* Best-of-period left rail accent */}
-      {isBestOfPeriod && (
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-0 left-0 w-[3px] rounded-l-card bg-accent-500"
-        />
-      )}
-
-      <div className="flex flex-col gap-2.5 px-4 py-3.5">
-        {/* Top row: type chip (+ best badge) · date */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Chip tone="neutral" size="sm" className="uppercase tracking-[0.06em]">
-              {getRoundTypeLabel(round.round_type)}
-            </Chip>
-            {isBestOfPeriod && (
-              <Badge tone="accent" size="sm" className="uppercase tracking-[0.06em]">
-                Best
-              </Badge>
-            )}
-          </div>
-          <span className="flex-shrink-0 font-fw-sans text-eyebrow font-medium tabular-nums text-text-tertiary">
-            {formatDate(round.round_date)}
-          </span>
-        </div>
-
-        {/* Hero score row: score + to-par pill · (coach) avatar */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            {round.total_score !== null ? (
-              <span
-                className={cn(
-                  'font-fw-display text-h1 font-medium leading-none tabular-nums tracking-[-0.01em]',
-                  tone === 'under' ? 'text-accent-700' : 'text-text-primary',
-                )}
-              >
-                {round.total_score}
-              </span>
-            ) : (
-              <span className="font-fw-display text-h1 font-medium leading-none text-text-tertiary">
-                —
-              </span>
-            )}
-            {hasToPar && (
-              <StatusPill
-                tone={tone === 'under' ? 'accent' : tone === 'over' ? 'warning' : 'neutral'}
-                size="sm"
-                dot={false}
-                className="font-fw-mono tabular-nums"
-              >
-                {formatToPar(stp)}
-              </StatusPill>
-            )}
-          </div>
-
-          {userRole === 'coach' && round.player && (
-            <Avatar
-              src={round.player.avatar_url}
-              name={playerName || undefined}
-              size="sm"
-              className="flex-shrink-0"
-            />
-          )}
-        </div>
-
-        {/* Course + city · holes badge */}
-        <div className="flex items-end justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-              {round.course_name ?? 'Unknown course'}
-            </p>
-            {city && (
-              <p className="truncate font-fw-sans text-caption text-text-tertiary">{city}</p>
-            )}
-          </div>
-          <Badge tone="neutral" size="sm" numeric className="flex-shrink-0">
-            {holesPlayed} {holesPlayed === 1 ? 'hole' : 'holes'}
-          </Badge>
-        </div>
-
-        {/* Hover/focus-reveal micro-stat row. Collapsed by default; expands on
-            card hover or keyboard focus. Honest "No stats logged" when empty. */}
-        <div
-          className={cn(
-            'grid grid-rows-[0fr] transition-[grid-template-rows,opacity] [transition-duration:220ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-            'opacity-0 group-hover/card:grid-rows-[1fr] group-hover/card:opacity-100',
-            'group-focus-visible/card:grid-rows-[1fr] group-focus-visible/card:opacity-100',
-            'motion-reduce:transition-none',
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border-subtle pt-2.5">
-              {hasAnyMicroStat ? (
-                <>
-                  {hasPutts && <MicroStat label="Putts" value={`${round.total_putts}`} />}
-                  {fir !== null && <MicroStat label="FIR" value={`${fir}%`} />}
-                  {gir !== null && <MicroStat label="GIR" value={`${gir}%`} />}
-                </>
-              ) : (
-                <span className="font-fw-sans text-eyebrow italic text-text-tertiary">
-                  No stats logged
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      </Surface>
-    </Link>
-  );
-}
-
-function MicroStat({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
-      <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
-        {value}
-      </span>
-      <span className="font-fw-sans text-eyebrow uppercase tracking-[0.06em] text-text-tertiary">
-        {label}
-      </span>
-    </span>
-  );
 }

@@ -10,7 +10,7 @@
  *
  *   • golf_rounds (select *)            → the score hero + the tertiary readouts
  *   • golf_holes (per-hole, honest)     → the matte scorecard spine + the
- *                                          scoring-distribution SegmentBar
+ *                                          ScoringDistribution segmented bar
  *   • golf_rounds.ai_recap (persisted)  → the editorial lede under the hero
  *   • golf_round_reviews.round_stats    → the rolling-score Pulse + "areas to
  *     (persisted RoundReviewContent)      work on" (real, never fabricated)
@@ -42,9 +42,10 @@
  * skeuomorphic gauges).
  * ========================================================================== */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 
 import {
   ViewHeader,
@@ -53,10 +54,17 @@ import {
   Readout,
   Surface,
   Inset,
-  SegmentBar,
   EmptyState,
   Button,
+  VIZ_COLOR,
+  VIZ_EASE,
+  VIZ_REVEAL_MS,
+  TABULAR_NUMS,
+  formatPercent,
+  chartAriaLabel,
+  type ChartTableData,
 } from '@/components/fairway';
+import { InstrumentTable } from '@/components/fairway/charts/InstrumentTable';
 import { classifyTrend, TREND_COLOR } from '@/components/fairway/charts/TrendChip';
 import { cn } from '@/lib/utils';
 import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
@@ -466,11 +474,11 @@ export function FairwayRoundDetail({
 
         {/* ════════════════ 3b · SCORING DISTRIBUTION (chunky matte bar) ════ */}
         {hasHoles ? (
-          <SegmentBar
+          <ScoringDistribution
             title="Scoring distribution"
             overline="By hole"
             takeaway="How the round broke down by score relative to par."
-            primary={heroSegmentIndex}
+            primaryIndex={heroSegmentIndex}
             parts={[
               { label: 'Eagles', value: distribution.eagle, tone: 'good' },
               { label: 'Birdies', value: distribution.birdie, tone: 'good' },
@@ -565,6 +573,224 @@ export function FairwayRoundDetail({
         </section>
       </div>
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * ScoringDistribution — the "By hole" chunky segmented bar, WITH an
+ * unambiguous chart/table toggle (bug #130).
+ * ----------------------------------------------------------------------------
+ * The shared `SegmentBar` (charts/SegmentBar.tsx) mounts a bezel-corner
+ * `InstrumentTableToggle` that hard-codes its own label from `show` (whether
+ * the TABLE is currently visible) with no override hook: `show ? 'View
+ * instrument' : 'View as table'`. "View instrument" is jargon-y and reads as
+ * a THIRD state to a user staring at a table, not "click here to go back to
+ * the chart" — the toggle never actually shows the wrong state, it's just
+ * unclear about what it means, and `SegmentBar`/`InstrumentTable` are shared
+ * chart primitives outside this package's ownership (no per-instance label
+ * prop to fix it upstream without touching every other SegmentBar/Ribbon/
+ * RadialGauge/Dial consumer). So the scoring-distribution instrument is
+ * ported locally here — same math, same bar/legend markup, same VIZ_* tokens
+ * — with its own toggle that says exactly what clicking it does: "View as
+ * table" while the chart shows, "View chart" while the table shows. Never
+ * "View instrument".
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+type ScoringDistributionTone = 'good' | 'caution' | 'neutral';
+
+interface ScoringDistributionPart {
+  label: string;
+  value: number;
+  /** Semantic tone (drives the default color). Default `neutral`. */
+  tone?: ScoringDistributionTone;
+  /** Explicit color override (must be a VIZ_* token / CSS var, not raw hex). */
+  color?: string;
+}
+
+const SCORING_TONE_COLOR: Record<ScoringDistributionTone, string> = {
+  good: VIZ_COLOR.accent,
+  caution: VIZ_COLOR.warning,
+  neutral: 'var(--fw-color-warm-300)',
+};
+
+function ScoringDistribution({
+  title,
+  overline,
+  takeaway,
+  parts,
+  primaryIndex,
+}: {
+  title: string;
+  overline?: string;
+  takeaway?: string;
+  parts: ReadonlyArray<ScoringDistributionPart>;
+  primaryIndex: number;
+}) {
+  const reduced = useReducedMotion() ?? false;
+  const [showTable, setShowTable] = useState(false);
+
+  const total = useMemo(
+    () => parts.reduce((s, p) => s + (Number.isFinite(p.value) ? Math.max(0, p.value) : 0), 0),
+    [parts],
+  );
+  const isAwaiting = parts.length === 0 || total === 0;
+
+  const resolved = useMemo(
+    () =>
+      parts.map((p) => {
+        const v = Number.isFinite(p.value) ? Math.max(0, p.value) : 0;
+        const pct = total > 0 ? v / total : 0;
+        const tone: ScoringDistributionTone = p.tone ?? 'neutral';
+        return { label: p.label, value: v, pct, color: p.color ?? SCORING_TONE_COLOR[tone] };
+      }),
+    [parts, total],
+  );
+
+  const primaryPart = resolved[primaryIndex] ?? resolved[0];
+
+  const tableData: ChartTableData = {
+    caption: title,
+    columns: [
+      { key: 'label', label: 'Outcome' },
+      { key: 'count', label: 'Count', numeric: true },
+      { key: 'pct', label: 'Share', numeric: true },
+    ],
+    rows: resolved.map((p) => ({
+      label: p.label,
+      count: String(p.value),
+      pct: formatPercent(p.pct),
+    })),
+  };
+  const hasTable = tableData.rows.length > 0 && !isAwaiting;
+
+  const ariaLabel = chartAriaLabel(
+    title,
+    takeaway ??
+      (primaryPart && !isAwaiting
+        ? `${formatPercent(primaryPart.pct)} ${primaryPart.label.toLowerCase()}, ${total} total`
+        : 'no outcomes yet'),
+  );
+
+  return (
+    <InstrumentPanel
+      depth="base"
+      eyebrow={overline}
+      header={title}
+      data-slot="scoring-distribution"
+      readout={
+        hasTable ? (
+          // eslint-disable-next-line helm/no-raw-button
+          <button
+            type="button"
+            onClick={() => setShowTable((v) => !v)}
+            aria-pressed={showTable}
+            data-slot="scoring-distribution-view-toggle"
+            className={cn(
+              'inline-flex h-7 min-w-[24px] items-center gap-1.5 rounded-fw-sm px-2.5',
+              'font-fw-sans text-caption font-medium text-text-secondary',
+              'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
+              'hover:bg-surface hover:text-text-primary',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+              'active:translate-y-[0.5px]',
+              showTable && 'bg-surface text-text-primary',
+            )}
+          >
+            {/* #130: the label always names the CURRENT view + the click
+                target unambiguously — never the shared toggle's "View
+                instrument" jargon. */}
+            {showTable ? 'View chart' : 'View as table'}
+          </button>
+        ) : undefined
+      }
+    >
+      {showTable && hasTable ? (
+        <InstrumentTable data={tableData} />
+      ) : isAwaiting ? (
+        <div role="img" aria-label={ariaLabel}>
+          <Readout
+            state="awaiting"
+            size="md"
+            samples={{ have: total, need: 1 }}
+            awaitingLabel="No outcomes yet"
+            label={title}
+          />
+        </div>
+      ) : (
+        <div role="img" aria-label={ariaLabel} className="flex flex-col gap-4">
+          {/* big called-out primary readout — the instrument display */}
+          {primaryPart ? (
+            <div className="flex items-baseline gap-2">
+              <Readout
+                value={primaryPart.pct}
+                format={{ style: 'percent', maximumFractionDigits: 0 }}
+                size="md"
+                align="start"
+              />
+              <span className="font-fw-sans text-body-sm font-medium text-text-secondary">
+                {primaryPart.label.toLowerCase()}
+                <span
+                  style={TABULAR_NUMS}
+                  className="ml-1.5 font-fw-mono text-caption text-text-tertiary"
+                >
+                  ({primaryPart.value} of {total})
+                </span>
+              </span>
+            </div>
+          ) : null}
+
+          {/* the chunky segmented bar */}
+          <div
+            className="flex w-full overflow-hidden rounded-fw-sm bg-surface-sunken"
+            style={{ height: 28 }}
+          >
+            {resolved.map((p, i) =>
+              p.pct > 0 ? (
+                <motion.div
+                  key={p.label}
+                  className="h-full first:rounded-l-fw-sm last:rounded-r-fw-sm"
+                  style={{ background: p.color }}
+                  initial={reduced ? false : { width: 0 }}
+                  animate={{ width: `${p.pct * 100}%` }}
+                  transition={
+                    reduced
+                      ? { duration: 0 }
+                      : { duration: VIZ_REVEAL_MS / 1000, ease: VIZ_EASE, delay: i * 0.08 }
+                  }
+                />
+              ) : null,
+            )}
+          </div>
+
+          {/* inline legend — swatch SHAPE + label + count + % (never color-only) */}
+          <ul className="flex flex-wrap gap-x-5 gap-y-1.5">
+            {resolved.map((p) => (
+              <li key={p.label} className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                  style={{ background: p.color }}
+                />
+                <span className="font-fw-sans text-caption font-medium text-text-secondary">
+                  {p.label}
+                </span>
+                <span
+                  style={TABULAR_NUMS}
+                  className="font-fw-mono text-caption font-semibold text-text-primary"
+                >
+                  {p.value}
+                </span>
+                <span
+                  style={TABULAR_NUMS}
+                  className="font-fw-mono text-caption text-text-tertiary"
+                >
+                  {formatPercent(p.pct)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </InstrumentPanel>
   );
 }
 

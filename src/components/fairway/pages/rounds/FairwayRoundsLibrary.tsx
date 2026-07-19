@@ -32,7 +32,7 @@
  * ── SECTIONS (mental-model order) ──────────────────────────────────────────
  *   1. (player) In-progress banner   2. Quiet toolbar (FilterPills + Month/Week
  *   Segmented)   3. History period groups (header + Sparkline + honest mini-
- *   stats; FairwayRoundCard grid)   4. Honest empties (zero → EmptyState;
+ *   stats; FairwayRoundRow ledger list)   4. Honest empties (zero → EmptyState;
  *   filter-zero → EmptyState variant="search").
  *
  * ADDITIVE + GATED — imported only behind the isRedesignEnabled() fork in

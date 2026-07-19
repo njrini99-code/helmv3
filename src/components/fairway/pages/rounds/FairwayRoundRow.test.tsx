@@ -18,7 +18,7 @@
  * alt/sr-only fallback — stays visible at every breakpoint, and the stat
  * line itself still renders every chip with the honest content it always did.
  * ========================================================================== */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 import { FairwayRoundRow } from './FairwayRoundRow';
@@ -100,5 +100,68 @@ describe('FairwayRoundRow — coach avatar block does not starve the pill-flow c
 
     expect(screen.queryByText('Alexandria Montgomery-Whitfield')).not.toBeInTheDocument();
     expect(screen.getByText('FIR 71%')).toBeInTheDocument();
+  });
+});
+
+/**
+ * ============================================================================
+ * #139 (round-2 mustFix #1) — FairwayRoundRow's date-only display, in a host
+ * timezone WEST of UTC.
+ * ----------------------------------------------------------------------------
+ * `round_date` is a bare 'YYYY-MM-DD' DATE column. `dateParts()` routes it
+ * through the shared `@/lib/golf/date-only` helpers (UTC-pinned), so a round
+ * dated the 1st of the month must display as the 1st — never the last day of
+ * the PREVIOUS month — regardless of the host's local timezone. This is the
+ * exact #916 bug class: `new Date('2026-02-01').toLocaleDateString()` with no
+ * `timeZone: 'UTC'` pin parses as UTC midnight, then a LOCAL read-back prints
+ * the previous calendar day in every timezone west of UTC (confirmed here
+ * against America/Los_Angeles, 8 hours behind).
+ * ========================================================================== */
+describe('FairwayRoundRow — #139 date-only display agrees across surfaces (non-UTC host TZ)', () => {
+  const ORIGINAL_TZ = process.env.TZ;
+
+  beforeEach(() => {
+    process.env.TZ = 'America/Los_Angeles';
+  });
+
+  afterEach(() => {
+    process.env.TZ = ORIGINAL_TZ;
+  });
+
+  it('shows Feb 1 (not Jan 31) for a round_date of 2026-02-01 under America/Los_Angeles', () => {
+    render(
+      <FairwayRoundRow
+        round={makeRound({ round_date: '2026-02-01' })}
+        isBestOfPeriod={false}
+        userRole="player"
+      />,
+    );
+
+    expect(screen.getByText('Feb 1')).toBeInTheDocument();
+    expect(screen.queryByText('Jan 31')).not.toBeInTheDocument();
+    expect(screen.getByText('Sun')).toBeInTheDocument();
+  });
+
+  it('agrees with the same UTC-pinned parse the Rounds Library month-group label and the ' +
+    "coach dashboard's Recent Rounds shortDate() both use for the identical round_date", () => {
+    // FairwayCoachDashboard.tsx's private `shortDate()` (not exported, and
+    // outside this package's owned files) formats a date-only value as:
+    //   new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+    // — i.e. the SAME UTC-pinned recipe as `@/lib/golf/date-only`'s
+    // `formatDateOnlyShort`. Mirrored here (not imported — cross-file, out of
+    // scope) to pin the cross-surface agreement this row must never regress.
+    const dashboardShortDate = (iso: string) =>
+      new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+    render(
+      <FairwayRoundRow
+        round={makeRound({ round_date: '2026-02-01' })}
+        isBestOfPeriod={false}
+        userRole="player"
+      />,
+    );
+
+    const rowDate = screen.getByText('Feb 1').textContent;
+    expect(rowDate).toBe(dashboardShortDate('2026-02-01'));
   });
 });

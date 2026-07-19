@@ -14,7 +14,7 @@
  * #129/#145: multiple in-progress rows with the same course/hole/type/round
  * — a real duplicate-draft scenario — must collapse to ONE resumable card.
  * ========================================================================== */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 import { FairwayRoundsLibrary } from './FairwayRoundsLibrary';
@@ -78,6 +78,37 @@ describe('FairwayRoundsLibrary — #139 date-only-safe grouping', () => {
     // read-back of either boundary date would silently roll it into the
     // adjacent month and change this label.
     expect(screen.getByText(/2 rounds recorded · Jan–Apr/)).toBeInTheDocument();
+  });
+
+  describe('round-2 mustFix #1 — month-group label agrees with the ledger row (non-UTC host TZ)', () => {
+    const ORIGINAL_TZ = process.env.TZ;
+
+    beforeEach(() => {
+      process.env.TZ = 'America/Los_Angeles';
+    });
+
+    afterEach(() => {
+      process.env.TZ = ORIGINAL_TZ;
+    });
+
+    it('groups + displays 2026-02-01 as February 1st, not Jan 31st, under America/Los_Angeles', () => {
+      render(
+        <FairwayRoundsLibrary
+          rounds={[makeRound({ id: 'r1', round_date: '2026-02-01' })]}
+          inProgressRounds={[]}
+          userRole="player"
+          stats={null}
+        />,
+      );
+
+      // The month-group header (getMonthKey) and the row inside it
+      // (FairwayRoundRow's dateParts) must agree on the SAME calendar month —
+      // both UTC-pinned, neither reading back via the host's local timezone.
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
+      expect(screen.queryByText('January 2026')).not.toBeInTheDocument();
+      expect(screen.getByText('Feb 1')).toBeInTheDocument();
+      expect(screen.queryByText('Jan 31')).not.toBeInTheDocument();
+    });
   });
 });
 
