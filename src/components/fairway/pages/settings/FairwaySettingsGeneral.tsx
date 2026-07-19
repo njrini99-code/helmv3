@@ -553,7 +553,7 @@ export function FairwaySettingsGeneral() {
 
   if (loadError && !profile) {
     return (
-      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
         <ViewHeader eyebrow="Settings" title="Settings" />
         <Surface elevation="border" padding="lg" className="mt-8 flex flex-col items-start gap-3">
           <h2 className="font-fw-display text-h2 text-text-primary">Couldn&rsquo;t load settings</h2>
@@ -575,7 +575,7 @@ export function FairwaySettingsGeneral() {
 
   if (!profile) {
     return (
-      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
         <ViewHeader eyebrow="Settings" title="Settings" />
         <div className="mt-8 space-y-6">
           {[1, 2, 3].map((i) => (
@@ -591,7 +591,7 @@ export function FairwaySettingsGeneral() {
 
   return (
     <UnsavedChangesGuard>
-    <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
       <ViewHeader
         eyebrow="Settings"
         title="Settings"
@@ -1074,7 +1074,13 @@ function OptionTile({
           : 'border-border-subtle hover:border-border-strong',
       )}
     >
-      <span className="flex flex-col">
+      {/* B14: the Button base recipe sets `whitespace-nowrap` (correct for a
+          single-line label) which is INHERITED by these descendant spans too —
+          at narrow widths a longer hint (e.g. Meters' "International metric
+          system · 137 m · 3 m putts") had nowhere to wrap and rendered its
+          would-be second line stacked onto the first baseline, overlapping the
+          title. `whitespace-normal` resets normal wrapping for this subtree. */}
+      <span className="flex flex-col whitespace-normal">
         <span className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</span>
         {hint ? <span className="font-fw-sans text-caption text-text-tertiary">{hint}</span> : null}
       </span>
@@ -1188,8 +1194,10 @@ function AppearancePanel() {
 
 /* ── Distance units ───────────────────────────────────────────────────────── */
 
-/** Restores the legacy yd/m display preference (localStorage-backed). */
-function DistanceUnitsPanel() {
+/** Restores the legacy yd/m display preference (localStorage-backed).
+ *  Exported for tests — B14: the Meters card's hint text must wrap, not
+ *  overlap the title. */
+export function DistanceUnitsPanel() {
   const { distancePref, setDistancePref } = useDistanceUnits();
   // P384: auto-save signal (this panel commits instantly, no Save button).
   const [savedAt, setSavedAt] = useState<number | null>(null);
