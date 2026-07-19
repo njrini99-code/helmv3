@@ -99,6 +99,7 @@ import type {
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { deriveCoachSignal } from './coach-signal';
+import { buildCoachAttentionCounts, splitActionItems } from './attention-queue';
 
 // Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
 // Scoring Trend chart). recharts' ResponsiveContainer has no real size to
@@ -280,9 +281,25 @@ export function FairwayCoachDashboard({
     setTimeout(() => setCopied(false), 2000);
   }, [team?.join_code]);
 
+  // ONE canonical "needs you" count (attention-queue.ts): actionable tasks +
+  // pending roster approvals, announcements excluded. The hero, the approvals
+  // banner and the Action Items panel all now speak from this same total
+  // instead of each telling a different story. Approvals come from the same
+  // pending join-requests already fetched for the banner (no extra query);
+  // getTeamJoinRequests() returns pending-only, but we filter defensively so a
+  // self-fetched fallback can't over-count.
+  const attention = useMemo(
+    () =>
+      buildCoachAttentionCounts(
+        enhancedData?.actionItems ?? [],
+        (joinRequests ?? []).filter((r) => r.status === 'pending').length,
+      ),
+    [enhancedData?.actionItems, joinRequests],
+  );
+
   const signal = useMemo(
-    () => deriveCoachSignal(enhancedData, stats.rosterSize),
-    [enhancedData, stats.rosterSize],
+    () => deriveCoachSignal(enhancedData, stats.rosterSize, attention),
+    [enhancedData, stats.rosterSize, attention],
   );
 
   const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
@@ -1125,8 +1142,77 @@ function formatRelativeDate(dateStr: string, now: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** One action row — reused by the actionable-task list and the announcements
+ *  strip below it. `now` is the client clock (null until mounted) so relative
+ *  dates stay hydration-safe. */
+function ActionItemRow({ item, now }: { item: ActionItem; now: Date | null }) {
+  const isUrgent = item.priority === 'high' || item.priority === 'urgent';
+  return (
+    <li key={item.id} className="min-w-0">
+      <Link
+        href={actionItemHref(item)}
+        className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+      >
+        {/* `overflow-hidden` is the hard backstop for the title's `truncate`
+            below — without it, a long single-line title can bleed past this
+            row's own rounded edge instead of ellipsizing at it (#957). */}
+        <Inset
+          padding="sm"
+          className="flex min-w-0 items-start gap-3 overflow-hidden transition-colors hover:bg-surface-hover"
+        >
+          <span className="mt-0.5 shrink-0">
+            {item.overdue ? (
+              <IconAlertCircle size={16} className="text-fw-danger" />
+            ) : item.type === 'announcement' ? (
+              <IconBell size={16} className="text-text-tertiary" />
+            ) : isUrgent ? (
+              <IconAlertCircle size={16} className="text-fw-warning" />
+            ) : (
+              <IconClipboardList size={16} className="text-text-tertiary" />
+            )}
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span
+              className={cn(
+                'truncate font-fw-sans text-body font-medium',
+                item.overdue ? 'text-fw-danger' : 'text-text-primary',
+              )}
+            >
+              {item.title}
+            </span>
+            <span className="flex flex-wrap items-center gap-2">
+              <span
+                className="font-fw-sans text-caption text-text-tertiary"
+                suppressHydrationWarning
+              >
+                {now ? formatRelativeDate(item.date, now) : ''}
+              </span>
+              {item.overdue ? (
+                <StatusPill tone="danger" dot={false} size="sm">
+                  Overdue
+                </StatusPill>
+              ) : isUrgent ? (
+                <StatusPill tone="warning" dot={false} size="sm">
+                  {item.priority === 'urgent' ? 'Urgent' : 'High'}
+                </StatusPill>
+              ) : null}
+            </span>
+          </span>
+        </Inset>
+      </Link>
+    </li>
+  );
+}
+
 /** Exported for a deterministic render test (W1 count-coherence audit) — the
- *  header count badge must always describe exactly what's rendered below it. */
+ *  header count badge must always describe exactly what's rendered below it.
+ *
+ *  Attention model (audit "five surfaces, one story"): this panel is the
+ *  ACTIONABLE backlog only — tasks and deadlines. Its header badge counts
+ *  exactly those, matching the hero's "needs you" total (which adds pending
+ *  approvals, surfaced in their own banner above). Announcements are NOT
+ *  actionable — they have no accept/resolve step — so they render as a clearly
+ *  separated, uncounted "Announcements" strip and never inflate the backlog. */
 export function ActionItemsPanel({ items }: { items: ActionItem[] }) {
   // Defer relative-date computation to the client to avoid a hydration mismatch.
   const [now, setNow] = useState<Date | null>(null);
@@ -1134,14 +1220,17 @@ export function ActionItemsPanel({ items }: { items: ActionItem[] }) {
     setNow(new Date());
   }, []);
 
+  const { actionable, announcements } = splitActionItems(items);
+  const isEmpty = actionable.length === 0 && announcements.length === 0;
+
   return (
     <section aria-label="Action items" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Action Items</h2>
-          {items.length > 0 ? (
+          {actionable.length > 0 ? (
             <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-              {items.length}
+              {actionable.length}
             </span>
           ) : null}
         </div>
@@ -1156,7 +1245,7 @@ export function ActionItemsPanel({ items }: { items: ActionItem[] }) {
       {/* Section hairline — more-green ruling. */}
       <div aria-hidden="true" className="h-px w-full bg-accent-300" />
 
-      {items.length === 0 ? (
+      {isEmpty ? (
         <Surface elevation="border" padding="md">
           <EmptyState
             variant="subtle"
@@ -1166,77 +1255,53 @@ export function ActionItemsPanel({ items }: { items: ActionItem[] }) {
           />
         </Surface>
       ) : (
-        <Surface elevation="border" padding="sm">
-          {/* W1 count-coherence audit fix: render the FULL `items` list, not a
-              slice(0, 6) — the header badge above (and the hero's "N items are
-              waiting on you" in coach-signal.ts, which sources the SAME
-              `enhancedData.actionItems` array) both state the true count, so a
-              truncated render disagreed with its own header on every team with
-              more than 6 open items. The upstream builder already bounds this
-              list (dashboard-data.ts caps tasks + announcements combined), so
-              rendering all of it is still a finite, calm digest — never an
-              unbounded list. */}
-          <ul className="flex flex-col gap-2">
-            {items.map((item) => {
-              const isUrgent = item.priority === 'high' || item.priority === 'urgent';
-              return (
-                <li key={item.id} className="min-w-0">
-                  <Link
-                    href={actionItemHref(item)}
-                    className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
-                  >
-                    {/* `overflow-hidden` is the hard backstop for the title's `truncate`
-                        below — without it, a long single-line title can bleed past this
-                        row's own rounded edge instead of ellipsizing at it (#957). */}
-                    <Inset
-                      padding="sm"
-                      className="flex min-w-0 items-start gap-3 overflow-hidden transition-colors hover:bg-surface-hover"
-                    >
-                      <span className="mt-0.5 shrink-0">
-                        {item.overdue ? (
-                          <IconAlertCircle size={16} className="text-fw-danger" />
-                        ) : item.type === 'announcement' ? (
-                          <IconBell size={16} className="text-text-tertiary" />
-                        ) : isUrgent ? (
-                          <IconAlertCircle size={16} className="text-fw-warning" />
-                        ) : (
-                          <IconClipboardList size={16} className="text-text-tertiary" />
-                        )}
-                      </span>
-                      <span className="flex min-w-0 flex-1 flex-col gap-1">
-                        <span
-                          className={cn(
-                            'truncate font-fw-sans text-body font-medium',
-                            item.overdue ? 'text-fw-danger' : 'text-text-primary',
-                          )}
-                        >
-                          {item.title}
-                        </span>
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span
-                            className="font-fw-sans text-caption text-text-tertiary"
-                            suppressHydrationWarning
-                          >
-                            {now ? formatRelativeDate(item.date, now) : ''}
-                          </span>
-                          {item.overdue ? (
-                            <StatusPill tone="danger" dot={false} size="sm">
-                              Overdue
-                            </StatusPill>
-                          ) : isUrgent ? (
-                            <StatusPill tone="warning" dot={false} size="sm">
-                              {item.priority === 'urgent' ? 'Urgent' : 'High'}
-                            </StatusPill>
-                          ) : null}
-                        </span>
-                      </span>
-                    </Inset>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </Surface>
+        <div className="flex flex-col gap-4">
+          {/* Actionable tasks / deadlines — the backlog the header badge counts.
+              Render the FULL list (W1 count-coherence fix: no slice(0, 6) that
+              disagreed with its own header). The upstream builder already caps
+              this list, so it stays a finite, calm digest. */}
+          {actionable.length > 0 ? (
+            <Surface elevation="border" padding="sm">
+              <ul className="flex flex-col gap-2">
+                {actionable.map((item) => (
+                  <ActionItemRow key={item.id} item={item} now={now} />
+                ))}
+              </ul>
+            </Surface>
+          ) : (
+            <Surface elevation="border" padding="md">
+              <EmptyState
+                variant="subtle"
+                icon={LucideCheckCircle}
+                title="No tasks or deadlines waiting"
+                description="You're clear on tasks. Team announcements are below."
+              />
+            </Surface>
+          )}
+
+          {/* Announcements — informational, NOT part of the "needs you" count.
+              Clearly labelled and separately counted so they never masquerade
+              as backlog the coach has to clear. */}
+          {announcements.length > 0 ? (
+            <section aria-label="Announcements" className="flex flex-col gap-2">
+              <div className="flex items-center gap-2.5">
+                <h3 className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                  Announcements
+                </h3>
+                <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                  {announcements.length}
+                </span>
+              </div>
+              <Surface elevation="border" padding="sm">
+                <ul className="flex flex-col gap-2">
+                  {announcements.map((item) => (
+                    <ActionItemRow key={item.id} item={item} now={now} />
+                  ))}
+                </ul>
+              </Surface>
+            </section>
+          ) : null}
+        </div>
       )}
     </section>
   );

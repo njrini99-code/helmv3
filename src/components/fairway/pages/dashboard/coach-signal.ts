@@ -18,6 +18,7 @@
  * ========================================================================== */
 
 import type { CoachDashboardPayload } from '@/app/golf/actions/dashboard-data';
+import { attentionBreakdown, type AttentionCounts } from './attention-queue';
 
 export interface CoachSignal {
   /** Drives the InsightCard priority tint + lead icon. */
@@ -37,30 +38,39 @@ export interface CoachSignal {
 
 /**
  * Build the calm CoachHelm signal headline. Greedy by importance:
- *   1. action items waiting (real count)         → high
- *   2. a measurable team mover this week          → medium
- *   3. rounds logged this week (activity proof)   → low
- *   4. today's events on the calendar             → info
- *   5. nothing real yet                           → insufficient
+ *   1. the canonical "needs you" queue (real count) → high
+ *   2. a measurable team mover this week            → medium
+ *   3. rounds logged this week (activity proof)     → low
+ *   4. today's events on the calendar               → info
+ *   5. nothing real yet                             → insufficient
+ *
+ * The `attention` arg is the ONE canonical count (see attention-queue.ts):
+ * actionable tasks + pending approvals, announcements excluded. When present
+ * the hero sources its number and its honest breakdown from it, so the "N need
+ * you" headline finally ties to the same total the approvals banner and the
+ * Action Items panel show. When omitted (legacy callers / unit tests), it
+ * falls back to the raw action-item count and drops the "approvals" claim it
+ * can no longer back.
  */
 export function deriveCoachSignal(
   enhanced: CoachDashboardPayload | null | undefined,
   rosterSize: number,
+  attention?: AttentionCounts,
 ): CoachSignal {
-  const actionCount = enhanced?.actionItems?.length ?? 0;
+  const actionCount = attention ? attention.total : enhanced?.actionItems?.length ?? 0;
   const roundsThisWeek = enhanced?.teamPulse?.roundsThisWeek ?? 0;
   const topMover = enhanced?.teamPulse?.topMover;
   const todayCount = enhanced?.todayEvents?.length ?? 0;
 
   if (actionCount > 0) {
+    const breakdown = attention ? attentionBreakdown(attention) : '';
     return {
       priority: 'high',
       overline: 'CoachHelm · This week',
-      title:
-        actionCount === 1
-          ? '1 item is waiting on you'
-          : `${actionCount} items are waiting on you`,
-      body: 'Tasks, approvals, and deadlines flagged from your roster this week.',
+      title: actionCount === 1 ? '1 item needs you' : `${actionCount} items need you`,
+      body: breakdown
+        ? `${breakdown} flagged from your roster this week.`
+        : 'Tasks and deadlines flagged from your roster this week.',
       insufficient: false,
     };
   }
