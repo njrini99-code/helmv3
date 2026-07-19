@@ -81,4 +81,28 @@ describe('GenomeRadar — the polar axis labels reserve real space instead of cl
     // The exact truncated forms the regression produced must never appear.
     expect(text).not.toContain('stamir');
   });
+
+  // The real callers of GenomeRadar span a range of heights — the mobile/
+  // teaser card (player-dashboard-parts.tsx height=220), the CoachHelm hero
+  // card (FairwayPlayerCoachHelm.tsx height=236), the game-profile hero
+  // (FairwayMyGameProfile.tsx height=300), and the detail-view hero
+  // (GenomeDetailView.tsx height=360). The margin/width fix must hold at the
+  // SMALL end of that range too, not just the larger 360x280 size already
+  // covered above — a fix that only reserves enough room at the big size
+  // would still clip on the compact teaser card.
+  it('reserves the same no-clipping label room at the smaller mobile/teaser viewport (~220px)', () => {
+    restoreRect = stubContainerSize(220, 220);
+    const { container } = render(<GenomeRadar data={AXES} height={220} />);
+
+    const angleAxisTicks = container.querySelectorAll('.recharts-polar-angle-axis-tick');
+    expect(angleAxisTicks.length).toBe(AXES.length);
+
+    const text = container.textContent ?? '';
+    for (const axis of AXES) {
+      for (const word of axis.label.split(' ')) {
+        expect(text).toContain(word);
+      }
+    }
+    expect(text).not.toContain('stamir');
+  });
 });

@@ -67,6 +67,28 @@ const QUICK_DAY_PATTERNS = [
 ];
 
 /**
+ * Cream-glass field recipe (#143) — every text-like field in this modal
+ * (Input/Textarea/Select from `@/components/ui`) otherwise falls back to
+ * its own legacy default: the shared `<Input>`/`<Select>` render a flat
+ * near-white `bg-cream-50/92` well with no blur, and the Notes `<Textarea>`
+ * previously overrode to `bg-surface` (the flat CARD-level cream token, not
+ * an input well) — both read as plain white against this Drawer's warm
+ * `surface-stone` chrome. This override swaps in the same warm SUNKEN well
+ * + hairline border + accent-600 focus ring that the canonical Fairway
+ * forms primitive uses for every field (`fieldControlBase`,
+ * src/components/fairway/forms/styles.ts) — reusing the exact override
+ * technique already established by FairwayNewRoundEntry's `fwInputCls`
+ * (twMerge, via `cn`, lets these win over the component's own bg/border/
+ * text defaults while leaving height/padding/radius untouched).
+ */
+const creamGlassFieldCls = cn(
+  'bg-surface-sunken border-border-subtle text-text-primary',
+  'placeholder:text-text-tertiary',
+  'hover:border-border-strong',
+  'focus:border-border-focus focus:ring-2 focus:ring-accent-600/30',
+);
+
+/**
  * Convert time string (HH:MM) to minutes for comparison
  */
 function timeToMinutes(time: string | null): number | null {
@@ -358,6 +380,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-course-code`}
+                className={creamGlassFieldCls}
                 value={formData.course_code}
                 onChange={(e) => setFormData(prev => ({ ...prev, course_code: e.target.value.toUpperCase() }))}
                 placeholder="BUAD 123"
@@ -370,6 +393,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-course-name`}
+                className={creamGlassFieldCls}
                 value={formData.course_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, course_name: e.target.value }))}
                 placeholder="Business Fundamentals"
@@ -427,6 +451,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-start-time`}
+                className={creamGlassFieldCls}
                 type="time"
                 value={formData.start_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
@@ -438,6 +463,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-end-time`}
+                className={creamGlassFieldCls}
                 type="time"
                 value={formData.end_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
@@ -453,6 +479,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-building`}
+                className={creamGlassFieldCls}
                 value={formData.building}
                 onChange={(e) => setFormData(prev => ({ ...prev, building: e.target.value }))}
                 placeholder="HAL"
@@ -464,6 +491,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-room`}
+                className={creamGlassFieldCls}
                 value={formData.room}
                 onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
                 placeholder="101"
@@ -479,6 +507,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-professor`}
+                className={creamGlassFieldCls}
                 value={formData.instructor}
                 onChange={(e) => setFormData(prev => ({ ...prev, instructor: e.target.value }))}
                 placeholder="Dr. Smith (optional)"
@@ -490,6 +519,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </label>
               <Input
                 id={`${uid}-credits`}
+                className={creamGlassFieldCls}
                 type="number"
                 min="0"
                 max="6"
@@ -513,6 +543,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             <div>
               <Select
                 label="Semester"
+                className={creamGlassFieldCls}
                 options={semesterOptions.map((option) => ({ value: option, label: option }))}
                 value={formData.semester}
                 onChange={(value) => setFormData(prev => ({ ...prev, semester: value }))}
@@ -549,7 +580,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               aria-label="Notes"
               autoCapitalize="sentences"
               autoCorrect="on"
-              className="w-full px-3 py-2 border border-border-subtle rounded-lg text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none"
+              className={cn('resize-none', creamGlassFieldCls)}
             />
           </div>
         </form>
