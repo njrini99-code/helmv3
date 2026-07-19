@@ -53,6 +53,55 @@ describe('ActionItemsPanel — count/render coherence', () => {
 
 /**
  * ============================================================================
+ * ActionItemsPanel — announcements are separated, never counted as backlog
+ * ----------------------------------------------------------------------------
+ * Attention model: the "Action Items" badge counts ACTIONABLE work only (tasks
+ * + deadlines). Announcements have no accept/resolve step, so they render in a
+ * clearly-labelled, separately-counted "Announcements" strip and must never
+ * inflate the actionable badge.
+ * ========================================================================== */
+describe('ActionItemsPanel — announcements are informational, not backlog', () => {
+  function mixed(): ActionItem[] {
+    return [
+      { id: 't1', type: 'task', title: 'Task one', date: '2026-07-01' },
+      { id: 't2', type: 'deadline', title: 'Deadline two', date: '2026-07-01', overdue: true },
+      { id: 'a1', type: 'announcement', title: 'Bus leaves at 6am', date: '2026-07-01' },
+    ];
+  }
+
+  it('badge counts only actionable items, not announcements', () => {
+    render(<ActionItemsPanel items={mixed()} />);
+    // 2 actionable (task + deadline), announcement excluded from the badge.
+    const heading = screen.getByRole('heading', { name: 'Action Items' });
+    const headerRow = heading.parentElement!;
+    expect(within(headerRow).getByText('2')).toBeInTheDocument();
+    expect(within(headerRow).queryByText('3')).not.toBeInTheDocument();
+  });
+
+  it('renders announcements under their own labelled, separately-counted strip', () => {
+    render(<ActionItemsPanel items={mixed()} />);
+    const strip = screen.getByRole('region', { name: 'Announcements' });
+    expect(within(strip).getByText('Bus leaves at 6am')).toBeInTheDocument();
+    expect(within(strip).getByText('1')).toBeInTheDocument();
+    // The announcement must NOT appear in the actionable list.
+    expect(within(strip).queryByText('Task one')).not.toBeInTheDocument();
+  });
+
+  it('an announcement-only payload does not show "All caught up" as if idle', () => {
+    render(
+      <ActionItemsPanel
+        items={[{ id: 'a1', type: 'announcement', title: 'Team photo Friday', date: '2026-07-01' }]}
+      />,
+    );
+    // No actionable backlog badge, honest "no tasks" note, announcement shown.
+    expect(screen.getByText('No tasks or deadlines waiting')).toBeInTheDocument();
+    expect(screen.getByText('Team photo Friday')).toBeInTheDocument();
+    expect(screen.queryByText('All caught up')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * ============================================================================
  * ActionItemsPanel — row sized by container, not by content length (audit W2)
  * ----------------------------------------------------------------------------
  * Regression guard for the "task-preview rows measure wider than the 390px
