@@ -122,6 +122,19 @@ export function FairwayCreateTaskModal({
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // #48 — the empty-title guard gets its OWN field-anchored error (rendered by
+  // FormField's inline error row, same styling as every other field error in
+  // the app), separate from `error` (the top InlineNotice for assignment-guard
+  // / server createTask failures). The title Input intentionally carries no
+  // native `required` attribute: Base UI's <Form> validates every registered
+  // Field against the underlying element's native constraint validity BEFORE
+  // calling our own onSubmit — with `required` present, an Enter-key submit
+  // on an empty title tripped that native gate first, so `handleSubmit` (and
+  // its "Give the task a title." message) never ran, and the coach saw either
+  // nothing or the browser's own unstyled validation bubble instead of the
+  // app's inline error. The plain JS check below (title.trim()) now owns this
+  // validation on every submit path — the button click AND the Enter key.
+  const [titleError, setTitleError] = useState<string | null>(null);
   // W4 audit fix — Escape / backdrop-click / the X used to discard whatever
   // the coach had typed with no warning. `confirmDiscardOpen` gates the close
   // path through a "Discard this task?" confirm whenever the form is dirty; a
@@ -138,6 +151,7 @@ export function FairwayCreateTaskModal({
     setAssignMode('all');
     setSelectedPlayers([]);
     setError(null);
+    setTitleError(null);
     setConfirmDiscardOpen(false);
   }
 
@@ -175,9 +189,13 @@ export function FairwayCreateTaskModal({
     if (loading) return;
 
     if (!title.trim()) {
-      setError('Give the task a title.');
+      // #48 — field-anchored inline error (FormField's own error row), not
+      // the top InlineNotice: the title field is where the coach's eye
+      // already is, so the message shows exactly where the problem is.
+      setTitleError('Give the task a title.');
       return;
     }
+    setTitleError(null);
     // P292 — single honest assignee guard: blocks an empty "specific" selection
     // AND an "all team members" create when the roster is empty (which would
     // assign the task to nobody), distinguishing a failed roster fetch from a
@@ -265,13 +283,26 @@ export function FairwayCreateTaskModal({
               </InlineNotice>
             ) : null}
 
-            <FormField label="Task title" required>
+            <FormField label="Task title" required error={titleError}>
               <Input
                 name="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  // Clear the moment the coach starts fixing it — the same
+                  // "error disappears on first correcting keystroke" contract
+                  // every other Fairway field error follows.
+                  if (titleError) setTitleError(null);
+                }}
                 placeholder="e.g. Complete shot-tracking drill"
-                required
+                // #48 — no native `required`: Base UI's <Form> validates every
+                // registered Field's underlying native constraint validity
+                // BEFORE invoking our own onSubmit, so a native-required,
+                // empty title short-circuited handleSubmit on an Enter-key
+                // submit — the coach saw the browser's own generic validation
+                // state instead of this field's app-styled error. The plain
+                // `!title.trim()` check in handleSubmit is the single source
+                // of truth for this validation now, on every submit path.
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />

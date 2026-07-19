@@ -100,6 +100,7 @@ import type {
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { deriveCoachSignal } from './coach-signal';
 import { buildCoachAttentionCounts, splitActionItems } from './attention-queue';
+import { parseDueDate } from '@/components/fairway/pages/tasks/FairwayTasks';
 
 // Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
 // Scoring Trend chart). recharts' ResponsiveContainer has no real size to
@@ -1127,7 +1128,15 @@ function actionItemHref(item: ActionItem): string {
 
 function formatRelativeDate(dateStr: string, now: Date): string {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  // P295-DASH — same local-safe date-only parse the Tasks page uses
+  // (parseDueDate, imported from FairwayTasks). A bare "YYYY-MM-DD" task
+  // due_date read via a raw `new Date(dateStr)` parses as UTC midnight, which
+  // in any negative-UTC-offset zone (all of the US) resolves to the PREVIOUS
+  // local calendar day — so a task due "today" showed "Yesterday" here in
+  // Action Items while the Tasks list/detail (already fixed) correctly said
+  // "Today" for the identical stored due_date. Routing this call site through
+  // the same helper keeps every surface honest about the same value.
+  const date = parseDueDate(dateStr);
   if (Number.isNaN(date.getTime())) return '';
   const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
   if (diffDays < 0) {
