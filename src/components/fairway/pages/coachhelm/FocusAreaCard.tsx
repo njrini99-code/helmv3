@@ -816,6 +816,24 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   <span>Due {timeframe}</span>
                 </p>
               ) : null}
+              {/* Bug #58: the placeholder used to be a dead end — a coach reading
+                  "No target set yet" had no way to act on it from the card
+                  itself, and had to hunt for the separate Edit button below (which
+                  is easy to miss once several cards repeat the identical
+                  placeholder). Give it its OWN inline call-to-action that opens the
+                  same edit flow (`onEdit`), gated the same way the Edit button
+                  already is — coach role + a wired handler — so this never renders
+                  a button that does nothing. */}
+              {showEdit ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<IconTarget size={15} />}
+                  onClick={() => onEdit!(focusArea)}
+                >
+                  Set a target
+                </Button>
+              ) : null}
             </Inset>
           )}
 

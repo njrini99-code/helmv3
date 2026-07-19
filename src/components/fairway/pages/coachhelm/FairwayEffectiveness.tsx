@@ -75,6 +75,7 @@ import {
   type PredictionPerformanceData,
   type PatternImpactData,
   type ConfidenceBucket,
+  type ImpactfulPattern,
 } from '@/app/golf/actions/coachhelm-analytics';
 // The ledger's shared trust-signal shape (status ladder + recent trend).
 import type { TrustSignal, TrustStatus } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
@@ -959,6 +960,36 @@ function PatternsResolvedReadout({ data }: { data?: PatternImpactData }) {
   );
 }
 
+/**
+ * Bug #61: `topPatterns` can hold MULTIPLE distinct patterns attributed to the
+ * SAME player (e.g. two separate swing-fault patterns both flagged for the
+ * same athlete). Labeling every tornado bar with the bare player name made
+ * the y-axis repeat an identical label across genuinely different bars, with
+ * nothing telling a coach which bar was which pattern. Only append a
+ * differentiator (a short pattern-description snippet, or a fallback ordinal)
+ * when a name actually collides within the plotted set — the common,
+ * no-collision case keeps the clean bare player name.
+ */
+export function patternImpactLabels(patterns: ImpactfulPattern[]): string[] {
+  const nameCounts = new Map<string, number>();
+  for (const p of patterns) {
+    nameCounts.set(p.playerName, (nameCounts.get(p.playerName) ?? 0) + 1);
+  }
+  const seenSoFar = new Map<string, number>();
+  return patterns.map((p) => {
+    if ((nameCounts.get(p.playerName) ?? 0) <= 1) return p.playerName;
+    const n = (seenSoFar.get(p.playerName) ?? 0) + 1;
+    seenSoFar.set(p.playerName, n);
+    const snippet = p.description?.trim();
+    const differentiator = snippet
+      ? snippet.length > 28
+        ? `${snippet.slice(0, 28)}…`
+        : snippet
+      : `pattern ${n}`;
+    return `${p.playerName} — ${differentiator}`;
+  });
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
  * BELOW THE COCKPIT — pattern impact as the diverging StrokesGainedTornado on a
  * MATTE Surface (dense, signed, legible). Honest empty/insufficient states.
@@ -990,9 +1021,12 @@ function PatternImpactDeck({
     );
   }
 
-  const cats: SGCategory[] = (data.topPatterns ?? [])
-    .slice(0, 8)
-    .map((p) => ({ label: p.playerName, value: p.strokesImpact }));
+  const topDeckPatterns = (data.topPatterns ?? []).slice(0, 8);
+  const deckLabels = patternImpactLabels(topDeckPatterns);
+  const cats: SGCategory[] = topDeckPatterns.map((p, i) => ({
+    label: deckLabels[i],
+    value: p.strokesImpact,
+  }));
 
   if (cats.length === 0) {
     return (
@@ -1714,8 +1748,10 @@ function PatternLifecycleFull({ data }: { data: PatternImpactData }) {
 
 /* Top impactful patterns — signed strokes-impact tornado. */
 function TopPatternsCard({ data }: { data: PatternImpactData }) {
-  const cats: SGCategory[] = (data.topPatterns ?? []).slice(0, 8).map((p) => ({
-    label: p.playerName,
+  const topCardPatterns = (data.topPatterns ?? []).slice(0, 8);
+  const cardLabels = patternImpactLabels(topCardPatterns);
+  const cats: SGCategory[] = topCardPatterns.map((p, i) => ({
+    label: cardLabels[i],
     value: p.strokesImpact,
   }));
 
