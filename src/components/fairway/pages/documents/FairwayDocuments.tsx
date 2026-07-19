@@ -39,6 +39,22 @@
  * ADDITIVE + GATED — imported only behind the isRedesignEnabled() fork in
  * documents/page.tsx (by DIRECT PATH). Renders inside a `.fairway-ds` scope on a
  * `bg-canvas` page.
+ *
+ * ── KNOWN CROSS-SURFACE GAP (#151, tracked — NOT fixable from this file) ────
+ *   documents/page.tsx correctly scopes players to `.eq('is_public', true)`
+ *   before this component ever sees the list, so an empty player view here is
+ *   the HONEST result whenever every team document is coach-only. But two
+ *   OTHER player-facing surfaces resolve the same `golf_documents` rows
+ *   WITHOUT that filter, so they can surface a coach-only doc's title to
+ *   players that this page correctly withholds:
+ *     - src/app/golf/actions/event-documents.ts → getEventDocuments()'s
+ *       `document:golf_documents(...)` embed has no is_public check.
+ *     - src/app/golf/actions/announcements.ts → the docDetails lookup off
+ *       `golf_announcement_documents` (`.from('golf_documents').select(...).in('id', docIds)`)
+ *       has no is_public check either.
+ *   Fix is a one-line `.eq('is_public', true)` (players only) added to each
+ *   query above — out of scope for this package (only DocumentPreview.tsx +
+ *   this file are in scope here); needs its own PR touching those two files.
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

@@ -115,4 +115,30 @@ describe('DocumentPreview (#w4-document-preview)', () => {
     // header is hand-rolled (hideTitle) rather than ModalShell's own.
     expect(screen.getByRole('dialog', { name: baseDoc.title })).toBeInTheDocument();
   });
+
+  // #10 — the W4 fix's root cause (an unembeddable `uploaded_by` FK on
+  // golf_document_versions breaking any `uploader:uploaded_by(...)` embed)
+  // was diagnosed specifically for Version History's query. This locks that
+  // Preview's OWN load path — a single `getPreviewUrl(documentId, version?)`
+  // call with no uploader embed at all — succeeds independently, so a fix
+  // (or a regression) confined to Version History's query can never silently
+  // take Preview down with it.
+  it('loads successfully via its own getPreviewUrl call, with no dependency on Version History at all (#10)', async () => {
+    getPreviewUrlMock.mockResolvedValue({
+      data: { url: 'https://signed.example/doc.pdf', mimeType: 'application/pdf' },
+      error: null,
+    });
+
+    render(<DocumentPreview golfDocument={baseDoc} open onOpenChange={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading preview/i)).not.toBeInTheDocument();
+    });
+    // Preview's call is scoped to (documentId, versionNumber) only — no
+    // uploader/version-history join is requested on this path.
+    expect(getPreviewUrlMock).toHaveBeenCalledWith(baseDoc.id, undefined);
+    expect(getPreviewUrlMock).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/preview unavailable/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no preview available/i)).not.toBeInTheDocument();
+  });
 });
