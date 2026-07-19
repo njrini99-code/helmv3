@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generateReviewContent, type HoleBreakdown } from '../round-review-system';
+import { generateReviewContent } from '../round-review-content';
+import type { HoleBreakdown } from '../round-review-system';
 
 /**
  * Regression coverage for #150 — one of the six AI round-review

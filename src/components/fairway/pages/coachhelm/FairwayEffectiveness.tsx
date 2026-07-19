@@ -1024,7 +1024,7 @@ function PatternImpactDeck({
   const topDeckPatterns = (data.topPatterns ?? []).slice(0, 8);
   const deckLabels = patternImpactLabels(topDeckPatterns);
   const cats: SGCategory[] = topDeckPatterns.map((p, i) => ({
-    label: deckLabels[i],
+    label: deckLabels[i] ?? p.playerName,
     value: p.strokesImpact,
   }));
 
@@ -1751,7 +1751,7 @@ function TopPatternsCard({ data }: { data: PatternImpactData }) {
   const topCardPatterns = (data.topPatterns ?? []).slice(0, 8);
   const cardLabels = patternImpactLabels(topCardPatterns);
   const cats: SGCategory[] = topCardPatterns.map((p, i) => ({
-    label: cardLabels[i],
+    label: cardLabels[i] ?? p.playerName,
     value: p.strokesImpact,
   }));
 

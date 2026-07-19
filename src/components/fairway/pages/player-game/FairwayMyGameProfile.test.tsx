@@ -13,7 +13,6 @@
  * This locks: the chart's own title is never a re-statement of the page H1 /
  * panel header (same firstName + "genome"/"shape" wording).
  * ========================================================================== */
-import * as React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { FairwayMyGameProfile } from './FairwayMyGameProfile';

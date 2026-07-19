@@ -44,6 +44,7 @@ describe('FocusAreaModal — Measurable target renders real inputs (#59)', () =>
             rounds_played: 5,
             driving_distance: 250,
             fairway_pct: 60,
+            gir_pct: 55,
             avg_score: 78,
             avg_putts: 30,
           },

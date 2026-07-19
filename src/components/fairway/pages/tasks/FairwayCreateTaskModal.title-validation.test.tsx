@@ -25,7 +25,6 @@
  * ========================================================================== */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
-import * as React from 'react';
 
 const createTaskMock = vi.fn(async (..._args: unknown[]) => ({
   success: true,
