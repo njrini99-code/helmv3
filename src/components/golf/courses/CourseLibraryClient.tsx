@@ -124,9 +124,11 @@ export function CourseLibraryClient({
             {courses.length} {courses.length === 1 ? 'course' : 'courses'} in the cloud library
           </p>
         </div>
-        <Button variant="primary" onClick={() => setCreateOpen(true)} className="self-start sm:self-auto">
-          <IconPlus size={16} aria-hidden /> Add course
-        </Button>
+        {canManageTeam && (
+          <Button variant="primary" onClick={() => setCreateOpen(true)} className="self-start sm:self-auto">
+            <IconPlus size={16} aria-hidden /> Add course
+          </Button>
+        )}
       </header>
 
       {/* ── Search ───────────────────────────────────────────── */}
@@ -179,7 +181,7 @@ export function CourseLibraryClient({
       </div>
 
       {courses.length === 0 ? (
-        <EmptyState onAdd={() => setCreateOpen(true)} />
+        <EmptyState onAdd={() => setCreateOpen(true)} canManage={canManageTeam} />
       ) : searching ? (
         <Section title={`${filtered.length} ${filtered.length === 1 ? 'result' : 'results'}`}>
           {filtered.length === 0 ? (
@@ -316,7 +318,7 @@ function Grid({ children }: { children: React.ReactNode }) {
   );
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState({ onAdd, canManage }: { onAdd: () => void; canManage: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-fw-lg border border-dashed border-border-subtle bg-surface px-6 py-16 text-center">
       <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600">
@@ -324,11 +326,15 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </span>
       <h3 className="font-fw-display text-title-3 font-semibold text-text-primary">No courses yet</h3>
       <p className="mt-1 max-w-sm text-body-sm text-text-secondary">
-        Add the courses your team plays. Each course can hold multiple tee sets with their own pars and yardages.
+        {canManage
+          ? 'Add the courses your team plays. Each course can hold multiple tee sets with their own pars and yardages.'
+          : 'Your coach hasn’t added any courses yet.'}
       </p>
-      <Button variant="primary" onClick={onAdd} className="mt-5">
-        <IconPlus size={16} aria-hidden /> Add your first course
-      </Button>
+      {canManage && (
+        <Button variant="primary" onClick={onAdd} className="mt-5">
+          <IconPlus size={16} aria-hidden /> Add your first course
+        </Button>
+      )}
     </div>
   );
 }

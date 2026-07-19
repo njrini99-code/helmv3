@@ -238,8 +238,11 @@ export function CourseDetailDrawer({
   // #913 part 2 — a course with no human creator shipped with the shared
   // library; only a super admin may edit or remove it. Team/user-contributed
   // courses (created_by_user_id set) keep the existing open-contribution model.
+  // Course-scoping player gate: every branch requires the coach role first —
+  // a player session must never see edit/upload/remove affordances, library
+  // course or not.
   const isLibraryOwned = course ? course.created_by_user_id == null : false;
-  const canEditCourse = !isLibraryOwned || isSuperAdmin;
+  const canEditCourse = canManageTeam && (!isLibraryOwned || isSuperAdmin);
 
   return (
     <>
@@ -425,7 +428,7 @@ export function CourseDetailDrawer({
                   <h3 className="font-fw-sans text-body font-semibold text-text-primary">
                     Tee sets {tees.length > 0 && <span className="text-text-tertiary">· {tees.length}</span>}
                   </h3>
-                  {course && (
+                  {course && canManageTeam && (
                     <Button variant="ghost" size="sm" onClick={() => setTeeForm({ open: true, mode: 'create' })}>
                       <IconPlus size={14} aria-hidden /> Add tee
                     </Button>
@@ -451,6 +454,7 @@ export function CourseDetailDrawer({
                           tee={tee}
                           onEdit={() => handleEditTee(tee.id)}
                           canManageTeam={canManageTeam && isSaved}
+                          canEdit={canManageTeam}
                           canDelete={canManageTeam}
                           isDefault={defaultTeeId === tee.id}
                           settingDefault={defaultTeePending === tee.id}
@@ -556,11 +560,13 @@ export function CourseDetailDrawer({
 }
 
 function TeeRow({
-  tee, onEdit, canManageTeam = false, canDelete = false, isDefault = false, settingDefault = false, onSetDefault, onDelete,
+  tee, onEdit, canManageTeam = false, canEdit = false, canDelete = false, isDefault = false, settingDefault = false, onSetDefault, onDelete,
 }: {
   tee: GolfCourseTee;
   onEdit: () => void;
   canManageTeam?: boolean;
+  /** Coach-only — hides the tee-set edit affordance from player sessions. */
+  canEdit?: boolean;
   canDelete?: boolean;
   isDefault?: boolean;
   settingDefault?: boolean;
@@ -635,9 +641,11 @@ function TeeRow({
             {isDefault ? 'Default' : 'Set default'}
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit ${tee.tee_name}`}>
-          <IconPencil size={14} aria-hidden /> Edit
-        </Button>
+        {canEdit && (
+          <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit ${tee.tee_name}`}>
+            <IconPencil size={14} aria-hidden /> Edit
+          </Button>
+        )}
         {canDelete && onDelete && (
           <Button
             variant="danger"
