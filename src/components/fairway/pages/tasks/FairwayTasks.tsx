@@ -1130,7 +1130,7 @@ function FairwayTaskCard({
           }
         >
           <ModalShell.Footer>
-            <Button variant="secondary" onClick={() => setPendingDelete(false)} disabled={deleting}>
+            <Button variant="ghost" onClick={() => setPendingDelete(false)} disabled={deleting}>
               Cancel
             </Button>
             <Button variant="danger" busy={deleting} onClick={handleDelete}>

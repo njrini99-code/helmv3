@@ -114,7 +114,7 @@ export function FairwayEditShotModal({
               This action cannot be undone. Shot numbers will be resequenced.
             </InlineNotice>
             <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })} disabled={editSaving}>
+              <Button variant="ghost" className="flex-1" onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })} disabled={editSaving}>
                 Cancel
               </Button>
               <Button variant="danger" className="flex-1" onClick={onDelete} disabled={editSaving} busy={editSaving}>
