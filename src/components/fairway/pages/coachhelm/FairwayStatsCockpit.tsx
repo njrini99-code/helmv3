@@ -45,7 +45,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, Printer, Sparkles, ArrowRight, RotateCw, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -676,22 +676,42 @@ export function FairwayStatsCockpit({
   // so refresh / browser-back / deep-link all restore (and share) the user's
   // place instead of always snapping back to Scoring. Falls back to the default
   // tab for a missing or unknown param.
-  const router = useRouter();
+  //
+  // Bug (audit W4): this used to derive `activeTab` straight from
+  // `useSearchParams()` and switch tabs via `router.replace(...)`. BOTH cockpit
+  // consumers sit behind a heavy async Server Component (session lookup +
+  // Supabase reads on /roster/[id], `dynamic = 'force-dynamic'` on /stats) with
+  // its own route-level `loading.tsx`. The App Router has no shallow-routing
+  // equivalent — ANY `router.replace()` (even search-param-only) re-renders
+  // that Server Component, so every tab click paused behind the route's
+  // Suspense fallback: the previous tab stayed on screen while the navigation
+  // was in flight (Approach "silently keeps showing Driving"), the heaviest
+  // tab's longer round trip left the generic skeleton showing well after the
+  // click (Analysis's "stuck ghost/skeleton"), and a slow mobile connection
+  // could stall or drop the navigation entirely (Driving "renders blank").
+  // None of this data is server-owned — the cockpit fetches everything itself
+  // via `loadAll` — so the active tab has no business gating on a navigation.
+  // Fix: make it local state (instant, synchronous) and mirror it to the URL
+  // with `history.replaceState`, the same "shareable but no round-trip"
+  // pattern already used by FairwayTeamHub / the CRM admin page.
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get(TAB_PARAM);
-  const activeTab = isStatsTab(tabParam) ? tabParam : DEFAULT_STATS_TAB;
+  const [activeTab, setActiveTab] = useState<(typeof STATS_TABS)[number]['id']>(() => {
+    const initial = searchParams.get(TAB_PARAM);
+    return isStatsTab(initial) ? initial : DEFAULT_STATS_TAB;
+  });
   const handleTabChange = useCallback(
     (value: string) => {
       if (!isStatsTab(value)) return;
+      setActiveTab(value);
+      if (typeof window === 'undefined') return;
       const params = new URLSearchParams(searchParams.toString());
       if (value === DEFAULT_STATS_TAB) params.delete(TAB_PARAM);
       else params.set(TAB_PARAM, value);
       const query = params.toString();
-      // shallow replace (no scroll, no history spam) keeps the URL shareable.
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      window.history.replaceState(null, '', query ? `${pathname}?${query}` : pathname);
     },
-    [router, pathname, searchParams],
+    [pathname, searchParams],
   );
 
   const loadAll = useCallback(async (id: string) => {

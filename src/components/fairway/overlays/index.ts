@@ -23,6 +23,9 @@ import './fairway-overlays.css';
 export { ModalShell } from './ModalShell';
 export type { ModalShellProps, ModalShellSize } from './ModalShell';
 
+export { DiscardChangesModal } from './DiscardChangesModal';
+export type { DiscardChangesModalProps } from './DiscardChangesModal';
+
 export { Sheet } from './Sheet';
 export type { SheetProps, SheetSide } from './Sheet';
 

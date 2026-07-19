@@ -398,6 +398,8 @@ export {
   ModalShell,
   type ModalShellProps,
   type ModalShellSize,
+  DiscardChangesModal,
+  type DiscardChangesModalProps,
   Sheet,
   type SheetProps,
   type SheetSide,

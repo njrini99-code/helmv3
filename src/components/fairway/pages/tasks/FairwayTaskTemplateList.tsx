@@ -392,7 +392,7 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
         description="This can't be undone. Tasks already created from it are unaffected."
       >
         <ModalShell.Footer>
-          <Button variant="secondary" onClick={() => setPendingDelete(null)} disabled={deleting}>
+          <Button variant="ghost" onClick={() => setPendingDelete(null)} disabled={deleting}>
             Cancel
           </Button>
           <Button variant="danger" busy={deleting} onClick={confirmDelete}>

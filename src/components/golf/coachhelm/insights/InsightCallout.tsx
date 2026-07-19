@@ -5,12 +5,12 @@
  * InsightCallout — shared primary-tinted callout for CoachHelm insight surfaces
  * ----------------------------------------------------------------------------
  * Consolidates the previously separate, near-identical "recommendation" boxes
- * in DiagnosisSheet (ChainRow tone="accent"), DiagnosisPanel ("Practice
- * focus"), and RoundIntelligence ("Take to the range") into one treatment: a
- * caption label over body content, tinted with the brand-primary wash. The bg
- * wash + label already carry the "this is the recommendation" signal on their
- * own — no left-border stripe needed. Uses `primary-*` (the canonical brand
- * green), not the Fairway-opt-in `accent-*` family — this component renders
+ * in DiagnosisPanel ("Practice focus") and RoundIntelligence ("Take to the
+ * range") into one treatment: a caption label over body content, tinted with
+ * the brand-primary wash. The bg wash + label already carry the "this is the
+ * recommendation" signal on their own — no left-border stripe needed. Uses
+ * `primary-*` (the canonical brand green), not the Fairway-opt-in `accent-*`
+ * family — this component renders
  * inside the main CoachHelm surface, not a Fairway-scoped shell.
  * ========================================================================== */
 

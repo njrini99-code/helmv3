@@ -116,6 +116,37 @@ async function verifyTeamAccess(
   return (await resolveTeamRole(supabase, userId, teamId)) !== 'none';
 }
 
+/**
+ * Resolve display names/emails for a set of `uploaded_by` user ids.
+ *
+ * `golf_document_versions.uploaded_by` has no foreign key at all (confirmed
+ * against the baseline schema), so a PostgREST embed like
+ * `uploader:uploaded_by(full_name, email)` can never resolve a relationship
+ * and always throws — which is why version history unconditionally rendered
+ * its error state. Resolve it with a follow-up query instead; documents can
+ * only be uploaded by a coach, so `golf_coaches.user_id` is the right key.
+ * Unknown/removed uploaders degrade to no entry in the map rather than
+ * failing the whole load.
+ */
+async function resolveUploaders(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userIds: Array<string | null | undefined>,
+): Promise<Map<string, { full_name: string | null; email: string | null }>> {
+  const ids = Array.from(new Set(userIds.filter((id): id is string => Boolean(id))));
+  if (ids.length === 0) return new Map();
+
+  const { data } = await supabase
+    .from('golf_coaches')
+    .select('user_id, full_name, email')
+    .in('user_id', ids);
+
+  const map = new Map<string, { full_name: string | null; email: string | null }>();
+  for (const row of (data as { user_id: string; full_name: string | null; email: string | null }[] | null) || []) {
+    map.set(row.user_id, { full_name: row.full_name, email: row.email });
+  }
+  return map;
+}
+
 // ============================================
 // DOCUMENT CRUD OPERATIONS
 // ============================================
@@ -670,13 +701,10 @@ async function uploadNewVersionImpl(
         change_notes: changeNotes || null,
         uploaded_by: user.id,
       })
-      .select(`
-        *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        )
-      `)
+      // '*' only — see resolveUploaders() above for why an `uploader:uploaded_by(...)`
+      // embed on this table always throws (uploaded_by has no FK), and the
+      // caller never reads .uploader off the returned version anyway.
+      .select('*')
       .single();
 
     if (versionError) throw versionError;
@@ -749,13 +777,7 @@ async function getDocumentVersionsImpl(documentId: string): Promise<{ data: Docu
 
     const { data: rawData, error } = await supabase
       .from('golf_document_versions' as any)
-      .select(`
-        *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        )
-      `)
+      .select('*')
       .eq('document_id', documentId)
       .order('version_number', { ascending: false });
 
@@ -764,14 +786,20 @@ async function getDocumentVersionsImpl(documentId: string): Promise<{ data: Docu
     // Cast to proper type
     const versionsData = rawData as unknown as DocumentVersionRow[] | null;
 
-    // Add file_url to each version
+    const uploaderMap = await resolveUploaders(supabase, (versionsData || []).map((v) => v.uploaded_by));
+
+    // Add file_url + resolved uploader to each version
     const versionsWithUrls = (versionsData || []).map(version => {
       const { data: urlData } = supabase.storage
         .from('documents')
         .getPublicUrl(version.storage_path);
+      const resolved = version.uploaded_by ? uploaderMap.get(version.uploaded_by) : undefined;
       return {
         ...version,
         file_url: urlData.publicUrl,
+        uploader: resolved
+          ? { id: version.uploaded_by!, full_name: resolved.full_name || '' }
+          : undefined,
       };
     });
 
@@ -981,7 +1009,7 @@ export async function compareVersions(
 async function getPreviewUrlImpl(
   documentId: string,
   versionNumber?: number
-): Promise<{ data: { url: string; mimeType: string } | null; error: string | null }> {
+): Promise<{ data: { url: string; mimeType: string } | null; error: string | null; noContent?: boolean }> {
   try {
     const supabase = await createClient();
 
@@ -1024,16 +1052,25 @@ async function getPreviewUrlImpl(
       // Get latest version's storage_path — `documents` bucket is private,
       // so we always issue a short-lived signed URL instead of returning the
       // stored file_url (which was a public URL pre-LIVE-29).
+      // maybeSingle() (not single()) — zero rows is an expected, non-error
+      // outcome for documents inserted without a version row (seed/legacy
+      // data, or a version-insert that silently failed at upload; see
+      // createGolfDocument), NOT a query failure worth logging as one.
       const { data: latestVersion, error: versionLookupError } = await supabase
         .from('golf_document_versions' as any)
         .select('storage_path, mime_type')
         .eq('document_id', documentId)
         .order('version_number', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (versionLookupError || !latestVersion) {
-        throw versionLookupError ?? new Error('No version found for document');
+      if (versionLookupError) throw versionLookupError;
+
+      if (!latestVersion) {
+        // Genuinely nothing to preview — not a technical failure. Let the
+        // caller render an honest empty state instead of a scary generic
+        // "Preview unavailable" error.
+        return { data: null, error: null, noContent: true };
       }
       const version = latestVersion as unknown as Pick<DocumentVersionRow, 'storage_path' | 'mime_type'>;
 
@@ -1069,7 +1106,7 @@ const observedGetPreviewUrl = withAdminObserved(
 export async function getPreviewUrl(
   documentId: string,
   versionNumber?: number
-): Promise<{ data: { url: string; mimeType: string } | null; error: string | null }> {
+): Promise<{ data: { url: string; mimeType: string } | null; error: string | null; noContent?: boolean }> {
   return observedGetPreviewUrl(documentId, versionNumber);
 }
 

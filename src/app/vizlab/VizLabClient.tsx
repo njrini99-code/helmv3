@@ -2,15 +2,13 @@
 
 /**
  * Visual-test lab (dev only) — renders the new CoachHelm viz with real DUG
- * sample data so the summary → detail drill-through can be clicked + screenshot
- * tested without an authenticated dashboard session. Not shipped to users.
+ * sample data so it can be screenshot tested without an authenticated
+ * dashboard session. Not shipped to users.
  */
 
-import * as React from 'react';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { DiagnosisPanel } from '@/components/golf/coachhelm/insights/DiagnosisPanel';
-import { DiagnosisSheet } from '@/components/golf/coachhelm/insights/DiagnosisSheet';
 import { StrokesGainedTornado } from '@/components/fairway/charts/StrokesGainedTornado';
 import {
   FairwayTrendBrain,
@@ -223,7 +221,6 @@ interface DemoInsight {
   confidence: number;
   strokesImpact: number;
   trust: DiagnosisTrust;
-  sg?: SGCategory[];
 }
 
 const INSIGHTS: DemoInsight[] = [
@@ -234,7 +231,6 @@ const INSIGHTS: DemoInsight[] = [
     confidence: 0.58,
     strokesImpact: 0.8,
     trust: 'new_hypothesis',
-    sg: SG,
     diagnosis: {
       symptom: 'You 3-putt from outside 15 feet more than twice as often as Tour.',
       root_cause:
@@ -275,9 +271,6 @@ const INSIGHTS: DemoInsight[] = [
 ];
 
 export function VizLabClient() {
-  const [openId, setOpenId] = React.useState<string | null>(null);
-  const active = INSIGHTS.find((i) => i.id === openId) ?? null;
-
   return (
     <div className={fairwayScope('min-h-[100dvh] bg-canvas px-4 py-12 sm:px-8')}>
       <div className="mx-auto max-w-3xl space-y-10">
@@ -286,11 +279,10 @@ export function VizLabClient() {
             Viz lab · dev only
           </p>
           <h1 className="font-fw-display text-h1 font-semibold text-text-primary">
-            Root-cause insights — summary → detail
+            Root-cause insights
           </h1>
           <p className="text-body text-text-secondary">
-            Each card is the new root-cause reasoning spine. Tap “See full breakdown” to open the
-            detail screen.
+            Each card is the root-cause reasoning spine as it renders in the real Signals UI.
           </p>
         </header>
 
@@ -303,8 +295,6 @@ export function VizLabClient() {
                 confidence={insight.confidence}
                 strokesImpact={insight.strokesImpact}
                 trust={insight.trust}
-                maxDrivers={2}
-                onSeeEvidence={() => setOpenId(insight.id)}
               />
             </InstrumentPanel>
           ))}
@@ -379,19 +369,6 @@ export function VizLabClient() {
           />
         </section>
       </div>
-
-      {active ? (
-        <DiagnosisSheet
-          open={openId !== null}
-          onOpenChange={(o) => !o && setOpenId(null)}
-          title={active.title}
-          category={active.category}
-          diagnosis={active.diagnosis}
-          confidence={active.confidence}
-          strokesImpact={active.strokesImpact}
-          sg={active.sg}
-        />
-      ) : null}
     </div>
   );
 }

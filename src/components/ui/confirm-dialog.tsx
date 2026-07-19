@@ -52,18 +52,25 @@ export function ConfirmDialog({
     danger: {
       icon: 'bg-fw-danger-bg text-fw-danger',
       button: 'bg-fw-danger hover:bg-fw-danger/90 text-text-on-accent',
+      // Destructive confirm: Cancel must read QUIET so the eye doesn't land on
+      // the safe action first — a bordered/shadowed `secondary` Cancel next to
+      // this solid-red destructive fill reversed the intended emphasis (W4
+      // destructive-emphasis audit).
+      cancelVariant: 'ghost' as const,
     },
     warning: {
       // Canonical Fairway amber tokens (fw-warning) — tinted tile + solid fill,
       // mirroring the danger recipe. No raw warning hex.
       icon: 'bg-fw-warning-bg text-fw-warning',
       button: 'bg-fw-warning hover:bg-fw-warning/90 text-text-on-accent',
+      cancelVariant: 'secondary' as const,
     },
     default: {
       icon: 'bg-surface-sunken text-text-secondary',
       // Brand light green (#16A34A = accent-500), matching the Fairway primary
       // button. Intentional brand decision — do NOT re-darken to accent-700.
       button: 'bg-accent-500 hover:bg-accent-600 text-text-on-accent',
+      cancelVariant: 'secondary' as const,
     },
   };
 
@@ -91,8 +98,22 @@ export function ConfirmDialog({
           role="dialog"
           aria-modal="true"
           aria-label={title}
-          className="w-full max-w-md px-3 pb-[max(12px,env(safe-area-inset-bottom))] space-y-2 animate-slide-up"
+          // flex-col-reverse: Cancel is the FIRST DOM/tabbable child (so
+          // useFocusTrap's auto-focus-first-element lands on the safe action,
+          // never the destructive one) while still rendering LAST/bottom —
+          // preserving the intended iOS UIAlertController visual order
+          // (destructive sheet on top, Cancel card below).
+          className="flex w-full max-w-md flex-col-reverse gap-2 px-3 pb-[max(12px,env(safe-area-inset-bottom))] animate-slide-up"
         >
+          {/* Cancel as separate card — DOM-first for focus, visually last. */}
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="w-full rounded-2xl bg-surface/95 px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-text-primary shadow-fw-modal backdrop-blur-xl transition-colors active:bg-surface-sunken disabled:opacity-50"
+          >
+            {cancelLabel}
+          </button>
           {/* Sheet body: title + message + destructive action */}
           <div className="overflow-hidden rounded-2xl bg-surface/95 backdrop-blur-xl shadow-fw-modal">
             <div className="px-5 pt-4 pb-3 text-center border-b border-border-subtle">
@@ -108,15 +129,6 @@ export function ConfirmDialog({
               {isLoading ? 'Please wait…' : confirmLabel}
             </button>
           </div>
-          {/* Cancel as separate card */}
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isLoading}
-            className="w-full rounded-2xl bg-surface/95 px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-text-primary shadow-fw-modal backdrop-blur-xl transition-colors active:bg-surface-sunken disabled:opacity-50"
-          >
-            {cancelLabel}
-          </button>
         </div>
       </div>
     );
@@ -163,7 +175,7 @@ export function ConfirmDialog({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-border-subtle px-6 py-4">
-          <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
+          <Button variant={styles.cancelVariant} onClick={onCancel} disabled={isLoading}>
             {cancelLabel}
           </Button>
           <button

@@ -18,11 +18,18 @@
  *     never colored good/bad without a benchmark (honesty over decoration)
  *   • the recommended action (the Rx) in an accent rail
  *   • a footer: confidence (+ reason on hover), optional trust badge + the
- *     strokes-per-round at stake, and a "see full breakdown" drill-through.
+ *     strokes-per-round at stake.
  *
  * ADDITIVE: renders inside a host card (EvidencePanel / InstrumentPanel). It
  * provides no outer card chrome of its own so it composes anywhere. Pass
- * `maxDrivers` to truncate for the summary altitude; the detail Sheet shows all.
+ * `maxDrivers` to truncate for the summary altitude.
+ *
+ * (audit W4: the `DiagnosisSheet` detail-screen drill-through this panel
+ * originally paired with was deleted as dead code — its only caller was the
+ * dev-only /vizlab harness, which 404s in production; no real host ever wired
+ * a trigger to it. If a "full breakdown" detail screen is needed again, design
+ * it fresh against the current InsightPanel sheet this renders inside today,
+ * rather than reintroducing a sheet-on-sheet stack.)
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
@@ -118,16 +125,14 @@ export interface DiagnosisPanelProps {
   diagnosis: Diagnosis;
   /** Skill category, e.g. "putting". Shown in the eyebrow. */
   category?: string;
-  /** 0..1 confidence. Reason renders on hover + in the detail Sheet. */
+  /** 0..1 confidence. Reason renders on hover. */
   confidence?: number;
   /** Strokes/round at stake (counterfactual). Shown in the footer. */
   strokesImpact?: number;
   /** Effectiveness-ledger trust status (optional badge). */
   trust?: DiagnosisTrust;
-  /** Truncate to N drivers for the summary altitude (detail shows all). */
+  /** Truncate to N drivers for the summary altitude. */
   maxDrivers?: number;
-  /** Drill-through to the full evidence Sheet. Omit to hide the affordance. */
-  onSeeEvidence?: () => void;
   className?: string;
 }
 
@@ -138,7 +143,6 @@ export function DiagnosisPanel({
   strokesImpact,
   trust,
   maxDrivers,
-  onSeeEvidence,
   className,
 }: DiagnosisPanelProps) {
   const drivers =
@@ -177,9 +181,7 @@ export function DiagnosisPanel({
             <DriverRow key={d.metric} driver={d} />
           ))}
           {hidden > 0 ? (
-            <p className="text-caption text-text-tertiary">
-              +{hidden} more in the full breakdown
-            </p>
+            <p className="text-caption text-text-tertiary">+{hidden} more driver{hidden === 1 ? '' : 's'}</p>
           ) : null}
         </div>
       ) : null}
@@ -208,19 +210,6 @@ export function DiagnosisPanel({
           <span className="text-caption text-text-secondary">
             ~{strokesImpact.toFixed(1)} str/rd at stake
           </span>
-        ) : null}
-        {onSeeEvidence ? (
-          // Fairway DS inline link-button — owns its warm styling; intentionally
-          // not the legacy @/components/ui/button (different visual language, per
-          // the same contract as ChartFrame's ViewToggle).
-          // eslint-disable-next-line helm/no-raw-button
-          <button
-            type="button"
-            onClick={onSeeEvidence}
-            className="ml-auto text-body-sm font-medium text-accent-700 transition-colors hover:text-accent-800"
-          >
-            See full breakdown →
-          </button>
         ) : null}
       </div>
     </div>

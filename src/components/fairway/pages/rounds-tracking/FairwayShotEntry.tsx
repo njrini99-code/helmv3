@@ -470,7 +470,7 @@ export function FairwayShotEntry({
           title={`Undo shot ${shotHistory.length}?`}
           action={
             <>
-              <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
+              <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
                 Cancel
               </Button>
               <Button variant="danger" size="sm" onClick={onUndoLastShot} disabled={undoSaving}>

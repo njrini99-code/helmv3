@@ -43,7 +43,7 @@ export function FairwayUnsavedNavModal({ open, onStay, onDiscard }: FairwayUnsav
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="secondary" className="flex-1" onClick={onStay}>
+          <Button variant="ghost" className="flex-1" onClick={onStay}>
             Stay
           </Button>
           <Button variant="danger" className="flex-1" onClick={onDiscard}>

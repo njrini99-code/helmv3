@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   ModalShell,
+  DiscardChangesModal,
   Button,
   InlineNotice,
   Form,
@@ -80,6 +81,31 @@ export function assignGuardMessage(args: {
   return null;
 }
 
+/**
+ * W4 — pure "has the coach typed/changed anything?" check driving the
+ * unsaved-changes guard (Escape / backdrop-click / X / Cancel show a
+ * "Discard this task?" confirm instead of silently closing whenever this is
+ * true). Exported for deterministic unit tests, same pattern as
+ * `assignGuardMessage` above.
+ */
+export function isTaskFormDirty(fields: {
+  title: string;
+  description: string;
+  dueDate: string;
+  reminderAt: string;
+  assignMode: AssignMode;
+  selectedPlayers: string[];
+}): boolean {
+  return (
+    fields.title.trim() !== '' ||
+    fields.description.trim() !== '' ||
+    fields.dueDate !== '' ||
+    fields.reminderAt !== '' ||
+    fields.assignMode !== 'all' ||
+    fields.selectedPlayers.length > 0
+  );
+}
+
 export function FairwayCreateTaskModal({
   open,
   onClose,
@@ -96,6 +122,13 @@ export function FairwayCreateTaskModal({
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // W4 audit fix — Escape / backdrop-click / the X used to discard whatever
+  // the coach had typed with no warning. `confirmDiscardOpen` gates the close
+  // path through a "Discard this task?" confirm whenever the form is dirty; a
+  // clean (untouched) form still closes immediately.
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+
+  const isDirty = isTaskFormDirty({ title, description, dueDate, reminderAt, assignMode, selectedPlayers });
 
   function reset() {
     setTitle('');
@@ -105,12 +138,26 @@ export function FairwayCreateTaskModal({
     setAssignMode('all');
     setSelectedPlayers([]);
     setError(null);
+    setConfirmDiscardOpen(false);
   }
 
+  /** Actually closes — used once a close is confirmed (or the form was never dirty). */
   function handleClose() {
     if (loading) return;
     reset();
     onClose();
+  }
+
+  /** Every close attempt (Escape, backdrop click, the X, and the footer Cancel
+   *  button all funnel through ModalShell's onOpenChange to here) — gated by
+   *  the dirty check above. */
+  function requestClose() {
+    if (loading) return;
+    if (isDirty) {
+      setConfirmDiscardOpen(true);
+      return;
+    }
+    handleClose();
   }
 
   function togglePlayer(id: string) {
@@ -190,161 +237,169 @@ export function FairwayCreateTaskModal({
   }
 
   return (
-    <ModalShell
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) handleClose();
-      }}
-      size="lg"
-      title="Create a task"
-      description="Assign work to the team and track who has completed it."
-    >
-      {/*
-       * W1 audit fix — the form used to sit directly under ModalShell with no
-       * scrolling region, so at short viewports (390×844 and similar) the
-       * panel's own `max-h-[calc(100dvh-4rem)] overflow-hidden` clipped the
-       * footer actions off-screen with no way to reach Cancel/Create task.
-       * ModalShell.Body (flex-1 overflow-y-auto) now owns the scroll and
-       * ModalShell.Footer sits OUTSIDE it as a pinned sibling — the same
-       * Body-wraps-Form / Footer-outside composition FairwayRecruitFormSheet
-       * uses, so the footer stays reachable no matter how tall the fields get.
-       */}
-      <ModalShell.Body>
-        <Form spacing="cozy" onSubmit={handleSubmit}>
-          {error ? (
-            <InlineNotice tone="danger" title="Couldn't create the task">
-              {error}
-            </InlineNotice>
-          ) : null}
+    <>
+      <ModalShell
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) requestClose();
+        }}
+        size="lg"
+        title="Create a task"
+        description="Assign work to the team and track who has completed it."
+      >
+        {/*
+         * W1 audit fix — the form used to sit directly under ModalShell with no
+         * scrolling region, so at short viewports (390×844 and similar) the
+         * panel's own `max-h-[calc(100dvh-4rem)] overflow-hidden` clipped the
+         * footer actions off-screen with no way to reach Cancel/Create task.
+         * ModalShell.Body (flex-1 overflow-y-auto) now owns the scroll and
+         * ModalShell.Footer sits OUTSIDE it as a pinned sibling — the same
+         * Body-wraps-Form / Footer-outside composition FairwayRecruitFormSheet
+         * uses, so the footer stays reachable no matter how tall the fields get.
+         */}
+        <ModalShell.Body>
+          <Form spacing="cozy" onSubmit={handleSubmit}>
+            {error ? (
+              <InlineNotice tone="danger" title="Couldn't create the task">
+                {error}
+              </InlineNotice>
+            ) : null}
 
-          <FormField label="Task title" required>
-            <Input
-              name="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Complete shot-tracking drill"
-              required
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
-            />
-          </FormField>
-
-          <FormField label="Description" showOptional>
-            <TextArea
-              name="description"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more detail about this task…"
-            />
-          </FormField>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <FormField label="Due date" showOptional>
+            <FormField label="Task title" required>
               <Input
-                type="date"
-                name="dueDate"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                name="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Complete shot-tracking drill"
+                required
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
               />
             </FormField>
-            <FormField label="Reminder" showOptional help="When the team gets a nudge.">
-              <Input
-                type="datetime-local"
-                name="reminderAt"
-                value={reminderAt}
-                onChange={(e) => setReminderAt(e.target.value)}
+
+            <FormField label="Description" showOptional>
+              <TextArea
+                name="description"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add more detail about this task…"
               />
             </FormField>
-          </div>
 
-          {/* Assignment */}
-          <FormField label="Assign to">
-            <RadioGroup
-              value={assignMode}
-              onValueChange={(v) => {
-                const next = v as AssignMode;
-                setAssignMode(next);
-                if (next === 'all') setSelectedPlayers([]);
-              }}
-              options={[
-                {
-                  value: 'all',
-                  label: 'All team members',
-                  description: playersError
-                    ? "Couldn't load the roster"
-                    : `${players.length} ${players.length === 1 ? 'player' : 'players'}`,
-                },
-                {
-                  value: 'specific',
-                  label: 'Specific players',
-                  description:
-                    selectedPlayers.length > 0
-                      ? `${selectedPlayers.length} selected`
-                      : 'Choose from the roster below',
-                },
-              ]}
-            />
-          </FormField>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <FormField label="Due date" showOptional>
+                <Input
+                  type="date"
+                  name="dueDate"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </FormField>
+              <FormField label="Reminder" showOptional help="When the team gets a nudge.">
+                <Input
+                  type="datetime-local"
+                  name="reminderAt"
+                  value={reminderAt}
+                  onChange={(e) => setReminderAt(e.target.value)}
+                />
+              </FormField>
+            </div>
 
-          {assignMode === 'specific' &&
-            (players.length === 0 ? (
-              playersError ? (
-                // P292 — the roster fetch failed; do not pretend the team is empty.
-                <InlineNotice tone="danger" title="Couldn't load the roster">
-                  We couldn't load your players right now. Close this and try again in a moment.
-                </InlineNotice>
+            {/* Assignment */}
+            <FormField label="Assign to">
+              <RadioGroup
+                value={assignMode}
+                onValueChange={(v) => {
+                  const next = v as AssignMode;
+                  setAssignMode(next);
+                  if (next === 'all') setSelectedPlayers([]);
+                }}
+                options={[
+                  {
+                    value: 'all',
+                    label: 'All team members',
+                    description: playersError
+                      ? "Couldn't load the roster"
+                      : `${players.length} ${players.length === 1 ? 'player' : 'players'}`,
+                  },
+                  {
+                    value: 'specific',
+                    label: 'Specific players',
+                    description:
+                      selectedPlayers.length > 0
+                        ? `${selectedPlayers.length} selected`
+                        : 'Choose from the roster below',
+                  },
+                ]}
+              />
+            </FormField>
+
+            {assignMode === 'specific' &&
+              (players.length === 0 ? (
+                playersError ? (
+                  // P292 — the roster fetch failed; do not pretend the team is empty.
+                  <InlineNotice tone="danger" title="Couldn't load the roster">
+                    We couldn't load your players right now. Close this and try again in a moment.
+                  </InlineNotice>
+                ) : (
+                  <InlineNotice tone="info" title="No players on the roster yet">
+                    Add players to your team first, then you can assign tasks to them.
+                  </InlineNotice>
+                )
               ) : (
-                <InlineNotice tone="info" title="No players on the roster yet">
-                  Add players to your team first, then you can assign tasks to them.
-                </InlineNotice>
-              )
-            ) : (
-              <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
-                {players.map((p) => {
-                  const isSel = selectedPlayers.includes(p.id);
-                  return (
-                    <label
-                      key={p.id}
-                      className={cn(
-                        'flex cursor-pointer items-center gap-3 rounded-fw-md border px-3.5 py-3 transition-colors',
-                        isSel
-                          ? 'border-accent-300 bg-accent-50/60'
-                          : 'border-border-subtle bg-surface hover:border-border-strong',
-                      )}
-                    >
-                      <Checkbox checked={isSel} onCheckedChange={() => togglePlayer(p.id)} />
-                      <span
+                <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+                  {players.map((p) => {
+                    const isSel = selectedPlayers.includes(p.id);
+                    return (
+                      <label
+                        key={p.id}
                         className={cn(
-                          'font-fw-sans text-body font-medium',
-                          isSel ? 'text-accent-700' : 'text-text-primary',
+                          'flex cursor-pointer items-center gap-3 rounded-fw-md border px-3.5 py-3 transition-colors',
+                          isSel
+                            ? 'border-accent-300 bg-accent-50/60'
+                            : 'border-border-subtle bg-surface hover:border-border-strong',
                         )}
                       >
-                        {p.first_name ?? ''} {p.last_name ?? ''}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            ))}
-        </Form>
-      </ModalShell.Body>
+                        <Checkbox checked={isSel} onCheckedChange={() => togglePlayer(p.id)} />
+                        <span
+                          className={cn(
+                            'font-fw-sans text-body font-medium',
+                            isSel ? 'text-accent-700' : 'text-text-primary',
+                          )}
+                        >
+                          {p.first_name ?? ''} {p.last_name ?? ''}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ))}
+          </Form>
+        </ModalShell.Body>
 
-      <ModalShell.Footer>
-        <Button type="button" variant="secondary" onClick={handleClose} disabled={loading}>
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          busy={loading}
-          leftIcon={<IconCheck size={16} />}
-          onClick={() => void handleSubmit()}
-        >
-          Create task
-        </Button>
-      </ModalShell.Footer>
-    </ModalShell>
+        <ModalShell.Footer>
+          <Button type="button" variant="secondary" onClick={requestClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            busy={loading}
+            leftIcon={<IconCheck size={16} />}
+            onClick={() => void handleSubmit()}
+          >
+            Create task
+          </Button>
+        </ModalShell.Footer>
+      </ModalShell>
+      <DiscardChangesModal
+        open={confirmDiscardOpen}
+        onStay={() => setConfirmDiscardOpen(false)}
+        onDiscard={handleClose}
+        itemLabel="task"
+      />
+    </>
   );
 }
 
