@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { CourseImage } from './CourseImage';
+import { CourseImage, formatCourseName } from './CourseImage';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/components/ui/sonner';
 import { IconSearch, IconChevronRight, IconChevronLeft, IconFlag, IconMapPin } from '@/components/icons';
@@ -90,7 +90,7 @@ export function TeePickerDrawer({ open, onOpenChange, onPick }: TeePickerDrawerP
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="sm:mx-auto sm:max-w-lg sm:rounded-fw-lg">
         <DrawerTitle className="sr-only">
-          {selected ? `Choose a tee at ${selected.name}` : 'Choose a course'}
+          {selected ? `Choose a tee at ${formatCourseName(selected.name)}` : 'Choose a course'}
         </DrawerTitle>
 
         <div className="flex max-h-[86vh] flex-col">
@@ -108,7 +108,7 @@ export function TeePickerDrawer({ open, onOpenChange, onPick }: TeePickerDrawerP
               </button>
             ) : null}
             <h2 className="font-fw-display text-title-3 font-semibold text-text-primary">
-              {selected ? selected.name : 'Choose a course'}
+              {selected ? formatCourseName(selected.name) : 'Choose a course'}
             </h2>
           </div>
 
@@ -182,7 +182,7 @@ function CourseRow({ course, onClick }: { course: GolfCourse; onClick: () => voi
         <CourseImage name={course.name} imageUrl={course.image_url} sizes="64px" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-fw-sans text-body font-medium text-text-primary">{course.name}</p>
+        <p className="truncate font-fw-sans text-body font-medium text-text-primary">{formatCourseName(course.name)}</p>
         {location && (
           <p className="mt-0.5 inline-flex items-center gap-1 truncate text-caption text-text-tertiary">
             <IconMapPin size={11} aria-hidden /> {location}

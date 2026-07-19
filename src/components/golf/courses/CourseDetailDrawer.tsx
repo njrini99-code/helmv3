@@ -249,7 +249,17 @@ export function CourseDetailDrawer({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent
           className={cn(
-            'sm:mx-auto sm:max-w-2xl sm:rounded-fw-lg',
+            // #94 (round 2) — the base DrawerContent primitive is `fixed
+            // inset-x-0 bottom-0 mt-24 rounded-t-3xl` (a bottom-pinned
+            // mobile sheet). Recoloring it alone (round 1) left the panel
+            // still hugging the bottom edge of a 1440px viewport — it read
+            // as a tall, oddly-glassed bottom sheet, not a centered floating
+            // modal. `inset-0 m-auto h-fit` (the same recipe ModalShell uses)
+            // overrides ALL FOUR offsets + the top margin so the panel is
+            // truly centered — width still capped by max-w-2xl, height by
+            // max-h — instead of just recoloring a panel still pinned to
+            // the bottom edge.
+            'sm:inset-0 sm:m-auto sm:bottom-auto sm:top-auto sm:mt-0 sm:h-fit sm:max-h-[85vh] sm:max-w-2xl sm:rounded-fw-lg',
             // #94 — the vaul primitive is a mobile bottom-sheet (drag handle +
             // matte surface-stone chrome) that's correct at phone width but
             // wrong at desktop, where it should read as the ModalShell

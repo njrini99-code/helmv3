@@ -7,6 +7,9 @@
  *   - the drag-handle bar is hidden at `sm:` and up
  *   - the panel picks up the ModalShell `--fw-glass-*` cream-glass recipe at
  *     `sm:` and up instead of staying on the mobile-sheet's matte surface
+ *   - (round 2) the panel is REPOSITIONED off the bottom edge — `inset-0
+ *     m-auto h-fit` — so it reads as a centered floating modal, not a
+ *     recolored bottom-pinned sheet
  *
  * Also re-confirms (#175) that the read-only "Holes" scorecard renders all 18
  * holes (not just 8) for a tee with a full set of hole rows — TeeHolesSummary
@@ -123,6 +126,33 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
     expect(className).toContain('sm:[&>div:first-child]:hidden');
     expect(className).toContain('sm:[background:var(--fw-glass-bg-strong)]');
     expect(className).toContain('sm:[box-shadow:var(--fw-shadow-modal)]');
+  });
+
+  it('repositions the panel off the bottom edge into a centered floating modal at sm and up', async () => {
+    render(
+      <CourseDetailDrawer
+        courseId="course-1"
+        open
+        onOpenChange={() => {}}
+        canManageTeam={false}
+        isSuperAdmin={false}
+        savedCourseIds={new Set()}
+      />,
+    );
+
+    const panel = document.querySelector('[data-vaul-drawer]') ?? document.querySelector('[role="dialog"]');
+    expect(panel).toBeTruthy();
+    const className = panel!.className;
+    // Round 2 (#94 mustFix) — the base DrawerContent primitive is
+    // `fixed inset-x-0 bottom-0 mt-24`, which pins the panel to the bottom
+    // edge of the viewport even with the cream-glass recolor. These
+    // overrides free it from the bottom edge and center it, matching the
+    // ModalShell `inset-0 m-auto h-fit` recipe.
+    expect(className).toContain('sm:inset-0');
+    expect(className).toContain('sm:m-auto');
+    expect(className).toContain('sm:bottom-auto');
+    expect(className).toContain('sm:mt-0');
+    expect(className).toContain('sm:h-fit');
   });
 
   it('renders all 18 holes in the read-only scorecard, not just 8', async () => {

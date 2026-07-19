@@ -63,9 +63,49 @@ export function formatCourseName(name: string): string {
  * image box. Bundled assets are committed local .webp, so the gradient tier is a
  * belt-and-braces last resort.
  *
+ * #163 root-cause note (round 2): a plain 404 on the uploaded tier was ALREADY
+ * handled correctly by the onError cascade above (verified — the storage bucket
+ * is genuinely public, `next.config.mjs` allowlists `**.supabase.co` under
+ * `images.remotePatterns`, and every bundled default/real asset resolves to a
+ * committed file, so a dead *well-formed* URL degrades cleanly and was already
+ * covered by a regression test). The gap `isLoadableImageUrl` closes is a
+ * DIFFERENT failure mode that the onError cascade can never catch: `imageUrl`
+ * is stored free-form (`golf_courses.image_url` is plain `text`, only validated
+ * server-side at WRITE time by `isCourseImagePublicUrl` — legacy rows written
+ * before that guard existed, or edited directly, aren't retroactively cleaned).
+ * If that stored value isn't an absolute http(s) URL (or a local `/…` asset),
+ * next/image throws SYNCHRONOUSLY while resolving `src` — before the browser
+ * ever issues a request, so the `<img>` element's `error` event never fires and
+ * the onError cascade never runs. That reads as EXACTLY the reported symptom —
+ * permanently blank, not slow — for precisely the malformed-data subset, while
+ * every genuinely-dead-but-well-formed URL was already fine. Validating shape
+ * up front turns that crash into the same graceful bundled-tier fallback as
+ * any other unusable uploaded photo.
+ *
  * All imagery is free for commercial use (CC0 / public domain / CC BY / CC BY-SA);
  * see public/courses/CREDITS.md. A bottom scrim is available for overlaid text.
  */
+
+/**
+ * True for a value next/image can actually attempt to load: an absolute
+ * http(s) URL (remote, subject to `images.remotePatterns`) or a root-relative
+ * path (a local `public/` asset). Anything else — empty, a bare filename, a
+ * protocol-relative `//host/path`, a `data:`/`blob:` URI our upload flow never
+ * produces — next/image throws on synchronously while building `src`, which
+ * would crash the render tree BEFORE the browser issues a request, so the
+ * `<img onError>` cascade below never gets a chance to run. Filtering here
+ * turns that crash into the same graceful bundled/gradient fallback as a
+ * genuine 404.
+ */
+function isLoadableImageUrl(url: string): boolean {
+  if (url.startsWith('/')) return true;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
 
 export interface CourseImageProps {
   name: string;
@@ -89,7 +129,8 @@ export function CourseImage({
   priority = false,
   className,
 }: CourseImageProps) {
-  const uploaded = imageUrl && imageUrl.trim() ? imageUrl.trim() : null;
+  const trimmedImageUrl = imageUrl && imageUrl.trim() ? imageUrl.trim() : null;
+  const uploaded = trimmedImageUrl && isLoadableImageUrl(trimmedImageUrl) ? trimmedImageUrl : null;
   const bundled = resolveRealCourseImage(name, normalizedName) || resolveDefaultCourseImage(name);
 
   const [uploadFailed, setUploadFailed] = useState(false);

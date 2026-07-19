@@ -66,6 +66,19 @@ describe('CourseImage — broken-image fallback cascade', () => {
     expect(screen.getByText('T')).toBeInTheDocument();
   });
 
+  it('#163 (round 2) — a malformed imageUrl skips straight to the bundled tier instead of crashing', () => {
+    // next/image throws synchronously (before any network request) when `src`
+    // isn't an absolute http(s) URL or a root-relative path. A stored value
+    // like this — legacy data, or a direct DB edit — would previously crash
+    // the render tree with NO onError ever firing. It must instead degrade
+    // straight to the bundled/default photo, same as a live 404 would.
+    render(<CourseImage name="Test Course" imageUrl="not-a-url" />);
+    const img = screen.getByAltText('Test Course course photo') as HTMLImageElement;
+    expect(img).toBeInTheDocument();
+    // The bundled default asset lives under /courses/, never the malformed value.
+    expect(img.src).not.toContain('not-a-url');
+  });
+
   it('shows a shimmer skeleton until the photo finishes loading', () => {
     const { container } = render(<CourseImage name="Pebble Beach" imageUrl={null} />);
     // Skeleton block is present before the image's load event fires.
