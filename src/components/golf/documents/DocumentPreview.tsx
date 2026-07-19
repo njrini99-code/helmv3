@@ -15,7 +15,6 @@ import { PDFViewer } from './PDFViewer';
 import { ImagePreview } from './ImagePreview';
 import { TextPreview } from './TextPreview';
 import {
-  XIcon,
   DownloadIcon,
   ExternalLinkIcon,
   Loader2Icon,
@@ -68,6 +67,10 @@ export function DocumentPreview({
   const [textContent, setTextContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // True when the document genuinely has no version content to preview yet
+  // (seed/legacy data, or an upload whose version record never landed) —
+  // distinct from `error`, which means the lookup itself failed.
+  const [noContent, setNoContent] = useState(false);
   // isFullScreen state used in toggleFullScreen callback
   const [, setIsFullScreen] = useState(false);
 
@@ -92,14 +95,19 @@ export function DocumentPreview({
 
       setIsLoading(true);
       setError(null);
+      setNoContent(false);
       setPreviewUrl(null);
       setTextContent(null);
 
       try {
         // Get the preview URL
         const versionNumber = version?.version_number;
-        const { data, error: urlError } = await getPreviewUrl(golfDocument.id, versionNumber);
+        const { data, error: urlError, noContent: hasNoContent } = await getPreviewUrl(golfDocument.id, versionNumber);
 
+        if (hasNoContent) {
+          setNoContent(true);
+          return;
+        }
         if (urlError) throw new Error(urlError);
         if (!data) throw new Error('No preview URL available');
 
@@ -155,6 +163,22 @@ export function DocumentPreview({
             <Loader2Icon className="h-12 w-12 animate-spin text-text-tertiary mx-auto mb-4" />
             <p className="text-text-secondary">Loading preview...</p>
           </div>
+        </div>
+      );
+    }
+
+    if (noContent) {
+      // Honest emptiness, not a scare state: the document row exists but has
+      // no version content behind it yet (seed/legacy data, or an upload
+      // whose version record never landed) — there's genuinely nothing to
+      // download or open either, so no dead-end action buttons here.
+      return (
+        <div className="flex flex-col items-center justify-center h-[40vh]">
+          <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
+          <p className="text-lg font-medium mb-2">{fileName}</p>
+          <p className="text-text-tertiary text-sm text-center max-w-sm">
+            No preview available. This file doesn&apos;t have any content yet.
+          </p>
         </div>
       );
     }
@@ -345,34 +369,27 @@ export function DocumentPreview({
       <DialogContent
         className="max-w-[100vw] sm:max-w-5xl h-[100dvh] sm:h-[90vh] rounded-none sm:rounded-lg flex flex-col p-0"
       >
-        {/* Header */}
-        <DialogHeader className="px-6 py-4 border-b border-border-subtle flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FileTypeIcon mimeType={mimeType} className="h-6 w-6" />
-              <div>
-                <DialogTitle className="text-lg">{golfDocument.title}</DialogTitle>
-                <div className="flex items-center gap-2 text-sm text-text-tertiary mt-1">
-                  <span>{formatFileSize(fileSize)}</span>
-                  {version && (
-                    <>
-                      <span>•</span>
-                      <span className="font-medium">v{version.version_number}</span>
-                    </>
-                  )}
-                  {/* Version display removed - current_version not available in schema */}
-                </div>
+        {/* Header — DialogContent already renders its own close affordance
+            (DialogPrimitive.Close, absolute top-right); this block used to
+            render a SECOND close Button on top of it, so the modal showed two
+            overlapping X's. Don't re-add one here — pr-10 just keeps the
+            title/metadata from running under the built-in close hit-target. */}
+        <DialogHeader className="px-6 py-4 pr-10 border-b border-border-subtle flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <FileTypeIcon mimeType={mimeType} className="h-6 w-6" />
+            <div>
+              <DialogTitle className="text-lg">{golfDocument.title}</DialogTitle>
+              <div className="flex items-center gap-2 text-sm text-text-tertiary mt-1">
+                <span>{formatFileSize(fileSize)}</span>
+                {version && (
+                  <>
+                    <span>•</span>
+                    <span className="font-medium">v{version.version_number}</span>
+                  </>
+                )}
+                {/* Version display removed - current_version not available in schema */}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="px-2"
-              onClick={() => onOpenChange(false)}
-              aria-label="Close preview"
-            >
-              <XIcon className="h-5 w-5" />
-            </Button>
           </div>
         </DialogHeader>
 
