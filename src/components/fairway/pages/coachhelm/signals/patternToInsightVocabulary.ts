@@ -410,35 +410,92 @@ const GENERIC_COACH_DISCUSSION_RECOMMENDATION = 'Monitor this pattern and discus
  * unrelated references like "your coach", see the discussion-recommendation
  * special-case below). Extend this list as new production phrasings surface;
  * a phrase with no match here is simply left as-is (no silent mangling).
+ *
+ * Audit W3 — the bug #943 pass above rewrote each literal phrase to the
+ * player's NAME independently, which left two defects once a generator's
+ * sentence used "you"/"your" more than once:
+ *   1. MIXED PERSON in one breath — e.g. scrambling.ts's lag branch opened
+ *      third-person ("Jackson Hale escapes the bunker fine") but the very
+ *      next clause stayed second-person ("88% of YOUR sand shots reached
+ *      the green"), because only the opener had a rewrite rule.
+ *   2. Same-name STUTTER — every rule independently substituted the full
+ *      name, so a paragraph with 3-4 "you"/"your" instances read "Jackson
+ *      Hale ... Jackson Hale ... Jackson Hale" back to back instead of one
+ *      introduction followed by pronouns.
+ * Fix: `replace` now also receives `mentioned` — whether an EARLIER rule (or
+ * the "you tend to" rewrite below) already introduced the player by name in
+ * THIS call. The first reference in a piece of text still gets the real
+ * name (never fabricated); every later reference reads as "they"/"them"/
+ * "their" instead of repeating it. Rules are declared in the SAME left-to-
+ * right order the known engine sentences use them, so by the time a
+ * later-clause rule fires, `mentioned` correctly reflects whether this text's
+ * own opener already fired.
  */
 const INSIGHT_VOICE_REWRITES: ReadonlyArray<{
   match: RegExp;
-  replace: (name: string) => string;
+  replace: (name: string, mentioned: boolean) => string;
 }> = [
-  // scrambling.ts — "lag, not the escape" branch opener.
+  // scrambling.ts — "lag, not the escape" branch opener (always the first
+  // player reference in this text — no earlier rule can have fired yet).
   { match: /\bYou ESCAPE the bunker fine\b/g, replace: (n) => `${n} escapes the bunker fine` },
-  // scrambling.ts — "escape is the leak" branch opener.
+  // scrambling.ts — "escape is the leak" branch opener (same: always first).
   {
     match: /\bYou're leaving balls in the bunker\b/g,
     replace: (n) => `${n} is leaving balls in the bunker`,
   },
+  // scrambling.ts — "N% of your ATTEMPTS sand shots reached the green" —
+  // shared by BOTH branches, always preceded by one of the two openers
+  // above in the same sentence breath (bug: this clause had no rule at all,
+  // so it stayed "your" right after the opener had already gone third-
+  // person). Lookahead keeps the genuine attempt count untouched.
+  {
+    match: /\byour(?= \d+ sand shots reached)/g,
+    replace: (n, mentioned) => (mentioned ? 'their' : `${n}'s`),
+  },
+  // scrambling.ts — lag branch closing-clause opener ("but you finish…").
+  {
+    match: /\bbut you finish\b/g,
+    replace: (n, mentioned) => (mentioned ? 'but they finish' : `but ${n} finishes`),
+  },
   // scrambling.ts — "not your splash" driver clause.
-  { match: /\byour splash\b/gi, replace: (n) => `${n}'s splash` },
-  // lag-distance-3putt.ts composite — opening clause.
+  {
+    match: /\byour splash\b/gi,
+    replace: (n, mentioned) => (mentioned ? 'their splash' : `${n}'s splash`),
+  },
+  // lag-distance-3putt.ts composite — opening clause (always first).
   {
     match: /\bYour lag putts \(15\+ ft\) aren't finishing\b/g,
     replace: (n) => `${n}'s lag putts (15+ ft) aren't finishing`,
   },
   // lag-distance-3putt.ts composite — "you're only making N%" clause.
-  { match: /\byou're only making\b/gi, replace: (n) => `${n} is only making` },
+  {
+    match: /\byou're only making\b/gi,
+    replace: (n, mentioned) => (mentioned ? "they're only making" : `${n} is only making`),
+  },
+  // lag-distance-3putt.ts composite — "N% of your long looks" clause.
+  {
+    match: /\byour(?= long looks)/g,
+    replace: (n, mentioned) => (mentioned ? 'their' : `${n}'s`),
+  },
+  // lag-distance-3putt.ts composite — "a comebacker your short stroke…" clause.
+  {
+    match: /\byour(?= short stroke isn't closing)/g,
+    replace: (n, mentioned) => (mentioned ? 'their' : `${n}'s`),
+  },
   // lag-distance-3putt.ts composite — closing clause.
-  { match: /\bcosting you a stroke\b/gi, replace: (n) => `costing ${n} a stroke` },
+  {
+    match: /\bcosting you a stroke\b/gi,
+    replace: (n, mentioned) => (mentioned ? 'costing them a stroke' : `costing ${n} a stroke`),
+  },
 ];
 
 /**
  * Rewrite a pattern's OR insight's player-voiced narrative into the coach's
  * third-person voice. Falls back to "the player" when no name is available —
- * never fabricates one.
+ * never fabricates one. The FIRST second-person reference in the text is
+ * named (or falls back to "the player"); every later reference in the SAME
+ * call reads as a pronoun so a multi-clause sentence never mixes person or
+ * repeats the name (audit W3 — see INSIGHT_VOICE_REWRITES comment above).
  */
 export function toCoachVoice(text: string, playerName: string | null | undefined): string {
   if (!text) return text;
@@ -450,12 +507,20 @@ export function toCoachVoice(text: string, playerName: string | null | undefined
   if (text.trim() === GENERIC_COACH_DISCUSSION_RECOMMENDATION) {
     return `Worth a conversation with ${name}.`;
   }
+  let mentioned = false;
   // The ONE first-person fragment `generateDescription` produces — every
   // conditional/compound/anomaly pattern description ends "…you tend to
   // score N strokes worse/better than average."
-  let out = text.replace(/\byou tend to\b/gi, `${name} tends to`);
+  let out = text.replace(/\byou tend to\b/gi, () => {
+    mentioned = true;
+    return `${name} tends to`;
+  });
   for (const rule of INSIGHT_VOICE_REWRITES) {
-    out = out.replace(rule.match, rule.replace(name));
+    out = out.replace(rule.match, () => {
+      const replacement = rule.replace(name, mentioned);
+      mentioned = true;
+      return replacement;
+    });
   }
   return out;
 }

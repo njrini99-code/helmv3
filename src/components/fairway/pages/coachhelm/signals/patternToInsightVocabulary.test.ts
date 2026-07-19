@@ -88,19 +88,40 @@ describe('toCoachVoice', () => {
   // production offenders.
   // -------------------------------------------------------------------------
 
-  it('rewrites the scrambling "lag, not escape" bunker opener to third person', () => {
+  // Audit W3 — the bug #943 rule only rewrote the OPENER, leaving the very
+  // next clause in second person ("Ethan escapes the bunker fine — 82% of
+  // YOUR 11 sand shots reached…"). Every later reference in the sentence
+  // must now read as a pronoun, never a mixed-person breath.
+  it('rewrites the scrambling "lag, not escape" bunker opener to third person, no mixed person', () => {
     const text =
       'You ESCAPE the bunker fine — 82% of your 11 sand shots reached the green — but you finish 9 ft from the hole.';
     expect(toCoachVoice(text, 'Ethan')).toBe(
-      'Ethan escapes the bunker fine — 82% of your 11 sand shots reached the green — but you finish 9 ft from the hole.',
+      'Ethan escapes the bunker fine — 82% of their 11 sand shots reached the green — but they finish 9 ft from the hole.',
     );
   });
 
-  it('rewrites the scrambling "escape is the leak" bunker opener to third person', () => {
+  it('rewrites the scrambling "escape is the leak" bunker opener to third person, no mixed person', () => {
     const text = "You're leaving balls in the bunker — only 40% of your 10 sand shots reached the green.";
     expect(toCoachVoice(text, 'Ethan')).toBe(
-      "Ethan is leaving balls in the bunker — only 40% of your 10 sand shots reached the green.",
+      "Ethan is leaving balls in the bunker — only 40% of their 10 sand shots reached the green.",
     );
+  });
+
+  it('audit W3 — pins the exact reported mixed-person defect ("Jackson Hale escapes the bunker fine" / "88% of YOUR sand shots")', () => {
+    const text =
+      'You ESCAPE the bunker fine — 88% of your 8 sand shots reached the green — but you finish 10 ft from the hole ' +
+      'and then 2-putt (3 of 7 reached greens). The driver is distance control OUT of the sand and the lag putt ' +
+      'that follows, not your splash.';
+    const voiced = toCoachVoice(text, 'Jackson Hale');
+    expect(voiced).toBe(
+      'Jackson Hale escapes the bunker fine — 88% of their 8 sand shots reached the green — but they finish 10 ft ' +
+        'from the hole and then 2-putt (3 of 7 reached greens). The driver is distance control OUT of the sand and ' +
+        'the lag putt that follows, not their splash.',
+    );
+    // No sentence may still address the coach in second person once the
+    // player has been introduced by name.
+    expect(voiced).not.toMatch(/\byour\b/i);
+    expect(voiced).not.toMatch(/\byou\b/i);
   });
 
   it('rewrites "not your splash" to a coach-voiced possessive', () => {
@@ -109,18 +130,44 @@ describe('toCoachVoice', () => {
     );
   });
 
-  it('rewrites the lag-distance 3-putt composite content end to end', () => {
+  it('rewrites the lag-distance 3-putt composite content end to end, pronoun on every repeat mention', () => {
     const text =
       "Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're only making 43% from " +
       '3-5 ft — so an estimated 57% of your long looks are turning into 3-putts. Fix the leave first, ' +
       'then drill the comebackers so the second putt stops costing you a stroke.';
     const voiced = toCoachVoice(text, 'Mason Rivers');
     expect(voiced.startsWith("Mason Rivers's lag putts (15+ ft) aren't finishing")).toBe(true);
-    expect(voiced).toContain('Mason Rivers is only making 43%');
-    expect(voiced).toContain('costing Mason Rivers a stroke.');
+    // Audit W3 — the player's name is introduced ONCE (the possessive
+    // opener); every later reference reads as a pronoun instead of
+    // repeating "Mason Rivers" three more times in one paragraph.
+    expect(voiced).toContain("they're only making 43%");
+    expect(voiced).toContain('of their long looks are turning into 3-putts');
+    expect(voiced).toContain('costing them a stroke.');
+    expect(voiced).not.toContain('Mason Rivers is only making');
+    expect(voiced).not.toContain('costing Mason Rivers a stroke');
     expect(voiced).not.toMatch(/\bYour lag putts\b/);
     expect(voiced).not.toMatch(/\byou're\b/i);
     expect(voiced).not.toMatch(/costing you\b/);
+    expect(voiced).not.toMatch(/\byour\b/i);
+    expect(voiced).not.toMatch(/\byou\b/i);
+  });
+
+  it('audit W3 — pins the exact reported same-player-named-twice defect ("costing Jackson Hale a stroke" right after "Jackson Hale is only making 47%")', () => {
+    const text =
+      "Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're only making 47% from " +
+      "3-5 ft — so an estimated 57% of your long looks are turning into 3-putts. That's the cascade: a " +
+      "long miss leaves a comebacker your short stroke isn't closing. Fix the leave first so the second " +
+      'putt stops costing you a stroke.';
+    const voiced = toCoachVoice(text, 'Jackson Hale');
+    expect(voiced).toBe(
+      "Jackson Hale's lag putts (15+ ft) aren't finishing inside tap-in range, and they're only making 47% " +
+        "from 3-5 ft — so an estimated 57% of their long looks are turning into 3-putts. That's the cascade: " +
+        "a long miss leaves a comebacker their short stroke isn't closing. Fix the leave first so the second " +
+        'putt stops costing them a stroke.',
+    );
+    // "Jackson Hale" is named exactly once — never repeated for a later
+    // second-person reference in the same passage.
+    expect(voiced.match(/Jackson Hale/g)).toHaveLength(1);
   });
 
   it('falls back to "the player" for insight phrasing too, never fabricating a name', () => {
@@ -324,8 +371,12 @@ describe('insightToSignalRow — coach voice (bug #943)', () => {
       { 'player-1': 'Mason Rivers' },
     );
     expect(row.body).toContain("Mason Rivers's lag putts (15+ ft) aren't finishing");
-    expect(row.body).toContain('Mason Rivers is only making 43%');
-    expect(row.body).toContain('costing Mason Rivers a stroke');
+    // Audit W3 — the name is introduced once; the repeat references read as
+    // pronouns instead of "Mason Rivers" a second and third time.
+    expect(row.body).toContain("they're only making 43%");
+    expect(row.body).toContain('costing them a stroke');
+    expect(row.body).not.toContain('Mason Rivers is only making');
+    expect(row.body).not.toContain('costing Mason Rivers a stroke');
     expect(row.body).not.toMatch(/\bYour lag putts\b/);
     expect(row.body).not.toMatch(/\byou're\b/i);
   });
