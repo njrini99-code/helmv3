@@ -21,6 +21,7 @@
  * ========================================================================== */
 
 import Link from 'next/link';
+import { cleanCourseName } from '@/lib/golf/course-name';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -106,7 +107,7 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate font-fw-sans text-body font-medium text-text-primary">
-            {round.course_name ?? 'Unknown course'}
+            {cleanCourseName(round.course_name) || 'Unknown course'}
           </span>
           {isBestOfPeriod && (
             <Badge tone="accent" size="sm" className="flex-shrink-0 uppercase tracking-[0.06em]">

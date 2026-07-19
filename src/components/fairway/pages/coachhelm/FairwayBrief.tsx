@@ -237,6 +237,52 @@ export function selectHeroSupportDetail(
 }
 
 /**
+ * Content-dedup audit (W3) — whether the WORK-ON-THIS-FIRST hero already
+ * displays the weakest category's lead-insight sentence SOMEWHERE on its own
+ * card: either as the headline support text (`selectHeroSupportDetail`
+ * returning `kind: 'lead-insight'`, the putting/scoring branch above), or —
+ * for a yardage-band category — as the foot strip's own honest fallback when
+ * no player is individually flagged (see `WorkOnThisHero`'s foot-strip
+ * branch: `flaggedPlayers.length === 0` falls through to the same
+ * `leadInsight.message`).
+ *
+ * `CategoryHealthRow` (Category Detail, section 4) renders that SAME
+ * category's `cat.insights[0]` as its evidence line unconditionally — so
+ * without this check, the identical paragraph rendered TWICE on one page
+ * (audit finding: the same lag-putt sentence in both the Brief hero and the
+ * Brief putting category row). Pure/testable; mirrors the exact branch logic
+ * inside `WorkOnThisHero` so the two never drift apart.
+ */
+export function heroAlreadyShowsLeadInsight(
+  supportDetailKind: HeroSupportDetail['kind'],
+  flaggedPlayerCount: number,
+  hasLeadInsight: boolean,
+): boolean {
+  if (!hasLeadInsight) return false;
+  if (supportDetailKind === 'lead-insight') return true;
+  return flaggedPlayerCount === 0;
+}
+
+/**
+ * Pick the ONE evidence insight for a Category Detail row. Falls through to
+ * the category's NEXT already-computed insight (never fabricated — the same
+ * `cat.insights` array `generateCategoryInsights`/`assembleBriefEngineInsights`
+ * already populate) when the top one is the exact sentence the hero already
+ * rendered above it on this page; omits entirely — rather than invent a
+ * replacement — when there is no second insight to fall back to.
+ */
+export function selectCategoryRowInsight(
+  insights: readonly CategoryInsight[],
+  dedupeInsightId: string | null | undefined,
+): CategoryInsight | null {
+  const top = insights[0] ?? null;
+  if (top && dedupeInsightId && top.id === dedupeInsightId) {
+    return insights[1] ?? null;
+  }
+  return top;
+}
+
+/**
  * The foot-strip section label naming who's "dragging" the weakest category.
  * `needsAttention` flags a player on absolute standing, not direction — a
  * player can be BOTH flagged AND improving (weak but trending up). Blanket-
@@ -457,6 +503,24 @@ export function FairwayBrief({
   ];
   const isSgCalibrated = !sgVsParSamples.some((v) => isImplausibleSG(v));
 
+  // ── Content-dedup (W3 audit): does the hero ABOVE already show the weakest
+  //    category's lead-insight sentence (headline support text, or the foot
+  //    strip's own honest fallback)? If so, the Category Detail row for that
+  //    SAME category must not repeat it verbatim — see `CategoryHealthRow`'s
+  //    `dedupeInsightId` prop. Only ever set once the hero itself is actually
+  //    rendered (hasTeamStats && weakest && isSgCalibrated — the same gate
+  //    that decides whether `WorkOnThisHero` renders at all).
+  const heroDedupedInsightId: string | null =
+    hasTeamStats && weakest && isSgCalibrated && weakestLeadInsight
+      ? heroAlreadyShowsLeadInsight(
+          selectHeroSupportDetail(weakest.categoryId, worstZone, weakestLeadInsight).kind,
+          flaggedPlayers.length,
+          true,
+        )
+        ? weakestLeadInsight.id
+        : null
+      : null;
+
   // DISTINCT players needing attention across categories — NOT a sum of each
   // category's attentionCount. A player can be flagged in 2+ categories (e.g.
   // below-average in both putting AND approach), and summing counted them
@@ -609,7 +673,16 @@ export function FairwayBrief({
           {categories.length > 0 && playerCount > 0 ? (
             <div className="flex flex-col gap-3">
               {categories.map((cat) => (
-                <CategoryHealthRow key={cat.id} cat={cat} rating={ratingByCategoryId.get(cat.id)} />
+                <CategoryHealthRow
+                  key={cat.id}
+                  cat={cat}
+                  rating={ratingByCategoryId.get(cat.id)}
+                  // Only the weakest category's row can possibly collide with
+                  // the hero above it — every other category's insight never
+                  // appears in the hero, so passing this unconditionally to
+                  // every row is safe (the id simply won't match).
+                  dedupeInsightId={cat.id === weakest?.categoryId ? heroDedupedInsightId : null}
+                />
               ))}
             </div>
           ) : (
@@ -1015,6 +1088,34 @@ function AspectRow({
   );
 }
 
+/**
+ * PulseStrip's meta caption — player count + an optional "need attention"
+ * clause + an optional freshness clause, joined ` · `. Isolated as a pure
+ * function (rather than inline JSX) so the "omit rather than mislead"
+ * freshness contract — the whole point of audit W3's freshness-honesty
+ * finding — is pinned by a DIRECT test at the render-assembly layer, not
+ * just at `formatAnalyzed` in isolation. This composition was silently
+ * dropped once already during cross-PR merge conflict resolution (#925/#929,
+ * restored in 09f13c0b), regressing to a fabricated-timestamp label in the
+ * interim — a render-layer test closes that gap so it can't happen again
+ * unnoticed.
+ *
+ * `lastAnalyzed` here is the ALREADY-FORMATTED (`formatAnalyzed`) date-only
+ * label, or '' when there's no completed round to honestly anchor the
+ * freshness claim to (never a raw date/timestamp) — the clause is omitted
+ * entirely in that case rather than showing a misleading stamp.
+ */
+export function pulseMetaLine(
+  playerCount: number,
+  attention: number,
+  lastAnalyzed: string,
+): string {
+  const parts = [`${playerCount} active ${playerCount === 1 ? 'player' : 'players'}`];
+  if (attention > 0) parts.push(`${attention} need attention`);
+  if (lastAnalyzed) parts.push(`updated ${lastAnalyzed}`);
+  return parts.join(' · ');
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
  * PulseStrip — the DEMOTED team read (was the twin-60px hero). One slim line:
  * composite + health as small inline Readouts + a muted meta line.
@@ -1057,9 +1158,7 @@ function PulseStrip({
           label="Health · out of 100"
         />
         <span className="font-fw-sans text-caption text-text-tertiary">
-          {playerCount} active {playerCount === 1 ? 'player' : 'players'}
-          {attention > 0 ? ` · ${attention} need attention` : ''}
-          {lastAnalyzed ? ` · updated ${lastAnalyzed}` : ''}
+          {pulseMetaLine(playerCount, attention, lastAnalyzed)}
         </span>
       </div>
     </InstrumentPanel>
@@ -1072,7 +1171,18 @@ function PulseStrip({
  * LINKS into Signals filtered to this category.
  * ────────────────────────────────────────────────────────────────────────── */
 
-function CategoryHealthRow({ cat, rating }: { cat: TeamCategory; rating?: number }) {
+function CategoryHealthRow({
+  cat,
+  rating,
+  dedupeInsightId,
+}: {
+  cat: TeamCategory;
+  rating?: number;
+  /** Content-dedup (W3 audit): the id of an insight the hero ABOVE already
+   *  rendered verbatim — when this category's top insight matches, fall
+   *  through to its next real insight (or omit) rather than repeat it. */
+  dedupeInsightId?: string | null;
+}) {
   const priority = categoryPriority(cat);
   const TrendIcon =
     cat.trend === 'improving'
@@ -1098,8 +1208,10 @@ function CategoryHealthRow({ cat, rating }: { cat: TeamCategory; rating?: number
           : `${cat.label} is holding steady`;
 
   // Trimmed to ONE evidence insight — the stacked 3-bullet insets created dead
-  // vertical bands down the lower page.
-  const evidence = cat.insights[0] ?? null;
+  // vertical bands down the lower page. Content-dedup (W3 audit): if the hero
+  // above already rendered this SAME sentence, fall through to the category's
+  // next real insight instead of repeating it verbatim on the same page.
+  const evidence = selectCategoryRowInsight(cat.insights, dedupeInsightId);
 
   const accent =
     priority === 'high'

@@ -18,6 +18,8 @@ import { describe, it, expect } from 'vitest';
 import {
   isYardageBandCategory,
   selectHeroSupportDetail,
+  heroAlreadyShowsLeadInsight,
+  selectCategoryRowInsight,
   type HeroSupportDetail,
 } from './FairwayBrief';
 import type { CategoryInsight } from '@/app/golf/actions/team-category-insights';
@@ -79,5 +81,59 @@ describe('selectHeroSupportDetail — category-matched selection (#946)', () => 
     const detail = selectHeroSupportDetail('driving', null, insight('unrelated'));
     expect(detail.kind).toBe('none');
     expect(detail.text).toBeNull();
+  });
+});
+
+/**
+ * Content-dedup audit (W3): the SAME lag-putt paragraph rendered verbatim in
+ * BOTH the Brief hero (as the headline support text, or the foot-strip's
+ * honest fallback) AND the Brief's own "putting" category-detail row below it
+ * — because `CategoryHealthRow` renders `cat.insights[0]` unconditionally,
+ * with no awareness of what the hero already showed. `heroAlreadyShowsLeadInsight`
+ * + `selectCategoryRowInsight` are the assembly-layer fix: detect the
+ * on-page collision, then fall through to the category's next REAL insight
+ * (never fabricate one) — or omit, if there is no second insight.
+ */
+describe('heroAlreadyShowsLeadInsight (content-dedup audit)', () => {
+  it('is true when the headline support text already used the lead insight (putting/scoring branch)', () => {
+    expect(heroAlreadyShowsLeadInsight('lead-insight', 0, true)).toBe(true);
+    expect(heroAlreadyShowsLeadInsight('lead-insight', 3, true)).toBe(true);
+  });
+
+  it('is true for a yardage-band category when no player is flagged (foot strip falls back to the lead insight)', () => {
+    expect(heroAlreadyShowsLeadInsight('yardage-band', 0, true)).toBe(true);
+  });
+
+  it('is false for a yardage-band category WITH flagged players (foot strip shows player chips instead)', () => {
+    expect(heroAlreadyShowsLeadInsight('yardage-band', 2, true)).toBe(false);
+  });
+
+  it('is false when there is no lead insight to begin with — never a fabricated dedup', () => {
+    expect(heroAlreadyShowsLeadInsight('lead-insight', 0, false)).toBe(false);
+    expect(heroAlreadyShowsLeadInsight('none', 0, false)).toBe(false);
+  });
+});
+
+describe('selectCategoryRowInsight (content-dedup audit)', () => {
+  const lagPutt = insight('Lag putts (15+ ft) are turning into 3-putts at nearly double the team rate.');
+  const trend = { id: 'putting-trend', message: 'Team putting trending up — 4 of 6 players improving', tone: 'positive' as const };
+
+  it('renders the top insight unchanged when it was NOT already shown in the hero', () => {
+    expect(selectCategoryRowInsight([lagPutt, trend], null)).toBe(lagPutt);
+    expect(selectCategoryRowInsight([lagPutt, trend], 'some-other-id')).toBe(lagPutt);
+  });
+
+  it('falls through to the category\'s next REAL insight when the top one collides with the hero (never a repeat, never fabricated)', () => {
+    const picked = selectCategoryRowInsight([lagPutt, trend], lagPutt.id);
+    expect(picked).toBe(trend);
+    expect(picked?.message).not.toBe(lagPutt.message);
+  });
+
+  it('omits the row entirely — rather than invent a replacement — when there is no second insight', () => {
+    expect(selectCategoryRowInsight([lagPutt], lagPutt.id)).toBeNull();
+  });
+
+  it('handles an empty insights array honestly', () => {
+    expect(selectCategoryRowInsight([], null)).toBeNull();
   });
 });

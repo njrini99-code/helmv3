@@ -354,7 +354,20 @@ export function insightToSignalRow(
     priority: INSIGHT_PRIORITY_MAP[insight.priority] ?? 'medium',
     title: toCoachVoice(insight.title, resolvedPlayerName),
     body: toCoachVoice(insight.content ?? '', resolvedPlayerName),
-    overline: `${categoryLabel} · Signal`,
+    // Content-dedup (W3 audit) — the engine's title/content is a TEMPLATE:
+    // two players who cross the same threshold (e.g. the same lag-putt leak)
+    // legitimately get the same generated sentence, because the generator
+    // narrates the CONDITION, not the individual (deferred engine-side half
+    // of #944 — not re-litigated here, no generator/prose change). The flat/
+    // ungrouped feed (`FairwayCoachHelmSignals`'s smart-default cross-player
+    // view) renders cards with no player-name header at all, so two such
+    // cards were visually INDISTINGUISHABLE — reading as a duplicate-content
+    // bug rather than two real, separate findings. Leading the overline with
+    // the resolved roster name (never fabricated — falls back to the
+    // original category-only label when absent) makes identical content
+    // honestly per-player instead of collapsing two coaching subjects into
+    // one indistinguishable card.
+    overline: resolvedPlayerName ? `${resolvedPlayerName} · ${categoryLabel}` : `${categoryLabel} · Signal`,
     playerId: insight.player_id,
     playerName: resolvedPlayerName,
     category: insight.category,
@@ -397,35 +410,92 @@ const GENERIC_COACH_DISCUSSION_RECOMMENDATION = 'Monitor this pattern and discus
  * unrelated references like "your coach", see the discussion-recommendation
  * special-case below). Extend this list as new production phrasings surface;
  * a phrase with no match here is simply left as-is (no silent mangling).
+ *
+ * Audit W3 — the bug #943 pass above rewrote each literal phrase to the
+ * player's NAME independently, which left two defects once a generator's
+ * sentence used "you"/"your" more than once:
+ *   1. MIXED PERSON in one breath — e.g. scrambling.ts's lag branch opened
+ *      third-person ("Jackson Hale escapes the bunker fine") but the very
+ *      next clause stayed second-person ("88% of YOUR sand shots reached
+ *      the green"), because only the opener had a rewrite rule.
+ *   2. Same-name STUTTER — every rule independently substituted the full
+ *      name, so a paragraph with 3-4 "you"/"your" instances read "Jackson
+ *      Hale ... Jackson Hale ... Jackson Hale" back to back instead of one
+ *      introduction followed by pronouns.
+ * Fix: `replace` now also receives `mentioned` — whether an EARLIER rule (or
+ * the "you tend to" rewrite below) already introduced the player by name in
+ * THIS call. The first reference in a piece of text still gets the real
+ * name (never fabricated); every later reference reads as "they"/"them"/
+ * "their" instead of repeating it. Rules are declared in the SAME left-to-
+ * right order the known engine sentences use them, so by the time a
+ * later-clause rule fires, `mentioned` correctly reflects whether this text's
+ * own opener already fired.
  */
 const INSIGHT_VOICE_REWRITES: ReadonlyArray<{
   match: RegExp;
-  replace: (name: string) => string;
+  replace: (name: string, mentioned: boolean) => string;
 }> = [
-  // scrambling.ts — "lag, not the escape" branch opener.
+  // scrambling.ts — "lag, not the escape" branch opener (always the first
+  // player reference in this text — no earlier rule can have fired yet).
   { match: /\bYou ESCAPE the bunker fine\b/g, replace: (n) => `${n} escapes the bunker fine` },
-  // scrambling.ts — "escape is the leak" branch opener.
+  // scrambling.ts — "escape is the leak" branch opener (same: always first).
   {
     match: /\bYou're leaving balls in the bunker\b/g,
     replace: (n) => `${n} is leaving balls in the bunker`,
   },
+  // scrambling.ts — "N% of your ATTEMPTS sand shots reached the green" —
+  // shared by BOTH branches, always preceded by one of the two openers
+  // above in the same sentence breath (bug: this clause had no rule at all,
+  // so it stayed "your" right after the opener had already gone third-
+  // person). Lookahead keeps the genuine attempt count untouched.
+  {
+    match: /\byour(?= \d+ sand shots reached)/g,
+    replace: (n, mentioned) => (mentioned ? 'their' : `${n}'s`),
+  },
+  // scrambling.ts — lag branch closing-clause opener ("but you finish…").
+  {
+    match: /\bbut you finish\b/g,
+    replace: (n, mentioned) => (mentioned ? 'but they finish' : `but ${n} finishes`),
+  },
   // scrambling.ts — "not your splash" driver clause.
-  { match: /\byour splash\b/gi, replace: (n) => `${n}'s splash` },
-  // lag-distance-3putt.ts composite — opening clause.
+  {
+    match: /\byour splash\b/gi,
+    replace: (n, mentioned) => (mentioned ? 'their splash' : `${n}'s splash`),
+  },
+  // lag-distance-3putt.ts composite — opening clause (always first).
   {
     match: /\bYour lag putts \(15\+ ft\) aren't finishing\b/g,
     replace: (n) => `${n}'s lag putts (15+ ft) aren't finishing`,
   },
   // lag-distance-3putt.ts composite — "you're only making N%" clause.
-  { match: /\byou're only making\b/gi, replace: (n) => `${n} is only making` },
+  {
+    match: /\byou're only making\b/gi,
+    replace: (n, mentioned) => (mentioned ? "they're only making" : `${n} is only making`),
+  },
+  // lag-distance-3putt.ts composite — "N% of your long looks" clause.
+  {
+    match: /\byour(?= long looks)/g,
+    replace: (n, mentioned) => (mentioned ? 'their' : `${n}'s`),
+  },
+  // lag-distance-3putt.ts composite — "a comebacker your short stroke…" clause.
+  {
+    match: /\byour(?= short stroke isn't closing)/g,
+    replace: (n, mentioned) => (mentioned ? 'their' : `${n}'s`),
+  },
   // lag-distance-3putt.ts composite — closing clause.
-  { match: /\bcosting you a stroke\b/gi, replace: (n) => `costing ${n} a stroke` },
+  {
+    match: /\bcosting you a stroke\b/gi,
+    replace: (n, mentioned) => (mentioned ? 'costing them a stroke' : `costing ${n} a stroke`),
+  },
 ];
 
 /**
  * Rewrite a pattern's OR insight's player-voiced narrative into the coach's
  * third-person voice. Falls back to "the player" when no name is available —
- * never fabricates one.
+ * never fabricates one. The FIRST second-person reference in the text is
+ * named (or falls back to "the player"); every later reference in the SAME
+ * call reads as a pronoun so a multi-clause sentence never mixes person or
+ * repeats the name (audit W3 — see INSIGHT_VOICE_REWRITES comment above).
  */
 export function toCoachVoice(text: string, playerName: string | null | undefined): string {
   if (!text) return text;
@@ -437,12 +507,20 @@ export function toCoachVoice(text: string, playerName: string | null | undefined
   if (text.trim() === GENERIC_COACH_DISCUSSION_RECOMMENDATION) {
     return `Worth a conversation with ${name}.`;
   }
+  let mentioned = false;
   // The ONE first-person fragment `generateDescription` produces — every
   // conditional/compound/anomaly pattern description ends "…you tend to
   // score N strokes worse/better than average."
-  let out = text.replace(/\byou tend to\b/gi, `${name} tends to`);
+  let out = text.replace(/\byou tend to\b/gi, () => {
+    mentioned = true;
+    return `${name} tends to`;
+  });
   for (const rule of INSIGHT_VOICE_REWRITES) {
-    out = out.replace(rule.match, rule.replace(name));
+    out = out.replace(rule.match, () => {
+      const replacement = rule.replace(name, mentioned);
+      mentioned = true;
+      return replacement;
+    });
   }
   return out;
 }
@@ -569,7 +647,12 @@ export function patternToSignalRow(pattern: ExtendedPattern): SignalRow {
     priority: derivePatternPriority(pattern.patternType, pattern.strokeImpact),
     title: patternHeadline(pattern),
     body: patternBody(pattern),
-    overline: `${categoryLabel} · Pattern`,
+    // Content-dedup (W3 audit) — same rationale as `insightToSignalRow`'s
+    // overline above: two players sharing the same mined condition
+    // legitimately get the same headline/body, so the flat feed needs the
+    // real (never fabricated) player name to read as two distinct findings
+    // rather than one duplicated card.
+    overline: pattern.playerName ? `${pattern.playerName} · ${categoryLabel}` : `${categoryLabel} · Pattern`,
     playerId: pattern.playerId,
     playerName: pattern.playerName,
     category: pattern.patternType,

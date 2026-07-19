@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { toneVsBenchmark, relativeTones, skewTone, buildVitalDelta, detailGridColClass } from './FairwayStatsCockpit';
+import {
+  toneVsBenchmark,
+  relativeTones,
+  skewTone,
+  buildVitalDelta,
+  detailGridColClass,
+  computeGainLeak,
+} from './FairwayStatsCockpit';
 
 // ── toneVsBenchmark (P921 #2 — DetailGrid tone vs a real PGA/team baseline) ───
 
@@ -161,6 +168,76 @@ describe('buildVitalDelta', () => {
     expect(
       buildVitalDelta({ current: null, previous: 32, currentRounds: 5, previousRounds: 5 }),
     ).toBeUndefined();
+  });
+});
+
+// ── computeGainLeak (audit W3 — "Biggest gain" mislabeling a negative SG value) ──
+// Root cause: the SG tab's "Biggest gain"/"Biggest leak" callout used to pick
+// purely by RANK (max/min across the 4 SG categories) and hard-coded the
+// "gain"/green-leader treatment onto the max slot regardless of its actual
+// sign — so a player below the Tour baseline in every category still saw
+// "BIGGEST GAIN −0.15 · Approach" in green. `computeGainLeak` fixes this by
+// classifying each slot against the real zero point (the Tour baseline).
+
+describe('computeGainLeak', () => {
+  it('pins the exact defect: the max of four NEGATIVE values is a loss, never a gain', () => {
+    // All four SG categories below Tour — the strongest one (−0.10) used to
+    // render as "Biggest gain −0.10 · Putting" in green. It is still a cost.
+    const result = computeGainLeak([
+      { label: 'SG: Off the Tee', value: -0.42 },
+      { label: 'SG: Approach', value: -0.55 },
+      { label: 'SG: Around the Green', value: -0.31 },
+      { label: 'SG: Putting', value: -0.1 },
+    ]);
+    expect(result).not.toBeNull();
+    expect(result!.best.label).toBe('SG: Putting');
+    expect(result!.best.value).toBe(-0.1);
+    // The label/tone-driving flag must say this is NOT a gain — it's negative.
+    expect(result!.bestIsGain).toBe(false);
+    expect(result!.worst.label).toBe('SG: Approach');
+    expect(result!.worstIsLeak).toBe(true);
+  });
+
+  it('symmetric case: the min of four POSITIVE values is a gain, never a leak', () => {
+    const result = computeGainLeak([
+      { label: 'SG: Off the Tee', value: 0.42 },
+      { label: 'SG: Approach', value: 0.55 },
+      { label: 'SG: Around the Green', value: 0.31 },
+      { label: 'SG: Putting', value: 0.1 },
+    ]);
+    expect(result).not.toBeNull();
+    expect(result!.worst.label).toBe('SG: Putting');
+    expect(result!.worst.value).toBe(0.1);
+    // Smallest gain is still a GAIN — must never be flagged as a leak.
+    expect(result!.worstIsLeak).toBe(false);
+    expect(result!.best.label).toBe('SG: Approach');
+    expect(result!.bestIsGain).toBe(true);
+  });
+
+  it('the normal mixed case: a real gain and a real leak both classify correctly', () => {
+    const result = computeGainLeak([
+      { label: 'SG: Off the Tee', value: 0.3 },
+      { label: 'SG: Approach', value: -0.6 },
+      { label: 'SG: Around the Green', value: 0.05 },
+      { label: 'SG: Putting', value: -0.1 },
+    ]);
+    expect(result).toEqual({
+      best: { label: 'SG: Off the Tee', value: 0.3 },
+      worst: { label: 'SG: Approach', value: -0.6 },
+      bestIsGain: true,
+      worstIsLeak: true,
+    });
+  });
+
+  it('needs at least 2 distinct-label values to compare', () => {
+    expect(computeGainLeak([])).toBeNull();
+    expect(computeGainLeak([{ label: 'SG: Putting', value: 0.4 }])).toBeNull();
+    expect(
+      computeGainLeak([
+        { label: 'SG: Putting', value: 0.4 },
+        { label: 'SG: Putting', value: 0.4 },
+      ]),
+    ).toBeNull();
   });
 });
 

@@ -210,7 +210,10 @@ describe('assembleBriefEngineInsights — coach voice (bug #943)', () => {
     const out = assembleBriefEngineInsights(rows, CATEGORIES, { 'player-9': 'Mason Rivers' });
     const msg = out.get('putting')?.message ?? '';
     expect(msg).toContain("Mason Rivers's lag putts (15+ ft) aren't finishing");
-    expect(msg).toContain('costing Mason Rivers a stroke');
+    // Audit W3 — the player is named once; the repeat reference later in the
+    // same sentence reads as a pronoun instead of "Mason Rivers" again.
+    expect(msg).toContain('costing them a stroke');
+    expect(msg).not.toContain('costing Mason Rivers a stroke');
     expect(msg).not.toMatch(/\bYour lag putts\b/);
   });
 
