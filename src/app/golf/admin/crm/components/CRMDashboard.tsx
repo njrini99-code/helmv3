@@ -20,9 +20,14 @@ import {
 import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 import { Button } from '@/components/ui/button';
+import { logError } from '@/lib/error-logging';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 interface CRMDashboardProps {
   allCoaches: Coach[];
+  /** True while the initial coach fetch is in flight. Optional — callers that
+   * don't pass it keep the previous (immediate) empty-state behavior. */
+  loading?: boolean;
   stats: {
     total: number;
     byStatus: Record<CoachStatus, number>;
@@ -43,6 +48,7 @@ interface CRMDashboardProps {
 
 export function CRMDashboard({
   allCoaches,
+  loading = false,
   stats,
   pipelineStages,
   statusConfig: _statusConfig,
@@ -68,6 +74,12 @@ export function CRMDashboard({
       const { data, error } = await (supabase as any).rpc('get_crm_email_stats');
       if (!error && data) {
         setEmailStats(data as { total_sent: number; delivered: number; opened: number; clicked: number; bounced: number });
+      } else if (error) {
+        logError(
+          error instanceof Error ? error : new Error(error?.message || 'get_crm_email_stats failed'),
+          { component: 'CRMDashboard', action: 'fetch-email-stats', sport: 'golf' },
+          'low'
+        );
       }
     }
     fetchEmailStats();
@@ -75,17 +87,23 @@ export function CRMDashboard({
 
   const allNewLeads = stats.byStatus.new_lead === stats.total && stats.total > 0;
 
-  // Division breakdown
-  const divisionStats = useMemo(() => {
-    const d2 = allCoaches.filter(c => c.division === 'D2').length;
-    const d3 = allCoaches.filter(c => c.division === 'D3').length;
-    return { d2, d3 };
+  // Division breakdown — count every division present in the data, not just D2/D3
+  const divisionBreakdown = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allCoaches.forEach(c => {
+      if (!c.division) return;
+      counts[c.division] = (counts[c.division] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count }));
   }, [allCoaches]);
 
   // Conference breakdown (top 8)
   const conferenceStats = useMemo(() => {
     const counts: Record<string, number> = {};
     allCoaches.forEach(c => {
+      if (!c.conference) return;
       counts[c.conference] = (counts[c.conference] || 0) + 1;
     });
     return Object.entries(counts)
@@ -166,7 +184,7 @@ export function CRMDashboard({
           iconColor="text-blue-600"
           label="Total Coaches"
           value={stats.total}
-          detail={`${divisionStats.d2} D2 · ${divisionStats.d3} D3`}
+          detail={divisionBreakdown.slice(0, 2).map(d => `${d.count} ${d.label}`).join(' · ') || 'No divisions yet'}
         />
         <KPICard
           icon={<IconTrendingUp size={20} />}
@@ -198,7 +216,7 @@ export function CRMDashboard({
           iconColor="text-orange-600"
           label="Hot Leads"
           value={stats.hot}
-          detail={`${stats.followUpsDue} follow-ups due`}
+          detail={`${followUpsDueToday.length} follow-ups due`}
           className="hidden xl:block"
         />
       </div>
@@ -385,7 +403,9 @@ export function CRMDashboard({
               <p className="text-xs text-warm-500">{followUpsDueToday.length} coaches need attention</p>
             </div>
           </div>
-          {followUpsDueToday.length === 0 ? (
+          {loading ? (
+            <ListSkeleton items={3} />
+          ) : followUpsDueToday.length === 0 ? (
             <EmptyState icon={<IconClock size={18} className="text-warm-300" />} title="No follow-ups due" subtitle="Schedule follow-ups from coach detail" />
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
@@ -420,7 +440,9 @@ export function CRMDashboard({
               <p className="text-xs text-warm-500">{staleLeads.length} no contact 7+ days</p>
             </div>
           </div>
-          {staleLeads.length === 0 ? (
+          {loading ? (
+            <ListSkeleton items={3} />
+          ) : staleLeads.length === 0 ? (
             <EmptyState icon={<IconWarning size={18} className="text-warm-300" />} title="No stale leads" subtitle="All pipeline leads are actively worked" />
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
@@ -455,7 +477,9 @@ export function CRMDashboard({
               <p className="text-xs text-warm-500">Latest pipeline changes</p>
             </div>
           </div>
-          {recentlyUpdated.length === 0 ? (
+          {loading ? (
+            <ListSkeleton items={3} />
+          ) : recentlyUpdated.length === 0 ? (
             <EmptyState icon={<IconZap size={18} className="text-warm-300" />} title="No activity yet" subtitle="Start working leads to see activity" />
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
@@ -560,12 +584,19 @@ export function CRMDashboard({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Division Breakdown</h3>
-              <p className="text-xs text-warm-500">D2 vs D3 distribution</p>
+              <p className="text-xs text-warm-500">By division</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <DivisionCard label="D2" count={divisionStats.d2} total={stats.total} color="blue" />
-            <DivisionCard label="D3" count={divisionStats.d3} total={stats.total} color="primary" />
+            {divisionBreakdown.map((d, i) => (
+              <DivisionCard
+                key={d.label}
+                label={d.label}
+                count={d.count}
+                total={stats.total}
+                color={i % 2 === 0 ? 'blue' : 'primary'}
+              />
+            ))}
           </div>
         </div>
       </div>
