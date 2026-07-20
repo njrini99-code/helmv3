@@ -50,3 +50,15 @@ export function verifyUnsubToken(coachId: string | null | undefined, token: stri
 export function buildUnsubUrl(coachId: string): string {
   return `${APP_URL}/api/crm/unsubscribe?c=${coachId}&t=${signUnsubToken(coachId)}`;
 }
+
+/**
+ * Replace the `{unsubscribe_url}` template tag with the recipient's real
+ * one-click unsubscribe URL. Server-only (the token is an HMAC keyed by
+ * CRM_UNSUB_SECRET), which is why mergeTags() — importable client-side for
+ * previews — deliberately does NOT handle this tag. Every send path calls this
+ * after mergeTags(). Templates without the tag pass through unchanged.
+ */
+export function applyUnsubTag(text: string, coachId: string): string {
+  if (!text.includes('{unsubscribe_url}')) return text;
+  return text.replace(/\{unsubscribe_url\}/g, buildUnsubUrl(coachId));
+}

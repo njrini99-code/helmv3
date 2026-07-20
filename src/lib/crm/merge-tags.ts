@@ -53,6 +53,14 @@ export const MERGE_TOKENS = [
   'current_software',
 ] as const;
 
+/**
+ * Server-resolved tokens that mergeTags() deliberately does NOT replace.
+ * `{unsubscribe_url}` becomes the recipient's real one-click unsubscribe link
+ * via applyUnsubTag() (unsubscribe-token.ts) inside every send path — it needs
+ * the server-only HMAC secret, so a client-side preview leaves it literal.
+ */
+export const SERVER_TOKENS = ['unsubscribe_url'] as const;
+
 export type MergeToken = (typeof MERGE_TOKENS)[number];
 
 /**

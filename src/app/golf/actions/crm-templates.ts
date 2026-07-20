@@ -66,7 +66,10 @@ export interface CrmEmailTemplate {
   format: TemplateFormat;
   merge_tags: string[] | null;
   is_default: boolean;
+  /** Emails actually sent with this template (all send paths). */
   usage_count: number;
+  /** Most recent send with this template; null = never used. */
+  last_used_at: string | null;
 }
 
 // ============================================================================
@@ -118,7 +121,7 @@ export async function listTemplates(): Promise<CrmEmailTemplate[]> {
 
     const { data, error } = await client
       .from('crm_email_templates')
-      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count')
+      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count, last_used_at')
       // Default templates first within a category, then most-used.
       .order('category', { ascending: true })
       .order('is_default', { ascending: false })
@@ -138,6 +141,7 @@ export async function listTemplates(): Promise<CrmEmailTemplate[]> {
       merge_tags: (row.merge_tags as string[] | null) ?? null,
       is_default: (row.is_default as boolean | null) ?? false,
       usage_count: (row.usage_count as number | null) ?? 0,
+      last_used_at: (row.last_used_at as string | null) ?? null,
     }));
   } catch (error) {
     void logServerException(error, {
@@ -191,7 +195,7 @@ export async function createTemplate(input: {
         usage_count: 0,
         created_by: user.id,
       })
-      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count')
+      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count, last_used_at')
       .single();
 
     if (error) {
@@ -216,6 +220,7 @@ export async function createTemplate(input: {
       merge_tags: (created.merge_tags as string[] | null) ?? null,
       is_default: (created.is_default as boolean | null) ?? false,
       usage_count: (created.usage_count as number | null) ?? 0,
+      last_used_at: (created.last_used_at as string | null) ?? null,
     };
   } catch (error) {
     void logServerException(error, {
@@ -295,7 +300,7 @@ export async function updateTemplate(
 
     const { data, error } = await client
       .from('crm_email_templates')
-      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count')
+      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count, last_used_at')
       .eq('id', id)
       .single();
     if (error) {
@@ -314,6 +319,7 @@ export async function updateTemplate(
       merge_tags: (row.merge_tags as string[] | null) ?? null,
       is_default: (row.is_default as boolean | null) ?? false,
       usage_count: (row.usage_count as number | null) ?? 0,
+      last_used_at: (row.last_used_at as string | null) ?? null,
     };
   } catch (error) {
     void logServerException(error, {
@@ -387,7 +393,7 @@ export async function duplicateTemplate(id: string): Promise<CrmEmailTemplate> {
         usage_count: 0,
         created_by: user.id,
       })
-      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count')
+      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count, last_used_at')
       .single();
 
     if (error) {
@@ -406,6 +412,7 @@ export async function duplicateTemplate(id: string): Promise<CrmEmailTemplate> {
       merge_tags: (row.merge_tags as string[] | null) ?? null,
       is_default: (row.is_default as boolean | null) ?? false,
       usage_count: (row.usage_count as number | null) ?? 0,
+      last_used_at: (row.last_used_at as string | null) ?? null,
     };
   } catch (error) {
     void logServerException(error, {
@@ -450,7 +457,7 @@ export async function setDefaultTemplate(
       .from('crm_email_templates')
       .update({ is_default: true })
       .eq('id', id)
-      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count')
+      .select('id, name, subject, body, category, format, merge_tags, is_default, usage_count, last_used_at')
       .single();
     if (error) {
       throw new Error(`Failed to set default template: ${error.message}`);
@@ -468,6 +475,7 @@ export async function setDefaultTemplate(
       merge_tags: (row.merge_tags as string[] | null) ?? null,
       is_default: (row.is_default as boolean | null) ?? false,
       usage_count: (row.usage_count as number | null) ?? 0,
+      last_used_at: (row.last_used_at as string | null) ?? null,
     };
   } catch (error) {
     void logServerException(error, {

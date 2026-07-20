@@ -152,7 +152,15 @@ const MOBILE_MORE_TABS = ['dashboard', 'pipeline', 'conferences', 'inbox', 'sett
 
 // ── "Open in Gmail" manual-send ──
 // The minimal shape we need from a crm_email_templates row to merge + compose.
-type ManualGmailTemplate = { id: string; name: string; subject: string; body: string };
+type ManualGmailTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  /** crm_email_templates.format — 'html' bodies are sent multipart via the
+   *  direct-Gmail path instead of as literal markup in text/plain. */
+  format: string | null;
+};
 // localStorage key for the currently-armed Gmail template (survives reloads).
 const MANUAL_GMAIL_TEMPLATE_KEY = 'crm_manual_gmail_template';
 
@@ -609,6 +617,7 @@ export default function CRMPage() {
             name: parsed.name ?? 'Template',
             subject: parsed.subject,
             body: parsed.body,
+            format: parsed.format ?? null,
           });
         }
       }
@@ -652,13 +661,14 @@ export default function CRMPage() {
         );
         return;
       }
-      const rows = (data ?? []) as Array<{ id: string; name: string | null; subject: string | null; body: string | null }>;
+      const rows = (data ?? []) as Array<{ id: string; name: string | null; subject: string | null; body: string | null; format: string | null }>;
       setEmailTemplates(
         rows.map((t) => ({
           id: t.id,
           name: t.name ?? 'Untitled template',
           subject: t.subject ?? '',
           body: t.body ?? '',
+          format: t.format ?? null,
         })),
       );
     })();
@@ -678,7 +688,8 @@ export default function CRMPage() {
     if (
       fresh.subject !== activeManualTemplate.subject ||
       fresh.body !== activeManualTemplate.body ||
-      fresh.name !== activeManualTemplate.name
+      fresh.name !== activeManualTemplate.name ||
+      fresh.format !== activeManualTemplate.format
     ) {
       setActiveManualTemplate(fresh);
     }
@@ -876,7 +887,13 @@ export default function CRMPage() {
     const body = mergeTemplate(activeManualTemplate.body, coach);
     const tid = toast.loading(`Sending to ${coach.name}…`);
     try {
-      const res = await sendCoachViaGmail({ coach_id: coach.id, subject, body });
+      const res = await sendCoachViaGmail({
+        coach_id: coach.id,
+        subject,
+        body,
+        format: activeManualTemplate.format ?? null,
+        template_id: activeManualTemplate.id,
+      });
       toast.dismiss(tid);
       if (res.ok) {
         markCoachContactedLocally(coach.id);

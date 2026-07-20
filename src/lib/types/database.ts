@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_allowlist: {
@@ -9156,6 +9181,7 @@ export type Database = {
           format: string
           id: string
           is_default: boolean | null
+          last_used_at: string | null
           merge_tags: string[] | null
           name: string
           subject: string
@@ -9170,6 +9196,7 @@ export type Database = {
           format?: string
           id?: string
           is_default?: boolean | null
+          last_used_at?: string | null
           merge_tags?: string[] | null
           name: string
           subject: string
@@ -9184,6 +9211,7 @@ export type Database = {
           format?: string
           id?: string
           is_default?: boolean | null
+          last_used_at?: string | null
           merge_tags?: string[] | null
           name?: string
           subject?: string
@@ -9199,6 +9227,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_email_templates_backup_20260720: {
+        Row: {
+          body: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          format: string | null
+          id: string | null
+          is_default: boolean | null
+          last_used_at: string | null
+          merge_tags: string[] | null
+          name: string | null
+          subject: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          format?: string | null
+          id?: string | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          merge_tags?: string[] | null
+          name?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          format?: string | null
+          id?: string | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          merge_tags?: string[] | null
+          name?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
       }
       crm_events: {
         Row: {
@@ -19978,6 +20054,7 @@ export type Database = {
       }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_staff: { Args: { p_team_id: string }; Returns: boolean }
+      is_golf_coach: { Args: never; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_head_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
@@ -20368,6 +20445,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       admin_event_severity: ["info", "warning", "error", "critical"],

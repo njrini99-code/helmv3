@@ -32,6 +32,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { mergeTags } from '@/lib/crm/merge-tags';
+import { applyUnsubTag } from '@/lib/crm/unsubscribe-token';
 import { buildOutreachExtras } from '@/lib/crm/outreach-headers';
 
 export const runtime = 'nodejs';
@@ -346,7 +347,8 @@ async function processEnrollment(
     current_software: coach.current_software,
   };
   const personalizedSubject = mergeTags(subject, recipient);
-  const personalizedBody = mergeTags(body, recipient);
+  // {unsubscribe_url} resolves server-side only (HMAC token) — after mergeTags.
+  const personalizedBody = applyUnsubTag(mergeTags(body, recipient), coach.id);
 
   // ── Send via Resend ──
   const apiKey = process.env.RESEND_API_KEY;

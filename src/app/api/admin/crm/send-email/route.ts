@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { mergeTags } from '@/lib/crm/merge-tags';
+import { applyUnsubTag } from '@/lib/crm/unsubscribe-token';
 import { buildOutreachExtras } from '@/lib/crm/outreach-headers';
 
 interface Recipient {
@@ -229,7 +230,8 @@ export async function POST(request: Request) {
 
       // Replace merge tags with recipient-specific data (shared single source — closes G10)
       const personalizedSubject = mergeTags(subject, recipient);
-      const personalizedBody = mergeTags(body, recipient);
+      // {unsubscribe_url} resolves server-side only (HMAC token) — after mergeTags.
+      const personalizedBody = applyUnsubTag(mergeTags(body, recipient), recipient.id);
 
       const extras = buildOutreachExtras({
         coachId: recipient.id,
@@ -342,7 +344,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // ── Increment template usage count ──
+    // ── Track template usage: count EMAILS SENT (not send-clicks) + last use ──
     if (templateId && sent > 0) {
       try {
         const { data: tpl } = (await fromUntyped(supabase, 'crm_email_templates')
@@ -352,7 +354,10 @@ export async function POST(request: Request) {
 
         if (tpl) {
           await fromUntyped(supabase, 'crm_email_templates')
-            .update({ usage_count: (tpl.usage_count ?? 0) + 1 })
+            .update({
+              usage_count: (tpl.usage_count ?? 0) + sent,
+              last_used_at: new Date().toISOString(),
+            })
             .eq('id', templateId);
         }
       } catch {

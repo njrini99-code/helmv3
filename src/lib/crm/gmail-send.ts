@@ -149,32 +149,72 @@ function buildMime(args: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   fromName: string;
   fromEmail: string;
   replyTo: string;
 }): string {
-  const { to, subject, text, fromName, fromEmail, replyTo } = args;
-  const headers = [
+  const { to, subject, text, html, fromName, fromEmail, replyTo } = args;
+  const commonHeaders = [
     `From: ${encodeHeader(fromName)} <${sanitizeHeaderValue(fromEmail)}>`,
     `To: ${sanitizeHeaderValue(to)}`,
     `Reply-To: ${sanitizeHeaderValue(replyTo)}`,
     `Subject: ${encodeHeader(subject)}`,
     'MIME-Version: 1.0',
+  ];
+
+  if (!html) {
+    // Plain sends keep the exact battle-tested text/plain envelope.
+    const headers = [
+      ...commonHeaders,
+      'Content-Type: text/plain; charset="UTF-8"',
+      'Content-Transfer-Encoding: quoted-printable',
+    ].join('\r\n');
+    // CRLF headers + blank-line separator; body is quoted-printable encoded.
+    return `${headers}\r\n\r\n${quotedPrintableEncode(text)}`;
+  }
+
+  // multipart/alternative: text part FIRST (least preferred), html LAST — per
+  // RFC 2046 order of increasing preference. Without this shape, an html-format
+  // template goes out as literal markup in a text/plain body (the "raw
+  // <!DOCTYPE html> in the prospect's inbox" failure this fixes).
+  const boundary = `=_helm_${Buffer.from(`${to}:${subject}`).toString('hex').slice(0, 24)}`;
+  const headers = [
+    ...commonHeaders,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+  ].join('\r\n');
+  const textPart = [
+    `--${boundary}`,
     'Content-Type: text/plain; charset="UTF-8"',
     'Content-Transfer-Encoding: quoted-printable',
+    '',
+    quotedPrintableEncode(text),
   ].join('\r\n');
-  // CRLF headers + blank-line separator; body is quoted-printable encoded.
-  return `${headers}\r\n\r\n${quotedPrintableEncode(text)}`;
+  const htmlPart = [
+    `--${boundary}`,
+    'Content-Type: text/html; charset="UTF-8"',
+    'Content-Transfer-Encoding: quoted-printable',
+    '',
+    quotedPrintableEncode(html),
+  ].join('\r\n');
+  return `${headers}\r\n\r\n${textPart}\r\n${htmlPart}\r\n--${boundary}--`;
 }
 
 export interface GmailSendInput {
   to: string;
   subject: string;
+  /** Plain-text body — always required (it is the only part for plain sends,
+   *  and the alternative part when `html` is present). */
   text: string;
+  /** Optional full HTML document. When present the message goes out as
+   *  multipart/alternative (text + html) instead of bare text/plain. */
+  html?: string;
 }
 
 /**
- * Send a true text/plain email as GMAIL_SEND_AS via the Gmail API.
+ * Send an email as GMAIL_SEND_AS via the Gmail API — true text/plain when only
+ * `text` is given (the deliverability-optimal cold-outreach shape), or
+ * multipart/alternative (text + html) when `html` is provided.
  * Returns the Gmail message id. Throws on failure (caller logs + reports).
  */
 export async function sendGmailEmail(input: GmailSendInput): Promise<{ id: string }> {
@@ -189,6 +229,7 @@ export async function sendGmailEmail(input: GmailSendInput): Promise<{ id: strin
     to: input.to,
     subject: input.subject,
     text: input.text,
+    html: input.html,
     fromName,
     fromEmail: sendAs,
     replyTo: sendAs,

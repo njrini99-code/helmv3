@@ -20,9 +20,11 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { isGmailSendConfigured, sendGmailEmail } from '@/lib/crm/gmail-send';
+import { htmlToText } from '@/lib/crm/html-to-text';
 import { verifyEmailDeliverability } from '@/lib/crm/email-verify';
 import { checkDomainAuth, type DomainAuthResult } from '@/lib/crm/domain-auth-check';
 import { mergeTags, type Recipient } from '@/lib/crm/merge-tags';
+import { applyUnsubTag } from '@/lib/crm/unsubscribe-token';
 import { describeError } from '@/lib/utils/describe-error';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 
@@ -136,6 +138,7 @@ async function recordGmailTouch(
   coach: { id: string; status: string | null },
   subject: string,
   gmailId: string,
+  templateId?: string | null,
 ) {
   const nowIso = new Date().toISOString();
   try {
@@ -145,7 +148,14 @@ async function recordGmailTouch(
       subject,
       notes: 'Sent via Gmail (direct)',
       created_by: userId,
-      metadata: { channel: 'gmail_api', gmail_message_id: gmailId },
+      metadata: {
+        channel: 'gmail_api',
+        gmail_message_id: gmailId,
+        // Stamp the template on every send so usage is reconstructable from the
+        // log (usage_count alone is a lossy counter that history showed nobody
+        // was incrementing on this path).
+        ...(templateId ? { templateId } : {}),
+      },
     });
     if (error) throw error;
   } catch (err) {
@@ -159,6 +169,44 @@ async function recordGmailTouch(
   } catch (err) {
     console.error('[crm] gmail recordGmailTouch: status flip failed:', err);
   }
+}
+
+/**
+ * Increment a template's usage_count by the number of emails actually sent and
+ * stamp last_used_at. Best-effort — a failed bump never fails the send.
+ */
+async function bumpTemplateUsage(client: AnySupabase, templateId: string, sentCount: number) {
+  if (!templateId || sentCount <= 0) return;
+  try {
+    const { data: tpl } = await client
+      .from('crm_email_templates')
+      .select('usage_count')
+      .eq('id', templateId)
+      .maybeSingle();
+    const { error } = await client
+      .from('crm_email_templates')
+      .update({
+        usage_count: ((tpl?.usage_count as number | null) ?? 0) + sentCount,
+        last_used_at: new Date().toISOString(),
+      })
+      .eq('id', templateId);
+    if (error) throw error;
+  } catch (err) {
+    console.error('[crm] gmail bumpTemplateUsage failed:', err);
+  }
+}
+
+/**
+ * Map a template body + format to the Gmail send parts. An html-format body
+ * goes out as multipart/alternative (derived text fallback + the html
+ * document); anything else stays the deliverability-optimal bare text/plain.
+ * Without this, an html template's markup was sent as literal text — the
+ * "raw <!DOCTYPE html> in the prospect's inbox" bug.
+ */
+function toSendParts(body: string, format: string | null | undefined): { text: string; html?: string } {
+  const isHtml = format === 'html' || /^\s*(<!DOCTYPE|<html)/i.test(body);
+  if (!isHtml) return { text: body };
+  return { text: htmlToText(body), html: body };
 }
 
 async function isSuppressed(client: AnySupabase, email: string): Promise<boolean> {
@@ -197,6 +245,12 @@ export async function sendCoachViaGmail(input: {
   coach_id: string;
   subject: string;
   body: string;
+  /** Format of the armed template ('html' bodies go out multipart). Bodies that
+   *  look like an HTML document are sent multipart even without this flag. */
+  format?: string | null;
+  /** Template the body was merged from — stamped into the contact log and
+   *  counted toward the template's usage. */
+  template_id?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!isGmailSendConfigured()) return { ok: false, error: 'Gmail send not configured' };
@@ -229,8 +283,10 @@ export async function sendCoachViaGmail(input: {
       return { ok: false, error: `Skipped (undeliverable: ${verdict.reason})` };
     }
 
-    const { id } = await sendGmailEmail({ to: coach.email, subject: input.subject, text: input.body });
-    await recordGmailTouch(supabase, user.id, coach, input.subject, id);
+    const parts = toSendParts(applyUnsubTag(input.body, coach.id), input.format);
+    const { id } = await sendGmailEmail({ to: coach.email, subject: input.subject, ...parts });
+    await recordGmailTouch(supabase, user.id, coach, input.subject, id, input.template_id);
+    if (input.template_id) await bumpTemplateUsage(supabase, input.template_id, 1);
     revalidatePath(CRM_REVALIDATE_PATH);
     return { ok: true };
   } catch (err) {
@@ -276,7 +332,7 @@ export async function sendNextBatchViaGmail(input: {
 
     const { data: tpl } = await supabase
       .from('crm_email_templates')
-      .select('subject, body')
+      .select('subject, body, format')
       .eq('id', input.templateId)
       .maybeSingle();
     if (!tpl?.subject || !tpl?.body) return { ok: false, ...empty, error: 'Template not found' };
@@ -344,10 +400,11 @@ export async function sendNextBatchViaGmail(input: {
         division: c.division, program: null, team_size: null, current_software: null,
       };
       const subject = mergeTags(tpl.subject, recipient);
-      const body = mergeTags(tpl.body, recipient);
+      const body = applyUnsubTag(mergeTags(tpl.body, recipient), c.id);
+      const parts = toSendParts(body, tpl.format);
       try {
-        const { id } = await sendGmailEmail({ to: c.email!, subject, text: body });
-        await recordGmailTouch(supabase, user.id, c, subject, id);
+        const { id } = await sendGmailEmail({ to: c.email!, subject, ...parts });
+        await recordGmailTouch(supabase, user.id, c, subject, id, input.templateId);
         sent++;
         details.push({ name: c.name, school: c.school, status: 'sent' });
       } catch (err) {
@@ -379,6 +436,7 @@ export async function sendNextBatchViaGmail(input: {
       );
     }
 
+    await bumpTemplateUsage(supabase, input.templateId, sent);
     revalidatePath(CRM_REVALIDATE_PATH);
     return { ok: true, sent, skipped, failed, capped: sentToday + sent >= dailyCap, details };
   } catch (err) {
