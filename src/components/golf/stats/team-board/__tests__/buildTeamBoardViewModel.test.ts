@@ -1,0 +1,276 @@
+import { describe, it, expect } from 'vitest';
+import {
+  rankByValue,
+  weightedMean,
+  signalToneFor,
+  scoringTrendVerdict,
+  worstCategoryLabel,
+  worstStandingMetric,
+  formatMetricValue,
+  fmtSg,
+  buildTeamBoardViewModel,
+  TREND_SIGNAL_MIN_ROUNDS,
+  type TeamBoardPlayerInput,
+} from '../buildTeamBoardViewModel';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+
+function standing(overrides: Partial<PlayerStanding> & { player_value: number }): PlayerStanding {
+  return {
+    player_id: 'p1',
+    metric_id: 'sg_putting',
+    team_avg: null,
+    team_n: 0,
+    team_pct: null,
+    level_avg: null,
+    level_n: 0,
+    level_pct: null,
+    pga_value: 0,
+    pga_delta: null,
+    computed_at: '2026-07-19T00:00:00Z',
+    ...overrides,
+  };
+}
+
+describe('rankByValue', () => {
+  it('ranks higher_better values 1..N best first', () => {
+    const ranks = rankByValue(
+      [
+        { id: 'a', value: 0.5 },
+        { id: 'b', value: -0.2 },
+        { id: 'c', value: 1.1 },
+      ],
+      'higher_better',
+    );
+    expect(ranks.get('c')).toEqual({ rank: 1, of: 3 });
+    expect(ranks.get('a')).toEqual({ rank: 2, of: 3 });
+    expect(ranks.get('b')).toEqual({ rank: 3, of: 3 });
+  });
+
+  it('ranks lower_better values 1..N best first', () => {
+    const ranks = rankByValue(
+      [
+        { id: 'a', value: 72.4 },
+        { id: 'b', value: 79.8 },
+      ],
+      'lower_better',
+    );
+    expect(ranks.get('a')).toEqual({ rank: 1, of: 2 });
+    expect(ranks.get('b')).toEqual({ rank: 2, of: 2 });
+  });
+
+  it('excludes null/non-finite values from both the ranking and the denominator', () => {
+    const ranks = rankByValue(
+      [
+        { id: 'a', value: 1 },
+        { id: 'b', value: null },
+        { id: 'c', value: Number.NaN },
+      ],
+      'higher_better',
+    );
+    expect(ranks.get('a')).toEqual({ rank: 1, of: 1 });
+    expect(ranks.has('b')).toBe(false);
+    expect(ranks.has('c')).toBe(false);
+  });
+});
+
+describe('weightedMean', () => {
+  it('weights by rounds played', () => {
+    // (0.5*10 + -0.5*2) / 12 = 4/12 = 0.3333...
+    const mean = weightedMean([
+      { value: 0.5, weight: 10 },
+      { value: -0.5, weight: 2 },
+    ]);
+    expect(mean).toBeCloseTo(1 / 3, 5);
+  });
+
+  it('falls back to an unweighted mean when no entry has a positive weight', () => {
+    const mean = weightedMean([
+      { value: 1, weight: 0 },
+      { value: 3, weight: 0 },
+    ]);
+    expect(mean).toBe(2);
+  });
+
+  it('returns null when every value is null', () => {
+    expect(weightedMean([{ value: null, weight: 5 }])).toBeNull();
+  });
+});
+
+describe('signalToneFor — hot/watch/quiet rules', () => {
+  it('is hot when the player is the top performer', () => {
+    expect(signalToneFor({ isTopPerformer: true, trend: 'stable', topInsightPriority: null })).toBe('hot');
+  });
+
+  it('is hot when improving, even without the top-performer crown', () => {
+    expect(signalToneFor({ isTopPerformer: false, trend: 'improving', topInsightPriority: null })).toBe('hot');
+  });
+
+  it('is watch when declining', () => {
+    expect(signalToneFor({ isTopPerformer: false, trend: 'declining', topInsightPriority: null })).toBe('watch');
+  });
+
+  it('is watch on a high-priority top insight even without a declining trend', () => {
+    expect(signalToneFor({ isTopPerformer: false, trend: 'stable', topInsightPriority: 'high' })).toBe('watch');
+    expect(signalToneFor({ isTopPerformer: false, trend: null, topInsightPriority: 'critical' })).toBe('watch');
+  });
+
+  it('is quiet for a steady player with no flagged insight', () => {
+    expect(signalToneFor({ isTopPerformer: false, trend: 'stable', topInsightPriority: null })).toBe('quiet');
+  });
+
+  it('is quiet (not watch) for a low/medium-priority insight', () => {
+    expect(signalToneFor({ isTopPerformer: false, trend: 'stable', topInsightPriority: 'medium' })).toBe('quiet');
+  });
+
+  it('is quiet for a cold-start player awaiting a trend signal', () => {
+    expect(signalToneFor({ isTopPerformer: false, trend: null, topInsightPriority: null })).toBe('quiet');
+  });
+});
+
+describe('scoringTrendVerdict', () => {
+  it('returns null (no signal) for a null delta', () => {
+    expect(scoringTrendVerdict(null)).toBeNull();
+  });
+
+  it('classifies a negative (improving, lower-is-better) delta past the threshold', () => {
+    expect(scoringTrendVerdict(-1.2)).toBe('improving');
+  });
+
+  it('classifies a positive delta past the threshold as declining', () => {
+    expect(scoringTrendVerdict(1.2)).toBe('declining');
+  });
+
+  it('classifies a delta inside the threshold as stable', () => {
+    expect(scoringTrendVerdict(0.05)).toBe('stable');
+  });
+});
+
+describe('worstCategoryLabel', () => {
+  it('picks the category with the highest (worst) rank', () => {
+    const label = worstCategoryLabel({
+      tee: { rank: 2, of: 6 },
+      app: { rank: 4, of: 6 },
+      short: { rank: 1, of: 6 },
+      putt: { rank: 5, of: 6 },
+    });
+    expect(label).toBe('Putting');
+  });
+
+  it('breaks ties in putt > app > tee > short priority order', () => {
+    const label = worstCategoryLabel({
+      tee: { rank: 6, of: 6 },
+      app: { rank: 6, of: 6 },
+      short: null,
+      putt: null,
+    });
+    expect(label).toBe('Approach');
+  });
+
+  it('returns null when no category has a rank', () => {
+    expect(worstCategoryLabel({ tee: null, app: null, short: null, putt: null })).toBeNull();
+  });
+});
+
+describe('worstStandingMetric', () => {
+  it('picks the row with the lowest team percentile', () => {
+    const map = new Map<MetricId, PlayerStanding>([
+      ['sg_putting', standing({ metric_id: 'sg_putting', player_value: -1.6, team_pct: 20 })],
+      ['sg_approach', standing({ metric_id: 'sg_approach', player_value: 0.2, team_pct: 60 })],
+    ]);
+    const worst = worstStandingMetric(map);
+    expect(worst?.metric).toBe('sg_putting');
+  });
+
+  it('ignores rows with a null team_pct (cold-start)', () => {
+    const map = new Map<MetricId, PlayerStanding>([
+      ['sg_putting', standing({ metric_id: 'sg_putting', player_value: -1.6, team_pct: null })],
+      ['sg_approach', standing({ metric_id: 'sg_approach', player_value: 0.2, team_pct: 60 })],
+    ]);
+    expect(worstStandingMetric(map)?.metric).toBe('sg_approach');
+  });
+
+  it('returns null for an undefined or empty map', () => {
+    expect(worstStandingMetric(undefined)).toBeNull();
+    expect(worstStandingMetric(new Map())).toBeNull();
+  });
+});
+
+describe('formatMetricValue', () => {
+  it('formats percent/strokes/feet/yards/count', () => {
+    expect(formatMetricValue(41.4, 'percent')).toBe('41%');
+    expect(formatMetricValue(-1.6, 'strokes')).toBe(fmtSg(-1.6));
+    expect(formatMetricValue(12.34, 'feet')).toBe('12.3 ft');
+    expect(formatMetricValue(220.5, 'yards')).toBe('220.5 yd');
+    expect(formatMetricValue(1.2, 'count')).toBe('1.2');
+  });
+});
+
+function player(overrides: Partial<TeamBoardPlayerInput>): TeamBoardPlayerInput {
+  return {
+    id: 'p1',
+    name: 'Player One',
+    classYear: "'26",
+    roundsPlayed: 12,
+    scoringAverage: 73.5,
+    scoringTrend: null,
+    lastRoundScore: 74,
+    recentScores: [],
+    composite: null,
+    topInsightTitle: null,
+    topInsightPriority: null,
+    ...overrides,
+  };
+}
+
+describe('buildTeamBoardViewModel', () => {
+  it('ranks cells from the standing map and marks the top composite hot', () => {
+    const jackson = player({ id: 'jackson', composite: 82, scoringTrend: -0.1 });
+    const mason = player({ id: 'mason', composite: 65, scoringTrend: 0.9, topInsightPriority: 'high' });
+
+    const standingByPlayer = new Map<string, Map<MetricId, PlayerStanding>>([
+      ['jackson', new Map([['sg_putting', standing({ metric_id: 'sg_putting', player_value: 0.6, team_pct: 90 })]])],
+      ['mason', new Map([['sg_putting', standing({ metric_id: 'sg_putting', player_value: -1.6, team_pct: 15 })]])],
+    ]);
+
+    const vm = buildTeamBoardViewModel({
+      players: [jackson, mason],
+      standingByPlayer,
+      intelligenceSampleSize: 4,
+      rounds30d: 41,
+    });
+
+    const jacksonRow = vm.rows.find((r) => r.id === 'jackson');
+    const masonRow = vm.rows.find((r) => r.id === 'mason');
+
+    expect(jacksonRow?.ranks.putt).toEqual({ rank: 1, of: 2 });
+    expect(masonRow?.ranks.putt).toEqual({ rank: 2, of: 2 });
+    expect(jacksonRow?.signal.tone).toBe('hot');
+    expect(jacksonRow?.signal.label).toBe('Top performer');
+    expect(masonRow?.signal.tone).toBe('watch');
+    expect(masonRow?.expand.worstMetricLabel).toBe('SG: Putting');
+  });
+
+  it('reports "N rds to trend" for a cold-start player under the signal minimum', () => {
+    const p = player({ id: 'rookie', roundsPlayed: 5, scoringTrend: null });
+    const vm = buildTeamBoardViewModel({
+      players: [p],
+      standingByPlayer: new Map(),
+      intelligenceSampleSize: 0,
+      rounds30d: 3,
+    });
+    expect(vm.rows[0]?.signal.tone).toBe('quiet');
+    expect(vm.rows[0]?.signal.label).toBe(`${TREND_SIGNAL_MIN_ROUNDS - 5} rds to trend`);
+  });
+
+  it('produces an honest em-dash team scoring/SG when the roster has no data', () => {
+    const vm = buildTeamBoardViewModel({
+      players: [player({ id: 'a', scoringAverage: null })],
+      standingByPlayer: new Map(),
+      intelligenceSampleSize: 0,
+      rounds30d: 0,
+    });
+    expect(vm.kpis.teamScoring).toBe('—');
+    expect(vm.kpis.teamSg).toBe('—');
+  });
+});

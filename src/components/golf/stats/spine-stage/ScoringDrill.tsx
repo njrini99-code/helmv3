@@ -1,0 +1,136 @@
+'use client';
+
+/**
+ * ============================================================================
+ * ScoringDrill — `?area=scoring` (spec §5.1)
+ * ----------------------------------------------------------------------------
+ * Par-split outcome mix (reused `BarCompare`), streak/best headline readouts,
+ * and the worst holes from the newly-surfaced `getWorstHoleAnalysis` as a
+ * ranked `PriorityList` (rank IS the leak-severity order).
+ * ========================================================================== */
+
+import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { InstrumentPanel, Readout, BarCompare } from '@/components/fairway';
+import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import type { WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
+
+function finite(n: number | null | undefined): number | null {
+  return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+function fmtToPar(v: number | null): string {
+  if (v === null) return '—';
+  if (Math.abs(v) < 0.05) return 'E';
+  return v > 0 ? `+${v.toFixed(2)}` : `−${Math.abs(v).toFixed(2)}`;
+}
+function pctOf(n: number, total: number): number {
+  return total > 0 ? (n / total) * 100 : 0;
+}
+
+const PAR_KEYS = [
+  { key: 'par3', label: 'Par 3' },
+  { key: 'par4', label: 'Par 4' },
+  { key: 'par5', label: 'Par 5' },
+] as const;
+
+export interface ScoringDrillProps {
+  detailedStats: GolfStats | null;
+  worstHoles: WorstHoleResponse | null;
+}
+
+export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
+  const { home } = useStage();
+  const s = detailedStats;
+
+  const parCards = PAR_KEYS.map(({ key, label }) => ({ label, d: s?.scoringByPar[key] }))
+    .filter((c) => (c.d?.total ?? 0) > 0)
+    .map((c) => ({ label: c.label, d: c.d! }));
+
+  const worstItems = (worstHoles?.worstHoles ?? []).slice(0, 5).map((h, i) => ({
+    rank: i + 1,
+    title: `Hole ${h.holeNumber} · Par ${h.par}`,
+    value: fmtToPar(h.averageToPar),
+  }));
+
+  return (
+    <DrillPanel title="Scoring" backLabel="All areas" onBack={home}>
+      <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={finite(s?.scoringAverage) ?? undefined} label="Scoring average" size="md" state={s?.scoringAverage != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout display={fmtToPar(finite(s?.avgScoreToPar))} label="Avg to par" size="md" state={s?.avgScoreToPar != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={finite(s?.bestRound) ?? undefined} label="Best round" size="md" state={s?.bestRound != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={finite(s?.worstRound) ?? undefined} label="Worst round" size="md" state={s?.worstRound != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
+          </InstrumentPanel>
+        </div>
+
+        {parCards.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {parCards.map(({ label, d }) => {
+              const bars = [
+                { label: 'Birdie+', value: pctOf(d.eagle + d.birdie, d.total) },
+                { label: 'Par', value: pctOf(d.par, d.total) },
+                { label: 'Bogey', value: pctOf(d.bogey, d.total) },
+                { label: 'Double+', value: pctOf(d.doublePlus, d.total) },
+              ];
+              let maxIdx = 0;
+              for (let i = 1; i < bars.length; i++) if ((bars[i]?.value ?? 0) > (bars[maxIdx]?.value ?? 0)) maxIdx = i;
+              return (
+                <BarCompare
+                  key={label}
+                  title={label}
+                  overline="Scoring"
+                  subtitle={`${fmtToPar(d.avgToPar)} / hole · ${d.total} holes`}
+                  takeaway={`Score distribution on ${label.toLowerCase()}s.`}
+                  data={bars.map((b, i) => ({ ...b, highlight: i === maxIdx }))}
+                  height={160}
+                  valueFormatter={(v) => `${Math.round(v)}%`}
+                />
+              );
+            })}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={finite(s?.mostBirdiesRound) ?? undefined} label="Most birdies / round" size="sm" state={s?.mostBirdiesRound != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={finite(s?.mostBirdiesRow) ?? undefined} label="Most birdies in a row" size="sm" state={s?.mostBirdiesRow != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={finite(s?.longestNo3PuttStreak) ?? undefined} unit="holes" label="Longest no-3-putt streak" size="sm" state={s?.longestNo3PuttStreak != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+          </InstrumentPanel>
+        </div>
+
+        {worstItems.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <h4 className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+              Toughest holes
+            </h4>
+            <ol className="grid gap-2.5 rounded-card border border-border-subtle bg-surface p-4">
+              {worstItems.map((item) => (
+                <li key={item.rank} className="grid grid-cols-[22px_1fr_auto] items-baseline gap-2.5">
+                  <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                    {String(item.rank).padStart(2, '0')}
+                  </span>
+                  <span className="min-w-0 truncate font-fw-sans text-body-sm font-semibold text-text-primary">
+                    {item.title}
+                  </span>
+                  <span className="font-fw-mono text-caption tabular-nums text-fw-warning">
+                    {item.value}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
+      </div>
+    </DrillPanel>
+  );
+}
