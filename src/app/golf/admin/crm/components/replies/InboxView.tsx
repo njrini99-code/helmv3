@@ -152,7 +152,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
         </div>
       </div>
 
-      {section === 'demos' && <InboundLeadsView />}
+      {section === 'demos' && <InboundLeadsView onOpenCoach={onCoachClick} />}
 
       {section === 'replies' && error && (
         <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">

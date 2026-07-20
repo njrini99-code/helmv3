@@ -56,6 +56,7 @@ import { NotificationBadgeProvider, useNotificationBadges } from '@/contexts/not
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
+import { DemoPricingNudge } from '@/components/golf/demo/DemoPricingNudge';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
@@ -660,6 +661,10 @@ export function FairwayDashboardShell({
               <LazyMotion features={loadFeatures}>
                 <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                   <LastSeenUpdater />
+                  {/* Must mount BEFORE DemoEnterTracker — see DemoPricingNudge.tsx
+                      header: it reads window.location.search for `demo=1` before
+                      DemoEnterTracker's own effect strips that param from the URL. */}
+                  <DemoPricingNudge />
                   {/* B36/F012: the demo_coach_entered PostHog event must fire in the
                       flag-ON shell too — prod demo entries land here, not on the legacy
                       GolfDashboardShell. Pure side-effect leaf (renders null). */}

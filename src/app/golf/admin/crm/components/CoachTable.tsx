@@ -16,6 +16,7 @@ import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { Button, IconButton } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/select';
 import { nextStepLabel } from './next-step-label';
+import { groupBy } from './group-coaches';
 
 // Row-density modes. Comfortable keeps the original generous vertical rhythm;
 // Compact tightens cell padding + line height so ~2x as many rows fit a
@@ -1122,31 +1123,36 @@ function SchoolGroupView({
 }: SchoolGroupViewProps) {
   const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
 
+  // Groups on a NORMALIZED key (trim, collapse internal whitespace, case-fold)
+  // via the shared groupBy() helper — "UNC Chapel Hill" and "unc chapel hill "
+  // land in ONE group instead of two (prod has 25 duplicate school+name pairs
+  // caused by exactly this kind of whitespace/casing drift). The displayed
+  // header is the first-seen raw school string; null/blank schools pool into
+  // a "No School" group that always sorts last, never floating to the top
+  // just because it happens to be the largest bucket. Group membership and
+  // counts come ONLY from the `coaches` prop, which is already the
+  // caller's filtered list — so switching filters shrinks/grows groups
+  // correctly with no separate re-derivation.
   const schoolGroups = useMemo((): SchoolGroup[] => {
-    const groups: Record<string, Coach[]> = {};
-    coaches.forEach(coach => {
-      if (!groups[coach.school]) groups[coach.school] = [];
-      groups[coach.school]!.push(coach);
-    });
-
-    return Object.entries(groups)
-      .map(([school, groupCoaches]) => ({
-        school,
-        division: groupCoaches[0]?.division ?? 'D3',
-        count: groupCoaches.length,
-        coaches: [...groupCoaches].sort((a, b) => {
-          // head-most role first
-          const aRole = HEAD_ROLE_ORDER[a.role_level ?? ''] ?? 5;
-          const bRole = HEAD_ROLE_ORDER[b.role_level ?? ''] ?? 5;
-          if (aRole !== bRole) return aRole - bRole;
-          // then by program
-          const aProg = PROGRAM_ORDER[a.program] ?? 3;
-          const bProg = PROGRAM_ORDER[b.program] ?? 3;
-          if (aProg !== bProg) return aProg - bProg;
-          return a.name.localeCompare(b.name);
-        }),
-      }))
-      .sort((a, b) => b.count - a.count);
+    return groupBy(coaches, (c) => c.school, {
+      emptyLabel: 'No School',
+      sort: (a, b) => b.items.length - a.items.length,
+    }).map((group) => ({
+      school: group.label,
+      division: group.items[0]?.division ?? 'D3',
+      count: group.items.length,
+      coaches: [...group.items].sort((a, b) => {
+        // head-most role first
+        const aRole = HEAD_ROLE_ORDER[a.role_level ?? ''] ?? 5;
+        const bRole = HEAD_ROLE_ORDER[b.role_level ?? ''] ?? 5;
+        if (aRole !== bRole) return aRole - bRole;
+        // then by program
+        const aProg = PROGRAM_ORDER[a.program] ?? 3;
+        const bProg = PROGRAM_ORDER[b.program] ?? 3;
+        if (aProg !== bProg) return aProg - bProg;
+        return a.name.localeCompare(b.name);
+      }),
+    }));
   }, [coaches]);
 
   const toggleSchool = (school: string) => {

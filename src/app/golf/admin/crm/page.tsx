@@ -251,6 +251,7 @@ export default function CRMPage() {
   // on mount; until it's true the whole flow stays on the compose-link path, so
   // nothing changes for an unconfigured deploy. See crm-gmail-send.ts.
   const [gmailDirectEnabled, setGmailDirectEnabled] = useState(false);
+  const [gmailSendStatus, setGmailSendStatus] = useState<{ sentToday: number; dailyCap: number } | null>(null);
   const [gmailBatchSending, setGmailBatchSending] = useState(false);
   // SPF/DKIM/DMARC self-check for the sending domain (fetched once when direct
   // send is configured) — surfaced as an "email auth" indicator in the bar.
@@ -782,6 +783,9 @@ export default function CRMPage() {
       .then((r) => {
         if (cancelled) return;
         setGmailDirectEnabled(r.configured);
+        if (r.configured && typeof r.sentToday === 'number' && typeof r.dailyCap === 'number') {
+          setGmailSendStatus({ sentToday: r.sentToday, dailyCap: r.dailyCap });
+        }
         if (r.configured) {
           getDomainAuthStatus()
             .then((d) => { if (!cancelled && d.checked && d.result) setDomainAuth(d.result); })
@@ -1201,6 +1205,14 @@ export default function CRMPage() {
           `Sent ${res.sent}${res.skipped ? `, skipped ${res.skipped}` : ''}${res.failed ? `, ${res.failed} failed` : ''}`,
         );
         fetchAllCoaches(); // resync truth after server-side sends
+        // Refresh the sent-today counter shown in the template bar.
+        getGmailSendStatus()
+          .then((r) => {
+            if (r.configured && typeof r.sentToday === 'number' && typeof r.dailyCap === 'number') {
+              setGmailSendStatus({ sentToday: r.sentToday, dailyCap: r.dailyCap });
+            }
+          })
+          .catch(() => {});
       }
     } catch (err) {
       toast.dismiss(tid);
@@ -1504,6 +1516,7 @@ export default function CRMPage() {
                   onSendBatch={sendBatchViaGmail}
                   batchSending={gmailBatchSending}
                   domainAuth={domainAuth}
+                  sendStatus={gmailSendStatus}
                 />
                 <TodayQueue
                   loading={loading}
@@ -1567,6 +1580,7 @@ export default function CRMPage() {
                     onSendBatch={sendBatchViaGmail}
                     batchSending={gmailBatchSending}
                     domainAuth={domainAuth}
+                    sendStatus={gmailSendStatus}
                   />
                   <AssigneeScopeBar scope={assigneeScope} onChange={setAssigneeScope} />
                   <div
@@ -2070,6 +2084,14 @@ function InsightsDashboardSkeleton() {
 // template arms it (merged per-coach on "Gmail" click in the row / detail
 // panel); the active name is shown with a clear (×) affordance. Selecting and
 // clearing both 44px-tall for touch. Persistence is handled by the parent.
+//
+// NOTE for integrator: `sendStatus` is optional and unwired here — no caller
+// currently passes it. To surface it: (1) add page.tsx state seeded from
+// getGmailSendStatus()'s extended { sentToday, dailyCap } (already returned
+// when configured — see crm-gmail-send.ts), and (2) re-fetch it inside
+// sendBatchViaGmail's success branch (same place it already calls
+// fetchAllCoaches() to resync after a batch completes) so the count stays
+// live after a send.
 // ============================================================================
 function ManualGmailTemplateBar({
   templates,
@@ -2079,6 +2101,7 @@ function ManualGmailTemplateBar({
   onSendBatch,
   batchSending = false,
   domainAuth = null,
+  sendStatus = null,
 }: {
   templates: ManualGmailTemplate[];
   active: ManualGmailTemplate | null;
@@ -2090,6 +2113,10 @@ function ManualGmailTemplateBar({
   batchSending?: boolean;
   // SPF/DKIM/DMARC self-check result for the sending domain (direct send only).
   domainAuth?: DomainAuthResult | null;
+  // Today's direct-send usage vs the daily cap (direct send only) — from
+  // getGmailSendStatus()'s extended shape. Optional so this bar renders
+  // unchanged until a caller wires it up.
+  sendStatus?: { sentToday: number; dailyCap: number } | null;
 }) {
   const handleSelect = (id: string) => {
     if (!id) { onChange(null); return; }
@@ -2192,6 +2219,11 @@ function ManualGmailTemplateBar({
             >
               <IconSend size={14} /> {batchSending ? 'Sending…' : 'Send next 10'}
             </Button>
+          )}
+          {sendStatus && (
+            <span className="text-micro text-warm-500 tabular-nums">
+              {sendStatus.sentToday} of {sendStatus.dailyCap} sent today
+            </span>
           )}
         </>
       )}

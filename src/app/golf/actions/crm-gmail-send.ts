@@ -42,33 +42,15 @@ const jitterGapMs = () => SEND_GAP_MIN_MS + Math.floor(Math.random() * (SEND_GAP
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Auto warm-up ramp: a brand-new sending mailbox must not blast its full cap on
-// day one (the classic outbound-spam trip). A short 2-day micro-warm-up
-// (5 → 10) then opens to the configured cap, keyed off the FIRST Gmail-API send
-// in the log — so a fresh mailbox still eases in, but an already-warm mailbox
-// runs at the full cap (default 50/day).
-async function effectiveDailyCap(client: AnySupabase): Promise<number> {
-  let ramp = DEFAULT_DAILY_CAP;
-  try {
-    const { data } = await client
-      .from('crm_contact_log')
-      .select('contact_date')
-      .eq('metadata->>channel', 'gmail_api')
-      .order('contact_date', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (!data?.contact_date) {
-      ramp = 5; // day 0 — never sent before
-    } else {
-      const days = Math.floor((Date.now() - Date.parse(data.contact_date)) / 864e5);
-      if (days < 1) ramp = 5; // first day
-      else if (days < 2) ramp = 10; // second day
-      // day 2+ → full configured cap (ramp stays DEFAULT_DAILY_CAP)
-    }
-  } catch {
-    /* on error, fall back to the configured ceiling (no extra restriction) */
-  }
-  return Math.min(DEFAULT_DAILY_CAP, ramp);
+// Founder-set 2026-07-20: the old auto warm-up ramp (5 → 10 → full cap over the
+// first 2 days, keyed off the first-ever Gmail-API send in the log) was stale
+// logic — the mailbox (admin@helmsportslabs.com) has been sending for weeks and
+// was still getting stuck re-ramping at 10/day. Just run the configured cap
+// (env GMAIL_DAILY_CAP, default 50). Kept as an async function taking the same
+// client shape so every call site (single send + batch send) is unchanged if a
+// per-mailbox ceiling needs to come back later.
+async function effectiveDailyCap(_client: AnySupabase): Promise<number> {
+  return DEFAULT_DAILY_CAP;
 }
 
 async function requireAdmin() {
@@ -81,15 +63,25 @@ async function requireAdmin() {
   return { supabase: supabase as AnySupabase, user };
 }
 
-export async function getGmailSendStatus(): Promise<{ configured: boolean }> {
+export async function getGmailSendStatus(): Promise<{ configured: boolean; sentToday?: number; dailyCap?: number }> {
   // Admin-gated for consistency with the send actions. Non-admins simply see the
   // feature as unconfigured (the UI catches + keeps the compose-link flow).
+  let supabase: AnySupabase;
   try {
-    await requireAdmin();
+    ({ supabase } = await requireAdmin());
   } catch {
     return { configured: false };
   }
-  return { configured: isGmailSendConfigured() };
+  if (!isGmailSendConfigured()) return { configured: false };
+  // Usage surfaced next to "Direct send" (e.g. "N of 50 sent today") — same
+  // count query sendNextBatchViaGmail gates the batch on, and the same cap
+  // sendCoachViaGmail / sendNextBatchViaGmail enforce, so the number shown
+  // always matches what the send actions would actually allow.
+  const [sentToday, dailyCap] = await Promise.all([
+    countSentToday(supabase),
+    effectiveDailyCap(supabase),
+  ]);
+  return { configured: true, sentToday, dailyCap };
 }
 
 /**
@@ -272,7 +264,7 @@ export async function sendCoachViaGmail(input: {
     }
     // Honor the same daily cap as the batch — rapid manual clicks burst from the
     // warmed mailbox exactly like a batch would, so the Workspace-throttle guard
-    // has to cover single sends too. Uses the auto warm-up ramp.
+    // has to cover single sends too. Uses the configured cap (no ramp).
     const dailyCap = await effectiveDailyCap(supabase);
     if (await countSentToday(supabase) >= dailyCap) {
       return { ok: false, error: `Daily Gmail send cap (${dailyCap}) reached` };
@@ -339,7 +331,7 @@ export async function sendNextBatchViaGmail(input: {
       .maybeSingle();
     if (!tpl?.subject || !tpl?.body) return { ok: false, ...empty, error: 'Template not found' };
 
-    const dailyCap = await effectiveDailyCap(supabase); // auto warm-up ramp
+    const dailyCap = await effectiveDailyCap(supabase); // configured cap (no ramp)
     const sentToday = await countSentToday(supabase);
     const remaining = Math.max(0, dailyCap - sentToday);
     if (remaining === 0) return { ok: true, ...empty, capped: true };

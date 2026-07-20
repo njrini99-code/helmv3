@@ -6,7 +6,7 @@
  *           `scripts/process-sequence-batch.mjs` to send the next batch). The
  *           route is fully wired (deliverability headers, suppression gating,
  *           daily cap) so enabling automation is a one-line vercel.json add of a
- *           crons entry for this path. Gated by SEQUENCE_DAILY_CAP (default 40).
+ *           crons entry for this path. Gated by SEQUENCE_DAILY_CAP (default 50).
  * Auth: requires `Authorization: Bearer ${CRON_SECRET}`. Vercel Cron sends
  *       this header automatically; do not trust `x-vercel-cron` alone since
  *       it is not stripped from inbound external traffic.
@@ -141,7 +141,7 @@ async function tick(): Promise<{
     .select('id', { count: 'exact', head: true })
     .gte('created_at', startOfDay.toISOString())
     .not('metadata->>sequence_id', 'is', null);
-  const dailyCap = parseInt(process.env.SEQUENCE_DAILY_CAP ?? '40', 10);
+  const dailyCap = parseInt(process.env.SEQUENCE_DAILY_CAP ?? '50', 10);
   const remainingToday = Math.max(0, dailyCap - (sentTodayRaw ?? 0));
   if (remainingToday === 0) {
     return { candidates: 0, sent: 0, stopped: 0, completed: 0, failed: 0, skipped: 0, capped: true };
