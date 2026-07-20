@@ -8,7 +8,7 @@ import {
   deleteSegment,
   updateSegment,
 } from '@/app/golf/actions/crm-foundations';
-import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
+import type { CrmSegment, SegmentDefinition } from '@/app/golf/admin/crm/types/foundations';
 import type { Filters } from '../CoachFilters';
 import { SegmentBadge } from './SegmentBadge';
 import { SaveSegmentDialog } from './SaveSegmentDialog';
@@ -18,6 +18,48 @@ import { Button, IconButton } from '@/components/ui/button';
 // SavedSegmentsRail — pill list in sidebar. Each pill applies its filter
 // definition to the active CRM filter state on click.
 // ============================================================================
+
+// ----------------------------------------------------------------------------
+// DEFAULT_FILTERS — the "no filters applied" Filters value. Mirrors the
+// literal inside CoachFilters.tsx's clearFilters() field-for-field; if that
+// literal changes, this MUST change in lockstep (same contract as
+// SegmentDefinition mirroring Filters — see foundations.ts header comment).
+// Kept local rather than imported because CoachFilters.tsx does not export
+// it today — integrator note: exporting a shared DEFAULT_FILTERS constant
+// from CoachFilters.tsx and having clearFilters() reuse it would remove this
+// duplication (out of scope here — not on this fix's file list).
+// ----------------------------------------------------------------------------
+export const DEFAULT_FILTERS: Filters = {
+  status: 'all',
+  division: 'all',
+  conference: 'all',
+  program: 'all',
+  priority: 'all',
+  search: '',
+  followUpDue: false,
+  starred: false,
+  hasNotes: false,
+  noContact30Days: false,
+  primaryOnly: false,
+  queueStatus: 'all',
+  overdueFollowUp: false,
+  noNextStep: false,
+};
+
+// ----------------------------------------------------------------------------
+// applySegmentDefinition — REPLACE, not merge. Starts from DEFAULT_FILTERS
+// and overlays only what the saved segment actually defines, so a facet
+// that was active before applying the segment (but absent from the saved
+// definition) is cleared instead of leaking through. Exported so the
+// save->apply round trip is unit-testable; see
+// SaveSegmentDialog.round-trip.test.ts.
+// ----------------------------------------------------------------------------
+export function applySegmentDefinition(definition: SegmentDefinition): Filters {
+  return {
+    ...DEFAULT_FILTERS,
+    ...definition,
+  };
+}
 
 interface SavedSegmentsRailProps {
   filters: Filters;
@@ -77,10 +119,7 @@ export function SavedSegmentsRail({
   const handleApply = useCallback(
     (segment: CrmSegment) => {
       setActiveId(segment.id);
-      setFilters((current) => ({
-        ...current,
-        ...segment.definition,
-      }));
+      setFilters(() => applySegmentDefinition(segment.definition));
     },
     [setFilters],
   );

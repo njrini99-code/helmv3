@@ -107,8 +107,6 @@ export interface SegmentDefinition {
   starred: boolean;
   hasNotes: boolean;
   noContact30Days: boolean;
-  // Phase 1 extension — Stream B's temperature filter
-  temperature?: 'hot' | 'warm' | 'cold' | 'all';
   // Primary-contact filter: when true, only coaches with is_primary_contact=true are enrolled
   primaryOnly?: boolean;
   // Next-step follow-up tracking quick filters — mirrors CoachFilters.tsx
