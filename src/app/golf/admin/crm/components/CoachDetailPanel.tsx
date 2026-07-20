@@ -27,14 +27,19 @@ import {
   IconNote as StickyNote,
   IconPencil as Pencil,
   IconUser,
+  IconFlame,
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 import { STATUS_COLORS, CRM_ASSIGNEES, type CrmAssignee } from '../crm-config';
 import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
+import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
+import { getCoachStageHistory, type StageHistoryRow } from '@/app/golf/actions/crm-stage-history';
+import type { CoachEngagement, CoachTemperature } from '../types/foundations';
 import { ToastProvider, useToast } from './Toast';
 import { CoachTimeline } from './timeline/CoachTimeline';
 import { NotesPanel } from './notes/NotesPanel';
 import { TasksPanel } from './tasks/TasksPanel';
+import { formatStageRow } from './detail/stage-history-format';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
@@ -77,6 +82,15 @@ const CONTACT_TYPES = [
 const ALL_STATUSES: readonly string[] = [
   'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
 ];
+
+// Compact engagement-strip chip styling — deliberately distinct from
+// EngagementBadge.tsx's table-cell pill (gradient/orange tones tuned for a
+// dense grid); this is a single inline chip under the header.
+const TEMPERATURE_CHIP: Record<CoachTemperature, { label: string; className: string }> = {
+  hot: { label: 'Hot', className: 'bg-red-50 text-red-700' },
+  warm: { label: 'Warm', className: 'bg-amber-50 text-amber-700' },
+  cold: { label: 'Cold', className: 'bg-cream-100 text-warm-500' },
+};
 
 // ============================================================================
 // COMPONENT
@@ -152,6 +166,13 @@ function CoachDetailPanelInner({
   const [assignee, setAssignee] = useState<string | null>(coach.assigned_to ?? null);
   const [assigneeSaving, setAssigneeSaving] = useState(false);
 
+  // Engagement (crm_coach_engagement matview) + stage-transition history
+  // (crm_coach_stage_history). Both are batch/single-coach reads that degrade
+  // to empty on failure, so no loading/error state is needed here — absence
+  // just means the strip/block below don't render.
+  const [engagement, setEngagement] = useState<CoachEngagement | null>(null);
+  const [stageHistory, setStageHistory] = useState<StageHistoryRow[]>([]);
+
   const supabase = createClient();
 
   // --------------------------------------------------------------------------
@@ -188,6 +209,27 @@ function CoachDetailPanelInner({
     })();
     return () => { cancelled = true; };
   }, [coachProp.id, supabase]);
+
+  // --------------------------------------------------------------------------
+  // Engagement + stage history — fetched together on mount and whenever the
+  // panel switches to a different coach. Reset first so a slow fetch for
+  // coach B never briefly shows coach A's stale engagement/history.
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    let cancelled = false;
+    setEngagement(null);
+    setStageHistory([]);
+    (async () => {
+      const [engagementMap, history] = await Promise.all([
+        getCoachEngagement([coachProp.id]),
+        getCoachStageHistory(coachProp.id),
+      ]);
+      if (cancelled) return;
+      setEngagement(engagementMap[coachProp.id] ?? null);
+      setStageHistory(history);
+    })();
+    return () => { cancelled = true; };
+  }, [coachProp.id]);
 
   // --------------------------------------------------------------------------
   // Reset transient form state when the panel switches between coaches.
@@ -331,6 +373,27 @@ function CoachDetailPanelInner({
   // Formatting helpers
   // --------------------------------------------------------------------------
   const formatShort = (s: string) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Relative-time for the engagement strip's "last event" — copied from
+  // EngagementBadge.tsx's formatRelative (same crm_coach_engagement.last_event_at
+  // domain) rather than importing, per the panel's no-new-shared-dependency rule.
+  const engagementRelativeTime = (iso: string): string => {
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 'today';
+    if (days === 1) return '1d ago';
+    if (days < 7) return `${days}d ago`;
+    if (days < 30) return `${Math.floor(days / 7)}w ago`;
+    return `${Math.floor(days / 30)}mo ago`;
+  };
+
+  // Resolves a from_status/to_status (string, not narrowed to CoachStatus —
+  // the RPC returns raw text columns) to its human label via the statusConfig
+  // prop the panel already receives. Falls back to the raw value so an
+  // unrecognized status still renders something instead of "undefined".
+  const statusLabelFor = (status: string | null): string => {
+    if (!status) return 'Unknown';
+    return statusConfig[status as CoachStatus]?.label ?? status;
+  };
 
   const isOverdue = coach.next_follow_up_at && new Date(coach.next_follow_up_at) < new Date();
 
@@ -505,6 +568,22 @@ function CoachDetailPanelInner({
                       />
                     </div>
                   </div>
+                  {/* Engagement strip — crm_coach_engagement matview via getCoachEngagement().
+                      No record for this coach (matview miss, no email activity yet) -> render
+                      nothing rather than a placeholder. */}
+                  {engagement && (
+                    <div className="flex items-center gap-3 mt-2 ml-[26px] text-micro">
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold', TEMPERATURE_CHIP[engagement.temperature].className)}>
+                        {engagement.temperature === 'hot' && <IconFlame size={10} aria-hidden="true" />}
+                        {TEMPERATURE_CHIP[engagement.temperature].label}
+                      </span>
+                      <span className="tabular-nums font-medium text-warm-700">score {engagement.score}</span>
+                      <span className="tabular-nums text-warm-500">{engagement.opens_90d} opens &middot; {engagement.clicks_90d} clicks (90d)</span>
+                      {engagement.last_event_at && (
+                        <span className="text-warm-400">{engagementRelativeTime(engagement.last_event_at)}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <IconButton variant="default" onClick={() => setEditingContact(true)}
@@ -648,6 +727,27 @@ function CoachDetailPanelInner({
                   </Button>
                 )}
               </div>
+
+              {/* Stage history — crm_coach_stage_history via getCoachStageHistory().
+                  No rows (no transitions tracked yet) -> render nothing. */}
+              {stageHistory.length > 0 && (
+                <div className="pt-2 mt-1 border-t border-warm-200/40">
+                  <div className="text-micro uppercase text-warm-500 tracking-wide font-semibold mb-1.5">
+                    Stage history
+                  </div>
+                  <div className="space-y-1">
+                    {stageHistory.slice(0, 8).map((row, i) => {
+                      const formatted = formatStageRow(row, statusLabelFor);
+                      return (
+                        <div key={`${row.changed_at}-${row.to_status}-${i}`} className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-warm-700 truncate">{formatted.label}</span>
+                          <span className="text-micro text-warm-400 flex-shrink-0 tabular-nums">{formatted.dateLabel}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
