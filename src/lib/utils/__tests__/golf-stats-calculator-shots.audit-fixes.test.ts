@@ -9,6 +9,7 @@ import {
   par4BogeyRawShots,
   par3GirRawShots,
   sandSaveRawShots,
+  threePuttRawShots,
 } from '@/test/fixtures/golf-shots';
 
 /**
@@ -283,5 +284,143 @@ describe('2026-06-09 fix D — shotless holes with NULL score/putts are null-hon
     expect(stats.scrambleAttempts).toBe(1);
     expect(stats.scramblesMade).toBe(0);
     expect(stats.threePuttsTotal).toBe(0);
+  });
+});
+
+// ============================================================================
+// fix/prod-readiness-audit — putting denominator + per-cell sample counts
+// ============================================================================
+
+/** Hole-out chip-in: tee→fairway, approach misses green, chip HOLES OUT
+ *  directly (no putting shot at all) → 0 recorded putts, a legitimate value,
+ *  not missing data (calculateHoleStatsFromShots falls back to
+ *  puttingShots.length, which is genuinely 0 here). */
+function holeOutFromChipRawShots(holeNumber = 1): RawShot[] {
+  return [
+    makeRawShot({
+      hole_number: holeNumber, shot_number: 1, shot_type: 'tee', club_type: 'driver',
+      lie_before: 'tee', distance_to_hole_before: 400, distance_unit_before: 'yards',
+      result: 'fairway', distance_to_hole_after: 150, distance_unit_after: 'yards',
+      shot_distance: 250,
+    }),
+    makeRawShot({
+      hole_number: holeNumber, shot_number: 2, shot_type: 'approach', club_type: 'non_driver',
+      lie_before: 'fairway', distance_to_hole_before: 150, distance_unit_before: 'yards',
+      result: 'rough', distance_to_hole_after: 30, distance_unit_after: 'yards',
+      shot_distance: 130, miss_direction: 'short',
+    }),
+    makeRawShot({
+      hole_number: holeNumber, shot_number: 3, shot_type: 'around_green', club_type: 'non_driver',
+      lie_before: 'rough', distance_to_hole_before: 30, distance_unit_before: 'yards',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+      shot_distance: 30,
+    }),
+  ];
+}
+
+describe('FIX 1 — puttsPerRound counts every hole with a RECORDED putts value, including legitimate 0-putt holes', () => {
+  it('a chip-in hole-out (0 recorded putts) counts in the denominator, not just holes with putts > 0', () => {
+    const shots: RawShot[] = [
+      ...par4BirdieRawShots(1), // hole 1: 1 putt
+      ...holeOutFromChipRawShots(2), // hole 2: 0 putts (holed a chip, no putting shot)
+    ];
+    const holes: HoleInfo[] = [
+      makeHoleInfo({ hole_number: 1, par: 4 }),
+      makeHoleInfo({ hole_number: 2, par: 4 }),
+    ];
+    const stats = calculateStatsFromShots(shots, holes, [round]);
+
+    expect(stats.totalPutts).toBe(1); // 1 + 0
+    // Old bug: `if (hole.putts > 0) totalHolesWithPutts++` only counted hole 1,
+    // so puttsPerRound = (1 / 1) * 18 = 18.0 — the 0-putt chip-in hole was
+    // silently dropped from the denominator despite carrying a real value.
+    // Fixed: both holes have a RECORDED putts value → denominator = 2, so
+    // puttsPerRound = (1 / 2) * 18 = 9.0.
+    expect(stats.puttsPerRound).toBeCloseTo(9, 1);
+  });
+
+  it('a genuinely unlogged hole (null putts, no shots) is still excluded from the denominator', () => {
+    const shots = par4BirdieRawShots(1);
+    const holes: HoleInfo[] = [
+      makeHoleInfo({ hole_number: 1, par: 4 }),
+      makeHoleInfo({ hole_number: 2, par: 4 }), // shotless, score/putts null
+    ];
+    const stats = calculateStatsFromShots(shots, holes, [round]);
+
+    expect(stats.totalPutts).toBe(1);
+    // Denominator = 1 (only hole 1 has a recorded value) → (1/1)*18 = 18.0.
+    expect(stats.puttsPerRound).toBeCloseTo(18, 1);
+  });
+});
+
+describe('FIX 2 — threePuttsPerRound denominator matches puttsPerRound (holes-with-putts, not holesPlayed)', () => {
+  it('an unlogged hole does not dilute the 3-putt rate via the holesPlayed denominator', () => {
+    const shots: RawShot[] = [
+      ...threePuttRawShots(1),
+      ...par4BirdieRawShots(3),
+    ];
+    const holes: HoleInfo[] = [
+      makeHoleInfo({ hole_number: 1, par: 4 }),
+      makeHoleInfo({ hole_number: 2, par: 4 }), // shotless, score/putts null (genuinely missing)
+      makeHoleInfo({ hole_number: 3, par: 4 }),
+    ];
+    const stats = calculateStatsFromShots(shots, holes, [round]);
+
+    expect(stats.holesPlayed).toBe(3);
+    expect(stats.threePuttsTotal).toBe(1);
+    // Old bug divided by stats.holesPlayed (3) → (1/3)*18 = 6.0. Fixed:
+    // divide by holes with a RECORDED putts value (2 — hole 2 is
+    // null-skipped, same denominator as puttsPerRound / FIX 1) → (1/2)*18 = 9.0.
+    expect(stats.threePuttsPerRound).toBeCloseTo(9, 1);
+  });
+
+  it('a genuine zero-three-putt round still reports 0, not a fabricated null', () => {
+    const shots = par4BirdieRawShots(1);
+    const holes = [makeHoleInfo({ hole_number: 1, par: 4 })];
+    const stats = calculateStatsFromShots(shots, holes, [round]);
+
+    expect(stats.threePuttsTotal).toBe(0);
+    expect(stats.threePuttsPerRound).toBe(0);
+  });
+});
+
+describe('FIX 3 — puttingByBreak exposes a per-band attempt count for every band the RampMatrix renders', () => {
+  it('counts land in the putt-distance band matching each putt, for the correct break type', () => {
+    const shots: RawShot[] = [
+      makeRawShot({
+        hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+        lie_before: 'tee', distance_to_hole_before: 160, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet',
+        shot_distance: 160,
+      }),
+      makeRawShot({
+        hole_number: 1, shot_number: 2, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 20, distance_unit_before: 'feet',
+        result: 'green', distance_to_hole_after: 4, distance_unit_after: 'feet',
+        shot_distance: 0, putt_break: 'straight', putt_distance_feet: 20, putt_made: false,
+      }),
+      makeRawShot({
+        hole_number: 1, shot_number: 3, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 4, distance_unit_before: 'feet',
+        result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+        shot_distance: 0, putt_break: 'straight', putt_distance_feet: 4, putt_made: true,
+      }),
+    ];
+    const holes = [makeHoleInfo({ hole_number: 1, par: 3 })];
+    const stats = calculateStatsFromShots(shots, holes, [round]);
+
+    const straight = stats.puttingByBreak.straight;
+    // 20ft putt → band 15_20 (1 attempt); 4ft putt → band 3_5 (1 attempt).
+    expect(straight.count15_20).toBe(1);
+    expect(straight.count3_5).toBe(1);
+    expect(straight.makePct15_20).toBe(0);
+    expect(straight.makePct3_5).toBe(100);
+    // Bands with no attempts stay a real 0, never undefined — the
+    // RampMatrix n= badge and the RxCard's n>=8 gate both compare against it.
+    expect(straight.count0_3).toBe(0);
+    expect(straight.count5_10).toBe(0);
+    expect(straight.count10_15).toBe(0);
+    expect(straight.count20_25).toBe(0);
+    expect(straight.count35Plus).toBe(0);
   });
 });

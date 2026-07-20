@@ -28,6 +28,7 @@ import {
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
 import { getRoundTakeawayInsight, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { getPlayerDisplayName } from '@/app/golf/actions/stats-data';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import {
   ViewHeader as FwViewHeader,
@@ -174,6 +175,12 @@ export default function RoundReviewPage() {
   // matches the server-side `callerRole === 'coach'` gate in
   // `annotateReviewImpl`). Drives the Coach Notes edit affordance below.
   const [isCoachViewer, setIsCoachViewer] = useState(false);
+  // Reviewed player's display name — fetched ONLY for a coach viewer, so the
+  // "Where this sits" StandingBar band can read the player's name instead of
+  // "You" (FIX: StandingBar Card previously hardcoded "You" for every
+  // viewer). Mirrors FairwayPlayerStats.tsx's identical viewedPlayerName
+  // pattern for a coach drilling into a teammate's stats.
+  const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(null);
   const [loadingRound, setLoadingRound] = useState(true);
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
@@ -302,6 +309,29 @@ export default function RoundReviewPage() {
 
     fetchRound();
   }, [roundId, supabase, activeTeamId, coachTeamIdsKey]);
+
+  // Fetch the reviewed player's display name — ONLY for a coach viewer (a
+  // player never needs their own name; StandingBar's 'self' viewer_context
+  // default already reads "You"). `getPlayerDisplayName` re-verifies access
+  // itself (verifyPlayerAccess), consistent with every other coach-viewing-a-
+  // teammate surface.
+  useEffect(() => {
+    if (!isCoachViewer || !round?.player_id) {
+      setViewedPlayerName(null);
+      return;
+    }
+    let cancelled = false;
+    getPlayerDisplayName(round.player_id)
+      .then((name) => {
+        if (!cancelled) setViewedPlayerName(name);
+      })
+      .catch(() => {
+        if (!cancelled) setViewedPlayerName(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isCoachViewer, round?.player_id]);
 
   // Fetch stored review + season standing. Resets `loadingStoredReview`
   // regardless of whether `round` resolved — previously an early
@@ -604,6 +634,13 @@ export default function RoundReviewPage() {
   const v2Body = isV2Enabled && v2Review?.composedReview?.body ? sanitizeNaN(v2Review.composedReview.body) : null;
   const v2PracticePriority =
     isV2Enabled && v2Review?.practicePriority ? sanitizeNaN(v2Review.practicePriority) : null;
+  // Same persisted-composed-body source FilmstripReview's narrative fallback
+  // reads (buildNarrative's second tier, via `review.deepInsights[0].body`).
+  // Used here only to decide whether the "CoachHelm AI" pill below should
+  // show — the pill previously tracked ONLY the hook's fresh `v2Review`, so
+  // it vanished on every revisit even though the composed narrative (now)
+  // still renders from the stored review.
+  const hasComposedNarrative = Boolean(v2Body) || Boolean(storedReview?.review_content?.deepInsights?.[0]?.body?.trim());
 
   // Round-review BODY, rendered once below inside the Fairway chrome (P203).
   const reviewBody = (
@@ -627,6 +664,7 @@ export default function RoundReviewPage() {
           promoteSuggestion={promoteSuggestion}
           standing={standing}
           holes={round.holes ?? []}
+          playerName={isCoachViewer ? viewedPlayerName : null}
         />
       ) : (
         <FwEmptyState
@@ -663,7 +701,7 @@ export default function RoundReviewPage() {
             title={displayCourseName(round.course_name) || 'Round Review'}
             description="Your CoachHelm analysis for this round."
             meta={
-              isV2Enabled && v2Review ? (
+              hasComposedNarrative ? (
                 <FwStatusPill tone="accent" dot={false} size="sm">
                   <IconSparkles size={14} />
                   CoachHelm AI

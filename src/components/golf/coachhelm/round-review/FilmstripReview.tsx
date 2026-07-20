@@ -73,6 +73,11 @@ export interface FilmstripReviewProps {
   promoteSuggestion: PromoteSuggestion | null;
   standing: Record<string, PlayerStanding>;
   holes: Array<{ hole_number: number; par: number | null; yardage: number | null; score: number | null }>;
+  /** The reviewed player's display name — used ONLY for the coach-facing
+   *  "Where this sits" StandingBar band (`viewer_context: 'coach'` reads the
+   *  player's name/initials instead of "You"). Omitted/null for a player
+   *  viewing their own review — StandingBar defaults to 'self' -> "You". */
+  playerName?: string | null;
 }
 
 const STANDING_BAND_METRICS = ['gir_pct', 'sg_ott', 'sg_approach', 'sg_putting'] as const;
@@ -95,6 +100,7 @@ export function FilmstripReview({
   promoteSuggestion,
   standing,
   holes,
+  playerName,
 }: FilmstripReviewProps) {
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [shotsByHole, setShotsByHole] = useState<Map<number, ShotInput[]> | null>(null);
@@ -144,7 +150,15 @@ export function FilmstripReview({
   const mixLine = useMemo(() => buildMixLine(review.scoringDistribution), [review.scoringDistribution]);
   const courseDateLine = useMemo(() => buildCourseDateLine(courseName, roundDate), [courseName, roundDate]);
   const filmstripHoles = useMemo(() => buildFilmstripHoles(review.holeByHole), [review.holeByHole]);
-  const narrative = useMemo(() => buildNarrative(review.summary, v2Body), [review.summary, v2Body]);
+  // Third tier — the persisted CoachHelm composed body, mirroring
+  // `pickPracticePriority`'s v1CoachHelm-overlay fallback below. Ensures a
+  // revisit (or the page's Refresh button, neither of which re-runs
+  // useRoundReviewV2's generate()) still shows the composed narrative
+  // instead of falling through to the V1 rule-based summary.
+  const narrative = useMemo(
+    () => buildNarrative(review.summary, v2Body, review.deepInsights?.[0]?.body),
+    [review.summary, review.deepInsights, v2Body],
+  );
   const strokesLostRows = useMemo(() => buildStrokesLostRows(review.strokesToGain), [review.strokesToGain]);
   const practicePriority = useMemo(
     () => pickPracticePriority(v2PracticePriority, review.coachHelm),
@@ -161,6 +175,12 @@ export function FilmstripReview({
   const shortGameRows = useMemo(() => buildShortGameRows(review.shortGameAnalysis), [review.shortGameAnalysis]);
 
   const standingBars = useMemo(() => {
+    // A coach viewing a PLAYER's review must read the player's standing as
+    // the player's, not their own — pass viewer context + the player's name
+    // through so the Card variant's visible label reads "You" only for the
+    // player's own view (StandingBar's aria label already handled this; the
+    // visible label previously hardcoded "You" for every viewer).
+    const viewerContext: 'self' | 'coach' = isCoachViewer ? 'coach' : 'self';
     return STANDING_BAND_METRICS.map((mid) => {
       const st = standing[mid];
       const cfg = getMetricRenderConfig(mid);
@@ -181,10 +201,12 @@ export function FilmstripReview({
           direction={cfg.direction}
           unit={cfg.unit}
           scale={cfg.default_scale}
+          viewer_context={viewerContext}
+          player_name={playerName ?? undefined}
         />
       );
     }).filter((b): b is ReactElement => b !== null);
-  }, [standing]);
+  }, [standing, isCoachViewer, playerName]);
 
   return (
     <div className="space-y-6">
@@ -238,9 +260,15 @@ export function FilmstripReview({
                 reviewContext={courseName || undefined}
               />
             ) : null}
-            <Button variant="secondary" size="sm" onClick={onShare} disabled={sharedWithCoach}>
-              {sharedWithCoach ? 'Shared with coach' : 'Share with coach'}
-            </Button>
+            {/* The server action authorizes only the review's OWNING player
+                (verifyReviewAccess 'player') — a coach clicking Share gets a
+                raw server error. Mirrors CoachNotesSection's isCoachViewer
+                gate two lines below. */}
+            {!isCoachViewer ? (
+              <Button variant="secondary" size="sm" onClick={onShare} disabled={sharedWithCoach}>
+                {sharedWithCoach ? 'Shared with coach' : 'Share with coach'}
+              </Button>
+            ) : null}
           </div>
         </Surface>
       ) : null}

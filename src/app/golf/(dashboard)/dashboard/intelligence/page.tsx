@@ -202,32 +202,42 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const players: PlayersGridPlayer[] = rawPlayers ?? [];
   const playerIds = players.map((p) => p.id);
 
+  // ── Progress recompute — MUST be awaited before the focus-area SELECT
+  // below. `runFocusAreaProgressForPlayers` writes golf_player_focus_areas.
+  // current_value; this used to be kicked off from inside an un-awaited
+  // `goalsAndStandingPromise` IIFE while the SELECT ran immediately after it
+  // (both only gated on `playerIds`), so the read reliably won the race and
+  // the grid showed pre-recompute progress for the entire page load. Mirrors
+  // the evaluate-then-read ordering the player side already uses (coachhelm/
+  // page.tsx: `await Promise.all([evaluateAndPersistGoals, evaluateAndPersistFocusAreas])`
+  // BEFORE `loadActiveGoals`). Bounded by roster size — each driver is one
+  // batched query across the whole active roster (not a per-player round
+  // trip), so this adds one bounded pass, not N; best-effort try/catch
+  // (mirrors development/page.tsx P1-07) so a hiccup here falls through to
+  // last-known values instead of failing the whole page.
+  try {
+    await Promise.all([
+      runGoalProgressForPlayers(playerIds),
+      runFocusAreaProgressForPlayers(playerIds),
+    ]);
+  } catch {
+    /* progress refresh is best-effort; fall through to last-known goals */
+  }
+
   // ── `players` drill goals/standing extra — a restored port of the
   // pre-redirect development/page.tsx read (PlayersGridView.goalsByPlayer +
   // playerNameById), dropped when that route consolidated into this one.
   // Kicked off here (not awaited yet) so it runs concurrently with the
-  // focus-area/stats reads below, which don't depend on it either way; only
-  // awaited once needed, right before `playersLoadError`. The progress
-  // refresh stays best-effort try/catch (mirrors development/page.tsx P1-07)
-  // so a hiccup there falls through to last-known goals instead of failing
-  // the whole page; the goals/standing reads are individually `.catch()`-
-  // degraded for the same reason `loadActiveGoalsForPlayers` can throw.
+  // focus-area/stats reads below — both only depend on the recompute above
+  // having finished, not on each other; only awaited once needed, right
+  // before `playersLoadError`. The goals/standing reads are individually
+  // `.catch()`-degraded since `loadActiveGoalsForPlayers` can throw.
   const goalsAndStandingPromise: Promise<
     [Map<string, Goal[]>, Map<string, Map<MetricId, PlayerStanding>>]
-  > = (async () => {
-    try {
-      await Promise.all([
-        runGoalProgressForPlayers(playerIds),
-        runFocusAreaProgressForPlayers(playerIds),
-      ]);
-    } catch {
-      /* progress refresh is best-effort; fall through to last-known goals */
-    }
-    return Promise.all([
-      loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
-      loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
-    ]);
-  })();
+  > = Promise.all([
+    loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
+    loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
+  ]);
 
   const { data: focusAreas, error: focusAreasError } =
     playerIds.length > 0

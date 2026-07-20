@@ -7,19 +7,34 @@
  * A tight label/value list (Rounds · Fairways · Greens · Putts / round) that
  * sits under the last hairline in `Spine`, before the CTA. Exported
  * standalone so drill panels can reuse the same ledger row treatment.
+ *
+ * Each row optionally carries a `delta` (§ types.ts `SpineLedgerRow`) — a
+ * signed ▲/▼/► annotation rendered beside the value. Color is never the only
+ * channel: the glyph is always the row's LITERAL direction, and `good` alone
+ * decides the tint (bright accent for an improvement, muted tertiary
+ * otherwise) — so a "fewer putts is good" delta still shows a ▼ (the number
+ * really did go down), just in the accent tone instead of the muted one.
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
 import { TABULAR_NUMS } from '../charts/theme';
+import type { SpineLedgerDelta, SpineLedgerProps } from './types';
 
-export interface SpineLedgerRow {
-  label: string;
-  value: string;
-}
+const DELTA_GLYPH: Record<SpineLedgerDelta['direction'], string> = {
+  up: '▲',
+  down: '▼',
+  flat: '►',
+};
 
-export interface SpineLedgerProps {
-  rows: SpineLedgerRow[];
-  className?: string;
+const DELTA_WORD: Record<SpineLedgerDelta['direction'], string> = {
+  up: 'up',
+  down: 'down',
+  flat: 'unchanged',
+};
+
+function deltaAriaLabel(label: string, delta: SpineLedgerDelta): string {
+  const qualifier = delta.direction === 'flat' ? '' : delta.good ? ', improvement' : ', decline';
+  return `${label} ${DELTA_WORD[delta.direction]} ${delta.text}${qualifier}`;
 }
 
 export function SpineLedger({ rows, className }: SpineLedgerProps) {
@@ -30,9 +45,20 @@ export function SpineLedger({ rows, className }: SpineLedgerProps) {
           <dt className="min-w-0 truncate">{row.label}</dt>
           <dd
             style={TABULAR_NUMS}
-            className="font-fw-mono font-normal tabular-nums text-text-on-accent"
+            className="flex items-center gap-1.5 font-fw-mono font-normal tabular-nums text-text-on-accent"
           >
             {row.value}
+            {row.delta ? (
+              <span
+                aria-label={deltaAriaLabel(row.label, row.delta)}
+                className={cn(
+                  'inline-flex items-center gap-0.5 text-caption font-semibold',
+                  row.delta.good ? 'text-accent-300' : 'text-text-tertiary',
+                )}
+              >
+                <span aria-hidden="true">{DELTA_GLYPH[row.delta.direction]}</span>
+              </span>
+            ) : null}
           </dd>
         </div>
       ))}

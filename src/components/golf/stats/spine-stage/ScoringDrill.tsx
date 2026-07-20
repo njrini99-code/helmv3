@@ -4,13 +4,14 @@
  * ============================================================================
  * ScoringDrill — `?area=scoring` (spec §5.1)
  * ----------------------------------------------------------------------------
- * Par-split outcome mix (reused `BarCompare`), streak/best headline readouts,
- * and the worst holes from the newly-surfaced `getWorstHoleAnalysis` as a
- * ranked `PriorityList` (rank IS the leak-severity order).
+ * Par-split outcome mix (reused `BarCompare`), per-round scoring rates +
+ * scoring-by-round-type Readout bands, streak/best headline readouts, and the
+ * worst holes from the newly-surfaced `getWorstHoleAnalysis` as a ranked
+ * `PriorityList` (rank IS the leak-severity order).
  * ========================================================================== */
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InstrumentPanel, Readout, BarCompare, InlineNotice } from '@/components/fairway';
+import { InstrumentPanel, Readout, BarCompare, InlineNotice, Eyebrow } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
 import { DEFAULT_MIN_PLAYS } from '@/lib/golf/worst-hole-ranking';
@@ -46,6 +47,27 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
     .filter((c) => (c.d?.total ?? 0) > 0)
     .map((c) => ({ label: c.label, d: c.d! }));
 
+  // Per-round scoring rates, each with its season total as a mono caption.
+  // Hidden entirely when there are no rounds (rate + total would both be 0,
+  // an honest but useless band).
+  const scoringRates: Array<{ label: string; rate: number | null; total: number }> = [
+    { label: 'Eagles / round', rate: finite(s?.eaglesPerRound), total: s?.totalEagles ?? 0 },
+    { label: 'Birdies / round', rate: finite(s?.birdiesPerRound), total: s?.totalBirdies ?? 0 },
+    { label: 'Pars / round', rate: finite(s?.parsPerRound), total: s?.totalPars ?? 0 },
+    { label: 'Bogeys / round', rate: finite(s?.bogeysPerRound), total: s?.totalBogeys ?? 0 },
+    { label: 'Double+ / round', rate: finite(s?.doublePlusPerRound), total: s?.totalDoublePlus ?? 0 },
+  ];
+  const hasScoringRates = (s?.roundsPlayed ?? 0) > 0;
+
+  // Scoring average + round count by round type. A type with zero rounds
+  // played stays an honest awaiting readout rather than a fabricated 0 avg.
+  const roundTypeRows: Array<{ label: string; avg: number | null; rounds: number }> = [
+    { label: 'Practice', avg: finite(s?.practiceScoringAvg), rounds: s?.practiceRounds ?? 0 },
+    { label: 'Qualifying', avg: finite(s?.qualifyingScoringAvg), rounds: s?.qualifyingRounds ?? 0 },
+    { label: 'Tournament', avg: finite(s?.tournamentScoringAvg), rounds: s?.tournamentRounds ?? 0 },
+  ];
+  const hasRoundTypeData = roundTypeRows.some((r) => r.rounds > 0);
+
   const worstItems = (worstHoles?.worstHoles ?? []).slice(0, 5).map((h, i) => ({
     rank: i + 1,
     title: `Hole ${h.holeNumber} · Par ${h.par}`,
@@ -72,6 +94,29 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
             <Readout value={finite(s?.worstRound) ?? undefined} label="Worst round" size="md" state={s?.worstRound != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
           </InstrumentPanel>
         </div>
+
+        {hasScoringRates ? (
+          <div className="flex flex-col gap-2">
+            <Eyebrow as="h4">Per round</Eyebrow>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+              {scoringRates.map((r) => (
+                <InstrumentPanel key={r.label} depth="base" padding="md">
+                  <Readout
+                    value={r.rate ?? undefined}
+                    format={{ maximumFractionDigits: 2 }}
+                    label={r.label}
+                    size="sm"
+                    state={r.rate != null ? 'live' : 'awaiting'}
+                    awaitingLabel="—"
+                  />
+                  <p className="mt-1 font-fw-mono text-caption tabular-nums text-text-tertiary">
+                    {r.total} total
+                  </p>
+                </InstrumentPanel>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {parCards.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -100,16 +145,48 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          <InstrumentPanel depth="base" padding="md">
-            <Readout value={finite(s?.mostBirdiesRound) ?? undefined} label="Most birdies / round" size="sm" state={s?.mostBirdiesRound != null ? 'live' : 'awaiting'} awaitingLabel="—" />
-          </InstrumentPanel>
-          <InstrumentPanel depth="base" padding="md">
-            <Readout value={finite(s?.mostBirdiesRow) ?? undefined} label="Most birdies in a row" size="sm" state={s?.mostBirdiesRow != null ? 'live' : 'awaiting'} awaitingLabel="—" />
-          </InstrumentPanel>
-          <InstrumentPanel depth="base" padding="md">
-            <Readout value={finite(s?.longestNo3PuttStreak) ?? undefined} unit="holes" label="Longest no-3-putt streak" size="sm" state={s?.longestNo3PuttStreak != null ? 'live' : 'awaiting'} awaitingLabel="—" />
-          </InstrumentPanel>
+        {hasRoundTypeData ? (
+          <div className="flex flex-col gap-2">
+            <Eyebrow as="h4">Scoring by round type</Eyebrow>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {roundTypeRows.map((r) => (
+                <InstrumentPanel key={r.label} depth="base" padding="md">
+                  <Readout
+                    value={r.avg ?? undefined}
+                    format={{ maximumFractionDigits: 1 }}
+                    label={r.label}
+                    size="sm"
+                    state={r.rounds > 0 ? 'live' : 'awaiting'}
+                    awaitingLabel="No rounds"
+                  />
+                  <p className="mt-1 font-fw-mono text-caption tabular-nums text-text-tertiary">
+                    {r.rounds > 0 ? `${r.rounds} round${r.rounds === 1 ? '' : 's'}` : '—'}
+                  </p>
+                </InstrumentPanel>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-2">
+          <Eyebrow as="h4">Streaks &amp; records</Eyebrow>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            <InstrumentPanel depth="base" padding="md">
+              <Readout value={finite(s?.mostBirdiesRound) ?? undefined} label="Most birdies / round" size="sm" state={s?.mostBirdiesRound != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+            </InstrumentPanel>
+            <InstrumentPanel depth="base" padding="md">
+              <Readout value={finite(s?.mostBirdiesRow) ?? undefined} label="Most birdies in a row" size="sm" state={s?.mostBirdiesRow != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+            </InstrumentPanel>
+            <InstrumentPanel depth="base" padding="md">
+              <Readout value={finite(s?.mostParsRow) ?? undefined} label="Most pars in a row" size="sm" state={s?.mostParsRow != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+            </InstrumentPanel>
+            <InstrumentPanel depth="base" padding="md">
+              <Readout value={finite(s?.longestNo3PuttStreak) ?? undefined} unit="holes" label="Longest no-3-putt streak" size="sm" state={s?.longestNo3PuttStreak != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+            </InstrumentPanel>
+            <InstrumentPanel depth="base" padding="md">
+              <Readout value={finite(s?.longestHoleOut) ?? undefined} unit="yds" label="Longest hole-out" size="sm" state={s?.longestHoleOut != null ? 'live' : 'awaiting'} awaitingLabel="—" />
+            </InstrumentPanel>
+          </div>
         </div>
 
         {worstItems.length > 0 ? (

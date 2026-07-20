@@ -173,4 +173,26 @@ describe('PlayerCoachHelmHome — hasData empty-state gate (Task D #1)', () => {
     expect(screen.queryByText('No insights yet')).not.toBeInTheDocument();
     expect(screen.getByTestId('stage-router')).toBeInTheDocument();
   });
+
+  // FIX 3: developmentCompletedAreas was missing from the hasData OR-chain —
+  // a player whose only CoachHelm artifact is completed focus areas (every
+  // active/proposed area finished) fell through to the whole-page empty
+  // state, even though DevelopmentDrill has a real "Completed" section.
+  it('renders the stage when only developmentCompletedAreas is populated', () => {
+    render(
+      <PlayerCoachHelmHome
+        data={baseData()}
+        playerId="p-1"
+        developmentActiveAreas={[]}
+        developmentCompletedAreas={[{ id: 'c-1' } as never]}
+        developmentProposedAreas={[]}
+        goals={[]}
+        achievedGoals={[]}
+        {...requiredGenomeProps}
+      />,
+    );
+
+    expect(screen.queryByText('No insights yet')).not.toBeInTheDocument();
+    expect(screen.getByTestId('stage-router')).toBeInTheDocument();
+  });
 });

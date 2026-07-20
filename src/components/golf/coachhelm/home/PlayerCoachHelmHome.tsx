@@ -167,8 +167,18 @@ export function PlayerCoachHelmHome({
     shotData != null ||
     developmentActiveAreas.length > 0 ||
     developmentProposedAreas.length > 0 ||
+    // FIX 3: a player whose only CoachHelm artifact is completed focus areas
+    // (every active/proposed area finished) previously fell through every
+    // branch above and got the whole-page empty state, even though
+    // `DevelopmentDrill` has a real "Completed" section to render for them.
+    developmentCompletedAreas.length > 0 ||
     goals.length > 0 ||
     achievedGoals.length > 0;
+
+  /* FIX 1: overflow of the top insight's prescribed drills (index 1+) —
+   * `PlayerHomeBento` renders only the first attached drill; the rest
+   * surface inside `InsightsDrill` so every attached drill stays visible. */
+  const topInsightDrills = useMemo(() => (topInsight?.drills ?? []).slice(1), [topInsight]);
 
   /* ── Feedback handler — PRESERVED rateInsightAsPlayer round-trip + toasts. ── */
   const handleRate = useCallback(
@@ -358,6 +368,7 @@ export function PlayerCoachHelmHome({
           onRate={(id, rating) => void handleRate(id, rating)}
           onMakePlan={handleMakePlan}
           makePlanPendingId={makePlanPendingId}
+          topInsightDrills={topInsightDrills}
         />
       ),
     },

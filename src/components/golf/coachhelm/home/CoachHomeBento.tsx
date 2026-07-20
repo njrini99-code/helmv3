@@ -96,7 +96,9 @@ export function CoachHomeBento({
         sentence={
           signalsSummary.total > 0
             ? `${signalsSummary.criticalPct}% critical · ${signalsSummary.warningPct}% warning · ${signalsSummary.infoPct}% info`
-            : 'No open signals right now.'
+            : signalsSummary.unavailable
+              ? 'Signal counts unavailable — try again shortly.'
+              : 'No open signals right now.'
         }
         onOpen={() => stage.open('signals')}
       >

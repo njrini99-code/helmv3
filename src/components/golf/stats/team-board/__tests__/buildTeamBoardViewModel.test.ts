@@ -170,6 +170,31 @@ describe('worstCategoryLabel', () => {
   it('returns null when no category has a rank', () => {
     expect(worstCategoryLabel({ tee: null, app: null, short: null, putt: null })).toBeNull();
   });
+
+  // FIX 1: `of` differs per category (rankByValue only counts players who
+  // carry a standing value for THAT metric), so raw rank numbers aren't
+  // comparable across categories — normalize to a rank/of percentile first.
+  it('normalizes rank/of across categories with unequal denominators — same raw rank, worse percentile wins', () => {
+    const label = worstCategoryLabel({
+      tee: { rank: 5, of: 12 }, // 0.417 — a big-roster metric, mid-pack
+      app: { rank: 3, of: 4 }, // 0.75
+      short: null,
+      putt: { rank: 5, of: 6 }, // 0.833 — same raw rank as tee, worse percentile
+    });
+    expect(label).toBe('Putting');
+  });
+
+  it('picks a lower raw rank number when its percentile is actually worse', () => {
+    // app: dead last of a small 4-player field (1.0) beats putt's raw rank
+    // 5 despite putt's rank number being numerically higher.
+    const label = worstCategoryLabel({
+      tee: null,
+      app: { rank: 4, of: 4 },
+      short: null,
+      putt: { rank: 5, of: 12 },
+    });
+    expect(label).toBe('Approach');
+  });
 });
 
 describe('worstStandingMetric', () => {
@@ -213,6 +238,11 @@ function player(overrides: Partial<TeamBoardPlayerInput>): TeamBoardPlayerInput 
     classYear: "'26",
     roundsPlayed: 12,
     scoringAverage: 73.5,
+    // Defaults mirror an all-18-hole player (roundsPlayed18 === roundsPlayed,
+    // scoringAverage18 === scoringAverage) so existing fixtures that predate
+    // the 9-hole/partial-round split keep behaving as an all-18 roster.
+    roundsPlayed18: 12,
+    scoringAverage18: 73.5,
     scoringTrend: null,
     lastRoundScore: 74,
     recentScores: [],
@@ -272,13 +302,75 @@ describe('buildTeamBoardViewModel', () => {
   });
 
   it('produces an honest em-dash team scoring/SG when the roster has no data', () => {
+    // Override scoringAverage18/roundsPlayed18 too — the `player()` helper's
+    // defaults mirror an all-18-hole player, which would otherwise mask this
+    // "no data at all" fixture's intent now that the KPI reads the 18-only fields.
     const vm = buildTeamBoardViewModel({
-      players: [player({ id: 'a', scoringAverage: null })],
+      players: [player({ id: 'a', scoringAverage: null, scoringAverage18: null, roundsPlayed18: 0 })],
       standingByPlayer: new Map(),
       intelligenceSampleSize: 0,
       rounds30d: 0,
     });
     expect(vm.kpis.teamScoring).toBe('—');
     expect(vm.kpis.teamSg).toBe('—');
+  });
+
+  // FIX 2: "Team scoring" must be round-weighted like the coach dashboard's
+  // "Team Scoring Avg" (pooled round scores / total rounds), NOT an
+  // unweighted mean of each player's own average — the two disagree
+  // whenever round counts differ across the roster. Both players here are
+  // all-18-hole, so roundsPlayed18/scoringAverage18 equal roundsPlayed/
+  // scoringAverage.
+  it('round-weights team scoring across two players with unequal round counts', () => {
+    const heavy = player({ id: 'heavy', scoringAverage: 70, roundsPlayed: 20, scoringAverage18: 70, roundsPlayed18: 20 });
+    const light = player({ id: 'light', scoringAverage: 80, roundsPlayed: 5, scoringAverage18: 80, roundsPlayed18: 5 });
+
+    const vm = buildTeamBoardViewModel({
+      players: [heavy, light],
+      standingByPlayer: new Map(),
+      intelligenceSampleSize: 0,
+      rounds30d: 25,
+    });
+
+    // Round-weighted: (70*20 + 80*5) / 25 = 72.0 — matches pooling every
+    // round score and dividing by total rounds, as dashboard-data.ts does.
+    // An unweighted mean of the two averages would wrongly read 75.0.
+    expect(vm.kpis.teamScoring).toBe('72.0');
+  });
+
+  // Regression: weighting by the ALL-format `roundsPlayed` (which includes
+  // 9-hole/partial rounds) instead of the strictly-18-hole `roundsPlayed18`
+  // over-weights a mixed-round-type player's 18-hole average and disagrees
+  // with the dashboard, which only ever pools 18-hole scores.
+  it('round-weights by 18-hole-only counts for a mixed 9-hole/18-hole player', () => {
+    // Player A: 3x 18-hole rounds avg 70 + 2x 9-hole rounds — roundsPlayed
+    // (all formats) is 5, but roundsPlayed18/scoringAverage18 is 3 rounds @ 70.
+    const mixed = player({
+      id: 'a',
+      scoringAverage: 70,
+      roundsPlayed: 5,
+      scoringAverage18: 70,
+      roundsPlayed18: 3,
+    });
+    // Player B: 1x 18-hole round scoring 80 — all-format and 18-only agree.
+    const pure18 = player({
+      id: 'b',
+      scoringAverage: 80,
+      roundsPlayed: 1,
+      scoringAverage18: 80,
+      roundsPlayed18: 1,
+    });
+
+    const vm = buildTeamBoardViewModel({
+      players: [mixed, pure18],
+      standingByPlayer: new Map(),
+      intelligenceSampleSize: 0,
+      rounds30d: 6,
+    });
+
+    // Dashboard's true pooled figure: (70*3 + 80*1) / 4 = 72.5. Weighting by
+    // the all-format roundsPlayed (5 + 1 = 6) would wrongly read
+    // (70*5 + 80*1) / 6 = 71.67.
+    expect(vm.kpis.teamScoring).toBe('72.5');
   });
 });

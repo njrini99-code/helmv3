@@ -224,13 +224,23 @@ export interface SignalsSummary {
   warningPct: number;
   infoPct: number;
   total: number;
+  /** true when `counts` itself is `null` — getAlertCounts (intelligence/
+   *  page.tsx) FAILED, a distinct state from a real zero-signal team. The
+   *  bento must not read a failed query the same as "nothing open" (that's
+   *  a reassuring lie); it renders an honest "unavailable" line instead. */
+  unavailable: boolean;
 }
 
 /** Percentage breakdown for the signals-summary bento cell's 3-segment bar.
- *  Honest all-zero when there's nothing to show (never a fabricated split). */
+ *  `counts === null` (query failure) is reported via `unavailable: true`,
+ *  kept separate from a genuine `total === 0` (real zero, never fabricated
+ *  either way — the split itself is honest all-zero in both cases). */
 export function buildSignalsSummary(counts: AlertCountsInput | null | undefined): SignalsSummary {
-  if (!counts || counts.total <= 0) {
-    return { criticalPct: 0, warningPct: 0, infoPct: 0, total: 0 };
+  if (counts == null) {
+    return { criticalPct: 0, warningPct: 0, infoPct: 0, total: 0, unavailable: true };
+  }
+  if (counts.total <= 0) {
+    return { criticalPct: 0, warningPct: 0, infoPct: 0, total: 0, unavailable: false };
   }
   const { critical, warning, info, total } = counts;
   return {
@@ -238,6 +248,7 @@ export function buildSignalsSummary(counts: AlertCountsInput | null | undefined)
     warningPct: Math.round((warning / total) * 100),
     infoPct: Math.round((info / total) * 100),
     total,
+    unavailable: false,
   };
 }
 

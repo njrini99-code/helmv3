@@ -16,7 +16,7 @@
  * repeats them.
  * ========================================================================== */
 
-import type { PriorityItem, StandingTrackProps } from '@/components/fairway/modules';
+import type { PriorityItem, SpineLedgerRow, StandingTrackProps } from '@/components/fairway/modules';
 import { clampPct } from '@/components/fairway/modules';
 import { standingSubjectLabel } from '@/components/golf/coachhelm/v3/StandingBar';
 
@@ -74,25 +74,96 @@ function fmtNum(n: number | null, digits = 1): string {
   return n === null ? '—' : n.toFixed(digits);
 }
 
+/** The subset of a `periodComparison` side (`last30Days`/`previous30Days`)
+ *  `buildLedger` needs to compute deltas — a structural pick so callers can
+ *  pass the full `TrendAnalysisResponse['periodComparison']['last30Days']`
+ *  object straight through (its extra `roundCount`/`scoringAvg` fields are
+ *  simply ignored). */
+export interface LedgerPeriodMetrics {
+  fairwayPct: number | null;
+  girPct: number | null;
+  puttsPerRound: number | null;
+}
+
 export interface LedgerInput {
   roundsPlayed: number | null | undefined;
   fairwayPct: number | null | undefined;
   girPct: number | null | undefined;
   puttsPerRound: number | null | undefined;
+  /**
+   * Optional last-30-days vs previous-30-days comparison (from
+   * `TrendAnalysisResponse.periodComparison`) — when BOTH sides are given,
+   * the Fairways/Greens/Putts rows each get a direction-aware ▲/▼ delta.
+   * Omitting either (or both) leaves those rows flat-valued, exactly like
+   * before this field existed — every existing fixture/caller still passes.
+   */
+  last30?: LedgerPeriodMetrics | null;
+  previous30?: LedgerPeriodMetrics | null;
+}
+
+/** Signed delta display, e.g. "+4%" / "0%". */
+function fmtPctDelta(delta: number): string {
+  const rounded = Math.round(Math.abs(delta));
+  if (rounded === 0) return '0%';
+  return `${delta > 0 ? '+' : '−'}${rounded}%`;
+}
+
+/** Signed delta display, e.g. "+0.4" / "0.0". */
+function fmtNumDelta(delta: number, digits = 1): string {
+  const magnitude = Math.abs(delta).toFixed(digits);
+  if (Number(magnitude) === 0) return magnitude;
+  return `${delta > 0 ? '+' : '−'}${magnitude}`;
+}
+
+/**
+ * One ledger row's `delta` — direction-aware (a lower-is-better metric
+ * falling still renders `good: true`, matching the same "raw direction vs
+ * good/bad" split `Ribbon`'s `goodDirection` uses). Returns `undefined` when
+ * either side of the comparison is missing, so a starved ledger row just
+ * renders flat rather than fabricating a 0-vs-0 delta.
+ */
+function ledgerDelta(
+  last: number | null | undefined,
+  previous: number | null | undefined,
+  higherIsBetter: boolean,
+  formatMagnitude: (delta: number) => string,
+): NonNullable<SpineLedgerRow['delta']> | undefined {
+  const l = finite(last);
+  const p = finite(previous);
+  if (l === null || p === null) return undefined;
+  const diff = l - p;
+  if (diff === 0) return { text: formatMagnitude(0), direction: 'flat', good: false };
+  const direction = diff > 0 ? 'up' : 'down';
+  const good = higherIsBetter ? diff > 0 : diff < 0;
+  return { text: formatMagnitude(diff), direction, good };
 }
 
 /**
  * The spine's `SpineLedger` rows — Rounds / Fairways / Greens / Putts per
  * round. The ONLY place these headline numbers render on the surface (the
  * `standing` drill shows the full per-metric matrix instead, never this
- * summary quartet again).
+ * summary quartet again). Fairways/Greens/Putts each carry an optional
+ * `delta` computed from `last30`/`previous30` — direction-aware, so fewer
+ * putts renders as a GOOD delta even though the raw number fell.
  */
-export function buildLedger(input: LedgerInput): Array<{ label: string; value: string }> {
+export function buildLedger(input: LedgerInput): SpineLedgerRow[] {
   return [
     { label: 'Rounds', value: fmtInt(finite(input.roundsPlayed)) },
-    { label: 'Fairways', value: fmtPct(finite(input.fairwayPct)) },
-    { label: 'Greens', value: fmtPct(finite(input.girPct)) },
-    { label: 'Putts / rd', value: fmtNum(finite(input.puttsPerRound), 1) },
+    {
+      label: 'Fairways',
+      value: fmtPct(finite(input.fairwayPct)),
+      delta: ledgerDelta(input.last30?.fairwayPct, input.previous30?.fairwayPct, true, fmtPctDelta),
+    },
+    {
+      label: 'Greens',
+      value: fmtPct(finite(input.girPct)),
+      delta: ledgerDelta(input.last30?.girPct, input.previous30?.girPct, true, fmtPctDelta),
+    },
+    {
+      label: 'Putts / rd',
+      value: fmtNum(finite(input.puttsPerRound), 1),
+      delta: ledgerDelta(input.last30?.puttsPerRound, input.previous30?.puttsPerRound, false, (d) => fmtNumDelta(d, 1)),
+    },
   ];
 }
 

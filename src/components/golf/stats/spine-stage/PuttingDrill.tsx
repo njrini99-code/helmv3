@@ -5,9 +5,13 @@
  * PuttingDrill — `?area=putting` (spec §5.1)
  * ----------------------------------------------------------------------------
  * RampMatrix (make% by break × distance — the ONLY place this matrix renders
- * on the surface, per the plan's dedupe rule) + a break-overview `RailBars` +
- * an `RxCard` prescription + a plain-language cost line + the existing
- * `LeakMap` chart (make% vs PGA Tour by distance, reused verbatim).
+ * on the surface, per the plan's dedupe rule, now with a per-cell n= sample
+ * badge) + a break-overview `RailBars` + an n-gated `RxCard` prescription +
+ * a plain-language cost line + the existing `LeakMap` chart (make% vs PGA
+ * Tour by distance, reused verbatim) — plus the putting depth the redesign
+ * dropped: efficiency `Readout`s (putts/hole, putts/GIR, 3-putts/round,
+ * 1-putts total, approach-putt avg leave) and miss-direction `RailBars`
+ * (overall, and per-break where the calculator exposes it).
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
@@ -21,7 +25,16 @@ import {
   rampBandForValue,
 } from '@/components/fairway/modules';
 import type { RampCell, RailBarRow } from '@/components/fairway/modules';
-import { Button, InlineNotice, Skeleton, Surface, type LeakMapBucket } from '@/components/fairway';
+import {
+  Button,
+  Eyebrow,
+  InlineNotice,
+  InstrumentPanel,
+  Readout,
+  Skeleton,
+  Surface,
+  type LeakMapBucket,
+} from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
@@ -71,6 +84,8 @@ function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: b
   );
 }
 
+type BreakStats = GolfStats['puttingByBreak']['straight'];
+
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
@@ -79,6 +94,11 @@ function fmtPct(n: number | null): string {
 }
 function toBuckets(buckets: LeakBucket[]): LeakMapBucket[] {
   return buckets.map((b) => ({ label: b.label, teamValue: b.team_value, pgaValue: b.pga_value, sampleN: b.sample_n }));
+}
+/** Reads a `countX` field off a break-stats cell without an `any`/unsafe cast. */
+function countAt(breakStats: BreakStats | undefined, field: keyof BreakStats): number {
+  const v = breakStats?.[field];
+  return typeof v === 'number' ? v : 0;
 }
 
 const BREAK_COLS: ReadonlyArray<{ colLabel: string; breakKey: keyof GolfStats['puttingByBreak'] }> = [
@@ -90,18 +110,21 @@ const BREAK_COLS: ReadonlyArray<{ colLabel: string; breakKey: keyof GolfStats['p
 
 const DISTANCE_BANDS: ReadonlyArray<{
   label: string;
-  field: keyof GolfStats['puttingByBreak']['straight'];
+  field: keyof BreakStats;
+  /** The per-cell attempt count backing `field` — feeds the matrix's n=
+   *  badge and the RxCard's sample-size gate. */
+  countField: keyof BreakStats;
   pgaMetricId: string | null;
 }> = [
-  { label: '0-3ft', field: 'makePct0_3', pgaMetricId: null },
-  { label: '3-5ft', field: 'makePct3_5', pgaMetricId: 'putts_made_3_5ft_pct' },
-  { label: '5-10ft', field: 'makePct5_10', pgaMetricId: 'putts_made_5_10ft_pct' },
-  { label: '10-15ft', field: 'makePct10_15', pgaMetricId: 'putts_made_10_15ft_pct' },
-  { label: '15-20ft', field: 'makePct15_20', pgaMetricId: 'putts_made_15_25ft_pct' },
-  { label: '20-25ft', field: 'makePct20_25', pgaMetricId: 'putts_made_15_25ft_pct' },
-  { label: '25-30ft', field: 'makePct25_30', pgaMetricId: 'putts_made_25_plus_ft_pct' },
-  { label: '30-35ft', field: 'makePct30_35', pgaMetricId: 'putts_made_25_plus_ft_pct' },
-  { label: '35+ft', field: 'makePct35Plus', pgaMetricId: 'putts_made_25_plus_ft_pct' },
+  { label: '0-3ft', field: 'makePct0_3', countField: 'count0_3', pgaMetricId: null },
+  { label: '3-5ft', field: 'makePct3_5', countField: 'count3_5', pgaMetricId: 'putts_made_3_5ft_pct' },
+  { label: '5-10ft', field: 'makePct5_10', countField: 'count5_10', pgaMetricId: 'putts_made_5_10ft_pct' },
+  { label: '10-15ft', field: 'makePct10_15', countField: 'count10_15', pgaMetricId: 'putts_made_10_15ft_pct' },
+  { label: '15-20ft', field: 'makePct15_20', countField: 'count15_20', pgaMetricId: 'putts_made_15_25ft_pct' },
+  { label: '20-25ft', field: 'makePct20_25', countField: 'count20_25', pgaMetricId: 'putts_made_15_25ft_pct' },
+  { label: '25-30ft', field: 'makePct25_30', countField: 'count25_30', pgaMetricId: 'putts_made_25_plus_ft_pct' },
+  { label: '30-35ft', field: 'makePct30_35', countField: 'count30_35', pgaMetricId: 'putts_made_25_plus_ft_pct' },
+  { label: '35+ft', field: 'makePct35Plus', countField: 'count35Plus', pgaMetricId: 'putts_made_25_plus_ft_pct' },
 ];
 
 /** Band thresholds for the ramp: proportional to the PGA standard when known
@@ -110,6 +133,11 @@ function bandThresholds(pga: number | null): [number, number, number] {
   if (pga === null) return [70, 85, 95];
   return [pga * 0.6, pga * 0.85, pga * 1.05];
 }
+
+/** Minimum tracked putts a cell needs before it can drive the "Work on next"
+ *  Rx — matches the CoachHelm 8-per-distance-bucket insight floor so a
+ *  single missed putt (1 attempt, 0%) can't outrank a well-sampled cell. */
+const RX_MIN_N = 8;
 
 export interface PuttingDrillProps {
   detailedStats: GolfStats | null;
@@ -132,16 +160,21 @@ export function PuttingDrill({
   retryingLeak = false,
 }: PuttingDrillProps) {
   const { home } = useStage();
-  const puttingByBreak = detailedStats?.puttingByBreak ?? null;
+  const s = detailedStats;
+  const puttingByBreak = s?.puttingByBreak ?? null;
 
   const rows = DISTANCE_BANDS.map((band) => ({
     label: band.label,
     cells: BREAK_COLS.map((col): RampCell => {
       const breakStats = puttingByBreak?.[col.breakKey];
       const pct = finite(breakStats?.[band.field] as number | null | undefined);
+      const n = countAt(breakStats, band.countField);
       const pga = band.pgaMetricId ? finite(standingByMetric.get(band.pgaMetricId)?.pga_value ?? null) : null;
       return {
         value: pct === null ? '—' : `${Math.round(pct)}`,
+        // Sample-size badge so a 1-putt "0%" cell doesn't read as trustworthy
+        // as a 40-putt one — omitted (not "n=0") when the cell has no data.
+        n: n > 0 ? `n=${n}` : undefined,
         band: rampBandForValue(pct, bandThresholds(pga)),
       };
     }),
@@ -153,14 +186,17 @@ export function PuttingDrill({
     return { label: col.colLabel, pct: pct ?? 0, value: fmtPct(pct) };
   });
 
-  // Worst single cell across the matrix — the Rx target.
-  let worst: { band: string; distance: string; pct: number } | null = null;
+  // Worst single cell across the matrix WITH enough tracked putts to trust —
+  // the Rx target. A cell below RX_MIN_N never qualifies, so a single missed
+  // 3-footer (1 attempt, 0%) can't outrank a well-sampled weak cell.
+  let worst: { band: string; distance: string; pct: number; n: number } | null = null;
   for (const band of DISTANCE_BANDS) {
     for (const col of BREAK_COLS) {
       const breakStats = puttingByBreak?.[col.breakKey];
       const pct = finite(breakStats?.[band.field] as number | null | undefined);
-      if (pct === null) continue;
-      if (worst === null || pct < worst.pct) worst = { band: col.colLabel, distance: band.label, pct };
+      const n = countAt(breakStats, band.countField);
+      if (pct === null || n < RX_MIN_N) continue;
+      if (worst === null || pct < worst.pct) worst = { band: col.colLabel, distance: band.label, pct, n };
     }
   }
 
@@ -168,48 +204,151 @@ export function PuttingDrill({
     .filter((w) => w.subcategory === 'putting')
     .reduce((sum, w) => sum + Math.abs(w.strokeImpact), 0);
 
+  // --- Putting efficiency readouts (FIX 4) ---------------------------------
+  const puttsPerHole = finite(s?.puttsPerHole);
+  const puttsPerGir = finite(s?.puttsPerGir);
+  const threePuttsPerRound = finite(s?.threePuttsPerRound);
+  // Raw total, not a rate — 0 is a real (if rare) reading, distinct from
+  // "no stats loaded yet" (finite(undefined) → null → awaiting).
+  const onePuttsTotal = finite(s?.onePuttsTotal);
+  const approachPuttAvgLeave = finite(s?.approachPuttAvgLeave);
+
+  const efficiencyReadouts: Array<{
+    label: string;
+    value: number | null;
+    unit?: string;
+    format?: { maximumFractionDigits: number };
+    awaitingLabel: string;
+  }> = [
+    { label: 'Putts / hole', value: puttsPerHole, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No putts' },
+    { label: 'Putts / GIR', value: puttsPerGir, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No GIR putts' },
+    { label: '3-putts / round', value: threePuttsPerRound, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No rounds' },
+    { label: '1-putts (total)', value: onePuttsTotal, awaitingLabel: 'No putts' },
+    { label: 'Approach-putt avg leave', value: approachPuttAvgLeave, unit: 'ft', format: { maximumFractionDigits: 1 }, awaitingLabel: 'No leave data' },
+  ];
+
+  // --- Miss direction (overall) — first-putt misses with a tagged
+  // direction. Low/high are amateur/pro break-read misses, not L/R. ---------
+  const missLeft = finite(s?.puttMissLeftPct);
+  const missRight = finite(s?.puttMissRightPct);
+  const missShort = finite(s?.puttMissShortPct);
+  const missLong = finite(s?.puttMissLongPct);
+  const missLow = finite(s?.puttMissLowPct);
+  const missHigh = finite(s?.puttMissHighPct);
+  const overallMissRows: RailBarRow[] = [
+    { label: 'Left', pct: missLeft ?? 0, value: fmtPct(missLeft), dim: missLeft === null },
+    { label: 'Right', pct: missRight ?? 0, value: fmtPct(missRight), dim: missRight === null },
+    { label: 'Short', pct: missShort ?? 0, value: fmtPct(missShort), dim: missShort === null },
+    { label: 'Long', pct: missLong ?? 0, value: fmtPct(missLong), dim: missLong === null },
+    { label: 'Low', pct: missLow ?? 0, value: fmtPct(missLow), dim: missLow === null },
+    { label: 'High', pct: missHigh ?? 0, value: fmtPct(missHigh), dim: missHigh === null },
+  ];
+  const hasOverallMissData = [missLeft, missRight, missShort, missLong, missLow, missHigh].some((v) => v !== null);
+
+  // --- Miss tendency by break — short/low/high only (the calculator does
+  // not split left/right per break, only overall). Groups with no tagged
+  // misses for that break are omitted rather than shown as an empty rail. --
+  const breakMissGroups = BREAK_COLS.map((col) => {
+    const breakStats = puttingByBreak?.[col.breakKey];
+    const short = finite(breakStats?.missShortPct);
+    const low = finite(breakStats?.missLowPct);
+    const high = finite(breakStats?.missHighPct);
+    const rows: RailBarRow[] = [
+      { label: 'Short', pct: short ?? 0, value: fmtPct(short), dim: short === null },
+      { label: 'Low', pct: low ?? 0, value: fmtPct(low), dim: low === null },
+      { label: 'High', pct: high ?? 0, value: fmtPct(high), dim: high === null },
+    ];
+    return { label: col.colLabel, rows, hasData: short !== null || low !== null || high !== null };
+  }).filter((g) => g.hasData);
+
   return (
     <DrillPanel title="Putting" backLabel="All areas" onBack={home}>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="flex flex-col gap-4">
-          <RampMatrix
-            cols={BREAK_COLS.map((c) => c.colLabel)}
-            rows={rows}
-            legend={[
-              { band: 1, label: 'Well behind Tour' },
-              { band: 2, label: 'Behind' },
-              { band: 3, label: 'Near Tour' },
-              { band: 4, label: 'Ahead of Tour' },
-            ]}
-          />
-          <RailBars rows={breakOverviewRows} labelWidth={64} />
+      <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+          {efficiencyReadouts.map((r) => (
+            <InstrumentPanel key={r.label} depth="base" padding="md">
+              <Readout
+                value={r.value ?? undefined}
+                format={r.format}
+                unit={r.unit}
+                label={r.label}
+                size="sm"
+                state={r.value != null ? 'live' : 'awaiting'}
+                awaitingLabel={r.awaitingLabel}
+              />
+            </InstrumentPanel>
+          ))}
         </div>
-        <div className="flex flex-col gap-4">
-          {worst ? (
-            <RxCard title="Work on next">
-              {worst.distance} putts breaking {worst.band.toLowerCase()} are converting at {Math.round(worst.pct)}%
-              — the weakest cell on the board. Block practice there first.
-            </RxCard>
-          ) : null}
-          {puttingCost > 0 ? (
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.
-            </p>
-          ) : null}
-          {leakError ? (
-            <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
-          ) : (
-            <LeakMap
-              title="Putt make %"
-              overline="Putting"
-              subtitle="Make rate by distance vs PGA Tour"
-              takeaway="Bands below the dashed Tour line are where putts are leaking."
-              direction="higher_better"
-              unit="percent"
-              data={leakMaps ? toBuckets(leakMaps.putting) : []}
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <div className="flex flex-col gap-4">
+            <RampMatrix
+              cols={BREAK_COLS.map((c) => c.colLabel)}
+              rows={rows}
+              legend={[
+                { band: 1, label: 'Well behind Tour' },
+                { band: 2, label: 'Behind' },
+                { band: 3, label: 'Near Tour' },
+                { band: 4, label: 'Ahead of Tour' },
+              ]}
             />
-          )}
+            <RailBars rows={breakOverviewRows} labelWidth={64} />
+          </div>
+          <div className="flex flex-col gap-4">
+            {worst ? (
+              <RxCard title="Work on next">
+                {worst.distance} putts breaking {worst.band.toLowerCase()} are converting at {Math.round(worst.pct)}%
+                (n={worst.n}) — the weakest cell with enough tracked putts to trust. Block practice there first.
+              </RxCard>
+            ) : (
+              <RxCard title="Work on next">
+                Not enough putts tracked per cell yet — every distance × break combination has fewer than {RX_MIN_N} recorded putts, so no cell is a reliable practice target.
+              </RxCard>
+            )}
+            {puttingCost > 0 ? (
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.
+              </p>
+            ) : null}
+            {leakError ? (
+              <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
+            ) : (
+              <LeakMap
+                title="Putt make %"
+                overline="Putting"
+                subtitle="Make rate by distance vs PGA Tour"
+                takeaway="Bands below the dashed Tour line are where putts are leaking."
+                direction="higher_better"
+                unit="percent"
+                data={leakMaps ? toBuckets(leakMaps.putting) : []}
+              />
+            )}
+          </div>
         </div>
+
+        {hasOverallMissData ? (
+          <div className="flex flex-col gap-2">
+            <Eyebrow as="h4">Miss direction</Eyebrow>
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              Low = didn’t break enough (amateur miss) · High = broke too much (pro miss).
+            </p>
+            <RailBars rows={overallMissRows} labelWidth={56} />
+          </div>
+        ) : null}
+
+        {breakMissGroups.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <Eyebrow as="h4">Miss tendency by break</Eyebrow>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {breakMissGroups.map((g) => (
+                <div key={g.label} className="flex flex-col gap-1.5">
+                  <span className="font-fw-sans text-caption text-text-tertiary">{g.label}</span>
+                  <RailBars rows={g.rows} labelWidth={40} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </DrillPanel>
   );
