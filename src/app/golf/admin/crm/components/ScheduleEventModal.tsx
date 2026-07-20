@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useId } from 'react';
+import { useState, useEffect, useId, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logError } from '@/lib/error-logging';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { format, addDays, addHours, parseISO } from 'date-fns';
 import type { Coach } from '../crm-config';
 import type { CRMEvent, CRMEventType } from './CalendarView';
@@ -112,12 +113,22 @@ export function ScheduleEventModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, onClose);
+
   // Coach search for FAB flow
   const [coachSearchQuery, setCoachSearchQuery] = useState('');
   const [coachSearchResults, setCoachSearchResults] = useState<Coach[]>([]);
   const [selectedCoach, setSelectedCoach] = useState<Coach | null>(coach || null);
 
-  const supabase = createClient();
+  // Memoized: createClient() returns a fresh, non-referentially-stable client
+  // on every call (src/lib/supabase/client.ts has no module-level singleton).
+  // The coach-search effect below lists `supabase` as a dependency, so an
+  // unmemoized client here reruns that effect on every render — and since it
+  // unconditionally calls setCoachSearchResults([]) (a new array reference)
+  // whenever the query is empty, that was an infinite render loop on mount
+  // for every "create" open of this modal (no pre-selected coach).
+  const supabase = useMemo(() => createClient(), []);
 
   // Update title when event type changes
   useEffect(() => {
@@ -252,8 +263,12 @@ export function ScheduleEventModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${uid}-title`}
         className="glass-prominent rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -262,7 +277,7 @@ export function ScheduleEventModal({
           <div className="flex items-center gap-2">
             <IconCalendar size={16} className="text-warm-600" />
             <div>
-              <h2 className="text-lg font-semibold text-warm-900">
+              <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">
                 {isEditing ? 'Edit Event' : 'Schedule Event'}
               </h2>
               {selectedCoach && (

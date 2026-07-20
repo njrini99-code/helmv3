@@ -94,10 +94,10 @@ export function BulkActionsBar({
 
       <div className="hidden sm:block w-px h-5 bg-warm-200" />
 
-      {/* Delete */}
+      {/* Archive — soft archive (recoverable), never a hard delete. See page.tsx handleBulkAction('delete'). */}
       {confirmDelete ? (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
-          <span className="text-sm font-medium text-red-700">Delete {selectedCount}?</span>
+          <span className="text-sm font-medium text-red-700">Archive {selectedCount}?</span>
           <Button variant="danger" onClick={() => { onAction('delete'); setConfirmDelete(false); }}
             className="px-2 py-0.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-sm font-bold">Yes</Button>
           <Button variant="ghost" onClick={() => setConfirmDelete(false)}
@@ -106,7 +106,7 @@ export function BulkActionsBar({
       ) : (
         <Button variant="danger" onClick={() => setConfirmDelete(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
-          <IconTrash size={14} /> Delete
+          <IconTrash size={14} /> Archive
         </Button>
       )}
 

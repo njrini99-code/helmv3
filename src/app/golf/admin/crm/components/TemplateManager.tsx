@@ -583,7 +583,16 @@ function TemplateCard({
         <span className={cn('px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', fmt.badge)}>
           {fmt.label}
         </span>
-        <span className="text-eyebrow text-warm-400">Used {template.usage_count}×</span>
+        {template.usage_count > 0 ? (
+          <span className="text-eyebrow text-warm-400">
+            {template.usage_count} sent
+            {template.last_used_at
+              ? ` · last ${new Date(template.last_used_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+              : ''}
+          </span>
+        ) : (
+          <span className="text-eyebrow text-warm-300">Never used</span>
+        )}
       </div>
 
       <p className="text-sm text-warm-600 truncate leading-relaxed">{template.subject}</p>

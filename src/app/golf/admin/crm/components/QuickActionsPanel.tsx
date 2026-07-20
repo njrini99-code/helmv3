@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { logError } from '@/lib/error-logging';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   IconStar,
   IconX,
@@ -77,6 +78,9 @@ export function QuickActionsPanel({
   const uid = useId();
   const [view, setView] = useState<ActionView>('main');
   const [submitting, setSubmitting] = useState(false);
+
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, onClose);
 
   const [scheduleForm, setScheduleForm] = useState<ScheduleForm>({
     type: 'demo',
@@ -212,8 +216,12 @@ export function QuickActionsPanel({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${uid}-title`}
         className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
@@ -228,7 +236,7 @@ export function QuickActionsPanel({
                 <IconStar size={20} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-white/40')} />
               </IconButton>
               <div>
-                <h2 className="text-xl font-bold">{coach.school}</h2>
+                <h2 id={`${uid}-title`} className="text-xl font-bold">{coach.school}</h2>
                 <p className="text-warm-300 text-sm">{coach.name} &middot; {coach.conference}</p>
               </div>
             </div>

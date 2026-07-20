@@ -28,6 +28,7 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY },
   { jobType: 'admin-digest', path: '/api/cron/admin-digest', cadenceMinutes: DAILY },
   { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 5 },
+  { jobType: 'ingest-gmail-replies', path: '/api/cron/ingest-gmail-replies', cadenceMinutes: 30 },
 ] as const;
 
 export type CronBoardStatus = 'ok' | 'overdue' | 'never-ran' | 'failed';

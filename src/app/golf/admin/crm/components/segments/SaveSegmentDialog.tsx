@@ -18,6 +18,36 @@ import { Textarea } from '@/components/ui/textarea';
 // CrmSegment row via Stream A's createSegment server action.
 // ============================================================================
 
+// ----------------------------------------------------------------------------
+// filtersToSegmentDefinition — the ONE place Filters is copied into a
+// SegmentDefinition for persistence. Every key of Filters (CoachFilters.tsx)
+// must appear here explicitly — no `...filters` spread — so a filter added
+// to the Filters interface without a matching line here fails loudly at the
+// TypeScript level (SegmentDefinition mirrors Filters field-for-field; see
+// foundations.ts header comment) instead of silently vanishing on save.
+// Exported so the save->apply round trip is unit-testable without mounting
+// the dialog. See SaveSegmentDialog.round-trip.test.ts — that test is the
+// contract future filter additions must extend.
+// ----------------------------------------------------------------------------
+export function filtersToSegmentDefinition(filters: Filters): SegmentDefinition {
+  return {
+    status: filters.status,
+    division: filters.division,
+    conference: filters.conference,
+    program: filters.program,
+    priority: filters.priority,
+    search: filters.search,
+    followUpDue: filters.followUpDue,
+    starred: filters.starred,
+    hasNotes: filters.hasNotes,
+    noContact30Days: filters.noContact30Days,
+    primaryOnly: filters.primaryOnly,
+    queueStatus: filters.queueStatus,
+    overdueFollowUp: filters.overdueFollowUp,
+    noNextStep: filters.noNextStep,
+  };
+}
+
 interface SaveSegmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,18 +93,7 @@ export function SaveSegmentDialog({
 
   if (!open) return null;
 
-  const definition: SegmentDefinition = {
-    status: filters.status,
-    division: filters.division,
-    conference: filters.conference,
-    program: filters.program,
-    priority: filters.priority,
-    search: filters.search,
-    followUpDue: filters.followUpDue,
-    starred: filters.starred,
-    hasNotes: filters.hasNotes,
-    noContact30Days: filters.noContact30Days,
-  };
+  const definition: SegmentDefinition = filtersToSegmentDefinition(filters);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

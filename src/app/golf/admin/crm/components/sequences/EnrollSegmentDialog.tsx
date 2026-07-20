@@ -134,15 +134,22 @@ export function EnrollSegmentDialog({
               >
                 Segment
               </label>
-              <NativeSelect
-                id="seg-pick"
-                value={selectedSegmentId}
-                onChange={(e) => setSelectedSegmentId(e.target.value)}
-                disabled={loading || submitting}
-                className="text-sm rounded-lg bg-cream-50 border-warm-200/80 focus:ring-primary-500/30 focus:border-primary-400"
-                placeholder="— Select a segment —"
-                options={segments.map((s) => ({ value: s.id, label: s.name }))}
-              />
+              {!loading && segments.length === 0 ? (
+                <p className="text-xs text-warm-500 bg-warm-50/60 border border-warm-100 rounded-lg px-3 py-2">
+                  No segments yet — create one on the Segments tab, then come
+                  back to enroll it here.
+                </p>
+              ) : (
+                <NativeSelect
+                  id="seg-pick"
+                  value={selectedSegmentId}
+                  onChange={(e) => setSelectedSegmentId(e.target.value)}
+                  disabled={loading || submitting}
+                  className="text-sm rounded-lg bg-cream-50 border-warm-200/80 focus:ring-primary-500/30 focus:border-primary-400"
+                  placeholder="— Select a segment —"
+                  options={segments.map((s) => ({ value: s.id, label: s.name }))}
+                />
+              )}
             </div>
 
             {error && (

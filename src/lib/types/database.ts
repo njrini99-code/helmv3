@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_allowlist: {
@@ -9156,6 +9181,7 @@ export type Database = {
           format: string
           id: string
           is_default: boolean | null
+          last_used_at: string | null
           merge_tags: string[] | null
           name: string
           subject: string
@@ -9170,6 +9196,7 @@ export type Database = {
           format?: string
           id?: string
           is_default?: boolean | null
+          last_used_at?: string | null
           merge_tags?: string[] | null
           name: string
           subject: string
@@ -9184,6 +9211,7 @@ export type Database = {
           format?: string
           id?: string
           is_default?: boolean | null
+          last_used_at?: string | null
           merge_tags?: string[] | null
           name?: string
           subject?: string
@@ -9199,6 +9227,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_email_templates_backup_20260720: {
+        Row: {
+          body: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          format: string | null
+          id: string | null
+          is_default: boolean | null
+          last_used_at: string | null
+          merge_tags: string[] | null
+          name: string | null
+          subject: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          format?: string | null
+          id?: string | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          merge_tags?: string[] | null
+          name?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          format?: string | null
+          id?: string | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          merge_tags?: string[] | null
+          name?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
       }
       crm_events: {
         Row: {
@@ -9707,6 +9783,58 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      crm_stage_transitions: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          coach_id: string
+          from_status: string | null
+          id: string
+          source: string
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          coach_id: string
+          from_status?: string | null
+          id?: string
+          source?: string
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          coach_id?: string
+          from_status?: string | null
+          id?: string
+          source?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_stage_transitions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_stage_transitions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_stage_transitions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_tasks: {
         Row: {
@@ -19686,6 +19814,15 @@ export type Database = {
           subject: string
         }[]
       }
+      get_crm_coach_stage_history: {
+        Args: { p_coach_id: string }
+        Returns: {
+          changed_at: string
+          from_status: string
+          source: string
+          to_status: string
+        }[]
+      }
       get_crm_email_stats: { Args: never; Returns: Json }
       get_crm_email_stats_detailed: { Args: never; Returns: Json }
       get_crm_events_in_range: {
@@ -19705,6 +19842,15 @@ export type Database = {
           start_time: string
           status: string
           title: string
+        }[]
+      }
+      get_crm_funnel: { Args: { p_window?: string }; Returns: Json }
+      get_crm_stage_ages: {
+        Args: never
+        Returns: {
+          coach_id: string
+          is_seed: boolean
+          stage_since: string
         }[]
       }
       get_crm_template_performance: {
@@ -19729,6 +19875,7 @@ export type Database = {
           count: number
         }[]
       }
+      get_crm_weekly_kpis: { Args: { p_weeks?: number }; Returns: Json }
       get_current_golf_player_id: { Args: never; Returns: string }
       get_current_player_team_ids: { Args: never; Returns: string[] }
       get_db_telemetry: { Args: never; Returns: Json }
@@ -19978,6 +20125,7 @@ export type Database = {
       }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_staff: { Args: { p_team_id: string }; Returns: boolean }
+      is_golf_coach: { Args: never; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_head_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
@@ -20368,6 +20516,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       admin_event_severity: ["info", "warning", "error", "critical"],

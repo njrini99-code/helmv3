@@ -3,6 +3,7 @@
 import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import type { Division, ProgramType } from '../crm-config';
 import { IconX, IconCheck, IconWarning, IconUpload, IconLayers } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
@@ -29,10 +30,27 @@ interface ParsedCoach {
 
 const inputClass = 'w-full bg-cream-50 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
 const DIVISION_OPTIONS = [
+  { value: 'D1', label: 'Division I' },
   { value: 'D2', label: 'Division II' },
   { value: 'D3', label: 'Division III' },
+  { value: 'NAIA', label: 'NAIA' },
+  { value: 'JUCO', label: 'JUCO' },
 ];
+const DIVISION_VALUES: readonly Division[] = ['D1', 'D2', 'D3', 'NAIA', 'JUCO'];
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+
+// Normalizes a raw CSV "Division" cell (e.g. "D1", "Division I", "DIII") to a
+// canonical Division value. Returns null when the cell is empty/unrecognized
+// so the caller can fall back to the form-level selector.
+function normalizeDivision(raw: string): Division | null {
+  const v = raw.trim().toUpperCase();
+  if (!v) return null;
+  if ((DIVISION_VALUES as readonly string[]).includes(v)) return v as Division;
+  if (v === 'DI' || v === 'DIVISION I' || v === 'DIVISION 1') return 'D1';
+  if (v === 'DII' || v === 'DIVISION II' || v === 'DIVISION 2') return 'D2';
+  if (v === 'DIII' || v === 'DIVISION III' || v === 'DIVISION 3') return 'D3';
+  return null;
+}
 
 export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const uid = useId();
@@ -44,6 +62,9 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const [errors, setErrors] = useState<string[]>([]);
   const [duplicateCount, setDuplicateCount] = useState(0);
   const [showDuplicateReview, setShowDuplicateReview] = useState(false);
+
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, onClose);
 
   const supabase = createClient();
 
@@ -74,6 +95,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
     const titleIdx = headerCols.findIndex(h => h.includes('title') || h.includes('position'));
     const emailIdx = headerCols.findIndex(h => h.includes('email'));
     const programIdx = headerCols.findIndex(h => h.includes('program') || h.includes('gender'));
+    const divisionIdx = headerCols.findIndex(h => h.includes('division'));
 
     for (let i = 1; i < lines.length; i++) {
       const line = (lines[i] ?? '').trim();
@@ -102,6 +124,11 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
       const title = titleIdx >= 0 ? (cols[titleIdx] ?? 'Head Coach') : 'Head Coach';
       const email = emailIdx >= 0 ? (cols[emailIdx] ?? '') : '';
       const programRaw = programIdx >= 0 ? (cols[programIdx]?.toLowerCase() ?? '') : '';
+      const divisionRaw = divisionIdx >= 0 ? (cols[divisionIdx] ?? '') : '';
+      // Per-row Division column wins when present and recognized; otherwise
+      // fall back to the form-level selector so single-division CSVs (the
+      // common case) keep working exactly as before.
+      const rowDivision = normalizeDivision(divisionRaw) ?? division;
 
       if (!name || !school) {
         parseErrors.push(`Row ${i + 1}: Missing name or school`);
@@ -124,7 +151,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
         email,
         school,
         conference,
-        division,
+        division: rowDivision,
         program,
       });
     }
@@ -264,13 +291,25 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${uid}-title`}
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div className="flex items-center gap-2">
             <IconUpload size={16} className="text-warm-600" />
-            <h2 className="text-lg font-semibold text-warm-900">Import Coaches</h2>
+            <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">Import Coaches</h2>
           </div>
           <IconButton variant="default"
             onClick={onClose}
@@ -285,13 +324,16 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           {step === 'upload' && (
             <div className="space-y-6">
               <div>
-                <label htmlFor={`${uid}-division`} className={labelClass}>Division</label>
+                <label htmlFor={`${uid}-division`} className={labelClass}>Default Division</label>
                 <Select
                   options={DIVISION_OPTIONS}
                   value={division}
                   onChange={(value) => setDivision(value as Division)}
                   className={inputClass}
                 />
+                <p className="text-xs text-warm-500 mt-1">
+                  Used for rows without a recognized Division column value.
+                </p>
               </div>
 
               <div>
@@ -311,7 +353,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   id={`${uid}-csv-text`}
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
-                  placeholder="Conference,School,Coach Name,Title,Email,Program"
+                  placeholder="Conference,School,Coach Name,Title,Email,Program,Division"
                   className={`${inputClass} font-mono resize-none min-h-[100px]`}
                   rows={10}
                 />
@@ -330,8 +372,9 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
               <div className="text-xs text-warm-500">
                 <p className="font-medium mb-1">Expected columns:</p>
-                <p>Conference, School, Coach Name, Title, Email, Program</p>
+                <p>Conference, School, Coach Name, Title, Email, Program, Division (optional)</p>
                 <p className="mt-1">Program values: Men&apos;s, Women&apos;s, Both</p>
+                <p className="mt-1">Division values: D1, D2, D3, NAIA, JUCO — rows missing/unrecognized use the Default Division above</p>
               </div>
 
               <div className="flex items-center justify-between gap-3">
@@ -376,7 +419,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   'px-2 py-1 rounded text-xs font-medium',
                   division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
                 )}>
-                  {division}
+                  Default: {division}
                 </span>
               </div>
 
@@ -405,6 +448,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Name</th>
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">School</th>
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Conference</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Division</th>
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Program</th>
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider w-20">Status</th>
                     </tr>
@@ -415,6 +459,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                         <td className="px-3 py-2">{coach.name}</td>
                         <td className="px-3 py-2">{coach.school}</td>
                         <td className="px-3 py-2 truncate max-w-[150px]">{coach.conference}</td>
+                        <td className="px-3 py-2">{coach.division}</td>
                         <td className="px-3 py-2 capitalize">{coach.program}</td>
                         <td className="px-3 py-2">
                           {coach.isDuplicate && (

@@ -31,14 +31,21 @@ interface ConferenceGroupViewProps {
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: React.ReactNode }>;
   // coach_id -> sequence enrollment summary, for the queue badge
   coachEnrollments?: Record<string, CoachEnrollmentSummary>;
+  // True when the parent's coach fetch itself failed (as opposed to a filter
+  // legitimately returning zero rows) — swaps the empty state to a retry message.
+  error?: boolean;
 }
 
 interface ConferenceGroup {
   conference: string;
   coaches: Coach[];
-  divisions: { d2: number; d3: number };
+  divisions: Record<string, number>;
   statusBreakdown: Record<string, number>;
 }
+
+// No-conference bucket label — coaches with a null/blank `conference` are
+// grouped here instead of under a blank, unlabeled header.
+const NO_CONFERENCE_LABEL = 'No Conference';
 
 const ALL_STATUSES: CoachStatus[] = [
   'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
@@ -65,6 +72,7 @@ export function ConferenceGroupView({
   onLogContact,
   statusConfig,
   coachEnrollments,
+  error = false,
 }: ConferenceGroupViewProps) {
   const [expandedConferences, setExpandedConferences] = useState<Set<string>>(new Set());
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
@@ -86,8 +94,13 @@ export function ConferenceGroupView({
   const conferenceGroups = useMemo((): ConferenceGroup[] => {
     const groups: Record<string, Coach[]> = {};
     coaches.forEach(coach => {
-      if (!groups[coach.conference]) groups[coach.conference] = [];
-      groups[coach.conference]!.push(coach);
+      // Coaches with a null/blank conference land in a labeled bucket instead
+      // of the raw '' key, which otherwise renders an unlabeled <h3> — and
+      // since this bucket is routinely the single largest group, it would
+      // sort to the top of the tab with no visible name.
+      const key = coach.conference?.trim() || NO_CONFERENCE_LABEL;
+      if (!groups[key]) groups[key] = [];
+      groups[key]!.push(coach);
     });
 
     return Object.entries(groups)
@@ -98,10 +111,15 @@ export function ConferenceGroupView({
           if (a.priority !== b.priority) return b.priority - a.priority;
           return a.name.localeCompare(b.name);
         }),
-        divisions: {
-          d2: groupCoaches.filter(c => c.division === 'D2').length,
-          d3: groupCoaches.filter(c => c.division === 'D3').length,
-        },
+        // Full tally over every division value present (D1/D2/D3/NAIA/JUCO*/
+        // CCCAA/etc.) instead of a hardcoded D2/D3-only breakdown, so a
+        // conference made up entirely of e.g. D1 or NAIA programs still
+        // shows a division breakdown instead of none at all.
+        divisions: groupCoaches.reduce((acc, c) => {
+          const key = c.division || 'Unknown';
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
         statusBreakdown: groupCoaches.reduce((acc, c) => {
           acc[c.status] = (acc[c.status] || 0) + 1;
           return acc;
@@ -172,8 +190,17 @@ export function ConferenceGroupView({
         <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
           <IconUsers size={24} className="text-warm-300" />
         </div>
-        <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
-        <p className="text-sm text-warm-500 max-w-xs mx-auto">Try adjusting your filters.</p>
+        {error ? (
+          <>
+            <h3 className="text-base font-semibold text-warm-700 mb-1">Failed to load coaches</h3>
+            <p className="text-sm text-warm-500 max-w-xs mx-auto">Something went wrong fetching this data. Please retry.</p>
+          </>
+        ) : (
+          <>
+            <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
+            <p className="text-sm text-warm-500 max-w-xs mx-auto">Try adjusting your filters.</p>
+          </>
+        )}
       </div>
     );
   }
@@ -265,16 +292,17 @@ export function ConferenceGroupView({
                 </span>
 
                 <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
-                  {group.divisions.d2 > 0 && (
-                    <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-micro font-bold text-blue-700 tabular-nums">
-                      D2: {group.divisions.d2}
-                    </span>
-                  )}
-                  {group.divisions.d3 > 0 && (
-                    <span className="px-2 py-0.5 rounded-lg bg-primary-50 text-micro font-bold text-primary-700 tabular-nums">
-                      D3: {group.divisions.d3}
-                    </span>
-                  )}
+                  {Object.entries(group.divisions)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 3)
+                    .map(([division, count]) => (
+                      <span
+                        key={division}
+                        className="px-2 py-0.5 rounded-lg bg-blue-50 text-micro font-bold text-blue-700 tabular-nums"
+                      >
+                        {division}: {count}
+                      </span>
+                    ))}
                 </span>
 
                 <span className="hidden sm:flex items-center gap-0.5 flex-shrink-0">

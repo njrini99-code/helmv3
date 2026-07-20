@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark, IconFilter, IconUser } from '@/components/icons';
+import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark, IconFilter, IconUser, IconTarget } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 import { SaveSegmentDialog } from './segments/SaveSegmentDialog';
 import { Button, IconButton } from '@/components/ui/button';
@@ -11,7 +11,11 @@ import { Select } from '@/components/ui/select';
 
 export interface Filters {
   status: CoachStatus | 'all';
-  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO';
+  // Mirrors the full ncaa_division DB enum (D1/D2/D3/NAIA/JUCO plus the
+  // JUCO_D1/JUCO_D2/JUCO_D3/CCCAA sub-divisions) — not just the 5-value
+  // Division app type — so every coach in the table is reachable by an
+  // exact-match division filter.
+  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO' | 'JUCO_D1' | 'JUCO_D2' | 'JUCO_D3' | 'CCCAA';
   conference: string;
   program: 'all' | 'mens' | 'womens' | 'both';
   priority: string;
@@ -24,6 +28,10 @@ export interface Filters {
   // Outreach-queue state (from sequence enrollment): queued = not emailed yet,
   // sent = in sequence, done = sequence complete.
   queueStatus?: 'all' | 'queued' | 'sent' | 'done';
+  // Next-step follow-up tracking quick filters (mirror types/foundations.ts
+  // SegmentDefinition in lockstep — see that file's header comment).
+  overdueFollowUp?: boolean;
+  noNextStep?: boolean;
 }
 
 interface CoachFiltersProps {
@@ -35,7 +43,19 @@ interface CoachFiltersProps {
 
 // All real division values present on the Filters type. "all" is intentionally
 // absent from the chooser — an unset division is simply the ABSENCE of a chip.
-const DIVISION_OPTIONS: ReadonlyArray<Exclude<Filters['division'], 'all'>> = ['D1', 'D2', 'D3', 'NAIA', 'JUCO'];
+// Includes the JUCO_D1/JUCO_D2/JUCO_D3/CCCAA sub-divisions that actually exist
+// in crm_coaches.division (a bare 'JUCO' chip alone never matches those rows).
+const DIVISION_OPTIONS: ReadonlyArray<{ value: Exclude<Filters['division'], 'all'>; label: string }> = [
+  { value: 'D1', label: 'D1' },
+  { value: 'D2', label: 'D2' },
+  { value: 'D3', label: 'D3' },
+  { value: 'NAIA', label: 'NAIA' },
+  { value: 'JUCO', label: 'JUCO' },
+  { value: 'JUCO_D1', label: 'JUCO D1' },
+  { value: 'JUCO_D2', label: 'JUCO D2' },
+  { value: 'JUCO_D3', label: 'JUCO D3' },
+  { value: 'CCCAA', label: 'CCCAA' },
+];
 
 const PROGRAM_OPTIONS: ReadonlyArray<{ value: Exclude<Filters['program'], 'all'>; label: string }> = [
   { value: 'mens', label: "Men's" },
@@ -58,7 +78,7 @@ const QUEUE_OPTIONS: ReadonlyArray<{ value: NonNullable<Filters['queueStatus']>;
 // Soft selected state per the design system: bg-primary-50 / text-primary-700 /
 // ring-primary-200. Reserved kelly-green fills are for ACTION buttons only.
 const SOFT_SELECTED = 'bg-primary-50 text-primary-700 ring-1 ring-inset ring-primary-200';
-const SOFT_IDLE = 'bg-white/60 text-warm-600 ring-1 ring-inset ring-warm-200/60 hover:bg-warm-50 hover:text-warm-700';
+const SOFT_IDLE = 'bg-cream-50/60 text-warm-600 ring-1 ring-inset ring-warm-200/60 hover:bg-warm-50 hover:text-warm-700';
 
 /** A compact soft chip used inside the popover facet rows. ≥44px touch target. */
 function FacetChip({
@@ -179,6 +199,8 @@ export function CoachFilters({
     filters.noContact30Days,
     filters.primaryOnly,
     queueActive,
+    filters.overdueFollowUp,
+    filters.noNextStep,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
@@ -186,7 +208,7 @@ export function CoachFilters({
     setFilters({
       status: 'all', division: 'all', conference: 'all', program: 'all', priority: 'all',
       search: '', followUpDue: false, starred: false, hasNotes: false, noContact30Days: false,
-      primaryOnly: false, queueStatus: 'all',
+      primaryOnly: false, queueStatus: 'all', overdueFollowUp: false, noNextStep: false,
     });
   };
 
@@ -196,7 +218,7 @@ export function CoachFilters({
   const programLabel = PROGRAM_OPTIONS.find(p => p.value === filters.program)?.label ?? '';
 
   const activeChips: Array<{ key: string; label: string; onRemove: () => void }> = [];
-  if (filters.division !== 'all') activeChips.push({ key: 'division', label: filters.division, onRemove: () => setFilters(f => ({ ...f, division: 'all' })) });
+  if (filters.division !== 'all') activeChips.push({ key: 'division', label: DIVISION_OPTIONS.find(d => d.value === filters.division)?.label ?? filters.division, onRemove: () => setFilters(f => ({ ...f, division: 'all' })) });
   if (filters.program !== 'all') activeChips.push({ key: 'program', label: programLabel, onRemove: () => setFilters(f => ({ ...f, program: 'all' })) });
   if (filters.status !== 'all') activeChips.push({ key: 'status', label: statusConfig[filters.status as CoachStatus]?.label ?? String(filters.status), onRemove: () => setFilters(f => ({ ...f, status: 'all' })) });
   if (filters.conference !== 'all') activeChips.push({ key: 'conference', label: filters.conference, onRemove: () => setFilters(f => ({ ...f, conference: 'all' })) });
@@ -207,6 +229,8 @@ export function CoachFilters({
   if (filters.hasNotes) activeChips.push({ key: 'hasNotes', label: 'Has Notes', onRemove: () => setFilters(f => ({ ...f, hasNotes: false })) });
   if (filters.noContact30Days) activeChips.push({ key: 'noContact30Days', label: 'No Contact 30d', onRemove: () => setFilters(f => ({ ...f, noContact30Days: false })) });
   if (filters.primaryOnly) activeChips.push({ key: 'primaryOnly', label: 'Primary Only', onRemove: () => setFilters(f => ({ ...f, primaryOnly: false })) });
+  if (filters.overdueFollowUp) activeChips.push({ key: 'overdueFollowUp', label: 'Overdue Follow-up', onRemove: () => setFilters(f => ({ ...f, overdueFollowUp: false })) });
+  if (filters.noNextStep) activeChips.push({ key: 'noNextStep', label: 'No Next Step', onRemove: () => setFilters(f => ({ ...f, noNextStep: false })) });
 
   const selectClass = (active: boolean) => cn(
     'w-full min-h-[44px] rounded-lg text-xs font-medium',
@@ -342,15 +366,15 @@ export function CoachFilters({
           <fieldset className="space-y-1.5">
             <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Division</legend>
             <div className="flex flex-wrap gap-1.5">
-              {DIVISION_OPTIONS.map(div => {
-                const selected = filters.division === div;
+              {DIVISION_OPTIONS.map(opt => {
+                const selected = filters.division === opt.value;
                 return (
                   <FacetChip
-                    key={div}
+                    key={opt.value}
                     selected={selected}
-                    onClick={() => setFilters(f => ({ ...f, division: selected ? 'all' : div }))}
+                    onClick={() => setFilters(f => ({ ...f, division: selected ? 'all' : opt.value }))}
                   >
-                    {div}
+                    {opt.label}
                   </FacetChip>
                 );
               })}
@@ -437,6 +461,12 @@ export function CoachFilters({
               </FacetChip>
               <FacetChip selected={Boolean(filters.primaryOnly)} onClick={() => setFilters(f => ({ ...f, primaryOnly: !f.primaryOnly }))}>
                 <IconUser size={12} /> Primary Contacts Only
+              </FacetChip>
+              <FacetChip selected={Boolean(filters.overdueFollowUp)} onClick={() => setFilters(f => ({ ...f, overdueFollowUp: !f.overdueFollowUp }))}>
+                <IconClock size={12} /> Overdue follow-up
+              </FacetChip>
+              <FacetChip selected={Boolean(filters.noNextStep)} onClick={() => setFilters(f => ({ ...f, noNextStep: !f.noNextStep }))}>
+                <IconTarget size={12} /> No next step
               </FacetChip>
             </div>
           </fieldset>

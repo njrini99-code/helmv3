@@ -29,6 +29,8 @@ import { LiveActivityFeed } from './LiveActivityFeed';
 import { EmailsTable } from './EmailsTable';
 import { EmailDetailPanel } from './EmailDetailPanel';
 import { DomainBreakdown } from './DomainBreakdown';
+import { DomainAuthCard } from './DomainAuthCard';
+import { getFailedEmailCounts } from './actions';
 
 type FollowupRecipient = {
   email: string;
@@ -156,6 +158,7 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
       {/* ── Tab content ── */}
       <TabsContent value="overview" className="mt-0">
         <div className="space-y-5">
+          <DomainAuthCard />
           <KPIGrid stats={stats} loading={statsLoading} />
           <DailyTrendChart data={stats?.by_day ?? null} />
           <SourceBreakdown bySource={stats?.by_source ?? null} />
@@ -296,15 +299,25 @@ function SourceBreakdown({
 // ---------------------------------------------------------------------------
 function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
   const [rows, setRows] = useState<EmailRow[]>([]);
+  const [counts, setCounts] = useState<{ bounced: number; complained: number } | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const data = await getFailedEmails(150);
+      // The row list is capped (bounded UI + payload size); the summary
+      // counts are a separate exact SQL COUNT so they never understate
+      // reality once bounced+complained volume exceeds the row cap.
+      const [data, exactCounts] = await Promise.all([
+        getFailedEmails(150),
+        getFailedEmailCounts(),
+      ]);
       if (cancelled) return;
       setRows(data);
+      setCounts(exactCounts);
       setLoading(false);
     })();
     return () => {
@@ -351,8 +364,11 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
     );
   }
 
-  const bounceCount = rows.filter((r) => r.bounced_at).length;
-  const complaintCount = rows.filter((r) => r.complained_at).length;
+  // Prefer the exact server-side COUNT; fall back to the capped row list
+  // only if that query somehow hasn't resolved yet.
+  const bounceCount = counts?.bounced ?? rows.filter((r) => r.bounced_at).length;
+  const complaintCount =
+    counts?.complained ?? rows.filter((r) => r.complained_at).length;
 
   return (
     <div className="space-y-4">

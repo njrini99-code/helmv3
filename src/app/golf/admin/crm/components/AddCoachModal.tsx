@@ -3,6 +3,7 @@
 import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { IconX, IconUser } from '@/components/icons';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import type { Division, ProgramType, CoachStatus } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,9 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
   const uid = useId();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, onClose);
 
   const [form, setForm] = useState({
     name: '',
@@ -70,13 +74,25 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${uid}-title`}
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-warm-100 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <IconUser size={16} className="text-warm-600" />
-            <h2 className="text-lg font-semibold text-warm-900">Add New Coach</h2>
+            <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">Add New Coach</h2>
           </div>
           <IconButton variant="default"
             type="button"
@@ -177,8 +193,11 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
               <label htmlFor={`${uid}-division`} className={labelClass}>Division</label>
               <Select
                 options={[
+                  { value: 'D1', label: 'Division I' },
                   { value: 'D2', label: 'Division II' },
                   { value: 'D3', label: 'Division III' },
+                  { value: 'NAIA', label: 'NAIA' },
+                  { value: 'JUCO', label: 'JUCO' },
                 ]}
                 value={form.division}
                 onChange={(value) => setForm({ ...form, division: value as Division })}

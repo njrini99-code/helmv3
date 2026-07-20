@@ -97,7 +97,7 @@ export interface CrmTask {
 // If CoachFilters.tsx Filters changes, this MUST change in lockstep.
 export interface SegmentDefinition {
   status: CoachStatus | 'all';
-  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO';
+  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO' | 'JUCO_D1' | 'JUCO_D2' | 'JUCO_D3' | 'CCCAA';
   queueStatus?: 'all' | 'queued' | 'sent' | 'done';
   conference: string;
   program: 'all' | 'mens' | 'womens' | 'both';
@@ -107,10 +107,12 @@ export interface SegmentDefinition {
   starred: boolean;
   hasNotes: boolean;
   noContact30Days: boolean;
-  // Phase 1 extension — Stream B's temperature filter
-  temperature?: 'hot' | 'warm' | 'cold' | 'all';
   // Primary-contact filter: when true, only coaches with is_primary_contact=true are enrolled
   primaryOnly?: boolean;
+  // Next-step follow-up tracking quick filters — mirrors CoachFilters.tsx
+  // Filters in lockstep (see this file's header comment).
+  overdueFollowUp?: boolean;
+  noNextStep?: boolean;
 }
 
 export interface CrmSegment {

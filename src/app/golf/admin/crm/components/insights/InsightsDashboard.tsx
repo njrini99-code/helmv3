@@ -2,19 +2,23 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { IconActivity, IconRefresh } from '@/components/icons';
+import { IconActivity, IconRefresh, IconWarning } from '@/components/icons';
 import {
   getTemplatePerformance,
   getTimeToOpenDistribution,
   getClickDestinations,
   getDeliverabilitySummary,
+  getCrmFunnel,
   type InsightsWindow,
   type TemplatePerformanceRow,
   type TimeToOpenBucket,
   type ClickDestinationRow,
   type DeliverabilitySummary,
+  type CrmFunnel,
 } from '@/app/golf/actions/crm-insights';
+import { SEGMENTED_TABLIST_CLASS, segmentedTabClass } from '@/app/golf/admin/crm/page-contracts';
 import { DeliverabilityCards } from './DeliverabilityCards';
+import { FunnelCard } from './FunnelCard';
 import { TemplatePerformanceTable } from './TemplatePerformanceTable';
 import { TimeToOpenChart } from './TimeToOpenChart';
 import { ClickHeatmap } from './ClickHeatmap';
@@ -38,32 +42,63 @@ export function InsightsDashboard() {
   const [window, setWindow] = useState<InsightsWindow>('30d');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // True when 1+ (but not all) of the five slices failed to load this
+  // fetch — the widgets that did load still render; this just adds a
+  // compact, non-blocking notice instead of hiding everything behind the
+  // full-page error state below.
+  const [partialFailure, setPartialFailure] = useState(false);
 
   const [summary, setSummary] = useState<DeliverabilitySummary | null>(null);
   const [templates, setTemplates] = useState<TemplatePerformanceRow[]>([]);
   const [buckets, setBuckets] = useState<TimeToOpenBucket[]>([]);
   const [clickDestinations, setClickDestinations] = useState<ClickDestinationRow[]>([]);
+  const [funnel, setFunnel] = useState<CrmFunnel | null>(null);
 
   const fetchAll = useCallback(async (w: InsightsWindow) => {
     setLoading(true);
     setError(null);
-    try {
-      const [s, t, b, c] = await Promise.all([
-        getDeliverabilitySummary(w),
-        getTemplatePerformance(w),
-        getTimeToOpenDistribution(w),
-        getClickDestinations(w, 25),
-      ]);
-      setSummary(s);
-      setTemplates(t);
-      setBuckets(b);
-      setClickDestinations(c);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load insights';
+    setPartialFailure(false);
+
+    // Promise.allSettled (not Promise.all) so one failed RPC doesn't
+    // discard the other four slices that loaded fine. Every action in
+    // crm-insights.ts rejects consistently on RPC failure (see that
+    // file's header), so a rejection here always means a real failure,
+    // never a genuinely-empty result.
+    const [s, t, b, c, f] = await Promise.allSettled([
+      getDeliverabilitySummary(w),
+      getTemplatePerformance(w),
+      getTimeToOpenDistribution(w),
+      getClickDestinations(w, 25),
+      getCrmFunnel(w),
+    ]);
+
+    const results = [s, t, b, c, f];
+    const failedCount = results.filter((r) => r.status === 'rejected').length;
+
+    if (failedCount === results.length) {
+      // Every slice failed — nothing meaningful to render. Fall back to
+      // the existing full-page error banner (with Retry) instead of an
+      // amber notice over five empty widgets.
+      const firstRejected = results.find(
+        (r): r is PromiseRejectedResult => r.status === 'rejected',
+      );
+      const msg =
+        firstRejected?.reason instanceof Error
+          ? firstRejected.reason.message
+          : 'Failed to load insights';
       setError(msg);
-    } finally {
       setLoading(false);
+      return;
     }
+
+    if (s.status === 'fulfilled') setSummary(s.value);
+    if (t.status === 'fulfilled') setTemplates(t.value);
+    if (b.status === 'fulfilled') setBuckets(b.value);
+    if (c.status === 'fulfilled') setClickDestinations(c.value);
+    if (f.status === 'fulfilled') setFunnel(f.value);
+
+    setPartialFailure(failedCount > 0);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -82,26 +117,23 @@ export function InsightsDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Window switcher */}
+          {/* Window switcher — shared segmented-tablist spec (page-contracts.ts)
+              so this is the same control as the Inbox sections / other CRM
+              sub-tabs, not a one-off that renders every pill solid green. */}
           <div
             role="tablist"
             aria-label="Insights time window"
-            className="inline-flex items-center glass-standard rounded-full p-1 shadow-glass-sm"
+            className={SEGMENTED_TABLIST_CLASS}
           >
             {WINDOWS.map((w) => {
               const isActive = w.id === window;
               return (
-                <Button variant="primary"
+                <Button variant="ghost"
                   key={w.id}
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setWindow(w.id)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200',
-                    isActive
-                      ? 'bg-primary-600 text-white shadow-sm'
-                      : 'text-warm-600 hover:text-warm-900',
-                  )}
+                  className={segmentedTabClass(isActive)}
                 >
                   {w.label}
                 </Button>
@@ -141,8 +173,26 @@ export function InsightsDashboard() {
         </div>
       )}
 
+      {!error && partialFailure && (
+        <div className="bg-amber-50/70 backdrop-blur-xl border border-amber-200/60 rounded-2xl px-4 py-2.5 flex items-center gap-2.5">
+          <IconWarning size={14} className="text-amber-600 flex-shrink-0" />
+          <p className="text-xs font-medium text-amber-800 flex-1">
+            Some analytics failed to load — refresh
+          </p>
+          <Button variant="ghost"
+            onClick={() => fetchAll(window)}
+            className="text-xs font-semibold text-amber-700 hover:text-amber-900 px-2 py-1 rounded-lg"
+          >
+            Refresh
+          </Button>
+        </div>
+      )}
+
       {/* ── KPI row ── */}
       <DeliverabilityCards summary={summary} loading={loading} />
+
+      {/* ── Outreach funnel (full-width) ── */}
+      <FunnelCard funnel={funnel} loading={loading} />
 
       {/* ── Two-column: chart + heatmap ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

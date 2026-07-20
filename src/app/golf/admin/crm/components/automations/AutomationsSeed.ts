@@ -10,7 +10,8 @@
 // The UI uses this constant to:
 //   1. Show "seeded" badges on rules that match this set (so admins know
 //      which rules came from the migration vs. which they created).
-//   2. Offer a "Restore defaults" button if an admin deletes a seeded rule.
+//   2. Power the "Restore defaults" button (AutomationsList.tsx) that
+//      re-creates any seeded rule (by name) an admin has deleted.
 //
 // Keep this in sync with the INSERT statements at the bottom of
 // 20260429T2_crm_automations.sql.
@@ -70,51 +71,73 @@ export const TRIGGER_EVENTS: ReadonlyArray<{
   value: CrmAutomationTrigger;
   label: string;
   description: string;
+  // Whether a real call site evaluates this trigger today. The only caller
+  // of evaluateAutomationsForEvent() is src/app/api/webhooks/resend/route.ts,
+  // which only reaches it for TRACKED_EVENTS (email.sent/delivered/
+  // delivery_delayed/opened/clicked/bounced/complained/unsubscribed,
+  // contact.updated). email.replied has no evaluator wired in
+  // resend-inbound/route.ts, and status_change.*/no_contact_30d have no
+  // evaluator at all (no scheduler, no status-change hook). Keep `wired:
+  // false` entries here (rather than deleting them) so any legacy row saved
+  // against one of these triggers still renders correctly in AutomationsList
+  // and AutomationEditor's edit mode — just exclude them from the
+  // "New automation" create dropdown until a real evaluator exists.
+  wired: boolean;
 }> = [
   {
     value: 'email.opened',
     label: 'Email opened',
     description: 'Fires when a coach opens an outbound email.',
+    wired: true,
   },
   {
     value: 'email.clicked',
     label: 'Email clicked',
     description: 'Fires when a coach clicks any link in an outbound email.',
+    wired: true,
   },
   {
     value: 'email.bounced',
     label: 'Email bounced',
     description: 'Fires on hard or soft bounce from Resend.',
+    wired: true,
   },
   {
     value: 'email.complained',
     label: 'Email complained',
     description: 'Fires when a coach marks an email as spam.',
+    wired: true,
   },
   {
     value: 'email.unsubscribed',
     label: 'Email unsubscribed',
     description: 'Fires when a coach unsubscribes via the Resend list-unsubscribe header.',
+    wired: true,
   },
   {
     value: 'email.replied',
     label: 'Email replied',
-    description: 'Fires when an inbound reply is received via /api/webhooks/resend-inbound.',
+    description:
+      'Not yet available — /api/webhooks/resend-inbound does not evaluate automations yet.',
+    wired: false,
   },
   {
     value: 'status_change.engaged',
     label: 'Status changed to engaged',
-    description: 'Fires when a coach is moved into the engaged stage (any source).',
+    description: 'Not yet available — no status-change evaluator is wired up yet.',
+    wired: false,
   },
   {
     value: 'status_change.contacted',
     label: 'Status changed to contacted',
-    description: 'Fires when a coach is moved into the contacted stage (any source).',
+    description: 'Not yet available — no status-change evaluator is wired up yet.',
+    wired: false,
   },
   {
     value: 'no_contact_30d',
     label: 'No contact for 30 days',
-    description: 'Fires once when a coach has had no recorded contact for 30+ days.',
+    description: 'Not yet available — no scheduler evaluates this trigger yet.',
+    wired: false,
   },
 ];
 

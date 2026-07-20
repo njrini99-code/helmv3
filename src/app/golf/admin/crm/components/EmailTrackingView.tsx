@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { addSuppression } from '@/app/golf/actions/crm-foundations';
+import { logError } from '@/lib/error-logging';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +20,7 @@ import {
   IconXCircle as Ban,
   IconUsers,
   IconExternalLink,
+  IconWarning,
 } from '@/components/icons';
 
 // ============================================================================
@@ -192,6 +195,7 @@ export function EmailTrackingView() {
   const [emails, setEmails] = useState<EmailRecord[]>([]);
   const [allOutreach, setAllOutreach] = useState<EmailRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
@@ -204,6 +208,7 @@ export function EmailTrackingView() {
   // ── Data Fetching ──
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       // Fetch Helm-sent emails (with Resend tracking events). PAGINATED past the
       // 1000-row PostgREST cap — an unpaginated fetch silently truncated at 1000,
@@ -219,6 +224,10 @@ export function EmailTrackingView() {
           .range(from, to) as unknown as PromiseLike<{ data: EmailRecord[] | null; error: { message: string } | null }>
       );
 
+      if (emailsRes.error) {
+        throw new Error(emailsRes.error.message);
+      }
+
       const helmEmails = emailsRes.data ?? [];
       setEmails(helmEmails);
 
@@ -233,6 +242,10 @@ export function EmailTrackingView() {
           .range(from, to) as unknown as PromiseLike<{ data: EmailRecord[] | null; error: { message: string } | null }>
       );
 
+      if (allEmailsRes.error) {
+        throw new Error(allEmailsRes.error.message);
+      }
+
       setAllOutreach(allEmailsRes.data ?? []);
 
       // Fetch stats via RPC — may not exist, so fall back to client-side compute
@@ -246,8 +259,14 @@ export function EmailTrackingView() {
       } catch {
         setStats(computeEmailStats(helmEmails));
       }
-    } catch {
-      // Silently handle — stats/emails will show empty state
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load email outreach data';
+      setFetchError(message);
+      logError(
+        err instanceof Error ? err : new Error(message),
+        { component: 'EmailTrackingView', action: 'fetch-email-outreach', sport: 'golf' },
+        'high'
+      );
     } finally {
       setLoading(false);
     }
@@ -258,18 +277,35 @@ export function EmailTrackingView() {
   }, [fetchData]);
 
   // ── Suppress Coach Email ──
-  const handleSuppress = async (coachId: string) => {
-    setSuppressingIds(prev => new Set(prev).add(coachId));
+  // Writes to BOTH mechanisms: crm_coaches.email_status (drives this UI's
+  // filtering/display) and the canonical crm_email_suppressions table via
+  // addSuppression() (the table Settings > Suppressions and
+  // crm-gmail-send.ts's isSuppressed() gate actually read). Without the
+  // latter, a coach suppressed here never appears in the Settings
+  // suppression list/count and carries no reason/source/suppressed_by audit
+  // trail.
+  const handleSuppress = async (coach: EmailCoach) => {
+    setSuppressingIds(prev => new Set(prev).add(coach.id));
     try {
       await supabase
         .from('crm_coaches')
         .update({ email_status: 'bounced' })
-        .eq('id', coachId);
+        .eq('id', coach.id);
+
+      if (coach.email) {
+        try {
+          await addSuppression({ email: coach.email, reason: 'hard_bounce' });
+        } catch {
+          // crm_coaches.email_status update above already blocks future
+          // sends via the UI's own gating; surfacing this failure silently
+          // is acceptable — the operator can retry from Settings.
+        }
+      }
 
       // Update local state
       setEmails(prev =>
         prev.map(e =>
-          e.crm_coaches?.id === coachId
+          e.crm_coaches?.id === coach.id
             ? { ...e, crm_coaches: { ...e.crm_coaches!, email_status: 'bounced' } }
             : e
         )
@@ -277,7 +313,7 @@ export function EmailTrackingView() {
     } finally {
       setSuppressingIds(prev => {
         const next = new Set(prev);
-        next.delete(coachId);
+        next.delete(coach.id);
         return next;
       });
     }
@@ -383,6 +419,30 @@ export function EmailTrackingView() {
     );
   }
 
+  // ── Error State ──
+  // Distinguishes a genuine fetch/permission failure from "no emails sent
+  // yet" — without this, a failed load rendered the identical empty-state
+  // copy as a CRM with zero outreach, with no signal anything was broken.
+  if (fetchError) {
+    return (
+      <div className="max-w-[1400px] mx-auto">
+        <div className="glass-standard rounded-2xl shadow-glass p-16 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-6">
+            <IconWarning size={28} className="text-red-500" />
+          </div>
+          <h3 className="text-xl font-bold text-warm-900 mb-2">Couldn&apos;t load email outreach</h3>
+          <p className="text-sm text-warm-500 max-w-md mx-auto leading-relaxed mb-6">{fetchError}</p>
+          <Button variant="primary"
+            onClick={() => fetchData()}
+            className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all duration-200 shadow-sm"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Empty State ──
   if (stats.total_sent === 0 && emails.length === 0 && allOutreach.length === 0) {
     return (
@@ -397,7 +457,7 @@ export function EmailTrackingView() {
             analytics will appear here automatically.
           </p>
           <p className="text-xs text-warm-400 max-w-sm mx-auto">
-            Select coaches from the Pipeline tab and use Bulk Email to send your first campaign.
+            Select coaches from the Coaches tab and use Bulk Email to send your first campaign.
           </p>
         </div>
       </div>
@@ -453,7 +513,7 @@ export function EmailTrackingView() {
           <p className="text-sm text-warm-500 mt-1">
             Coach-level contact history across Helm and Gmail. For full deliverability analytics, see{' '}
             <a
-              href="/golf/admin/crm?tab=resend"
+              href="/golf/admin/crm?tab=outreach&outreach=resend"
               className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-medium underline-offset-2 hover:underline transition-colors"
             >
               Resend activity
@@ -586,7 +646,7 @@ export function EmailTrackingView() {
                       <span className="text-sm font-semibold text-warm-900 tabular-nums">{contactedCoaches.length}</span>
                     </div>
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-warm-600">Bounced Emails</span>
+                      <span className="text-sm text-warm-600">Bounced Emails (Helm)</span>
                       <span className={cn('text-sm font-semibold tabular-nums', bouncedCoaches.length > 0 ? 'text-red-600' : 'text-warm-900')}>{bouncedCoaches.length}</span>
                     </div>
                     {helmOutreach > 0 && (
@@ -849,7 +909,7 @@ export function EmailTrackingView() {
                         <p className="text-xs text-warm-500 truncate">{coach.school} · {coach.email}</p>
                       </div>
                       <Button variant="danger"
-                        onClick={() => handleSuppress(coach.id)}
+                        onClick={() => handleSuppress(coach)}
                         disabled={suppressingIds.has(coach.id)}
                         className={cn(
                           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
@@ -900,7 +960,7 @@ function CrossRefBanner({
       <p className="leading-relaxed">
         {text}{' '}
         <a
-          href="/golf/admin/crm?tab=resend"
+          href="/golf/admin/crm?tab=outreach&outreach=resend"
           className="inline-flex items-center gap-1 text-primary-700 hover:text-primary-800 font-semibold underline-offset-2 hover:underline transition-colors"
         >
           {linkLabel}

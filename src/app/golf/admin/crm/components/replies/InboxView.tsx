@@ -10,12 +10,23 @@ import {
 import { getInboxFeed, type CrmReply } from '@/app/golf/actions/crm-replies';
 import { completeCrmTask } from '@/app/golf/actions/crm-foundations';
 import type { CrmTask } from '@/app/golf/admin/crm/types/foundations';
+import {
+  INBOX_SECTIONS,
+  SEGMENTED_TABLIST_CLASS,
+  segmentedTabClass,
+  segmentedTabIconClass,
+  type InboxSectionId,
+} from '@/app/golf/admin/crm/page-contracts';
 import { ReplyThread } from './ReplyThread';
+import { InboundLeadsView } from '../InboundLeadsView';
 import { Button } from '@/components/ui/button';
 
 // ============================================================================
-// InboxView — three-column layout (replies left, tasks right, selected
-// thread/task center). On mobile, stacks vertically.
+// InboxView — everything INCOMING, in one destination:
+//  · "Replies & tasks": three-column layout (replies left, tasks right,
+//    selected thread/task center; stacks vertically on mobile)
+//  · "Demo requests": landing-page demo_requests (InboundLeadsView), moved
+//    here from the Outreach sub-tabs in the 2026-07-20 nav consolidation.
 // ============================================================================
 
 type Selection =
@@ -32,7 +43,19 @@ function relTime(iso: string | null): string {
   }
 }
 
-export function InboxView() {
+interface InboxViewProps {
+  /** Optional handler invoked when the user clicks "Open coach" inside a
+      reply's action row (forwarded to ReplyThread). Hidden entirely when
+      omitted. Wiring for the integrator: page.tsx already has
+      handleCoachClick(coach: Coach) + a coaches list in scope — pass
+      `onCoachClick={(coachId) => { const c = coaches.find(x => x.id ===
+      coachId); if (c) handleCoachClick(c); }}` at the `<InboxView />`
+      call site. */
+  onCoachClick?: (coachId: string) => void;
+}
+
+export function InboxView({ onCoachClick }: InboxViewProps = {}) {
+  const [section, setSection] = useState<InboxSectionId>('replies');
   const [replies, setReplies] = useState<CrmReply[]>([]);
   const [dueTasks, setDueTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,30 +111,56 @@ export function InboxView() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-warm-900 flex items-center gap-2">
             <IconMail size={20} className="text-primary-600" />
             Inbox
           </h2>
           <p className="text-sm text-warm-500 mt-0.5">
-            Inbound replies and tasks due today, side-by-side.
+            Everything incoming — replies, tasks due, and demo requests.
           </p>
         </div>
-        {unreadCount > 0 && (
-          <span className="px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700">
-            {unreadCount} unread
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && section === 'replies' && (
+            <span className="px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700">
+              {unreadCount} unread
+            </span>
+          )}
+          <div
+            role="tablist"
+            aria-label="Inbox sections"
+            className={SEGMENTED_TABLIST_CLASS}
+          >
+            {INBOX_SECTIONS.map((s) => {
+              const isActive = section === s.id;
+              const SectionIcon = s.Icon;
+              return (
+                <Button variant="ghost"
+                  key={s.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setSection(s.id)}
+                  className={segmentedTabClass(isActive)}
+                >
+                  <SectionIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
+                  {s.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      {error && (
+      {section === 'demos' && <InboundLeadsView />}
+
+      {section === 'replies' && error && (
         <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
           {error}
         </div>
       )}
 
-      {loading ? (
+      {section === 'replies' && (loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-96 rounded-2xl glass-standard border-warm-200/60 skeleton-shimmer" />
@@ -119,16 +168,20 @@ export function InboxView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4 min-h-[480px]">
-          {/* Replies column */}
-          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col">
+          {/* Replies column — pinned height + internal scroll below lg so a
+              long list can't push the (visually second, on mobile) Detail
+              column off-screen. */}
+          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col max-h-64 lg:max-h-none order-2 lg:order-none">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
                 <IconMail size={12} /> Replies
               </h3>
             </header>
             {replies.length === 0 ? (
-              <p className="px-4 py-8 text-xs text-warm-500 text-center">
-                No replies yet.
+              <p className="px-4 py-8 text-caption text-warm-500 text-center leading-relaxed">
+                No replies captured yet. Reply capture reads the admin@ Gmail
+                inbox and needs the one-time gmail.readonly scope grant —
+                until then this stays empty.
               </p>
             ) : (
               <ul className="divide-y divide-warm-100 overflow-y-auto flex-1">
@@ -137,7 +190,7 @@ export function InboxView() {
                     selection?.kind === 'reply' && selection.reply.id === r.id;
                   return (
                     <li key={r.id}>
-                      <Button variant="primary"
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => setSelection({ kind: 'reply', reply: r })}
                         className={cn(
@@ -174,8 +227,10 @@ export function InboxView() {
             )}
           </aside>
 
-          {/* Detail column */}
-          <section className="rounded-2xl glass-subtle border-warm-200/60 overflow-hidden flex flex-col">
+          {/* Detail column — order-1 on mobile so the selected reply/task is
+              visible immediately below the tab header, ahead of both list
+              columns; reverts to natural (source) order at lg. */}
+          <section className="rounded-2xl glass-subtle border-warm-200/60 overflow-hidden flex flex-col order-1 lg:order-none">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600">
                 Detail
@@ -193,7 +248,7 @@ export function InboxView() {
                 </div>
               )}
               {selection?.kind === 'reply' && (
-                <ReplyThread reply={selection.reply} onRead={handleReplyRead} />
+                <ReplyThread reply={selection.reply} onRead={handleReplyRead} onOpenCoach={onCoachClick} />
               )}
               {selection?.kind === 'task' && (
                 <article className="rounded-xl border border-warm-200/60 glass-standard px-4 py-3">
@@ -224,8 +279,9 @@ export function InboxView() {
             </div>
           </section>
 
-          {/* Tasks column */}
-          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col">
+          {/* Tasks column — same bounded-height + reorder treatment as the
+              Replies column above. */}
+          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col max-h-64 lg:max-h-none order-3 lg:order-none">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
                 <IconCheckCircle2 size={12} /> Due today
@@ -242,7 +298,7 @@ export function InboxView() {
                     selection?.kind === 'task' && selection.task.id === t.id;
                   return (
                     <li key={t.id}>
-                      <Button variant="primary"
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => setSelection({ kind: 'task', task: t })}
                         className={cn(
@@ -264,7 +320,7 @@ export function InboxView() {
             )}
           </aside>
         </div>
-      )}
+      ))}
     </div>
   );
 }

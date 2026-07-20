@@ -73,16 +73,6 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
           isOverlay && 'ring-2 ring-primary-500',
         )}
       >
-        {/* Subtle priority accent strip on the left edge */}
-        {coach.priority > 0 && (
-          <div
-            className={cn(
-              'absolute inset-y-0 left-0 w-[3px]',
-              coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-400',
-            )}
-          />
-        )}
-
         <Button variant="ghost"
           type="button"
           onClick={(e) => {
@@ -100,6 +90,19 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
               <IconStar
                 size={12}
                 className="fill-amber-400 text-amber-400 flex-shrink-0 mt-0.5"
+              />
+            )}
+            {/* Priority dot — mirrors the CoachTable priority-cell idiom (a
+                small colored dot, not an accent stripe). Amber for High (1),
+                orange for Hot (2+); no dot at Normal (0). */}
+            {coach.priority > 0 && (
+              <span
+                className={cn(
+                  'w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5',
+                  coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500',
+                )}
+                aria-label={coach.priority >= 2 ? 'Hot priority' : 'High priority'}
+                title={coach.priority >= 2 ? 'Hot priority' : 'High priority'}
               />
             )}
             <div className="flex-1 min-w-0">
