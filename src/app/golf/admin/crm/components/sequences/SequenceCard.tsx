@@ -105,7 +105,8 @@ export function SequenceCard({
         onClick={(e) => e.stopPropagation()}
       >
         {onToggleActive && (
-          <IconButton variant="primary" aria-label="Play"
+          <IconButton variant="primary"
+            aria-label={sequence.is_active ? 'Pause sequence' : 'Activate sequence'}
             type="button"
             onClick={() => onToggleActive(!sequence.is_active)}
             title={sequence.is_active ? 'Pause sequence' : 'Activate sequence'}

@@ -18,6 +18,7 @@ const listEnrollments = vi.fn();
 const getSequenceEnrollmentCounts = vi.fn();
 const getSequencePerformance = vi.fn();
 const pauseEnrollment = vi.fn();
+const resumeEnrollment = vi.fn();
 const stopEnrollment = vi.fn();
 
 vi.mock('@/app/golf/actions/crm-sequences', () => ({
@@ -27,6 +28,7 @@ vi.mock('@/app/golf/actions/crm-sequences', () => ({
     getSequenceEnrollmentCounts(...args),
   getSequencePerformance: (...args: unknown[]) => getSequencePerformance(...args),
   pauseEnrollment: (...args: unknown[]) => pauseEnrollment(...args),
+  resumeEnrollment: (...args: unknown[]) => resumeEnrollment(...args),
   stopEnrollment: (...args: unknown[]) => stopEnrollment(...args),
   upsertSequenceStep: vi.fn(),
   deleteSequenceStep: vi.fn(),
@@ -118,8 +120,8 @@ describe('SequenceBuilder — enrollment management', () => {
 
     const row = screen.getByText('Pat Smith').closest('div.flex.items-center.gap-3');
     expect(row).not.toBeNull();
-    const pauseBtn = within(row as HTMLElement).getByRole('button', { name: 'Pause' });
-    const stopBtn = within(row as HTMLElement).getByRole('button', { name: 'Stop' });
+    const pauseBtn = within(row as HTMLElement).getByRole('button', { name: 'Pause enrollment' });
+    const stopBtn = within(row as HTMLElement).getByRole('button', { name: 'Stop enrollment' });
     expect(pauseBtn).toBeInTheDocument();
     expect(stopBtn).toBeInTheDocument();
 
@@ -129,6 +131,34 @@ describe('SequenceBuilder — enrollment management', () => {
     await waitFor(() =>
       expect(screen.getByText('paused')).toBeInTheDocument(),
     );
+  });
+
+  it('resumes a paused enrollment via the Resume action', async () => {
+    const user = userEvent.setup();
+    listEnrollments.mockResolvedValue([
+      enrollment({ id: 'enr-paused', coach_id: 'coach-1', status: 'paused', current_step: 2 }),
+    ]);
+    resumeEnrollment.mockResolvedValue(
+      enrollment({ id: 'enr-paused', coach_id: 'coach-1', status: 'active', current_step: 2 }),
+    );
+
+    render(<SequenceBuilder sequenceId="seq-1" />);
+
+    await waitFor(() => screen.getByText('Pat Smith'));
+    const row = screen.getByText('Pat Smith').closest('div.flex.items-center.gap-3');
+    const resumeBtn = within(row as HTMLElement).getByRole('button', { name: 'Resume enrollment' });
+    // A paused enrollment can also be stopped outright, but not re-paused.
+    expect(within(row as HTMLElement).queryByRole('button', { name: 'Pause enrollment' })).not.toBeInTheDocument();
+    expect(within(row as HTMLElement).getByRole('button', { name: 'Stop enrollment' })).toBeInTheDocument();
+
+    await user.click(resumeBtn);
+
+    expect(resumeEnrollment).toHaveBeenCalledWith('enr-paused');
+    await waitFor(() =>
+      expect(screen.getByText('active')).toBeInTheDocument(),
+    );
+    // current_step is preserved across the pause/resume round trip.
+    expect(screen.getByText('Step 2')).toBeInTheDocument();
   });
 
   it('stops an enrollment via the confirm-gated Stop action', async () => {
@@ -150,7 +180,7 @@ describe('SequenceBuilder — enrollment management', () => {
 
     await waitFor(() => screen.getByText('Jordan Lee'));
     const row = screen.getByText('Jordan Lee').closest('div.flex.items-center.gap-3');
-    const stopBtn = within(row as HTMLElement).getByRole('button', { name: 'Stop' });
+    const stopBtn = within(row as HTMLElement).getByRole('button', { name: 'Stop enrollment' });
 
     await user.click(stopBtn);
 
@@ -163,7 +193,7 @@ describe('SequenceBuilder — enrollment management', () => {
     confirmSpy.mockRestore();
   });
 
-  it('offers no Pause/Stop controls for a completed enrollment', async () => {
+  it('offers no Pause/Resume/Stop controls for a completed enrollment', async () => {
     listEnrollments.mockResolvedValue([
       enrollment({ id: 'enr-done', coach_id: 'coach-1', status: 'completed' }),
     ]);
@@ -171,8 +201,9 @@ describe('SequenceBuilder — enrollment management', () => {
     render(<SequenceBuilder sequenceId="seq-1" />);
 
     await waitFor(() => screen.getByText('Pat Smith'));
-    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pause enrollment' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Resume enrollment' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Stop enrollment' })).not.toBeInTheDocument();
   });
 
   it('shows an honest empty state when nobody is enrolled', async () => {

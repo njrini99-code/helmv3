@@ -314,7 +314,20 @@ export async function deleteSequence(id: string): Promise<{ ok: true }> {
 // ============================================================================
 // SEQUENCE STEPS
 // ============================================================================
+//
+// CRITICAL fix note: editing an EXISTING step used to go through the same
+// upsert-on-(sequence_id, step_order) path as creating a new one. That is
+// safe for a brand-new step (there is no prior row to orphan) but silently
+// corrupted a reorder: changing an existing step's step_order upserted a NEW
+// row keyed on the new order and left the OLD row — same content, old
+// position — live in the table, so it kept firing on its original schedule
+// (an orphaned duplicate). Editing now always passes the step's `id`, which
+// routes through updateSequenceStepInPlace() below: the SAME row is moved
+// (and siblings shifted to keep step_order unique), never inserted anew.
 export async function upsertSequenceStep(input: {
+  /** The step's own id. REQUIRED when editing an existing step — omit only
+   *  when creating a brand-new step (no prior row exists to move/orphan). */
+  id?: string;
   sequence_id: string;
   step_order: number;
   delay_hours: number;
@@ -327,20 +340,34 @@ export async function upsertSequenceStep(input: {
   try {
     const client = supabase as AnySupabase;
 
-    // Upsert on (sequence_id, step_order) — the unique constraint handles
-    // collisions cleanly so re-saving a step at the same position updates
-    // rather than erroring.
+    const fields = {
+      delay_hours: input.delay_hours,
+      template_id: input.template_id ?? null,
+      subject_override: input.subject_override ?? null,
+      body_override: input.body_override ?? null,
+      condition: input.condition ?? {},
+    };
+
+    if (input.id) {
+      const saved = await updateSequenceStepInPlace(client, {
+        id: input.id,
+        sequence_id: input.sequence_id,
+        step_order: input.step_order,
+        ...fields,
+      });
+      revalidatePath(CRM_SEQUENCES_REVALIDATE_PATH);
+      return saved;
+    }
+
+    // New step (no id yet) — upsert on (sequence_id, step_order) is safe
+    // here: there is no existing row for this step that could be orphaned.
     const { data, error } = await client
       .from('crm_sequence_steps')
       .upsert(
         {
           sequence_id: input.sequence_id,
           step_order: input.step_order,
-          delay_hours: input.delay_hours,
-          template_id: input.template_id ?? null,
-          subject_override: input.subject_override ?? null,
-          body_override: input.body_override ?? null,
-          condition: input.condition ?? {},
+          ...fields,
         },
         { onConflict: 'sequence_id,step_order' },
       )
@@ -362,6 +389,140 @@ export async function upsertSequenceStep(input: {
     });
     throw error;
   }
+}
+
+// Moves an EXISTING step (by id) to a new step_order in place, shifting
+// sibling steps as needed to preserve the UNIQUE (sequence_id, step_order)
+// constraint — every write in this function targets a row that already
+// exists (by id); nothing is ever inserted, so a reorder can never leave an
+// orphaned duplicate behind.
+async function updateSequenceStepInPlace(
+  client: AnySupabase,
+  input: {
+    id: string;
+    sequence_id: string;
+    step_order: number;
+    delay_hours: number;
+    template_id: string | null;
+    subject_override: string | null;
+    body_override: string | null;
+    condition: Record<string, unknown>;
+  },
+): Promise<CrmSequenceStep> {
+  const fieldPatch = {
+    delay_hours: input.delay_hours,
+    template_id: input.template_id,
+    subject_override: input.subject_override,
+    body_override: input.body_override,
+    condition: input.condition,
+  };
+
+  const { data: current, error: currentErr } = await client
+    .from('crm_sequence_steps')
+    .select('id, sequence_id, step_order')
+    .eq('id', input.id)
+    .single();
+
+  if (currentErr || !current) {
+    throw new Error(`Failed to load step to update: ${currentErr?.message ?? 'not found'}`);
+  }
+  const currentRow = current as { id: string; sequence_id: string; step_order: number };
+  if (currentRow.sequence_id !== input.sequence_id) {
+    throw new Error('Step does not belong to the given sequence');
+  }
+
+  const oldOrder = currentRow.step_order;
+  const newOrder = input.step_order;
+
+  if (oldOrder === newOrder) {
+    // No reorder needed — plain field update by id, no sibling shifting.
+    const { data, error } = await client
+      .from('crm_sequence_steps')
+      .update(fieldPatch)
+      .eq('id', input.id)
+      .select('*')
+      .single();
+    if (error) {
+      throw new Error(`Failed to save sequence step: ${error.message}`);
+    }
+    return data as CrmSequenceStep;
+  }
+
+  const { data: siblingsRaw, error: siblingsErr } = await client
+    .from('crm_sequence_steps')
+    .select('id, step_order')
+    .eq('sequence_id', input.sequence_id)
+    .neq('id', input.id)
+    .order('step_order', { ascending: true });
+  if (siblingsErr) {
+    throw new Error(`Failed to load sibling steps: ${siblingsErr.message}`);
+  }
+  const siblings = (siblingsRaw ?? []) as Array<{ id: string; step_order: number }>;
+
+  // Park the moved row on a temporary out-of-range order so the sibling
+  // shifts below never collide with it — the UNIQUE (sequence_id,
+  // step_order) constraint would otherwise reject the shift's intermediate
+  // states (e.g. two rows momentarily wanting the same order).
+  const maxOrder = Math.max(oldOrder, newOrder, 0, ...siblings.map((s) => s.step_order));
+  const parkedOrder = maxOrder + 1000;
+  const { error: parkErr } = await client
+    .from('crm_sequence_steps')
+    .update({ step_order: parkedOrder })
+    .eq('id', input.id);
+  if (parkErr) {
+    throw new Error(`Failed to reorder step: ${parkErr.message}`);
+  }
+
+  try {
+    if (newOrder > oldOrder) {
+      // Moving later: siblings strictly between old and new shift down by 1.
+      // Ascending order so each freed slot is taken before the next sibling
+      // needs it.
+      const affected = siblings
+        .filter((s) => s.step_order > oldOrder && s.step_order <= newOrder)
+        .sort((a, b) => a.step_order - b.step_order);
+      for (const sib of affected) {
+        const { error } = await client
+          .from('crm_sequence_steps')
+          .update({ step_order: sib.step_order - 1 })
+          .eq('id', sib.id);
+        if (error) throw new Error(`Failed to shift step: ${error.message}`);
+      }
+    } else {
+      // Moving earlier: siblings strictly between new and old shift up by 1.
+      // Descending order so each freed slot is taken before the next sibling
+      // needs it.
+      const affected = siblings
+        .filter((s) => s.step_order >= newOrder && s.step_order < oldOrder)
+        .sort((a, b) => b.step_order - a.step_order);
+      for (const sib of affected) {
+        const { error } = await client
+          .from('crm_sequence_steps')
+          .update({ step_order: sib.step_order + 1 })
+          .eq('id', sib.id);
+        if (error) throw new Error(`Failed to shift step: ${error.message}`);
+      }
+    }
+  } catch (shiftError) {
+    // Best-effort unpark so a failed mid-shift doesn't strand the moved row
+    // at the temporary order.
+    await client
+      .from('crm_sequence_steps')
+      .update({ step_order: oldOrder })
+      .eq('id', input.id);
+    throw shiftError;
+  }
+
+  const { data, error } = await client
+    .from('crm_sequence_steps')
+    .update({ step_order: newOrder, ...fieldPatch })
+    .eq('id', input.id)
+    .select('*')
+    .single();
+  if (error) {
+    throw new Error(`Failed to save sequence step: ${error.message}`);
+  }
+  return data as CrmSequenceStep;
 }
 
 export async function deleteSequenceStep(id: string): Promise<{ ok: true }> {
@@ -428,12 +589,19 @@ export async function enrollCoachesInSequence(input: {
       return { enrolled: 0, skipped: 0 };
     }
 
-    // De-duplicate against existing (sequence, coach) pairs so we report skipped
-    // accurately. The DB UNIQUE constraint would also catch this but on-conflict
-    // ignore returns less helpful counts.
+    // Check existing (sequence, coach) pairs — status + stop_reason decide
+    // what happens to each one:
+    //   no existing row              -> brand-new enrollment (insert)
+    //   stopped AND stop_reason='manual' -> operator-stopped, safe to
+    //                                        RE-enroll (reactivate the SAME
+    //                                        row so the UNIQUE(sequence_id,
+    //                                        coach_id) constraint is never
+    //                                        violated by a second insert)
+    //   anything else (active/paused/completed, or stopped for
+    //   replied/unsubscribed/bounced) -> permanently/currently blocked, skip
     const { data: existing, error: existingErr } = await client
       .from('crm_sequence_enrollments')
-      .select('coach_id')
+      .select('id, coach_id, status, stop_reason')
       .eq('sequence_id', input.sequence_id)
       .in('coach_id', input.coach_ids);
 
@@ -441,33 +609,82 @@ export async function enrollCoachesInSequence(input: {
       throw new Error(`Failed to check existing enrollments: ${existingErr.message}`);
     }
 
-    const existingSet = new Set<string>(
-      ((existing ?? []) as Array<{ coach_id: string }>).map((r) => r.coach_id),
+    const existingByCoach = new Map<
+      string,
+      { id: string; status: SequenceEnrollmentStatus; stop_reason: SequenceEnrollmentStopReason | null }
+    >(
+      ((existing ?? []) as Array<{
+        id: string;
+        coach_id: string;
+        status: SequenceEnrollmentStatus;
+        stop_reason: SequenceEnrollmentStopReason | null;
+      }>).map((r) => [r.coach_id, { id: r.id, status: r.status, stop_reason: r.stop_reason }]),
     );
-    const newCoachIds = input.coach_ids.filter((id) => !existingSet.has(id));
 
-    if (newCoachIds.length === 0) {
+    const newCoachIds: string[] = [];
+    const reEnrollIds: string[] = [];
+    let blockedCount = 0;
+
+    for (const coachId of input.coach_ids) {
+      const row = existingByCoach.get(coachId);
+      if (!row) {
+        newCoachIds.push(coachId);
+      } else if (row.status === 'stopped' && row.stop_reason === 'manual') {
+        reEnrollIds.push(row.id);
+      } else {
+        blockedCount += 1;
+      }
+    }
+
+    if (newCoachIds.length === 0 && reEnrollIds.length === 0) {
       return { enrolled: 0, skipped: input.coach_ids.length };
     }
 
-    const rows = await buildEnrollmentRows({
-      sequence_id: input.sequence_id,
-      coach_ids: newCoachIds,
-      enrolled_by: user.id,
-    });
+    if (newCoachIds.length > 0) {
+      const rows = await buildEnrollmentRows({
+        sequence_id: input.sequence_id,
+        coach_ids: newCoachIds,
+        enrolled_by: user.id,
+      });
 
-    const { error: insertErr } = await client
-      .from('crm_sequence_enrollments')
-      .insert(rows);
+      const { error: insertErr } = await client
+        .from('crm_sequence_enrollments')
+        .insert(rows);
 
-    if (insertErr) {
-      throw new Error(`Failed to enroll coaches: ${insertErr.message}`);
+      if (insertErr) {
+        throw new Error(`Failed to enroll coaches: ${insertErr.message}`);
+      }
+    }
+
+    if (reEnrollIds.length > 0) {
+      // Restart from step 0 — a fresh run of the sequence, same as a new
+      // enrollment, just reusing the existing row instead of inserting a
+      // duplicate.
+      const now = new Date().toISOString();
+      const { error: reEnrollErr } = await client
+        .from('crm_sequence_enrollments')
+        .update({
+          status: 'active',
+          current_step: 0,
+          next_send_at: now,
+          enrolled_at: now,
+          enrolled_by: user.id,
+          completed_at: null,
+          stopped_at: null,
+          stop_reason: null,
+          metadata: {},
+        })
+        .in('id', reEnrollIds);
+
+      if (reEnrollErr) {
+        throw new Error(`Failed to re-enroll coaches: ${reEnrollErr.message}`);
+      }
     }
 
     revalidatePath(CRM_SEQUENCES_REVALIDATE_PATH);
     return {
-      enrolled: newCoachIds.length,
-      skipped: input.coach_ids.length - newCoachIds.length,
+      enrolled: newCoachIds.length + reEnrollIds.length,
+      skipped: blockedCount,
     };
   } catch (error) {
     void logServerException(error, {
@@ -696,6 +913,41 @@ export async function pauseEnrollment(id: string): Promise<CrmSequenceEnrollment
   } catch (error) {
     void logServerException(error, {
       action: 'crm_sequences.pauseEnrollment',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
+  }
+}
+
+// Resumes a paused enrollment (paused -> active), preserving current_step
+// and next_send_at exactly as they were when paused. Guarded to only affect
+// a currently-paused row — resuming an active/completed/stopped enrollment
+// is a no-op that fails loudly instead of silently doing nothing, since the
+// UI only ever offers this action on a paused row.
+export async function resumeEnrollment(id: string): Promise<CrmSequenceEnrollment> {
+  const { supabase } = await getAuthedClient();
+  try {
+    const client = supabase as AnySupabase;
+
+    const { data, error } = await client
+      .from('crm_sequence_enrollments')
+      .update({ status: 'active' })
+      .eq('id', id)
+      .eq('status', 'paused')
+      .select('*')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to resume enrollment: ${error.message}`);
+    }
+
+    revalidatePath(CRM_SEQUENCES_REVALIDATE_PATH);
+    return data as CrmSequenceEnrollment;
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_sequences.resumeEnrollment',
       source: 'server_action',
       sport: 'golf',
       featureArea: 'crm',

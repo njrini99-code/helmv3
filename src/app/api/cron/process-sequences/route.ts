@@ -121,6 +121,7 @@ async function tick(): Promise<{
   stopped: number;
   completed: number;
   failed: number;
+  skipped: number;
   capped?: boolean;
 }> {
   const supabase = createAdminClient();
@@ -143,7 +144,7 @@ async function tick(): Promise<{
   const dailyCap = parseInt(process.env.SEQUENCE_DAILY_CAP ?? '40', 10);
   const remainingToday = Math.max(0, dailyCap - (sentTodayRaw ?? 0));
   if (remainingToday === 0) {
-    return { candidates: 0, sent: 0, stopped: 0, completed: 0, failed: 0, capped: true };
+    return { candidates: 0, sent: 0, stopped: 0, completed: 0, failed: 0, skipped: 0, capped: true };
   }
   // Per-tick cap smooths sends within a day so a batch sharing next_send_at
   // trickles out (a few per cron run) instead of firing all at once.
@@ -166,13 +167,14 @@ async function tick(): Promise<{
 
   const enrollments = (due ?? []) as EnrollmentRow[];
   if (enrollments.length === 0) {
-    return { candidates: 0, sent: 0, stopped: 0, completed: 0, failed: 0 };
+    return { candidates: 0, sent: 0, stopped: 0, completed: 0, failed: 0, skipped: 0 };
   }
 
   let sent = 0;
   let stopped = 0;
   let completed = 0;
   let failed = 0;
+  let skipped = 0;
 
   // 2. Process each enrollment in parallel; one failure shouldn't block the
   // batch.
@@ -195,6 +197,7 @@ async function tick(): Promise<{
     else if (r.value.outcome === 'stopped') stopped += 1;
     else if (r.value.outcome === 'completed') completed += 1;
     else if (r.value.outcome === 'failed') failed += 1;
+    else if (r.value.outcome === 'skipped') skipped += 1;
   }
 
   // Single roll-up (not one log per rejection) so a bad batch doesn't flood
@@ -213,16 +216,33 @@ async function tick(): Promise<{
     );
   }
 
-  return { candidates: enrollments.length, sent, stopped, completed, failed };
+  return { candidates: enrollments.length, sent, stopped, completed, failed, skipped };
 }
 
-type ProcessOutcome = 'sent' | 'stopped' | 'completed' | 'failed';
+type ProcessOutcome = 'sent' | 'stopped' | 'completed' | 'failed' | 'skipped';
 
 async function processEnrollment(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any,
   enrollment: EnrollmentRow,
 ): Promise<{ outcome: ProcessOutcome }> {
+  // ── Guard: skip if the PARENT sequence is paused (is_active = false).
+  // Enrollments are fetched purely by their own status='active' +
+  // next_send_at — without this check, pausing a whole sequence via
+  // updateSequence({is_active:false}) had no effect on the cron: every
+  // individual enrollment kept firing on schedule regardless. ──
+  const { data: seqRow, error: seqErr } = await client
+    .from('crm_sequences')
+    .select('is_active')
+    .eq('id', enrollment.sequence_id)
+    .maybeSingle();
+  if (seqErr) {
+    throw new Error(`Failed to load parent sequence: ${seqErr.message}`);
+  }
+  if (seqRow && (seqRow as { is_active: boolean }).is_active === false) {
+    return { outcome: 'skipped' };
+  }
+
   // ── Load coach (we need email + merge-tag fields + email_status) ──
   const { data: coachRaw, error: coachErr } = await client
     .from('crm_coaches')

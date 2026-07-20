@@ -16,6 +16,7 @@ import {
   getSequenceEnrollmentCounts,
   getSequencePerformance,
   pauseEnrollment,
+  resumeEnrollment,
   stopEnrollment,
   type CrmSequence,
   type CrmSequenceStep,
@@ -145,6 +146,24 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
     } catch (err) {
       setEnrollmentActionError(
         err instanceof Error ? err.message : 'Failed to pause enrollment',
+      );
+    } finally {
+      setBusyEnrollmentId(null);
+    }
+  };
+
+  const handleResumeEnrollment = async (enrollmentId: string) => {
+    setBusyEnrollmentId(enrollmentId);
+    setEnrollmentActionError(null);
+    try {
+      const updated = await resumeEnrollment(enrollmentId);
+      setEnrollments((prev) =>
+        prev.map((e) => (e.id === updated.id ? updated : e)),
+      );
+      onChange?.();
+    } catch (err) {
+      setEnrollmentActionError(
+        err instanceof Error ? err.message : 'Failed to resume enrollment',
       );
     } finally {
       setBusyEnrollmentId(null);
@@ -418,6 +437,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                 enrollment={enrollment}
                 coach={coachesById[enrollment.coach_id]}
                 onPause={() => handlePauseEnrollment(enrollment.id)}
+                onResume={() => handleResumeEnrollment(enrollment.id)}
                 onStop={() => handleStopEnrollment(enrollment.id)}
                 busy={busyEnrollmentId === enrollment.id}
               />
@@ -432,8 +452,13 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
         onOpenChange={setEnrollDialogOpen}
         sequenceId={sequenceId}
         onEnrolled={() => {
-          // Refetch enrollments to update counts.
+          // Refetch this builder's own enrollments/counts, AND tell the
+          // parent (onChange) so the SequencesList row's active-enrollment
+          // count refreshes too — previously only the local refresh() ran,
+          // so the list row kept showing the stale pre-enroll count until
+          // something else (e.g. a step edit) happened to bump refreshKey.
           refresh();
+          onChange?.();
         }}
       />
     </div>
@@ -516,25 +541,34 @@ function EnrollmentStatusBadge({ status }: { status: SequenceEnrollmentStatus })
 }
 
 // ============================================================================
-// EnrollmentRow — one coach's enrollment. Pause/Stop wire directly to the
-// server actions (pauseEnrollment/stopEnrollment) — previously the fetched
-// enrollment list was only used to derive a count fallback, with no way for
-// an operator to actually manage a running enrollment.
+// EnrollmentRow — one coach's enrollment. Pause/Resume/Stop wire directly to
+// the server actions (pauseEnrollment/resumeEnrollment/stopEnrollment) —
+// previously the fetched enrollment list was only used to derive a count
+// fallback, with no way for an operator to actually manage a running
+// enrollment, and a paused enrollment had no way back to active.
+//
+// Button copy says "…enrollment" (not the bare "Pause"/"Stop" used
+// previously) so it reads distinctly from the sequence-level "Pause
+// sequence" / "Activate sequence" action in SequenceCard — those two toggle
+// very different things (the whole drip vs. one coach's progress through it).
 // ============================================================================
 function EnrollmentRow({
   enrollment,
   coach,
   onPause,
+  onResume,
   onStop,
   busy,
 }: {
   enrollment: CrmSequenceEnrollment;
   coach?: EnrollmentCoachLite;
   onPause: () => void;
+  onResume: () => void;
   onStop: () => void;
   busy: boolean;
 }) {
   const canPause = enrollment.status === 'active';
+  const canResume = enrollment.status === 'paused';
   const canStop = enrollment.status === 'active' || enrollment.status === 'paused';
 
   return (
@@ -551,7 +585,7 @@ function EnrollmentRow({
         Step {enrollment.current_step}
       </span>
       <EnrollmentStatusBadge status={enrollment.status} />
-      {(canPause || canStop) && (
+      {(canPause || canResume || canStop) && (
         <div className="flex items-center gap-1 flex-shrink-0">
           {canPause && (
             <Button variant="ghost"
@@ -564,7 +598,21 @@ function EnrollmentRow({
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
-              {busy ? <IconLoader size={12} className="animate-spin" /> : 'Pause'}
+              {busy ? <IconLoader size={12} className="animate-spin" /> : 'Pause enrollment'}
+            </Button>
+          )}
+          {canResume && (
+            <Button variant="ghost"
+              type="button"
+              onClick={onResume}
+              disabled={busy}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium',
+                'text-primary-700 hover:bg-primary-50 transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
+            >
+              {busy ? <IconLoader size={12} className="animate-spin" /> : 'Resume enrollment'}
             </Button>
           )}
           {canStop && (
@@ -578,7 +626,7 @@ function EnrollmentRow({
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
-              Stop
+              Stop enrollment
             </Button>
           )}
         </div>
