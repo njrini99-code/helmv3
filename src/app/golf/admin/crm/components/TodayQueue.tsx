@@ -155,6 +155,13 @@ interface TodayQueueProps {
    * manual Gmail worklist (the two channels are mutually exclusive).
    */
   enrollmentMap?: Record<string, { status: string }>;
+  /**
+   * True while the parent's coach list is still loading. When set, the
+   * "All caught up" empty state is suppressed so an empty `coaches` prop
+   * (the initial pre-fetch state) doesn't read as "no work today" before
+   * the real data has arrived.
+   */
+  loading?: boolean;
 }
 
 export function TodayQueue({
@@ -167,6 +174,7 @@ export function TodayQueue({
   manualTemplateArmed,
   gmailDirectSend = false,
   enrollmentMap,
+  loading = false,
 }: TodayQueueProps) {
   const queue = useMemo(() => {
     const cutoff = Date.now() - SEVEN_DAYS_MS;
@@ -188,6 +196,11 @@ export function TodayQueue({
     for (const c of coaches) {
       if (c.status !== 'new_lead') continue;
       if (!hasValidEmail(c.email)) continue;
+      // Never queue a coach whose email is known-bad — mirrors the send gate in
+      // crm-gmail-send.ts (sendCoachViaGmail/sendNextBatchViaGmail), which skips
+      // any non-'valid' email_status. Legacy rows with no email_status set yet
+      // are treated as eligible (null/unknown-unset, not a known bounce).
+      if (c.email_status && c.email_status !== 'valid') continue;
       // The manual worklist targets a program's DECISION-MAKER only — never line
       // up assistant/volunteer coaches. So if a school's head is already worked
       // (contacted / sequence-enrolled) or has no email, we DON'T fall back to an
@@ -216,6 +229,25 @@ export function TodayQueue({
     );
     return mains.slice(0, MAX_ROWS);
   }, [coaches, enrollmentMap]);
+
+  if (loading && queue.length === 0) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-2xl glass-standard p-3">
+            <div className="flex items-center gap-3">
+              <div className="h-7 w-7 flex-shrink-0 rounded-full bg-warm-200/60 skeleton-shimmer" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3.5 w-40 rounded bg-warm-200/60 skeleton-shimmer" />
+                <div className="h-2.5 w-28 rounded bg-warm-100/60 skeleton-shimmer" />
+              </div>
+              <div className="h-8 w-20 rounded-xl bg-warm-100/60 skeleton-shimmer" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (queue.length === 0) {
     return (
