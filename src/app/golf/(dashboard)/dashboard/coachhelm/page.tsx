@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { createClient } from '@/lib/supabase/server';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import {
@@ -10,9 +11,34 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayPlayerCoachHelm, InlineNotice, Button } from '@/components/fairway';
+import { InlineNotice, Button, type FocusAreaCardData } from '@/components/fairway';
+import { PlayerCoachHelmHome } from '@/components/golf/coachhelm/home/PlayerCoachHelmHome';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+
+// ── `development` drill reads — copied from my-development/page.tsx (the
+// route it now absorbs via ?view=development). ──────────────────────────────
+import type { AreaAutoFillStats } from '@/lib/coachhelm/focus-areas/catalog';
+import {
+  loadActiveGoals,
+  loadPendingGoalSuggestions,
+  loadRecentlyAchievedGoals,
+} from '@/lib/coachhelm/v3/goals/loader';
+import { evaluateAndPersistGoals, evaluateAndPersistFocusAreas } from '@/lib/golf/progress-drivers';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
+import type { GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
+import { getPlayerCausalRelationships } from '@/app/golf/actions/causal-relationships';
+
+// ── `profile` drill reads — copied from my-game-profile/page.tsx. ───────────
+import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
+import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
+import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
+import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
+
+// ── `standing` drill read — copied from my-standing/page.tsx (the
+// counterfactual baseline; the standing map itself is already fetched below). ─
+import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
 
 export const metadata: Metadata = {
   title: 'CoachHelm | GolfHelm',
@@ -87,6 +113,21 @@ function CoachHelmDisabledState({ reason }: { reason: string }) {
       </div>
     </div>
   );
+}
+
+/** `progress_notes` ({ entries: [{ at, value, note }] }) → the card's
+ *  progressHistory shape — ported verbatim from my-development/page.tsx. */
+function progressHistoryOf(raw: unknown): { at: string; value: number; note?: string }[] {
+  const entries = (raw as { entries?: unknown } | null)?.entries;
+  if (!Array.isArray(entries)) return [];
+  return entries
+    .filter(
+      (e): e is { at: string; value: number; note?: string } =>
+        Boolean(e) &&
+        typeof (e as { at?: unknown }).at === 'string' &&
+        typeof (e as { value?: unknown }).value === 'number',
+    )
+    .map((e) => ({ at: e.at, value: e.value, note: e.note }));
 }
 
 /**
@@ -187,33 +228,193 @@ export default async function PlayerCoachHelmPage() {
     return <ErrorState error="No dashboard data available" />;
   }
 
-  // The warm player front door (player CoachHelmShell variant: sub-nav = Brief +
-  // My Development). It receives the SAME parallel-fetched props; null V3 panels
-  // degrade to honest InsufficientData INSIDE the surface (no shells), and the
-  // "Ask CoachHelm about this insight" entry ships RESERVED/disabled (no
-  // chat-gate lift this wave). All gate states above are shared.
-  //
   // Standing snapshots (you vs team vs PGA). Convert the Map to a plain Record
   // so it serializes across the server→client boundary.
   const standingMap = await loadPlayerStandingMap(player.id);
   const standingByMetric = Object.fromEntries(standingMap) as Record<string, PlayerStanding>;
   // Hierarchical theme scaffold — degrades to `[]` on a failed/absent fetch.
   const themes = themesRes?.data?.themes ?? [];
+
+  // ── `?view=development` reads — copied verbatim from my-development/page.tsx
+  // (the drill's own DrillPanel now hosts this content; the fetch shape is
+  // unchanged). Best-effort: a failure here degrades to an honest loadError
+  // flag inside the drill rather than failing the whole CoachHelm home. ──────
+  const supabase = await createClient();
+  let developmentActiveAreas: FocusAreaCardData[] = [];
+  let developmentCompletedAreas: FocusAreaCardData[] = [];
+  let developmentProposedAreas: FocusAreaCardData[] = [];
+  let developmentPlayerStats: AreaAutoFillStats = {
+    rounds_played: 0,
+    avg_score: null,
+    avg_putts: null,
+    fairway_pct: null,
+    gir_pct: null,
+  };
+  let developmentLoadError = false;
+  let goals: FairwayGoalCardData[] = [];
+  let achievedGoals: FairwayGoalCardData[] = [];
+  let suggestions: GoalSuggestionView[] = [];
+  let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
+  try {
+    const { data: focusAreas, error: focusAreasError } = await supabase
+      .from('golf_player_focus_areas')
+      .select(
+        `id, area_type, title, description, status, target_metric, current_value,
+         target_value, target_kind, target_date, target_rounds, started_at,
+         completed_at, created_at, from_review_id, from_insight_id,
+         review_context, progress_notes`,
+      )
+      .eq('player_id', player.id)
+      .order('created_at', { ascending: false });
+    developmentLoadError = Boolean(focusAreasError);
+
+    const reviewIds = Array.from(
+      new Set((focusAreas || []).map((fa) => fa.from_review_id).filter((id): id is string => Boolean(id))),
+    );
+    const roundIdByReviewId: Record<string, string> = {};
+    if (reviewIds.length > 0) {
+      const { data: reviewRows } = await supabase
+        .from('golf_round_reviews')
+        .select('id, round_id')
+        .in('id', reviewIds);
+      for (const row of reviewRows || []) {
+        if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
+      }
+    }
+
+    const focusAreasWithHistory = (focusAreas || []).map((fa) => ({
+      ...fa,
+      progressHistory: progressHistoryOf(fa.progress_notes),
+      from_review_round_id: fa.from_review_id ? roundIdByReviewId[fa.from_review_id] ?? null : null,
+    }));
+
+    developmentActiveAreas = focusAreasWithHistory.filter(
+      (fa) => fa.status === 'active' || fa.status === 'in_progress' || fa.status === 'paused',
+    ) as unknown as FocusAreaCardData[];
+    developmentCompletedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'completed') as unknown as FocusAreaCardData[];
+    developmentProposedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'proposed') as unknown as FocusAreaCardData[];
+
+    // Recompute each active goal's observed snapshot before loading (idempotent
+    // per UTC day) — best-effort, same as my-development/page.tsx.
+    try {
+      await Promise.all([evaluateAndPersistGoals(player.id), evaluateAndPersistFocusAreas(player.id)]);
+    } catch { /* progress refresh is best-effort */ }
+
+    const [activeGoals, achievedGoalsRes, suggestionsRes, causalRes, statsRow] = await Promise.all([
+      loadActiveGoals(player.id),
+      loadRecentlyAchievedGoals(player.id),
+      loadPendingGoalSuggestions(player.id, 5),
+      getPlayerCausalRelationships(player.id),
+      supabase
+        .from('golf_player_stats_cache')
+        .select(
+          'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+        )
+        .eq('player_id', player.id)
+        .maybeSingle(),
+    ]);
+    const sr = statsRow.data;
+    developmentPlayerStats = {
+      rounds_played: sr?.rounds_played ?? 0,
+      avg_score: sr?.scoring_average ?? null,
+      avg_putts: sr?.putts_per_round ?? null,
+      fairway_pct: sr?.driving_accuracy_percentage ?? null,
+      gir_pct: sr?.gir_percentage ?? null,
+      best_score: sr?.best_round ?? null,
+      driving_distance: sr?.driving_distance_average ?? null,
+      proximity_to_hole: sr?.approach_proximity_average ?? null,
+      scrambling_pct: sr?.scrambling_percentage ?? null,
+      up_and_down_pct: sr?.up_and_down_percentage ?? null,
+      sand_save_pct: sr?.sand_save_percentage ?? null,
+      one_putt_pct: sr?.one_putt_percentage ?? null,
+      three_putt_pct: sr?.three_putt_percentage ?? null,
+      par3_avg: sr?.par3_average ?? null,
+      par4_avg: sr?.par4_average ?? null,
+      par5_avg: sr?.par5_average ?? null,
+    };
+    goals = activeGoals.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
+    achievedGoals = achievedGoalsRes.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
+    suggestions = suggestionsRes.map((s) => {
+      const cfg = getMetricRenderConfig(s.metric_id);
+      return { suggestion: s, display_label: cfg?.display_label ?? s.metric_id, unit: cfg?.unit ?? 'count' };
+    });
+    causalRelationships = causalRes;
+  } catch {
+    developmentLoadError = true;
+  }
+
+  // ── `?view=profile` reads — copied verbatim from my-game-profile/page.tsx. ──
+  let genomeAxes: { label: string; value: number }[] = [];
+  let genomeDimensions: { id: string; label: string; score: number | null; qualitative: string | null }[] = [];
+  let genomeStrengths: { id: string; label: string; qualitative: string | null }[] = [];
+  let genomeWatchouts: { id: string; label: string; qualitative: string | null }[] = [];
+  let genomeCourseProfile: string | null = null;
+  let genomeRoundsBasis: number | null = null;
+  try {
+    const genome = await loadGenome(supabase, player.id);
+    const persona = genome ? derivePersona(genome.vector) : null;
+    const cells = genome
+      ? GENOME_DIMENSIONS.map((dim) => {
+          const r = genome.vector[dim.id];
+          const norm = r ? normalizeForRadar(dim.id, r) : null;
+          return {
+            id: dim.id,
+            label: dim.label,
+            score: norm == null ? null : Math.round(norm * 100),
+            qualitative: r?.label ?? null,
+          };
+        })
+      : [];
+    genomeDimensions = cells;
+    genomeAxes = cells
+      .filter((c): c is typeof c & { score: number } => c.score != null)
+      .map((c) => ({ label: c.label, value: c.score }));
+    genomeStrengths = (persona?.strengths ?? []).map((s) => ({ id: s.dim_id, label: s.label, qualitative: s.qualitative }));
+    genomeWatchouts = (persona?.watchouts ?? []).map((w) => ({ id: w.dim_id, label: w.label, qualitative: w.qualitative }));
+    genomeCourseProfile = persona?.course_profile ?? null;
+    genomeRoundsBasis = genome?.rounds_basis ?? null;
+  } catch { /* genome not yet available — the profile drill degrades honestly */ }
+
+  // ── `?view=standing` read — the F028 counterfactual baseline (the standing
+  // map itself is already fetched above). Copied from my-standing/page.tsx. ──
+  let playerBaseline: number | null = null;
+  try {
+    playerBaseline = await loadPlayerScoringBaseline(player.id);
+  } catch { /* counterfactual line degrades honestly (suppressed) */ }
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <FairwayPlayerCoachHelm
-        data={dashboardResult.data}
-        playerId={player.id}
-        initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
-        profileData={profileData}
-        trendData={trendData}
-        shotData={shotData}
-        v3EmptyCodes={v3EmptyCodes}
-        topInsight={topInsight}
-        secondaryInsights={secondaryInsights}
-        standingByMetric={standingByMetric}
-        themes={themes}
-      />
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
+        <PlayerCoachHelmHome
+          data={dashboardResult.data}
+          playerId={player.id}
+          initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
+          profileData={profileData}
+          trendData={trendData}
+          shotData={shotData}
+          v3EmptyCodes={v3EmptyCodes}
+          topInsight={topInsight}
+          secondaryInsights={secondaryInsights}
+          standingByMetric={standingByMetric}
+          themes={themes}
+          developmentActiveAreas={developmentActiveAreas}
+          developmentCompletedAreas={developmentCompletedAreas}
+          developmentProposedAreas={developmentProposedAreas}
+          developmentPlayerStats={developmentPlayerStats}
+          developmentLoadError={developmentLoadError}
+          goals={goals}
+          suggestions={suggestions}
+          causalRelationships={causalRelationships}
+          achievedGoals={achievedGoals}
+          genomeAxes={genomeAxes}
+          genomeDimensions={genomeDimensions}
+          genomeStrengths={genomeStrengths}
+          genomeWatchouts={genomeWatchouts}
+          genomeCourseProfile={genomeCourseProfile}
+          genomeRoundsBasis={genomeRoundsBasis}
+          playerBaseline={playerBaseline}
+        />
+      </div>
     </div>
   );
 }

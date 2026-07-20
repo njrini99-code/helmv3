@@ -34,6 +34,15 @@
  * leaf depth (Players > {playerName}, Players > Compare). Signals stays at tab
  * level (filtered presets, not leaves).
  *
+ * EMBEDDED MODE: `embedded` (default false) suppresses the eyebrow/title/
+ * description masthead AND the persistent sub-nav strip — used when this
+ * shell is mounted by a legacy monolith (FairwayCoachHelmSignals,
+ * PlayersGridView, FairwayEffectiveness) that in turn gets mounted INSIDE a
+ * stage `DrillPanel` (see `components/golf/coachhelm/home/*Drill.tsx`), which
+ * already renders its own back-chip + title chrome. The `actions` cluster
+ * still renders on its own — real controls, not chrome — and layout width +
+ * `children` rendering are unaffected either way.
+ *
  * LIVE — mounted unconditionally by ~15 CoachHelm route surfaces (coach Brief/
  * Signals/Players/Effectiveness/Ask + player Overview/Development/Game Profile/
  * Standing and their leaf views such as GenomeDetailView/GenomeCompareView/
@@ -82,6 +91,18 @@ export interface CoachHelmShellProps {
   breadcrumbs?: CoachHelmCrumb[];
   /** Right-aligned action cluster (the ViewHeader primary/secondary slot). */
   actions?: React.ReactNode;
+  /**
+   * When true, suppresses the masthead block (eyebrow/title/description) and
+   * the persistent sub-nav strip — used when this shell is mounted INSIDE a
+   * stage `DrillPanel` (see `components/golf/coachhelm/home/*Drill.tsx`),
+   * which already renders its own back-chip + title chrome; without this, a
+   * drill showed two competing mastheads plus a redundant single-tab strip.
+   * The `actions` cluster still renders when provided — those are real
+   * controls (Refresh, New focus area, bulk Resolve/Dismiss), not chrome.
+   * Layout width and `children` rendering are unaffected either way.
+   * Default false — every existing standalone route mount is unchanged.
+   */
+  embedded?: boolean;
 
   children: React.ReactNode;
   className?: string;
@@ -106,6 +127,7 @@ export function CoachHelmShell({
   description,
   breadcrumbs,
   actions,
+  embedded = false,
   children,
   className,
 }: CoachHelmShellProps) {
@@ -117,20 +139,36 @@ export function CoachHelmShell({
       data-slot="coachhelm-shell"
       data-active={active}
       data-role={role}
+      data-embedded={embedded ? '' : undefined}
       className={cn('flex w-full flex-col', className)}
     >
       {/* ── Masthead (§A light-airy gutters) + persistent sub-nav strip ─────── */}
       {/* Masthead + body share ONE centered max-w container so every CoachHelm
-          tab aligns at the same width + gutters (cross-tab cohesion). */}
+          tab aligns at the same width + gutters (cross-tab cohesion). When
+          `embedded`, the eyebrow/title/description masthead and the sub-nav
+          strip are suppressed (the host DrillPanel owns that chrome); the
+          action cluster still renders on its own when provided, since those
+          are real controls rather than chrome. */}
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 pt-2 md:px-6">
-        <ViewHeader
-          eyebrow={eyebrow}
-          title={resolvedTitle}
-          description={description}
-          primaryAction={actions}
-          // The sub-nav is the shell's own strip (richer than the segmented row),
-          // rendered immediately beneath — so we never pass segments here.
-        />
+        {embedded ? (
+          actions != null ? (
+            <div
+              data-slot="coachhelm-shell-embedded-actions"
+              className="flex flex-wrap items-center justify-end gap-2"
+            >
+              {actions}
+            </div>
+          ) : null
+        ) : (
+          <ViewHeader
+            eyebrow={eyebrow}
+            title={resolvedTitle}
+            description={description}
+            primaryAction={actions}
+            // The sub-nav is the shell's own strip (richer than the segmented row),
+            // rendered immediately beneath — so we never pass segments here.
+          />
+        )}
 
         {/* Leaf breadcrumbs: CoachHelm > <Tab> > <leaf>. Tab prefix is implied. */}
         {hasCrumbs ? (
@@ -165,7 +203,9 @@ export function CoachHelmShell({
           </nav>
         ) : null}
 
-        <CoachHelmSubNav active={active} role={role} signalCount={signalCount} />
+        {embedded ? null : (
+          <CoachHelmSubNav active={active} role={role} signalCount={signalCount} />
+        )}
       </div>
 
       {/* ── Surface body on the warm canvas, aligned to the masthead width ──── */}

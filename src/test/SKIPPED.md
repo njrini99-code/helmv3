@@ -27,7 +27,7 @@ _Updated 2026-07-09: 5 of the original 9 entries are resolved and removed from t
 - `src/components/ui/button.test.tsx` — `shows loading state` (children no longer hidden under spinner)
 - `src/test/golf/components/EvidencePanel.test.tsx` — `compact mode renders the four key facts in a single row`
 - `src/test/golf/components/InsightCard.test.tsx` — `fires coach actions including create_focus_area`, `renders different action buttons for player vs coach`
-- `src/test/golf/components/RoundTakeaway.test.tsx` — `shows the "bright spot" pre-header when the tone is celebratory`
+- ~~`src/test/golf/components/RoundTakeaway.test.tsx`~~ — deleted 2026-07-20: `RoundTakeaway` was retired by the Round Review filmstrip rebuild (Task 10) — its one narrative replaces the separate hero card.
 
 ## Plan 04 deferred — round-loop hardening test surface
 

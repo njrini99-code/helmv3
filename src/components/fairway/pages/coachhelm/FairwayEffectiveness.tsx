@@ -362,6 +362,15 @@ export interface FairwayEffectivenessProps {
    */
   initialView?: ViewType;
   initialRange?: DateRangeType;
+  /**
+   * True when mounted by `EffectivenessDrill` inside the Brief home's stage
+   * `DrillPanel`, which already renders its own back-chip + title chrome.
+   * Forwarded to the internally-rendered `CoachHelmShell` to suppress its
+   * masthead + sub-nav (see `CoachHelmShell`'s `embedded` prop). Default
+   * false — the retired standalone /analytics/coachhelm redirect (and any
+   * other direct mount) is unaffected.
+   */
+  embedded?: boolean;
 }
 
 export function FairwayEffectiveness({
@@ -377,6 +386,7 @@ export function FairwayEffectiveness({
   signalCount,
   initialView = 'cockpit',
   initialRange = '30d',
+  embedded = false,
 }: FairwayEffectivenessProps) {
   const [activeView, setActiveView] = React.useState<ViewType>(initialView);
   const [selectedRange, setSelectedRange] = React.useState<DateRangeType>(initialRange);
@@ -522,6 +532,7 @@ export function FairwayEffectiveness({
       // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
+      embedded={embedded}
       title="Is CoachHelm helping?"
       description={`Last ${days} days of accuracy and outcomes`}
       actions={actions}

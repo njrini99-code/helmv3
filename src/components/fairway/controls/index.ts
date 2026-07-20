@@ -18,6 +18,7 @@
  * ========================================================================== */
 
 export { Button, IconButton } from './button';
+export { PressTarget, type PressTargetProps } from './press-target';
 export type {
   ButtonProps,
   IconButtonProps,

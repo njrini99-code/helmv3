@@ -106,6 +106,8 @@ export {
 export {
   Button,
   IconButton,
+  PressTarget,
+  type PressTargetProps,
   type ButtonProps,
   type IconButtonProps,
   type FwButtonVariant,
@@ -460,8 +462,6 @@ export {
   CoachHelmShell,
   type CoachHelmShellProps,
   type CoachHelmCrumb,
-  FairwayBrief,
-  type FairwayBriefProps,
   CoachHelmSubNav,
   type CoachHelmSubNavProps,
   type CoachHelmTab,

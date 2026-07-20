@@ -1079,6 +1079,10 @@ async function generateTeamInsightsImpl() {
     // revalidated, so the coach saw a stale list until a full reload).
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/insights');
+    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9) — revalidate
+    // the canonical destination too (pattern: v3/goals.ts createTeamGoal).
+    revalidatePath('/golf/dashboard/intelligence');
 
     return {
       success: true,
@@ -1249,6 +1253,9 @@ async function acknowledgeInsightImpl(insightId: string) {
     // C2/F112 — the insights list page is its own route; revalidate it so the
     // acknowledged row updates without a hard reload.
     revalidatePath('/golf/dashboard/insights');
+    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
+    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`acknowledgeInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -1329,6 +1336,9 @@ async function dismissInsightImpl(insightId: string) {
     revalidatePath('/golf/dashboard');
     // C2/F112 — revalidate the insights list route so the dismissed row drops.
     revalidatePath('/golf/dashboard/insights');
+    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
+    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`dismissInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -1413,6 +1423,9 @@ async function reactivateInsightImpl(
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/insights');
+    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
+    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`reactivateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -1495,6 +1508,9 @@ async function resolveInsightImpl(insightId: string) {
     revalidatePath('/golf/dashboard');
     // C2/F112 — revalidate the insights list route so the resolved row updates.
     revalidatePath('/golf/dashboard/insights');
+    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
+    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`resolveInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
