@@ -153,8 +153,9 @@ function buildMime(args: {
   fromName: string;
   fromEmail: string;
   replyTo: string;
+  extraHeaders?: Record<string, string>;
 }): string {
-  const { to, subject, text, html, fromName, fromEmail, replyTo } = args;
+  const { to, subject, text, html, fromName, fromEmail, replyTo, extraHeaders } = args;
   const commonHeaders = [
     `From: ${encodeHeader(fromName)} <${sanitizeHeaderValue(fromEmail)}>`,
     `To: ${sanitizeHeaderValue(to)}`,
@@ -162,6 +163,11 @@ function buildMime(args: {
     `Subject: ${encodeHeader(subject)}`,
     'MIME-Version: 1.0',
   ];
+  for (const [name, value] of Object.entries(extraHeaders ?? {})) {
+    const safeName = name.replace(/[^A-Za-z0-9-]/g, '');
+    const safeValue = sanitizeHeaderValue(value);
+    if (safeName && safeValue) commonHeaders.push(`${safeName}: ${safeValue}`);
+  }
 
   if (!html) {
     // Plain sends keep the exact battle-tested text/plain envelope.
@@ -203,6 +209,10 @@ function buildMime(args: {
 export interface GmailSendInput {
   to: string;
   subject: string;
+  /** Extra top-level MIME headers (e.g. the List-Unsubscribe pair from
+   *  buildListUnsubscribeHeaders). Names/values are header-sanitized before
+   *  emission; anything that survives sanitization empty is dropped. */
+  extraHeaders?: Record<string, string>;
   /** Plain-text body — always required (it is the only part for plain sends,
    *  and the alternative part when `html` is present). */
   text: string;
@@ -233,6 +243,7 @@ export async function sendGmailEmail(input: GmailSendInput): Promise<{ id: strin
     fromName,
     fromEmail: sendAs,
     replyTo: sendAs,
+    extraHeaders: input.extraHeaders,
   });
 
   const res = await fetch(SEND_URL, {
