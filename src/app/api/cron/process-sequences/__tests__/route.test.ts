@@ -91,7 +91,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   })),
 }));
 
-const logServerError = vi.fn(async () => undefined);
+const logServerError = vi.fn(async (..._args: unknown[]) => undefined);
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: (...args: unknown[]) => logServerError(...args),
 }));

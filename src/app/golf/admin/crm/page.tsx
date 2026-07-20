@@ -1480,7 +1480,7 @@ export default function CRMPage() {
                 <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200/50">
                   <IconFlame size={14} className="text-orange-600" />
                   <span className="text-sm font-bold text-orange-700 tabular-nums">{stats.hot}</span>
-                  <span className="text-xs text-orange-600">hot</span>
+                  <span className="text-xs text-orange-600">high priority</span>
                 </div>
               )}
             </div>
@@ -1516,6 +1516,11 @@ export default function CRMPage() {
                   manualTemplateArmed={!!activeManualTemplate}
                   gmailDirectSend={gmailDirectEnabled}
                   enrollmentMap={sequenceEnrollmentMap}
+                  onFollowUpSet={(coachId, followUpAt) => {
+                    setAllCoaches((prev) =>
+                      prev.map((c) => (c.id === coachId ? { ...c, next_follow_up_at: followUpAt } : c)),
+                    );
+                  }}
                 />
               </div>
             )
@@ -1629,6 +1634,8 @@ export default function CRMPage() {
                     stats={stats}
                     onBulkUpdate={bulkUpdateCoaches}
                     onRefresh={refreshData}
+                    selectedIds={selectedIds}
+                    onSelectionChange={setSelectedIds}
                   />
                 )}
                 {coachView === 'conferences' && (
@@ -1686,7 +1693,14 @@ export default function CRMPage() {
 
           {/* ── Inbox Tab ── everything incoming: replies + tasks due, and
               demo requests (moved here from the Outreach sub-tabs). */}
-          {activeTab === 'inbox' && <InboxView />}
+          {activeTab === 'inbox' && (
+            <InboxView
+              onCoachClick={(coachId) => {
+                const coach = allCoaches.find((c) => c.id === coachId);
+                if (coach) handleCoachClick(coach);
+              }}
+            />
+          )}
 
           {/* ── Sequences Tab (NEW — Phase 2) ── */}
           {activeTab === 'sequences' && <SequencesTabWrapper />}

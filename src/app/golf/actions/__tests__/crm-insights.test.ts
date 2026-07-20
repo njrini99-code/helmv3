@@ -117,8 +117,8 @@ describe('getTemplatePerformance', () => {
 
     const [row] = await getTemplatePerformance('30d');
 
-    expect(row.open_rate).toBeNull();
-    expect(row.click_rate).toBeNull();
+    expect(row?.open_rate).toBeNull();
+    expect(row?.click_rate).toBeNull();
   });
 
   it('rates opened/clicked against delivered_count when delivered_count > 0', async () => {
@@ -139,8 +139,8 @@ describe('getTemplatePerformance', () => {
 
     const [row] = await getTemplatePerformance('30d');
 
-    expect(row.open_rate).toBe(0.5);
-    expect(row.click_rate).toBe(0.25);
+    expect(row?.open_rate).toBe(0.5);
+    expect(row?.click_rate).toBe(0.25);
   });
 });
 

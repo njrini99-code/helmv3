@@ -108,6 +108,9 @@ export function SequenceStepEditor({
     setError(null);
     try {
       const saved = await upsertSequenceStep({
+        // Editing an existing step must carry its id so the action moves the
+        // SAME row (atomic reorder) instead of upserting a duplicate.
+        ...(step?.id ? { id: step.id } : {}),
         sequence_id: sequenceId,
         step_order: stepOrder,
         delay_hours: delayHours,
