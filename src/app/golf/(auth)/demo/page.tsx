@@ -61,9 +61,18 @@ function DemoGateContent() {
   const sessionExpired = searchParams.get('message') === 'demo_session_expired';
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
+  // CRM demo-invite emails link here as /golf/demo?ref={email} — prefill the
+  // email field so a coach arriving from their inbox doesn't retype the
+  // address we sent to. Only a value that passes the same validation the
+  // field enforces is accepted; anything else is ignored.
+  const refEmail = useMemo(() => {
+    const raw = searchParams.get('ref')?.trim().toLowerCase() ?? '';
+    return raw && !validateEmail(raw) ? raw : '';
+  }, [searchParams]);
+
   // Form state
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(refEmail);
   const [school, setSchool] = useState('');
 
   // Touched tracks whether the user has blurred a field (show inline errors after blur)
