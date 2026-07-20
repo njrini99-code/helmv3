@@ -91,14 +91,14 @@ async function extractResponseErrorLine(response: Response): Promise<string> {
  */
 async function extractOutcomeMetadata(
   response: Response,
-): Promise<Record<string, unknown> | null> {
+): Promise<Record<string, string | number | boolean> | null> {
   try {
     const clone = response.clone();
     if (!(clone.headers.get('content-type') ?? '').includes('application/json')) return null;
     const body: unknown = await clone.json();
     if (!body || typeof body !== 'object') return null;
     const record = body as Record<string, unknown>;
-    const outcome: Record<string, unknown> = {};
+    const outcome: Record<string, string | number | boolean> = {};
     for (const key of ['skipped', 'matched', 'inserted', 'sent', 'processed', 'count', 'detail']) {
       const value = record[key];
       if (typeof value === 'string') outcome[key] = value.slice(0, 300);
@@ -115,7 +115,7 @@ async function writeRow(
   status: 'completed' | 'failed',
   startedAt: Date,
   errorMessage: string | null,
-  metadata: Record<string, unknown> | null = null,
+  metadata: Record<string, string | number | boolean> | null = null,
 ): Promise<void> {
   try {
     const completedAt = new Date();
