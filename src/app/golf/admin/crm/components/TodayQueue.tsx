@@ -21,7 +21,7 @@
 // open the detail panel, log a touch, and an assignee picker.
 // ============================================================================
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   IconMail,
   IconSend,
@@ -40,6 +40,7 @@ import {
   CRM_ASSIGNEES,
   type CrmAssignee,
 } from '../crm-config';
+import { SignalsPanel } from './today/SignalsPanel';
 
 const MAX_ROWS = 40;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -230,39 +231,58 @@ export function TodayQueue({
     return mains.slice(0, MAX_ROWS);
   }, [coaches, enrollmentMap]);
 
+  // SignalsPanel's rows only carry a coach_id — adapt it back to the full
+  // Coach object the rest of this component (and its onCoachClick prop)
+  // works with, using the already-loaded `coaches` list.
+  const handleSignalCoachClick = useCallback(
+    (coachId: string) => {
+      const coach = coaches.find((c) => c.id === coachId);
+      if (coach) onCoachClick(coach);
+    },
+    [coaches, onCoachClick],
+  );
+
   if (loading && queue.length === 0) {
     return (
-      <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-2xl glass-standard p-3">
-            <div className="flex items-center gap-3">
-              <div className="h-7 w-7 flex-shrink-0 rounded-full bg-warm-200/60 skeleton-shimmer" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-3.5 w-40 rounded bg-warm-200/60 skeleton-shimmer" />
-                <div className="h-2.5 w-28 rounded bg-warm-100/60 skeleton-shimmer" />
+      <div className="space-y-4">
+        <SignalsPanel onCoachClick={handleSignalCoachClick} />
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl glass-standard p-3">
+              <div className="flex items-center gap-3">
+                <div className="h-7 w-7 flex-shrink-0 rounded-full bg-warm-200/60 skeleton-shimmer" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3.5 w-40 rounded bg-warm-200/60 skeleton-shimmer" />
+                  <div className="h-2.5 w-28 rounded bg-warm-100/60 skeleton-shimmer" />
+                </div>
+                <div className="h-8 w-20 rounded-xl bg-warm-100/60 skeleton-shimmer" />
               </div>
-              <div className="h-8 w-20 rounded-xl bg-warm-100/60 skeleton-shimmer" />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
 
   if (queue.length === 0) {
     return (
-      <div className="rounded-2xl glass-standard p-10 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
-          <IconCheckCircle2 size={26} className="text-primary-600" />
+      <div className="space-y-4">
+        <SignalsPanel onCoachClick={handleSignalCoachClick} />
+        <div className="rounded-2xl glass-standard p-10 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
+            <IconCheckCircle2 size={26} className="text-primary-600" />
+          </div>
+          <h3 className="text-lg font-bold text-warm-900">All caught up</h3>
+          <p className="mt-1 text-sm text-warm-500">No fresh leads due today.</p>
         </div>
-        <h3 className="text-lg font-bold text-warm-900">All caught up</h3>
-        <p className="mt-1 text-sm text-warm-500">No fresh leads due today.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      <SignalsPanel onCoachClick={handleSignalCoachClick} />
+
       {/* Header / count */}
       <div className="flex items-center justify-between rounded-2xl glass-standard px-4 py-3">
         <div className="flex items-center gap-2">
