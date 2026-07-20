@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -72,7 +73,6 @@ import { InboxView } from './components/replies/InboxView';
 import { SequencesList } from './components/sequences/SequencesList';
 import { SequenceBuilder } from './components/sequences/SequenceBuilder';
 import { TemplateManager } from './components/TemplateManager';
-import { InsightsDashboard } from './components/insights/InsightsDashboard';
 import { AutomationsList } from './components/automations/AutomationsList';
 import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAdminPanel';
 import type { CRMEvent } from './components/CalendarView';
@@ -101,6 +101,8 @@ import { Button, IconButton } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { logError } from '@/lib/error-logging';
 import { NativeSelect } from '@/components/ui/native-select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { nextStepLabel } from './components/next-step-label';
 
 // ============================================================================
 // SIDEBAR TABS + shell contracts
@@ -108,6 +110,16 @@ import { NativeSelect } from '@/components/ui/native-select';
 // TABS / OUTREACH_SUBTABS / MOBILE_BAR_TABS / MOBILE_MORE_TABS and the
 // suppression gate live in ./page-contracts (a page.tsx may only export the
 // page component — extra named exports fail next build's page validation).
+
+// Recharts (~100KB gz) backs the Outreach → Analytics sub-tab only. Loading
+// it statically put the whole library in the shell's initial bundle even
+// though most sessions never open that sub-tab. next/dynamic + ssr:false
+// keeps it out of the first paint and off the server render entirely.
+// Mirrors the BusinessIntelligenceTab pattern in /golf/admin/page.tsx.
+const InsightsDashboard = dynamic(
+  () => import('./components/insights/InsightsDashboard').then((m) => ({ default: m.InsightsDashboard })),
+  { loading: () => <InsightsDashboardSkeleton />, ssr: false },
+);
 
 // Labeled sidebar sections, rendered in this order with an uppercase eyebrow.
 const NAV_SECTIONS = [
@@ -191,7 +203,20 @@ export default function CRMPage() {
   // Modals & Panels
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
+  // Holds only the id. `selectedCoach` itself is DERIVED from allCoaches
+  // below so every mutation path (single update, bulk update, assignee
+  // change, optimistic "contacted" flip) keeps the open detail panel in sync
+  // automatically — no path needs its own explicit setSelectedCoach(...) call
+  // anymore. CoachDetailPanel hydrates its own heavy/rarely-fetched columns
+  // keyed off the id independently (see its `hydratedCoach` state), so
+  // swapping the base coach reference here doesn't disturb that.
+  const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
+  // Derived — see the comment on selectedCoachId above. Recomputes only when
+  // allCoaches or the selected id actually changes.
+  const selectedCoach = useMemo(
+    () => allCoaches.find((c) => c.id === selectedCoachId) ?? null,
+    [allCoaches, selectedCoachId],
+  );
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [quickActionsCoach, setQuickActionsCoach] = useState<Coach | null>(null);
   const [scheduleModalCoach, setScheduleModalCoach] = useState<Coach | null>(null);
@@ -518,6 +543,11 @@ export default function CRMPage() {
   // Single-pass loop over allCoaches to avoid 10 intermediate array allocations per recompute.
   const filteredCoaches = useMemo(() => {
     const now = new Date().toISOString();
+    // Shared with the overdueFollowUp filter below so it agrees with
+    // nextStepLabel()'s calendar-day-granular "overdue" tone (the same
+    // source of truth the CoachTable "Next step" badge uses) — computed once
+    // per recompute, not once per coach.
+    const nowDate = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const cutoff = thirtyDaysAgo.toISOString();
@@ -563,11 +593,12 @@ export default function CRMPage() {
       if (filters.hasNotes && !c.notes) continue;
       if (filters.noContact30Days && c.last_contacted_at && c.last_contacted_at >= cutoff) continue;
       if (filters.primaryOnly && !c.is_primary_contact) continue;
-      // Overdue follow-up: has a next_follow_up_at strictly in the past.
-      // `now` (ISO string, computed once above) compares correctly against
-      // other ISO strings — equivalent to new Date(x) < new Date() without
-      // allocating a Date per coach.
-      if (filters.overdueFollowUp && !(c.next_follow_up_at && c.next_follow_up_at < now)) continue;
+      // Overdue follow-up: same day-granularity "overdue" tone as the
+      // Next-step badge (nextStepLabel) — previously this used a raw
+      // millisecond comparison while the badge used calendar-day comparison,
+      // so a coach due earlier "today" could show the overdue-red badge
+      // while being excluded here (or the reverse), depending on time of day.
+      if (filters.overdueFollowUp && nextStepLabel(c.next_follow_up_at, nowDate).tone !== 'overdue') continue;
       // No next step: an actively-worked coach (contacted/engaged/proposal)
       // with no follow-up scheduled at all — the gap this column surfaces.
       if (filters.noNextStep && !(['contacted', 'engaged', 'proposal'].includes(c.status) && !c.next_follow_up_at)) continue;
@@ -815,7 +846,9 @@ export default function CRMPage() {
         }
         return merged;
       }));
-      if (selectedCoach?.id === coachId) setSelectedCoach(prev => prev ? { ...prev, ...finalUpdates } : null);
+      // selectedCoach is DERIVED from allCoaches (see selectedCoachId above),
+      // so the setAllCoaches call above already keeps an open detail panel
+      // in sync — no separate setSelectedCoach(...) needed here.
     } catch (err) {
       console.error('Failed to update coach:', err);
       toast.error('Failed to update coach', err instanceof Error ? err.message : 'Please try again.');
@@ -887,7 +920,7 @@ export default function CRMPage() {
   }, []);
 
   const handleCoachClick = useCallback((coach: Coach) => {
-    setSelectedCoach(coach);
+    setSelectedCoachId(coach.id);
     setDetailPanelOpen(true);
   }, []);
 
@@ -937,9 +970,10 @@ export default function CRMPage() {
   }, [activeManualTemplate]);
 
   // Optimistically mark a coach contacted locally (last_contacted_at = now;
-  // promote new_lead → contacted) in both the list and the open detail panel.
-  // Shared by the compose-log path and the direct-send path so the UI updates
-  // identically whichever channel fired.
+  // promote new_lead → contacted) in the list. selectedCoach (the open detail
+  // panel) is DERIVED from allCoaches, so updating the list here is
+  // sufficient to keep it in sync too. Shared by the compose-log path and the
+  // direct-send path so the UI updates identically whichever channel fired.
   const markCoachContactedLocally = useCallback((coachId: string) => {
     const nowIso = new Date().toISOString();
     const apply = (c: Coach): Coach => ({
@@ -949,7 +983,6 @@ export default function CRMPage() {
       status: c.status === 'new_lead' ? ('contacted' as Coach['status']) : c.status,
     });
     setAllCoaches((prev) => prev.map((c) => (c.id === coachId ? apply(c) : c)));
-    setSelectedCoach((prev) => (prev && prev.id === coachId ? apply(prev) : prev));
   }, []);
 
   // Direct send: push the merged email straight through the Workspace mailbox
@@ -1035,13 +1068,11 @@ export default function CRMPage() {
   // owns double-touch prevention. On failure we re-fetch to resync truth.
   const handleSetAssignee = useCallback(
     async (coachId: string, assignee: CrmAssignee | null) => {
+      // selectedCoach is DERIVED from allCoaches (see selectedCoachId above),
+      // so updating the list here also keeps an open detail panel in sync —
+      // no separate setSelectedCoach(...) call needed.
       setAllCoaches((prev) =>
         prev.map((c) => (c.id === coachId ? { ...c, assigned_to: assignee } : c)),
-      );
-      // Read the open-panel guard from inside the updater so we don't close over
-      // `selectedCoach` (keeps the handler ref stable, no extra dep needed).
-      setSelectedCoach((prev) =>
-        prev && prev.id === coachId ? { ...prev, assigned_to: assignee } : prev,
       );
       const { ok } = await setCoachAssignee({ coach_id: coachId, assignee });
       if (!ok) {
@@ -1231,40 +1262,25 @@ export default function CRMPage() {
     return s;
   }, [allCoaches]);
 
-  // ============================================================================
-  // ERROR STATE
-  // ============================================================================
-  if (error) {
-    return (
-      <div className="min-h-dvh bg-[#FFFEF8] flex items-center justify-center p-8">
-        <div className="glass-standard rounded-2xl shadow-glass p-8 text-center max-w-md">
-          <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <IconWarning size={28} className="text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold text-warm-900 mb-2">Error Loading CRM</h2>
-          <p className="text-warm-600 mb-6">{error}</p>
-          <Button variant="primary"
-            onClick={() => { setError(null); fetchAllCoaches(); }}
-            className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all duration-200 shadow-sm"
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Error state is NOT an early return anymore — it used to blank the entire
+  // shell (sidebar, mobile bar, every tab) whenever the initial crm_coaches
+  // fetch failed, even though most tabs (Inbox, Outreach, Sequences,
+  // Templates, Settings) don't read allCoaches at all. It's now rendered as
+  // the CONTENT of just the coach-dependent tabs (Today / Dashboard /
+  // Coaches) below, via <CoachLoadErrorCard>, so the rest of the shell stays
+  // usable.
 
   // ============================================================================
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-dvh bg-[#FFFEF8] flex">
+    <div className="min-h-dvh bg-cream-100 flex">
       {/* ═══════════════════ Mobile Header ═══════════════════ */}
       {/* Below lg the dark sidebar is hidden; navigation moves to the fixed
           bottom tab bar (see below). This top header keeps only the back link,
           the active destination's label, and the Import / Export / Add actions
           so we don't double up on navigation. */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#1C1917]/95 backdrop-blur-xl border-b border-white/10">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-warm-900/95 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-2 px-3 h-12">
           <a href="/golf/admin" aria-label="Back to admin dashboard" className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-white transition-all duration-200">
             <ArrowLeft size={16} />
@@ -1297,7 +1313,7 @@ export default function CRMPage() {
       {/* ═══════════════════ Desktop Sidebar ═══════════════════ */}
       <aside className={cn(
         'fixed left-0 top-0 bottom-0 z-50 flex flex-col',
-        'bg-[#1C1917] border-r border-white/5',
+        'bg-warm-900 border-r border-white/5',
         'transition-all duration-300 ease-in-out',
         sidebarCollapsed ? 'w-[72px]' : 'w-[260px]',
         'hidden lg:flex'
@@ -1419,7 +1435,7 @@ export default function CRMPage() {
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-expanded={!sidebarCollapsed}
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-all duration-200 shadow-lg"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-warm-900 border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-all duration-200 shadow-lg"
         >
           {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
         </Button>
@@ -1476,57 +1492,10 @@ export default function CRMPage() {
         <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-6 bg-cream-100 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6">
           {/* ── Today Work Queue (DEFAULT) ── */}
           {activeTab === 'today' && (
-            <div className="space-y-4">
-              <ManualGmailTemplateBar
-                templates={emailTemplates}
-                active={activeManualTemplate}
-                onChange={setActiveManualTemplate}
-                directEnabled={gmailDirectEnabled}
-                onSendBatch={sendBatchViaGmail}
-                batchSending={gmailBatchSending}
-                domainAuth={domainAuth}
-              />
-              <TodayQueue
-                loading={loading}
-                coaches={allCoaches}
-                onCoachClick={handleCoachClick}
-                onOpenInGmail={logGmailTouch}
-                getGmailHref={getGmailHref}
-                onLogTouch={handleLogContact}
-                onSetAssignee={handleSetAssignee}
-                manualTemplateArmed={!!activeManualTemplate}
-                gmailDirectSend={gmailDirectEnabled}
-                enrollmentMap={sequenceEnrollmentMap}
-              />
-            </div>
-          )}
-
-          {/* ── Dashboard Tab ── */}
-          {activeTab === 'dashboard' && (
-            <CRMDashboard
-              loading={loading}
-              allCoaches={allCoaches}
-              stats={stats}
-              pipelineStages={PIPELINE_STAGES}
-              statusConfig={STATUS_CONFIG}
-              onBulkUpdate={bulkUpdateCoaches}
-              onRefresh={refreshData}
-              onNavigate={(tab, view) => {
-                setActiveTab(tab);
-                if (view) setCoachView(view);
-              }}
-              {...({ onCoachClick: handleCoachClick } as Record<string, unknown>)}
-            />
-          )}
-
-          {/* ── Coaches Tab ── ONE destination for the coach list, with a
-              segmented view switcher (Table / Board / Conferences). The three
-              views share the same filters, selection, and Gmail template bar —
-              previously these were three top-level tabs with fragmented
-              state (the board ignored filters entirely). */}
-          {activeTab === 'list' && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
+            error ? (
+              <CoachLoadErrorCard error={error} onRetry={() => { setError(null); fetchAllCoaches(); }} />
+            ) : (
+              <div className="space-y-4">
                 <ManualGmailTemplateBar
                   templates={emailTemplates}
                   active={activeManualTemplate}
@@ -1536,90 +1505,149 @@ export default function CRMPage() {
                   batchSending={gmailBatchSending}
                   domainAuth={domainAuth}
                 />
-                <AssigneeScopeBar scope={assigneeScope} onChange={setAssigneeScope} />
-                <div
-                  role="tablist"
-                  aria-label="Coach views"
-                  className={cn('ml-auto', SEGMENTED_TABLIST_CLASS)}
-                >
-                  {COACH_VIEWS.map((v) => {
-                    const isActive = coachView === v.id;
-                    const ViewIcon = v.Icon;
-                    return (
-                      <Button variant="ghost"
-                        key={v.id}
-                        role="tab"
-                        aria-selected={isActive}
-                        onClick={() => setCoachView(v.id)}
-                        className={segmentedTabClass(isActive)}
-                      >
-                        <ViewIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
-                        {v.label}
-                      </Button>
-                    );
-                  })}
-                </div>
+                <TodayQueue
+                  loading={loading}
+                  coaches={allCoaches}
+                  onCoachClick={handleCoachClick}
+                  onOpenInGmail={logGmailTouch}
+                  getGmailHref={getGmailHref}
+                  onLogTouch={handleLogContact}
+                  onSetAssignee={handleSetAssignee}
+                  manualTemplateArmed={!!activeManualTemplate}
+                  gmailDirectSend={gmailDirectEnabled}
+                  enrollmentMap={sequenceEnrollmentMap}
+                />
               </div>
-              <CoachFilters
-                filters={filters}
-                setFilters={setFilters}
-                conferences={conferences}
+            )
+          )}
+
+          {/* ── Dashboard Tab ── */}
+          {activeTab === 'dashboard' && (
+            error ? (
+              <CoachLoadErrorCard error={error} onRetry={() => { setError(null); fetchAllCoaches(); }} />
+            ) : (
+              <CRMDashboard
+                loading={loading}
+                allCoaches={allCoaches}
+                stats={stats}
+                pipelineStages={PIPELINE_STAGES}
                 statusConfig={STATUS_CONFIG}
+                onBulkUpdate={bulkUpdateCoaches}
+                onRefresh={refreshData}
+                onNavigate={(tab, view) => {
+                  setActiveTab(tab);
+                  if (view) setCoachView(view);
+                }}
+                onCoachClick={handleCoachClick}
               />
-              {coachView === 'table' && (
-                <div className="rounded-2xl overflow-clip glass-standard">
-                  <CoachTable
+            )
+          )}
+
+          {/* ── Coaches Tab ── ONE destination for the coach list, with a
+              segmented view switcher (Table / Board / Conferences). The three
+              views share the same filters, selection, and Gmail template bar —
+              previously these were three top-level tabs with fragmented
+              state (the board ignored filters entirely). */}
+          {activeTab === 'list' && (
+            error ? (
+              <CoachLoadErrorCard error={error} onRetry={() => { setError(null); fetchAllCoaches(); }} />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <ManualGmailTemplateBar
+                    templates={emailTemplates}
+                    active={activeManualTemplate}
+                    onChange={setActiveManualTemplate}
+                    directEnabled={gmailDirectEnabled}
+                    onSendBatch={sendBatchViaGmail}
+                    batchSending={gmailBatchSending}
+                    domainAuth={domainAuth}
+                  />
+                  <AssigneeScopeBar scope={assigneeScope} onChange={setAssigneeScope} />
+                  <div
+                    role="tablist"
+                    aria-label="Coach views"
+                    className={cn('ml-auto', SEGMENTED_TABLIST_CLASS)}
+                  >
+                    {COACH_VIEWS.map((v) => {
+                      const isActive = coachView === v.id;
+                      const ViewIcon = v.Icon;
+                      return (
+                        <Button variant="ghost"
+                          key={v.id}
+                          role="tab"
+                          aria-selected={isActive}
+                          onClick={() => setCoachView(v.id)}
+                          className={segmentedTabClass(isActive)}
+                        >
+                          <ViewIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
+                          {v.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <CoachFilters
+                  filters={filters}
+                  setFilters={setFilters}
+                  conferences={conferences}
+                  statusConfig={STATUS_CONFIG}
+                />
+                {coachView === 'table' && (
+                  <div className="rounded-2xl overflow-clip glass-standard">
+                    <CoachTable
+                      coaches={filteredCoaches}
+                      loading={loading}
+                      selectedIds={selectedIds}
+                      onSelectionChange={setSelectedIds}
+                      onStatusChange={handleStatusChange}
+                      onToggleStar={toggleStar}
+                      onCoachClick={handleCoachClick}
+                      onLogContact={handleLogContact}
+                      statusConfig={STATUS_CONFIG}
+                      priorityConfig={PRIORITY_CONFIG}
+                      coachEngagement={engagementMap}
+                      coachEnrollments={sequenceEnrollmentMap}
+                      onOpenInGmail={openInGmail}
+                      manualTemplateArmed={!!activeManualTemplate}
+                      getGmailHref={getGmailHref}
+                      onGmailTouch={logGmailTouch}
+                      gmailDirectSend={gmailDirectEnabled}
+                    />
+                  </div>
+                )}
+                {coachView === 'board' && (
+                  <PipelineView
+                    loading={loading}
+                    coaches={filteredCoaches}
+                    onCoachClick={handleCoachClick}
+                    onStatusChange={handleStatusChange}
+                    onToggleStar={toggleStar}
+                    statusConfig={STATUS_CONFIG}
+                    priorityConfig={PRIORITY_CONFIG}
+                    pipelineStages={PIPELINE_STAGES}
+                    stats={stats}
+                    onBulkUpdate={bulkUpdateCoaches}
+                    onRefresh={refreshData}
+                  />
+                )}
+                {coachView === 'conferences' && (
+                  <ConferenceGroupView
                     coaches={filteredCoaches}
                     loading={loading}
                     selectedIds={selectedIds}
                     onSelectionChange={setSelectedIds}
+                    onCoachClick={handleCoachClick}
                     onStatusChange={handleStatusChange}
                     onToggleStar={toggleStar}
-                    onCoachClick={handleCoachClick}
                     onLogContact={handleLogContact}
                     statusConfig={STATUS_CONFIG}
                     priorityConfig={PRIORITY_CONFIG}
-                    coachEngagement={engagementMap}
                     coachEnrollments={sequenceEnrollmentMap}
-                    onOpenInGmail={openInGmail}
-                    manualTemplateArmed={!!activeManualTemplate}
-                    getGmailHref={getGmailHref}
-                    onGmailTouch={logGmailTouch}
-                    gmailDirectSend={gmailDirectEnabled}
                   />
-                </div>
-              )}
-              {coachView === 'board' && (
-                <PipelineView
-                  loading={loading}
-                  coaches={filteredCoaches}
-                  onCoachClick={handleCoachClick}
-                  onStatusChange={handleStatusChange}
-                  onToggleStar={toggleStar}
-                  statusConfig={STATUS_CONFIG}
-                  priorityConfig={PRIORITY_CONFIG}
-                  pipelineStages={PIPELINE_STAGES}
-                  stats={stats}
-                  onBulkUpdate={bulkUpdateCoaches}
-                  onRefresh={refreshData}
-                />
-              )}
-              {coachView === 'conferences' && (
-                <ConferenceGroupView
-                  coaches={filteredCoaches}
-                  loading={loading}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
-                  onCoachClick={handleCoachClick}
-                  onStatusChange={handleStatusChange}
-                  onToggleStar={toggleStar}
-                  onLogContact={handleLogContact}
-                  statusConfig={STATUS_CONFIG}
-                  priorityConfig={PRIORITY_CONFIG}
-                  coachEnrollments={sequenceEnrollmentMap}
-                />
-              )}
-            </div>
+                )}
+              </div>
+            )
           )}
 
           {/* ── Outreach Tab ── the email observability surfaces (Tracking /
@@ -1826,7 +1854,7 @@ export default function CRMPage() {
       {detailPanelOpen && selectedCoach && (
         <CoachDetailPanel
           coach={selectedCoach}
-          onClose={() => { setDetailPanelOpen(false); setSelectedCoach(null); }}
+          onClose={() => { setDetailPanelOpen(false); setSelectedCoachId(null); }}
           onUpdate={(updates) => updateCoach(selectedCoach.id, updates)}
           statusConfig={STATUS_CONFIG}
           priorityConfig={PRIORITY_CONFIG}
@@ -1891,6 +1919,36 @@ export default function CRMPage() {
           onSuccess={() => { setSelectedIds(new Set()); refreshData(); }}
         />
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// CoachLoadErrorCard — inline error content for the coach-dependent tabs
+// (Today / Dashboard / Coaches) when the initial crm_coaches fetch fails.
+// ============================================================================
+// Scoped to just the tab's CONTENT area — not a full-page early return — so
+// the sidebar, mobile bar, and the tabs that don't read allCoaches (Inbox,
+// Outreach, Sequences, Templates, Settings) stay fully usable even while the
+// coach fetch is broken.
+// ============================================================================
+function CoachLoadErrorCard({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className="flex items-center justify-center p-8">
+      <div className="glass-standard rounded-2xl shadow-glass p-8 text-center max-w-md">
+        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+          <IconWarning size={28} className="text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold text-warm-900 mb-2">Error loading coaches</h2>
+        <p className="text-warm-600 mb-6">{error}</p>
+        <Button
+          variant="primary"
+          onClick={onRetry}
+          className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all duration-200 shadow-sm"
+        >
+          Try Again
+        </Button>
+      </div>
     </div>
   );
 }
@@ -1963,6 +2021,30 @@ function SequencesTabWrapper() {
           onChange={() => setRefreshKey((k) => k + 1)}
         />
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// InsightsDashboardSkeleton — loading fallback for the dynamic()-imported
+// InsightsDashboard (Outreach → Analytics). Referenced by the dynamic()
+// call up top; function declarations hoist, so definition order here vs.
+// there doesn't matter.
+// ============================================================================
+function InsightsDashboardSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="glass-standard rounded-2xl p-4">
+            <Skeleton variant="text" className="w-2/3 mb-3" />
+            <Skeleton variant="text" className="w-1/2 h-7" />
+          </div>
+        ))}
+      </div>
+      <div className="glass-standard rounded-2xl p-6">
+        <Skeleton variant="chart" className="h-56 w-full" />
+      </div>
     </div>
   );
 }

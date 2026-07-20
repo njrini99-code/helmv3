@@ -47,6 +47,12 @@ describe('mobile navigation coverage', () => {
   it('specifically includes templates in the mobile More sheet', () => {
     expect(MOBILE_MORE_TABS).toContain('templates');
   });
+
+  it('2026-07-20: mobile bar surfaces the daily loop (today/list/outreach/inbox) — Sequences moved to More', () => {
+    expect(MOBILE_BAR_TABS).toEqual(['today', 'list', 'outreach', 'inbox']);
+    expect(MOBILE_BAR_TABS).not.toContain('sequences');
+    expect(MOBILE_MORE_TABS).toContain('sequences');
+  });
 });
 
 describe('nav consolidation (2026-07-20)', () => {

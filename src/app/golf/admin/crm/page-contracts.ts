@@ -116,10 +116,14 @@ export type InboxSectionId = (typeof INBOX_SECTIONS)[number]['id'];
 // rest — so every sidebar destination stays reachable on mobile. Ids reference
 // the same stable TabId values, so tapping a bar item calls setActiveTab
 // exactly like the sidebar.
-export const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'sequences'] as const;
+// 2026-07-20: Inbox swapped onto the bar in place of Sequences — mobile
+// doctrine is "the bar surfaces the daily loop"; Inbox (replies, demo
+// requests, tasks due) is the daily incoming hub, while Sequences is a
+// set-up-once-and-check-occasionally automation surface that belongs in More.
+export const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'inbox'] as const;
 // Destinations that live behind the "More" sheet (everything not on the bar).
 // Must cover every TABS id not already on the bar.
-export const MOBILE_MORE_TABS = ['dashboard', 'inbox', 'templates', 'settings'] as const;
+export const MOBILE_MORE_TABS = ['dashboard', 'sequences', 'templates', 'settings'] as const;
 
 // ── Segmented-control spec ──
 // ONE visual spec for every horizontal switcher in the CRM shell (Outreach
