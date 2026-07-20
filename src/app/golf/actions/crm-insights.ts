@@ -33,6 +33,15 @@
  *
  * Auth: every action enforces admin role at the action layer, mirroring
  * `crm-engagement.ts:28` and `resend-activity.ts:121`.
+ *
+ * Error contract: all five actions in this file re-throw on RPC failure
+ * (rather than swallowing to `[]` / `null` / a zeroed summary) so a real
+ * failure is distinguishable from a genuinely empty result. This used to
+ * be true for three of the five only — `getDeliverabilitySummary` and
+ * `getCrmFunnel` returned safe-looking defaults on error, which rendered
+ * identically to "no activity in this window" with no signal anywhere.
+ * InsightsDashboard.fetchAll relies on every action rejecting consistently
+ * to track and surface per-call failures (2026-07-20 metric-alignment fix).
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -175,8 +184,7 @@ export async function getTemplatePerformance(
     );
     // Re-throw (rather than returning []) so the dashboard's error banner
     // can distinguish a real failure from a genuinely empty result —
-    // InsightsDashboard.fetchAll's try/catch around Promise.all already
-    // handles this.
+    // InsightsDashboard.fetchAll's Promise.allSettled already handles this.
     throw new Error(`Failed to load template performance: ${describeError(error)}`);
   }
 
@@ -199,16 +207,14 @@ export async function getTemplatePerformance(
     clicked_count: row.clicked_count ?? 0,
     bounced_count: row.bounced_count ?? 0,
     // Rates use delivered as the denominator — same convention as Resend's
-    // dashboard. Falls back to sent if delivered is 0 to avoid hiding all-
-    // bounce templates from the table.
-    open_rate: safeRate(
-      row.opened_count ?? 0,
-      row.delivered_count > 0 ? row.delivered_count : row.sent_count,
-    ),
-    click_rate: safeRate(
-      row.clicked_count ?? 0,
-      row.delivered_count > 0 ? row.delivered_count : row.sent_count,
-    ),
+    // dashboard. When delivered is 0 (sent but not yet confirmed delivered,
+    // or every send bounced), safeRate returns null rather than silently
+    // swapping to sent_count as the denominator — swapping produced a
+    // fabricated rate (e.g. "0% open" for a template that's simply still
+    // in flight, indistinguishable from a genuinely bad template). The
+    // table renders null as "—" with a "Pending delivery" hint instead.
+    open_rate: safeRate(row.opened_count ?? 0, row.delivered_count ?? 0),
+    click_rate: safeRate(row.clicked_count ?? 0, row.delivered_count ?? 0),
   }));
 }
 
@@ -323,9 +329,16 @@ export async function getDeliverabilitySummary(
         errorDetails: error.details,
       },
     );
+    // Re-throw (rather than silently falling back to a zeroed summary) —
+    // same pattern as the other four insights actions in this file. Before
+    // this fix, a real RPC failure here rendered identically to "no
+    // activity in this window": InsightsDashboard.fetchAll's Promise.all
+    // never rejected, so the dashboard showed a confident "Sent 0 /
+    // Delivered 0 / ..." KPI row with no error signal at all.
+    throw new Error(`Failed to load deliverability summary: ${describeError(error)}`);
   }
 
-  const stats = (!error ? (data as ResendActivityStats | null) : null);
+  const stats = data as ResendActivityStats | null;
 
   if (!stats) {
     return {
@@ -345,16 +358,19 @@ export async function getDeliverabilitySummary(
 
   return {
     window,
-    total_sent: stats.total ?? 0,
+    // `sent` (sent_at IS NOT NULL), not `total` (every row in the window —
+    // includes rows that haven't gone out yet). The RPC's own field names
+    // already disambiguate these; `total` never belongs on a "Sent" KPI.
+    total_sent: stats.sent ?? 0,
     delivered: stats.delivered ?? 0,
     opened: stats.opened ?? 0,
     clicked: stats.clicked ?? 0,
     bounced: stats.bounced ?? 0,
     complained: stats.complained ?? 0,
-    delivery_rate: safeRate(stats.delivered ?? 0, stats.total ?? 0),
+    delivery_rate: safeRate(stats.delivered ?? 0, stats.sent ?? 0),
     open_rate: safeRate(stats.opened ?? 0, stats.delivered ?? 0),
     click_rate: safeRate(stats.clicked ?? 0, stats.delivered ?? 0),
-    bounce_rate: safeRate(stats.bounced ?? 0, stats.total ?? 0),
+    bounce_rate: safeRate(stats.bounced ?? 0, stats.sent ?? 0),
   };
 }
 
@@ -379,7 +395,12 @@ export async function getCrmFunnel(window: InsightsWindow): Promise<CrmFunnel | 
         errorDetails: error.details,
       },
     );
-    return null;
+    // Re-throw (rather than returning null) — same pattern as the other
+    // four insights actions in this file. `null` stays reserved for the
+    // RPC genuinely returning no row (see below); an RPC-level error must
+    // surface distinctly so InsightsDashboard can tell "funnel empty" from
+    // "funnel failed to load" instead of rendering both identically.
+    throw new Error(`Failed to load outreach funnel: ${describeError(error)}`);
   }
 
   const row = data as CrmFunnel | null;

@@ -141,7 +141,10 @@ function RateBar({
 }) {
   const widthPct = rate === null ? 0 : Math.max(2, Math.min(100, Math.round(rate * 100)));
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className="flex items-center gap-2"
+      title={rate === null ? 'Pending delivery' : undefined}
+    >
       <div className="flex-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
         <div
           className={cn('h-full rounded-full transition-all duration-300', color)}

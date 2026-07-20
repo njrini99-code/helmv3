@@ -6,10 +6,21 @@
 //      the service-role admin client (authenticated/anon EXECUTE was
 //      revoked on both functions), not the cookie/session client — after
 //      requireAdmin() has already verified the caller is an admin.
-//   2. All three RPC-backed actions re-throw on error instead of silently
-//      returning [] — see this file's fetchAll() try/catch pattern.
+//   2. All five RPC-backed actions re-throw on error instead of silently
+//      returning [] / null / a zeroed summary — see this file's fetchAll()
+//      Promise.allSettled pattern in InsightsDashboard.tsx.
 //   3. getDeliverabilitySummary passes '90d' straight through to
 //      get_resend_activity_stats instead of aliasing it to 'all'.
+//   4. (2026-07-20 metric-alignment fix) getDeliverabilitySummary maps the
+//      "Sent" KPI from the RPC's `sent` field (sent_at IS NOT NULL), not
+//      `total` (every row in the window, including never-sent ones) — and
+//      delivery_rate/bounce_rate use `sent` as their denominator to match.
+//   5. (2026-07-20 metric-alignment fix) getDeliverabilitySummary and
+//      getCrmFunnel now re-throw on RPC error instead of swallowing it to a
+//      zeroed summary / null, matching the other three insights actions.
+//   6. (2026-07-20 metric-alignment fix) getTemplatePerformance's open_rate/
+//      click_rate return null (not a rate against sent_count) when
+//      delivered_count is 0, instead of fabricating a rate.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -50,6 +61,7 @@ import {
   getClickDestinations,
   getTimeToOpenDistribution,
   getDeliverabilitySummary,
+  getCrmFunnel,
 } from '../crm-insights';
 
 beforeEach(() => {
@@ -85,6 +97,50 @@ describe('getTemplatePerformance', () => {
 
     await expect(getTemplatePerformance('30d')).rejects.toThrow('Forbidden');
     expect(mocks.adminRpc).not.toHaveBeenCalled();
+  });
+
+  it('returns a null rate (not a rate against sent_count) when delivered_count is 0', async () => {
+    mocks.adminRpc.mockResolvedValue({
+      data: [
+        {
+          template_id: 't1',
+          template_name: 'Cold outreach',
+          sent_count: 10,
+          delivered_count: 0,
+          opened_count: 0,
+          clicked_count: 0,
+          bounced_count: 0,
+        },
+      ],
+      error: null,
+    });
+
+    const [row] = await getTemplatePerformance('30d');
+
+    expect(row.open_rate).toBeNull();
+    expect(row.click_rate).toBeNull();
+  });
+
+  it('rates opened/clicked against delivered_count when delivered_count > 0', async () => {
+    mocks.adminRpc.mockResolvedValue({
+      data: [
+        {
+          template_id: 't1',
+          template_name: 'Cold outreach',
+          sent_count: 10,
+          delivered_count: 8,
+          opened_count: 4,
+          clicked_count: 2,
+          bounced_count: 2,
+        },
+      ],
+      error: null,
+    });
+
+    const [row] = await getTemplatePerformance('30d');
+
+    expect(row.open_rate).toBe(0.5);
+    expect(row.click_rate).toBe(0.25);
   });
 });
 
@@ -126,7 +182,8 @@ describe('getDeliverabilitySummary', () => {
   it('passes the "90d" window straight through to get_resend_activity_stats instead of aliasing to "all"', async () => {
     mocks.sessionRpc.mockResolvedValue({
       data: {
-        total: 100,
+        total: 120,
+        sent: 100,
         delivered: 90,
         opened: 40,
         clicked: 10,
@@ -143,26 +200,56 @@ describe('getDeliverabilitySummary', () => {
     expect(summary.total_sent).toBe(100);
   });
 
-  it('returns a zeroed summary (not a throw) when the RPC errors', async () => {
+  it('maps the "Sent" KPI from `sent` (sent_at IS NOT NULL), not `total` (every row in the window)', async () => {
+    // `total` intentionally differs from `sent` here — rows that landed in
+    // the window but haven't gone out yet (draft/queued) count toward
+    // `total` but must never inflate the "Sent" KPI.
+    mocks.sessionRpc.mockResolvedValue({
+      data: {
+        total: 250,
+        sent: 100,
+        delivered: 90,
+        opened: 40,
+        clicked: 10,
+        bounced: 5,
+        complained: 1,
+      },
+      error: null,
+    });
+
+    const summary = await getDeliverabilitySummary('30d');
+
+    expect(summary.total_sent).toBe(100);
+    expect(summary.total_sent).not.toBe(250);
+    // delivery_rate / bounce_rate denominators track `sent`, matching the
+    // "Sent" KPI they're displayed next to.
+    expect(summary.delivery_rate).toBe(0.9);
+    expect(summary.bounce_rate).toBe(0.05);
+  });
+
+  it('re-throws (does not return a zeroed summary) when the RPC errors', async () => {
     mocks.sessionRpc.mockResolvedValue({
       data: null,
       error: { message: 'boom', code: 'XX000' },
     });
 
-    const summary = await getDeliverabilitySummary('30d');
+    await expect(getDeliverabilitySummary('30d')).rejects.toThrow(/Failed to load deliverability summary/);
+  });
+});
 
-    expect(summary).toEqual({
-      window: '30d',
-      total_sent: 0,
-      delivered: 0,
-      opened: 0,
-      clicked: 0,
-      bounced: 0,
-      complained: 0,
-      delivery_rate: null,
-      open_rate: null,
-      click_rate: null,
-      bounce_rate: null,
+describe('getCrmFunnel', () => {
+  it('re-throws (does not return null) when the RPC errors', async () => {
+    mocks.sessionRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'boom', code: 'XX000' },
     });
+
+    await expect(getCrmFunnel('30d')).rejects.toThrow(/Failed to load outreach funnel/);
+  });
+
+  it('still returns null (not a throw) when the RPC succeeds with no row', async () => {
+    mocks.sessionRpc.mockResolvedValue({ data: null, error: null });
+
+    await expect(getCrmFunnel('30d')).resolves.toBeNull();
   });
 });
