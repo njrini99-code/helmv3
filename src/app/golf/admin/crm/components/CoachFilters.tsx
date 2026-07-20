@@ -78,7 +78,7 @@ const QUEUE_OPTIONS: ReadonlyArray<{ value: NonNullable<Filters['queueStatus']>;
 // Soft selected state per the design system: bg-primary-50 / text-primary-700 /
 // ring-primary-200. Reserved kelly-green fills are for ACTION buttons only.
 const SOFT_SELECTED = 'bg-primary-50 text-primary-700 ring-1 ring-inset ring-primary-200';
-const SOFT_IDLE = 'bg-white/60 text-warm-600 ring-1 ring-inset ring-warm-200/60 hover:bg-warm-50 hover:text-warm-700';
+const SOFT_IDLE = 'bg-cream-50/60 text-warm-600 ring-1 ring-inset ring-warm-200/60 hover:bg-warm-50 hover:text-warm-700';
 
 /** A compact soft chip used inside the popover facet rows. ≥44px touch target. */
 function FacetChip({

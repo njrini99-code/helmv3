@@ -106,6 +106,83 @@ describe('TodayQueue eligibility filter', () => {
   });
 });
 
+describe('TodayQueue fit ranking (priority weighting)', () => {
+  it('ranks a Hot-priority coach above a stronger conference bonus (priority dominates)', () => {
+    const conferenceCoach = makeCoach({
+      id: 'conf-1',
+      name: 'Conference Coach',
+      school: 'ODAC State',
+      conference: 'Old Dominion', // base fit score 40
+      division: 'D3',
+      priority: 0,
+    });
+    const hotCoach = makeCoach({
+      id: 'hot-1',
+      name: 'Hot Priority Coach',
+      school: 'No Conference State',
+      conference: '',
+      division: 'D1', // base fit score 5, + Hot (priority 2) * 30 = 65
+      priority: 2,
+    });
+    render(
+      <TodayQueue
+        coaches={[conferenceCoach, hotCoach]}
+        onCoachClick={noop}
+        onOpenInGmail={noop}
+        onLogTouch={noop}
+        manualTemplateArmed={false}
+      />,
+    );
+    const rows = screen.getAllByRole('listitem').map((li) => li.textContent ?? '');
+    const hotIndex = rows.findIndex((t) => t.includes('Hot Priority Coach'));
+    const confIndex = rows.findIndex((t) => t.includes('Conference Coach'));
+    expect(hotIndex).toBeGreaterThanOrEqual(0);
+    expect(confIndex).toBeGreaterThanOrEqual(0);
+    expect(hotIndex).toBeLessThan(confIndex);
+  });
+
+  it('prefixes the fit reason with "High priority" when the priority weighting dominates', () => {
+    const coach = makeCoach({
+      name: 'Priority Reason Coach',
+      school: 'Reason State',
+      conference: '',
+      division: 'D1', // base fit score 5
+      priority: 1, // High (priority 1) * 30 = 30, dominates the base score of 5
+    });
+    render(
+      <TodayQueue
+        coaches={[coach]}
+        onCoachClick={noop}
+        onOpenInGmail={noop}
+        onLogTouch={noop}
+        manualTemplateArmed={false}
+      />,
+    );
+    expect(screen.getByText(/High priority · D1/)).toBeTruthy();
+  });
+
+  it('leaves the fit reason unprefixed when the conference bonus still dominates priority', () => {
+    const coach = makeCoach({
+      name: 'Conference Wins Coach',
+      school: 'Conference Wins State',
+      conference: 'Old Dominion', // base fit score 40
+      division: 'D3',
+      priority: 1, // High (priority 1) * 30 = 30 < 40, conference still wins
+    });
+    render(
+      <TodayQueue
+        coaches={[coach]}
+        onCoachClick={noop}
+        onOpenInGmail={noop}
+        onLogTouch={noop}
+        manualTemplateArmed={false}
+      />,
+    );
+    expect(screen.queryByText(/High priority/)).toBeNull();
+    expect(screen.getByText(/ODAC/)).toBeTruthy();
+  });
+});
+
 describe('TodayQueue loading state', () => {
   it('renders a loading skeleton instead of "All caught up" when loading and coaches is empty', () => {
     render(

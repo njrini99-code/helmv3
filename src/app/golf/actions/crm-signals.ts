@@ -53,6 +53,13 @@ const NO_NEXT_STEP_STATUSES = ['contacted', 'engaged', 'proposal'] as const;
 const HOT_ROW_LIMIT = 8;
 const OVERDUE_ROW_LIMIT = 8;
 const NO_NEXT_STEP_ROW_LIMIT = 8;
+// overdue/noNextStep can't push the BAD_EMAIL_STATUSES exclusion into the DB
+// filter (a `.not('email_status', 'in', ...)` would silently drop legacy
+// NULL-email_status rows too — the exact NULL-unsafe trap is_archived has,
+// see the .or('is_archived.is.null,...') below). So they over-fetch this
+// multiple of the row limit and filter/slice in JS instead, mirroring
+// getHotSignals (24 fetched / 8 kept = 3x).
+const ROW_LIMIT_BUFFER_FACTOR = 3;
 
 // ---------------------------------------------------------------------------
 // Auth helpers
@@ -113,6 +120,13 @@ interface CoachSignalRow {
 const COACH_SIGNAL_COLUMNS =
   'id, name, school, status, next_follow_up_at, last_contacted_at, is_archived, email_status';
 
+// A coach whose email is known-bad should never surface as an actionable
+// signal anywhere — a dead-email row earning quick-set buttons wastes
+// operator time exactly like it would in the hot list.
+function hasBadEmail(coach: Pick<CoachSignalRow, 'email_status'>): boolean {
+  return !!coach.email_status && BAD_EMAIL_STATUSES.has(coach.email_status);
+}
+
 // ---------------------------------------------------------------------------
 // hot — top-scoring "Hot" coaches from crm_coach_engagement, joined in
 // memory against crm_coaches (a materialized view can't be filtered on
@@ -155,7 +169,7 @@ async function getHotSignals(): Promise<SignalCoach[]> {
       if (!coach) continue;
       if (coach.is_archived) continue;
       if (CLOSED_STATUSES.has(coach.status)) continue;
-      if (coach.email_status && BAD_EMAIL_STATUSES.has(coach.email_status)) continue;
+      if (hasBadEmail(coach)) continue;
 
       out.push({
         id: coach.id,
@@ -194,21 +208,27 @@ async function getOverdueSignals(): Promise<SignalCoach[]> {
       .from('crm_coaches')
       .select(COACH_SIGNAL_COLUMNS)
       .lt('next_follow_up_at', nowIso)
-      .eq('is_archived', false)
+      // NULL-safe: a plain .eq('is_archived', false) drops rows where the
+      // column is NULL (unarchived-by-default legacy rows) — see the same
+      // fix in crm-dedup.ts / crm-gmail-send.ts / crm-templates.ts.
+      .or('is_archived.is.null,is_archived.eq.false')
       .not('status', 'in', '(won,lost)')
       .order('next_follow_up_at', { ascending: true })
-      .limit(OVERDUE_ROW_LIMIT);
+      .limit(OVERDUE_ROW_LIMIT * ROW_LIMIT_BUFFER_FACTOR);
 
     if (error) throw error;
 
-    return ((data ?? []) as CoachSignalRow[]).map((c) => ({
-      id: c.id,
-      name: c.name,
-      school: c.school,
-      status: c.status,
-      next_follow_up_at: c.next_follow_up_at,
-      last_contacted_at: c.last_contacted_at,
-    }));
+    return ((data ?? []) as CoachSignalRow[])
+      .filter((c) => !hasBadEmail(c))
+      .slice(0, OVERDUE_ROW_LIMIT)
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        school: c.school,
+        status: c.status,
+        next_follow_up_at: c.next_follow_up_at,
+        last_contacted_at: c.last_contacted_at,
+      }));
   } catch (error) {
     void logServerException(error, {
       action: 'crm_signals.getOverdueSignals',
@@ -233,20 +253,28 @@ async function getNoNextStepSignals(): Promise<{ rows: SignalCoach[]; total: num
       .select(COACH_SIGNAL_COLUMNS, { count: 'exact' })
       .in('status', [...NO_NEXT_STEP_STATUSES])
       .is('next_follow_up_at', null)
-      .eq('is_archived', false)
+      // NULL-safe: a plain .eq('is_archived', false) drops rows where the
+      // column is NULL (unarchived-by-default legacy rows) — see the same
+      // fix in crm-dedup.ts / crm-gmail-send.ts / crm-templates.ts. `count`
+      // (the "N in pipeline with no follow-up" headline) is computed against
+      // this same filter set, independent of .limit()/.range().
+      .or('is_archived.is.null,is_archived.eq.false')
       .order('last_contacted_at', { ascending: true, nullsFirst: true })
-      .limit(NO_NEXT_STEP_ROW_LIMIT);
+      .limit(NO_NEXT_STEP_ROW_LIMIT * ROW_LIMIT_BUFFER_FACTOR);
 
     if (error) throw error;
 
-    const rows = ((data ?? []) as CoachSignalRow[]).map((c) => ({
-      id: c.id,
-      name: c.name,
-      school: c.school,
-      status: c.status,
-      next_follow_up_at: c.next_follow_up_at,
-      last_contacted_at: c.last_contacted_at,
-    }));
+    const rows = ((data ?? []) as CoachSignalRow[])
+      .filter((c) => !hasBadEmail(c))
+      .slice(0, NO_NEXT_STEP_ROW_LIMIT)
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        school: c.school,
+        status: c.status,
+        next_follow_up_at: c.next_follow_up_at,
+        last_contacted_at: c.last_contacted_at,
+      }));
 
     return { rows, total: count ?? rows.length };
   } catch (error) {

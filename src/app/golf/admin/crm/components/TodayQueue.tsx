@@ -52,10 +52,17 @@ function hasValidEmail(email: string | null | undefined): email is string {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-// Fit score — customer-like first. Mirrors coach-priority.mjs's conference /
-// division intent (the only signals reliably populated for never-contacted
-// leads). Conference wins over division; ties fall through to division.
-function fitScore(coach: Coach): number {
+// +30 per priority level — the one operator-controlled ranking input.
+// Hot (priority 2) = +60, which outranks even the strongest conference bonus
+// (ODAC's 40), so an operator manually flagging a coach Hot always surfaces
+// them above the conference/division heuristics below.
+const PRIORITY_WEIGHT = 30;
+
+// Conference/division component of the fit score — customer-like first.
+// Mirrors coach-priority.mjs's conference/division intent (the only signals
+// reliably populated for never-contacted leads). Conference wins over
+// division; ties fall through to division.
+function baseFitScore(coach: Coach): number {
   const conf = (coach.conference || '').toLowerCase();
   const div = (coach.division ?? '').toString().toUpperCase() as Division | '';
   if (conf.includes('old dominion')) return 40; // ODAC — 4 customers here
@@ -68,8 +75,14 @@ function fitScore(coach: Coach): number {
   return 0;
 }
 
-// Short, human reason shown under each row so the ranking is explainable.
-function fitReason(coach: Coach): string {
+// Full fit score — conference/division heuristic plus the operator's manual
+// priority flag (see PRIORITY_WEIGHT above).
+function fitScore(coach: Coach): number {
+  return baseFitScore(coach) + coach.priority * PRIORITY_WEIGHT;
+}
+
+// Conference/division component of the human-readable reason.
+function baseFitReason(coach: Coach): string {
   const conf = (coach.conference || '').toLowerCase();
   const div = (coach.division ?? '').toString().toUpperCase();
   if (conf.includes('old dominion')) return 'ODAC · 4 customers in this conference';
@@ -80,6 +93,18 @@ function fitReason(coach: Coach): string {
   if (div === 'JUCO') return 'JUCO · small / hands-on';
   if (div === 'D1') return 'D1 · least like current customers';
   return 'New lead';
+}
+
+// Short, human reason shown under each row so the ranking is explainable.
+// When the priority weighting dominates the conference/division component,
+// "High priority" leads the reason so the operator sees WHY the row jumped.
+function fitReason(coach: Coach): string {
+  const base = baseFitReason(coach);
+  const priorityWeight = coach.priority * PRIORITY_WEIGHT;
+  if (priorityWeight > 0 && priorityWeight >= baseFitScore(coach)) {
+    return `High priority · ${base}`;
+  }
+  return base;
 }
 
 // Normalize a school name for grouping (trim + lowercase).
@@ -143,6 +168,13 @@ interface TodayQueueProps {
   onLogTouch: (coach: Coach) => void;
   /** Set/clear the manual work-division label on a coach. Optional. */
   onSetAssignee?: (coachId: string, assignee: CrmAssignee | null) => void;
+  /**
+   * Forwarded to SignalsPanel — called after a Signals quick-set follow-up
+   * write succeeds, with the coach id and the new `next_follow_up_at` ISO
+   * timestamp. Optional; wire it to keep a parent's own coach list (e.g.
+   * `coaches` here) in sync instead of going stale after a quick-set.
+   */
+  onFollowUpSet?: (coachId: string, followUpAt: string) => void;
   /** Whether a Gmail template is armed (enables the "Gmail" quick action). */
   manualTemplateArmed: boolean;
   /**
@@ -176,6 +208,7 @@ export function TodayQueue({
   gmailDirectSend = false,
   enrollmentMap,
   loading = false,
+  onFollowUpSet,
 }: TodayQueueProps) {
   const queue = useMemo(() => {
     const cutoff = Date.now() - SEVEN_DAYS_MS;
@@ -245,7 +278,7 @@ export function TodayQueue({
   if (loading && queue.length === 0) {
     return (
       <div className="space-y-4">
-        <SignalsPanel onCoachClick={handleSignalCoachClick} />
+        <SignalsPanel onCoachClick={handleSignalCoachClick} onFollowUpSet={onFollowUpSet} />
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-2xl glass-standard p-3">
@@ -267,7 +300,7 @@ export function TodayQueue({
   if (queue.length === 0) {
     return (
       <div className="space-y-4">
-        <SignalsPanel onCoachClick={handleSignalCoachClick} />
+        <SignalsPanel onCoachClick={handleSignalCoachClick} onFollowUpSet={onFollowUpSet} />
         <div className="rounded-2xl glass-standard p-10 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
             <IconCheckCircle2 size={26} className="text-primary-600" />
@@ -281,7 +314,7 @@ export function TodayQueue({
 
   return (
     <div className="space-y-4">
-      <SignalsPanel onCoachClick={handleSignalCoachClick} />
+      <SignalsPanel onCoachClick={handleSignalCoachClick} onFollowUpSet={onFollowUpSet} />
 
       {/* Header / count */}
       <div className="flex items-center justify-between rounded-2xl glass-standard px-4 py-3">

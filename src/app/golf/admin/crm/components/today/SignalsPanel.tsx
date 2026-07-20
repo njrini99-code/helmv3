@@ -26,6 +26,14 @@ import { overdueLabel, relativeCompact } from './signals-format';
 
 interface SignalsPanelProps {
   onCoachClick: (coachId: string) => void;
+  /**
+   * Called after a quick-set follow-up write succeeds, with the coach id and
+   * the new `next_follow_up_at` ISO timestamp. Optional — SignalsPanel keeps
+   * working (rows still drop themselves locally) without it, but a parent
+   * holding its own coach list (e.g. TodayQueue's `allCoaches`) should wire
+   * this so that copy stays in sync instead of going stale.
+   */
+  onFollowUpSet?: (coachId: string, followUpAt: string) => void;
 }
 
 const EMPTY_SIGNALS: EngagementSignals = {
@@ -52,7 +60,7 @@ function isAllEmpty(s: EngagementSignals): boolean {
   );
 }
 
-export function SignalsPanel({ onCoachClick }: SignalsPanelProps) {
+export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps) {
   const [signals, setSignals] = useState<EngagementSignals>(EMPTY_SIGNALS);
   const [loading, setLoading] = useState(true);
   // coach_id currently mid-request for a quick-set action — disables its buttons.
@@ -84,8 +92,9 @@ export function SignalsPanel({ onCoachClick }: SignalsPanelProps) {
   // CRM write path uses).
   const quickSet = useCallback(async (coach: SignalCoach, days: number, list: 'overdue' | 'noNextStep') => {
     setPendingId(coach.id);
+    const followUpAt = nowPlusDays(days);
     try {
-      await setNextFollowUp(coach.id, nowPlusDays(days));
+      await setNextFollowUp(coach.id, followUpAt);
       setSignals((prev) => ({
         ...prev,
         [list]: prev[list].filter((c) => c.id !== coach.id),
@@ -93,12 +102,13 @@ export function SignalsPanel({ onCoachClick }: SignalsPanelProps) {
           ? { noNextStepTotal: Math.max(0, prev.noNextStepTotal - 1) }
           : {}),
       }));
+      onFollowUpSet?.(coach.id, followUpAt);
     } catch {
       toast.error(`Couldn't update follow-up for ${coach.name}`);
     } finally {
       setPendingId(null);
     }
-  }, []);
+  }, [onFollowUpSet]);
 
   if (loading) {
     return <div className="h-11 rounded-2xl glass-standard skeleton-shimmer" aria-hidden="true" />;
