@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
 import type { CRMEvent, CRMEventType } from './CalendarView';
 import { IconX, IconVideo, IconPhone, IconUsers, IconMail, IconMapPin, IconCalendar, IconCheck, IconEdit, IconTrash, IconUser, IconLink, IconClock } from '@/components/icons';
@@ -40,7 +41,7 @@ const STATUS_OPTIONS = [
   { value: 'rescheduled', label: 'Rescheduled', icon: IconClock, color: 'bg-amber-100 text-amber-700' },
 ];
 
-const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const inputClass = 'w-full bg-cream-50/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 // ============================================================================
@@ -52,10 +53,14 @@ export function EventDetailModal({
   onEdit,
   onRefresh,
 }: EventDetailModalProps) {
+  const uid = useId();
   const [status, setStatus] = useState(event.status);
   const [outcome, setOutcome] = useState('');
   const [showOutcomeForm, setShowOutcomeForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, onClose);
 
   const supabase = createClient();
   const startTime = parseISO(event.start_time);
@@ -153,8 +158,12 @@ export function EventDetailModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${uid}-title`}
         className="glass-prominent rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
@@ -164,7 +173,7 @@ export function EventDetailModal({
             <div className="flex items-center gap-2">
               <TypeIcon size={16} className="text-warm-600" />
               <div>
-                <h2 className="text-lg font-semibold text-warm-900">{event.title}</h2>
+                <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">{event.title}</h2>
                 <p className="text-sm text-warm-500">{typeConfig.label}</p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   IconX,
@@ -10,6 +10,7 @@ import {
   IconLayers,
   IconLayers3,
 } from '@/components/icons';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button, IconButton } from '@/components/ui/button';
 import {
   findDuplicateCoaches,
@@ -44,6 +45,7 @@ function formatDate(iso: string | null): string {
 }
 
 export function DuplicateReview({ onClose, onMerged }: DuplicateReviewProps) {
+  const uid = useId();
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -107,14 +109,29 @@ export function DuplicateReview({ onClose, onMerged }: DuplicateReviewProps) {
     onClose();
   };
 
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, handleClose);
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog. stopPropagation guards against DuplicateReview being nested inside another modal's own backdrop (e.g. ImportModal) so one Escape/click doesn't cascade-close both.
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => { e.stopPropagation(); handleClose(); }}
+    >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${uid}-title`}
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div className="flex items-center gap-2">
             <IconLayers size={16} className="text-warm-600" />
-            <h2 className="text-lg font-semibold text-warm-900">Review Duplicates</h2>
+            <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">Review Duplicates</h2>
           </div>
           <IconButton
             variant="default"

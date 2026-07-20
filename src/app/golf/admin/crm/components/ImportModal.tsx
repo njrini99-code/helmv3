@@ -3,6 +3,7 @@
 import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import type { Division, ProgramType } from '../crm-config';
 import { IconX, IconCheck, IconWarning, IconUpload, IconLayers } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
@@ -61,6 +62,9 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const [errors, setErrors] = useState<string[]>([]);
   const [duplicateCount, setDuplicateCount] = useState(0);
   const [showDuplicateReview, setShowDuplicateReview] = useState(false);
+
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, onClose);
 
   const supabase = createClient();
 
@@ -287,13 +291,25 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${uid}-title`}
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div className="flex items-center gap-2">
             <IconUpload size={16} className="text-warm-600" />
-            <h2 className="text-lg font-semibold text-warm-900">Import Coaches</h2>
+            <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">Import Coaches</h2>
           </div>
           <IconButton variant="default"
             onClick={onClose}

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconX, IconTrophy, IconXCircle, IconActivity as Sprout } from '@/components/icons';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import type { Coach, CoachStatus } from '../../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -108,14 +109,8 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ESC closes dialog
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !submitting) onClose();
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, submitting]);
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open.
+  const { modalRef } = useFocusTrap(true, onClose);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,100 +138,105 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
       <IconButton variant="default"
         type="button"
         aria-label="Close dialog"
-        onClick={() => !submitting && onClose()}
+        onClick={onClose}
         className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
       ><span className="sr-only">Close dialog</span></IconButton>
 
-      <form
-        onSubmit={handleSubmit}
-        className="relative w-full max-w-md rounded-2xl bg-cream-50 shadow-2xl border border-warm-100"
-      >
-        <div className="px-5 pt-5 pb-3 flex items-start gap-3">
-          <span
-            className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-              meta.iconBg,
-              meta.iconColor,
-            )}
-          >
-            <Icon size={20} />
-          </span>
-          <div className="flex-1 min-w-0">
-            <h2 id="winloss-dialog-title" className="text-base font-semibold text-warm-900">
-              {meta.title}
-            </h2>
-            <p className="text-xs text-warm-500 mt-0.5">{coach.name} · {coach.school}</p>
-            <p className="text-xs text-warm-500 mt-2">{meta.description}</p>
-          </div>
-          <IconButton variant="default"
-            type="button"
-            onClick={() => !submitting && onClose()}
-            aria-label="Close"
-            className="p-1.5 rounded-md hover:bg-warm-100 text-warm-400 hover:text-warm-700"
-          >
-            <IconX size={14} />
-          </IconButton>
-        </div>
-
-        <div className="px-5 py-3 space-y-4">
-          <div>
-            <Select
-              label="Reason"
-              options={reasons.map((r) => ({ value: r.value, label: r.label }))}
-              value={reason}
-              onChange={(v) => setReason(v as WinLossReason)}
-              disabled={submitting}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="winloss-notes"
-              className="block text-xs font-semibold text-warm-700 mb-1.5"
+      {/* display:contents wrapper — pure ref anchor for useFocusTrap's Tab-cycle
+          scope; a <form> can't take the hook's HTMLDivElement ref directly, and
+          `contents` keeps it invisible to layout so the visual markup is unchanged. */}
+      <div ref={modalRef} className="contents">
+        <form
+          onSubmit={handleSubmit}
+          className="relative w-full max-w-md rounded-2xl bg-cream-50 shadow-2xl border border-warm-100"
+        >
+          <div className="px-5 pt-5 pb-3 flex items-start gap-3">
+            <span
+              className={cn(
+                'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                meta.iconBg,
+                meta.iconColor,
+              )}
             >
-              Notes <span className="text-warm-400 font-normal">(optional)</span>
-            </label>
-            <Textarea
-              id="winloss-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              maxLength={2000}
-              disabled={submitting}
-              placeholder="What happened? Anything we should remember next time?"
-              className="text-sm bg-cream-50"
-            />
+              <Icon size={20} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <h2 id="winloss-dialog-title" className="text-base font-semibold text-warm-900">
+                {meta.title}
+              </h2>
+              <p className="text-xs text-warm-500 mt-0.5">{coach.name} · {coach.school}</p>
+              <p className="text-xs text-warm-500 mt-2">{meta.description}</p>
+            </div>
+            <IconButton variant="default"
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="p-1.5 rounded-md hover:bg-warm-100 text-warm-400 hover:text-warm-700"
+            >
+              <IconX size={14} />
+            </IconButton>
           </div>
 
-          {error && (
-            <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-              {error}
+          <div className="px-5 py-3 space-y-4">
+            <div>
+              <Select
+                label="Reason"
+                options={reasons.map((r) => ({ value: r.value, label: r.label }))}
+                value={reason}
+                onChange={(v) => setReason(v as WinLossReason)}
+                disabled={submitting}
+              />
             </div>
-          )}
-        </div>
 
-        <div className="px-5 pb-5 pt-2 flex items-center justify-end gap-2">
-          <Button variant="ghost"
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 disabled:opacity-50"
-          >
-            Cancel
-          </Button>
-          <Button variant="ghost"
-            type="submit"
-            disabled={submitting}
-            className={cn(
-              'px-4 py-1.5 text-sm font-semibold text-white rounded-xl shadow-sm transition-colors',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              meta.submitClass,
+            <div>
+              <label
+                htmlFor="winloss-notes"
+                className="block text-xs font-semibold text-warm-700 mb-1.5"
+              >
+                Notes <span className="text-warm-400 font-normal">(optional)</span>
+              </label>
+              <Textarea
+                id="winloss-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                disabled={submitting}
+                placeholder="What happened? Anything we should remember next time?"
+                className="text-sm bg-cream-50"
+              />
+            </div>
+
+            {error && (
+              <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {error}
+              </div>
             )}
-          >
-            {submitting ? 'Saving…' : meta.submitLabel}
-          </Button>
-        </div>
-      </form>
+          </div>
+
+          <div className="px-5 pb-5 pt-2 flex items-center justify-end gap-2">
+            <Button variant="ghost"
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 disabled:opacity-50"
+            >
+              Cancel
+            </Button>
+            <Button variant="ghost"
+              type="submit"
+              disabled={submitting}
+              className={cn(
+                'px-4 py-1.5 text-sm font-semibold text-white rounded-xl shadow-sm transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                meta.submitClass,
+              )}
+            >
+              {submitting ? 'Saving…' : meta.submitLabel}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
