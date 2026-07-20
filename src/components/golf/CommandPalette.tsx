@@ -35,7 +35,7 @@ import {
   getCommandPaletteData,
   type CommandPaletteData,
 } from '@/app/golf/actions/command-palette';
-import { surfaceName } from '@/lib/golf/surface-registry';
+import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 
 interface CommandItemSpec {
   id: string;
@@ -65,10 +65,10 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     // routes stay searchable via keywords ("today's calls", "patterns",
     // "insights" all resolve to their tab) so nothing becomes unreachable.
     { id: 'intelligence', label: surfaceName('rail-coachhelm-ai-coach'), description: "Brief — today's calls & command center", icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview', 'brief', 'today', "today's calls", 'calls', 'priority', 'commandcenter', 'command center'] },
-    { id: 'signals', label: surfaceName('signals'), description: 'Alerts, insights & patterns', icon: <IconBell size={18} />, href: '/golf/dashboard/alerts', keywords: ['signals', 'alerts', 'notifications', 'priority', 'attention', 'insights', 'feed', 'recommendations', 'patterns', 'mining', 'evidence', 'triage', 'coachhelm'] },
-    { id: 'coachhelm-insights', label: surfaceName('insights'), description: 'AI-generated coaching insights', icon: <IconSparkles size={18} />, href: '/golf/dashboard/insights', keywords: ['insights', 'recommendations', 'ai', 'coachhelm', 'signals'] },
-    { id: 'coachhelm-patterns', label: surfaceName('patterns'), description: 'Recurring player and team patterns', icon: <IconTarget size={18} />, href: '/golf/dashboard/patterns', keywords: ['patterns', 'mining', 'trends', 'evidence', 'coachhelm'] },
-    { id: 'coachhelm-analytics', label: surfaceName('effectiveness'), description: 'Insight effectiveness', icon: <IconGauge size={18} />, href: '/golf/dashboard/analytics/coachhelm', keywords: ['analytics', 'effectiveness', 'coachhelm', 'metrics'] },
+    { id: 'signals', label: surfaceName('signals'), description: 'Alerts, insights & patterns', icon: <IconBell size={18} />, href: surfaceHref('signals'), keywords: ['signals', 'alerts', 'notifications', 'priority', 'attention', 'insights', 'feed', 'recommendations', 'patterns', 'mining', 'evidence', 'triage', 'coachhelm'] },
+    { id: 'coachhelm-insights', label: surfaceName('insights'), description: 'AI-generated coaching insights', icon: <IconSparkles size={18} />, href: surfaceHref('insights'), keywords: ['insights', 'recommendations', 'ai', 'coachhelm', 'signals'] },
+    { id: 'coachhelm-patterns', label: surfaceName('patterns'), description: 'Recurring player and team patterns', icon: <IconTarget size={18} />, href: surfaceHref('patterns'), keywords: ['patterns', 'mining', 'trends', 'evidence', 'coachhelm'] },
+    { id: 'coachhelm-analytics', label: surfaceName('effectiveness'), description: 'Insight effectiveness', icon: <IconGauge size={18} />, href: surfaceHref('effectiveness'), keywords: ['analytics', 'effectiveness', 'coachhelm', 'metrics'] },
     { id: 'coachhelm-chat', label: surfaceName('ask'), description: 'Chat history', icon: <IconBot size={18} />, href: '/golf/dashboard/coachhelm/chat', keywords: ['chat', 'conversation', 'coachhelm', 'history', 'ask'] },
     { id: 'genome-compare', label: surfaceName('genome-compare'), description: 'Compare player genomes', icon: <IconChartRadar size={18} />, href: '/golf/dashboard/coachhelm/genome/compare', keywords: ['genome', 'compare', 'radar', 'persona', 'profile'] },
     { id: 'qualifying-selection', label: 'Selection Workspace', description: 'Qualifier selection', icon: <IconCrosshair size={18} />, href: '/golf/dashboard/qualifiers', keywords: ['qualifying', 'selection', 'workspace', 'lineup', 'tournament', 'pick'] },
@@ -85,7 +85,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     // via direct URL. Add icons later if a palette redesign asks for it.
     { id: 'documents', label: 'Documents', description: 'Team files and forms', icon: <IconBook size={18} />, href: '/golf/dashboard/documents', keywords: ['files', 'forms', 'pdfs'] },
     { id: 'tasks', label: 'Tasks', description: 'Open and assigned tasks', icon: <IconClipboardList size={18} />, href: '/golf/dashboard/tasks', keywords: ['todo', 'assignments', 'checklist'] },
-    { id: 'development', label: surfaceName('development'), description: 'Player focus areas', icon: <IconTarget size={18} />, href: '/golf/dashboard/development', keywords: ['focus', 'improvement', 'plan'] },
+    { id: 'development', label: surfaceName('development'), description: 'Player focus areas', icon: <IconTarget size={18} />, href: surfaceHref('development'), keywords: ['focus', 'improvement', 'plan'] },
     { id: 'recruiting', label: 'Recruiting HQ', description: 'Recruiting pipeline', icon: <IconUsers size={18} />, href: '/golf/dashboard/recruiting', keywords: ['recruits', 'pipeline'] },
     { id: 'whats-new', label: "What's New", description: 'Latest team activity', icon: <IconRocket size={18} />, href: '/golf/dashboard/whats-new', keywords: ['whatsnew', 'updates', 'activity', 'changelog', 'recent'] },
     { id: 'coaching-intelligence', label: 'Coaching Intelligence', description: 'Tune your coaching philosophy', icon: <IconWrench size={18} />, href: '/golf/dashboard/settings/coaching-intelligence', keywords: ['philosophy', 'intelligence', 'thresholds', 'sensitivity', 'tuning', 'settings'] },
@@ -97,7 +97,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'insights', label: surfaceName('rail-coachhelm-ai-player'), description: 'Personalized AI insights', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'coachhelm', 'focus'] },
     { id: 'rounds', label: 'My Rounds', description: 'View and submit rounds', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds', keywords: ['scores', 'games'] },
     { id: 'courses', label: 'Course Library', description: 'Browse courses & tee sets', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility'] },
-    { id: 'development', label: surfaceName('my-development-tab'), description: 'Assigned focus areas', icon: <IconTarget size={18} />, href: '/golf/dashboard/my-development', keywords: ['focus', 'improvement', 'plan'] },
+    { id: 'development', label: surfaceName('my-development-tab'), description: 'Assigned focus areas', icon: <IconTarget size={18} />, href: surfaceHref('my-development-tab'), keywords: ['focus', 'improvement', 'plan'] },
     { id: 'qualifiers', label: 'My Qualifiers', description: 'Progress and leaderboards', icon: <IconTrophy size={18} />, href: '/golf/dashboard/my-qualifiers', keywords: ['leaderboard', 'tournament', 'qualifying'] },
     { id: 'stats', label: surfaceName('rail-my-stats-player'), description: 'Performance analytics', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats', keywords: ['analytics', 'performance'] },
     { id: 'calendar', label: 'Calendar', description: 'Team events', icon: <IconCalendar size={18} />, href: '/golf/dashboard/calendar', keywords: ['schedule', 'events'] },

@@ -4,16 +4,23 @@
  * ============================================================================
  * Fairway · CoachHelm · CoachHelmSubNav — THE keystone sub-nav primitive
  * ----------------------------------------------------------------------------
- * The persistent 5-tab underline strip that unifies the CoachHelm cluster:
- *   Brief · Signals · Players · Effectiveness · Ask
+ * Historically the persistent 5-tab underline strip that unified the coach
+ * CoachHelm cluster (Brief · Signals · Players · Effectiveness · Ask). The
+ * Spine & Stage redesign (2026-07-19, plan Task 9) folded Signals/Players/
+ * Effectiveness into `?view=` drills of the Brief home itself (mirroring
+ * Task 8's player consolidation below) — the STAGE is the coach's nav for
+ * that content now, so the coach strip collapses to the single Brief tab,
+ * same shape as the player strip's single Overview tab.
  *
  * ENGINE (blueprint subNavEngine — explicit):
  *   • Each tab is a REAL Next <Link> to its route (full SSR per route) — this is
  *     NOT a Radix ToggleGroup value-emitter and NOT ViewHeaderSegments. The
  *     surfaces live in 4 different folder trees so a single route-group layout
  *     cannot wrap them; the sub-nav is a shared COMPONENT instead.
- *   • Active tab is resolved by a longest-prefix `usePathname()` ROUTE→TAB map,
- *     so /coachhelm/genome/[id] and /development both light the Players tab.
+ *   • A collapsed single-tab strip (coach Brief-only, player Overview-only)
+ *     matches its href EXACTLY — deeper nested routes (chat, genome, the
+ *     `?view=`/`?filter=` stage drills) never fight it for the active state;
+ *     the stage itself owns navigation identity below that one front door.
  *   • Each surface ALSO passes an explicit `active` prop as the SSR-known
  *     fallback so the correct tab paints before hydration (no flash) — the prop
  *     wins until the client pathname resolves to a known tab.
@@ -21,17 +28,12 @@
  *     tab is in the tab order, arrows move focus); visible green focus-visible
  *     ring; a slow framer-motion `layoutId` underline glides between tabs
  *     (honors prefers-reduced-motion).
- *   • The Signals tab carries the ambient unread badge (urgent/high open
- *     signals) sourced ONCE by the shell (getAlertCounts → signalCount).
- *
- * PLAYER VARIANT (cohesion: PLAYER SHELL VARIANT):
- *   role='player' shows Overview · Development · Game Profile · Standing (the
- *   coach-only Signals/Ask tabs and the Signals badge are hidden). The player
- *   surfaces still mount the same shell + sub-nav.
  *
  * LIVE — unconditional, no redesign flag. Rendered by every CoachHelmShell
- * mount (~15 live coach + player route surfaces). Renders inside a
- * `.fairway-ds` scope on a `bg-canvas` page.
+ * mount (~15 live coach + player route surfaces, including the legacy
+ * Signals/Players/Effectiveness monoliths now mounted INSIDE the Brief
+ * home's stage drills). Renders inside a `.fairway-ds` scope on a
+ * `bg-canvas` page.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -66,68 +68,44 @@ interface TabDef {
 }
 
 /**
- * The route→tab map. Order is the visual tab order; matching uses the LONGEST
- * matching prefix across ALL tabs so nested leaves (genome detail, compare)
- * resolve to Players, and the three Signals routes (alerts/insights/patterns)
- * all resolve to Signals.
+ * The coach tab set — a single Brief entry. Signals, Players, and
+ * Effectiveness used to be sibling tabs pointing at standalone /alerts
+ * (+ /insights, /patterns), /development, and /analytics/coachhelm routes;
+ * the Spine & Stage redesign (2026-07-19, plan Task 9) folded all three into
+ * `?view=` drills of the Brief home itself, so the STAGE is the coach's nav
+ * for that content now — a persistent strip of tabs that all led back to the
+ * same page would be redundant chrome. Their `surface-registry.ts` entries
+ * are `legacy: true, hidden: true`; this strip still renders the ONE tab a
+ * coach-role `CoachHelmShell` mount needs — including the legacy Signals/
+ * Players/Effectiveness monoliths now mounted INSIDE the Brief home's own
+ * stage drills, which still pass `active="signals"` etc. for parity; those
+ * values simply aren't in this collapsed tab set, so they render no strip
+ * tab of their own (matched to the single Brief tab via the exact-href rule
+ * below instead).
  */
-const TABS: readonly TabDef[] = [
+const COACH_TABS: readonly TabDef[] = [
   {
     tab: 'brief',
     label: surfaceName('brief'),
     href: '/golf/dashboard/intelligence',
-    matchPrefixes: ['/golf/dashboard/intelligence'],
-  },
-  {
-    tab: 'signals',
-    label: surfaceName('signals'),
-    href: '/golf/dashboard/alerts',
-    matchPrefixes: [
-      '/golf/dashboard/alerts',
-      '/golf/dashboard/insights',
-      '/golf/dashboard/patterns',
-    ],
-  },
-  {
-    tab: 'players',
-    label: surfaceName('players-tab'),
-    href: '/golf/dashboard/development',
-    matchPrefixes: [
-      '/golf/dashboard/development',
-      '/golf/dashboard/coachhelm/genome',
-      // The coach player-detail surfaces (AI Insight + its /game fingerprint leaf)
-      // live under /players/[id]; they are the Players-tab leaves, so they must
-      // light the Players tab to read as part of the CoachHelm cluster (P410).
-      '/golf/dashboard/players',
-      '/golf/dashboard/my-development',
-    ],
-  },
-  {
-    tab: 'effectiveness',
-    label: surfaceName('effectiveness'),
-    href: '/golf/dashboard/analytics/coachhelm',
-    matchPrefixes: ['/golf/dashboard/analytics/coachhelm'],
-  },
-  {
-    tab: 'ask',
-    label: surfaceName('ask'),
-    href: '/golf/dashboard/coachhelm/chat',
-    matchPrefixes: ['/golf/dashboard/coachhelm/chat'],
+    // exact-only match below; the intelligence root is the coach front door,
+    // and its `?view=`/`?filter=` stage drills all share that SAME pathname.
+    matchPrefixes: [],
   },
 ] as const;
 
 /**
- * The player tab set — the single CoachHelm home: Overview · Development ·
- * Game Profile · Standing. Brief ("Overview") points at the player front door;
- * Development, Game Profile and Standing fold the former standalone
- * /my-development, /my-game-profile and /my-standing routes into the same shell
- * so a player has ONE AI surface instead of scattered routes.
- *
- * Game Profile reuses the coach-only `'effectiveness'` slot as its internal tab
- * key purely so it has a distinct identity in the player set without widening the
- * shared `CoachHelmTab` union (the coach `'effectiveness'` tab never appears in
- * the player set, so there is no collision) — its visible label + route are the
- * player's genome view (/my-game-profile).
+ * The player tab set — a single Overview entry. Development, Game Profile,
+ * and Standing used to be sibling tabs pointing at standalone /my-development,
+ * /my-game-profile and /my-standing routes; the Spine & Stage redesign
+ * (2026-07-19, plan Task 8) folded all three into `?view=` drills of the
+ * Overview home itself, so the STAGE is the player's nav for that content now
+ * — a persistent strip of "tabs" that all led back to the same page would be
+ * redundant chrome. Their `surface-registry.ts` entries are `legacy: true,
+ * hidden: true`; this strip still renders the ONE tab a player-role
+ * `CoachHelmShell` mount needs (e.g. the player Stats identity shell, which
+ * uses `active="brief" role="player"` to show "you are in your CoachHelm AI
+ * context" — see `FairwayPlayerStats.tsx`).
  */
 const PLAYER_TABS: readonly TabDef[] = [
   {
@@ -137,24 +115,6 @@ const PLAYER_TABS: readonly TabDef[] = [
     // exact-only match below; the coachhelm root is the player front door, and
     // its nested /chat + /genome routes belong to OTHER tabs, so we match exact.
     matchPrefixes: [],
-  },
-  {
-    tab: 'players',
-    label: surfaceName('my-development-tab'),
-    href: '/golf/dashboard/my-development',
-    matchPrefixes: ['/golf/dashboard/my-development'],
-  },
-  {
-    tab: 'effectiveness',
-    label: surfaceName('my-game-profile-tab'),
-    href: '/golf/dashboard/my-game-profile',
-    matchPrefixes: ['/golf/dashboard/my-game-profile'],
-  },
-  {
-    tab: 'standing',
-    label: surfaceName('my-standing-tab'),
-    href: '/golf/dashboard/my-standing',
-    matchPrefixes: ['/golf/dashboard/my-standing'],
   },
 ] as const;
 
@@ -166,20 +126,22 @@ const PLAYER_TABS: readonly TabDef[] = [
 function resolveTabFromPath(
   pathname: string | null,
   tabs: readonly TabDef[],
-  role: CoachHelmRole,
 ): CoachHelmTab | null {
   if (!pathname) return null;
 
-  // Player "Overview" (the coachhelm front door) is matched EXACTLY so deeper
-  // /coachhelm/* routes (chat, genome) don't accidentally claim it.
-  if (role === 'player') {
-    const overview = tabs.find((t) => t.tab === 'brief');
-    if (overview && pathname === overview.href) return 'brief';
+  // A collapsed single-tab strip (coach Brief-only, player Overview-only) is
+  // the cluster's front door — match it EXACTLY so deeper nested routes
+  // (chat, genome, the `?view=`/`?filter=` stage drills sharing that SAME
+  // pathname) never fight it for the active state; the stage/subroute owns
+  // its own identity below that one front door, not this strip.
+  if (tabs.length === 1) {
+    const only = tabs[0]!;
+    return pathname === only.href ? only.tab : null;
   }
 
   let best: { tab: CoachHelmTab; len: number } | null = null;
   for (const t of tabs) {
-    const prefixes = role === 'player' && t.tab === 'brief' ? [] : [t.href, ...t.matchPrefixes];
+    const prefixes = [t.href, ...t.matchPrefixes];
     for (const p of prefixes) {
       if ((pathname === p || pathname.startsWith(`${p}/`)) && (!best || p.length > best.len)) {
         best = { tab: t.tab, len: p.length };
@@ -199,7 +161,7 @@ export interface CoachHelmSubNavProps {
    * is no flash. Once the client pathname resolves to a known tab, that wins.
    */
   active: CoachHelmTab;
-  /** Coach (5 tabs) or player (Brief + Players only). Default 'coach'. */
+  /** Coach (single Brief tab) or player (single Overview tab). Default 'coach'. */
   role?: CoachHelmRole;
   /**
    * Unread urgent/high open-signal count for the Signals tab badge. `null` /
@@ -235,10 +197,10 @@ export function CoachHelmSubNav({
   const reactId = React.useId();
   const underlineLayoutId = `fw-coachhelm-subnav-underline-${reactId}`;
 
-  const tabs = role === 'player' ? PLAYER_TABS : TABS;
+  const tabs = role === 'player' ? PLAYER_TABS : COACH_TABS;
 
   // Client pathname wins once it resolves to a known tab; else the SSR `active`.
-  const resolved = resolveTabFromPath(pathname, tabs, role) ?? active;
+  const resolved = resolveTabFromPath(pathname, tabs) ?? active;
 
   // Roving tabindex: only the active tab is in the tab order; arrows move focus.
   const itemRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);

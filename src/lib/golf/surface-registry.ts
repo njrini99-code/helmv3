@@ -87,26 +87,32 @@ export const GOLF_SURFACES: readonly GolfSurfaceEntry[] = [
   // Effectiveness · Ask). Also the breadcrumb's cluster leaf segment and
   // (Brief/Effectiveness) the page <title>.
   // ---------------------------------------------------------------------
+  // GOLF IA REORG — Spine & Stage (2026-07-19, plan Task 9): Signals/Players/
+  // Effectiveness are now `?view=` drills of the Brief home itself (the coach
+  // stage IS the coach nav now, mirroring Task 8's player consolidation), so
+  // all four flip legacy+hidden with hrefs pointing at their new stage
+  // targets — Brief alone stays the canonical, visible coachhelm-tab entry.
   { id: 'brief', canonicalName: 'Brief', href: '/golf/dashboard/intelligence', role: 'coach', group: 'coachhelm-tab' },
-  { id: 'signals', canonicalName: 'Signals', href: '/golf/dashboard/alerts', role: 'coach', group: 'coachhelm-tab' },
-  { id: 'players-tab', canonicalName: 'Players', href: '/golf/dashboard/development', role: 'coach', group: 'coachhelm-tab' },
-  { id: 'effectiveness', canonicalName: 'Effectiveness', href: '/golf/dashboard/analytics/coachhelm', role: 'coach', group: 'coachhelm-tab' },
+  { id: 'signals', canonicalName: 'Signals', href: '/golf/dashboard/intelligence?view=signals', role: 'coach', group: 'coachhelm-tab', legacy: true, hidden: true },
+  { id: 'players-tab', canonicalName: 'Players', href: '/golf/dashboard/intelligence?view=players', role: 'coach', group: 'coachhelm-tab', legacy: true, hidden: true },
+  { id: 'effectiveness', canonicalName: 'Effectiveness', href: '/golf/dashboard/intelligence?view=effectiveness', role: 'coach', group: 'coachhelm-tab', legacy: true, hidden: true },
   { id: 'ask', canonicalName: 'Ask', href: '/golf/dashboard/coachhelm/chat', role: 'coach', group: 'coachhelm-tab' },
 
   // ---------------------------------------------------------------------
-  // Signals segments — the 3 sibling routes the "Signals" tab covers.
-  // Each keeps its own page-level identity (page <title>, in-page
-  // FeatureUnavailable copy, CommandPalette entries).
+  // Signals segments — the 3 sibling routes the Signals drill covers, now
+  // consolidated into ONE `?view=signals&filter=` workspace (plan Task 9).
+  // Each keeps its own canonical NAME (page <title>, in-page copy,
+  // CommandPalette entries) even though the destination is now shared.
   // ---------------------------------------------------------------------
-  { id: 'alerts', canonicalName: 'Alerts', href: '/golf/dashboard/alerts', role: 'coach', group: 'signals-segment' },
-  { id: 'insights', canonicalName: 'Insights', href: '/golf/dashboard/insights', role: 'coach', group: 'signals-segment' },
-  { id: 'patterns', canonicalName: 'Patterns', href: '/golf/dashboard/patterns', role: 'coach', group: 'signals-segment' },
+  { id: 'alerts', canonicalName: 'Alerts', href: '/golf/dashboard/intelligence?view=signals&filter=alerts', role: 'coach', group: 'signals-segment', legacy: true, hidden: true },
+  { id: 'insights', canonicalName: 'Insights', href: '/golf/dashboard/intelligence?view=signals&filter=insights', role: 'coach', group: 'signals-segment', legacy: true, hidden: true },
+  { id: 'patterns', canonicalName: 'Patterns', href: '/golf/dashboard/intelligence?view=signals&filter=patterns', role: 'coach', group: 'signals-segment', legacy: true, hidden: true },
 
   // ---------------------------------------------------------------------
-  // Players-tab leaves — content reachable under the Players tab besides
-  // the /development landing page itself.
+  // Players-tab leaves — content reachable under the Players drill besides
+  // the ?view=players landing itself.
   // ---------------------------------------------------------------------
-  { id: 'development', canonicalName: 'Development Plans', href: '/golf/dashboard/development', role: 'coach', group: 'page' },
+  { id: 'development', canonicalName: 'Development Plans', href: '/golf/dashboard/intelligence?view=players', role: 'coach', group: 'page', legacy: true, hidden: true },
   // GOLF IA REORG (final_migrations #11): /players/[playerId]/game is now the
   // ONE canonical per-player deep-dive URL — 'Player Insight' lives on as its
   // in-page "Scouting Report" tab (?tab=scouting), not a separate route, so
@@ -127,9 +133,14 @@ export const GOLF_SURFACES: readonly GolfSurfaceEntry[] = [
   // Game Profile · Standing), the single player CoachHelm home.
   // ---------------------------------------------------------------------
   { id: 'overview', canonicalName: 'Overview', href: '/golf/dashboard/coachhelm', role: 'player', group: 'coachhelm-tab' },
-  { id: 'my-development-tab', canonicalName: 'Development', href: '/golf/dashboard/my-development', role: 'player', group: 'coachhelm-tab' },
-  { id: 'my-game-profile-tab', canonicalName: 'Game Profile', href: '/golf/dashboard/my-game-profile', role: 'player', group: 'coachhelm-tab' },
-  { id: 'my-standing-tab', canonicalName: 'Standing', href: '/golf/dashboard/my-standing', role: 'player', group: 'coachhelm-tab' },
+  // GOLF IA REORG — Spine & Stage (2026-07-19, plan Task 8): Development / Game
+  // Profile / Standing are now `?view=` drills of the Overview home itself (the
+  // stage IS the player nav) instead of separate CoachHelmSubNav tabs, so all
+  // three flip legacy+hidden with hrefs pointing at their new stage targets —
+  // the SAME permanent-redirect-shim pattern as `my-insights` below.
+  { id: 'my-development-tab', canonicalName: 'Development', href: '/golf/dashboard/coachhelm?view=development', role: 'player', group: 'coachhelm-tab', legacy: true, hidden: true },
+  { id: 'my-game-profile-tab', canonicalName: 'Game Profile', href: '/golf/dashboard/coachhelm?view=profile', role: 'player', group: 'coachhelm-tab', legacy: true, hidden: true },
+  { id: 'my-standing-tab', canonicalName: 'Standing', href: '/golf/dashboard/coachhelm?view=standing', role: 'player', group: 'coachhelm-tab', legacy: true, hidden: true },
 
   // ---------------------------------------------------------------------
   // Stats — the Player Stats cockpit (both roles) + coach-only Team Stats.
