@@ -5,7 +5,7 @@ import {
   OUTREACH_SUBTABS,
   MOBILE_BAR_TABS,
   MOBILE_MORE_TABS,
-} from './page';
+} from './page-contracts';
 
 // ============================================================================
 // Regression coverage for confirmed wiring defects fixed on the CRM shell page:
