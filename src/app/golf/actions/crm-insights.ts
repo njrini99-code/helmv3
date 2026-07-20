@@ -5,23 +5,36 @@
  * `/golf/admin/crm/insights`.
  *
  * Wraps three SECURITY DEFINER RPCs declared in
- * supabase/migrations/20260429T4_crm_insights_rpcs.sql:
+ * supabase/migrations/20260527000000_prod_public_baseline.sql and amended by
+ * 20260704110000_crm_rpcs_admin_gate.sql and
+ * 20260708021000_gate_ungated_definer_rpcs.sql:
  *   - get_crm_template_performance(window)
  *   - get_crm_time_to_open(window)
  *   - get_crm_click_destinations(window, limit)
  *
- * Plus a deliverability summary that re-uses `getResendActivityStats` from
- * `resend-activity.ts` (mapped from its `'24h' | '7d' | '30d' | 'all'`
- * window vocab to the insights-dashboard's `'7d' | '30d' | '90d'`).
+ * get_crm_template_performance and get_crm_click_destinations had their
+ * `authenticated`/`anon` EXECUTE grant revoked by the 20260708021000
+ * migration (their sole intended callers were meant to go through the
+ * service_role admin client — see that migration's own comment (3) — but
+ * this file was still calling them via the cookie/session client). Both now
+ * run their RPC call through `createAdminClient()` after `requireAdmin()`
+ * has already verified the caller is an admin.
+ *
+ * Plus a deliverability summary that calls `get_resend_activity_stats`
+ * directly (rather than through `resend-activity.ts`'s
+ * `getResendActivityStats`, whose `ActivityWindow` type only accepts
+ * `'24h' | '7d' | '30d' | 'all'`) so the dashboard's native `'90d'` window
+ * reaches the RPC instead of being aliased to the unbounded `'all'` window.
  *
  * Auth: every action enforces admin role at the action layer, mirroring
  * `crm-engagement.ts:28` and `resend-activity.ts:121`.
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
-import { getResendActivityStats } from './resend-activity';
+import type { ResendActivityStats } from './resend-activity';
 
 // ---------------------------------------------------------------------------
 // Types — exported for component consumers
@@ -120,10 +133,14 @@ const TIME_TO_OPEN_LABELS: Record<string, string> = {
 export async function getTemplatePerformance(
   window: InsightsWindow,
 ): Promise<TemplatePerformanceRow[]> {
-  const supabase = await requireAdmin();
+  // Verify admin, then use the service-role client for the RPC itself —
+  // authenticated/anon EXECUTE was revoked on this function (see file
+  // header), so the cookie/session client always permission-denies here.
+  await requireAdmin();
+  const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc(
+  const { data, error } = await (admin as any).rpc(
     'get_crm_template_performance',
     { p_window: window },
   );
@@ -138,7 +155,11 @@ export async function getTemplatePerformance(
         errorDetails: error.details,
       },
     );
-    return [];
+    // Re-throw (rather than returning []) so the dashboard's error banner
+    // can distinguish a real failure from a genuinely empty result —
+    // InsightsDashboard.fetchAll's try/catch around Promise.all already
+    // handles this.
+    throw new Error(`Failed to load template performance: ${describeError(error)}`);
   }
 
   interface RawRow {
@@ -196,7 +217,9 @@ export async function getTimeToOpenDistribution(
         errorDetails: error.details,
       },
     );
-    return [];
+    // Re-throw so a real RPC failure surfaces via the dashboard's error
+    // banner instead of rendering identically to "no data yet".
+    throw new Error(`Failed to load time-to-open distribution: ${describeError(error)}`);
   }
 
   interface RawBucket {
@@ -223,10 +246,14 @@ export async function getClickDestinations(
   window: InsightsWindow,
   limit = 25,
 ): Promise<ClickDestinationRow[]> {
-  const supabase = await requireAdmin();
+  // Verify admin, then use the service-role client for the RPC itself —
+  // authenticated/anon EXECUTE was revoked on this function (see file
+  // header), so the cookie/session client always permission-denies here.
+  await requireAdmin();
+  const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc(
+  const { data, error } = await (admin as any).rpc(
     'get_crm_click_destinations',
     { p_window: window, p_limit: Math.min(Math.max(limit, 1), 100) },
   );
@@ -241,24 +268,46 @@ export async function getClickDestinations(
         errorDetails: error.details,
       },
     );
-    return [];
+    // Re-throw so a real RPC failure surfaces via the dashboard's error
+    // banner instead of rendering identically to "no clicks yet".
+    throw new Error(`Failed to load click destinations: ${describeError(error)}`);
   }
 
   return (data ?? []) as ClickDestinationRow[];
 }
 
 // ---------------------------------------------------------------------------
-// 4. Deliverability summary (wraps existing getResendActivityStats)
+// 4. Deliverability summary
 // ---------------------------------------------------------------------------
+// Calls get_resend_activity_stats directly (rather than through
+// resend-activity.ts's getResendActivityStats, whose ActivityWindow type is
+// '24h' | '7d' | '30d' | 'all' only) so the insights dashboard's native
+// '90d' window reaches the RPC's own v_since CASE instead of being aliased
+// to the unbounded 'all' window. The RPC has a matching `WHEN '90d' THEN
+// now() - interval '90 days'` branch (added alongside this fix).
 export async function getDeliverabilitySummary(
   window: InsightsWindow,
 ): Promise<DeliverabilitySummary> {
-  // getResendActivityStats already enforces admin; no need to duplicate here.
-  // It accepts '24h' | '7d' | '30d' | 'all'. The insights window vocabulary
-  // adds '90d' (which maps to 'all' as the closest superset; the dashboard
-  // labels both as "90d" since 'all' returns a no-window scan).
-  const resendWindow = window === '90d' ? 'all' : window;
-  const stats = await getResendActivityStats(resendWindow);
+  const supabase = await requireAdmin();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('get_resend_activity_stats', {
+    p_window: window,
+  });
+
+  if (error) {
+    await logServerError(
+      `[crm-insights] deliverability summary rpc failed: ${describeError(error)}`,
+      {
+        action: 'crm_insights.getDeliverabilitySummary',
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      },
+    );
+  }
+
+  const stats = (!error ? (data as ResendActivityStats | null) : null);
 
   if (!stats) {
     return {
