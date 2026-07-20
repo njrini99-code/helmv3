@@ -4,14 +4,24 @@
  * ============================================================================
  * PuttingDrill — `?area=putting` (spec §5.1)
  * ----------------------------------------------------------------------------
- * RampMatrix (make% by break × distance — the ONLY place this matrix renders
- * on the surface, per the plan's dedupe rule, now with a per-cell n= sample
- * badge) + a break-overview `RailBars` + an n-gated `RxCard` prescription +
- * a plain-language cost line + the existing `LeakMap` chart (make% vs PGA
- * Tour by distance, reused verbatim) — plus the putting depth the redesign
- * dropped: efficiency `Readout`s (putts/hole, putts/GIR, 3-putts/round,
- * 1-putts total, approach-putt avg leave) and miss-direction `RailBars`
- * (overall, and per-break where the calculator exposes it).
+ * HERO: `MakeCurve` — overall (all-break) ALL-PUTT make% by distance band
+ * (every putt on the hole, made = holed — same semantic as `puttMakePct*`
+ * and the `LeakMap` below; NOT first-putt-only, see golf-stats-calculator
+ * -shots.ts:1985-1996), dot radius/hollow-below-8 keyed to the real per-band
+ * attempt count. n comes from the exact top-level `puttMakeCount*` field
+ * where the calculator exposes one (5 of the 9 bands); the remaining 4
+ * bands (20ft+) have no top-level count, so n falls back to the four
+ * break-type cells summed — an undercount when a putt has no tagged break,
+ * but the best available signal for those bands (see `heroPoints` below).
+ *
+ * Then: efficiency `Readout`s (putts/hole, putts/GIR, 3-putts/round,
+ * 1-putts total, approach-putt avg leave) + RampMatrix (make% by break ×
+ * distance — the ONLY place this matrix renders on the surface, per the
+ * plan's dedupe rule, now with a per-cell n= sample badge) + a break-overview
+ * `RailBars` + miss-direction `RailBars` (overall, and per-break where the
+ * calculator exposes it) + an n-gated `RxCard` prescription + a plain-
+ * language cost line + the existing `LeakMap` chart (make% vs PGA Tour by
+ * distance, reused verbatim).
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
@@ -35,6 +45,8 @@ import {
   Surface,
   type LeakMapBucket,
 } from '@/components/fairway';
+import { chartAriaLabel } from '@/components/fairway/charts/theme';
+import type { MakeCurvePoint } from '@/components/fairway/charts/MakeCurve';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
@@ -51,6 +63,11 @@ function ChartLoading() {
 
 const LeakMap = dynamic(
   () => import('@/components/fairway/charts/LeakMap').then((m) => m.LeakMap),
+  { ssr: false, loading: () => <ChartLoading /> },
+);
+
+const MakeCurve = dynamic(
+  () => import('@/components/fairway/charts/MakeCurve').then((m) => m.MakeCurve),
   { ssr: false, loading: () => <ChartLoading /> },
 );
 
@@ -108,6 +125,32 @@ const BREAK_COLS: ReadonlyArray<{ colLabel: string; breakKey: keyof GolfStats['p
   { colLabel: 'Multiple', breakKey: 'multiple' },
 ];
 
+/** The 9 overall (all-break) ALL-PUTT make% fields on `GolfStats` (every
+ *  putt on the hole, made = holed — not first-putt-only) — literal union
+ *  (not `keyof GolfStats`) so indexing stays `number | null`, never the
+ *  full cross-type `GolfStats` value union. Feeds the hero curve. */
+type PuttMakePctField =
+  | 'puttMakePct0_3'
+  | 'puttMakePct3_5'
+  | 'puttMakePct5_10'
+  | 'puttMakePct10_15'
+  | 'puttMakePct15_20'
+  | 'puttMakePct20_25'
+  | 'puttMakePct25_30'
+  | 'puttMakePct30_35'
+  | 'puttMakePct35Plus';
+
+/** The 5 (of 9) bands where `GolfStats` exposes an exact top-level attempt
+ *  count for the `PuttMakePctField` above — NOT subject to the nullable-
+ *  `putt_break` undercount the break-type sum has (see `heroPoints`). No
+ *  such field exists for 20-25ft and up. */
+type PuttMakeCountField =
+  | 'puttMakeCount0_3'
+  | 'puttMakeCount3_5'
+  | 'puttMakeCount5_10'
+  | 'puttMakeCount10_15'
+  | 'puttMakeCount15_20';
+
 const DISTANCE_BANDS: ReadonlyArray<{
   label: string;
   field: keyof BreakStats;
@@ -115,16 +158,23 @@ const DISTANCE_BANDS: ReadonlyArray<{
    *  badge and the RxCard's sample-size gate. */
   countField: keyof BreakStats;
   pgaMetricId: string | null;
+  /** All-break aggregate ALL-PUTT make% for the hero `MakeCurve`. */
+  overallField: PuttMakePctField;
+  /** Exact top-level attempt count backing `overallField`, when the
+   *  calculator exposes one (5 of 9 bands) — see `heroPoints`. `null` for
+   *  the 4 bands (20ft+) with no top-level count, where n falls back to
+   *  the break-type sum. */
+  overallCountField: PuttMakeCountField | null;
 }> = [
-  { label: '0-3ft', field: 'makePct0_3', countField: 'count0_3', pgaMetricId: null },
-  { label: '3-5ft', field: 'makePct3_5', countField: 'count3_5', pgaMetricId: 'putts_made_3_5ft_pct' },
-  { label: '5-10ft', field: 'makePct5_10', countField: 'count5_10', pgaMetricId: 'putts_made_5_10ft_pct' },
-  { label: '10-15ft', field: 'makePct10_15', countField: 'count10_15', pgaMetricId: 'putts_made_10_15ft_pct' },
-  { label: '15-20ft', field: 'makePct15_20', countField: 'count15_20', pgaMetricId: 'putts_made_15_25ft_pct' },
-  { label: '20-25ft', field: 'makePct20_25', countField: 'count20_25', pgaMetricId: 'putts_made_15_25ft_pct' },
-  { label: '25-30ft', field: 'makePct25_30', countField: 'count25_30', pgaMetricId: 'putts_made_25_plus_ft_pct' },
-  { label: '30-35ft', field: 'makePct30_35', countField: 'count30_35', pgaMetricId: 'putts_made_25_plus_ft_pct' },
-  { label: '35+ft', field: 'makePct35Plus', countField: 'count35Plus', pgaMetricId: 'putts_made_25_plus_ft_pct' },
+  { label: '0-3ft', field: 'makePct0_3', countField: 'count0_3', pgaMetricId: null, overallField: 'puttMakePct0_3', overallCountField: 'puttMakeCount0_3' },
+  { label: '3-5ft', field: 'makePct3_5', countField: 'count3_5', pgaMetricId: 'putts_made_3_5ft_pct', overallField: 'puttMakePct3_5', overallCountField: 'puttMakeCount3_5' },
+  { label: '5-10ft', field: 'makePct5_10', countField: 'count5_10', pgaMetricId: 'putts_made_5_10ft_pct', overallField: 'puttMakePct5_10', overallCountField: 'puttMakeCount5_10' },
+  { label: '10-15ft', field: 'makePct10_15', countField: 'count10_15', pgaMetricId: 'putts_made_10_15ft_pct', overallField: 'puttMakePct10_15', overallCountField: 'puttMakeCount10_15' },
+  { label: '15-20ft', field: 'makePct15_20', countField: 'count15_20', pgaMetricId: 'putts_made_15_25ft_pct', overallField: 'puttMakePct15_20', overallCountField: 'puttMakeCount15_20' },
+  { label: '20-25ft', field: 'makePct20_25', countField: 'count20_25', pgaMetricId: 'putts_made_15_25ft_pct', overallField: 'puttMakePct20_25', overallCountField: null },
+  { label: '25-30ft', field: 'makePct25_30', countField: 'count25_30', pgaMetricId: 'putts_made_25_plus_ft_pct', overallField: 'puttMakePct25_30', overallCountField: null },
+  { label: '30-35ft', field: 'makePct30_35', countField: 'count30_35', pgaMetricId: 'putts_made_25_plus_ft_pct', overallField: 'puttMakePct30_35', overallCountField: null },
+  { label: '35+ft', field: 'makePct35Plus', countField: 'count35Plus', pgaMetricId: 'putts_made_25_plus_ft_pct', overallField: 'puttMakePct35Plus', overallCountField: null },
 ];
 
 /** Band thresholds for the ramp: proportional to the PGA standard when known
@@ -162,6 +212,26 @@ export function PuttingDrill({
   const { home } = useStage();
   const s = detailedStats;
   const puttingByBreak = s?.puttingByBreak ?? null;
+
+  // --- Hero: overall (all-break) ALL-PUTT make% by distance band ---------
+  // n prefers the EXACT top-level attempt count (`puttMakeCount*`, 5 of 9
+  // bands) that backs `overallField` 1:1. For the other 4 bands (20ft+),
+  // no top-level count exists, so n falls back to summing the four
+  // break-type cells — an undercount whenever a putt has no tagged break
+  // (`putt_break` is nullable), but still the best available signal there.
+  const heroPoints: MakeCurvePoint[] = DISTANCE_BANDS.map((band) => ({
+    label: band.label,
+    pct: finite(s?.[band.overallField]),
+    n: band.overallCountField
+      ? (s?.[band.overallCountField] ?? 0)
+      : BREAK_COLS.reduce((sum, col) => sum + countAt(puttingByBreak?.[col.breakKey], band.countField), 0),
+  }));
+  const heroAriaLabel = chartAriaLabel(
+    'Putt make curve: make percentage by distance',
+    heroPoints
+      .map((p) => (p.pct === null ? `${p.label} no data` : `${p.label} ${Math.round(p.pct)}% on ${p.n ?? 0} putts`))
+      .join(', '),
+  );
 
   const rows = DISTANCE_BANDS.map((band) => ({
     label: band.label,
@@ -264,6 +334,16 @@ export function PuttingDrill({
   return (
     <DrillPanel title="Putting" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <Eyebrow as="h3" tone="accent">Putt make curve</Eyebrow>
+            <span className="font-fw-sans text-caption text-text-tertiary">
+              Make % by distance
+            </span>
+          </div>
+          <MakeCurve points={heroPoints} ariaLabel={heroAriaLabel} />
+        </div>
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
           {efficiencyReadouts.map((r) => (
             <InstrumentPanel key={r.label} depth="base" padding="md">
