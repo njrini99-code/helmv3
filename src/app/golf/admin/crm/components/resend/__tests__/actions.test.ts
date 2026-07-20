@@ -51,7 +51,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 vi.mock('@/lib/server-error-logger', () => ({
-  logServerError: (...args: unknown[]) => mocks.logServerError(...args),
+  logServerError: (...args: unknown[]) => (mocks.logServerError as (...a: unknown[]) => unknown)(...args),
 }));
 
 import { getFailedEmailCounts } from '../actions';

@@ -1220,7 +1220,11 @@ export default function CRMPage() {
       inPipeline: 0,
     };
 
-    const now = Date.now();
+    // "Due" means due TODAY (end-of-day cutoff) — must match CRMDashboard's
+    // followUpsDueToday so the header pill and the dashboard agree on one number.
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    const dueCutoff = endOfToday.getTime();
     const notInPipeline = new Set<CoachStatus>(['new_lead', 'won', 'lost', 'nurture']);
 
     for (const c of allCoaches) {
@@ -1233,7 +1237,7 @@ export default function CRMPage() {
       }
       if (c.is_starred) s.starred++;
       if (c.priority >= 2) s.hot++;
-      if (c.next_follow_up_at && Date.parse(c.next_follow_up_at) <= now) s.followUpsDue++;
+      if (c.next_follow_up_at && Date.parse(c.next_follow_up_at) <= dueCutoff) s.followUpsDue++;
       if (c.status !== 'new_lead') s.contacted++;
       if (!notInPipeline.has(c.status)) s.inPipeline++;
     }
@@ -1497,6 +1501,7 @@ export default function CRMPage() {
                 domainAuth={domainAuth}
               />
               <TodayQueue
+                loading={loading}
                 coaches={allCoaches}
                 onCoachClick={handleCoachClick}
                 onOpenInGmail={logGmailTouch}
@@ -1513,6 +1518,7 @@ export default function CRMPage() {
           {/* ── Dashboard Tab ── */}
           {activeTab === 'dashboard' && (
             <CRMDashboard
+              loading={loading}
               allCoaches={allCoaches}
               stats={stats}
               pipelineStages={PIPELINE_STAGES}
@@ -1572,6 +1578,7 @@ export default function CRMPage() {
           {/* ── Pipeline Tab ── */}
           {activeTab === 'pipeline' && (
             <PipelineView
+              loading={loading}
               coaches={allCoaches}
               onCoachClick={handleCoachClick}
               onStatusChange={handleStatusChange}

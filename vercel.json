@@ -108,6 +108,10 @@
     {
       "path": "/api/cron/refresh-engagement",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/ingest-gmail-replies",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

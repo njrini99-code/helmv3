@@ -163,7 +163,7 @@ export function AutomationsList() {
         </div>
         <div className="flex items-center gap-2">
           {!loading && missingSeeds.length > 0 && (
-            <Button variant="default"
+            <Button variant="outline"
               type="button"
               onClick={handleRestoreDefaults}
               disabled={restoring}

@@ -147,15 +147,27 @@ export function Select({
     });
   }, [updateDropdownRect]);
 
+  // Track the close-animation timeout so unmount can cancel it — the previous
+  // `return () => clearTimeout(timer)` from inside the useCallback body was a
+  // no-op (nothing consumed the returned cleanup), so unmounting mid-close
+  // fired setState after teardown (jsdom: "window is not defined").
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeDropdown = useCallback(() => {
     setIsAnimating(false);
-    const timer = setTimeout(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
       setIsOpen(false);
       setSearchQuery('');
       setDropdownRect(null);
     }, 150);
-    return () => clearTimeout(timer);
   }, []);
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    },
+    [],
+  );
 
   // Close on outside click — must also check the portaled dropdown, which
   // lives outside containerRef in the DOM once mounted at document.body.

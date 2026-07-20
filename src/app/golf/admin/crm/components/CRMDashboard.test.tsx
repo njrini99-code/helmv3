@@ -164,7 +164,7 @@ describe('CRMDashboard', () => {
     await vi.waitFor(() => {
       expect(logErrorMock).toHaveBeenCalled();
     });
-    expect(logErrorMock.mock.calls[0][1]).toMatchObject({ component: 'CRMDashboard' });
+    expect(logErrorMock.mock.calls[0]?.[1]).toMatchObject({ component: 'CRMDashboard' });
   });
 
   it('renders a loading skeleton instead of misleading empty states while loading', () => {

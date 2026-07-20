@@ -63,9 +63,14 @@ export function DomainAuthCard() {
           </span>
           <div>
             <p className="text-sm font-semibold text-warm-900">
-              Domain authentication
+              Domain authentication (Gmail direct sends)
             </p>
-            <p className="text-xs text-warm-500">{domain}</p>
+            {/* This card verifies the Workspace/DNS records the Gmail-direct
+                path depends on. Resend verifies its own sending domain
+                separately (Resend dashboard) — this check cannot speak for it. */}
+            <p className="text-xs text-warm-500">
+              {domain} · Resend&apos;s own domain status lives in the Resend dashboard
+            </p>
           </div>
         </div>
         <span

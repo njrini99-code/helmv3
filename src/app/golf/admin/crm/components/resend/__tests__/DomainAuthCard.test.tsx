@@ -54,7 +54,10 @@ describe('DomainAuthCard', () => {
     });
     render(<DomainAuthCard />);
     expect(await screen.findByText('Authenticated')).toBeInTheDocument();
-    expect(screen.getByText('helmsportslabs.com')).toBeInTheDocument();
+    // The card is explicitly scoped to the Gmail-direct path (it cannot speak
+    // for Resend's own domain verification) — pin that honest labeling.
+    expect(screen.getByText('Domain authentication (Gmail direct sends)')).toBeInTheDocument();
+    expect(screen.getByText(/helmsportslabs\.com/)).toBeInTheDocument();
   });
 
   it('renders "Needs attention" when a record fails', async () => {

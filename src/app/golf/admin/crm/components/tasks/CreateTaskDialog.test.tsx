@@ -23,7 +23,11 @@ vi.mock('@/app/golf/actions/crm-foundations', () => ({
   })),
 }));
 
-const mockGetUser = vi.fn(async () => ({ data: { user: { id: 'user-123' } } }));
+const mockGetUser = vi.fn(
+  async (): Promise<{ data: { user: { id: string } | null } }> => ({
+    data: { user: { id: 'user-123' } },
+  }),
+);
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({

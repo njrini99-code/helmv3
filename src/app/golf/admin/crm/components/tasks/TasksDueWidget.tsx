@@ -198,7 +198,10 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
         }}
         aria-label="Mark complete"
         className="w-4 h-4 rounded-md border border-warm-300 hover:border-primary-500 hover:bg-primary-50 flex items-center justify-center flex-shrink-0 transition-colors"
-      />
+      >
+        {/* Empty checkbox visual — the label lives in aria-label; see note below. */}
+        <span aria-hidden="true" />
+      </IconButton>
       {/* No IconCheck here: rows in this list are always open tasks —
           handleComplete removes a task from state the instant it's marked
           done, so a completed checkmark state is never actually rendered
