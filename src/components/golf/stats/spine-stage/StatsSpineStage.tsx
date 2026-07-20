@@ -15,8 +15,9 @@
  *
  * Layout: `300px 1fr` grid, spine sticky at `top-20` — both collapse to a
  * single stacked column under 940px (spine un-stickies on mobile, per plan).
- * `FairwayStatsCockpit.tsx` is intentionally left untouched (Task 10 cleanup
- * retires it once every consumer has migrated).
+ * `FairwayStatsCockpit.tsx` has been retired (Task 10 cleanup) now that every
+ * consumer — the player stats route and the roster coach drill-down — has
+ * migrated to this component.
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';

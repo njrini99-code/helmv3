@@ -142,17 +142,24 @@ function categoryToAreaType(category: string | null | undefined): string {
 // doesn't see three putting recommendations when other zones also need work.
 // ---------------------------------------------------------------------------
 
-function derivePracticePlan(args: {
+export function derivePracticePlan(args: {
   insights: EvidenceInsight[];
   patterns: PatternLike[];
   categoryBreakdown: CategoryBreakdown;
   focusAreas: FocusAreaLike[];
+  /** Area types to treat as already-covered beyond `focusAreas` — the coach
+   *  side pins in-session saves here so a duplicate drill for a just-saved
+   *  area can never re-derive while the parent's `focusAreas` prop is stale. */
+  extraUsedAreas?: Iterable<string>;
 }): PrescribedDrill[] {
-  const { insights, patterns, categoryBreakdown, focusAreas } = args;
+  const { insights, patterns, categoryBreakdown, focusAreas, extraUsedAreas } = args;
   const drills: PrescribedDrill[] = [];
   const usedAreas = new Set<string>();
   for (const fa of focusAreas) {
     if (fa.area_type) usedAreas.add(fa.area_type);
+  }
+  for (const area of extraUsedAreas ?? []) {
+    usedAreas.add(area);
   }
 
   // 1. Insight-sourced drills (strongest signal — evidence-backed).
@@ -242,16 +249,21 @@ function derivePracticePlan(args: {
 function DrillRow({
   drill,
   onSave,
+  initiallySaved = false,
 }: {
   drill: PrescribedDrill;
   onSave: (drill: PrescribedDrill) => Promise<{ ok: boolean; error?: string }>;
+  /** Pinned drills remount with a fresh id-keyed instance when the rendered
+   *  list is rebuilt, so "saved" can't be recovered from local state — the
+   *  parent hands it back in via this prop instead. */
+  initiallySaved?: boolean;
 }) {
   const [state, setState] = useState<
     | { kind: 'idle' }
     | { kind: 'saving' }
     | { kind: 'saved' }
     | { kind: 'error'; message: string }
-  >({ kind: 'idle' });
+  >(() => (initiallySaved ? { kind: 'saved' } : { kind: 'idle' }));
 
   const handleClick = useCallback(async () => {
     setState({ kind: 'saving' });
@@ -342,16 +354,30 @@ export function PrescribedPracticePlanCard({
   focusAreas,
   isRefreshing = false,
 }: PrescribedPracticePlanCardProps) {
-  const drills = useMemo(
+  // Drills saved this session — pinned in the list independent of props so
+  // a parent refetch (which updates `focusAreas`/`insights`) can never make
+  // the "Added to Focus Areas" confirmation the coach is looking at vanish.
+  const [savedDrills, setSavedDrills] = useState<PrescribedDrill[]>([]);
+
+  const derivedDrills = useMemo(
     () =>
       derivePracticePlan({
         insights,
         patterns,
         categoryBreakdown,
         focusAreas,
+        extraUsedAreas: savedDrills.map((d) => d.areaType),
       }),
-    [insights, patterns, categoryBreakdown, focusAreas],
+    [insights, patterns, categoryBreakdown, focusAreas, savedDrills],
   );
+
+  // Pinned saves fill the front of the list in save order; freshly-derived
+  // drills top up whatever's left, capped at 3 total.
+  const remainingSlots = Math.max(0, 3 - savedDrills.length);
+  const drills: Array<{ drill: PrescribedDrill; pinned: boolean }> = [
+    ...savedDrills.map((drill) => ({ drill, pinned: true })),
+    ...derivedDrills.slice(0, remainingSlots).map((drill) => ({ drill, pinned: false })),
+  ];
 
   const handleSave = useCallback(
     async (drill: PrescribedDrill) => {
@@ -370,6 +396,9 @@ export function PrescribedPracticePlanCard({
         target_value: null,
         from_insight_id: drill.sourceInsightId ?? null,
       });
+      if (res.success) {
+        setSavedDrills((prev) => (prev.some((d) => d.id === drill.id) ? prev : [...prev, drill]));
+      }
       return { ok: res.success, error: res.error };
     },
     [playerId, coachId],
@@ -414,8 +443,8 @@ export function PrescribedPracticePlanCard({
         </Inset>
       ) : (
         <div className="space-y-3">
-          {drills.map((drill) => (
-            <DrillRow key={drill.id} drill={drill} onSave={handleSave} />
+          {drills.map(({ drill, pinned }) => (
+            <DrillRow key={drill.id} drill={drill} onSave={handleSave} initiallySaved={pinned} />
           ))}
         </div>
       )}

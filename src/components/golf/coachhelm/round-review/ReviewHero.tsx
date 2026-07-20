@@ -15,14 +15,27 @@
  * ========================================================================== */
 
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Filmstrip, GradeDots } from '@/components/fairway/modules';
-import { PressTarget } from '@/components/fairway';
+import { PressTarget, Skeleton } from '@/components/fairway';
 import type { FilmstripHole } from '@/components/fairway/modules';
-import { HoleShotPath } from '@/components/golf/coachhelm/v3/HoleShotPath';
 import type { ShotInput } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 import type { ReviewGrade } from './buildReviewViewModel';
 import { formatHoleDetail, formatToPar } from './buildReviewViewModel';
+
+// Only renders once a reader explicitly taps "View shot path" — code-split so
+// its framer-motion + SVG reconstruction never lands in the review page's
+// first-load JS. Fallback mirrors the `hero` size variant it replaces.
+const HoleShotPath = dynamic(
+  () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((m) => m.HoleShotPath),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="w-full max-w-[280px] h-[560px] md:max-w-[320px] md:h-[640px] rounded-fw-md" />
+    ),
+  },
+);
 
 export interface ReviewHoleMeta {
   par: number | null;
