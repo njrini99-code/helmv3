@@ -177,8 +177,11 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
               <label htmlFor={`${uid}-division`} className={labelClass}>Division</label>
               <Select
                 options={[
+                  { value: 'D1', label: 'Division I' },
                   { value: 'D2', label: 'Division II' },
                   { value: 'D3', label: 'Division III' },
+                  { value: 'NAIA', label: 'NAIA' },
+                  { value: 'JUCO', label: 'JUCO' },
                 ]}
                 value={form.division}
                 onChange={(value) => setForm({ ...form, division: value as Division })}

@@ -11,7 +11,11 @@ import { Select } from '@/components/ui/select';
 
 export interface Filters {
   status: CoachStatus | 'all';
-  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO';
+  // Mirrors the full ncaa_division DB enum (D1/D2/D3/NAIA/JUCO plus the
+  // JUCO_D1/JUCO_D2/JUCO_D3/CCCAA sub-divisions) — not just the 5-value
+  // Division app type — so every coach in the table is reachable by an
+  // exact-match division filter.
+  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO' | 'JUCO_D1' | 'JUCO_D2' | 'JUCO_D3' | 'CCCAA';
   conference: string;
   program: 'all' | 'mens' | 'womens' | 'both';
   priority: string;
@@ -35,7 +39,19 @@ interface CoachFiltersProps {
 
 // All real division values present on the Filters type. "all" is intentionally
 // absent from the chooser — an unset division is simply the ABSENCE of a chip.
-const DIVISION_OPTIONS: ReadonlyArray<Exclude<Filters['division'], 'all'>> = ['D1', 'D2', 'D3', 'NAIA', 'JUCO'];
+// Includes the JUCO_D1/JUCO_D2/JUCO_D3/CCCAA sub-divisions that actually exist
+// in crm_coaches.division (a bare 'JUCO' chip alone never matches those rows).
+const DIVISION_OPTIONS: ReadonlyArray<{ value: Exclude<Filters['division'], 'all'>; label: string }> = [
+  { value: 'D1', label: 'D1' },
+  { value: 'D2', label: 'D2' },
+  { value: 'D3', label: 'D3' },
+  { value: 'NAIA', label: 'NAIA' },
+  { value: 'JUCO', label: 'JUCO' },
+  { value: 'JUCO_D1', label: 'JUCO D1' },
+  { value: 'JUCO_D2', label: 'JUCO D2' },
+  { value: 'JUCO_D3', label: 'JUCO D3' },
+  { value: 'CCCAA', label: 'CCCAA' },
+];
 
 const PROGRAM_OPTIONS: ReadonlyArray<{ value: Exclude<Filters['program'], 'all'>; label: string }> = [
   { value: 'mens', label: "Men's" },
@@ -196,7 +212,7 @@ export function CoachFilters({
   const programLabel = PROGRAM_OPTIONS.find(p => p.value === filters.program)?.label ?? '';
 
   const activeChips: Array<{ key: string; label: string; onRemove: () => void }> = [];
-  if (filters.division !== 'all') activeChips.push({ key: 'division', label: filters.division, onRemove: () => setFilters(f => ({ ...f, division: 'all' })) });
+  if (filters.division !== 'all') activeChips.push({ key: 'division', label: DIVISION_OPTIONS.find(d => d.value === filters.division)?.label ?? filters.division, onRemove: () => setFilters(f => ({ ...f, division: 'all' })) });
   if (filters.program !== 'all') activeChips.push({ key: 'program', label: programLabel, onRemove: () => setFilters(f => ({ ...f, program: 'all' })) });
   if (filters.status !== 'all') activeChips.push({ key: 'status', label: statusConfig[filters.status as CoachStatus]?.label ?? String(filters.status), onRemove: () => setFilters(f => ({ ...f, status: 'all' })) });
   if (filters.conference !== 'all') activeChips.push({ key: 'conference', label: filters.conference, onRemove: () => setFilters(f => ({ ...f, conference: 'all' })) });
@@ -342,15 +358,15 @@ export function CoachFilters({
           <fieldset className="space-y-1.5">
             <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Division</legend>
             <div className="flex flex-wrap gap-1.5">
-              {DIVISION_OPTIONS.map(div => {
-                const selected = filters.division === div;
+              {DIVISION_OPTIONS.map(opt => {
+                const selected = filters.division === opt.value;
                 return (
                   <FacetChip
-                    key={div}
+                    key={opt.value}
                     selected={selected}
-                    onClick={() => setFilters(f => ({ ...f, division: selected ? 'all' : div }))}
+                    onClick={() => setFilters(f => ({ ...f, division: selected ? 'all' : opt.value }))}
                   >
-                    {div}
+                    {opt.label}
                   </FacetChip>
                 );
               })}
