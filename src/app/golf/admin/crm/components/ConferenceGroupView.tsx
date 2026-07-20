@@ -16,6 +16,7 @@ import type { Coach, CoachStatus } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
 import { SequenceEnrollmentBadge } from './badges/SequenceEnrollmentBadge';
 import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
+import { groupBy } from './group-coaches';
 
 interface ConferenceGroupViewProps {
   coaches: Coach[];
@@ -27,7 +28,8 @@ interface ConferenceGroupViewProps {
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onLogContact: (coach: Coach) => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
-  // Accepted for API parity with other CRM views; reserved for future priority chips.
+  // Drives the priority dot rendered next to each coach's name in the
+  // expanded conference row (same idiom as CoachTable's priority column).
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: React.ReactNode }>;
   // coach_id -> sequence enrollment summary, for the queue badge
   coachEnrollments?: Record<string, CoachEnrollmentSummary>;
@@ -91,41 +93,42 @@ export function ConferenceGroupView({
     return () => window.removeEventListener('keydown', onKey);
   }, [openActionMenu, openStatusDropdown]);
 
+  // Groups on a NORMALIZED key (trim, collapse internal whitespace, case-fold)
+  // via the shared groupBy() helper — "ACC" and "acc " (or any other
+  // whitespace/casing drift in the source data) land in ONE group instead of
+  // two. The displayed header is the first-seen raw conference string.
+  // Coaches with a null/blank conference land in the labeled
+  // NO_CONFERENCE_LABEL bucket instead of the raw '' key, which otherwise
+  // renders an unlabeled <h3> — and since this bucket is routinely the
+  // single largest group, groupBy() always sorts it last rather than letting
+  // it float to the top of the tab with no visible name. Group membership
+  // and counts come ONLY from the `coaches` prop, which is already the
+  // caller's filtered list.
   const conferenceGroups = useMemo((): ConferenceGroup[] => {
-    const groups: Record<string, Coach[]> = {};
-    coaches.forEach(coach => {
-      // Coaches with a null/blank conference land in a labeled bucket instead
-      // of the raw '' key, which otherwise renders an unlabeled <h3> — and
-      // since this bucket is routinely the single largest group, it would
-      // sort to the top of the tab with no visible name.
-      const key = coach.conference?.trim() || NO_CONFERENCE_LABEL;
-      if (!groups[key]) groups[key] = [];
-      groups[key]!.push(coach);
-    });
-
-    return Object.entries(groups)
-      .map(([conference, groupCoaches]) => ({
-        conference,
-        coaches: groupCoaches.sort((a, b) => {
-          if (a.is_starred !== b.is_starred) return a.is_starred ? -1 : 1;
-          if (a.priority !== b.priority) return b.priority - a.priority;
-          return a.name.localeCompare(b.name);
-        }),
-        // Full tally over every division value present (D1/D2/D3/NAIA/JUCO*/
-        // CCCAA/etc.) instead of a hardcoded D2/D3-only breakdown, so a
-        // conference made up entirely of e.g. D1 or NAIA programs still
-        // shows a division breakdown instead of none at all.
-        divisions: groupCoaches.reduce((acc, c) => {
-          const key = c.division || 'Unknown';
-          acc[key] = (acc[key] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        statusBreakdown: groupCoaches.reduce((acc, c) => {
-          acc[c.status] = (acc[c.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-      }))
-      .sort((a, b) => b.coaches.length - a.coaches.length);
+    return groupBy(coaches, (c) => c.conference, {
+      emptyLabel: NO_CONFERENCE_LABEL,
+      sort: (a, b) => b.items.length - a.items.length,
+    }).map((group) => ({
+      conference: group.label,
+      coaches: [...group.items].sort((a, b) => {
+        if (a.is_starred !== b.is_starred) return a.is_starred ? -1 : 1;
+        if (a.priority !== b.priority) return b.priority - a.priority;
+        return a.name.localeCompare(b.name);
+      }),
+      // Full tally over every division value present (D1/D2/D3/NAIA/JUCO*/
+      // CCCAA/etc.) instead of a hardcoded D2/D3-only breakdown, so a
+      // conference made up entirely of e.g. D1 or NAIA programs still
+      // shows a division breakdown instead of none at all.
+      divisions: group.items.reduce((acc, c) => {
+        const key = c.division || 'Unknown';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      statusBreakdown: group.items.reduce((acc, c) => {
+        acc[c.status] = (acc[c.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+    }));
   }, [coaches]);
 
   const toggleConference = (conference: string) => {
@@ -388,7 +391,26 @@ export function ConferenceGroupView({
                             </IconButton>
                           </td>
                           <td className="px-4 py-2.5">
-                            <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+                              {/* Priority dot — same idiom as the desktop CoachTable priority
+                                  column (colored pill + dot + icon), relocated next to the name
+                                  so this compact conference-grouped row doesn't need its own
+                                  priority column. Only rendered above the "Normal" floor. */}
+                              {coach.priority > 0 && (
+                                <span
+                                  className={cn(
+                                    'shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full',
+                                    priorityConfig[coach.priority]?.bgColor,
+                                    priorityConfig[coach.priority]?.color,
+                                  )}
+                                  title={priorityConfig[coach.priority]?.label}
+                                >
+                                  <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500')} />
+                                  <span className="flex items-center">{priorityConfig[coach.priority]?.iconLabel}</span>
+                                </span>
+                              )}
+                            </div>
                             {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
                             <div className="mt-1"><SequenceEnrollmentBadge summary={coachEnrollments?.[coach.id]} /></div>
                           </td>
