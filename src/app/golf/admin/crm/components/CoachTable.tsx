@@ -15,6 +15,7 @@ import type { CoachEngagement } from '../types/foundations';
 import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { Button, IconButton } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/select';
+import { nextStepLabel } from './next-step-label';
 
 // Row-density modes. Comfortable keeps the original generous vertical rhythm;
 // Compact tightens cell padding + line height so ~2x as many rows fit a
@@ -254,7 +255,7 @@ const ALL_STATUSES: CoachStatus[] = [
   'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
 ];
 
-type SortField = 'name' | 'school' | 'conference' | 'division' | 'status' | 'priority' | 'last_contacted_at';
+type SortField = 'name' | 'school' | 'conference' | 'division' | 'status' | 'priority' | 'last_contacted_at' | 'next_follow_up_at';
 type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZES = [25, 50, 100];
@@ -267,6 +268,23 @@ function formatRelativeDate(dateStr: string | null): string {
   if (days < 7) return `${days}d ago`;
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
   return `${Math.floor(days / 30)}mo ago`;
+}
+
+// Tailwind classes per nextStepLabel() tone. Kept as a lookup (rather than
+// inline in each render site) so the desktop <td>, mobile card meta line, and
+// any future consumer render byte-identical styling for the same tone.
+const NEXT_STEP_TONE_CLASS: Record<ReturnType<typeof nextStepLabel>['tone'], string> = {
+  none: 'text-caption text-warm-300',
+  future: 'text-caption text-warm-700',
+  today: 'text-xs text-amber-700 font-medium',
+  overdue: 'text-xs text-red-700 font-medium',
+};
+
+// "Next step" cell/line — shared between the desktop <td> and the mobile card
+// so both read next_follow_up_at through the same pure derivation.
+function NextStepValue({ coach }: { coach: Coach }) {
+  const { text, tone } = nextStepLabel(coach.next_follow_up_at);
+  return <span className={cn('tabular-nums', NEXT_STEP_TONE_CLASS[tone])}>{text}</span>;
 }
 
 // ============================================================================
@@ -483,6 +501,12 @@ const CoachTableRow = React.memo(
           </span>
         </td>
 
+        {/* Next step — visible whenever the table shows (md+); right-aligned,
+            derived from next_follow_up_at via nextStepLabel(). */}
+        <td className={cn('hidden md:table-cell text-right', cellPad)}>
+          <NextStepValue coach={coach} />
+        </td>
+
         {/* Segments — visible at xl+. Stream C owns this. Renders one
             mini chip per saved-segment this coach belongs to. */}
         <td className={cn('hidden xl:table-cell', cellPad)}>
@@ -633,6 +657,12 @@ const CoachTableRow = React.memo(
     // page no longer re-render this row.
     return (
       prev.coach === next.coach &&
+      // Explicit nested-field check (belt-and-suspenders alongside the coach
+      // reference check above): guards the new "Next step" column against a
+      // future caller that mutates next_follow_up_at in place instead of
+      // producing a new coach object, which would otherwise leave this row
+      // showing a stale value.
+      prev.coach.next_follow_up_at === next.coach.next_follow_up_at &&
       prev.isSelected === next.isSelected &&
       prev.isFocused === next.isFocused &&
       prev.isStatusOpen === next.isStatusOpen &&
@@ -948,14 +978,19 @@ const CoachTableCard = React.memo(
           ) : null}
         </div>
 
-        {/* Footer: last contact + segments */}
+        {/* Footer: last contact + next step + segments */}
         <div className="mt-2 flex items-center justify-between gap-2 pl-7">
-          <span className={cn(
-            'text-xs tabular-nums',
-            !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500',
-          )}>
-            {formatRelativeDate(coach.last_contacted_at)}
-          </span>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className={cn(
+              'text-xs tabular-nums',
+              !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500',
+            )}>
+              {formatRelativeDate(coach.last_contacted_at)}
+            </span>
+            <span className="flex items-center gap-1 text-xs text-warm-400 min-w-0">
+              Next step: <NextStepValue coach={coach} />
+            </span>
+          </div>
           {segments && segments.length > 0 && (
             <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
               {segments.slice(0, 3).map((seg) => (
@@ -974,6 +1009,12 @@ const CoachTableCard = React.memo(
     // Identical memo contract to CoachTableRow.
     return (
       prev.coach === next.coach &&
+      // Explicit nested-field check (belt-and-suspenders alongside the coach
+      // reference check above): guards the new "Next step" column against a
+      // future caller that mutates next_follow_up_at in place instead of
+      // producing a new coach object, which would otherwise leave this row
+      // showing a stale value.
+      prev.coach.next_follow_up_at === next.coach.next_follow_up_at &&
       prev.isSelected === next.isSelected &&
       prev.isFocused === next.isFocused &&
       prev.isStatusOpen === next.isStatusOpen &&
@@ -1407,6 +1448,20 @@ export function CoachTable({
           aVal = a.last_contacted_at ? new Date(a.last_contacted_at).getTime() : 0;
           bVal = b.last_contacted_at ? new Date(b.last_contacted_at).getTime() : 0;
           break;
+        case 'next_follow_up_at': {
+          // Infinity sentinel for a null next_follow_up_at — but nulls must
+          // sort LAST in BOTH asc and desc, so short-circuit here rather than
+          // falling through to the sortDir-aware comparison below (which
+          // would otherwise flip Infinity to "first" when descending).
+          const aTime = a.next_follow_up_at ? new Date(a.next_follow_up_at).getTime() : Infinity;
+          const bTime = b.next_follow_up_at ? new Date(b.next_follow_up_at).getTime() : Infinity;
+          if (aTime === Infinity || bTime === Infinity) {
+            if (aTime === bTime) return 0;
+            return aTime === Infinity ? 1 : -1;
+          }
+          aVal = aTime; bVal = bTime;
+          break;
+        }
       }
       if (aVal === null || bVal === null) return 0;
       if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
@@ -1699,6 +1754,8 @@ export function CoachTable({
             <TH field="conference" label="Conference" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden xl:table-cell"><SortArrow field="conference" /></TH>
             {/* Last Contact — md+ (matches the cell), right-aligned numeric */}
             <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden md:table-cell !text-right"><SortArrow field="last_contacted_at" /></TH>
+            {/* Next step — md+ (next_follow_up_at), right-aligned like Last Contact */}
+            <TH field="next_follow_up_at" label="Next step" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden md:table-cell !text-right"><SortArrow field="next_follow_up_at" /></TH>
             {/* Segments — xl+. Stream C owns. */}
             <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-[180px]', DENSITY_CELL_PADDING[density])}>Segments</th>
             {/* Actions — always */}

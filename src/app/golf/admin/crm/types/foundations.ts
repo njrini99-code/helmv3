@@ -111,6 +111,10 @@ export interface SegmentDefinition {
   temperature?: 'hot' | 'warm' | 'cold' | 'all';
   // Primary-contact filter: when true, only coaches with is_primary_contact=true are enrolled
   primaryOnly?: boolean;
+  // Next-step follow-up tracking quick filters — mirrors CoachFilters.tsx
+  // Filters in lockstep (see this file's header comment).
+  overdueFollowUp?: boolean;
+  noNextStep?: boolean;
 }
 
 export interface CrmSegment {

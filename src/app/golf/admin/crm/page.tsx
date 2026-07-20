@@ -166,6 +166,8 @@ export default function CRMPage() {
     noContact30Days: false,
     primaryOnly: false,
     queueStatus: 'all',
+    overdueFollowUp: false,
+    noNextStep: false,
   });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -521,6 +523,14 @@ export default function CRMPage() {
       if (filters.hasNotes && !c.notes) continue;
       if (filters.noContact30Days && c.last_contacted_at && c.last_contacted_at >= cutoff) continue;
       if (filters.primaryOnly && !c.is_primary_contact) continue;
+      // Overdue follow-up: has a next_follow_up_at strictly in the past.
+      // `now` (ISO string, computed once above) compares correctly against
+      // other ISO strings — equivalent to new Date(x) < new Date() without
+      // allocating a Date per coach.
+      if (filters.overdueFollowUp && !(c.next_follow_up_at && c.next_follow_up_at < now)) continue;
+      // No next step: an actively-worked coach (contacted/engaged/proposal)
+      // with no follow-up scheduled at all — the gap this column surfaces.
+      if (filters.noNextStep && !(['contacted', 'engaged', 'proposal'].includes(c.status) && !c.next_follow_up_at)) continue;
       if (filters.queueStatus && filters.queueStatus !== 'all') {
         const enr = sequenceEnrollmentMap[c.id];
         if (filters.queueStatus === 'queued' && !(enr && enr.status === 'active' && (enr.current_step ?? 0) === 0)) continue;

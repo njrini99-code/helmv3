@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark, IconFilter, IconUser } from '@/components/icons';
+import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark, IconFilter, IconUser, IconTarget } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 import { SaveSegmentDialog } from './segments/SaveSegmentDialog';
 import { Button, IconButton } from '@/components/ui/button';
@@ -28,6 +28,10 @@ export interface Filters {
   // Outreach-queue state (from sequence enrollment): queued = not emailed yet,
   // sent = in sequence, done = sequence complete.
   queueStatus?: 'all' | 'queued' | 'sent' | 'done';
+  // Next-step follow-up tracking quick filters (mirror types/foundations.ts
+  // SegmentDefinition in lockstep — see that file's header comment).
+  overdueFollowUp?: boolean;
+  noNextStep?: boolean;
 }
 
 interface CoachFiltersProps {
@@ -195,6 +199,8 @@ export function CoachFilters({
     filters.noContact30Days,
     filters.primaryOnly,
     queueActive,
+    filters.overdueFollowUp,
+    filters.noNextStep,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
@@ -202,7 +208,7 @@ export function CoachFilters({
     setFilters({
       status: 'all', division: 'all', conference: 'all', program: 'all', priority: 'all',
       search: '', followUpDue: false, starred: false, hasNotes: false, noContact30Days: false,
-      primaryOnly: false, queueStatus: 'all',
+      primaryOnly: false, queueStatus: 'all', overdueFollowUp: false, noNextStep: false,
     });
   };
 
@@ -223,6 +229,8 @@ export function CoachFilters({
   if (filters.hasNotes) activeChips.push({ key: 'hasNotes', label: 'Has Notes', onRemove: () => setFilters(f => ({ ...f, hasNotes: false })) });
   if (filters.noContact30Days) activeChips.push({ key: 'noContact30Days', label: 'No Contact 30d', onRemove: () => setFilters(f => ({ ...f, noContact30Days: false })) });
   if (filters.primaryOnly) activeChips.push({ key: 'primaryOnly', label: 'Primary Only', onRemove: () => setFilters(f => ({ ...f, primaryOnly: false })) });
+  if (filters.overdueFollowUp) activeChips.push({ key: 'overdueFollowUp', label: 'Overdue Follow-up', onRemove: () => setFilters(f => ({ ...f, overdueFollowUp: false })) });
+  if (filters.noNextStep) activeChips.push({ key: 'noNextStep', label: 'No Next Step', onRemove: () => setFilters(f => ({ ...f, noNextStep: false })) });
 
   const selectClass = (active: boolean) => cn(
     'w-full min-h-[44px] rounded-lg text-xs font-medium',
@@ -453,6 +461,12 @@ export function CoachFilters({
               </FacetChip>
               <FacetChip selected={Boolean(filters.primaryOnly)} onClick={() => setFilters(f => ({ ...f, primaryOnly: !f.primaryOnly }))}>
                 <IconUser size={12} /> Primary Contacts Only
+              </FacetChip>
+              <FacetChip selected={Boolean(filters.overdueFollowUp)} onClick={() => setFilters(f => ({ ...f, overdueFollowUp: !f.overdueFollowUp }))}>
+                <IconClock size={12} /> Overdue follow-up
+              </FacetChip>
+              <FacetChip selected={Boolean(filters.noNextStep)} onClick={() => setFilters(f => ({ ...f, noNextStep: !f.noNextStep }))}>
+                <IconTarget size={12} /> No next step
               </FacetChip>
             </div>
           </fieldset>
