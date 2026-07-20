@@ -163,7 +163,9 @@ export const RATE_LIMITS = {
     windowMs: 60 * 1000,
   },
   DEMO_GATE: {
-    maxAttempts: 5,
+    // 10 (not 5): several coaches at one school can share a campus NAT IP —
+    // a mass demo send must not lock out the second coach who clicks.
+    maxAttempts: 10,
     windowMs: 5 * 60 * 1000,
     blockDurationMs: 15 * 60 * 1000,
   },

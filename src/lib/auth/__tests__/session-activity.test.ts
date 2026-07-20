@@ -31,6 +31,13 @@ const mocks = vi.hoisted(() => ({
     data: { user: null },
     error: null,
   })),
+  // resolveIdleTimeoutMs reads the LOCAL session (no network) to pick the
+  // demo vs standard idle window — the double must provide it or the hook
+  // silently falls back to the standard window and the demo-window tests
+  // go false-green (adversarial-review finding, 2026-07-20).
+  getSession: vi.fn(async (): Promise<{ data: { session: { user: FakeUser } | null } }> => ({
+    data: { session: null },
+  })),
   signOut: vi.fn(async () => ({ error: null })),
 }));
 
@@ -38,6 +45,7 @@ vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({
     auth: {
       getUser: mocks.getUser,
+      getSession: mocks.getSession,
       signOut: mocks.signOut,
     },
   })),
@@ -45,8 +53,15 @@ vi.mock('@/lib/supabase/client', () => ({
 
 import { useSessionActivity } from '@/lib/auth/session-activity';
 
-/** A `sb_last_activity` value 10 minutes in the past — past the 5-min idle window. */
-const STALE = Date.now() - 10 * 60 * 1000;
+/**
+ * A `sb_last_activity` value 35 minutes in the past — past BOTH the 5-min
+ * standard window and the 30-min demo window, so it is genuinely expired for
+ * every session type.
+ */
+const STALE = Date.now() - 35 * 60 * 1000;
+
+/** 10 minutes ago — expired for a standard session, INSIDE the demo window. */
+const STALE_FOR_STANDARD_ONLY = Date.now() - 10 * 60 * 1000;
 
 function setPath(pathname: string) {
   window.history.pushState({}, '', pathname);
@@ -133,6 +148,39 @@ describe('useSessionActivity — idle-timeout logout demo routing (#918)', () =>
     expect(url.startsWith('/golf/login?')).toBe(true);
     expect(url).toContain('message=session_expired');
     expect(url).toContain('returnTo=%2Fadmin%2Ferrors');
+  });
+
+  it('a DEMO session idle 10 min stays signed in (30-min demo window)', async () => {
+    setPath('/golf/dashboard');
+    document.cookie = `${SESSION_IDLE_COOKIE}=${STALE_FOR_STANDARD_ONLY}; path=/`;
+    const demoUser = { id: 'demo-1', user_metadata: { is_demo: true } };
+    mocks.getSession.mockResolvedValue({ data: { session: { user: demoUser } } });
+    mocks.getUser.mockResolvedValue({ data: { user: demoUser }, error: null });
+
+    renderHook(() => useSessionActivity());
+
+    // Window resolution must actually run (guards against the false-green
+    // fallback where a missing getSession silently picks the 5-min window)...
+    await waitFor(() => expect(mocks.getSession).toHaveBeenCalled());
+    // ...and 10 idle minutes inside the 30-min demo window must NOT log out.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(mocks.signOut).not.toHaveBeenCalled();
+  });
+
+  it('a REGULAR session idle 10 min still logs out (5-min window unchanged)', async () => {
+    setPath('/golf/dashboard');
+    document.cookie = `${SESSION_IDLE_COOKIE}=${STALE_FOR_STANDARD_ONLY}; path=/`;
+    const realUser = { id: 'real-coach-9', user_metadata: {} };
+    mocks.getSession.mockResolvedValue({ data: { session: { user: realUser } } });
+    mocks.getUser.mockResolvedValue({ data: { user: realUser }, error: null });
+
+    renderHook(() => useSessionActivity());
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalled());
+    expect(replaceMock).toHaveBeenCalledWith('/golf/login?message=session_expired');
   });
 
   it('never hangs the logout: a getUser() that hangs forever still completes the redirect', async () => {

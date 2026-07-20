@@ -4,11 +4,14 @@ import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-share
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
 import { evaluateAdminGate, isAdminPath } from '@/lib/admin/super-admin-shared';
 import {
+  DEMO_SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_COOKIE,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
+  SESSION_IDLE_TIMEOUT_MS,
   isSessionIdleExpired,
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { isDemoMetadataUser, type ProbedUser } from '@/lib/demo/gate-probe';
 import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { isBaseballDemoCoachEmail } from '@/lib/demo/baseball-config.server';
@@ -500,6 +503,15 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
+      global: {
+        // 5s HTTP abort (tighter than server.ts's 10s): middleware runs on
+        // EVERY request — a hung auth server must fail fast into
+        // getUserResilient's transient path, never hold page loads open.
+        fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
+          const signal = options.signal ?? AbortSignal.timeout(5_000);
+          return fetch(fetchUrl, { ...options, signal });
+        },
+      },
     }
   );
 
@@ -507,9 +519,11 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Transient-tolerant: under burst load (mass demo sends) auth verification
+  // funnels through Vercel egress IPs into Supabase's per-IP rate limits — a
+  // throttled auth server must degrade to the local session, not read as
+  // "signed out" and bounce every active user to login (resilient-get-user.ts).
+  const { user, degraded } = await getUserResilient(supabase);
   const activeTeamCookie = request.cookies.get(ACTIVE_BASEBALL_TEAM_COOKIE)?.value ?? null;
 
   // ── Helm Bridge Layer 1: /admin gate ──────────────────────────────────────
@@ -517,10 +531,14 @@ export async function updateSession(request: NextRequest) {
   // This is the cheap first filter — NEVER the sole gate (Next middleware has
   // had bypass CVEs). Layer 2 is requireSuperAdmin() in every server entry
   // point; Layer 3 is deny-by-default RLS via is_super_admin().
+  // A degraded user (local-session fallback, signature NOT verified by the
+  // auth server) must never satisfy the admin allowlist — availability
+  // degradation is for the app surface, not /admin. Layers 2 (requireSuperAdmin)
+  // and 3 (RLS) would hold anyway; this keeps Layer 1 strict too.
   const adminGate = evaluateAdminGate({
     pathname,
     isNative: isNativeUserAgent(request),
-    userId: user?.id ?? null,
+    userId: degraded ? null : (user?.id ?? null),
     allowlistRaw: process.env.SUPER_ADMIN_USER_IDS,
   });
   if (adminGate === 'block-native' || adminGate === 'redirect-dashboard') {
@@ -568,8 +586,13 @@ export async function updateSession(request: NextRequest) {
   if (user && isIdleGatedRoute) {
     const lastActivity = parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value);
     const now = Date.now();
+    // Demo visitors get the longer window — a prospect who tabs away for 6
+    // minutes must not come back to the gate form (session-idle-shared.ts).
+    const idleTimeoutMs = isDemoContextUser(user, sport)
+      ? DEMO_SESSION_IDLE_TIMEOUT_MS
+      : SESSION_IDLE_TIMEOUT_MS;
 
-    if (isSessionIdleExpired(lastActivity, now)) {
+    if (isSessionIdleExpired(lastActivity, now, idleTimeoutMs)) {
       try {
         // Local scope: clear cookies without a GoTrue round-trip — middleware
         // must stay fast and must not depend on auth-server reachability.

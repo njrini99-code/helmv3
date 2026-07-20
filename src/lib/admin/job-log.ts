@@ -39,7 +39,9 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
       }
       return result;
     }
-    await writeRow(jobType, 'completed', startedAt, null);
+    const metadata =
+      result instanceof Response ? await extractOutcomeMetadata(result) : null;
+    await writeRow(jobType, 'completed', startedAt, null, metadata);
     return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -80,11 +82,40 @@ async function extractResponseErrorLine(response: Response): Promise<string> {
   }
 }
 
+/**
+ * Best-effort outcome snapshot from a successful cron Response body, stored in
+ * background_job_logs.metadata so the admin cron board can distinguish "ran
+ * and did work" from "self-skipped" (e.g. ingest-gmail-replies returns
+ * `{skipped: 'not-armed'}` until its Google scope is granted — without this,
+ * both outcomes log as a bare 'completed'). Whitelisted keys only; never throws.
+ */
+async function extractOutcomeMetadata(
+  response: Response,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const clone = response.clone();
+    if (!(clone.headers.get('content-type') ?? '').includes('application/json')) return null;
+    const body: unknown = await clone.json();
+    if (!body || typeof body !== 'object') return null;
+    const record = body as Record<string, unknown>;
+    const outcome: Record<string, unknown> = {};
+    for (const key of ['skipped', 'matched', 'inserted', 'sent', 'processed', 'count', 'detail']) {
+      const value = record[key];
+      if (typeof value === 'string') outcome[key] = value.slice(0, 300);
+      else if (typeof value === 'number' || typeof value === 'boolean') outcome[key] = value;
+    }
+    return Object.keys(outcome).length > 0 ? outcome : null;
+  } catch {
+    return null;
+  }
+}
+
 async function writeRow(
   jobType: string,
   status: 'completed' | 'failed',
   startedAt: Date,
   errorMessage: string | null,
+  metadata: Record<string, unknown> | null = null,
 ): Promise<void> {
   try {
     const completedAt = new Date();
@@ -96,6 +127,7 @@ async function writeRow(
       error_message: errorMessage,
       started_at: startedAt.toISOString(),
       completed_at: completedAt.toISOString(),
+      ...(metadata ? { metadata } : {}),
     });
   } catch {
     // Fire-and-forget: outcome logging must never fail a cron.

@@ -93,7 +93,9 @@ describe('RATE_LIMITS.DEMO_GATE (Issue #392)', () => {
 
   it('is configured with a bounded attempt count and an extended block', async () => {
     const { RATE_LIMITS } = await import('@/lib/auth/rate-limit');
-    expect(RATE_LIMITS.DEMO_GATE.maxAttempts).toBe(5);
+    // 10 (not 5) since the mass-send hardening: several coaches at one school
+    // can share a campus NAT IP.
+    expect(RATE_LIMITS.DEMO_GATE.maxAttempts).toBe(10);
     expect(RATE_LIMITS.DEMO_GATE.windowMs).toBe(5 * 60 * 1000);
     expect(RATE_LIMITS.DEMO_GATE.blockDurationMs).toBe(15 * 60 * 1000);
   });
