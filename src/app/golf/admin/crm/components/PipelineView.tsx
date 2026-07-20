@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconArrowRight, IconRocket, IconZap, IconUsers } from '@/components/icons';
+import { IconStar, IconArrowRight, IconRocket, IconZap, IconUsers, IconX } from '@/components/icons';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 import { STATUS_COLORS, PRIORITY_CONFIG } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
@@ -22,16 +22,25 @@ interface PipelineViewProps {
   };
   onBulkUpdate: (ids: string[], updates: Partial<Coach>) => Promise<void>;
   onRefresh: () => void;
+  /** Optional — while true, renders skeleton columns instead of a false
+   *  "no pipeline" flash during the initial fetch. Callers that don't pass
+   *  it keep today's behavior (treated as not loading). */
+  loading?: boolean;
 }
 
 const CARDS_PER_PAGE = 20;
 
+// Quick-advance (card arrow + Space key) only fires when the next stage maps
+// to exactly one status — for multi-status stages (e.g. "Closed" = won/lost/
+// nurture) there is no single correct target, so the affordance is hidden and
+// the coach must be moved via drag-and-drop, which prompts for the specific
+// outcome (see StageChoicePrompt below).
 function getNextStageStatus(stages: PipelineStage[], currentStageId: string): CoachStatus | null {
   const idx = stages.findIndex(s => s.id === currentStageId);
   if (idx < 0 || idx >= stages.length - 1) return null;
   const nextStage = stages[idx + 1];
-  if (!nextStage || !nextStage.statuses[0]) return null;
-  return nextStage.statuses[0];
+  if (!nextStage || nextStage.statuses.length !== 1) return null;
+  return nextStage.statuses[0] ?? null;
 }
 
 function daysSince(dateStr: string): number {
@@ -65,11 +74,16 @@ export function PipelineView({
   stats,
   onBulkUpdate,
   onRefresh,
+  loading = false,
 }: PipelineViewProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
+  // Set when a coach is dropped into a stage that maps to more than one
+  // status (currently only "Closed" = won/lost/nurture) — we can't infer the
+  // intended outcome from the drop alone, so we ask instead of guessing.
+  const [pendingStageChoice, setPendingStageChoice] = useState<{ coach: Coach; stage: PipelineStage } | null>(null);
 
   const allNewLeads = stats.byStatus.new_lead === stats.total && stats.total > 0;
 
@@ -117,10 +131,28 @@ export function PipelineView({
   const handleDrop = (e: React.DragEvent, stage: PipelineStage) => {
     e.preventDefault();
     const coachId = e.dataTransfer.getData('coachId');
-    const targetStatus = stage.statuses[0];
-    if (coachId && targetStatus) onStatusChange(coachId, targetStatus);
     setDraggingId(null);
     setDropTarget(null);
+    if (!coachId) return;
+
+    const coach = coaches.find((c) => c.id === coachId);
+    if (!coach) return;
+
+    // Dropped back into the stage the coach is already in — including a
+    // stray reorder among won/lost/nurture cards already inside the same
+    // "Closed" column. Not a real move; do NOT write a status.
+    if (stage.statuses.includes(coach.status)) return;
+
+    // Unambiguous single-status stage — safe to write directly.
+    if (stage.statuses.length === 1) {
+      const targetStatus = stage.statuses[0];
+      if (targetStatus) onStatusChange(coachId, targetStatus);
+      return;
+    }
+
+    // Multi-status stage (e.g. "Closed") — don't guess which of won/lost/
+    // nurture was intended. Ask.
+    setPendingStageChoice({ coach, stage });
   };
 
   const handleResearchNext = async (count: number) => {
@@ -148,6 +180,32 @@ export function PipelineView({
       return next;
     });
   };
+
+  // Loading skeleton — avoids a false "no pipeline" flash (all stage columns
+  // at 0) while the initial coach list is still in flight.
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="glass-standard flex items-center gap-2 p-3 rounded-2xl">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-11 flex-1 rounded-full bg-warm-100/70 skeleton-shimmer" />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="min-w-0 flex flex-col gap-2">
+              <div className="glass-standard rounded-2xl h-14 skeleton-shimmer" />
+              <div className="rounded-2xl p-2 space-y-2 bg-warm-50/30 border border-warm-100/40">
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <div key={j} className="h-20 rounded-2xl bg-warm-100/60 skeleton-shimmer" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -298,6 +356,92 @@ export function PipelineView({
           );
         })}
       </div>
+
+      {pendingStageChoice && (
+        <StageChoicePrompt
+          coach={pendingStageChoice.coach}
+          stage={pendingStageChoice.stage}
+          statusConfig={statusConfig}
+          onChoose={(status) => {
+            onStatusChange(pendingStageChoice.coach.id, status);
+            setPendingStageChoice(null);
+          }}
+          onCancel={() => setPendingStageChoice(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// STAGE CHOICE PROMPT — shown when a card is dropped into a stage that maps
+// to more than one status (currently only "Closed" = won/lost/nurture), so
+// the exact outcome can't be inferred from the drop target alone.
+// ============================================================================
+function StageChoicePrompt({
+  coach, stage, statusConfig, onChoose, onCancel,
+}: {
+  coach: Coach;
+  stage: PipelineStage;
+  statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
+  onChoose: (status: CoachStatus) => void;
+  onCancel: () => void;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="stage-choice-title" className="fixed inset-0 z-modal flex items-center justify-center px-4">
+      <IconButton variant="default"
+        type="button"
+        aria-label="Close dialog"
+        onClick={onCancel}
+        className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+      ><span className="sr-only">Close dialog</span></IconButton>
+
+      <div className="relative w-full max-w-sm rounded-2xl bg-cream-50 shadow-2xl border border-warm-100 p-5">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h2 id="stage-choice-title" className="text-base font-semibold text-warm-900">
+            Move to {stage.label}
+          </h2>
+          <IconButton variant="default"
+            type="button"
+            onClick={onCancel}
+            aria-label="Cancel"
+            className="p-1.5 -mt-1 -mr-1 rounded-md hover:bg-warm-100 text-warm-400 hover:text-warm-700"
+          >
+            <IconX size={14} />
+          </IconButton>
+        </div>
+        <p className="text-xs text-warm-500 mb-4">
+          {coach.name} · {coach.school} — {stage.label} covers more than one status. Pick the exact outcome.
+        </p>
+        <div className="space-y-1.5">
+          {stage.statuses.map((status) => {
+            const cfg = statusConfig[status];
+            const colors = STATUS_COLORS[status];
+            return (
+              <Button key={status} variant="ghost"
+                type="button"
+                onClick={() => onChoose(status)}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium justify-start',
+                  'border border-warm-100 hover:border-warm-200 transition-colors',
+                  colors?.bg, colors?.text,
+                )}
+              >
+                <span aria-hidden="true">{cfg?.icon}</span>
+                {cfg?.label ?? status}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -306,7 +450,7 @@ export function PipelineView({
 // KANBAN CARD — glass-standard card with hover lift + keyboard accessibility
 // ============================================================================
 function KanbanCard({
-  coach, nextStatus, isDragging,
+  coach, nextStatus, isDragging, statusConfig,
   onDragStart, onDragEnd, onClick, onStatusChange, onToggleStar,
 }: {
   coach: Coach;
@@ -321,6 +465,8 @@ function KanbanCard({
 }) {
   const daysInStage = daysSince(coach.updated_at);
   const priorityCfg = PRIORITY_CONFIG[coach.priority];
+  const statusCfg = statusConfig[coach.status];
+  const statusColors = STATUS_COLORS[coach.status];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -339,7 +485,7 @@ function KanbanCard({
       draggable
       tabIndex={0}
       role="button"
-      aria-label={`${coach.name} at ${coach.school}. ${coach.division}. ${daysInStage} days in stage.${nextStatus ? ' Press Space to advance.' : ''}`}
+      aria-label={`${coach.name} at ${coach.school}. ${coach.division}. Status: ${statusCfg?.label ?? coach.status}. ${daysInStage} days in stage.${nextStatus ? ' Press Space to advance.' : ''}`}
       onDragStart={(e) => onDragStart(e, coach)}
       onDragEnd={onDragEnd}
       onClick={onClick}
@@ -374,6 +520,18 @@ function KanbanCard({
 
       {/* School */}
       <p className="text-xs text-warm-500 line-clamp-1 mb-2">{coach.school}</p>
+
+      {/* Status badge — column groups multiple statuses (e.g. Closed = won/
+          lost/nurture), so the card must still show which one this coach is. */}
+      {statusCfg && (
+        <span className={cn(
+          'inline-flex items-center gap-1 text-eyebrow font-semibold px-1.5 py-0.5 rounded-full mb-1.5',
+          statusColors?.bg, statusColors?.text,
+        )}>
+          <span aria-hidden="true">{statusCfg.icon}</span>
+          {statusCfg.label}
+        </span>
+      )}
 
       {/* Bottom row: Division + Priority dot + Last contacted */}
       <div className="flex items-center justify-between">
