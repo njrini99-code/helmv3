@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconClipboardList, IconX } from '@/components/icons';
 import { createCrmTask } from '@/app/golf/actions/crm-foundations';
+import { createClient } from '@/lib/supabase/client';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -70,6 +71,7 @@ export function CreateTaskDialog({
   const [kind, setKind] = useState<TaskKind>(defaultKind);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -82,6 +84,21 @@ export function CreateTaskDialog({
       setError(null);
     }
   }, [open, defaultPriority, defaultKind]);
+
+  // Resolve the acting admin so new tasks self-assign by default — without
+  // this, assignee_id stays null and the task can never surface in the
+  // creator's own "due today" inbox (listMyDueTasks filters on assignee_id).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled) setCurrentUserId(data.user?.id ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -117,7 +134,7 @@ export function CreateTaskDialog({
     try {
       const created = await createCrmTask({
         coach_id: coachId,
-        assignee_id: null,
+        assignee_id: currentUserId,
         title: trimmedTitle,
         description: description.trim() || null,
         due_at: dueIso,
@@ -234,6 +251,10 @@ export function CreateTaskDialog({
                   onChange={(e) => setDueAt(e.target.value)}
                 />
               </div>
+
+              <p className="text-eyebrow text-warm-400">
+                Assigned to you — appears in your Inbox &quot;Due today&quot; list.
+              </p>
 
               {error && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
