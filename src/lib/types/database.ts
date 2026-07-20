@@ -9784,6 +9784,58 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_stage_transitions: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          coach_id: string
+          from_status: string | null
+          id: string
+          source: string
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          coach_id: string
+          from_status?: string | null
+          id?: string
+          source?: string
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          coach_id?: string
+          from_status?: string | null
+          id?: string
+          source?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_stage_transitions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_stage_transitions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_stage_transitions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_tasks: {
         Row: {
           assignee_id: string | null
@@ -19762,6 +19814,15 @@ export type Database = {
           subject: string
         }[]
       }
+      get_crm_coach_stage_history: {
+        Args: { p_coach_id: string }
+        Returns: {
+          changed_at: string
+          from_status: string
+          source: string
+          to_status: string
+        }[]
+      }
       get_crm_email_stats: { Args: never; Returns: Json }
       get_crm_email_stats_detailed: { Args: never; Returns: Json }
       get_crm_events_in_range: {
@@ -19781,6 +19842,15 @@ export type Database = {
           start_time: string
           status: string
           title: string
+        }[]
+      }
+      get_crm_funnel: { Args: { p_window?: string }; Returns: Json }
+      get_crm_stage_ages: {
+        Args: never
+        Returns: {
+          coach_id: string
+          is_seed: boolean
+          stage_since: string
         }[]
       }
       get_crm_template_performance: {
@@ -19805,6 +19875,7 @@ export type Database = {
           count: number
         }[]
       }
+      get_crm_weekly_kpis: { Args: { p_weeks?: number }; Returns: Json }
       get_current_golf_player_id: { Args: never; Returns: string }
       get_current_player_team_ids: { Args: never; Returns: string[] }
       get_db_telemetry: { Args: never; Returns: Json }
