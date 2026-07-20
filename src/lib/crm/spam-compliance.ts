@@ -56,11 +56,16 @@ const SPAM_TRIGGER_PATTERNS: Array<{ re: RegExp; phrase: string }> = [
   { re: /\bexclusive deal\b/i, phrase: 'exclusive deal' },
 ];
 
-/** Strip HTML to comparable text (crude but deterministic — no DOM needed). */
+/**
+ * Strip HTML to comparable text for WORD COUNTING (crude but deterministic —
+ * no DOM needed). NOT a sanitizer: the output is never rendered, only counted.
+ * End tags tolerate whitespace (`</script >`), and the catch-all tag strip
+ * below removes any fragment the block patterns miss.
+ */
 function htmlToText(html: string): string {
   return html
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
