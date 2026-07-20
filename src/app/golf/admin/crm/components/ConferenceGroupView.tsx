@@ -73,6 +73,7 @@ export function ConferenceGroupView({
   onToggleStar,
   onLogContact,
   statusConfig,
+  priorityConfig,
   coachEnrollments,
   error = false,
 }: ConferenceGroupViewProps) {

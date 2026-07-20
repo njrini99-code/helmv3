@@ -251,6 +251,7 @@ export default function CRMPage() {
   // on mount; until it's true the whole flow stays on the compose-link path, so
   // nothing changes for an unconfigured deploy. See crm-gmail-send.ts.
   const [gmailDirectEnabled, setGmailDirectEnabled] = useState(false);
+  const [gmailSendStatus, setGmailSendStatus] = useState<{ sentToday: number; dailyCap: number } | null>(null);
   const [gmailBatchSending, setGmailBatchSending] = useState(false);
   // SPF/DKIM/DMARC self-check for the sending domain (fetched once when direct
   // send is configured) — surfaced as an "email auth" indicator in the bar.
@@ -782,6 +783,9 @@ export default function CRMPage() {
       .then((r) => {
         if (cancelled) return;
         setGmailDirectEnabled(r.configured);
+        if (r.configured && typeof r.sentToday === 'number' && typeof r.dailyCap === 'number') {
+          setGmailSendStatus({ sentToday: r.sentToday, dailyCap: r.dailyCap });
+        }
         if (r.configured) {
           getDomainAuthStatus()
             .then((d) => { if (!cancelled && d.checked && d.result) setDomainAuth(d.result); })
@@ -1201,6 +1205,14 @@ export default function CRMPage() {
           `Sent ${res.sent}${res.skipped ? `, skipped ${res.skipped}` : ''}${res.failed ? `, ${res.failed} failed` : ''}`,
         );
         fetchAllCoaches(); // resync truth after server-side sends
+        // Refresh the sent-today counter shown in the template bar.
+        getGmailSendStatus()
+          .then((r) => {
+            if (r.configured && typeof r.sentToday === 'number' && typeof r.dailyCap === 'number') {
+              setGmailSendStatus({ sentToday: r.sentToday, dailyCap: r.dailyCap });
+            }
+          })
+          .catch(() => {});
       }
     } catch (err) {
       toast.dismiss(tid);
@@ -1504,6 +1516,7 @@ export default function CRMPage() {
                   onSendBatch={sendBatchViaGmail}
                   batchSending={gmailBatchSending}
                   domainAuth={domainAuth}
+                  sendStatus={gmailSendStatus}
                 />
                 <TodayQueue
                   loading={loading}
@@ -1567,6 +1580,7 @@ export default function CRMPage() {
                     onSendBatch={sendBatchViaGmail}
                     batchSending={gmailBatchSending}
                     domainAuth={domainAuth}
+                    sendStatus={gmailSendStatus}
                   />
                   <AssigneeScopeBar scope={assigneeScope} onChange={setAssigneeScope} />
                   <div

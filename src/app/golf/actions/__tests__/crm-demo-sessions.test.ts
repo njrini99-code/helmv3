@@ -18,7 +18,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(async () => ({ data: { user: { id: 'admin-1' } } })),
+  getUser: vi.fn(async (): Promise<{ data: { user: { id: string } | null } }> => ({ data: { user: { id: 'admin-1' } } })),
   usersSingle: vi.fn(async () => ({ data: { role: 'admin' } })),
   adminFrom: vi.fn(),
   logServerException: vi.fn(async () => {}),
