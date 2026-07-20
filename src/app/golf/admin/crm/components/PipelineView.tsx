@@ -6,6 +6,8 @@ import { IconStar, IconArrowRight, IconRocket, IconZap, IconUsers, IconX } from 
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 import { STATUS_COLORS, PRIORITY_CONFIG } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
+import { getStageAges, type StageAge } from '@/app/golf/actions/crm-stage-ages';
+import { daysBetween, agingTier, median } from './pipeline-aging';
 
 interface PipelineViewProps {
   coaches: Coach[];
@@ -84,6 +86,18 @@ export function PipelineView({
   // status (currently only "Closed" = won/lost/nurture) — we can't infer the
   // intended outcome from the drop alone, so we ask instead of guessing.
   const [pendingStageChoice, setPendingStageChoice] = useState<{ coach: Coach; stage: PipelineStage } | null>(null);
+  // Real per-coach stage-entry timestamps (get_crm_stage_ages RPC). Fetched
+  // once on mount — degrades to {} on error, in which case the chip/median
+  // fall back to coach.updated_at (see stageAgeDays below).
+  const [stageAges, setStageAges] = useState<Record<string, StageAge>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    getStageAges().then((ages) => {
+      if (!cancelled) setStageAges(ages);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const allNewLeads = stats.byStatus.new_lead === stats.total && stats.total > 0;
 
@@ -113,6 +127,25 @@ export function PipelineView({
 
     return groups;
   }, [coaches, pipelineStages]);
+
+  // Median days-in-stage per (non-closed) column header — computed only from
+  // coaches with a known stage-age entry (real or seed transition). Columns
+  // with zero known-age coaches omit the stat rather than showing a
+  // misleading 0.
+  const stageMedianDays = useMemo(() => {
+    const result: Record<string, number> = {};
+    pipelineStages.forEach((stage) => {
+      if (stage.id === 'closed') return;
+      const knownDays = (coachesByStage[stage.id] || [])
+        .map((c) => stageAges[c.id])
+        .filter((age): age is StageAge => Boolean(age))
+        .map((age) => daysBetween(age.stageSince));
+      if (knownDays.length > 0) {
+        result[stage.id] = median(knownDays);
+      }
+    });
+    return result;
+  }, [pipelineStages, coachesByStage, stageAges]);
 
   const handleDragStart = (e: React.DragEvent, coach: Coach) => {
     e.dataTransfer.setData('coachId', coach.id);
@@ -292,14 +325,21 @@ export function PipelineView({
                     <span className="flex-shrink-0" aria-hidden="true">{stage.icon}</span>
                     <h3 className="text-sm font-semibold text-warm-900 truncate tracking-tight">{stage.label}</h3>
                   </div>
-                  <span className={cn(
-                    'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
-                    columnCoaches.length > 0
-                      ? `${stageColors?.bg || 'bg-warm-50'} ${stageColors?.text || 'text-warm-700'}`
-                      : 'bg-warm-100 text-warm-400'
-                  )}>
-                    {columnCoaches.length}
-                  </span>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className={cn(
+                      'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
+                      columnCoaches.length > 0
+                        ? `${stageColors?.bg || 'bg-warm-50'} ${stageColors?.text || 'text-warm-700'}`
+                        : 'bg-warm-100 text-warm-400'
+                    )}>
+                      {columnCoaches.length}
+                    </span>
+                    {stageMedianDays[stage.id] !== undefined && (
+                      <span className="text-micro text-warm-400 tabular-nums whitespace-nowrap">
+                        · {Math.round(stageMedianDays[stage.id]!)}d median
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -321,6 +361,8 @@ export function PipelineView({
                       <KanbanCard
                         key={coach.id}
                         coach={coach}
+                        stageId={stage.id}
+                        stageAge={stageAges[coach.id]}
                         nextStatus={nextStatus}
                         isDragging={draggingId === coach.id}
                         statusConfig={statusConfig}
@@ -450,10 +492,17 @@ function StageChoicePrompt({
 // KANBAN CARD — glass-standard card with hover lift + keyboard accessibility
 // ============================================================================
 function KanbanCard({
-  coach, nextStatus, isDragging, statusConfig,
+  coach, stageId, stageAge, nextStatus, isDragging, statusConfig,
   onDragStart, onDragEnd, onClick, onStatusChange, onToggleStar,
 }: {
   coach: Coach;
+  /** id of the pipeline column this card is rendered in — the aging chip is
+   *  suppressed for 'closed' (won/lost/nurture no longer "age" in a stage). */
+  stageId: string;
+  /** Real per-coach stage-entry timestamp from get_crm_stage_ages(), if any.
+   *  Falls back to coach.updated_at when absent (e.g. RPC failed, or the
+   *  coach predates stage-transition tracking and has no seed row yet). */
+  stageAge: StageAge | undefined;
   nextStatus: CoachStatus | null;
   isDragging: boolean;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
@@ -463,7 +512,10 @@ function KanbanCard({
   onStatusChange: (coachId: string, status: CoachStatus) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
 }) {
-  const daysInStage = daysSince(coach.updated_at);
+  const stageSince = stageAge?.stageSince ?? coach.updated_at;
+  const daysInStage = daysBetween(stageSince);
+  const showAgingChip = stageId !== 'closed';
+  const tier = agingTier(daysInStage);
   const priorityCfg = PRIORITY_CONFIG[coach.priority];
   const statusCfg = statusConfig[coach.status];
   const statusColors = STATUS_COLORS[coach.status];
@@ -546,6 +598,22 @@ function KanbanCard({
           {/* Priority dot */}
           {coach.priority > 0 && priorityCfg?.icon && (
             <span className="flex-shrink-0" aria-label={priorityCfg.label}>{priorityCfg.icon}</span>
+          )}
+          {/* Stage-aging chip — hidden for the "Closed" column (won/lost/
+              nurture cards no longer age in a stage). Tint escalates
+              fresh -> aging -> stale at the 14d / 30d thresholds. */}
+          {showAgingChip && (
+            <span
+              className={cn(
+                'text-micro tabular-nums rounded-full px-2 py-0.5 flex-shrink-0',
+                tier === 'fresh' && 'bg-cream-100 text-warm-500',
+                tier === 'aging' && 'bg-amber-50 text-amber-700',
+                tier === 'stale' && 'bg-red-50 text-red-700',
+              )}
+              title={stageAge?.isSeed ? 'approximate — tracking started Jul 20' : undefined}
+            >
+              {daysInStage}d in stage
+            </span>
           )}
         </div>
 
