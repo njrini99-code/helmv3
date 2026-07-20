@@ -10,10 +10,21 @@ import {
   IconUserPlus,
   IconRefresh,
   IconExternalLink,
+  IconCalendar,
+  IconXCircle,
 } from '@/components/icons';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { EmailStatusBadge } from './EmailStatusBadge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  isNewRequest,
+  isContactedRequest,
+  isScheduledRequest,
+  isConvertedRequest,
+  isDeclinedRequest,
+  buildDeclineUpdate,
+} from './demo-request-status';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,6 +70,10 @@ export function InboundLeadsView() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [processing, setProcessing] = useState<string | null>(null);
+  // Inline decline-reason composer — id of the row currently entering a
+  // reason, plus the in-progress text for it.
+  const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState('');
 
   const supabase = createClient();
 
@@ -83,6 +98,24 @@ export function InboundLeadsView() {
     }).eq('id', id);
     await fetchRequests();
     setProcessing(null);
+  };
+
+  const markScheduled = async (id: string) => {
+    setProcessing(id);
+    await supabase.from('demo_requests').update({
+      status: 'scheduled',
+    }).eq('id', id);
+    await fetchRequests();
+    setProcessing(null);
+  };
+
+  const declineRequest = async (id: string, reason: string) => {
+    setProcessing(id);
+    await supabase.from('demo_requests').update(buildDeclineUpdate(reason)).eq('id', id);
+    await fetchRequests();
+    setProcessing(null);
+    setDecliningId(null);
+    setDeclineReason('');
   };
 
   const addToCRM = async (request: DemoRequest) => {
@@ -123,20 +156,20 @@ export function InboundLeadsView() {
   // demo_requests.status CHECK domain: pending | contacted | scheduled |
   // completed | declined — the landing form inserts 'pending' and the CHECK
   // rejects 'new'/'converted', so the filters map onto the real domain.
-  const isNew = (r: DemoRequest) => !r.status || r.status === 'pending';
-  const isConverted = (r: DemoRequest) => r.status === 'completed';
-
+  // Predicates live in ./demo-request-status (pure, unit-tested); referenced
+  // directly (not aliased to a local const) so the module-stable import
+  // reference satisfies react-hooks/exhaustive-deps below.
   const allStats = useMemo(() => ({
     total: allRequests.length,
-    new: allRequests.filter(isNew).length,
-    contacted: allRequests.filter(r => r.status === 'contacted').length,
-    converted: allRequests.filter(isConverted).length,
+    new: allRequests.filter(isNewRequest).length,
+    contacted: allRequests.filter(isContactedRequest).length,
+    converted: allRequests.filter(isConvertedRequest).length,
   }), [allRequests]);
 
   const requests = useMemo(() => {
     if (filter === 'all') return allRequests;
-    if (filter === 'new') return allRequests.filter(isNew);
-    if (filter === 'converted') return allRequests.filter(isConverted);
+    if (filter === 'new') return allRequests.filter(isNewRequest);
+    if (filter === 'converted') return allRequests.filter(isConvertedRequest);
     return allRequests.filter(r => r.status === filter);
   }, [allRequests, filter]);
 
@@ -313,10 +346,13 @@ export function InboundLeadsView() {
         ) : (
           <ul className="divide-y divide-warm-100/60">
             {requests.map((request) => {
-              const rowIsNew = isNew(request);
-              const rowIsContacted = request.status === 'contacted';
-              const rowIsConverted = isConverted(request);
+              const rowIsNew = isNewRequest(request);
+              const rowIsContacted = isContactedRequest(request);
+              const rowIsScheduled = isScheduledRequest(request);
+              const rowIsConverted = isConvertedRequest(request);
+              const rowIsDeclined = isDeclinedRequest(request);
               const isProcessing = processing === request.id;
+              const isDeclining = decliningId === request.id;
               const coachRow = request.email
                 ? coachByEmail.get(request.email.toLowerCase())
                 : undefined;
@@ -335,13 +371,17 @@ export function InboundLeadsView() {
                       'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
                       rowIsNew && 'bg-amber-100',
                       rowIsContacted && 'bg-violet-100',
+                      rowIsScheduled && 'bg-blue-100',
                       rowIsConverted && 'bg-primary-100',
+                      rowIsDeclined && 'bg-warm-100',
                     )}
                     aria-hidden="true"
                   >
                     {rowIsNew && <IconMail size={18} className="text-amber-600" />}
                     {rowIsContacted && <IconCheckCircle2 size={18} className="text-violet-600" />}
+                    {rowIsScheduled && <IconCalendar size={18} className="text-blue-600" />}
                     {rowIsConverted && <IconUserPlus size={18} className="text-primary-600" />}
+                    {rowIsDeclined && <IconXCircle size={18} className="text-warm-500" />}
                   </div>
 
                   {/* Info */}
@@ -385,55 +425,130 @@ export function InboundLeadsView() {
                       {request.interest_type && (
                         <span className="capitalize">{request.interest_type.replace(/_/g, ' ')}</span>
                       )}
+                      {request.contacted_by && (
+                        <span>Contacted by {request.contacted_by}</span>
+                      )}
                     </div>
                     {request.message && (
                       <p className="text-xs text-warm-500 mt-1 truncate max-w-md italic">
                         &ldquo;{request.message}&rdquo;
                       </p>
                     )}
+                    {request.notes && (
+                      <p className="text-xs text-warm-600 mt-1 max-w-md">
+                        <span className="font-medium text-warm-700">Notes:</span> {request.notes}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {rowIsNew && (
-                      <Button variant="ghost"
-                        type="button"
-                        onClick={() => markContacted(request.id)}
-                        disabled={isProcessing}
-                        aria-label={`Mark ${request.email} as contacted`}
-                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-700 hover:bg-cream-100 hover:text-warm-900 transition-colors disabled:opacity-50"
-                      >
-                        Mark Contacted
-                      </Button>
+                  {/* Actions — wraps rather than overflowing now that a row
+                      can carry up to 4 buttons (Mark Contacted / Mark
+                      scheduled / Add to CRM / Decline) plus the mailto icon. */}
+                  <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
+                    {isDeclining ? (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="text"
+                          value={declineReason}
+                          onChange={(e) => setDeclineReason(e.target.value)}
+                          placeholder="Reason (optional)"
+                          aria-label={`Decline reason for ${request.email}`}
+                          className="w-40 min-h-0 px-2.5 py-1.5 rounded-lg text-xs"
+                        />
+                        <Button variant="danger"
+                          type="button"
+                          onClick={() => declineRequest(request.id, declineReason)}
+                          disabled={isProcessing}
+                          aria-label={`Confirm decline for ${request.email}`}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+                        >
+                          Confirm
+                        </Button>
+                        <Button variant="ghost"
+                          type="button"
+                          onClick={() => { setDecliningId(null); setDeclineReason(''); }}
+                          disabled={isProcessing}
+                          aria-label="Cancel decline"
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        {rowIsNew && (
+                          <Button variant="ghost"
+                            type="button"
+                            onClick={() => markContacted(request.id)}
+                            disabled={isProcessing}
+                            aria-label={`Mark ${request.email} as contacted`}
+                            className="px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-700 hover:bg-cream-100 hover:text-warm-900 transition-colors disabled:opacity-50"
+                          >
+                            Mark Contacted
+                          </Button>
+                        )}
+                        {(rowIsNew || rowIsContacted) && (
+                          <Button variant="ghost"
+                            type="button"
+                            onClick={() => markScheduled(request.id)}
+                            disabled={isProcessing}
+                            aria-label={`Mark ${request.email} as scheduled`}
+                            className="px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-700 hover:bg-cream-100 hover:text-warm-900 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            <IconCalendar size={12} aria-hidden="true" />
+                            Mark scheduled
+                          </Button>
+                        )}
+                        {(rowIsNew || rowIsContacted || rowIsScheduled) && (
+                          <Button variant="primary"
+                            type="button"
+                            onClick={() => addToCRM(request)}
+                            disabled={isProcessing}
+                            aria-label={`Add ${request.email} to CRM`}
+                            className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            <IconUserPlus size={12} aria-hidden="true" />
+                            Add to CRM
+                          </Button>
+                        )}
+                        {(rowIsNew || rowIsContacted || rowIsScheduled) && (
+                          <Button variant="danger"
+                            type="button"
+                            onClick={() => { setDecliningId(request.id); setDeclineReason(''); }}
+                            disabled={isProcessing}
+                            aria-label={`Decline ${request.email}`}
+                            className="px-3 py-1.5 rounded-xl text-xs font-medium disabled:opacity-50"
+                          >
+                            Decline
+                          </Button>
+                        )}
+                        {rowIsConverted && (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium"
+                            aria-label="Already in CRM"
+                          >
+                            <IconCheckCircle2 size={12} aria-hidden="true" />
+                            In CRM
+                          </span>
+                        )}
+                        {rowIsDeclined && (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs text-warm-500 font-medium"
+                            aria-label="Declined"
+                          >
+                            <IconXCircle size={12} aria-hidden="true" />
+                            Declined
+                          </span>
+                        )}
+                        <a
+                          href={`mailto:${request.email}`}
+                          aria-label={`Compose email to ${request.email}`}
+                          className="p-1.5 rounded-lg hover:bg-cream-100 text-warm-400 hover:text-warm-700 transition-colors"
+                        >
+                          <IconExternalLink size={14} aria-hidden="true" />
+                        </a>
+                      </>
                     )}
-                    {(rowIsNew || rowIsContacted) && (
-                      <Button variant="primary"
-                        type="button"
-                        onClick={() => addToCRM(request)}
-                        disabled={isProcessing}
-                        aria-label={`Add ${request.email} to CRM`}
-                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
-                      >
-                        <IconUserPlus size={12} aria-hidden="true" />
-                        Add to CRM
-                      </Button>
-                    )}
-                    {rowIsConverted && (
-                      <span
-                        className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium"
-                        aria-label="Already in CRM"
-                      >
-                        <IconCheckCircle2 size={12} aria-hidden="true" />
-                        In CRM
-                      </span>
-                    )}
-                    <a
-                      href={`mailto:${request.email}`}
-                      aria-label={`Compose email to ${request.email}`}
-                      className="p-1.5 rounded-lg hover:bg-cream-100 text-warm-400 hover:text-warm-700 transition-colors"
-                    >
-                      <IconExternalLink size={14} aria-hidden="true" />
-                    </a>
                   </div>
                 </li>
               );

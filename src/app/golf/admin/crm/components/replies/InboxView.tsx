@@ -43,7 +43,18 @@ function relTime(iso: string | null): string {
   }
 }
 
-export function InboxView() {
+interface InboxViewProps {
+  /** Optional handler invoked when the user clicks "Open coach" inside a
+      reply's action row (forwarded to ReplyThread). Hidden entirely when
+      omitted. Wiring for the integrator: page.tsx already has
+      handleCoachClick(coach: Coach) + a coaches list in scope — pass
+      `onCoachClick={(coachId) => { const c = coaches.find(x => x.id ===
+      coachId); if (c) handleCoachClick(c); }}` at the `<InboxView />`
+      call site. */
+  onCoachClick?: (coachId: string) => void;
+}
+
+export function InboxView({ onCoachClick }: InboxViewProps = {}) {
   const [section, setSection] = useState<InboxSectionId>('replies');
   const [replies, setReplies] = useState<CrmReply[]>([]);
   const [dueTasks, setDueTasks] = useState<CrmTask[]>([]);
@@ -157,16 +168,20 @@ export function InboxView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4 min-h-[480px]">
-          {/* Replies column */}
-          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col">
+          {/* Replies column — pinned height + internal scroll below lg so a
+              long list can't push the (visually second, on mobile) Detail
+              column off-screen. */}
+          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col max-h-64 lg:max-h-none order-2 lg:order-none">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
                 <IconMail size={12} /> Replies
               </h3>
             </header>
             {replies.length === 0 ? (
-              <p className="px-4 py-8 text-xs text-warm-500 text-center">
-                No replies yet.
+              <p className="px-4 py-8 text-caption text-warm-500 text-center leading-relaxed">
+                No replies captured yet. Reply capture reads the admin@ Gmail
+                inbox and needs the one-time gmail.readonly scope grant —
+                until then this stays empty.
               </p>
             ) : (
               <ul className="divide-y divide-warm-100 overflow-y-auto flex-1">
@@ -175,7 +190,7 @@ export function InboxView() {
                     selection?.kind === 'reply' && selection.reply.id === r.id;
                   return (
                     <li key={r.id}>
-                      <Button variant="primary"
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => setSelection({ kind: 'reply', reply: r })}
                         className={cn(
@@ -212,8 +227,10 @@ export function InboxView() {
             )}
           </aside>
 
-          {/* Detail column */}
-          <section className="rounded-2xl glass-subtle border-warm-200/60 overflow-hidden flex flex-col">
+          {/* Detail column — order-1 on mobile so the selected reply/task is
+              visible immediately below the tab header, ahead of both list
+              columns; reverts to natural (source) order at lg. */}
+          <section className="rounded-2xl glass-subtle border-warm-200/60 overflow-hidden flex flex-col order-1 lg:order-none">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600">
                 Detail
@@ -231,7 +248,7 @@ export function InboxView() {
                 </div>
               )}
               {selection?.kind === 'reply' && (
-                <ReplyThread reply={selection.reply} onRead={handleReplyRead} />
+                <ReplyThread reply={selection.reply} onRead={handleReplyRead} onOpenCoach={onCoachClick} />
               )}
               {selection?.kind === 'task' && (
                 <article className="rounded-xl border border-warm-200/60 glass-standard px-4 py-3">
@@ -262,8 +279,9 @@ export function InboxView() {
             </div>
           </section>
 
-          {/* Tasks column */}
-          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col">
+          {/* Tasks column — same bounded-height + reorder treatment as the
+              Replies column above. */}
+          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col max-h-64 lg:max-h-none order-3 lg:order-none">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
                 <IconCheckCircle2 size={12} /> Due today
@@ -280,7 +298,7 @@ export function InboxView() {
                     selection?.kind === 'task' && selection.task.id === t.id;
                   return (
                     <li key={t.id}>
-                      <Button variant="primary"
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => setSelection({ kind: 'task', task: t })}
                         className={cn(

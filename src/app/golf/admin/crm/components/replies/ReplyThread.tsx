@@ -3,8 +3,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { IconMail, IconCheckCircle2 } from '@/components/icons';
-import { listReplies, markReplyRead, type CrmReply } from '@/app/golf/actions/crm-replies';
+import { IconMail, IconCheckCircle2, IconUser, IconSend, IconExternalLink } from '@/components/icons';
+import {
+  listReplies,
+  markReplyRead,
+  getReplyContext,
+  type CrmReply,
+  type ReplyContext,
+} from '@/app/golf/actions/crm-replies';
+import { buildGmailSearchUrl, extractGmailId, buildReplyMailto } from './reply-links';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // ReplyThread — vertical thread view: most recent reply at top, original
@@ -19,6 +27,9 @@ interface ReplyThreadProps {
   reply: CrmReply;
   /** Optional callback fired after the reply is marked read. */
   onRead?: (reply: CrmReply) => void;
+  /** Optional handler for the "Open coach" action-row button. Hidden
+      entirely when omitted or when the reply has no linked coach_id. */
+  onOpenCoach?: (coachId: string) => void;
 }
 
 function relTime(iso: string): string {
@@ -29,10 +40,11 @@ function relTime(iso: string): string {
   }
 }
 
-export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
+export function ReplyThread({ reply, onRead, onOpenCoach }: ReplyThreadProps) {
   const [thread, setThread] = useState<CrmReply[]>([reply]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [context, setContext] = useState<ReplyContext | null>(null);
 
   // Fetch full thread when a thread_id is present.
   useEffect(() => {
@@ -85,12 +97,75 @@ export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reply.id]);
 
+  // Fetch the outbound contact_log entry this reply is answering, if any.
+  // Degrades to nothing (context stays null) on error or when the reply has
+  // no linked coach — this is a supplementary line, not critical path.
+  useEffect(() => {
+    if (!reply.coach_id) {
+      setContext(null);
+      return;
+    }
+    let cancelled = false;
+    getReplyContext(reply.coach_id, reply.received_at)
+      .then((ctx) => {
+        if (!cancelled) setContext(ctx);
+      })
+      .catch(() => {
+        if (!cancelled) setContext(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reply.coach_id, reply.received_at]);
+
   const sorted = useMemo(() => {
     return [...thread].sort((a, b) => b.received_at.localeCompare(a.received_at));
   }, [thread]);
 
+  // Action row targets the most recent message in the thread (falls back to
+  // the originally-passed reply before the thread fetch resolves).
+  const topReply = sorted[0] ?? reply;
+  const gmailSearchId = extractGmailId(topReply.raw_payload) ?? topReply.message_id;
+  const gmailUrl = buildGmailSearchUrl(gmailSearchId);
+  const mailtoHref = buildReplyMailto(topReply.from_address, topReply.subject);
+
   return (
     <div className="space-y-3">
+      {/* Compact action row — open the linked coach, reply by email, or jump
+          to the message in Gmail. Every action degrades independently: "Open
+          coach" only renders when both a handler and a coach_id exist, and
+          "Open in Gmail" only renders when we have something to search on. */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {onOpenCoach && reply.coach_id && (
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => onOpenCoach(reply.coach_id!)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium min-h-0"
+          >
+            {/* Layout-only overrides above; ghost variant already supplies
+                text-warm-600 / hover states via Button's variants map. */}
+            <IconUser size={12} /> Open coach
+          </Button>
+        )}
+        <a
+          href={mailtoHref}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+        >
+          <IconSend size={12} /> Reply
+        </a>
+        {gmailUrl && (
+          <a
+            href={gmailUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+          >
+            <IconExternalLink size={12} /> Open in Gmail
+          </a>
+        )}
+      </div>
+
       {error && (
         <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
           {error}
@@ -159,6 +234,12 @@ export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
           )}
         </article>
       ))}
+
+      {context && (
+        <p className="px-1 text-caption text-warm-500">
+          In reply to: {context.subject ?? 'your prior outreach'} · sent {relTime(context.contactDate)}
+        </p>
+      )}
     </div>
   );
 }

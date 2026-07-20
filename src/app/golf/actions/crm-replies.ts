@@ -173,3 +173,53 @@ export async function getInboxFeed(opts?: {
   ]);
   return { replies, dueTasks };
 }
+
+// ----------------------------------------------------------------------------
+// Reply context — the most recent outbound (email) crm_contact_log entry for
+// a coach, sent before a given reply's received_at. Surfaces the "In reply
+// to: <subject>" line in ReplyThread's footer so the reply reads in context
+// of what we actually sent. Read-only; degrades to null (component renders
+// nothing) rather than surfacing an error for what is a supplementary line.
+// ----------------------------------------------------------------------------
+export interface ReplyContext {
+  subject: string | null;
+  contactDate: string;
+}
+
+export async function getReplyContext(
+  coachId: string,
+  beforeIso: string,
+): Promise<ReplyContext | null> {
+  const { supabase } = await getAuthedClient();
+  try {
+    const client = supabase as AnySupabase;
+
+    const { data, error } = await client
+      .from('crm_contact_log')
+      .select('subject, contact_date')
+      .eq('coach_id', coachId)
+      .eq('contact_type', 'email')
+      .lt('contact_date', beforeIso)
+      .order('contact_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to load reply context: ${error.message}`);
+    }
+    if (!data) return null;
+
+    return {
+      subject: (data.subject as string | null) ?? null,
+      contactDate: data.contact_date as string,
+    };
+  } catch (error) {
+    void logServerException(error, {
+      action: 'crm_replies.getReplyContext',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+    });
+    throw error;
+  }
+}
