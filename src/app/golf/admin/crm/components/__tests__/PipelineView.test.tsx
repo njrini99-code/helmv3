@@ -89,6 +89,26 @@ function renderPipeline(coaches: Coach[], onStatusChange = vi.fn()) {
   return onStatusChange;
 }
 
+function renderSelectablePipeline(coaches: Coach[], selectedIds: Set<string>, onSelectionChange = vi.fn()) {
+  render(
+    <PipelineView
+      coaches={coaches}
+      onCoachClick={vi.fn()}
+      onStatusChange={vi.fn()}
+      onToggleStar={vi.fn()}
+      statusConfig={STATUS_CONFIG}
+      priorityConfig={PRIORITY_CONFIG}
+      pipelineStages={PIPELINE_STAGES}
+      stats={statsFor(coaches)}
+      onBulkUpdate={vi.fn()}
+      onRefresh={vi.fn()}
+      selectedIds={selectedIds}
+      onSelectionChange={onSelectionChange}
+    />,
+  );
+  return onSelectionChange;
+}
+
 function dropOnStage(stageLabel: string, coachId: string) {
   const zone = screen.getByLabelText(new RegExp(`^${stageLabel} column`));
   fireEvent.drop(zone, { dataTransfer: { getData: () => coachId } });
@@ -157,5 +177,117 @@ describe('PipelineView drag-and-drop status writes', () => {
     fireEvent.click(advanceBtn);
 
     expect(onStatusChange).toHaveBeenCalledWith('contacted-1', 'proposal');
+  });
+});
+
+describe('PipelineView board selection (CRM-audit: BulkActionsBar unreachable from the board)', () => {
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('renders no selection checkbox and no aria-keyshortcuts when selectedIds/onSelectionChange are omitted (unchanged default behavior)', () => {
+    const coach = makeCoach({ id: 'plain-1', status: 'new_lead', name: 'Plain Coach' });
+    renderPipeline([coach]);
+
+    expect(screen.queryByLabelText(/Select Plain Coach/i)).not.toBeInTheDocument();
+    const card = screen.getByRole('button', { name: /^Plain Coach at/i });
+    expect(card).not.toHaveAttribute('aria-keyshortcuts');
+  });
+
+  it('renders a checkbox that calls onSelectionChange with the toggled id when clicked', () => {
+    const coach = makeCoach({ id: 'sel-1', status: 'new_lead', name: 'Selectable Coach' });
+    const onSelectionChange = renderSelectablePipeline([coach], new Set());
+
+    const checkbox = screen.getByLabelText('Select Selectable Coach');
+    fireEvent.click(checkbox);
+
+    expect(onSelectionChange).toHaveBeenCalledTimes(1);
+    expect(onSelectionChange).toHaveBeenCalledWith(new Set(['sel-1']));
+  });
+
+  it('unchecks (removes from the set) a card that is already selected', () => {
+    const coach = makeCoach({ id: 'sel-2', status: 'new_lead', name: 'Already Selected Coach' });
+    const onSelectionChange = renderSelectablePipeline([coach], new Set(['sel-2']));
+
+    const checkbox = screen.getByLabelText('Deselect Already Selected Coach');
+    expect(checkbox).toBeChecked();
+    fireEvent.click(checkbox);
+
+    expect(onSelectionChange).toHaveBeenCalledWith(new Set());
+  });
+
+  it('does not open the coach detail panel when the checkbox is clicked', () => {
+    const coach = makeCoach({ id: 'sel-3', status: 'new_lead', name: 'No Detail Coach' });
+    const onCoachClick = vi.fn();
+    render(
+      <PipelineView
+        coaches={[coach]}
+        onCoachClick={onCoachClick}
+        onStatusChange={vi.fn()}
+        onToggleStar={vi.fn()}
+        statusConfig={STATUS_CONFIG}
+        priorityConfig={PRIORITY_CONFIG}
+        pipelineStages={PIPELINE_STAGES}
+        stats={statsFor([coach])}
+        onBulkUpdate={vi.fn()}
+        onRefresh={vi.fn()}
+        selectedIds={new Set()}
+        onSelectionChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText('Select No Detail Coach'));
+
+    expect(onCoachClick).not.toHaveBeenCalled();
+  });
+
+  it('toggles selection via the "x" key on a focused card, and documents it via aria-keyshortcuts', () => {
+    const coach = makeCoach({ id: 'sel-4', status: 'new_lead', name: 'Keyboard Coach' });
+    const onSelectionChange = renderSelectablePipeline([coach], new Set());
+
+    const card = screen.getByRole('button', { name: /^Keyboard Coach at/i });
+    expect(card).toHaveAttribute('aria-keyshortcuts', 'x');
+
+    fireEvent.keyDown(card, { key: 'x' });
+
+    expect(onSelectionChange).toHaveBeenCalledTimes(1);
+    expect(onSelectionChange).toHaveBeenCalledWith(new Set(['sel-4']));
+  });
+
+  it('the "x" key does not interfere with Space (quick-advance) on the same card', () => {
+    // 'contacted' (Active) -> next stage is Closing ('proposal' only) — unambiguous,
+    // so quick-advance stays live even with selection enabled.
+    const coach = makeCoach({ id: 'sel-5', status: 'contacted', name: 'Dual Key Coach' });
+    const onStatusChange = vi.fn();
+    render(
+      <PipelineView
+        coaches={[coach]}
+        onCoachClick={vi.fn()}
+        onStatusChange={onStatusChange}
+        onToggleStar={vi.fn()}
+        statusConfig={STATUS_CONFIG}
+        priorityConfig={PRIORITY_CONFIG}
+        pipelineStages={PIPELINE_STAGES}
+        stats={statsFor([coach])}
+        onBulkUpdate={vi.fn()}
+        onRefresh={vi.fn()}
+        selectedIds={new Set()}
+        onSelectionChange={vi.fn()}
+      />,
+    );
+
+    const card = screen.getByRole('button', { name: /^Dual Key Coach at/i });
+    fireEvent.keyDown(card, { key: ' ' });
+
+    expect(onStatusChange).toHaveBeenCalledWith('sel-5', 'proposal');
+  });
+
+  it('keeps the checkbox visible (not just on hover) once any card is selected', () => {
+    const coachA = makeCoach({ id: 'sel-6a', status: 'new_lead', name: 'Selected Coach A' });
+    const coachB = makeCoach({ id: 'sel-6b', status: 'new_lead', name: 'Unselected Coach B' });
+    renderSelectablePipeline([coachA, coachB], new Set(['sel-6a']));
+
+    const uncheckedCheckbox = screen.getByLabelText('Select Unselected Coach B');
+    expect(uncheckedCheckbox.className).toContain('opacity-100');
   });
 });

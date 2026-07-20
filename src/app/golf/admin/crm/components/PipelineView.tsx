@@ -28,6 +28,12 @@ interface PipelineViewProps {
    *  "no pipeline" flash during the initial fetch. Callers that don't pass
    *  it keep today's behavior (treated as not loading). */
   loading?: boolean;
+  /** Optional — when provided together with onSelectionChange, cards render a
+   *  bulk-selection checkbox (mirrors CoachTable's row checkbox) so
+   *  BulkActionsBar becomes reachable from the board. Callers that omit
+   *  either prop keep today's behavior: no checkbox is rendered at all. */
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
 }
 
 const CARDS_PER_PAGE = 20;
@@ -77,6 +83,8 @@ export function PipelineView({
   onBulkUpdate,
   onRefresh,
   loading = false,
+  selectedIds,
+  onSelectionChange,
 }: PipelineViewProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -148,6 +156,20 @@ export function PipelineView({
     });
     return result;
   }, [pipelineStages, coachesByStage, stageAges]);
+
+  // Selection is entirely optional (see PipelineViewProps) — onToggleSelect is
+  // only defined (and only then does a card render its checkbox) when the
+  // caller passed onSelectionChange. hasSelection forces every card's
+  // checkbox visible (not just hover/focus) once at least one is checked, so
+  // the affordance doesn't disappear out from under an in-progress selection.
+  const hasSelection = !!selectedIds && selectedIds.size > 0;
+  const onToggleSelect = onSelectionChange
+    ? (coachId: string) => {
+        const next = new Set(selectedIds ?? []);
+        if (next.has(coachId)) next.delete(coachId); else next.add(coachId);
+        onSelectionChange(next);
+      }
+    : undefined;
 
   const handleDragStart = (e: React.DragEvent, coach: Coach) => {
     e.dataTransfer.setData('coachId', coach.id);
@@ -373,6 +395,9 @@ export function PipelineView({
                         onClick={() => onCoachClick(coach)}
                         onStatusChange={onStatusChange}
                         onToggleStar={onToggleStar}
+                        isSelected={selectedIds?.has(coach.id) ?? false}
+                        hasSelection={hasSelection}
+                        onToggleSelect={onToggleSelect}
                       />
                     ))}
                     {hasMore && (
@@ -496,6 +521,7 @@ function StageChoicePrompt({
 function KanbanCard({
   coach, stageId, stageAge, nextStatus, isDragging, statusConfig,
   onDragStart, onDragEnd, onClick, onStatusChange, onToggleStar,
+  isSelected = false, hasSelection = false, onToggleSelect,
 }: {
   coach: Coach;
   /** id of the pipeline column this card is rendered in — the aging chip is
@@ -513,6 +539,16 @@ function KanbanCard({
   onClick: () => void;
   onStatusChange: (coachId: string, status: CoachStatus) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
+  /** Whether this card is currently in the caller's selection set. Ignored
+   *  (and no checkbox renders) when onToggleSelect is absent. */
+  isSelected?: boolean;
+  /** Whether ANY card is currently selected — forces this card's checkbox
+   *  visible instead of only on hover/focus, so it doesn't vanish mid-selection. */
+  hasSelection?: boolean;
+  /** Present only when the board's selection feature is enabled (see
+   *  PipelineViewProps.onSelectionChange). Renders a checkbox + wires the
+   *  'x' keyboard shortcut when set. */
+  onToggleSelect?: (coachId: string) => void;
 }) {
   const stageSince = stageAge?.stageSince ?? coach.updated_at;
   const daysInStage = daysBetween(stageSince);
@@ -521,6 +557,7 @@ function KanbanCard({
   const priorityCfg = PRIORITY_CONFIG[coach.priority];
   const statusCfg = statusConfig[coach.status];
   const statusColors = STATUS_COLORS[coach.status];
+  const selectable = !!onToggleSelect;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -531,6 +568,9 @@ function KanbanCard({
       if (nextStatus) {
         onStatusChange(coach.id, nextStatus);
       }
+    } else if ((e.key === 'x' || e.key === 'X') && onToggleSelect) {
+      e.preventDefault();
+      onToggleSelect(coach.id);
     }
   };
 
@@ -539,7 +579,8 @@ function KanbanCard({
       draggable
       tabIndex={0}
       role="button"
-      aria-label={`${coach.name} at ${coach.school}. ${coach.division}. Status: ${statusCfg?.label ?? coach.status}. ${daysInStage} days in stage.${nextStatus ? ' Press Space to advance.' : ''}`}
+      aria-keyshortcuts={selectable ? 'x' : undefined}
+      aria-label={`${coach.name} at ${coach.school}. ${coach.division}. Status: ${statusCfg?.label ?? coach.status}. ${daysInStage} days in stage.${nextStatus ? ' Press Space to advance.' : ''}${selectable ? ' Press x to select.' : ''}`}
       onDragStart={(e) => onDragStart(e, coach)}
       onDragEnd={onDragEnd}
       onClick={onClick}
@@ -551,11 +592,30 @@ function KanbanCard({
         'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',
         isDragging && 'opacity-40 scale-95',
+        isSelected && 'ring-2 ring-primary-500/50 bg-primary-50/30',
       )}
     >
-      {/* Name + Star */}
+      {/* Name + optional selection checkbox + Star */}
       <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1 tracking-tight">{coach.name}</p>
+        <div className="flex items-start gap-2 min-w-0">
+          {selectable && (
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click when interacting with checkbox
+            <div className="pt-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => onToggleSelect?.(coach.id)}
+                tabIndex={-1}
+                aria-label={isSelected ? `Deselect ${coach.name}` : `Select ${coach.name}`}
+                className={cn(
+                  'w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer transition-opacity',
+                  hasSelection ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+                )}
+              />
+            </div>
+          )}
+          <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1 tracking-tight">{coach.name}</p>
+        </div>
         <Button variant="ghost"
           type="button"
           onClick={(e) => { e.stopPropagation(); onToggleStar(coach.id, coach.is_starred); }}

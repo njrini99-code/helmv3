@@ -1,14 +1,23 @@
 'use client';
 
+import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
 import type { Coach, CoachStatus } from '../../crm-config';
 import type { CoachEngagement } from '../../types/foundations';
 import { PipelineCard } from './PipelineCard';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // PipelineColumn — droppable kanban column for one coach_status value.
 // ============================================================================
+
+// Columns like new_lead can carry ~2,000 coaches — mounting a useDraggable
+// hook per card for all of them janks the board. Render only the first
+// INITIAL_CARD_LIMIT (by the column's existing/incoming order) until the
+// caller asks for more. The header count + drop-empty-state still read off
+// the full `coaches` prop, so those never lie about the true column size.
+const INITIAL_CARD_LIMIT = 60;
 
 interface PipelineColumnProps {
   status: CoachStatus;
@@ -47,6 +56,15 @@ export function PipelineColumn({
     id: status,
     data: { status, promptsReason: !!promptsReason },
   });
+
+  // Capped render — see INITIAL_CARD_LIMIT above. `coaches` keeps its
+  // existing (caller-supplied) order; the cap only trims how many of that
+  // order get a mounted PipelineCard/useDraggable (each reveal grows the
+  // window by another INITIAL_CARD_LIMIT), it never reorders them, so
+  // drag-and-drop targets among the visible cards are unaffected.
+  const [visibleCount, setVisibleCount] = useState(INITIAL_CARD_LIMIT);
+  const visibleCoaches = coaches.slice(0, visibleCount);
+  const remaining = coaches.length - visibleCoaches.length;
 
   return (
     <div
@@ -93,7 +111,7 @@ export function PipelineColumn({
 
       {/* Card list */}
       <div className="flex-1 px-2 py-2 space-y-2 overflow-y-auto">
-        {coaches.map((coach) => (
+        {visibleCoaches.map((coach) => (
           <PipelineCard
             key={coach.id}
             coach={coach}
@@ -101,6 +119,17 @@ export function PipelineColumn({
             onClick={() => onCoachClick?.(coach)}
           />
         ))}
+
+        {remaining > 0 && (
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => setVisibleCount((count) => count + INITIAL_CARD_LIMIT)}
+            className="w-full py-2 text-center text-xs font-medium text-primary-600 hover:bg-primary-50/60 rounded-xl transition-colors"
+          >
+            Show 60 more ({remaining} remaining)
+          </Button>
+        )}
 
         {coaches.length === 0 && (
           <div
