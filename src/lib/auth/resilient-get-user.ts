@@ -37,7 +37,7 @@ export function isTransientAuthError(error: AuthErrorLike | null | undefined): b
 }
 
 /** Narrow structural client type so middleware + server clients both fit. */
-interface AuthClientLike {
+export interface AuthClientLike {
   auth: {
     getUser(): Promise<{ data: { user: User | null }; error: AuthErrorLike | null }>;
     getSession(): Promise<{
@@ -94,7 +94,7 @@ export interface ResilientUserResult {
 }
 
 /** Structural client type for the password sign-in retry helper below. */
-interface PasswordSignInClientLike {
+export interface PasswordSignInClientLike {
   auth: {
     signInWithPassword(credentials: { email: string; password: string }): Promise<{
       data: { user: User | null; session: unknown };

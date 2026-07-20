@@ -3,6 +3,8 @@ import {
   getUserResilient,
   isTransientAuthError,
   signInWithPasswordResilient,
+  type AuthClientLike,
+  type PasswordSignInClientLike,
 } from '@/lib/auth/resilient-get-user';
 
 // Backoff delays are real timers — keep them instant in tests.
@@ -36,7 +38,16 @@ function authClient(overrides: {
         overrides.getSession ?? vi.fn().mockResolvedValue({ data: { session: null } }),
       signInWithPassword: overrides.signInWithPassword ?? vi.fn(),
     },
-  };
+    // vi.fn()'s broad Mock type isn't structurally assignable to the helpers'
+    // specific call signatures — assert the intersection once here.
+  } as unknown as AuthClientLike &
+    PasswordSignInClientLike & {
+      auth: {
+        getUser: ReturnType<typeof vi.fn>;
+        getSession: ReturnType<typeof vi.fn>;
+        signInWithPassword: ReturnType<typeof vi.fn>;
+      };
+    };
 }
 
 describe('isTransientAuthError', () => {
