@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Filmstrip, GradeDots } from '@/components/fairway/modules';
+import { PressTarget } from '@/components/fairway';
 import type { FilmstripHole } from '@/components/fairway/modules';
 import { HoleShotPath } from '@/components/golf/coachhelm/v3/HoleShotPath';
 import type { ShotInput } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
@@ -154,14 +155,13 @@ export function ReviewHero({
               <p className="font-fw-mono text-caption font-normal text-text-primary">{detail.header}</p>
               <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">{detail.body}</p>
               {canOpenShotPath ? (
-                <button
-                  type="button"
+                <PressTarget
                   onClick={toggleShotPath}
                   aria-expanded={openHole === activeHole}
-                  className="mt-2 font-fw-sans text-caption font-semibold text-accent-700 outline-none transition-colors duration-150 hover:text-accent-800 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+                  className="mt-2 font-fw-sans text-caption font-semibold text-accent-700 transition-colors duration-150 hover:text-accent-800"
                 >
                   {openHole === activeHole ? 'Hide shot path' : 'View shot path →'}
-                </button>
+                </PressTarget>
               ) : null}
             </>
           ) : (

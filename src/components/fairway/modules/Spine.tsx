@@ -25,6 +25,7 @@
 
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { PressTarget } from '../controls';
 import { TABULAR_NUMS } from '../charts/theme';
 import { StandingTrack } from './StandingTrack';
 import { PriorityList } from './PriorityList';
@@ -115,9 +116,9 @@ export function Spine({
             {cta.label}
           </a>
         ) : (
-          <button type="button" onClick={cta.onClick} className={ctaClassName} style={{ borderColor: CTA_BORDER_COLOR }}>
+          <PressTarget onClick={cta.onClick} className={ctaClassName} style={{ borderColor: CTA_BORDER_COLOR }}>
             {cta.label}
-          </button>
+          </PressTarget>
         )
       ) : null}
     </aside>

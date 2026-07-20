@@ -24,6 +24,7 @@
 import { useId, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { PressTarget } from '../controls';
 import type { MatrixBoardProps, MatrixBoardRow as MatrixBoardRowData, MatrixColumn } from './types';
 
 /** Columns hidden below the 940px breakpoint (mockup `.h-tr`, `.h-sig`, `.sig`). */
@@ -142,16 +143,14 @@ function MatrixRow({
 
   return (
     <div data-slot="matrix-row-group">
-      <button
-        type="button"
+      <PressTarget
         aria-label={row.ariaLabel}
         aria-expanded={hasExpand ? open : undefined}
         aria-controls={hasExpand && open ? expandId : undefined}
         onClick={hasExpand ? () => setOpen((v) => !v) : undefined}
         className={cn(
           'grid w-full items-center gap-0 px-5 py-2.5 text-left transition-colors duration-150',
-          'hover:bg-surface-tint motion-reduce:transition-none',
-          'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+          'hover:bg-surface-tint',
           !(isLast && !hasExpand) && 'border-b border-border-subtle',
           GRID_COLS_CLASS,
         )}
@@ -170,7 +169,7 @@ function MatrixRow({
             </div>
           );
         })}
-      </button>
+      </PressTarget>
       {hasExpand && open ? <MatrixExpand id={expandId}>{row.expand}</MatrixExpand> : null}
     </div>
   );

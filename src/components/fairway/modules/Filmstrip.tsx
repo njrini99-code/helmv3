@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { PressTarget } from '../controls';
 import { holeBar } from './logic';
 import type { FilmstripHole, FilmstripProps } from './types';
 
@@ -59,9 +60,8 @@ export function Filmstrip({ holes, activeHole, onScrub }: FilmstripProps) {
           const { heightPx, tone } = holeBar(hole);
           const isActive = active === hole.n;
           return (
-            <button
+            <PressTarget
               key={hole.n}
-              type="button"
               aria-label={`Hole ${hole.n}, par ${hole.par}, score ${hole.score}`}
               aria-pressed={isActive}
               onMouseEnter={() => scrub(hole)}
@@ -69,8 +69,7 @@ export function Filmstrip({ holes, activeHole, onScrub }: FilmstripProps) {
               onClick={() => scrub(hole)}
               className={cn(
                 'flex h-full min-w-[1.875rem] flex-col items-center justify-end gap-1 rounded-fw-sm px-0 pb-1 transition-colors duration-150',
-                'hover:bg-surface-tint motion-reduce:transition-none',
-                'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                'hover:bg-surface-tint',
                 isActive && 'bg-surface-tint',
               )}
             >
@@ -82,7 +81,7 @@ export function Filmstrip({ holes, activeHole, onScrub }: FilmstripProps) {
               <span className="font-fw-mono text-eyebrow font-normal text-text-tertiary tabular-nums">
                 {hole.n}
               </span>
-            </button>
+            </PressTarget>
           );
         })}
       </div>

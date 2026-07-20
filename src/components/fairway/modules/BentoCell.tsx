@@ -13,6 +13,7 @@
 
 import type { ElementType } from 'react';
 import { cn } from '@/lib/utils';
+import { PressTarget } from '../controls';
 import type { BentoCellProps, CellChipTone } from './types';
 
 /** Statchip tones (mockup `.statchip.s-leak` / `.s-strong`) — reuse the
@@ -41,9 +42,11 @@ export function BentoCell({
   children,
 }: BentoCellProps) {
   const interactive = Boolean(onOpen);
-  const Comp = (interactive ? 'button' : 'div') as ElementType;
+  // PressTarget (fairway/controls) is the sanctioned pressable primitive —
+  // it owns type="button", the focus ring, and disabled semantics.
+  const Comp = (interactive ? PressTarget : 'div') as ElementType;
   const interactiveProps = interactive
-    ? { type: 'button' as const, onClick: onOpen, 'aria-label': `Open ${label}` }
+    ? { onClick: onOpen, 'aria-label': `Open ${label}` }
     : {};
 
   return (

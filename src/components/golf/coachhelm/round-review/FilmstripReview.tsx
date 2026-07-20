@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Eyebrow, Surface, Button } from '@/components/fairway';
+import { Eyebrow, Surface, Button, PressTarget } from '@/components/fairway';
 import { DrillPanel, RailBars } from '@/components/fairway/modules';
 import type { ShotInput } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
@@ -273,14 +273,13 @@ export function FilmstripReview({
           />
         </DrillPanel>
       ) : (
-        <button
-          type="button"
+        <PressTarget
           onClick={() => setBreakdownOpen(true)}
           aria-expanded={breakdownOpen}
-          className="w-full rounded-fw-lg border border-border-subtle bg-surface px-5 py-3.5 text-left font-fw-sans text-body-sm font-semibold text-accent-700 outline-none transition-colors duration-150 hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+          className="w-full rounded-fw-lg border border-border-subtle bg-surface px-5 py-3.5 text-left font-fw-sans text-body-sm font-semibold text-accent-700 transition-colors duration-150 hover:bg-surface-tint"
         >
           Full breakdown →
-        </button>
+        </PressTarget>
       )}
     </div>
   );

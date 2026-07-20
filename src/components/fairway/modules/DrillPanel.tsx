@@ -20,6 +20,7 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
+import { PressTarget } from '../controls';
 import type { DrillPanelProps } from './types';
 
 export function DrillPanel({ title, backLabel, onBack, chip, children }: DrillPanelProps) {
@@ -33,20 +34,18 @@ export function DrillPanel({ title, backLabel, onBack, chip, children }: DrillPa
       )}
     >
       <div className="mb-1.5 flex flex-wrap items-center gap-3.5">
-        <button
-          type="button"
+        <PressTarget
           onClick={onBack}
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50',
             'px-3 py-1.5 text-caption font-bold text-accent-700',
-            'transition-colors [transition-duration:150ms] motion-reduce:transition-none',
+            'transition-colors [transition-duration:150ms]',
             'hover:bg-accent-100',
-            'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           )}
         >
           <span aria-hidden>←</span>
           {backLabel}
-        </button>
+        </PressTarget>
         <span className="font-fw-display text-body-lg font-semibold text-text-primary">
           {title}
         </span>
