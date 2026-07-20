@@ -61,6 +61,14 @@ vi.mock('@/components/lifting/shell/LabShell', () => ({
 
 import LiftingDashboardLayout from '../layout';
 import { LabShell } from '@/components/lifting/shell/LabShell';
+import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
+
+// The layout wraps every admitted branch in SessionActivityProvider (idle
+// tracking — 2026-07-20 idle-bounce fix); unwrap it to reach the LabShell.
+function unwrapShell(element: { type: unknown; props: Record<string, unknown> }) {
+  expect(element.type).toBe(SessionActivityProvider);
+  return element.props.children as { type: unknown; props: Record<string, unknown> };
+}
 
 describe('LiftingDashboardLayout — athlete-self admission', () => {
   beforeEach(() => {
@@ -77,8 +85,9 @@ describe('LiftingDashboardLayout — athlete-self admission', () => {
     const element = await LiftingDashboardLayout({ children: 'child-content' });
 
     expect(redirectMock).not.toHaveBeenCalled();
-    expect(element.type).toBe(LabShell);
-    expect(element.props).toMatchObject({ coachRow: null, isViewOnly: true });
+    const shell = unwrapShell(element);
+    expect(shell.type).toBe(LabShell);
+    expect(shell.props).toMatchObject({ coachRow: null, isViewOnly: true });
   });
 
   it('still redirects to login when the user has no coach, viewer, or athlete row (regression guard)', async () => {
@@ -101,8 +110,9 @@ describe('LiftingDashboardLayout — athlete-self admission', () => {
 
     const element = await LiftingDashboardLayout({ children: 'child-content' });
 
-    expect(element.type).toBe(LabShell);
-    expect(element.props).toMatchObject({ isViewOnly: false });
-    expect((element.props as { coachRow: unknown }).coachRow).toEqual(coachRowResult);
+    const shell = unwrapShell(element);
+    expect(shell.type).toBe(LabShell);
+    expect(shell.props).toMatchObject({ isViewOnly: false });
+    expect((shell.props as { coachRow: unknown }).coachRow).toEqual(coachRowResult);
   });
 });

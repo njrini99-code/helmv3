@@ -592,7 +592,16 @@ export async function updateSession(request: NextRequest) {
       ? DEMO_SESSION_IDLE_TIMEOUT_MS
       : SESSION_IDLE_TIMEOUT_MS;
 
-    if (isSessionIdleExpired(lastActivity, now, idleTimeoutMs)) {
+    // A session YOUNGER than its idle window can never be idle-expired — the
+    // sb_last_activity marker is a 30-day cookie that survives sign-out and
+    // sign-in, so without this guard a stale marker from a PREVIOUS session
+    // bounced users to login minutes after a fresh sign-in (2026-07-20
+    // incident: repeated "signed out after ~2 minutes" on the admin CRM).
+    const lastSignInMs = user.last_sign_in_at ? Date.parse(user.last_sign_in_at) : NaN;
+    const sessionYoungerThanWindow =
+      Number.isFinite(lastSignInMs) && now - lastSignInMs < idleTimeoutMs;
+
+    if (!sessionYoungerThanWindow && isSessionIdleExpired(lastActivity, now, idleTimeoutMs)) {
       try {
         // Local scope: clear cookies without a GoTrue round-trip — middleware
         // must stay fast and must not depend on auth-server reachability.
