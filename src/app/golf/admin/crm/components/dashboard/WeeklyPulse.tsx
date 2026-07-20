@@ -114,8 +114,8 @@ function MetricTile({
           delta.direction === 'flat' && 'text-warm-400',
         )}
       >
-        {delta.direction === 'up' && `▲ ${diff} vs last wk`}
-        {delta.direction === 'down' && `▼ ${diff} vs last wk`}
+        {delta.direction === 'up' && `▲ ${diff} vs last full wk`}
+        {delta.direction === 'down' && `▼ ${diff} vs last full wk`}
         {delta.direction === 'flat' && '— flat'}
       </p>
       <Sparkline points={points} />

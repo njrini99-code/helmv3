@@ -121,6 +121,26 @@ export const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'sequences'] as con
 // Must cover every TABS id not already on the bar.
 export const MOBILE_MORE_TABS = ['dashboard', 'inbox', 'templates', 'settings'] as const;
 
+// ── Segmented-control spec ──
+// ONE visual spec for every horizontal switcher in the CRM shell (Outreach
+// sub-tabs, Coach views, Inbox sections). Drift between these controls was a
+// cohesion bug — change them together or not at all.
+export const SEGMENTED_TABLIST_CLASS =
+  'flex items-center gap-1 rounded-2xl glass-standard p-1';
+
+export function segmentedTabClass(isActive: boolean): string {
+  return [
+    'flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
+    isActive
+      ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
+      : 'text-warm-500 hover:text-warm-900 hover:bg-cream-100',
+  ].join(' ');
+}
+
+export function segmentedTabIconClass(isActive: boolean): string {
+  return `flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-warm-400'}`;
+}
+
 // Email statuses that must never receive a manual Gmail send. Mirrors the
 // email_status/suppression gate that already exists server-side for the
 // direct-send path (crm-gmail-send.ts's sendCoachViaGmail/sendNextBatchViaGmail

@@ -42,6 +42,9 @@ import {
   MOBILE_BAR_TABS,
   MOBILE_MORE_TABS,
   isSuppressedEmailStatus,
+  SEGMENTED_TABLIST_CLASS,
+  segmentedTabClass,
+  segmentedTabIconClass,
   type TabId,
   type OutreachSubTabId,
   type CoachViewId,
@@ -351,6 +354,14 @@ export default function CRMPage() {
       if (alias.tab !== activeTabRef.current) setActiveTabState(alias.tab);
       if (alias.view) setCoachViewState(alias.view);
       if (alias.outreach) setOutreachSubTabState(alias.outreach);
+      // Canonicalize the address bar so the legacy id doesn't linger.
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        params.set('tab', alias.tab);
+        if (alias.view) params.set('view', alias.view);
+        if (alias.outreach) params.set('outreach', alias.outreach);
+        window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+      }
     } else {
       const urlTab = rawTab as TabId | null;
       if (urlTab && TABS.some((t) => t.id === urlTab) && urlTab !== activeTabRef.current) {
@@ -1500,7 +1511,10 @@ export default function CRMPage() {
               statusConfig={STATUS_CONFIG}
               onBulkUpdate={bulkUpdateCoaches}
               onRefresh={refreshData}
-              onNavigate={setActiveTab}
+              onNavigate={(tab, view) => {
+                setActiveTab(tab);
+                if (view) setCoachView(view);
+              }}
               {...({ onCoachClick: handleCoachClick } as Record<string, unknown>)}
             />
           )}
@@ -1526,7 +1540,7 @@ export default function CRMPage() {
                 <div
                   role="tablist"
                   aria-label="Coach views"
-                  className="ml-auto flex items-center gap-1 rounded-2xl glass-standard p-1"
+                  className={cn('ml-auto', SEGMENTED_TABLIST_CLASS)}
                 >
                   {COACH_VIEWS.map((v) => {
                     const isActive = coachView === v.id;
@@ -1537,14 +1551,9 @@ export default function CRMPage() {
                         role="tab"
                         aria-selected={isActive}
                         onClick={() => setCoachView(v.id)}
-                        className={cn(
-                          'flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
-                          isActive
-                            ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
-                            : 'text-warm-500 hover:text-warm-900 hover:bg-cream-100'
-                        )}
+                        className={segmentedTabClass(isActive)}
                       >
-                        <ViewIcon size={15} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} aria-hidden />
+                        <ViewIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
                         {v.label}
                       </Button>
                     );
@@ -1622,7 +1631,7 @@ export default function CRMPage() {
               <div
                 role="tablist"
                 aria-label="Outreach views"
-                className="flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-2xl glass-standard p-1.5"
+                className={cn('overflow-x-auto scrollbar-hide', SEGMENTED_TABLIST_CLASS)}
               >
                 {OUTREACH_SUBTABS.map((sub) => {
                   const isActive = outreachSubTab === sub.id;
@@ -1633,14 +1642,9 @@ export default function CRMPage() {
                       role="tab"
                       aria-selected={isActive}
                       onClick={() => setOutreachSubTab(sub.id)}
-                      className={cn(
-                        'flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
-                        isActive
-                          ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
-                          : 'text-warm-500 hover:text-warm-900 hover:bg-cream-100'
-                      )}
+                      className={segmentedTabClass(isActive)}
                     >
-                      <SubIcon size={16} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} aria-hidden />
+                      <SubIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
                       {sub.label}
                     </Button>
                   );

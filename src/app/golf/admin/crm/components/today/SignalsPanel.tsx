@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { IconClock, IconFlame, IconTarget } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/sonner';
 import {
   getEngagementSignals,
   setNextFollowUp,
@@ -78,8 +79,9 @@ export function SignalsPanel({ onCoachClick }: SignalsPanelProps) {
   }, []);
 
   // Quick-set a coach's next_follow_up_at, then optimistically remove the
-  // row from whichever local list it came from. On failure the row simply
-  // stays put — the next mount/refresh reconciles with the server.
+  // row from whichever local list it came from. On failure the row stays put
+  // and the failure is surfaced (matching the toast convention every other
+  // CRM write path uses).
   const quickSet = useCallback(async (coach: SignalCoach, days: number, list: 'overdue' | 'noNextStep') => {
     setPendingId(coach.id);
     try {
@@ -92,7 +94,7 @@ export function SignalsPanel({ onCoachClick }: SignalsPanelProps) {
           : {}),
       }));
     } catch {
-      // Best-effort optimistic UI — swallow and leave the row in place.
+      toast.error(`Couldn't update follow-up for ${coach.name}`);
     } finally {
       setPendingId(null);
     }

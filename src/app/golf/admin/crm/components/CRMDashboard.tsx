@@ -9,7 +9,6 @@ import {
   IconZap,
   IconRocket,
   IconClock,
-  IconWarning,
   IconArrowRight,
   IconChartBar,
   IconTarget,
@@ -40,7 +39,7 @@ interface CRMDashboardProps {
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode }>;
   onBulkUpdate: (ids: string[], updates: Partial<Coach>) => Promise<void>;
   onRefresh: () => void;
-  onNavigate: (tab: 'today' | 'dashboard' | 'list' | 'outreach') => void;
+  onNavigate: (tab: 'today' | 'dashboard' | 'list' | 'outreach', view?: 'table' | 'board' | 'conferences') => void;
   onCoachClick?: (coach: Coach) => void;
 }
 
@@ -199,32 +198,6 @@ export function CRMDashboard({
         />
       </div>
 
-      {/* ── Today's Focus ── */}
-      <div className="glass-standard rounded-2xl p-5 shadow-sm">
-        <div className="flex items-center gap-2.5 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-            <IconTarget size={16} className="text-primary-600" />
-          </div>
-          <h3 className="text-sm font-semibold text-warm-900">Today&apos;s Focus</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50/60 border border-amber-100/50">
-            <IconClock size={16} className="text-amber-600 flex-shrink-0" />
-            <div>
-              <p className="text-2xl font-bold tabular-nums text-warm-900">{followUpsDueToday.length}</p>
-              <p className="text-xs text-warm-500">Follow-ups due today</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50/60 border border-red-100/50">
-            <IconWarning size={16} className="text-red-600 flex-shrink-0" />
-            <div>
-              <p className="text-2xl font-bold tabular-nums text-warm-900">{staleLeads.length}</p>
-              <p className="text-xs text-warm-500">Stale leads (no contact 7+ days)</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── Getting Started (only when all new leads) ── */}
       {allNewLeads && (
         <div className="glass-standard rounded-2xl p-8 shadow-sm text-center">
@@ -258,7 +231,7 @@ export function CRMDashboard({
               </span>
             </Button>
             <Button variant="ghost"
-              onClick={() => onNavigate('list')}
+              onClick={() => onNavigate('list', 'board')}
               className="w-full sm:w-auto px-5 py-2.5 text-warm-500 hover:text-warm-700 rounded-xl font-medium transition-all duration-200 text-sm"
             >
               View All <IconArrowRight size={12} className="inline" />
@@ -282,7 +255,7 @@ export function CRMDashboard({
               </div>
             </div>
             <Button variant="ghost"
-              onClick={() => onNavigate('list')}
+              onClick={() => onNavigate('list', 'board')}
               className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors"
             >
               View board <IconArrowRight size={12} />
@@ -459,7 +432,7 @@ export function CRMDashboard({
                   <IconArrowRight size={16} /> Move to Pipeline
                 </Button>
                 <Button variant="ghost"
-                  onClick={() => onNavigate('list')}
+                  onClick={() => onNavigate('list', 'board')}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cream-100 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
                   <IconChartBar size={16} /> Open Coaches

@@ -457,7 +457,7 @@ export function EmailTrackingView() {
             analytics will appear here automatically.
           </p>
           <p className="text-xs text-warm-400 max-w-sm mx-auto">
-            Select coaches from the Pipeline tab and use Bulk Email to send your first campaign.
+            Select coaches from the Coaches tab and use Bulk Email to send your first campaign.
           </p>
         </div>
       </div>

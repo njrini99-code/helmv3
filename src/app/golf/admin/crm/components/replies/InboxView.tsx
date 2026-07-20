@@ -10,7 +10,13 @@ import {
 import { getInboxFeed, type CrmReply } from '@/app/golf/actions/crm-replies';
 import { completeCrmTask } from '@/app/golf/actions/crm-foundations';
 import type { CrmTask } from '@/app/golf/admin/crm/types/foundations';
-import { INBOX_SECTIONS, type InboxSectionId } from '@/app/golf/admin/crm/page-contracts';
+import {
+  INBOX_SECTIONS,
+  SEGMENTED_TABLIST_CLASS,
+  segmentedTabClass,
+  segmentedTabIconClass,
+  type InboxSectionId,
+} from '@/app/golf/admin/crm/page-contracts';
 import { ReplyThread } from './ReplyThread';
 import { InboundLeadsView } from '../InboundLeadsView';
 import { Button } from '@/components/ui/button';
@@ -113,7 +119,7 @@ export function InboxView() {
           <div
             role="tablist"
             aria-label="Inbox sections"
-            className="flex items-center gap-1 rounded-2xl glass-standard p-1"
+            className={SEGMENTED_TABLIST_CLASS}
           >
             {INBOX_SECTIONS.map((s) => {
               const isActive = section === s.id;
@@ -124,14 +130,9 @@ export function InboxView() {
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setSection(s.id)}
-                  className={cn(
-                    'flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
-                    isActive
-                      ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
-                      : 'text-warm-500 hover:text-warm-900 hover:bg-cream-100'
-                  )}
+                  className={segmentedTabClass(isActive)}
                 >
-                  <SectionIcon size={15} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} aria-hidden />
+                  <SectionIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
                   {s.label}
                 </Button>
               );

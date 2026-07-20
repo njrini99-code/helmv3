@@ -99,7 +99,9 @@ export function PipelineView({
     return () => { cancelled = true; };
   }, []);
 
-  const allNewLeads = stats.byStatus.new_lead === stats.total && stats.total > 0;
+  // Derived from the coaches PROP (the filtered board), not page-level stats —
+  // with filters applied the two can disagree and the banner would lie.
+  const allNewLeads = coaches.length > 0 && coaches.every((c) => c.status === 'new_lead');
 
   // Group coaches by pipeline stage
   const coachesByStage = useMemo(() => {
@@ -610,7 +612,7 @@ function KanbanCard({
                 tier === 'aging' && 'bg-amber-50 text-amber-700',
                 tier === 'stale' && 'bg-red-50 text-red-700',
               )}
-              title={stageAge?.isSeed ? 'approximate — tracking started Jul 20' : undefined}
+              title={stageAge?.isSeed ? 'approximate — tracking started Jul 20, 2026' : undefined}
             >
               {daysInStage}d in stage
             </span>

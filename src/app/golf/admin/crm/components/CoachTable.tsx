@@ -663,6 +663,7 @@ const CoachTableRow = React.memo(
       // producing a new coach object, which would otherwise leave this row
       // showing a stale value.
       prev.coach.next_follow_up_at === next.coach.next_follow_up_at &&
+      prev.enrollment === next.enrollment &&
       prev.isSelected === next.isSelected &&
       prev.isFocused === next.isFocused &&
       prev.isStatusOpen === next.isStatusOpen &&
@@ -1015,6 +1016,7 @@ const CoachTableCard = React.memo(
       // producing a new coach object, which would otherwise leave this row
       // showing a stale value.
       prev.coach.next_follow_up_at === next.coach.next_follow_up_at &&
+      prev.enrollment === next.enrollment &&
       prev.isSelected === next.isSelected &&
       prev.isFocused === next.isFocused &&
       prev.isStatusOpen === next.isStatusOpen &&
