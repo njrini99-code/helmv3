@@ -33,6 +33,20 @@ export interface OutreachExtras {
 }
 
 /**
+ * The one-click List-Unsubscribe header pair for a coach. Shared by BOTH send
+ * transports — Resend (via buildOutreachExtras) and the Gmail API direct-send
+ * path (gmail-send.ts buildMime) — so no cold-outreach email can ship without
+ * an unsubscribe mechanism regardless of whether the template body carries
+ * {unsubscribe_url}.
+ */
+export function buildListUnsubscribeHeaders(coachId: string): Record<string, string> {
+  return {
+    'List-Unsubscribe': `<${buildUnsubUrl(coachId)}>, <mailto:${UNSUB_MAILTO}?subject=unsubscribe>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  };
+}
+
+/**
  * Build the unsubscribe headers, reply-to, and segmentation tags for a single
  * cold-outreach send. Tag values are sanitized to Resend's allowed charset;
  * empty values are dropped (a tag with an empty value would be rejected).
@@ -45,10 +59,7 @@ export function buildOutreachExtras(args: {
 }): OutreachExtras {
   const { coachId, format, campaign, division } = args;
 
-  const headers: Record<string, string> = {
-    'List-Unsubscribe': `<${buildUnsubUrl(coachId)}>, <mailto:${UNSUB_MAILTO}?subject=unsubscribe>`,
-    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-  };
+  const headers = buildListUnsubscribeHeaders(coachId);
 
   const rawTags: { name: string; value: string }[] = [
     { name: 'campaign', value: sanitizeTag(campaign) },

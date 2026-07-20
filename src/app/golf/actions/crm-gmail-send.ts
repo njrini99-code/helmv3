@@ -25,6 +25,7 @@ import { verifyEmailDeliverability } from '@/lib/crm/email-verify';
 import { checkDomainAuth, type DomainAuthResult } from '@/lib/crm/domain-auth-check';
 import { mergeTags, type Recipient } from '@/lib/crm/merge-tags';
 import { applyUnsubTag } from '@/lib/crm/unsubscribe-token';
+import { buildListUnsubscribeHeaders } from '@/lib/crm/outreach-headers';
 import { describeError } from '@/lib/utils/describe-error';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 
@@ -278,7 +279,15 @@ export async function sendCoachViaGmail(input: {
     }
 
     const parts = toSendParts(applyUnsubTag(input.body, coach.id), input.format);
-    const { id } = await sendGmailEmail({ to: coach.email, subject: input.subject, ...parts });
+    // One-click unsubscribe headers ride on EVERY Gmail send — CAN-SPAM's
+    // opt-out mechanism must not depend on the template body carrying
+    // {unsubscribe_url} (most plain templates don't).
+    const { id } = await sendGmailEmail({
+      to: coach.email,
+      subject: input.subject,
+      extraHeaders: buildListUnsubscribeHeaders(coach.id),
+      ...parts,
+    });
     await recordGmailTouch(supabase, user.id, coach, input.subject, id, input.template_id);
     if (input.template_id) await bumpTemplateUsage(supabase, input.template_id, 1);
     revalidatePath(CRM_REVALIDATE_PATH);
@@ -417,7 +426,12 @@ export async function sendNextBatchViaGmail(input: {
       const body = applyUnsubTag(mergeTags(tpl.body, recipient), c.id);
       const parts = toSendParts(body, tpl.format);
       try {
-        const { id } = await sendGmailEmail({ to: c.email!, subject, ...parts });
+        const { id } = await sendGmailEmail({
+          to: c.email!,
+          subject,
+          extraHeaders: buildListUnsubscribeHeaders(c.id),
+          ...parts,
+        });
         await recordGmailTouch(supabase, user.id, c, subject, id, input.templateId);
         sent++;
         details.push({ name: c.name, school: c.school, status: 'sent' });
