@@ -14,6 +14,7 @@ import {
   generateStatisticalStrengthsWeaknesses,
   type StatisticalStrengthWeakness,
 } from '@/lib/golf/strokes-gained';
+import { rankHoleAnalyses } from '@/lib/golf/worst-hole-ranking';
 import type {
   StatsFilter,
   StatsSummary,
@@ -2418,10 +2419,9 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
     });
   }
 
-  // Sort by average to par (worst first)
-  const sortedByToPar = [...holes].sort((a, b) => b.averageToPar - a.averageToPar);
-  const worstHoles = sortedByToPar.slice(0, 3);
-  const bestHoles = [...sortedByToPar].reverse().slice(0, 3);
+  // Rank worst/best with a per-hole sample floor — a hole played once/twice
+  // can't be crowned "toughest" or "easiest" off one blow-up or one birdie.
+  const { worstHoles, bestHoles } = rankHoleAnalyses(holes);
 
   // Par-specific + closing averages: mean of per-play (score - par) bucketed by
   // each play's ACTUAL par (NOT an average of per-hole-number averages, which the

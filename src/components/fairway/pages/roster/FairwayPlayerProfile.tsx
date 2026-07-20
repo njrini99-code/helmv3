@@ -6,14 +6,14 @@
  * ----------------------------------------------------------------------------
  * The coach-facing player page reached from the roster (Roster → player). It is
  * now a thin IDENTITY HEADER (avatar, name, year, editable status, contact +
- * message) on top of the shared <FairwayStatsCockpit> — the SAME re-architected
- * strokes-gained stats body the player sees at /golf/dashboard/stats. This is
+ * message) on top of the shared <StatsSpineStage> — the SAME Spine & Stage
+ * strokes-gained stats surface the player sees at /golf/dashboard/stats. This is
  * the "unify on the cockpit" decision: one beautiful stats page, two roles, no
  * double-nav (the coach gets a roster header instead of the CoachHelm sub-nav).
  *
- * The cockpit owns the stats, leak maps, trend, detailed standings, CoachHelm
- * cause/effect, and recent rounds — so this file no longer renders its own
- * stats block or rounds list.
+ * StatsSpineStage owns the stats, leak maps, trend, detailed standings,
+ * CoachHelm cause/effect, and recent rounds — so this file no longer renders
+ * its own stats block or rounds list.
  *
  * The only mutation reachable here is the NON-destructive status change inside
  * FairwayPlayerStatusBadge. No row is deleted; no destructive write auto-fires.
@@ -41,7 +41,7 @@ import {
 import { FairwayYearBadge } from './FairwayYearBadge';
 import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
-import { FairwayStatsCockpit } from '@/components/fairway/pages/coachhelm/FairwayStatsCockpit';
+import { StatsSpineStage } from '@/components/golf/stats/spine-stage/StatsSpineStage';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the roster/[id] loader output
@@ -208,9 +208,9 @@ export function FairwayPlayerProfile({
         />
       </nav>
 
-      {/* ── The shared stats cockpit (stats · leak maps · trend · CoachHelm ·
+      {/* ── The shared stats surface (stats · leak maps · trend · CoachHelm ·
            detailed standings · recent rounds) ── */}
-      <FairwayStatsCockpit playerId={player.id} />
+      <StatsSpineStage playerId={player.id} isOwnStats={false} playerName={name} />
     </div>
   );
 }

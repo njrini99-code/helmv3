@@ -10,9 +10,10 @@
  * ========================================================================== */
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InstrumentPanel, Readout, BarCompare } from '@/components/fairway';
+import { InstrumentPanel, Readout, BarCompare, InlineNotice } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
+import { DEFAULT_MIN_PLAYS } from '@/lib/golf/worst-hole-ranking';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -50,6 +51,9 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
     title: `Hole ${h.holeNumber} · Par ${h.par}`,
     value: fmtToPar(h.averageToPar),
   }));
+  // Data exists (holes were played) but nothing clears the per-hole sample
+  // floor — an honest "not enough plays yet" note, not a bare empty state.
+  const belowSampleFloor = worstItems.length === 0 && (worstHoles?.holes.length ?? 0) > 0;
 
   return (
     <DrillPanel title="Scoring" backLabel="All areas" onBack={home}>
@@ -129,6 +133,10 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
               ))}
             </ol>
           </div>
+        ) : belowSampleFloor ? (
+          <InlineNotice tone="info" title="Toughest holes">
+            {`Need ${DEFAULT_MIN_PLAYS}+ plays of a hole before it can be ranked.`}
+          </InlineNotice>
         ) : null}
       </div>
     </DrillPanel>
