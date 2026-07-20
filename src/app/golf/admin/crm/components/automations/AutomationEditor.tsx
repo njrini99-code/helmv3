@@ -123,6 +123,16 @@ export function AutomationEditor({
     return JSON.stringify({ conditions, actions }, null, 2);
   }, [conditions, actions]);
 
+  // Only offer triggers that a real evaluator wires up today. When editing an
+  // existing automation that was already saved against a not-yet-wired
+  // trigger, keep its current value selectable so the form doesn't silently
+  // change it out from under the admin.
+  const triggerOptions = useMemo(() => {
+    return TRIGGER_EVENTS.filter(
+      (t) => t.wired || (isEdit && t.value === automation?.trigger_event),
+    );
+  }, [isEdit, automation?.trigger_event]);
+
   if (!open) return null;
 
   // ---- handlers ----
@@ -275,7 +285,7 @@ export function AutomationEditor({
                     Trigger event <span className="text-red-500">*</span>
                   </span>
                   <Select
-                    options={TRIGGER_EVENTS.map((t) => ({ value: t.value, label: t.label }))}
+                    options={triggerOptions.map((t) => ({ value: t.value, label: t.label }))}
                     value={triggerEvent}
                     onChange={(value) => setTriggerEvent(value as CrmAutomationTrigger)}
                     className="rounded-lg"

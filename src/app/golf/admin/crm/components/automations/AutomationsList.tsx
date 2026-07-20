@@ -13,13 +13,14 @@ import {
   listAutomations,
   updateAutomation,
   deleteAutomation,
+  createAutomation,
 } from '@/app/golf/actions/crm-automations';
 import type {
   CrmAutomation,
   CrmAutomationTrigger,
 } from '@/lib/crm/automations-engine';
 import { AutomationEditor } from './AutomationEditor';
-import { TRIGGER_EVENTS, isSeededAutomation } from './AutomationsSeed';
+import { AUTOMATIONS_SEED, TRIGGER_EVENTS, isSeededAutomation } from './AutomationsSeed';
 import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
@@ -34,6 +35,7 @@ export function AutomationsList() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<CrmAutomation | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -112,6 +114,40 @@ export function AutomationsList() {
     });
   };
 
+  // Re-create any seeded automation (by name) that isn't currently present,
+  // e.g. after an admin deletes one. Referenced by the file-header comment
+  // but previously had no implementation anywhere in the tree.
+  const missingSeeds = useMemo(() => {
+    const existingNames = new Set(automations.map((a) => a.name));
+    return AUTOMATIONS_SEED.filter((s) => !existingNames.has(s.name));
+  }, [automations]);
+
+  const handleRestoreDefaults = async () => {
+    if (missingSeeds.length === 0) return;
+    setRestoring(true);
+    setError(null);
+    try {
+      const restored = await Promise.all(
+        missingSeeds.map((seed) =>
+          createAutomation({
+            name: seed.name,
+            description: seed.description,
+            trigger_event: seed.trigger_event,
+            conditions: seed.conditions,
+            actions: seed.actions,
+            priority: seed.priority,
+          }),
+        ),
+      );
+      setAutomations((prev) => [...restored, ...prev]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to restore default automations';
+      setError(msg);
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -125,13 +161,26 @@ export function AutomationsList() {
             Configurable rules that fire on email events and pipeline changes.
           </p>
         </div>
-        <Button variant="primary"
-          type="button"
-          onClick={handleNew}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
-        >
-          <IconPlus size={14} /> New automation
-        </Button>
+        <div className="flex items-center gap-2">
+          {!loading && missingSeeds.length > 0 && (
+            <Button variant="default"
+              type="button"
+              onClick={handleRestoreDefaults}
+              disabled={restoring}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-warm-200 text-warm-700 text-sm font-medium hover:bg-warm-50 transition-colors disabled:opacity-50"
+            >
+              <IconCheckCircle2 size={14} />
+              {restoring ? 'Restoring…' : 'Restore defaults'}
+            </Button>
+          )}
+          <Button variant="primary"
+            type="button"
+            onClick={handleNew}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
+          >
+            <IconPlus size={14} /> New automation
+          </Button>
+        </div>
       </div>
 
       {/* Error */}

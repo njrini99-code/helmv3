@@ -268,7 +268,7 @@ export async function POST(request: Request) {
                     .eq('id', coachId);
                 }
               } else if (action.kind === 'add_tag') {
-                const tag = (action.params as { tag?: string }).tag;
+                const tag = (action.params as { value?: string }).value;
                 if (tag && coach) {
                   // Append to tags[] array; dedupe in TS since SQL array_append
                   // doesn't dedupe.
