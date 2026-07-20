@@ -26,6 +26,11 @@
  * `'24h' | '7d' | '30d' | 'all'`) so the dashboard's native `'90d'` window
  * reaches the RPC instead of being aliased to the unbounded `'all'` window.
  *
+ * Plus `get_crm_funnel(window)` — the stage-transition-tracking RPC from
+ * the `feat/crm-visibility-tracking` foundation — backing the outreach
+ * funnel card (sent → delivered → opened → clicked → replied, plus
+ * coaches_* distinct-recipient counts).
+ *
  * Auth: every action enforces admin role at the action layer, mirroring
  * `crm-engagement.ts:28` and `resend-activity.ts:121`.
  */
@@ -68,6 +73,19 @@ export interface ClickDestinationRow {
   clicked_url: string;
   click_count: number;
   unique_recipients: number;
+}
+
+export interface CrmFunnel {
+  window: string;
+  sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  replied: number;
+  coaches_emailed: number;
+  coaches_opened: number;
+  coaches_clicked: number;
+  coaches_replied: number;
 }
 
 export interface DeliverabilitySummary {
@@ -337,5 +355,47 @@ export async function getDeliverabilitySummary(
     open_rate: safeRate(stats.opened ?? 0, stats.delivered ?? 0),
     click_rate: safeRate(stats.clicked ?? 0, stats.delivered ?? 0),
     bounce_rate: safeRate(stats.bounced ?? 0, stats.total ?? 0),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 5. Outreach funnel (sent → delivered → opened → clicked → replied)
+// ---------------------------------------------------------------------------
+export async function getCrmFunnel(window: InsightsWindow): Promise<CrmFunnel | null> {
+  const supabase = await requireAdmin();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('get_crm_funnel', {
+    p_window: window,
+  });
+
+  if (error) {
+    await logServerError(
+      `[crm-insights] funnel rpc failed: ${describeError(error)}`,
+      {
+        action: 'crm_insights.getCrmFunnel',
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      },
+    );
+    return null;
+  }
+
+  const row = data as CrmFunnel | null;
+
+  if (!row) return null;
+
+  return {
+    window: row.window,
+    sent: row.sent ?? 0,
+    delivered: row.delivered ?? 0,
+    opened: row.opened ?? 0,
+    clicked: row.clicked ?? 0,
+    replied: row.replied ?? 0,
+    coaches_emailed: row.coaches_emailed ?? 0,
+    coaches_opened: row.coaches_opened ?? 0,
+    coaches_clicked: row.coaches_clicked ?? 0,
+    coaches_replied: row.coaches_replied ?? 0,
   };
 }

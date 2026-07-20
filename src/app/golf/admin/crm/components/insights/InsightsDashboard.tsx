@@ -8,13 +8,16 @@ import {
   getTimeToOpenDistribution,
   getClickDestinations,
   getDeliverabilitySummary,
+  getCrmFunnel,
   type InsightsWindow,
   type TemplatePerformanceRow,
   type TimeToOpenBucket,
   type ClickDestinationRow,
   type DeliverabilitySummary,
+  type CrmFunnel,
 } from '@/app/golf/actions/crm-insights';
 import { DeliverabilityCards } from './DeliverabilityCards';
+import { FunnelCard } from './FunnelCard';
 import { TemplatePerformanceTable } from './TemplatePerformanceTable';
 import { TimeToOpenChart } from './TimeToOpenChart';
 import { ClickHeatmap } from './ClickHeatmap';
@@ -43,21 +46,24 @@ export function InsightsDashboard() {
   const [templates, setTemplates] = useState<TemplatePerformanceRow[]>([]);
   const [buckets, setBuckets] = useState<TimeToOpenBucket[]>([]);
   const [clickDestinations, setClickDestinations] = useState<ClickDestinationRow[]>([]);
+  const [funnel, setFunnel] = useState<CrmFunnel | null>(null);
 
   const fetchAll = useCallback(async (w: InsightsWindow) => {
     setLoading(true);
     setError(null);
     try {
-      const [s, t, b, c] = await Promise.all([
+      const [s, t, b, c, f] = await Promise.all([
         getDeliverabilitySummary(w),
         getTemplatePerformance(w),
         getTimeToOpenDistribution(w),
         getClickDestinations(w, 25),
+        getCrmFunnel(w),
       ]);
       setSummary(s);
       setTemplates(t);
       setBuckets(b);
       setClickDestinations(c);
+      setFunnel(f);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load insights';
       setError(msg);
@@ -143,6 +149,9 @@ export function InsightsDashboard() {
 
       {/* ── KPI row ── */}
       <DeliverabilityCards summary={summary} loading={loading} />
+
+      {/* ── Outreach funnel (full-width) ── */}
+      <FunnelCard funnel={funnel} loading={loading} />
 
       {/* ── Two-column: chart + heatmap ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
