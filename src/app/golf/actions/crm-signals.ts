@@ -48,7 +48,7 @@ const CLOSED_STATUSES = new Set(['won', 'lost']);
 // Known-bad deliverability states — mirrors the send-gate used elsewhere in
 // the CRM (e.g. TodayQueue's hasValidEmail/email_status check).
 const BAD_EMAIL_STATUSES = new Set(['bounced', 'complained', 'unsubscribed']);
-const NO_NEXT_STEP_STATUSES = ['contacted', 'engaged', 'proposal'];
+const NO_NEXT_STEP_STATUSES = ['contacted', 'engaged', 'proposal'] as const;
 
 const HOT_ROW_LIMIT = 8;
 const OVERDUE_ROW_LIMIT = 8;
@@ -231,7 +231,7 @@ async function getNoNextStepSignals(): Promise<{ rows: SignalCoach[]; total: num
     const { data, error, count } = await admin
       .from('crm_coaches')
       .select(COACH_SIGNAL_COLUMNS, { count: 'exact' })
-      .in('status', NO_NEXT_STEP_STATUSES)
+      .in('status', [...NO_NEXT_STEP_STATUSES])
       .is('next_follow_up_at', null)
       .eq('is_archived', false)
       .order('last_contacted_at', { ascending: true, nullsFirst: true })

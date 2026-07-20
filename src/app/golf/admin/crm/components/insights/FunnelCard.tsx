@@ -68,7 +68,8 @@ export function FunnelCard({ funnel, loading }: FunnelCardProps) {
           <div className="space-y-3">
             {STAGES.map((stage, i) => {
               const value = stage.value(funnel);
-              const previous = i === 0 ? null : STAGES[i - 1].value(funnel);
+              const prevStage = i === 0 ? undefined : STAGES[i - 1];
+              const previous = prevStage ? prevStage.value(funnel) : null;
               const conversion = stepConversion(value, previous);
               return (
                 <div key={stage.label} className="flex items-center gap-3">
