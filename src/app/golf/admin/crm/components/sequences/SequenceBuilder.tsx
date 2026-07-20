@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   IconPlus,
@@ -14,16 +15,26 @@ import {
   listEnrollments,
   getSequenceEnrollmentCounts,
   getSequencePerformance,
+  pauseEnrollment,
+  stopEnrollment,
   type CrmSequence,
   type CrmSequenceStep,
   type CrmSequenceEnrollment,
   type SequenceEnrollmentCounts,
+  type SequenceEnrollmentStatus,
   type SequencePerformance,
   type SequencePerformanceStep,
 } from '@/app/golf/actions/crm-sequences';
 import { SequenceStepEditor } from './SequenceStepEditor';
 import { EnrollSegmentDialog } from './EnrollSegmentDialog';
 import { Button } from '@/components/ui/button';
+
+// Lite coach shape for the enrollments list — just enough to identify who's
+// enrolled without pulling in the full CrmCoach surface from crm-config.
+interface EnrollmentCoachLite {
+  name: string;
+  email: string | null;
+}
 
 // ============================================================================
 // SequenceBuilder — inline editor for a single sequence. Vertical stepper of
@@ -48,6 +59,16 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [coachesById, setCoachesById] = useState<
+    Record<string, EnrollmentCoachLite>
+  >({});
+  const [busyEnrollmentId, setBusyEnrollmentId] = useState<string | null>(
+    null,
+  );
+  const [enrollmentActionError, setEnrollmentActionError] = useState<
+    string | null
+  >(null);
+  const fetchedCoachIdsRef = useRef<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -76,6 +97,83 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Resolve coach name/email for whatever enrollment rows are on screen.
+  // Cheap batch lookup, client-side (same pattern as SequenceStepEditor's
+  // template fetch) — crm_sequence_enrollments only stores coach_id.
+  useEffect(() => {
+    const ids = Array.from(new Set(enrollments.map((e) => e.coach_id))).filter(
+      (id) => !fetchedCoachIdsRef.current.has(id),
+    );
+    if (ids.length === 0) return;
+    ids.forEach((id) => fetchedCoachIdsRef.current.add(id));
+
+    let cancelled = false;
+    const supabase = createClient();
+    supabase
+      .from('crm_coaches')
+      .select('id, name, email')
+      .in('id', ids)
+      .then(({ data, error: coachErr }) => {
+        if (cancelled || coachErr || !data) return;
+        setCoachesById((prev) => {
+          const next = { ...prev };
+          for (const row of data as Array<{
+            id: string;
+            name: string;
+            email: string | null;
+          }>) {
+            next[row.id] = { name: row.name, email: row.email };
+          }
+          return next;
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enrollments]);
+
+  const handlePauseEnrollment = async (enrollmentId: string) => {
+    setBusyEnrollmentId(enrollmentId);
+    setEnrollmentActionError(null);
+    try {
+      const updated = await pauseEnrollment(enrollmentId);
+      setEnrollments((prev) =>
+        prev.map((e) => (e.id === updated.id ? updated : e)),
+      );
+      onChange?.();
+    } catch (err) {
+      setEnrollmentActionError(
+        err instanceof Error ? err.message : 'Failed to pause enrollment',
+      );
+    } finally {
+      setBusyEnrollmentId(null);
+    }
+  };
+
+  const handleStopEnrollment = async (enrollmentId: string) => {
+    if (typeof window !== 'undefined') {
+      const ok = window.confirm(
+        'Stop this enrollment? The coach will not receive any remaining steps in this sequence.',
+      );
+      if (!ok) return;
+    }
+    setBusyEnrollmentId(enrollmentId);
+    setEnrollmentActionError(null);
+    try {
+      const updated = await stopEnrollment(enrollmentId, 'manual');
+      setEnrollments((prev) =>
+        prev.map((e) => (e.id === updated.id ? updated : e)),
+      );
+      onChange?.();
+    } catch (err) {
+      setEnrollmentActionError(
+        err instanceof Error ? err.message : 'Failed to stop enrollment',
+      );
+    } finally {
+      setBusyEnrollmentId(null);
+    }
+  };
 
   const handleStepSaved = (saved: CrmSequenceStep) => {
     setSteps((prev) => {
@@ -288,6 +386,46 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
         </div>
       </div>
 
+      {/* Enrollments */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-warm-900">Enrollments</h3>
+          {enrollments.length > 0 && (
+            <span className="text-xs text-warm-400">
+              {enrollments.length} shown
+            </span>
+          )}
+        </div>
+
+        {enrollmentActionError && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-2">
+            {enrollmentActionError}
+          </p>
+        )}
+
+        {enrollments.length === 0 ? (
+          <div className="py-8 text-center bg-warm-50/40 rounded-xl border border-warm-100">
+            <p className="text-sm text-warm-500">
+              No coaches enrolled yet. Use <strong>Enroll segment</strong>{' '}
+              above to add some.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {enrollments.map((enrollment) => (
+              <EnrollmentRow
+                key={enrollment.id}
+                enrollment={enrollment}
+                coach={coachesById[enrollment.coach_id]}
+                onPause={() => handlePauseEnrollment(enrollment.id)}
+                onStop={() => handleStopEnrollment(enrollment.id)}
+                busy={busyEnrollmentId === enrollment.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Enroll segment dialog */}
       <EnrollSegmentDialog
         open={enrollDialogOpen}
@@ -350,6 +488,101 @@ function StatCard({
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+// ============================================================================
+// EnrollmentStatusBadge — small pill for an enrollment's lifecycle status.
+// ============================================================================
+const ENROLLMENT_STATUS_STYLES: Record<SequenceEnrollmentStatus, string> = {
+  active: 'bg-primary-50 text-primary-700 border-primary-100',
+  paused: 'bg-amber-50 text-amber-700 border-amber-100',
+  completed: 'bg-warm-100 text-warm-600 border-warm-200',
+  stopped: 'bg-red-50 text-red-600 border-red-100',
+};
+
+function EnrollmentStatusBadge({ status }: { status: SequenceEnrollmentStatus }) {
+  return (
+    <span
+      className={cn(
+        'px-1.5 py-0.5 rounded text-eyebrow font-bold uppercase tracking-wider border flex-shrink-0',
+        ENROLLMENT_STATUS_STYLES[status],
+      )}
+    >
+      {status}
+    </span>
+  );
+}
+
+// ============================================================================
+// EnrollmentRow — one coach's enrollment. Pause/Stop wire directly to the
+// server actions (pauseEnrollment/stopEnrollment) — previously the fetched
+// enrollment list was only used to derive a count fallback, with no way for
+// an operator to actually manage a running enrollment.
+// ============================================================================
+function EnrollmentRow({
+  enrollment,
+  coach,
+  onPause,
+  onStop,
+  busy,
+}: {
+  enrollment: CrmSequenceEnrollment;
+  coach?: EnrollmentCoachLite;
+  onPause: () => void;
+  onStop: () => void;
+  busy: boolean;
+}) {
+  const canPause = enrollment.status === 'active';
+  const canStop = enrollment.status === 'active' || enrollment.status === 'paused';
+
+  return (
+    <div className="flex items-center gap-3 p-3 bg-cream-50 border border-warm-200/60 rounded-xl">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-warm-900 truncate">
+          {coach?.name ?? 'Loading…'}
+        </p>
+        <p className="text-xs text-warm-500 truncate">
+          {coach?.email ?? enrollment.coach_id}
+        </p>
+      </div>
+      <span className="text-xs text-warm-500 tabular-nums flex-shrink-0">
+        Step {enrollment.current_step}
+      </span>
+      <EnrollmentStatusBadge status={enrollment.status} />
+      {(canPause || canStop) && (
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {canPause && (
+            <Button variant="ghost"
+              type="button"
+              onClick={onPause}
+              disabled={busy}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium',
+                'text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
+            >
+              {busy ? <IconLoader size={12} className="animate-spin" /> : 'Pause'}
+            </Button>
+          )}
+          {canStop && (
+            <Button variant="ghost"
+              type="button"
+              onClick={onStop}
+              disabled={busy}
+              className={cn(
+                'px-2 py-1 rounded-lg text-xs font-medium',
+                'text-red-600 hover:bg-red-50 transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
+            >
+              Stop
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
