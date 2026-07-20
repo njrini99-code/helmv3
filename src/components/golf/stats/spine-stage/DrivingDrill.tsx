@@ -4,9 +4,10 @@
  * ============================================================================
  * DrivingDrill — `?area=driving` (spec §5.1 "Off the tee")
  * ----------------------------------------------------------------------------
- * The reused `FairwayDrivingSpray` glass chart + `RailBars` for fairway
- * accuracy by hole type/club + `DivergingBars` for the left/right miss bias
- * (overall, plus a paired driver/non-driver breakdown).
+ * `SprayField` (family='driving') as the drill's signature hero — full width,
+ * first element after the header — plus `RailBars` for fairway accuracy by
+ * hole type/club + `DivergingBars` for the left/right miss bias (overall,
+ * plus a paired driver/non-driver breakdown) below it.
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
@@ -25,8 +26,8 @@ function ChartLoading() {
   );
 }
 
-const FairwayDrivingSpray = dynamic(
-  () => import('@/components/fairway/pages/coachhelm/FairwayDrivingSpray').then((m) => m.FairwayDrivingSpray),
+const SprayField = dynamic(
+  () => import('@/components/fairway/charts/SprayField').then((m) => m.SprayField),
   { ssr: false, loading: () => <ChartLoading /> },
 );
 
@@ -93,41 +94,42 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
 
   return (
     <DrillPanel title="Off the tee" backLabel="All areas" onBack={home}>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <InstrumentPanel depth="base" padding="md">
-              <Readout value={distAvg ?? undefined} unit="yds" label="Driving distance" size="md" state={distAvg != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
-            </InstrumentPanel>
-            <InstrumentPanel depth="base" padding="md">
-              <Readout value={distDriver ?? undefined} unit="yds" label="Driver only" size="md" state={distDriver != null ? 'live' : 'awaiting'} awaitingLabel="No driver shots" />
-            </InstrumentPanel>
-            <InstrumentPanel depth="base" padding="md">
-              <Readout value={distNonDriver ?? undefined} unit="yds" label="Non-driver" size="md" state={distNonDriver != null ? 'live' : 'awaiting'} awaitingLabel="No non-driver shots" />
-            </InstrumentPanel>
-            <InstrumentPanel depth="base" padding="md">
-              <Readout value={fwPct ?? undefined} unit="%" label="Fairways hit" size="md" state={fwPct != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
-            </InstrumentPanel>
-          </div>
-          <RailBars rows={byHoleType} labelWidth={80} />
-          <DivergingBars rows={missBias} max={missMax} />
-          {hasClubMiss ? (
-            <div className="flex flex-col gap-2">
-              <Eyebrow as="h4">Tee miss by club</Eyebrow>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <span className="font-fw-sans text-caption text-text-tertiary">Driver</span>
-                  <DivergingBars rows={driverMissRows} max={clubMissMax} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="font-fw-sans text-caption text-text-tertiary">Non-driver</span>
-                  <DivergingBars rows={nonDriverMissRows} max={clubMissMax} />
-                </div>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Eyebrow as="h3" tone="accent">Tee shot spray</Eyebrow>
+          <SprayField group={sprayData?.driving ?? null} family="driving" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={distAvg ?? undefined} unit="yds" label="Driving distance" size="md" state={distAvg != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={distDriver ?? undefined} unit="yds" label="Driver only" size="md" state={distDriver != null ? 'live' : 'awaiting'} awaitingLabel="No driver shots" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={distNonDriver ?? undefined} unit="yds" label="Non-driver" size="md" state={distNonDriver != null ? 'live' : 'awaiting'} awaitingLabel="No non-driver shots" />
+          </InstrumentPanel>
+          <InstrumentPanel depth="base" padding="md">
+            <Readout value={fwPct ?? undefined} unit="%" label="Fairways hit" size="md" state={fwPct != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
+          </InstrumentPanel>
+        </div>
+        <RailBars rows={byHoleType} labelWidth={80} />
+        <DivergingBars rows={missBias} max={missMax} />
+        {hasClubMiss ? (
+          <div className="flex flex-col gap-2">
+            <Eyebrow as="h4">Tee miss by club</Eyebrow>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <span className="font-fw-sans text-caption text-text-tertiary">Driver</span>
+                <DivergingBars rows={driverMissRows} max={clubMissMax} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="font-fw-sans text-caption text-text-tertiary">Non-driver</span>
+                <DivergingBars rows={nonDriverMissRows} max={clubMissMax} />
               </div>
             </div>
-          ) : null}
-        </div>
-        <FairwayDrivingSpray group={sprayData?.driving ?? null} />
+          </div>
+        ) : null}
       </div>
     </DrillPanel>
   );
