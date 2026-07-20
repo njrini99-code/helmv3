@@ -82,6 +82,14 @@ export interface TeamStatsBoardProps {
   intelligenceSampleSize?: number;
   leakMaps: TeamLeakMaps | null;
   leakError?: boolean;
+  /**
+   * True when the paginated `golf_rounds` fetch genuinely FAILED (rejected
+   * page, PostgREST error) — distinct from a roster with no rounds yet.
+   * Every per-player figure derived from `allRounds` (rounds played, scoring
+   * average, trend, last round, sparkline) silently reads as cold-start zero
+   * when this is unchecked, which previously masked a real backend failure.
+   */
+  roundsError?: boolean;
   standingByPlayer: Map<string, Map<MetricId, PlayerStanding>>;
   /** Rounds across the whole roster in the last 30 days (already-fetched `allRounds`, filtered by date). */
   teamRounds30d: number;
@@ -125,6 +133,24 @@ function worstLeakTakeaway(
   if (!worst) return undefined;
   const suffix = unit === 'percent' ? 'pp below Tour' : ' ft farther than Tour';
   return `${worst.label} is ${worst.mag}${suffix}.`;
+}
+
+/**
+ * Combine the three independent fetch-failure flags into one honest sentence
+ * for the masthead `InlineNotice` — extends the original intelligence/leak
+ * two-flag ternary to a third (`roundsError`) without the branch count
+ * doubling per flag.
+ */
+function statsLoadErrorMessage(roundsError: boolean, intelligenceError: boolean, leakError: boolean): string {
+  const failed: string[] = [];
+  if (roundsError) failed.push('Round scoring and per-player stats');
+  if (intelligenceError) failed.push('team intelligence (composite ratings)');
+  if (leakError) failed.push('strokes-gained leak maps');
+  if (failed.length === 0) return '';
+  if (failed.length === 1) return `${failed[0]} failed to load. Reload to try again.`;
+  const [head, ...rest] = failed;
+  const tail = rest.length === 1 ? rest[0] : `${rest.slice(0, -1).join(', ')}, and ${rest[rest.length - 1]}`;
+  return `${head} and ${tail} failed to load. The figures below may be incomplete — reload to try again.`;
 }
 
 function csvCell(value: string): string {
@@ -178,6 +204,7 @@ export function TeamStatsBoard({
   intelligenceSampleSize = 0,
   leakMaps,
   leakError = false,
+  roundsError = false,
   standingByPlayer,
   teamRounds30d,
 }: TeamStatsBoardProps) {
@@ -326,13 +353,9 @@ export function TeamStatsBoard({
         }
       />
 
-      {intelligenceError || leakError ? (
-        <InlineNotice tone="warning" title="Some stats couldn't load" className="mt-6">
-          {intelligenceError && leakError
-            ? 'Team intelligence and leak maps failed to load. The figures below may be incomplete — reload to try again.'
-            : intelligenceError
-              ? 'Team intelligence (composite ratings) failed to load. Reload to try again.'
-              : 'Strokes-gained leak maps failed to load. Reload to try again.'}
+      {roundsError || intelligenceError || leakError ? (
+        <InlineNotice tone={roundsError ? 'danger' : 'warning'} title="Some stats couldn't load" className="mt-6">
+          {statsLoadErrorMessage(roundsError, intelligenceError, leakError)}
         </InlineNotice>
       ) : null}
 

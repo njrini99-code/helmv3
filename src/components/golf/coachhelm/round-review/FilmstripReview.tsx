@@ -98,12 +98,13 @@ export function FilmstripReview({
 }: FilmstripReviewProps) {
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [shotsByHole, setShotsByHole] = useState<Map<number, ShotInput[]> | null>(null);
+  const [shotsError, setShotsError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('golf_shots')
         .select(
           'hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, miss_direction, is_penalty',
@@ -112,6 +113,12 @@ export function FilmstripReview({
         .order('hole_number', { ascending: true })
         .order('shot_number', { ascending: true });
       if (cancelled) return;
+      if (error) {
+        setShotsError(error.message);
+        setShotsByHole(new Map());
+        return;
+      }
+      setShotsError(null);
       const map = new Map<number, ShotInput[]>();
       for (const s of (data ?? []) as (ShotInput & { hole_number: number })[]) {
         const list = map.get(s.hole_number) ?? [];
@@ -191,6 +198,11 @@ export function FilmstripReview({
         holeMeta={holeMeta}
         shotsByHole={shotsByHole}
       />
+      {shotsError ? (
+        <p className="font-fw-sans text-caption italic text-text-tertiary">
+          {`Couldn't load shots for this round (${shotsError}).`}
+        </p>
+      ) : null}
 
       {/* ONE AI narrative — V2 composed-review body preferred, V1 rule-based
           summary as the honest fallback. */}

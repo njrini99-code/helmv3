@@ -56,4 +56,43 @@ describe('StageRouter', () => {
     expect(screen.getByText('Home view content')).toBeInTheDocument();
     expect(screen.queryByText('Putting view content')).not.toBeInTheDocument();
   });
+
+  it('wraps the stage in an aria-live="polite" region so AT announces swaps', () => {
+    const { container } = render(<StageRouter param="area" homeKey="home" views={VIEWS} />);
+    const stage = container.querySelector('[data-slot="stage"]');
+    expect(stage).not.toBeNull();
+    expect(stage).toHaveAttribute('aria-live', 'polite');
+  });
+
+  it('gives the active view container a focusable (tabIndex -1) target', () => {
+    const { container } = render(<StageRouter param="area" homeKey="home" views={VIEWS} />);
+    const stageview = container.querySelector('[data-slot="stageview"]');
+    expect(stageview).not.toBeNull();
+    expect(stageview).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('does NOT steal focus on initial mount', () => {
+    const { container } = render(<StageRouter param="area" homeKey="home" views={VIEWS} />);
+    const stageview = container.querySelector('[data-slot="stageview"]');
+    expect(stageview).not.toBeNull();
+    expect(stageview).not.toHaveFocus();
+  });
+
+  it('moves focus to the new view container when the view changes (a re-mount with a new key)', () => {
+    const { container, rerender } = render(
+      <StageRouter param="area" homeKey="home" views={VIEWS} />,
+    );
+    expect(container.querySelector('[data-slot="stageview"]')).not.toHaveFocus();
+
+    // Simulate the navigation StageRouter performs internally: the param
+    // changes, `activeKey` recomputes, and the stageview div re-keys/remounts
+    // on the new view — the same trigger `open()`/`home()` produce via
+    // router.replace + useSearchParams picking up the new param.
+    mockSearchParams = new URLSearchParams('area=putting');
+    rerender(<StageRouter param="area" homeKey="home" views={VIEWS} />);
+
+    const stageview = container.querySelector('[data-slot="stageview"][data-stage-key="putting"]');
+    expect(stageview).not.toBeNull();
+    expect(stageview).toHaveFocus();
+  });
 });

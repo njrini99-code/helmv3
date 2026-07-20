@@ -24,6 +24,16 @@ describe('Filmstrip', () => {
     expect(onScrub).toHaveBeenCalledTimes(1);
     expect(onScrub).toHaveBeenCalledWith(expect.objectContaining({ n: 7, par: 4, score: 4 }));
   });
+
+  it('wraps the strip in an overflow-x-auto container so 18 narrow columns scroll instead of crushing', () => {
+    const { container } = render(<Filmstrip holes={HOLES} />);
+    const scrollWrap = container.querySelector('[data-slot="filmstrip-scroll"]');
+    expect(scrollWrap).not.toBeNull();
+    expect(scrollWrap!.className).toContain('overflow-x-auto');
+    const strip = scrollWrap!.querySelector('[data-slot="filmstrip"]');
+    expect(strip).not.toBeNull();
+    expect(scrollWrap!.contains(strip)).toBe(true);
+  });
 });
 
 describe('MatrixBoard', () => {

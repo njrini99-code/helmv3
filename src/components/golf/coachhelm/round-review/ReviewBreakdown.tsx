@@ -52,7 +52,7 @@ export function ReviewBreakdown({
             {frontBack.map((row) => (
               <div
                 key={row.label}
-                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 rounded-fw-md bg-surface-sunken px-3 py-2"
+                className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 rounded-fw-md bg-surface-sunken px-3 py-2"
               >
                 <span className="font-fw-sans text-body-sm font-medium text-text-primary">{row.label}</span>
                 <span style={TABULAR_NUMS} className="font-fw-mono text-caption tabular-nums text-text-secondary">
@@ -63,6 +63,9 @@ export function ReviewBreakdown({
                 </span>
                 <span style={TABULAR_NUMS} className="font-fw-mono text-caption tabular-nums text-text-secondary">
                   {row.gir} GIR
+                </span>
+                <span style={TABULAR_NUMS} className="font-fw-mono text-caption tabular-nums text-text-secondary">
+                  {row.fairways} FW
                 </span>
               </div>
             ))}

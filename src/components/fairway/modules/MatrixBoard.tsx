@@ -11,11 +11,14 @@
  * directly beneath themselves — no navigation, the depth opens IN the board.
  *
  * Responsive: rather than forking a separate mobile card component, the
- * SAME row/header grid swaps its `grid-template-columns` at `sm:` via two
- * CSS custom properties (`--mtx-mobile` / `--mtx-desktop`) computed once
- * from `columns`, and the mockup's "Trend"/"Signal" columns (matched by
- * `key`) are hidden below `sm` exactly like `.h-tr`/`.h-sig`/`.sig` in the
- * source CSS.
+ * SAME row/header grid swaps its `grid-template-columns` at `min-[940px]:`
+ * via two CSS custom properties (`--mtx-mobile` / `--mtx-desktop`) computed
+ * once from `columns`, and the mockup's "Trend"/"Signal" columns (matched by
+ * `key`) are hidden below 940px exactly like `.h-tr`/`.h-sig`/`.sig` in the
+ * source CSS. 940px is the SAME spine/stage stacking threshold used by
+ * `StatsSpineStage` / the CoachHelm homes, so the board's own column
+ * collapse lines up with the shell's single-column breakpoint instead of
+ * drifting at Tailwind's `sm` (640px).
  * ========================================================================== */
 
 import { useId, useState } from 'react';
@@ -23,7 +26,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { MatrixBoardProps, MatrixBoardRow as MatrixBoardRowData, MatrixColumn } from './types';
 
-/** Columns hidden below `sm` (mockup `.h-tr`, `.h-sig`, `.sig`). */
+/** Columns hidden below the 940px breakpoint (mockup `.h-tr`, `.h-sig`, `.sig`). */
 const HIDE_ON_MOBILE = new Set(['trend', 'signal']);
 
 function trackFor(col: MatrixColumn, isFirst: boolean): string {
@@ -40,7 +43,22 @@ function gridTemplate(columns: MatrixColumn[], mobile: boolean): string {
 }
 
 const GRID_COLS_CLASS =
-  '[grid-template-columns:var(--mtx-mobile)] sm:[grid-template-columns:var(--mtx-desktop)]';
+  '[grid-template-columns:var(--mtx-mobile)] min-[940px]:[grid-template-columns:var(--mtx-desktop)]';
+
+/** Hairline borders for the KPI band, correct at both the 2-col (mobile)
+ *  and 4-col (min-[940px]) arrangements: a vertical divider between the
+ *  two visual columns at every width, plus a horizontal divider between
+ *  the two wrapped rows ONLY below 940px (the 4-col arrangement is a
+ *  single row, so it never wants one). */
+function kpiBandCellClass(i: number): string {
+  return cn(
+    'border-border-subtle',
+    i % 2 === 1 && 'border-l',
+    i >= 2 && 'border-t',
+    'min-[940px]:border-t-0',
+    i > 0 && i % 2 === 0 && 'min-[940px]:border-l',
+  );
+}
 
 /**
  * The team-stats board: KPI band + sortable-style header + ranked rows, any
@@ -60,12 +78,9 @@ export function MatrixBoard({ kpis, columns, rows }: MatrixBoardProps) {
       className="overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]"
     >
       {kpis.length > 0 ? (
-        <div className="grid grid-cols-4 border-b border-border-subtle">
+        <div className="grid grid-cols-2 border-b border-border-subtle min-[940px]:grid-cols-4">
           {kpis.map((kpi, i) => (
-            <div
-              key={kpi.label}
-              className={cn('px-5 py-3.5', i > 0 && 'border-l border-border-subtle')}
-            >
+            <div key={kpi.label} className={cn('px-5 py-3.5', kpiBandCellClass(i))}>
               <div className="font-fw-display text-eyebrow font-bold uppercase tracking-[0.1em] text-text-tertiary">
                 {kpi.label}
               </div>
@@ -102,7 +117,7 @@ function MatrixHeader({ columns }: { columns: MatrixColumn[] }) {
           className={cn(
             'font-fw-display text-eyebrow font-bold uppercase tracking-[0.09em] text-text-tertiary',
             col.align === 'center' && 'text-center',
-            HIDE_ON_MOBILE.has(col.key) && 'hidden sm:block',
+            HIDE_ON_MOBILE.has(col.key) && 'hidden min-[940px]:block',
           )}
         >
           {col.label}
@@ -148,7 +163,7 @@ function MatrixRow({
               key={col?.key ?? i}
               className={cn(
                 col?.align === 'center' && 'flex justify-center',
-                col && HIDE_ON_MOBILE.has(col.key) && 'hidden sm:flex sm:items-center',
+                col && HIDE_ON_MOBILE.has(col.key) && 'hidden min-[940px]:flex min-[940px]:items-center',
               )}
             >
               {cell}

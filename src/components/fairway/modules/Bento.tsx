@@ -9,6 +9,21 @@
  * whole thing reads as ONE surface with internal dividers rather than a
  * stack of separate cards. Cells opt into the whole-cell click target via
  * `BentoCell`'s own `onOpen` prop — `Bento` itself is a pure grid shell.
+ *
+ * Breakpoint: the 4-col collapse fires at `min-[940px]:` (not Tailwind's
+ * `lg`) so the chassis shares ONE mobile threshold with the spine/stage
+ * shell's own stacking breakpoint (see `StatsSpineStage`, the CoachHelm
+ * homes) — the bento and the shell that hosts it go single-column together.
+ *
+ * `grid-flow-dense` trade-off: dense packing fills mid-grid holes left by
+ * earlier cells, which is exactly what makes this "gapless" instead of
+ * leaving ragged empty tracks. The conscious cost is that when a 2×2 cell
+ * (`span=2 rows=2`) is NOT the first child, dense packing can pull a later,
+ * smaller cell UP ahead of it to fill the hole — so visual order can diverge
+ * from DOM/tab order for keyboard and screen-reader users. Every current
+ * composition sidesteps this by authoring cells in visual-priority order
+ * already (the 2×2, if present, goes first) — any NEW composition must do
+ * the same, or drop `grid-flow-dense` for that instance.
  * ========================================================================== */
 
 import type { ReactNode } from 'react';
@@ -30,7 +45,7 @@ export function Bento({ children, className }: BentoProps) {
       className={cn(
         'grid grid-flow-dense grid-cols-2 gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle [box-shadow:var(--fw-shadow-card)]',
         'auto-rows-[minmax(7.375rem,auto)]',
-        'lg:grid-cols-4',
+        'min-[940px]:grid-cols-4',
         className,
       )}
     >

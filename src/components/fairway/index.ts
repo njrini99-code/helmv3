@@ -460,8 +460,6 @@ export {
   CoachHelmShell,
   type CoachHelmShellProps,
   type CoachHelmCrumb,
-  FairwayBrief,
-  type FairwayBriefProps,
   CoachHelmSubNav,
   type CoachHelmSubNavProps,
   type CoachHelmTab,

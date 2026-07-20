@@ -69,6 +69,22 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
   // Unknown/absent param → homeKey. Never render a blank stage.
   const activeKey = requestedKey && knownKeys.has(requestedKey) ? requestedKey : homeKey;
 
+  // Focus management: when the stage swaps to a new view (via open()/home()),
+  // move focus onto the new view's container so keyboard/AT users land in
+  // the fresh content instead of staying stranded on whatever trigger they
+  // clicked. Skipped on first mount — that's initial page load, not a
+  // stage swap, and stealing focus there would fight the page's own
+  // initial-focus behavior.
+  const stageViewRef = React.useRef<HTMLDivElement | null>(null);
+  const hasMounted = React.useRef(false);
+  React.useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
+    stageViewRef.current?.focus({ preventScroll: false });
+  }, [activeKey]);
+
   const open = React.useCallback(
     (key: string) => {
       const next = new URLSearchParams(searchParams.toString());
@@ -91,13 +107,16 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
 
   return (
     <StageContext.Provider value={contextValue}>
-      <div data-slot="stage" className="relative min-h-[320px]">
+      <div data-slot="stage" className="relative min-h-[320px]" aria-live="polite">
         {activeView ? (
           <div
             key={activeView.key}
+            ref={stageViewRef}
+            tabIndex={-1}
             data-slot="stageview"
             data-stage-key={activeView.key}
             className={cn(
+              'outline-none',
               'motion-safe:animate-[fade-up_220ms_ease-out]',
               'motion-reduce:animate-none',
             )}

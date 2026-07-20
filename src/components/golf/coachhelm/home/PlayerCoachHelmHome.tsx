@@ -164,7 +164,11 @@ export function PlayerCoachHelmHome({
     data.recentRounds.length > 0 ||
     profileData != null ||
     trendData != null ||
-    shotData != null;
+    shotData != null ||
+    developmentActiveAreas.length > 0 ||
+    developmentProposedAreas.length > 0 ||
+    goals.length > 0 ||
+    achievedGoals.length > 0;
 
   /* ── Feedback handler — PRESERVED rateInsightAsPlayer round-trip + toasts. ── */
   const handleRate = useCallback(

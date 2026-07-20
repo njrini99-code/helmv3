@@ -401,6 +401,11 @@ async function bulkAcknowledgeInsightsImpl(
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/insights');
+    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9) — revalidate
+    // the canonical destination too (pattern: v3/goals.ts createTeamGoal;
+    // see bulkDismissInsightsImpl above, which already does this).
+    revalidatePath('/golf/dashboard/intelligence');
 
     return { success: true, affectedCount: data?.length || 0 };
   } catch (error) {
@@ -470,6 +475,11 @@ async function bulkResolveInsightsImpl(
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/insights');
+    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9) — revalidate
+    // the canonical destination too (pattern: v3/goals.ts createTeamGoal;
+    // see bulkDismissInsightsImpl above, which already does this).
+    revalidatePath('/golf/dashboard/intelligence');
 
     return { success: true, affectedCount: data?.length || 0 };
   } catch (error) {

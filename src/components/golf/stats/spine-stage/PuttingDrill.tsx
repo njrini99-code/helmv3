@@ -11,6 +11,7 @@
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
+import { RotateCw } from 'lucide-react';
 import {
   DrillPanel,
   RampMatrix,
@@ -20,7 +21,7 @@ import {
   rampBandForValue,
 } from '@/components/fairway/modules';
 import type { RampCell, RailBarRow } from '@/components/fairway/modules';
-import { Skeleton, Surface, type LeakMapBucket } from '@/components/fairway';
+import { Button, InlineNotice, Skeleton, Surface, type LeakMapBucket } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
@@ -39,6 +40,36 @@ const LeakMap = dynamic(
   () => import('@/components/fairway/charts/LeakMap').then((m) => m.LeakMap),
   { ssr: false, loading: () => <ChartLoading /> },
 );
+
+/**
+ * P354 · The scoped leak-map failure notice, ported verbatim from
+ * FairwayStatsCockpit's `LeakLoadError`. Rendered instead of the bare
+ * (empty-data) `LeakMap` when the leak-map fetch genuinely FAILED, so a
+ * backend error reads honestly as "couldn't load — retry" rather than being
+ * masked as the insufficient-data empty state.
+ */
+function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
+  return (
+    <InlineNotice
+      tone="danger"
+      title="Couldn’t load the leak map"
+      action={
+        <Button
+          variant="secondary"
+          size="sm"
+          busy={retrying}
+          leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
+          onClick={onRetry}
+        >
+          Try again
+        </Button>
+      }
+    >
+      The strokes-gained leak detail failed to load. Your other stats are
+      up to date — retry to pull the make-rate and proximity bands.
+    </InlineNotice>
+  );
+}
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -85,9 +116,21 @@ export interface PuttingDrillProps {
   leakMaps: PlayerLeakMaps | null;
   standingByMetric: Map<string, PlayerStandingRow>;
   weaknesses: StatisticalStrengthWeakness[];
+  /** True when the leak-map fetch genuinely FAILED (distinct from no-data). */
+  leakError?: boolean;
+  onRetryLeak?: () => void;
+  retryingLeak?: boolean;
 }
 
-export function PuttingDrill({ detailedStats, leakMaps, standingByMetric, weaknesses }: PuttingDrillProps) {
+export function PuttingDrill({
+  detailedStats,
+  leakMaps,
+  standingByMetric,
+  weaknesses,
+  leakError = false,
+  onRetryLeak,
+  retryingLeak = false,
+}: PuttingDrillProps) {
   const { home } = useStage();
   const puttingByBreak = detailedStats?.puttingByBreak ?? null;
 
@@ -153,15 +196,19 @@ export function PuttingDrill({ detailedStats, leakMaps, standingByMetric, weakne
               Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.
             </p>
           ) : null}
-          <LeakMap
-            title="Putt make %"
-            overline="Putting"
-            subtitle="Make rate by distance vs PGA Tour"
-            takeaway="Bands below the dashed Tour line are where putts are leaking."
-            direction="higher_better"
-            unit="percent"
-            data={leakMaps ? toBuckets(leakMaps.putting) : []}
-          />
+          {leakError ? (
+            <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
+          ) : (
+            <LeakMap
+              title="Putt make %"
+              overline="Putting"
+              subtitle="Make rate by distance vs PGA Tour"
+              takeaway="Bands below the dashed Tour line are where putts are leaking."
+              direction="higher_better"
+              unit="percent"
+              data={leakMaps ? toBuckets(leakMaps.putting) : []}
+            />
+          )}
         </div>
       </div>
     </DrillPanel>

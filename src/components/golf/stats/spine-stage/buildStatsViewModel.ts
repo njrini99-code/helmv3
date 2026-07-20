@@ -18,6 +18,7 @@
 
 import type { PriorityItem, StandingTrackProps } from '@/components/fairway/modules';
 import { clampPct } from '@/components/fairway/modules';
+import { standingSubjectLabel } from '@/components/golf/coachhelm/v3/StandingBar';
 
 /** The seven `?area=` stage views (`home` renders the bento). */
 export type StatsArea =
@@ -152,13 +153,15 @@ export function sgToTrackPct(value: number | null | undefined, halfRange = 2): n
 export function buildStandingTrack(
   sgTotal: number | null | undefined,
   teamAvg: number | null | undefined,
+  standingViewerContext: 'self' | 'coach' = 'self',
+  playerName?: string | null,
 ): StandingTrackProps | undefined {
   const you = finite(sgTotal);
   if (you === null) return undefined;
   const team = finite(teamAvg);
   return {
     pct: sgToTrackPct(you),
-    subjectLabel: 'You',
+    subjectLabel: standingSubjectLabel(standingViewerContext, playerName),
     benchmarks: [
       ...(team !== null ? [{ label: 'Team', pct: sgToTrackPct(team) }] : []),
       { label: 'Tour', pct: sgToTrackPct(0), emphasis: true },

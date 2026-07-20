@@ -173,7 +173,13 @@ export default async function TeamStatsPage() {
     ),
     getTeamStatsIntelligence(teamId),
   ]);
-  const { data: allRounds } = roundsResult;
+  // Honesty flag: a genuinely FAILED rounds fetch must read as "couldn't
+  // load" (with retry), not as a silent cold-start — `fetchAllRowsResult`
+  // resolves `{ data: null, error }` on the first-page error instead of
+  // throwing, so an unchecked `error` here previously rendered every
+  // player's per-round stats as "no rounds yet".
+  const { data: allRounds, error: roundsFetchError } = roundsResult;
+  const roundsError = roundsFetchError !== null;
 
   // Fetch ALL holes for calculating GIR and fairway stats
   const roundIds = (allRounds || []).map(r => r.id);
@@ -435,6 +441,7 @@ export default async function TeamStatsPage() {
         intelligenceSampleSize={intelligenceSampleSize}
         leakMaps={leakRes.success ? leakRes.data ?? null : null}
         leakError={leakError}
+        roundsError={roundsError}
         standingByPlayer={standingByPlayer}
         teamRounds30d={teamRounds30d}
       />

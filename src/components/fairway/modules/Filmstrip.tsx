@@ -42,43 +42,50 @@ export function Filmstrip({ holes, activeHole, onScrub }: FilmstripProps) {
   }
 
   return (
-    <div
-      role="group"
-      aria-label="Hole by hole"
-      data-slot="filmstrip"
-      className="grid h-[6.75rem] items-end gap-1"
-      style={{ gridTemplateColumns: `repeat(${holes.length}, minmax(0, 1fr))` }}
-    >
-      {holes.map((hole) => {
-        const { heightPx, tone } = holeBar(hole);
-        const isActive = active === hole.n;
-        return (
-          <button
-            key={hole.n}
-            type="button"
-            aria-label={`Hole ${hole.n}, par ${hole.par}, score ${hole.score}`}
-            aria-pressed={isActive}
-            onMouseEnter={() => scrub(hole)}
-            onFocus={() => scrub(hole)}
-            onClick={() => scrub(hole)}
-            className={cn(
-              'flex h-full flex-col items-center justify-end gap-1 rounded-fw-sm px-0 pb-1 transition-colors duration-150',
-              'hover:bg-surface-tint motion-reduce:transition-none',
-              'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-              isActive && 'bg-surface-tint',
-            )}
-          >
-            <span
-              aria-hidden="true"
-              style={{ height: `${heightPx}px` }}
-              className={cn('min-h-[4px] w-[70%] rounded-sm', BAR_TONE[tone])}
-            />
-            <span className="font-fw-mono text-eyebrow font-normal text-text-tertiary tabular-nums">
-              {hole.n}
-            </span>
-          </button>
-        );
-      })}
+    // `overflow-x-auto` + a per-column `minmax(1.875rem, …)` floor (30px,
+    // inside the ~28-32px tap-target band) so 18 holes scroll horizontally
+    // on narrow viewports instead of being crushed unreadable. On desktop
+    // the available width already exceeds 18 × 30px, so the `1fr` half of
+    // each track wins and columns render full-width and equal, unchanged.
+    <div className="overflow-x-auto" data-slot="filmstrip-scroll">
+      <div
+        role="group"
+        aria-label="Hole by hole"
+        data-slot="filmstrip"
+        className="grid h-[6.75rem] items-end gap-1"
+        style={{ gridTemplateColumns: `repeat(${holes.length}, minmax(1.875rem, 1fr))` }}
+      >
+        {holes.map((hole) => {
+          const { heightPx, tone } = holeBar(hole);
+          const isActive = active === hole.n;
+          return (
+            <button
+              key={hole.n}
+              type="button"
+              aria-label={`Hole ${hole.n}, par ${hole.par}, score ${hole.score}`}
+              aria-pressed={isActive}
+              onMouseEnter={() => scrub(hole)}
+              onFocus={() => scrub(hole)}
+              onClick={() => scrub(hole)}
+              className={cn(
+                'flex h-full min-w-[1.875rem] flex-col items-center justify-end gap-1 rounded-fw-sm px-0 pb-1 transition-colors duration-150',
+                'hover:bg-surface-tint motion-reduce:transition-none',
+                'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                isActive && 'bg-surface-tint',
+              )}
+            >
+              <span
+                aria-hidden="true"
+                style={{ height: `${heightPx}px` }}
+                className={cn('min-h-[4px] w-[70%] rounded-sm', BAR_TONE[tone])}
+              />
+              <span className="font-fw-mono text-eyebrow font-normal text-text-tertiary tabular-nums">
+                {hole.n}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

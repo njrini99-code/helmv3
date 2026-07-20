@@ -157,6 +157,16 @@ describe('buildStandingTrack', () => {
     const track = buildStandingTrack(0.5, null);
     expect(track?.benchmarks.find((b) => b.label === 'Team')).toBeUndefined();
   });
+
+  it('labels the subject with the player\'s initials when a coach views a teammate', () => {
+    const track = buildStandingTrack(0.5, 0.2, 'coach', 'Jordan Smith');
+    expect(track?.subjectLabel).toBe('JS');
+  });
+
+  it('defaults to "You" for the self viewer context', () => {
+    const track = buildStandingTrack(0.5, 0.2, 'self', 'Jordan Smith');
+    expect(track?.subjectLabel).toBe('You');
+  });
 });
 
 describe('buildVerdict', () => {

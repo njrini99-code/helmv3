@@ -73,6 +73,11 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
   const [standingRows, setStandingRows] = useState<PlayerStandingRow[] | null>(null);
   const [leakMaps, setLeakMaps] = useState<PlayerLeakMaps | null>(null);
+  // Distinguish a leak-maps FETCH FAILURE from genuine no-data, so the
+  // Approach/Putting drills render an honest "couldn't load — retry" notice
+  // instead of masking a backend error as the insufficient-data empty state.
+  // Mirrors FairwayStatsCockpit's P354 `leakError` pattern.
+  const [leakError, setLeakError] = useState(false);
   const [sprayData, setSprayData] = useState<SprayChartResponse | null>(null);
   const [strengths, setStrengths] = useState<StatisticalStrengthWeakness[]>([]);
   const [weaknesses, setWeaknesses] = useState<StatisticalStrengthWeakness[]>([]);
@@ -84,6 +89,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const loadAll = useCallback(async (id: string) => {
     setLoading(true);
     setLoadError(null);
+    setLeakError(false);
     try {
       const [detailedRes, trendRes, standingRes, leakRes, sprayRes, swRes, worstRes, patternsRes] =
         await Promise.allSettled([
@@ -133,6 +139,11 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
       const leakFailed = leakRes.status === 'rejected' || (leakRes.status === 'fulfilled' && !leakRes.value.success);
       if (standingFailed && leakFailed) {
         setLoadError('Failed to load stats. Please try again.');
+      } else if (leakFailed) {
+        // The page is otherwise healthy, but the leak-map enrichment failed on
+        // its own — surface a scoped, retryable notice in the Approach/Putting
+        // drills rather than letting them read as "not enough data". (P354)
+        setLeakError(true);
       }
     } catch {
       setLoadError('Failed to load stats. Please try again.');
@@ -198,7 +209,10 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     [weaknesses],
   );
 
-  const track = useMemo(() => buildStandingTrack(sgTotal, sgTeamAvg), [sgTotal, sgTeamAvg]);
+  const track = useMemo(
+    () => buildStandingTrack(sgTotal, sgTeamAvg, standingViewerContext, playerName),
+    [sgTotal, sgTeamAvg, standingViewerContext, playerName],
+  );
   const verdict = useMemo(() => buildVerdict(sgTotal, leakLabel), [sgTotal, leakLabel]);
 
   const roundsAnalyzed = detailedStats?.roundsPlayed ?? 0;
@@ -274,11 +288,25 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           leakMaps={leakMaps}
           standingByMetric={standingByMetric}
           weaknesses={weaknesses}
+          leakError={leakError}
+          onRetryLeak={() => void loadAll(playerId)}
+          retryingLeak={loading}
         />
       ),
     },
     { key: 'driving', node: <DrivingDrill detailedStats={detailedStats} sprayData={sprayData} /> },
-    { key: 'approach', node: <ApproachDrill detailedStats={detailedStats} leakMaps={leakMaps} /> },
+    {
+      key: 'approach',
+      node: (
+        <ApproachDrill
+          detailedStats={detailedStats}
+          leakMaps={leakMaps}
+          leakError={leakError}
+          onRetryLeak={() => void loadAll(playerId)}
+          retryingLeak={loading}
+        />
+      ),
+    },
     { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} /> },
     { key: 'scoring', node: <ScoringDrill detailedStats={detailedStats} worstHoles={worstHoles} /> },
     {

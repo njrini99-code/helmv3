@@ -85,6 +85,19 @@ export function ReviewHero({
     router.replace(qs ? `?${qs}` : '?', { scroll: false });
   }
 
+  // Scrubbing to a different hole while a shot-path panel is open leaves a
+  // stale panel (open hole's shots keep rendering under a detail line that
+  // has moved on). Closing the panel on scrub — rather than repointing it —
+  // keeps "View shot path" an explicit, deliberate action per hole instead
+  // of shot data silently swapping under the reader as they scrub.
+  function handleScrub(hole: FilmstripHole) {
+    setActiveHole(hole.n);
+    if (openHole != null && openHole !== hole.n) {
+      setOpenHole(null);
+      setHoleParam(null);
+    }
+  }
+
   function toggleShotPath() {
     if (activeHole == null) return;
     if (openHole === activeHole) {
@@ -133,7 +146,7 @@ export function ReviewHero({
         <Filmstrip
           holes={filmstripHoles}
           activeHole={activeHole ?? undefined}
-          onScrub={(hole) => setActiveHole(hole.n)}
+          onScrub={handleScrub}
         />
         <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
           {detail ? (

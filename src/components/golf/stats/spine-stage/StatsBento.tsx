@@ -81,7 +81,6 @@ export function StatsBento({
       label: 'Fairways',
       pct: finite(s?.fairwayPercentage) ?? 0,
       value: fmtPct(finite(s?.fairwayPercentage)),
-      tickPct: pgaTickPct(standingByMetric, 'gir_pct'),
     },
     { label: 'Par 4', pct: finite(s?.fairwayPctPar4) ?? 0, value: fmtPct(finite(s?.fairwayPctPar4)) },
     { label: 'Par 5', pct: finite(s?.fairwayPctPar5) ?? 0, value: fmtPct(finite(s?.fairwayPctPar5)) },
