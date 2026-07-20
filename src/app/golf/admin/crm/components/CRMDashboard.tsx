@@ -22,6 +22,7 @@ import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 import { Button } from '@/components/ui/button';
 import { logError } from '@/lib/error-logging';
 import { ListSkeleton } from '@/components/ui/skeleton';
+import { WeeklyPulse } from './dashboard/WeeklyPulse';
 
 interface CRMDashboardProps {
   allCoaches: Coach[];
@@ -176,6 +177,9 @@ export function CRMDashboard({
 
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto">
+      {/* ── Weekly Pulse ── */}
+      <WeeklyPulse />
+
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <KPICard
