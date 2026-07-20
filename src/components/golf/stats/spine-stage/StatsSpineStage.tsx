@@ -304,6 +304,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         <ApproachDrill
           detailedStats={detailedStats}
           leakMaps={leakMaps}
+          sprayData={sprayData}
           leakError={leakError}
           onRetryLeak={() => void loadAll(playerId)}
           retryingLeak={loading}

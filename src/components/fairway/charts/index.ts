@@ -143,6 +143,25 @@ export type { ShotDispersionProps, ShotPoint } from './ShotDispersion';
 export { PuttingHeatmap } from './PuttingHeatmap';
 export type { PuttingHeatmapProps, HeatCell } from './PuttingHeatmap';
 
+// ── Drill-hero kit (Wave — stats visuals): SprayField / BandHistogram /
+// MakeCurve. Bare instrument bodies (no title/state/tableData props) — the
+// consuming drill hero supplies its own surrounding card + header chrome.
+export { SprayField } from './SprayField';
+export type {
+  SprayFieldProps,
+  SprayBounds,
+  CardinalSector,
+  SectorWedgeGeometry,
+  PlotBox,
+  WedgeRect,
+} from './SprayField';
+
+export { BandHistogram } from './BandHistogram';
+export type { BandHistogramProps, BandHistogramBand } from './BandHistogram';
+
+export { MakeCurve } from './MakeCurve';
+export type { MakeCurveProps, MakeCurvePoint } from './MakeCurve';
+
 // ── DOM-based feature × time density grid (Utilization tab) ────────────────
 export { AdoptionHeatGrid } from './AdoptionHeatGrid';
 export type {

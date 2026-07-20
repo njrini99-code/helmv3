@@ -4,14 +4,29 @@
  * ============================================================================
  * ScoringDrill — `?area=scoring` (spec §5.1)
  * ----------------------------------------------------------------------------
- * Par-split outcome mix (reused `BarCompare`), per-round scoring rates +
- * scoring-by-round-type Readout bands, streak/best headline readouts, and the
- * worst holes from the newly-surfaced `getWorstHoleAnalysis` as a ranked
- * `PriorityList` (rank IS the leak-severity order).
+ * HERO — a single full-width `SegmentBar` of the season's score mix (eagle-
+ * or-better / birdie / par / bogey / double+ shares, best → worst left to
+ * right, semantic ramp: birdie-or-better in accent ink, par neutral, bogey
+ * warning-tinted, double+ danger-tinted) with an integrated "label pct%"
+ * legend, plus a per-round mono caption line underneath. Zero rounds → the
+ * bar's own honest empty state, never a fabricated segment.
+ *
+ * Below the hero: par-split outcome mix (reused `BarCompare`), the detailed
+ * per-round scoring rates + scoring-by-round-type Readout bands, streak/best
+ * headline readouts, and the worst holes from `getWorstHoleAnalysis` as a
+ * ranked list (rank IS the leak-severity order).
  * ========================================================================== */
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InstrumentPanel, Readout, BarCompare, InlineNotice, Eyebrow } from '@/components/fairway';
+import {
+  InstrumentPanel,
+  Readout,
+  BarCompare,
+  InlineNotice,
+  Eyebrow,
+  SegmentBar,
+  type SegmentBarPart,
+} from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
 import { DEFAULT_MIN_PLAYS } from '@/lib/golf/worst-hole-ranking';
@@ -26,6 +41,10 @@ function fmtToPar(v: number | null): string {
 }
 function pctOf(n: number, total: number): number {
   return total > 0 ? (n / total) * 100 : 0;
+}
+/** Per-round rate for the mono caption line — 2 decimals, honest em-dash. */
+function fmtRate(n: number | null): string {
+  return n === null ? '—' : n.toFixed(2);
 }
 
 const PAR_KEYS = [
@@ -47,17 +66,45 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
     .filter((c) => (c.d?.total ?? 0) > 0)
     .map((c) => ({ label: c.label, d: c.d! }));
 
+  // Season totals + per-round rates for each scoring outcome — shared by the
+  // hero SegmentBar (counts → shares) and the detailed per-round band below
+  // (rate + season total per outcome).
+  const totalEagles = s?.totalEagles ?? 0;
+  const totalBirdies = s?.totalBirdies ?? 0;
+  const totalPars = s?.totalPars ?? 0;
+  const totalBogeys = s?.totalBogeys ?? 0;
+  const totalDoublePlus = s?.totalDoublePlus ?? 0;
+
+  const eaglesPerRound = finite(s?.eaglesPerRound);
+  const birdiesPerRound = finite(s?.birdiesPerRound);
+  const parsPerRound = finite(s?.parsPerRound);
+  const bogeysPerRound = finite(s?.bogeysPerRound);
+  const doublePlusPerRound = finite(s?.doublePlusPerRound);
+
   // Per-round scoring rates, each with its season total as a mono caption.
   // Hidden entirely when there are no rounds (rate + total would both be 0,
   // an honest but useless band).
   const scoringRates: Array<{ label: string; rate: number | null; total: number }> = [
-    { label: 'Eagles / round', rate: finite(s?.eaglesPerRound), total: s?.totalEagles ?? 0 },
-    { label: 'Birdies / round', rate: finite(s?.birdiesPerRound), total: s?.totalBirdies ?? 0 },
-    { label: 'Pars / round', rate: finite(s?.parsPerRound), total: s?.totalPars ?? 0 },
-    { label: 'Bogeys / round', rate: finite(s?.bogeysPerRound), total: s?.totalBogeys ?? 0 },
-    { label: 'Double+ / round', rate: finite(s?.doublePlusPerRound), total: s?.totalDoublePlus ?? 0 },
+    { label: 'Eagles / round', rate: eaglesPerRound, total: totalEagles },
+    { label: 'Birdies / round', rate: birdiesPerRound, total: totalBirdies },
+    { label: 'Pars / round', rate: parsPerRound, total: totalPars },
+    { label: 'Bogeys / round', rate: bogeysPerRound, total: totalBogeys },
+    { label: 'Double+ / round', rate: doublePlusPerRound, total: totalDoublePlus },
   ];
   const hasScoringRates = (s?.roundsPlayed ?? 0) > 0;
+
+  // HERO — the score-mix SegmentBar, best → worst left to right. Color ramp
+  // per the design spec: birdie-or-better in the accent ("good") ink, par
+  // neutral, bogey the warning ("caution") tint, double+ an explicit muted
+  // danger-token override (SegmentBar's built-in tones stop at "caution").
+  const scoreMixParts: SegmentBarPart[] = [
+    { label: 'Eagle or better', value: totalEagles, tone: 'good' },
+    { label: 'Birdie', value: totalBirdies, tone: 'good' },
+    { label: 'Par', value: totalPars, tone: 'neutral' },
+    { label: 'Bogey', value: totalBogeys, tone: 'caution' },
+    { label: 'Double+', value: totalDoublePlus, color: 'var(--fw-color-danger)' },
+  ];
+  const perRoundLine = `per round: E ${fmtRate(eaglesPerRound)} · B ${fmtRate(birdiesPerRound)} · P ${fmtRate(parsPerRound)} · Bo ${fmtRate(bogeysPerRound)} · D+ ${fmtRate(doublePlusPerRound)}`;
 
   // Scoring average + round count by round type. A type with zero rounds
   // played stays an honest awaiting readout rather than a fabricated 0 avg.
@@ -80,6 +127,22 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
   return (
     <DrillPanel title="Scoring" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
+        {/* HERO — score mix */}
+        <div className="flex flex-col gap-2">
+          <SegmentBar
+            title="Score mix"
+            overline="Scoring"
+            takeaway="Share of holes by scoring outcome, best to worst."
+            parts={scoreMixParts}
+            primary={1}
+          />
+          {hasScoringRates ? (
+            <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+              {perRoundLine}
+            </p>
+          ) : null}
+        </div>
+
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <InstrumentPanel depth="base" padding="md">
             <Readout value={finite(s?.scoringAverage) ?? undefined} label="Scoring average" size="md" state={s?.scoringAverage != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />

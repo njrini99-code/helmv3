@@ -4,17 +4,23 @@
  * ============================================================================
  * ApproachDrill — `?area=approach` (spec §5.1)
  * ----------------------------------------------------------------------------
- * GIR-by-distance `RailBars` (0-3 through 225+ yd bands) + the reused
- * `LeakMap` proximity chart (lower-is-better feet vs PGA Tour).
+ * `SprayField` (family='approach') as the drill's signature hero — full
+ * width, first element after the header — a `BandHistogram` for GIR by
+ * approach-distance band (0-3 through 225+ yds; only a percentage is tracked
+ * per band, so `n` is honestly `null` rather than fabricated), GIR-by-lie
+ * `RailBars`, and the reused `LeakMap` proximity chart (lower-is-better feet
+ * vs PGA Tour).
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
 import { RotateCw } from 'lucide-react';
 import { DrillPanel, RailBars, useStage } from '@/components/fairway/modules';
 import type { RailBarRow } from '@/components/fairway/modules';
-import { Button, InlineNotice, Skeleton, Surface, type LeakMapBucket } from '@/components/fairway';
+import { Button, Eyebrow, InlineNotice, Skeleton, Surface, type LeakMapBucket } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
+import type { SprayChartResponse } from '@/app/golf/actions/stats-data-types';
+import type { BandHistogramBand } from '@/components/fairway/charts/BandHistogram';
 
 function ChartLoading() {
   return (
@@ -24,6 +30,16 @@ function ChartLoading() {
     </Surface>
   );
 }
+
+const SprayField = dynamic(
+  () => import('@/components/fairway/charts/SprayField').then((m) => m.SprayField),
+  { ssr: false, loading: () => <ChartLoading /> },
+);
+
+const BandHistogram = dynamic(
+  () => import('@/components/fairway/charts/BandHistogram').then((m) => m.BandHistogram),
+  { ssr: false, loading: () => <ChartLoading /> },
+);
 
 const LeakMap = dynamic(
   () => import('@/components/fairway/charts/LeakMap').then((m) => m.LeakMap),
@@ -81,9 +97,26 @@ const GIR_BANDS: ReadonlyArray<{ label: string; field: keyof GolfStats }> = [
   { label: '225+ yds', field: 'girPct225Plus' },
 ];
 
+/** Real-summary aria-label for the GIR-by-distance BandHistogram — the ONE
+ *  non-interactive AT channel, so it must actually describe the data rather
+ *  than just naming the chart (mirrors SprayField's `buildSprayAriaSummary`). */
+function buildGirBandsAriaSummary(bands: BandHistogramBand[]): string {
+  const withData = bands.filter(
+    (b): b is BandHistogramBand & { pct: number } => b.pct !== null && Number.isFinite(b.pct),
+  );
+  if (withData.length === 0) return 'Greens in regulation percentage by approach distance band. No data yet.';
+  const best = withData.reduce((a, b) => (b.pct > a.pct ? b : a));
+  const worst = withData.reduce((a, b) => (b.pct < a.pct ? b : a));
+  return (
+    `Greens in regulation percentage by approach distance band. ` +
+    `Best at ${best.label} (${Math.round(best.pct)}%), worst at ${worst.label} (${Math.round(worst.pct)}%).`
+  );
+}
+
 export interface ApproachDrillProps {
   detailedStats: GolfStats | null;
   leakMaps: PlayerLeakMaps | null;
+  sprayData: SprayChartResponse | null;
   /** True when the leak-map fetch genuinely FAILED (distinct from no-data). */
   leakError?: boolean;
   onRetryLeak?: () => void;
@@ -93,6 +126,7 @@ export interface ApproachDrillProps {
 export function ApproachDrill({
   detailedStats,
   leakMaps,
+  sprayData,
   leakError = false,
   onRetryLeak,
   retryingLeak = false,
@@ -100,10 +134,13 @@ export function ApproachDrill({
   const { home } = useStage();
   const s = detailedStats;
 
-  const girRows: RailBarRow[] = GIR_BANDS.map((band) => {
+  // GIR by approach distance — only a percentage is tracked per band (no
+  // per-band attempt count on `GolfStats`), so `n` stays honestly `null`
+  // rather than fabricating a sample size (BandHistogram falls back to the
+  // pct-scaled height when `n` is absent).
+  const girBands: BandHistogramBand[] = GIR_BANDS.map((band) => {
     const raw = s ? (s[band.field] as unknown as number | null) : null;
-    const pct = finite(raw);
-    return { label: band.label, pct: pct ?? 0, value: fmtPct(pct), dim: pct === null };
+    return { label: band.label, n: null, pct: finite(raw) };
   });
 
   const byLie: RailBarRow[] = [
@@ -114,24 +151,31 @@ export function ApproachDrill({
 
   return (
     <DrillPanel title="Approach" backLabel="All areas" onBack={home}>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="flex flex-col gap-4">
-          <RailBars rows={girRows} labelWidth={84} />
-          <RailBars rows={byLie} labelWidth={84} />
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Eyebrow as="h3" tone="accent">Approach shot spray</Eyebrow>
+          <SprayField group={sprayData?.approach ?? null} family="approach" />
         </div>
-        {leakError ? (
-          <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
-        ) : (
-          <LeakMap
-            title="Approach proximity"
-            overline="Approach"
-            subtitle="Average proximity to the hole by approach distance vs PGA Tour"
-            takeaway="Bands above the dashed Tour line leave you farther from the hole than Tour."
-            direction="lower_better"
-            unit="feet"
-            data={leakMaps ? toBuckets(leakMaps.approach) : []}
-          />
-        )}
+        <div className="flex flex-col gap-2">
+          <Eyebrow as="h4">GIR by distance</Eyebrow>
+          <BandHistogram bands={girBands} ariaLabel={buildGirBandsAriaSummary(girBands)} />
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <RailBars rows={byLie} labelWidth={84} />
+          {leakError ? (
+            <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
+          ) : (
+            <LeakMap
+              title="Approach proximity"
+              overline="Approach"
+              subtitle="Average proximity to the hole by approach distance vs PGA Tour"
+              takeaway="Bands above the dashed Tour line leave you farther from the hole than Tour."
+              direction="lower_better"
+              unit="feet"
+              data={leakMaps ? toBuckets(leakMaps.approach) : []}
+            />
+          )}
+        </div>
       </div>
     </DrillPanel>
   );
