@@ -2070,6 +2070,14 @@ function InsightsDashboardSkeleton() {
 // template arms it (merged per-coach on "Gmail" click in the row / detail
 // panel); the active name is shown with a clear (×) affordance. Selecting and
 // clearing both 44px-tall for touch. Persistence is handled by the parent.
+//
+// NOTE for integrator: `sendStatus` is optional and unwired here — no caller
+// currently passes it. To surface it: (1) add page.tsx state seeded from
+// getGmailSendStatus()'s extended { sentToday, dailyCap } (already returned
+// when configured — see crm-gmail-send.ts), and (2) re-fetch it inside
+// sendBatchViaGmail's success branch (same place it already calls
+// fetchAllCoaches() to resync after a batch completes) so the count stays
+// live after a send.
 // ============================================================================
 function ManualGmailTemplateBar({
   templates,
@@ -2079,6 +2087,7 @@ function ManualGmailTemplateBar({
   onSendBatch,
   batchSending = false,
   domainAuth = null,
+  sendStatus = null,
 }: {
   templates: ManualGmailTemplate[];
   active: ManualGmailTemplate | null;
@@ -2090,6 +2099,10 @@ function ManualGmailTemplateBar({
   batchSending?: boolean;
   // SPF/DKIM/DMARC self-check result for the sending domain (direct send only).
   domainAuth?: DomainAuthResult | null;
+  // Today's direct-send usage vs the daily cap (direct send only) — from
+  // getGmailSendStatus()'s extended shape. Optional so this bar renders
+  // unchanged until a caller wires it up.
+  sendStatus?: { sentToday: number; dailyCap: number } | null;
 }) {
   const handleSelect = (id: string) => {
     if (!id) { onChange(null); return; }
@@ -2192,6 +2205,11 @@ function ManualGmailTemplateBar({
             >
               <IconSend size={14} /> {batchSending ? 'Sending…' : 'Send next 10'}
             </Button>
+          )}
+          {sendStatus && (
+            <span className="text-micro text-warm-500 tabular-nums">
+              {sendStatus.sentToday} of {sendStatus.dailyCap} sent today
+            </span>
           )}
         </>
       )}
