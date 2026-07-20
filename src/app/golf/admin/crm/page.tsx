@@ -75,7 +75,13 @@ import { AutomationsList } from './components/automations/AutomationsList';
 import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAdminPanel';
 import type { CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
-import { getCoachSequenceEnrollmentStatuses, type CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
+import {
+  getCoachSequenceEnrollmentStatuses,
+  type CoachEnrollmentSummary,
+  listSequences,
+  getSequence,
+  getSequenceEnrollmentCounts,
+} from '@/app/golf/actions/crm-sequences';
 import { logManualGmailTouch } from '@/app/golf/actions/crm-manual-send';
 import {
   getGmailSendStatus,
@@ -87,6 +93,7 @@ import { scoreColdEmail } from '@/lib/crm/spam-score';
 import type { DomainAuthResult } from '@/lib/crm/domain-auth-check';
 import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
 import { mergeTemplate, buildGmailComposeUrl } from '@/lib/crm/gmail-compose';
+import { htmlToText } from '@/lib/crm/html-to-text';
 import type { CoachEngagement } from './types/foundations';
 import { Button, IconButton } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
@@ -102,7 +109,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 // key. The four legacy email surfaces (email/resend/insights/inbound) are NOT
 // nav destinations anymore — they live as sub-tabs inside the single
 // "outreach" destination (see OUTREACH_SUBTABS below).
-const TABS = [
+export const TABS = [
   // ── WORK ──
   { id: 'today', label: 'Today', Icon: IconClock3, shortcut: '1', description: "Today's ranked call & email worklist", section: 'work' },
   { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '2', description: 'Pipeline overview & quick actions', section: 'work' },
@@ -130,11 +137,16 @@ const NAV_SECTIONS = [
 // ── Outreach sub-tabs ──
 // The four legacy email surfaces, merged behind a horizontal sub-tab switcher
 // inside the Outreach panel. Each renders the exact same component as before.
-const OUTREACH_SUBTABS = [
+export const OUTREACH_SUBTABS = [
   { id: 'email', label: 'Tracking', Icon: IconSend },
   { id: 'resend', label: 'Deliverability', Icon: IconGauge },
   { id: 'insights', label: 'Analytics', Icon: IconChartBar },
-  { id: 'inbound', label: 'Replies', Icon: IconMessage },
+  // NOTE: this renders InboundLeadsView, which is backed by `demo_requests`
+  // (landing-page "request a demo" submissions) — a different object from
+  // coach replies to outreach emails (crm_replies, surfaced under the
+  // top-level "Inbox" tab). Label must stay accurate to that data source;
+  // do not relabel this "Replies".
+  { id: 'inbound', label: 'Demo Requests', Icon: IconMessage },
 ] as const;
 
 type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
@@ -146,9 +158,11 @@ type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
 // rest — so every sidebar destination stays reachable on mobile. Ids reference
 // the same stable TabId values, so tapping a bar item calls setActiveTab
 // exactly like the sidebar.
-const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'sequences'] as const;
+export const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'sequences'] as const;
 // Destinations that live behind the "More" sheet (everything not on the bar).
-const MOBILE_MORE_TABS = ['dashboard', 'pipeline', 'conferences', 'inbox', 'settings'] as const;
+// Must cover every TABS id not already on the bar — 'templates' was missing
+// here (present in neither array), making it unreachable on mobile touch.
+export const MOBILE_MORE_TABS = ['dashboard', 'pipeline', 'conferences', 'inbox', 'templates', 'settings'] as const;
 
 // ── "Open in Gmail" manual-send ──
 // The minimal shape we need from a crm_email_templates row to merge + compose.
@@ -163,6 +177,17 @@ type ManualGmailTemplate = {
 };
 // localStorage key for the currently-armed Gmail template (survives reloads).
 const MANUAL_GMAIL_TEMPLATE_KEY = 'crm_manual_gmail_template';
+
+// Email statuses that must never receive a manual Gmail send. Mirrors the
+// email_status/suppression gate that already exists server-side for the
+// direct-send path (crm-gmail-send.ts's sendCoachViaGmail/sendNextBatchViaGmail
+// skip non-'valid' status), extended to the compose-tab path below — the only
+// channel reachable while direct-send is unconfigured (the current default).
+// Exported (alongside a few other module-level contracts below) so a
+// colocated test can assert on it without rendering the full client page.
+export function isSuppressedEmailStatus(status: Coach['email_status'] | null | undefined): boolean {
+  return status === 'bounced' || status === 'complained' || status === 'unsubscribed';
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -304,9 +329,40 @@ export default function CRMPage() {
   const activeTabRef = useRef(activeTab);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
+  // Whether any modal/overlay is currently open. The shortcut listener below
+  // is registered once (empty-ish dep array) so it reads this via a ref
+  // rather than re-subscribing on every modal toggle. Needed because none of
+  // these overlays stop keydown propagation for non-Escape/Tab keys
+  // (useFocusTrap only intercepts those two) — without this guard, pressing
+  // e.g. "3" while a modal is focused silently switches the tab underneath it.
+  const anyModalOpenRef = useRef(false);
+  useEffect(() => {
+    anyModalOpenRef.current =
+      showAddModal ||
+      showImportModal ||
+      detailPanelOpen ||
+      !!quickActionsCoach ||
+      showScheduleModal ||
+      !!selectedEvent ||
+      showBulkEmailModal ||
+      cmdkOpen ||
+      moreSheetOpen;
+  }, [
+    showAddModal,
+    showImportModal,
+    detailPanelOpen,
+    quickActionsCoach,
+    showScheduleModal,
+    selectedEvent,
+    showBulkEmailModal,
+    cmdkOpen,
+    moreSheetOpen,
+  ]);
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (anyModalOpenRef.current) return;
       // Match against each tab's declared shortcut (case-insensitive for the
       // letter shortcut, e.g. "S" for Settings).
       const match = TABS.find((t) => t.shortcut.toLowerCase() === e.key.toLowerCase());
@@ -463,6 +519,10 @@ export default function CRMPage() {
     } catch (err) {
       console.error('Failed to fetch all coaches:', err);
       toast.error('Failed to load coaches', err instanceof Error ? err.message : 'Please refresh and try again.');
+      // Populate the dedicated full-page error screen (below) — previously
+      // only the toast fired, so a failed initial load rendered `allCoaches`
+      // as an empty [] indistinguishable from a genuinely empty CRM.
+      setError(err instanceof Error ? err.message : 'Failed to load coaches');
       logError(
         err instanceof Error ? err : new Error(String(err)),
         { component: 'CRMPage', action: 'fetch-all-coaches', sport: 'golf' },
@@ -783,9 +843,22 @@ export default function CRMPage() {
   };
 
   const bulkUpdateCoaches = async (ids: string[], updates: Partial<Coach>) => {
-    const finalUpdates = updates.status
+    let finalUpdates = updates.status
       ? { ...updates, updated_at: new Date().toISOString() }
       : updates;
+
+    // Same auto-follow-up rule as the single-coach path (updateCoach above) —
+    // without this, bulk-promoting via Pipeline's "Research Top N" silently
+    // skipped next_follow_up_at while the identical status change via
+    // drag-and-drop (single-coach path) set it.
+    if (updates.status && !updates.next_follow_up_at) {
+      const followUpDays = AUTO_FOLLOWUP_DAYS[updates.status];
+      if (followUpDays) {
+        const followUpDate = new Date();
+        followUpDate.setDate(followUpDate.getDate() + followUpDays);
+        finalUpdates = { ...finalUpdates, next_follow_up_at: followUpDate.toISOString() };
+      }
+    }
 
     try {
       const { error: updateError } = await supabase
@@ -856,8 +929,24 @@ export default function CRMPage() {
   // never reach the compose tab.
   const getGmailHref = useCallback((coach: Coach): string | null => {
     if (!activeManualTemplate || !coach.email) return null;
+    // Never build a send link for a suppressed coach — this compose-tab path
+    // is the only currently-reachable Gmail send channel (direct-send is
+    // inert until GMAIL_SA_* env is configured), so it needs the same
+    // email_status gate that already protects the direct-send path.
+    if (isSuppressedEmailStatus(coach.email_status)) return null;
     const subject = mergeTemplate(activeManualTemplate.subject, coach);
-    const body = mergeTemplate(activeManualTemplate.body, coach);
+    let body = mergeTemplate(activeManualTemplate.body, coach);
+    // {unsubscribe_url} is a SERVER_TOKEN resolved only inside server-side
+    // send paths (applyUnsubTag) — this client-side compose path has no
+    // server round-trip to resolve a real per-coach link, so leaving it
+    // would put the literal "{unsubscribe_url}" text in a real inbox.
+    body = body.replace(/\{unsubscribe_url\}/g, 'Reply STOP to unsubscribe');
+    // html-format templates must not be dumped as raw markup into Gmail's
+    // body= param — mirrors toSendParts()'s isHtml check in crm-gmail-send.ts
+    // (the direct-send path), which already guards against this bug for the
+    // other channel.
+    const isHtml = activeManualTemplate.format === 'html' || /^\s*(<!DOCTYPE|<html)/i.test(body);
+    if (isHtml) body = htmlToText(body);
     return buildGmailComposeUrl({ to: coach.email, subject, body });
   }, [activeManualTemplate]);
 
@@ -883,6 +972,10 @@ export default function CRMPage() {
   const sendViaGmail = useCallback(async (coach: Coach) => {
     if (!activeManualTemplate) { toast('Arm a Gmail template first'); return; }
     if (!coach.email) { toast('No email on file'); return; }
+    if (isSuppressedEmailStatus(coach.email_status)) {
+      toast.error(`${coach.name}'s email is ${coach.email_status} — send blocked`);
+      return;
+    }
     const subject = mergeTemplate(activeManualTemplate.subject, coach);
     const body = mergeTemplate(activeManualTemplate.body, coach);
     const tid = toast.loading(`Sending to ${coach.name}…`);
@@ -922,6 +1015,10 @@ export default function CRMPage() {
   // direct mode the surfaces render buttons and this SENDS via the Gmail API.
   const logGmailTouch = useCallback((coach: Coach) => {
     if (!activeManualTemplate || !coach.email) return;
+    if (isSuppressedEmailStatus(coach.email_status)) {
+      toast.error(`${coach.name}'s email is ${coach.email_status} — send blocked`);
+      return;
+    }
     if (gmailDirectEnabled) { void sendViaGmail(coach); return; }
     const subject = mergeTemplate(activeManualTemplate.subject, coach);
     logManualGmailTouch({ coach_id: coach.id, subject }).catch((err) => {
@@ -1809,11 +1906,57 @@ export default function CRMPage() {
 function SequencesTabWrapper() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // SequencesList only lists sequences — it never computes per-sequence step
+  // counts or active-enrollment counts itself (stepCounts/activeEnrollmentCounts
+  // are optional props it just forwards to SequenceCard, which falls back to
+  // `?? 0` when they're absent). Fetch and own them here so every row shows
+  // real numbers instead of always "0 steps / 0 active".
+  const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
+  const [activeEnrollmentCounts, setActiveEnrollmentCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sequences = await listSequences();
+        const results = await Promise.all(
+          sequences.map(async (seq) => {
+            const [detail, counts] = await Promise.all([
+              getSequence(seq.id).catch(() => null),
+              getSequenceEnrollmentCounts(seq.id).catch(() => null),
+            ]);
+            return { id: seq.id, steps: detail?.steps.length ?? 0, active: counts?.active ?? 0 };
+          }),
+        );
+        if (cancelled) return;
+        const nextSteps: Record<string, number> = {};
+        const nextActive: Record<string, number> = {};
+        for (const r of results) {
+          nextSteps[r.id] = r.steps;
+          nextActive[r.id] = r.active;
+        }
+        setStepCounts(nextSteps);
+        setActiveEnrollmentCounts(nextActive);
+      } catch (err) {
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'SequencesTabWrapper', action: 'load-sequence-counts', sport: 'golf' },
+          'low',
+        );
+      }
+    })();
+    return () => { cancelled = true; };
+    // refreshKey is bumped after step edits (which change counts) or on
+    // create/delete inside SequencesList — refetch counts alongside the list.
+  }, [refreshKey]);
+
   return (
     <div className="space-y-6">
       <SequencesList
         selectedId={selectedId}
         onSelect={setSelectedId}
+        stepCounts={stepCounts}
+        activeEnrollmentCounts={activeEnrollmentCounts}
         refreshKey={refreshKey}
       />
       {selectedId && (
