@@ -410,32 +410,27 @@ Approve and squash-merge.
 
 ## Code Review Tooling
 
-PRs into `main`, `develop`, and `release/*` are auto-reviewed by **two AI
-reviewers running in parallel**, plus a CI gate that mirrors them locally.
+> 2026-07-20: the external AI reviewers (CodeRabbit, Greptile) were
+> DROPPED by founder decision — CodeRabbit's credit quota had become the
+> slowest step in shipping, and the Review Gate + CodeQL cover the same
+> hard rules deterministically. `.coderabbit.yaml` is now a disable stub;
+> `.greptile/` is deleted; "CodeRabbit" was removed from main's required
+> status checks. The GitHub Apps themselves still need an owner uninstall
+> (repo Settings → Integrations). The custom rule packs under
+> `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` REMAIN — CI consumes
+> them directly; treat that directory name as historical.
 
 > PR check is red or stuck pending? `docs/CI_RUNBOOK.md` classifies every
 > check as hard-gate vs. advisory, with expected wait windows and exact
-> GHA/CircleCI rerun commands. For a stale CodeRabbit `CHANGES_REQUESTED`
-> specifically, see `docs/operations/coderabbit-review-workflow.md`.
+> GHA/CircleCI rerun commands.
 
-**CodeRabbit** — line-level static-analysis view. Configuration at
-`.coderabbit.yaml`: assertive profile, pre-merge gate, every applicable
-linter enabled (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint,
-shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint,
-checkov, gitleaks, semgrep, sqlfluff). Custom ast-grep rules in
-`.coderabbit/ast-grep/`, custom semgrep pack in `.coderabbit/semgrep/`.
-
-**Greptile** — whole-codebase view. Catches what diff-only review
-misses: duplicated logic, broken callers, drift from architecture docs.
-Configuration at `.greptile/` — `instructions.md` is the natural-language
-project context; `config.json` controls ignores and additional-context
-docs. Installed as a GitHub App at https://app.greptile.com.
-
-**Review Gate** (`.github/workflows/review-gate.yml`) — runs the same
-toolchain locally (ast-grep, semgrep, gitleaks, actionlint, yamllint,
-shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint) so merges
-are blocked even if either AI reviewer is offline. Aggregate status
-check: `Review Gate / all`.
+**Review Gate** (`.github/workflows/review-gate.yml`) — the deterministic
+review toolchain (ast-grep, semgrep, gitleaks, actionlint, yamllint,
+shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint). Aggregate
+status check: `Review Gate / all`. The blocking hard rules live in the
+custom packs: service-role key in a client bundle, RLS missing on a new
+table, server action without an auth check, sport-prefixed table name
+violation, destructive DELETE-then-INSERT in a save/submit/sync path.
 
 **CI split — GitHub Actions vs CircleCI**
 
@@ -459,18 +454,9 @@ Fastlane, parallel Playwright, Lighthouse on Vercel previews).
 
 Shared config:
 
-- `.coderabbitignore` — generated/vendored paths CodeRabbit skips
-  (mirrored under `ignore` in `.greptile/config.json`).
 - `.gitleaks.toml` — project-specific secret patterns (rotated
   2026-05-17 Supabase dev DB password is allowlisted only in audit
   docs).
-
-The CodeRabbit pre-merge gate fails the PR if any of these blocking
-custom checks trip: service-role key in a client bundle, RLS missing
-on a new table, server action without an auth check, sport-prefixed
-table name violation, destructive DELETE-then-INSERT in a save/submit/
-sync path. The same hard-rule set is documented in
-`.greptile/rules.md` "Hard rules" so Greptile blocks on them too.
 
 ---
 
