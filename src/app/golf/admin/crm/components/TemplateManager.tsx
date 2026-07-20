@@ -46,6 +46,7 @@ import {
   type TemplateCategory,
   type TemplateFormat,
 } from '@/app/golf/actions/crm-templates';
+import { SpamCompliancePanel } from './SpamCompliancePanel';
 
 // ── Category metadata (mirrors TemplatePicker's palette) ──
 const CATEGORY_LABELS: Record<TemplateCategory, string> = {
@@ -502,9 +503,10 @@ function TemplateEditor({
           </label>
         </div>
 
-        {/* Right column — live preview */}
+        {/* Right column — live preview + compliance lint */}
         <div className="space-y-3">
           <PreviewPane subject={state.subject} body={state.body} format={state.format} />
+          <SpamCompliancePanel subject={state.subject} body={state.body} format={state.format} />
         </div>
       </div>
 
