@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logLogin } from '@/lib/admin-logger';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
+import { isTransientAuthError, signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { BASEBALL_DEMO_LANDING_PATH } from '@/lib/demo/baseball-config';
 import {
   getBaseballDemoCoachCredentials,
@@ -158,9 +159,12 @@ async function enterBaseballDemoImpl(
   }
 
   // --- 6. Sign visitor into the shared demo account server-side ------------
+  //    Retried on 429/5xx/network — mass-send bursts funnel every sign-in
+  //    through Vercel's egress IPs into Supabase's per-IP auth limits (see
+  //    signInWithPasswordResilient).
   const supabase = await createClient();
   // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc above.
-  const { data, error: signInError } = await supabase.auth.signInWithPassword({
+  const { data, error: signInError } = await signInWithPasswordResilient(supabase, {
     email: creds.email,
     password: creds.password,
   });
@@ -168,8 +172,9 @@ async function enterBaseballDemoImpl(
   if (signInError || !data.session || !data.user) {
     return {
       success: false,
-      error:
-        'The demo is not available right now. Please try again later or contact support.',
+      error: isTransientAuthError(signInError)
+        ? 'The demo is getting a lot of traffic right now — please try again in a minute.'
+        : 'The demo is not available right now. Please try again later or contact support.',
     };
   }
 
@@ -179,10 +184,15 @@ async function enterBaseballDemoImpl(
   //    idle-timeout flow (middleware + useSessionActivity) reads it to route
   //    an expired demo session back to /baseball/demo instead of the password
   //    login (#918). Best-effort: a failure here must never block entry.
-  try {
-    await supabase.auth.updateUser({ data: { is_demo: true } });
-  } catch {
-    // Worst case the session_expired redirect falls back to /baseball/login.
+  //    Skipped once stamped: the flag persists on the shared account and the
+  //    fresh session's JWT already carries it — re-stamping per visitor is a
+  //    pure extra auth-server round-trip (bad under mass-send load).
+  if (data.user.user_metadata?.is_demo !== true) {
+    try {
+      await supabase.auth.updateUser({ data: { is_demo: true } });
+    } catch {
+      // Worst case the session_expired redirect falls back to /baseball/login.
+    }
   }
 
   // --- 7. Mirror into the admin_events feed (best-effort) ------------------

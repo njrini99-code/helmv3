@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logLogin } from '@/lib/admin-logger';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
+import { isTransientAuthError, signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { getDemoCoachCredentials } from '@/lib/demo/config.server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -143,8 +144,11 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   }
 
   // --- 5. Sign visitor into the shared demo account server-side ------------
+  //    Retried on 429/5xx/network: mass-send bursts funnel every sign-in
+  //    through Vercel's egress IPs into Supabase's per-IP auth limits, and a
+  //    throttled sign-in is congestion — not a reason to fail the visitor.
   const supabase = await createClient();
-  const { data, error: signInError } = await supabase.auth.signInWithPassword({
+  const { data, error: signInError } = await signInWithPasswordResilient(supabase, {
     email: creds.email,
     password: creds.password,
   });
@@ -152,8 +156,9 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   if (signInError || !data.session || !data.user) {
     return {
       success: false,
-      error:
-        'Unable to start the demo session. Please try again or contact support.',
+      error: isTransientAuthError(signInError)
+        ? 'The demo is getting a lot of traffic right now — please try again in a minute.'
+        : 'Unable to start the demo session. Please try again or contact support.',
     };
   }
 
@@ -163,10 +168,15 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   //    idle-timeout flow (middleware + useSessionActivity) reads it to route
   //    an expired demo session back to /golf/demo instead of the password
   //    login (#918). Best-effort: a failure here must never block entry.
-  try {
-    await supabase.auth.updateUser({ data: { is_demo: true } });
-  } catch {
-    // Worst case the session_expired redirect falls back to /golf/login.
+  //    Skipped once stamped: the flag persists on the shared account and the
+  //    fresh session's JWT already carries it, so re-stamping per visitor is
+  //    a pure extra auth-server round-trip (bad under mass-send load).
+  if (data.user.user_metadata?.is_demo !== true) {
+    try {
+      await supabase.auth.updateUser({ data: { is_demo: true } });
+    } catch {
+      // Worst case the session_expired redirect falls back to /golf/login.
+    }
   }
 
   // --- 6. Mirror into the admin_events feed --------------------------------

@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import type { Database } from '@/lib/types/database';
 
 export type CoachType = Database['public']['Enums']['baseball_coach_type'];
@@ -49,12 +50,10 @@ export interface SessionProfile {
 export const getSessionProfile = cache(async (): Promise<SessionProfile | null> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) return null;
+  // Transient-tolerant: a throttled/unreachable auth server must not read as
+  // "signed out" and bounce a valid user to login (see resilient-get-user.ts).
+  const { user } = await getUserResilient(supabase);
+  if (!user) return null;
 
   // Single-trip: fetch user role + both profiles in parallel
   const [userResult, coachResult, playerResult] = await Promise.all([
@@ -142,8 +141,9 @@ export interface GolfSessionProfile {
 export const getGolfSessionProfile = cache(async (): Promise<GolfSessionProfile | null> => {
   const supabase = await createClient();
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return null;
+  // Transient-tolerant (same rationale as getSessionProfile above).
+  const { user } = await getUserResilient(supabase);
+  if (!user) return null;
 
   // Single-trip: coach + player in parallel
   const [coachResult, playerResult] = await Promise.all([

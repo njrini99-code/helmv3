@@ -17,13 +17,15 @@ import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
+  DEMO_SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_COOKIE,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
+  SESSION_IDLE_TIMEOUT_MS,
   SESSION_VISIBLE_HEARTBEAT_MS,
   isSessionIdleExpired,
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
-import { isDemoMetadataUser, probeSignedIn } from '@/lib/demo/gate-probe';
+import { isDemoMetadataUser, probeSignedIn, raceWithTimeout } from '@/lib/demo/gate-probe';
 
 const ACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Re-check every minute
 
@@ -60,9 +62,35 @@ function clearLastActivity(): void {
   document.cookie = `${SESSION_IDLE_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
 }
 
-/** True when the session has been idle past the timeout. */
-function isSessionTimedOut(): boolean {
-  return isSessionIdleExpired(getLastActivity(), Date.now());
+/** True when the session has been idle past the given window. */
+function isSessionTimedOut(timeoutMs: number): boolean {
+  return isSessionIdleExpired(getLastActivity(), Date.now(), timeoutMs);
+}
+
+/**
+ * Resolve which idle window applies to the CURRENT session: demo sessions
+ * (user_metadata.is_demo, stamped by the demo gates) get the longer demo
+ * window; everyone else gets the standard one.
+ *
+ * Reads the LOCAL session via getSession() — no auth-server round-trip on
+ * page mount (this hook runs on every dashboard page; adding a network
+ * getUser() here would worsen the exact burst-load profile the demo window
+ * exists to survive). Timeout-guarded so a stuck read degrades to the
+ * standard window instead of hanging the hook.
+ */
+async function resolveIdleTimeoutMs(
+  supabase: ReturnType<typeof createClient>,
+): Promise<number> {
+  try {
+    const {
+      data: { session },
+    } = await raceWithTimeout(supabase.auth.getSession(), 4000);
+    return isDemoMetadataUser(session?.user)
+      ? DEMO_SESSION_IDLE_TIMEOUT_MS
+      : SESSION_IDLE_TIMEOUT_MS;
+  } catch {
+    return SESSION_IDLE_TIMEOUT_MS;
+  }
 }
 
 /**
@@ -79,6 +107,10 @@ function isSessionTimedOut(): boolean {
 export function useSessionActivity() {
   const router = useRouter();
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Which idle window applies to this session (demo sessions get the longer
+  // one). Starts at the standard window; resolved properly on mount BEFORE the
+  // first staleness decision (see the effect's init below).
+  const idleTimeoutMsRef = useRef<number>(SESSION_IDLE_TIMEOUT_MS);
   // Memoize — createClient() returns a fresh client per call; without this the
   // callbacks below would re-create on every render.
   const supabase = useMemo(() => createClient(), []);
@@ -125,20 +157,20 @@ export function useSessionActivity() {
   }, [router, supabase]);
 
   const checkSessionTimeout = useCallback(async () => {
-    if (isSessionTimedOut()) {
+    if (isSessionTimedOut(idleTimeoutMsRef.current)) {
       await handleLogout();
     }
   }, [handleLogout]);
 
   useEffect(() => {
-    // Check for a stale session BEFORE recording new activity, so a reopen after
-    // the idle window actually logs out — instead of the mount itself refreshing
-    // the marker and masking the timeout (the previous fail-open behavior).
-    if (isSessionTimedOut()) {
-      void handleLogout();
-      return;
-    }
+    let disposed = false;
+    const disposers: Array<() => void> = [];
 
+    // Setup is deferred behind an async init: the idle window must be resolved
+    // (demo vs standard) BEFORE the mount staleness check, or a demo visitor
+    // reopening after 10 quiet minutes — well inside the 30-min demo window —
+    // would be booted by the default 5-minute one.
+    const setup = () => {
     // Fresh/bootstrap: record activity now.
     updateLastActivity();
 
@@ -158,7 +190,7 @@ export function useSessionActivity() {
           stopVisibleHeartbeat();
           return;
         }
-        if (isSessionTimedOut()) {
+        if (isSessionTimedOut(idleTimeoutMsRef.current)) {
           void handleLogout();
           return;
         }
@@ -168,7 +200,7 @@ export function useSessionActivity() {
 
     const syncTabVisibility = () => {
       if (document.visibilityState === 'visible') {
-        if (isSessionTimedOut()) {
+        if (isSessionTimedOut(idleTimeoutMsRef.current)) {
           void handleLogout();
           return;
         }
@@ -217,7 +249,7 @@ export function useSessionActivity() {
     document.addEventListener('visibilitychange', syncTabVisibility);
     window.addEventListener('pageshow', syncTabVisibility);
 
-    return () => {
+    disposers.push(() => {
       stopVisibleHeartbeat();
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
@@ -227,8 +259,41 @@ export function useSessionActivity() {
       });
       document.removeEventListener('visibilitychange', syncTabVisibility);
       window.removeEventListener('pageshow', syncTabVisibility);
+    });
     };
-  }, [handleLogout, checkSessionTimeout]);
+
+    // Fast SYNCHRONOUS pre-check: idle beyond the LONGEST window is stale for
+    // every session type — bounce immediately rather than showing the page for
+    // up to ~4s while the async window resolution below settles (matters for
+    // bfcache/pageshow reopens of long-abandoned tabs).
+    if (isSessionTimedOut(DEMO_SESSION_IDLE_TIMEOUT_MS)) {
+      void handleLogout();
+      return;
+    }
+
+    const init = async () => {
+      idleTimeoutMsRef.current = await resolveIdleTimeoutMs(supabase);
+      if (disposed) return;
+
+      // Check for a stale session BEFORE recording new activity, so a reopen
+      // after the idle window actually logs out — instead of the mount itself
+      // refreshing the marker and masking the timeout (the previous fail-open
+      // behavior).
+      if (isSessionTimedOut(idleTimeoutMsRef.current)) {
+        void handleLogout();
+        return;
+      }
+
+      setup();
+    };
+
+    void init();
+
+    return () => {
+      disposed = true;
+      disposers.forEach((dispose) => dispose());
+    };
+  }, [handleLogout, checkSessionTimeout, supabase]);
 
   return null;
 }
