@@ -6,9 +6,10 @@
  * `/analytics/coachhelm`)
  * ----------------------------------------------------------------------------
  * Mounts the existing `FairwayEffectiveness` cockpit content UNCHANGED. It
- * renders its own `CoachHelmShell` internally (masthead + the now-collapsed
- * single-tab sub-nav) — this wrapper only adds the stage's own "back to
- * Brief" chrome around it, same as every other drill on this surface.
+ * renders its own `CoachHelmShell` internally, passed `embedded` here so it
+ * suppresses its masthead + sub-nav strip (the DrillPanel below owns that
+ * chrome instead) — without it the drill showed two competing mastheads plus
+ * a redundant single-tab strip.
  * ========================================================================== */
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
@@ -21,7 +22,7 @@ export function EffectivenessDrill(props: EffectivenessDrillProps) {
 
   return (
     <DrillPanel title="Effectiveness" backLabel="Home" onBack={home}>
-      <FairwayEffectiveness {...props} />
+      <FairwayEffectiveness {...props} embedded />
     </DrillPanel>
   );
 }

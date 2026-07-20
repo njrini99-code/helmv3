@@ -10,6 +10,19 @@ import { permanentRedirect } from 'next/navigation';
  * `/my-development`. `surface-registry.ts`'s `development` and `players-tab`
  * entries are both `legacy: true, hidden: true` and point here-onward.
  */
-export default function DevelopmentRedirect(): never {
-  permanentRedirect('/golf/dashboard/intelligence?view=players');
+export default async function DevelopmentRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<{ player?: string | string[] }>;
+}): Promise<never> {
+  // F133: preserve the ?player= deep-link (FingerprintHero, team board
+  // "Prescribe drill", Player Insight, Genome all link here scoped to one
+  // player) — the players drill validates the id against the roster.
+  const sp = await searchParams;
+  const player = Array.isArray(sp.player) ? sp.player[0] : sp.player;
+  permanentRedirect(
+    player
+      ? `/golf/dashboard/intelligence?view=players&player=${encodeURIComponent(player)}`
+      : '/golf/dashboard/intelligence?view=players',
+  );
 }

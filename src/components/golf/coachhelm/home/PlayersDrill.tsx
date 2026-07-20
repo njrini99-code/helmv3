@@ -9,8 +9,9 @@
  * the ranked roster table, and its internal `FocusAreaBoard` (development
  * plans) all come along verbatim, exactly like the retired `/development`
  * route mounted it. `PlayersGridView` renders its own `CoachHelmShell`
- * internally (masthead + the now-collapsed single-tab sub-nav) — this
- * wrapper only adds the stage's own "back to Brief" chrome around it.
+ * internally, passed `embedded` here so it suppresses its masthead + sub-nav
+ * strip (the DrillPanel below owns that chrome instead) — without it the
+ * drill showed two competing mastheads plus a redundant single-tab strip.
  * ========================================================================== */
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
@@ -23,7 +24,7 @@ export function PlayersDrill(props: PlayersDrillProps) {
 
   return (
     <DrillPanel title="Players" backLabel="Home" onBack={home}>
-      <PlayersGridView {...props} />
+      <PlayersGridView {...props} embedded />
     </DrillPanel>
   );
 }

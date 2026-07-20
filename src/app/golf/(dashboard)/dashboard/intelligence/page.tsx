@@ -20,6 +20,16 @@ import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachInt
 import { resolveSignalsFilter } from '@/components/golf/coachhelm/home/buildCoachHomeViewModel';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { ExtendedPattern } from '@/app/golf/actions/pattern-management';
+import { getTeamCausalRelationships, type CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
+import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
+import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
+import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
+import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
+import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 
 // ============================================================================
 // METADATA
@@ -110,11 +120,19 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     redirect('/golf/dashboard');
   }
 
-  // ── Spine data — the SAME two reads FairwayBrief fetched. ────────────────
-  const [overviewResult, categoryInsightsResult, countsRes] = await Promise.all([
+  // ── Spine data — the SAME two reads FairwayBrief fetched, plus two
+  // `players` drill extras (causalByPlayer, coachIntents) that only depend on
+  // teamId/coach.id — already available here — so they run fully parallel
+  // with the rest of this block instead of adding a serial round trip later.
+  // Individually `.catch()`-degraded: `loadActiveGoalsForPlayers` and
+  // `loadCoachIntents` throw on a DB error (unlike the `.success`-shaped
+  // actions above), so a hiccup on either must not blank the whole Brief. ──
+  const [overviewResult, categoryInsightsResult, countsRes, causalByPlayer, coachIntents] = await Promise.all([
     getTeamOverview(teamId),
     getTeamCategoryInsights(teamId),
     getAlertCounts(coach.id),
+    getTeamCausalRelationships(teamId).catch(() => ({}) as Record<string, CausalRelationshipRow[]>),
+    loadCoachIntents(coach.id).catch(() => new Map<string, CoachPlayerIntent>()),
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
 
@@ -161,9 +179,11 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
         })()
       : undefined;
 
-  // ── `players` drill reads — a reduced-but-honest port of development/
-  // page.tsx's roster + focus-area fetch (goals/causal/silent-posture extras
-  // are omitted; `PlayersGridView` defaults them to {}/[] safely). ─────────
+  // ── `players` drill reads — a port of development/page.tsx's roster +
+  // focus-area fetch. The goals/causal/silent-posture extras (goalsByPlayer,
+  // playerNameById, causalByPlayer, silentPostureByPlayer) are assembled
+  // further below, once playerIds/coachIntents/goalsAndStandingPromise are
+  // available. ───────────────────────────────────────────────────────────
   const { data: teamMembers } = await supabase
     .from('golf_team_members')
     .select('player_id')
@@ -181,6 +201,33 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       : { data: [], error: null };
   const players: PlayersGridPlayer[] = rawPlayers ?? [];
   const playerIds = players.map((p) => p.id);
+
+  // ── `players` drill goals/standing extra — a restored port of the
+  // pre-redirect development/page.tsx read (PlayersGridView.goalsByPlayer +
+  // playerNameById), dropped when that route consolidated into this one.
+  // Kicked off here (not awaited yet) so it runs concurrently with the
+  // focus-area/stats reads below, which don't depend on it either way; only
+  // awaited once needed, right before `playersLoadError`. The progress
+  // refresh stays best-effort try/catch (mirrors development/page.tsx P1-07)
+  // so a hiccup there falls through to last-known goals instead of failing
+  // the whole page; the goals/standing reads are individually `.catch()`-
+  // degraded for the same reason `loadActiveGoalsForPlayers` can throw.
+  const goalsAndStandingPromise: Promise<
+    [Map<string, Goal[]>, Map<string, Map<MetricId, PlayerStanding>>]
+  > = (async () => {
+    try {
+      await Promise.all([
+        runGoalProgressForPlayers(playerIds),
+        runFocusAreaProgressForPlayers(playerIds),
+      ]);
+    } catch {
+      /* progress refresh is best-effort; fall through to last-known goals */
+    }
+    return Promise.all([
+      loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
+      loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
+    ]);
+  })();
 
   const { data: focusAreas, error: focusAreasError } =
     playerIds.length > 0
@@ -268,6 +315,32 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
 
   const playersLoadError = playersError || focusAreasError ? 'We couldn’t load your development data. Please try again.' : null;
 
+  // ── Assemble the goals/causal/silent-posture extras (ported verbatim from
+  // development/page.tsx, adapted to this page's variable names). ─────────
+  const [goalsByPlayerMap, standingByPlayer] = await goalsAndStandingPromise;
+  const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
+  for (const pid of playerIds) {
+    const g = goalsByPlayerMap.get(pid) ?? [];
+    const sm = standingByPlayer.get(pid) ?? new Map();
+    goalsByPlayer[pid] = g.map((goal) => ({ goal, standing: sm.get(goal.metric_id) ?? null }));
+  }
+
+  const playerNameById: Record<string, string> = {};
+  for (const p of players) {
+    playerNameById[p.id] = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
+  }
+
+  // #920 — alert_posture='silent' makes the CoachHelm confidence gate
+  // infinite for that player, so the engine keeps running but never surfaces
+  // an insight for them; the roster row flags it instead of reading as
+  // "nothing found." `coachIntents` was fetched in the spine Promise.all above.
+  const silentPostureByPlayer: Record<string, boolean> = {};
+  for (const pid of playerIds) {
+    if (coachIntents.get(pid)?.alert_posture === 'silent') {
+      silentPostureByPlayer[pid] = true;
+    }
+  }
+
   // ── `effectiveness` drill reads — copied from analytics/coachhelm/page.tsx. ─
   const [coachHelmOverviewResult, effectivenessResult, performanceResult, patternResult] = await Promise.all([
     getCoachHelmOverview(teamId),
@@ -297,6 +370,15 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
             playerStats: gridStats,
             signalCount: alertCounts?.critical ?? null,
             loadError: playersLoadError,
+            goalsByPlayer,
+            playerNameById,
+            causalByPlayer,
+            silentPostureByPlayer,
+            // F133 deep-link (?player=, forwarded by the /development shim):
+            // validate against the roster so a stale id degrades to the
+            // unscoped grid instead of a phantom selection.
+            initialSelectedPlayerId:
+              sp.player && players.some((p) => p.id === sp.player) ? sp.player : null,
           }}
           effectivenessDrillProps={{
             teamId,

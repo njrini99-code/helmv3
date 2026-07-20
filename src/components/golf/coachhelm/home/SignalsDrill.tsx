@@ -10,9 +10,10 @@
  * sibling routes (/alerts, /insights, /patterns) now permanent-redirect into
  * this ONE `?view=signals&filter=` drill, so its "3 duplicate chrome stacks"
  * collapse to the ONE mount here. `FairwayCoachHelmSignals` renders its own
- * `CoachHelmShell` internally (masthead + the now-collapsed single-tab
- * sub-nav) — this wrapper only adds the stage's own "back to Brief" chrome
- * around it, same as every other drill on this surface.
+ * `CoachHelmShell` internally, passed `embedded` here so it suppresses its
+ * masthead + sub-nav strip (the DrillPanel below owns that chrome instead) —
+ * without it the drill showed two competing mastheads plus a redundant
+ * single-tab strip.
  * ========================================================================== */
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
@@ -91,6 +92,7 @@ export function SignalsDrill({
         signalCount={signalCount}
         showScanTeam={showScanTeam}
         initialSearchParams={initialSearchParams}
+        embedded
       />
     </DrillPanel>
   );

@@ -323,7 +323,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     key={`insight-${i.id}`}
                     value={`Insight ${i.title} ${i.player_name ?? ''} ${i.category ?? ''} ${i.severity ?? ''}`}
                     onSelect={() => {
-                      router.push(`/golf/dashboard/insights?id=${i.id}`);
+                      router.push(`${surfaceHref('insights')}&id=${i.id}`);
                       setOpen(false);
                     }}
                     className={cn(

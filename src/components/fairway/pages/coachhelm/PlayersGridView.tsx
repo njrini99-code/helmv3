@@ -187,6 +187,15 @@ export interface PlayersGridViewProps {
    */
   initialSelectedPlayerId?: string | null;
   className?: string;
+  /**
+   * True when mounted by `PlayersDrill` inside the Brief home's stage
+   * `DrillPanel`, which already renders its own back-chip + title chrome.
+   * Forwarded to the internally-rendered `CoachHelmShell` to suppress its
+   * masthead + sub-nav (see `CoachHelmShell`'s `embedded` prop). Default
+   * false — the retired standalone /development redirect (and any other
+   * direct mount) is unaffected.
+   */
+  embedded?: boolean;
 }
 
 /* ---------------------------------------------------------------------------
@@ -245,6 +254,7 @@ export function PlayersGridView({
   loadError,
   initialSelectedPlayerId = null,
   className,
+  embedded = false,
 }: PlayersGridViewProps) {
   const router = useRouter();
 
@@ -813,6 +823,7 @@ export function PlayersGridView({
       // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
+      embedded={embedded}
       title="Players"
       description="Assign and track measurable development focus areas across your roster."
       actions={headerActions}
