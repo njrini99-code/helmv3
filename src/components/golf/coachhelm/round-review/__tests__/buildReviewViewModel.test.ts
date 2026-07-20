@@ -160,11 +160,35 @@ describe('buildNarrative', () => {
   it('prefers the V2 composed-review body when present', () => {
     expect(buildNarrative('v1 summary', 'v2 body')).toBe('v2 body');
   });
-  it('falls back to the V1 summary when V2 body is null', () => {
+  it('falls back to the V1 summary when V2 body is null and there is no persisted body', () => {
     expect(buildNarrative('v1 summary', null)).toBe('v1 summary');
   });
-  it('falls back to the V1 summary when V2 body is empty/whitespace', () => {
+  it('falls back to the V1 summary when V2 body is empty/whitespace and there is no persisted body', () => {
     expect(buildNarrative('v1 summary', '   ')).toBe('v1 summary');
+  });
+
+  // FIX (Round Review V2-narrative blocker): a revisit — and the page's own
+  // Refresh button — never re-runs useRoundReviewV2's generate(), so v2Body
+  // stays null even though the composed body IS already persisted on the
+  // stored review (`review.deepInsights[0].body`). The persisted body is the
+  // SECOND tier: it must win over the V1 summary whenever there's no fresh
+  // v2 generation.
+  it('falls back to the persisted composed body when v2Body is null', () => {
+    expect(buildNarrative('v1 summary', null, 'persisted composed body')).toBe('persisted composed body');
+  });
+  it('falls back to the persisted composed body when v2Body is empty/whitespace', () => {
+    expect(buildNarrative('v1 summary', '  ', 'persisted composed body')).toBe('persisted composed body');
+  });
+  it('prefers a fresh v2Body over the persisted composed body', () => {
+    expect(buildNarrative('v1 summary', 'fresh v2 body', 'persisted composed body')).toBe('fresh v2 body');
+  });
+  it('falls back past an empty/whitespace persisted body to the V1 summary', () => {
+    expect(buildNarrative('v1 summary', null, '   ')).toBe('v1 summary');
+  });
+  it('sanitizes stale NaN artifacts in the persisted composed body', () => {
+    expect(
+      buildNarrative('v1 summary', null, 'Solid round. This occurs in NaN% of rounds with NaN% reliability.'),
+    ).toBe('Solid round.');
   });
 });
 

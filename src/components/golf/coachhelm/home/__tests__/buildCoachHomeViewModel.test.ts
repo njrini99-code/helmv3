@@ -197,15 +197,34 @@ describe('formatAnalyzedDate', () => {
 describe('buildSignalsSummary', () => {
   it('computes percentages that sum near 100', () => {
     const out = buildSignalsSummary({ critical: 2, warning: 1, info: 1, total: 4 });
-    expect(out).toEqual({ criticalPct: 50, warningPct: 25, infoPct: 25, total: 4 });
+    expect(out).toEqual({ criticalPct: 50, warningPct: 25, infoPct: 25, total: 4, unavailable: false });
   });
-  it('honestly zeroes out when there is nothing to show', () => {
-    expect(buildSignalsSummary(null)).toEqual({ criticalPct: 0, warningPct: 0, infoPct: 0, total: 0 });
+  it('honestly zeroes out (available) when the team really has zero signals', () => {
     expect(buildSignalsSummary({ critical: 0, warning: 0, info: 0, total: 0 })).toEqual({
       criticalPct: 0,
       warningPct: 0,
       infoPct: 0,
       total: 0,
+      unavailable: false,
+    });
+  });
+  // getAlertCounts FAILED (intelligence/page.tsx counts.success===false → null)
+  // is a DISTINCT state from a real zero — must not read as the reassuring
+  // "no open signals" copy.
+  it('flags unavailable (not a fabricated zero) when counts is null', () => {
+    expect(buildSignalsSummary(null)).toEqual({
+      criticalPct: 0,
+      warningPct: 0,
+      infoPct: 0,
+      total: 0,
+      unavailable: true,
+    });
+    expect(buildSignalsSummary(undefined)).toEqual({
+      criticalPct: 0,
+      warningPct: 0,
+      infoPct: 0,
+      total: 0,
+      unavailable: true,
     });
   });
 });

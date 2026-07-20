@@ -141,11 +141,30 @@ export function buildFilmstripHoles(holes: HoleBreakdown[]): FilmstripHole[] {
   }));
 }
 
-/** V2 composed-review body wins when present (non-empty); the V1 rule-based
- *  `summary` is the honest fallback — the surface is never narrative-empty. */
-export function buildNarrative(v1Summary: string, v2Body: string | null | undefined): string {
-  const trimmed = v2Body?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : v1Summary;
+/** Narrative fallback, three tiers in priority order:
+ *   1. `v2Body` — a FRESH V2 composed-review generation from THIS page load
+ *      (only populated when the round had no stored review yet, so
+ *      `useRoundReviewV2`'s auto-generate effect fired).
+ *   2. `persistedComposedBody` — the SAME CoachHelm-authored body read back
+ *      from the already-stored review row (`review.deepInsights[0].body`,
+ *      written by `mergeCoachHelmReviewContent` in round-review-system.ts).
+ *      Without this tier, every revisit — and the page's Refresh button,
+ *      neither of which re-runs the hook's own generate() — fell all the way
+ *      through to the V1 summary even though the composed narrative was
+ *      sitting in the DB. Mirrors `pickPracticePriority`'s v2-then-v1-overlay
+ *      tiering below.
+ *   3. `v1Summary` — the rule-based summary, the surface's honest floor. The
+ *      surface is never narrative-empty. */
+export function buildNarrative(
+  v1Summary: string,
+  v2Body: string | null | undefined,
+  persistedComposedBody?: string | null,
+): string {
+  const fresh = v2Body?.trim();
+  if (fresh && fresh.length > 0) return fresh;
+  const persisted = persistedComposedBody?.trim();
+  if (persisted && persisted.length > 0) return sanitizeNaN(persisted);
+  return v1Summary;
 }
 
 /** "Sat, Jun 6" — compact course/date line format (mockup §04 film-left

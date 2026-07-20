@@ -198,8 +198,10 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         fairwayPct: detailedStats?.fairwayPercentage,
         girPct: detailedStats?.girPercentage,
         puttsPerRound: detailedStats?.puttsPerRound,
+        last30: trendData?.periodComparison.last30Days,
+        previous30: trendData?.periodComparison.previous30Days,
       }),
-    [detailedStats],
+    [detailedStats, trendData],
   );
 
   const priorities = useMemo(
@@ -322,7 +324,17 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         />
       ),
     },
-    { key: 'rounds', node: <RoundsDrill rounds={trendData?.rounds ?? []} /> },
+    {
+      key: 'rounds',
+      node: (
+        <RoundsDrill
+          rounds={trendData?.rounds ?? []}
+          scoreTrend={trendData?.trends.score}
+          personalBests={trendData?.personalBests}
+          periodComparison={trendData?.periodComparison}
+        />
+      ),
+    },
   ];
 
   return (
@@ -336,7 +348,14 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         priorities={priorities}
         ledger={ledger}
       />
-      <StageRouter param="area" homeKey="home" views={views} />
+      <div className="flex min-w-0 flex-col gap-4">
+        {detailedStats?.truncated ? (
+          <InlineNotice tone="info" title="Stats cover your most recent 100 rounds">
+            Older rounds aren&apos;t included in the totals below.
+          </InlineNotice>
+        ) : null}
+        <StageRouter param="area" homeKey="home" views={views} />
+      </div>
     </div>
   );
 }

@@ -22,8 +22,10 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Surface, EmptyState, Button } from '@/components/fairway';
+import { Surface, EmptyState, Button, InlineNotice } from '@/components/fairway';
 import { StageRouter } from '@/components/fairway/modules';
 import type { StageView } from '@/components/fairway/modules';
 import type { RibbonPoint, PlayersGridViewProps } from '@/components/fairway';
@@ -89,10 +91,21 @@ export function CoachIntelligenceHome({
   playersDrillProps,
   effectivenessDrillProps,
 }: CoachIntelligenceHomeProps) {
+  const router = useRouter();
   const ov = overview.success ? overview.data : undefined;
   const ci = categoryInsights.success ? categoryInsights.data : undefined;
 
-  const playerCount = ov?.playerCount ?? 0;
+  // getTeamOverview can fail transiently (P017, team-category-insights.ts) —
+  // that is a DISTINCT state from a genuinely empty roster (which the action
+  // reports as success:true, playerCount:0). Falling back to `playerCount:0`
+  // here would misreport an established team as "no active players yet" on a
+  // Supabase hiccup. Use the separately-fetched roster (playersDrillProps,
+  // unaffected by the overview call) so an overview failure never fabricates
+  // an empty-team onboarding screen for a real team.
+  const overviewFailed = !overview.success;
+  const overviewError = overview.success ? null : overview.error;
+  const rosterPlayerCount = playersDrillProps.players.length;
+  const playerCount = ov?.playerCount ?? (overviewFailed ? rosterPlayerCount : 0);
   const hasTeamStats = (ov?.statsRowCount ?? 0) > 0;
   const categories = useMemo(() => ci?.categories ?? [], [ci?.categories]);
 
@@ -129,7 +142,11 @@ export function CoachIntelligenceHome({
 
   const predictionAccuracy = effectivenessDrillProps.initialOverview?.predictionAccuracy ?? null;
 
-  if (playerCount === 0) {
+  // Genuinely empty roster (overview loaded fine, playerCount really is 0) —
+  // keep the existing onboarding gate. An overview FAILURE falls through
+  // instead: it renders the shell below (spine + stage, using the roster
+  // fallback above) with an honest error notice rather than this screen.
+  if (!overviewFailed && playerCount === 0) {
     return (
       <Surface padding="lg">
         <EmptyState
@@ -179,16 +196,43 @@ export function CoachIntelligenceHome({
   ];
 
   return (
-    <div className={cn('flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start')}>
-      <CoachSpine
-        className="min-[940px]:sticky min-[940px]:top-20"
-        hero={hero}
-        verdict={verdict}
-        trajectorySentence={trajectorySentence}
-        priorities={priorities}
-        ledger={ledger}
-      />
-      <StageRouter param="view" homeKey="home" views={views} />
+    <div className="flex flex-col gap-6">
+      {overviewFailed && (
+        // Honest error state instead of the silently-degraded "—" hero/verdict
+        // this would otherwise render as. Roster fallback above already kept
+        // the onboarding gate from firing, so Signals/Players/Effectiveness
+        // stay reachable below — only the ranking-dependent hero/verdict/roster
+        // heat are actually unavailable.
+        <Surface padding="md">
+          <InlineNotice
+            tone="danger"
+            title="Couldn't load team intelligence — retry"
+            action={
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
+                onClick={() => router.refresh()}
+              >
+                Try again
+              </Button>
+            }
+          >
+            {overviewError ?? 'We hit a snag loading the team overview. Signals, Players, and Effectiveness below are unaffected.'}
+          </InlineNotice>
+        </Surface>
+      )}
+      <div className={cn('flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start')}>
+        <CoachSpine
+          className="min-[940px]:sticky min-[940px]:top-20"
+          hero={hero}
+          verdict={verdict}
+          trajectorySentence={trajectorySentence}
+          priorities={priorities}
+          ledger={ledger}
+        />
+        <StageRouter param="view" homeKey="home" views={views} />
+      </div>
     </div>
   );
 }

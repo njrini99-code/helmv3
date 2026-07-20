@@ -4,19 +4,29 @@
  * ============================================================================
  * PlayerHomeBento — the Player CoachHelm stage home view (spec §5.3 bento)
  * ----------------------------------------------------------------------------
- * Top insight (2×2, evidence + Helpful/Dismiss) · Focus areas · Game profile
- * teaser (mini GenomeRadar) · Standing best/worst (2×1) · Trend · Themes
- * (flag-gated) — six cells on one gapless `Bento` surface. Every cell but the
- * top insight is a whole-cell `<button>` (`onOpen`) that swaps the stage via
- * `useStage()`. The top-insight cell renders Helpful/Dismiss as REAL nested
- * `<button>`s, so it deliberately has NO `onOpen` (BentoCell renders the
- * whole cell as a `<button>` when `onOpen` is set — nesting a button inside a
- * button is invalid HTML/inaccessible) — a "More insights →" text button
- * inside it drives the same `insights` drill instead.
+ * Top insight (2×2, evidence + Helpful/Dismiss + prescribed drill) · Focus
+ * areas · Game profile teaser (mini GenomeRadar) · Standing best/worst (2×1)
+ * · Trend · Shot analysis (deep-dive entry point) · Themes (flag-gated) —
+ * cells on one gapless `Bento` surface. Every cell but the top insight is a
+ * whole-cell `<button>` (`onOpen`) that swaps the stage via `useStage()`.
+ * The top-insight cell renders Helpful/Dismiss as REAL nested `<button>`s, so
+ * it deliberately has NO `onOpen` (BentoCell renders the whole cell as a
+ * `<button>` when `onOpen` is set — nesting a button inside a button is
+ * invalid HTML/inaccessible) — a "More insights →" text button inside it
+ * drives the same `insights` drill instead.
+ *
+ * Prescribed drills (FIX 1): `topInsight.drills` is pre-joined by
+ * `insight-delivery.ts` (`golf_insight_drill_attachments → golf_drills`,
+ * ranked, capped at 3). Only the FIRST drill renders here (accent-50 "Drill"
+ * inset, matching `PrescribedPracticePlanCard`'s pattern) — the remaining
+ * attached drills render inside `InsightsDrill` via the `topInsightDrills`
+ * prop `PlayerCoachHelmHome` threads through, so every attached drill stays
+ * visible somewhere.
  * ========================================================================== */
 
 import { Bento, BentoCell, useStage } from '@/components/fairway/modules';
 import { Button, GenomeRadar, type GenomeAxis } from '@/components/fairway';
+import { IconClock } from '@/components/icons';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { isThemesEnabled } from '@/lib/redesign/flag';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -54,6 +64,8 @@ export function PlayerHomeBento({
 }: PlayerHomeBentoProps) {
   const stage = useStage();
 
+  const firstDrill = topInsight?.drills?.[0] ?? null;
+
   const { bestId, worstId } = pickBestWorstStandingIds(standingByMetric);
   const bestCfg = bestId ? getMetricRenderConfig(bestId) : null;
   const worstCfg = worstId ? getMetricRenderConfig(worstId) : null;
@@ -72,6 +84,19 @@ export function PlayerHomeBento({
             <p className="line-clamp-3 font-fw-sans text-caption text-text-secondary">
               {topInsight.content}
             </p>
+            {firstDrill ? (
+              <div className="rounded-fw-md border border-accent-200 bg-accent-50 px-3 py-2">
+                <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-accent-700">
+                  Drill
+                </p>
+                <p className="mt-1 line-clamp-1 font-fw-sans text-caption leading-relaxed text-accent-900">
+                  {firstDrill.title}
+                </p>
+                <p className="mt-1.5 inline-flex items-center gap-1 font-fw-sans text-eyebrow font-medium text-accent-700">
+                  <IconClock size={12} /> {firstDrill.duration_min} min
+                </p>
+              </div>
+            ) : null}
             <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
               <Button variant="secondary" size="sm" onClick={() => onRateTopInsight('helpful')}>
                 Helpful
@@ -137,6 +162,18 @@ export function PlayerHomeBento({
         label="Trend"
         sentence={trendSummary ?? 'Your performance trend fills in with more rounds.'}
         onOpen={() => stage.open('profile')}
+      />
+
+      {/* FIX 2: deliberate entry point for the `deep-dive` stage view (shot
+          analysis charts + What-If simulator) — previously registered in
+          `StageRouter`'s `views` but unreachable, since no `stage.open`
+          call targeted it anywhere. Same whole-cell `onOpen` idiom as every
+          other bento cell, so it's keyboard-reachable via `BentoCell`'s
+          `PressTarget`. */}
+      <BentoCell
+        label="Shot analysis"
+        sentence="Charts + What-If scenarios for every shot."
+        onOpen={() => stage.open('deep-dive')}
       />
 
       {showThemes ? (

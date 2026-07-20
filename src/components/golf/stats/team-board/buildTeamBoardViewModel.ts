@@ -165,18 +165,27 @@ const CATEGORY_PRIORITY: ReadonlyArray<{ key: 'putt' | 'app' | 'tee' | 'short'; 
   { key: 'short', label: 'Short game' },
 ];
 
-/** The roster-relative worst SG category for a player's ranks — drives the "<Category> slump" watch label. Ties favor putting (the most common early leak). */
+/**
+ * The roster-relative worst SG category for a player's ranks — drives the
+ * "<Category> slump" watch label. Each category's `of` denominator only
+ * counts players who carry a standing value for THAT metric (rankByValue's
+ * contract, above), so raw rank numbers aren't comparable across categories
+ * — rank 5 of 6 is worse than rank 5 of 12. Compare the rank/of percentile
+ * instead. Ties favor putting (the most common early leak), via
+ * `CATEGORY_PRIORITY`'s iteration order + a strict `>` (first-seen wins).
+ */
 export function worstCategoryLabel(ranks: {
   tee: RankInfo | null;
   app: RankInfo | null;
   short: RankInfo | null;
   putt: RankInfo | null;
 }): string | null {
-  let worst: { label: string; rank: number } | null = null;
+  let worst: { label: string; pct: number } | null = null;
   for (const { key, label } of CATEGORY_PRIORITY) {
     const r = ranks[key];
     if (!r) continue;
-    if (!worst || r.rank > worst.rank) worst = { label, rank: r.rank };
+    const pct = r.rank / r.of;
+    if (!worst || pct > worst.pct) worst = { label, pct };
   }
   return worst?.label ?? null;
 }
@@ -211,6 +220,16 @@ export interface TeamBoardPlayerInput {
   classYear: string | null;
   roundsPlayed: number;
   scoringAverage: number | null;
+  /**
+   * Strictly-18-hole round count / average — the SAME `rounds_played_18` /
+   * `scoring_average_18` the dashboard's "Team Scoring Avg" pools (excludes
+   * 9-hole and partial rounds, unlike `roundsPlayed`/`scoringAverage`
+   * above). Used ONLY for the board's round-weighted "Team scoring" KPI so
+   * it matches dashboard-data.ts exactly; the row's own displayed average
+   * and rank still use the all-format `scoringAverage`/`roundsPlayed`.
+   */
+  roundsPlayed18: number;
+  scoringAverage18: number | null;
   /** recent-minus-prior normalized-score delta; null = not enough rounds for a signal yet (never a fabricated 0). */
   scoringTrend: number | null;
   lastRoundScore: number | null;
@@ -370,9 +389,23 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
     };
   });
 
-  const scoringValues = players.map((p) => p.scoringAverage).filter((v): v is number => v !== null);
-  const teamScoring =
-    scoringValues.length > 0 ? (scoringValues.reduce((a, b) => a + b, 0) / scoringValues.length).toFixed(1) : '—';
+  // Round-weighted, matching the coach dashboard's "Team Scoring Avg"
+  // (dashboard-data.ts pools every 18-hole round score across the roster
+  // and divides by the total 18-hole round count — 9-hole/partial rounds
+  // are excluded there). MUST use `scoringAverage18`/`roundsPlayed18`, not
+  // the all-format `scoringAverage`/`roundsPlayed`: a player with mixed
+  // 9-hole and 18-hole rounds has `scoringAverage` == `scoringAverage18`
+  // (18-first) but `roundsPlayed` counts the 9-hole rounds too, which
+  // over-weights that player's 18-hole figure against the dashboard's true
+  // pooled denominator. Weighting the 18-only pair recovers the pooled
+  // figure exactly, since `scoringAverage18` is itself a mean over
+  // `roundsPlayed18` rounds. A player with zero 18-hole rounds has a null
+  // `scoringAverage18`, so `weightedMean` naturally excludes them (matching
+  // the dashboard, which only ever sums 18-hole scores).
+  const teamScoringRaw = weightedMean(
+    players.map((p) => ({ value: p.scoringAverage18, weight: p.roundsPlayed18 })),
+  );
+  const teamScoring = teamScoringRaw === null ? '—' : teamScoringRaw.toFixed(1);
 
   const teamSgRaw = weightedMean(
     players.map((p) => ({ value: standingByPlayer.get(p.id)?.get('sg_total')?.player_value ?? null, weight: p.roundsPlayed })),

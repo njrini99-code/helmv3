@@ -10,6 +10,27 @@ export interface StandingTrackProps {
 
 export interface PriorityItem { rank: number; title: string; value: string }
 
+/** A signed ▲/▼/► annotation on a `SpineLedgerRow` — the direction the raw
+ *  value actually moved (`up`/`down`/`flat`), plus whether that movement is
+ *  GOOD for this metric (e.g. fewer putts is `up` in the "good" sense even
+ *  though the raw number went down). `good` alone drives the color; the
+ *  glyph is always literal direction so it never lies about which way the
+ *  number moved. */
+export interface SpineLedgerDelta {
+  /** Pre-formatted signed magnitude, e.g. "+4%" / "−0.6". */
+  text: string;
+  direction: 'up' | 'down' | 'flat';
+  good: boolean;
+}
+export interface SpineLedgerRow {
+  label: string;
+  value: string;
+  /** Optional — omit for the unchanged flat-value row every existing caller
+   *  (PlayerSpine/CoachSpine) already renders. */
+  delta?: SpineLedgerDelta;
+}
+export interface SpineLedgerProps { rows: SpineLedgerRow[]; className?: string }
+
 export interface SpineProps {
   eyebrow: string;
   hero: { value: string; unit?: string };

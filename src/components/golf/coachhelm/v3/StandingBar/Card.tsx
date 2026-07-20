@@ -23,6 +23,7 @@ import {
   formatValue,
   pgaReferenceLabel,
   shouldShowTeamMarker,
+  standingSubjectLabel,
   teamRelativeText,
   toScalePct,
 } from './utils';
@@ -83,7 +84,7 @@ export function Card(props: CardProps) {
           <span>Team {formatValue(props.team_avg, props.unit)}</span>
         ) : <span className="opacity-0">·</span>}
         <span className="text-warm-900 font-medium text-sm">
-          You {formatValue(props.player_value, props.unit)}
+          {standingSubjectLabel(props.viewer_context, props.player_name)} {formatValue(props.player_value, props.unit)}
         </span>
         {props.pga_omitted
           ? <span className="opacity-0">·</span>

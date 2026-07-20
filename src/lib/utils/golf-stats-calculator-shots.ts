@@ -409,8 +409,18 @@ export interface PuttingBreakStats {
   makePct30_35: number | null;
   makePct35Plus: number | null;
 
-  // Sample counts by distance (number of first putts in each bucket)
+  // Sample counts by distance (attempts feeding each makePct band above — the
+  // n= the RampMatrix cell badges read so a 1-of-1 "0%" cell doesn't look as
+  // trustworthy as a 40-of-50 one).
+  count0_3: number;
+  count3_5: number;
   count5_10: number;
+  count10_15: number;
+  count15_20: number;
+  count20_25: number;
+  count25_30: number;
+  count30_35: number;
+  count35Plus: number;
 
   // Overall make %
   overallMakePct: number | null;
@@ -1346,13 +1356,21 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
-        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
         makePct25_30: null,
         makePct30_35: null,
         makePct35Plus: null,
+        count0_3: 0,
+        count3_5: 0,
+        count5_10: 0,
+        count10_15: 0,
+        count15_20: 0,
+        count20_25: 0,
+        count25_30: 0,
+        count30_35: 0,
+        count35Plus: 0,
         overallMakePct: null,
         missShortPct: null,
         missLowPct: null,
@@ -1363,13 +1381,21 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
-        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
         makePct25_30: null,
         makePct30_35: null,
         makePct35Plus: null,
+        count0_3: 0,
+        count3_5: 0,
+        count5_10: 0,
+        count10_15: 0,
+        count15_20: 0,
+        count20_25: 0,
+        count25_30: 0,
+        count30_35: 0,
+        count35Plus: 0,
         overallMakePct: null,
         missShortPct: null,
         missLowPct: null,
@@ -1380,13 +1406,21 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
-        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
         makePct25_30: null,
         makePct30_35: null,
         makePct35Plus: null,
+        count0_3: 0,
+        count3_5: 0,
+        count5_10: 0,
+        count10_15: 0,
+        count15_20: 0,
+        count20_25: 0,
+        count25_30: 0,
+        count30_35: 0,
+        count35Plus: 0,
         overallMakePct: null,
         missShortPct: null,
         missLowPct: null,
@@ -1397,13 +1431,21 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
-        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
         makePct25_30: null,
         makePct30_35: null,
         makePct35Plus: null,
+        count0_3: 0,
+        count3_5: 0,
+        count5_10: 0,
+        count10_15: 0,
+        count15_20: 0,
+        count20_25: 0,
+        count25_30: 0,
+        count30_35: 0,
+        count35Plus: 0,
         overallMakePct: null,
         missShortPct: null,
         missLowPct: null,
@@ -1928,7 +1970,14 @@ function aggregateRoundStats(rounds: Array<{
       // (the old known-hole path fabricated putts=2 for these holes).
       if (hole.putts !== null) {
         stats.totalPutts += hole.putts;
-        if (hole.putts > 0) totalHolesWithPutts++;
+        // Denominator for puttsPerRound/threePuttsPerRound (#917): count every
+        // hole with a RECORDED putts value, including legitimate 0-putt holes
+        // (chip-ins / hole-outs from off the green — createHoleStatsFromKnownHole
+        // and calculateHoleStatsFromShots both only reach putts=0 via a real
+        // recorded value, never a fabricated one). The old `hole.putts > 0`
+        // guard silently dropped those holes from the denominator despite the
+        // null check above already establishing the value is real, not missing.
+        totalHolesWithPutts++;
         if (hole.threePutts) stats.threePuttsTotal++;
         if (hole.putts === 1) stats.onePuttsTotal++;
       }
@@ -2380,8 +2429,17 @@ function aggregateRoundStats(rounds: Array<{
   // Denominator = GIR holes with KNOWN putts (null-skip both sides of the
   // ratio; a GIR hole with unrecorded putts must not drag the average down).
   stats.puttsPerGir = safeAverage(puttsOnGir, girHolesWithPutts);
-  stats.threePuttsPerRound = stats.holesPlayed > 0
-    ? Math.round(((stats.threePuttsTotal / stats.holesPlayed) * 18) * 100) / 100
+  // Denominator mirrors puttsPerRound above (#917) — holes with a RECORDED
+  // putts value (totalHolesWithPutts), not every hole played
+  // (stats.holesPlayed). stats.threePuttsTotal only increments inside the
+  // same `hole.putts !== null` guard that feeds totalHolesWithPutts, so
+  // dividing by holesPlayed diluted the rate for any round with an unlogged
+  // hole — the same denominator bug #917 fixed for puttsPerRound. Normalized
+  // to the 18-hole equivalent the same way, but kept as its own ternary
+  // (rather than routing through calculatePuttsPerRound) so a genuine 0
+  // three-putts round still reports 0.00, not null.
+  stats.threePuttsPerRound = totalHolesWithPutts > 0
+    ? Math.round(((stats.threePuttsTotal / totalHolesWithPutts) * 18) * 100) / 100
     : null;
 
   // Putt make %
@@ -2560,13 +2618,24 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: safePercent(breakData.make['0_3']?.made || 0, breakData.make['0_3']?.total || 0),
         makePct3_5: safePercent(breakData.make['3_5']?.made || 0, breakData.make['3_5']?.total || 0),
         makePct5_10: safePercent(breakData.make['5_10']?.made || 0, breakData.make['5_10']?.total || 0),
-        count5_10: breakData.make['5_10']?.total || 0,
         makePct10_15: safePercent(breakData.make['10_15']?.made || 0, breakData.make['10_15']?.total || 0),
         makePct15_20: safePercent(breakData.make['15_20']?.made || 0, breakData.make['15_20']?.total || 0),
         makePct20_25: safePercent(breakData.make['20_25']?.made || 0, breakData.make['20_25']?.total || 0),
         makePct25_30: safePercent(breakData.make['25_30']?.made || 0, breakData.make['25_30']?.total || 0),
         makePct30_35: safePercent(breakData.make['30_35']?.made || 0, breakData.make['30_35']?.total || 0),
         makePct35Plus: safePercent(breakData.make['35_plus']?.made || 0, breakData.make['35_plus']?.total || 0),
+        // FIX 3: per-cell attempt counts for every band the RampMatrix renders
+        // (previously only count5_10 existed) — feeds both the matrix's n=
+        // badge and the RxCard's n>=8 eligibility gate.
+        count0_3: breakData.make['0_3']?.total || 0,
+        count3_5: breakData.make['3_5']?.total || 0,
+        count5_10: breakData.make['5_10']?.total || 0,
+        count10_15: breakData.make['10_15']?.total || 0,
+        count15_20: breakData.make['15_20']?.total || 0,
+        count20_25: breakData.make['20_25']?.total || 0,
+        count25_30: breakData.make['25_30']?.total || 0,
+        count30_35: breakData.make['30_35']?.total || 0,
+        count35Plus: breakData.make['35_plus']?.total || 0,
         overallMakePct: safePercent(breakData.makes, breakData.attempts),
         missShortPct: safePercent(breakData.missShort, breakData.missTotal),
         missLowPct: safePercent(breakData.missLow, breakData.missTotal),

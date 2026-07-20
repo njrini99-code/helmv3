@@ -215,6 +215,8 @@ export function TeamStatsBoard({
       classYear: p.graduation_year ? `'${String(p.graduation_year).slice(-2)}` : null,
       roundsPlayed: p.rounds_played,
       scoringAverage: p.scoring_average,
+      roundsPlayed18: p.rounds_played_18,
+      scoringAverage18: p.scoring_average_18,
       scoringTrend: p.scoring_trend,
       lastRoundScore: p.last_round_score ?? null,
       recentScores: p.recent_scores ?? [],

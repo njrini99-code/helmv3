@@ -34,6 +34,9 @@ import {
 } from '@/components/icons';
 import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
+import { findMetric } from '@/lib/coachhelm/focus-areas/catalog';
 import { deriveTone, type DerivedTone } from './tone-derivation';
 import { MovementPill } from './MovementPill';
 import { WhyPopover } from './WhyPopover';
@@ -705,6 +708,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               suggestedTitle={insight.title}
               suggestedDescription={insight.content}
               suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
+              suggestedTargetMetric={suggestedFocusMetricFromStanding(insight)}
             />
           )}
           <Button variant="ghost"
@@ -755,6 +759,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             suggestedTitle={insight.title}
             suggestedDescription={insight.content}
             suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
+            suggestedTargetMetric={suggestedFocusMetricFromStanding(insight)}
             className={emphasis ? 'px-4 py-2 text-sm' : undefined}
             label="Create focus area"
           />
@@ -812,6 +817,24 @@ function rewriteForPlayer(text: string): string {
     .replace(/\bthey're\b/gi, "you're")
     .replace(/\btheir\b/gi, 'your')
     .replace(/\bthey\b/gi, 'you');
+}
+
+/**
+ * Best-effort preselect for `PromoteToFocusAreaButton`'s target metric.
+ * `evidence.standing.metric_id` is a v3 MetricId (e.g. 'scoring_par_4',
+ * 'scrambling_pct_sand', 'putts_made_5_10ft_pct') — a DIFFERENT vocabulary
+ * from the focus-area METRIC_CATALOG keys (e.g. 'par4_avg',
+ * 'scrambling_pct', 'putts_per_round') the windowed auto-tracker reads
+ * (src/lib/coachhelm/focus-areas/catalog.ts). Only pass it through when it
+ * happens to resolve to a REAL catalog entry (verified via `findMetric` —
+ * today only 'gir_pct' overlaps) — otherwise preselect nothing rather than
+ * hand the button a metric_id it can't honor.
+ */
+function suggestedFocusMetricFromStanding(insight: EvidenceInsight): string | undefined {
+  const standing = (insight.evidence as InsightEvidence & { standing?: EvidenceStanding })
+    .standing;
+  const metricId = standing?.metric_id;
+  return metricId && findMetric(metricId) ? metricId : undefined;
 }
 
 /**

@@ -256,6 +256,17 @@ export default async function PlayerCoachHelmPage() {
   let suggestions: GoalSuggestionView[] = [];
   let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
   try {
+    // Recompute each active goal's + focus area's observed snapshot BEFORE
+    // reading golf_player_focus_areas below — best-effort, mirrors the goals
+    // sequencing (loadActiveGoals runs after evaluateAndPersistGoals too).
+    // Reading the focus-area row BEFORE this evaluate call was the bug: a
+    // player opening Development right after logging a round saw the
+    // pre-round `current_value` because evaluateAndPersistFocusAreas hadn't
+    // written the fresh windowed value yet.
+    try {
+      await Promise.all([evaluateAndPersistGoals(player.id), evaluateAndPersistFocusAreas(player.id)]);
+    } catch { /* progress refresh is best-effort */ }
+
     const { data: focusAreas, error: focusAreasError } = await supabase
       .from('golf_player_focus_areas')
       .select(
@@ -293,12 +304,6 @@ export default async function PlayerCoachHelmPage() {
     ) as unknown as FocusAreaCardData[];
     developmentCompletedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'completed') as unknown as FocusAreaCardData[];
     developmentProposedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'proposed') as unknown as FocusAreaCardData[];
-
-    // Recompute each active goal's observed snapshot before loading (idempotent
-    // per UTC day) — best-effort, same as my-development/page.tsx.
-    try {
-      await Promise.all([evaluateAndPersistGoals(player.id), evaluateAndPersistFocusAreas(player.id)]);
-    } catch { /* progress refresh is best-effort */ }
 
     const [activeGoals, achievedGoalsRes, suggestionsRes, causalRes, statsRow] = await Promise.all([
       loadActiveGoals(player.id),

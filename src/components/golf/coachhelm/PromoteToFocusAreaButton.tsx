@@ -23,6 +23,7 @@ import {
   DrawerDescription,
 } from '@/components/ui/drawer';
 import { Input, Textarea } from '@/components/ui/input';
+import { Select, type SelectOption } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,36 @@ import {
   createFocusAreaFromReview,
   createFocusAreaFromInsightV2,
 } from '@/app/golf/actions/development';
+import { metricsForArea, findMetric } from '@/lib/coachhelm/focus-areas/catalog';
+
+/** Sentinel Select value for the free-text escape hatch. */
+const CUSTOM_METRIC_VALUE = '__custom__';
+
+/**
+ * Starting state for the metric picker. Prefers a catalog match for
+ * `suggested` (so a caller-supplied metric_id/label preselects the right
+ * card); falls back to the free-text "Other (custom)" slot — carrying the
+ * suggestion through verbatim — when the area has no catalog metrics, the
+ * suggestion doesn't resolve, or it resolves to a DIFFERENT area's metric
+ * (never preselect a metric that doesn't belong to this area's chip).
+ */
+function resolveInitialMetric(
+  areaType: string,
+  suggested: string | undefined,
+): { metricSelection: string; customMetricText: string } {
+  const catalogMetrics = metricsForArea(areaType);
+  if (catalogMetrics.length === 0) {
+    return { metricSelection: CUSTOM_METRIC_VALUE, customMetricText: suggested ?? '' };
+  }
+  if (suggested) {
+    const entry = findMetric(suggested);
+    if (entry && entry.areaType === areaType) {
+      return { metricSelection: entry.key, customMetricText: '' };
+    }
+    return { metricSelection: CUSTOM_METRIC_VALUE, customMetricText: suggested };
+  }
+  return { metricSelection: '', customMetricText: '' };
+}
 
 export interface PromoteToFocusAreaButtonProps {
   source: 'review' | 'insight';
@@ -71,7 +102,18 @@ export function PromoteToFocusAreaButton({
 
   const [title, setTitle] = useState(suggestedTitle);
   const [description, setDescription] = useState(suggestedDescription);
-  const [targetMetric, setTargetMetric] = useState(suggestedTargetMetric ?? '');
+  // Catalog-driven metric picker (see resolveInitialMetric above) — replaces
+  // the old free-text 'Target metric' input. A catalog key resolves to an
+  // exact METRIC_CATALOG entry so the windowed auto-tracker
+  // (progress-drivers.ts → isWindowableFocusMetric) can pick it up; the
+  // CUSTOM_METRIC_VALUE escape hatch still allows any free text, honestly
+  // labeled as non-auto-tracking.
+  const [metricSelection, setMetricSelection] = useState<string>(
+    () => resolveInitialMetric(suggestedAreaType, suggestedTargetMetric).metricSelection,
+  );
+  const [customMetricText, setCustomMetricText] = useState<string>(
+    () => resolveInitialMetric(suggestedAreaType, suggestedTargetMetric).customMetricText,
+  );
   const [targetValue, setTargetValue] = useState<string>(
     suggestedTargetValue != null ? String(suggestedTargetValue) : '',
   );
@@ -79,10 +121,21 @@ export function PromoteToFocusAreaButton({
   function reset() {
     setTitle(suggestedTitle);
     setDescription(suggestedDescription);
-    setTargetMetric(suggestedTargetMetric ?? '');
+    const initialMetric = resolveInitialMetric(suggestedAreaType, suggestedTargetMetric);
+    setMetricSelection(initialMetric.metricSelection);
+    setCustomMetricText(initialMetric.customMetricText);
     setTargetValue(suggestedTargetValue != null ? String(suggestedTargetValue) : '');
     setSubmitting(false);
   }
+
+  // Catalog metrics scoped to this area (empty for areas with no cached
+  // metrics, e.g. 'mental_game'/'other' — the picker falls straight to
+  // custom text, mirroring FocusAreaModal).
+  const areaMetrics = metricsForArea(suggestedAreaType);
+  const metricOptions: SelectOption[] = [
+    ...areaMetrics.map((m) => ({ value: m.key, label: m.label })),
+    { value: CUSTOM_METRIC_VALUE, label: 'Other (custom)' },
+  ];
 
   function handleClose() {
     if (submitting) return;
@@ -116,7 +169,10 @@ export function PromoteToFocusAreaButton({
       return;
     }
 
-    const trimmedMetric = targetMetric.trim() || undefined;
+    const trimmedMetric =
+      metricSelection === CUSTOM_METRIC_VALUE
+        ? customMetricText.trim() || undefined
+        : metricSelection || undefined;
 
     setSubmitting(true);
     try {
@@ -244,14 +300,28 @@ export function PromoteToFocusAreaButton({
             maxLength={600}
           />
 
-          {/* Optional target metric + value */}
+          {/* Target metric + value — catalog-driven so a promoted area
+              resolves to an exact METRIC_CATALOG key and auto-tracks, same
+              picker contract as FocusAreaModal (src/components/fairway/pages/
+              coachhelm/FocusAreaModal.tsx selectMetric, ~269-281). */}
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Target metric (optional)"
-              value={targetMetric}
-              onChange={(e) => setTargetMetric(e.target.value)}
-              placeholder="e.g. 3-putt %"
-            />
+            {areaMetrics.length > 0 ? (
+              <Select
+                label="Target metric (optional)"
+                options={metricOptions}
+                value={metricSelection || undefined}
+                onChange={(v) => setMetricSelection(v)}
+                placeholder="Select a metric…"
+                clearable
+              />
+            ) : (
+              <Input
+                label="Target metric (optional)"
+                value={customMetricText}
+                onChange={(e) => setCustomMetricText(e.target.value)}
+                placeholder="e.g. Pre-shot routine consistency"
+              />
+            )}
             <Input
               label="Target value (optional)"
               type="number"
@@ -262,6 +332,26 @@ export function PromoteToFocusAreaButton({
               placeholder="e.g. 5"
             />
           </div>
+
+          {areaMetrics.length > 0 && metricSelection === CUSTOM_METRIC_VALUE ? (
+            <div>
+              <Input
+                label="Custom metric name"
+                value={customMetricText}
+                onChange={(e) => setCustomMetricText(e.target.value)}
+                placeholder="e.g. Pre-shot routine consistency"
+              />
+              <p className="mt-1.5 text-xs text-warm-500">
+                Custom metrics won&apos;t auto-track — update progress manually.
+              </p>
+            </div>
+          ) : null}
+
+          {areaMetrics.length === 0 ? (
+            <p className="-mt-3 text-xs text-warm-500">
+              Custom metrics won&apos;t auto-track — update progress manually.
+            </p>
+          ) : null}
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <Button

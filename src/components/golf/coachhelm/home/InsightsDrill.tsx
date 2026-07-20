@@ -8,17 +8,23 @@
  * for you" section) — hierarchical THEMES (flag on + present) REPLACE the
  * flat feed, exactly as the monolith did; the top insight itself lives on
  * the bento home, so this feed is the REST of the evidence (deduped).
+ *
+ * FIX 1: `topInsightDrills` carries the OVERFLOW of the top insight's
+ * prescribed drills — `PlayerHomeBento` renders only the first attached
+ * drill (space-constrained bento cell), so anything beyond that (indices
+ * 1+, still ranked/capped at 3 by `insight-delivery.ts`) surfaces here via
+ * `PracticeRxPanel` so every attached drill stays visible somewhere.
  * ========================================================================== */
 
 import { useState } from 'react';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InsightCard, InsightPanel, type InsightPanelAction, type InsightPriority } from '@/components/fairway';
+import { InsightCard, InsightPanel, Eyebrow, type InsightPanelAction, type InsightPriority } from '@/components/fairway';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
 import { ThemesPanel } from '@/components/fairway/cards-insight/themes';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
-import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import type { EvidenceInsight, InsightAttachedDrill } from '@/app/golf/actions/insight-delivery';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 
@@ -48,6 +54,10 @@ export interface InsightsDrillProps {
   onRate: (insightId: string, rating: 'helpful' | 'not_helpful' | 'acknowledged' | 'dismissed') => void;
   onMakePlan: (cause: CauseNode, theme: ThemeNode) => void;
   makePlanPendingId: string | null;
+  /** FIX 1: overflow of the top insight's prescribed drills (index 1+) —
+   *  `PlayerHomeBento` already rendered the first one. Empty/undefined when
+   *  the top insight has 0 or 1 attached drills. */
+  topInsightDrills?: InsightAttachedDrill[];
 }
 
 export function InsightsDrill({
@@ -58,6 +68,7 @@ export function InsightsDrill({
   onRate,
   onMakePlan,
   makePlanPendingId,
+  topInsightDrills = [],
 }: InsightsDrillProps) {
   const { home } = useStage();
   const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(null);
@@ -66,6 +77,15 @@ export function InsightsDrill({
 
   return (
     <DrillPanel title="Insights" backLabel="Home" onBack={home}>
+      {topInsightDrills.length > 0 ? (
+        <div className="mb-6">
+          <Eyebrow>More drills for your top insight</Eyebrow>
+          <div className="mt-3">
+            <PracticeRxPanel drills={topInsightDrills} variant="sheet" />
+          </div>
+        </div>
+      ) : null}
+
       {showThemes ? (
         <ThemesPanel
           themes={themes}

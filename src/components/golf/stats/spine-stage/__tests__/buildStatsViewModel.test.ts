@@ -71,6 +71,91 @@ describe('buildLedger', () => {
       { label: 'Putts / rd', value: '—' },
     ]);
   });
+
+  it('omits deltas when last30/previous30 are not supplied (unchanged flat rows)', () => {
+    const rows = buildLedger({ roundsPlayed: 12, fairwayPct: 61.4, girPct: 52.9, puttsPerRound: 29.3 });
+    expect(rows.every((r) => r.delta === undefined)).toBe(true);
+  });
+
+  it('marks a higher-is-better metric (Fairways) rising as a GOOD up delta', () => {
+    const rows = buildLedger({
+      roundsPlayed: 12,
+      fairwayPct: 65,
+      girPct: null,
+      puttsPerRound: null,
+      last30: { fairwayPct: 65, girPct: null, puttsPerRound: null },
+      previous30: { fairwayPct: 58, girPct: null, puttsPerRound: null },
+    });
+    const fairways = rows.find((r) => r.label === 'Fairways');
+    expect(fairways?.delta).toEqual({ text: '+7%', direction: 'up', good: true });
+  });
+
+  it('marks a higher-is-better metric (Greens) falling as a BAD down delta', () => {
+    const rows = buildLedger({
+      roundsPlayed: 12,
+      fairwayPct: null,
+      girPct: 48,
+      puttsPerRound: null,
+      last30: { fairwayPct: null, girPct: 48, puttsPerRound: null },
+      previous30: { fairwayPct: null, girPct: 55, puttsPerRound: null },
+    });
+    const greens = rows.find((r) => r.label === 'Greens');
+    expect(greens?.delta).toEqual({ text: '−7%', direction: 'down', good: false });
+  });
+
+  it('direction-aware: fewer putts per round is a GOOD delta even though the raw number fell', () => {
+    const rows = buildLedger({
+      roundsPlayed: 12,
+      fairwayPct: null,
+      girPct: null,
+      puttsPerRound: 28.4,
+      last30: { fairwayPct: null, girPct: null, puttsPerRound: 28.4 },
+      previous30: { fairwayPct: null, girPct: null, puttsPerRound: 29.6 },
+    });
+    const putts = rows.find((r) => r.label === 'Putts / rd');
+    // Raw direction is genuinely "down" (28.4 < 29.6) — the glyph must stay
+    // honest to that — but `good` flips true because fewer putts is the win.
+    expect(putts?.delta).toEqual({ text: '−1.2', direction: 'down', good: true });
+  });
+
+  it('direction-aware: MORE putts per round is a BAD delta', () => {
+    const rows = buildLedger({
+      roundsPlayed: 12,
+      fairwayPct: null,
+      girPct: null,
+      puttsPerRound: 30.1,
+      last30: { fairwayPct: null, girPct: null, puttsPerRound: 30.1 },
+      previous30: { fairwayPct: null, girPct: null, puttsPerRound: 28.9 },
+    });
+    const putts = rows.find((r) => r.label === 'Putts / rd');
+    expect(putts?.delta).toEqual({ text: '+1.2', direction: 'up', good: false });
+  });
+
+  it('reads an exact tie as a flat, non-good delta', () => {
+    const rows = buildLedger({
+      roundsPlayed: 12,
+      fairwayPct: 60,
+      girPct: null,
+      puttsPerRound: null,
+      last30: { fairwayPct: 60, girPct: null, puttsPerRound: null },
+      previous30: { fairwayPct: 60, girPct: null, puttsPerRound: null },
+    });
+    const fairways = rows.find((r) => r.label === 'Fairways');
+    expect(fairways?.delta).toEqual({ text: '0%', direction: 'flat', good: false });
+  });
+
+  it('omits a delta when only one side of the comparison is known', () => {
+    const rows = buildLedger({
+      roundsPlayed: 12,
+      fairwayPct: 60,
+      girPct: null,
+      puttsPerRound: null,
+      last30: { fairwayPct: 60, girPct: null, puttsPerRound: null },
+      previous30: { fairwayPct: null, girPct: null, puttsPerRound: null },
+    });
+    const fairways = rows.find((r) => r.label === 'Fairways');
+    expect(fairways?.delta).toBeUndefined();
+  });
 });
 
 describe('buildPriorities', () => {
