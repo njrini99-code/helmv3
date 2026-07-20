@@ -31,26 +31,59 @@ import type { Coach } from './crm-config';
 // Flat list of every NAVIGABLE destination, each with a STABLE id, a fixed
 // keyboard shortcut, and a section it belongs to. Shortcuts are bound to ids
 // (not array position) so regrouping/reordering never silently re-points a
-// key. The four legacy email surfaces (email/resend/insights/inbound) are NOT
-// nav destinations anymore — they live as sub-tabs inside the single
-// "outreach" destination (see OUTREACH_SUBTABS below).
+// key.
+//
+// 2026-07-20 consolidation: the CRM had three top-level tabs rendering the
+// SAME coach list (list/pipeline/conferences) and inbound demo requests
+// hidden under Outreach while replies lived in Inbox. Now: 'list' is the one
+// coach destination with an internal view switcher (see COACH_VIEWS), and
+// Inbox owns everything incoming (replies, demo requests, tasks). Legacy ids
+// keep working via LEGACY_TAB_ALIASES below.
 export const TABS = [
   // ── WORK ──
-  { id: 'today', label: 'Today', Icon: IconClock3, shortcut: '1', description: "Today's ranked call & email worklist", section: 'work' },
-  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '2', description: 'Pipeline overview & quick actions', section: 'work' },
-  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '3', description: 'All coaches in table view', section: 'work' },
-  { id: 'pipeline', label: 'Pipeline', Icon: IconLayers, shortcut: '4', description: 'Kanban sales pipeline', section: 'work' },
-  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '5', description: 'Grouped by conference', section: 'work' },
-  { id: 'outreach', label: 'Outreach', Icon: IconMail, shortcut: '6', description: 'Email tracking, deliverability, analytics & replies', section: 'work' },
-  { id: 'inbox', label: 'Inbox', Icon: IconMessageSquare, shortcut: '7', description: 'Replies + tasks due today', section: 'work' },
+  { id: 'today', label: 'Today', Icon: IconClock3, shortcut: '1', description: 'Signals + ranked call & email worklist', section: 'work' },
+  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '2', description: 'KPIs, trends & pipeline overview', section: 'work' },
+  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '3', description: 'Every coach — table, board or by conference', section: 'work' },
+  { id: 'inbox', label: 'Inbox', Icon: IconMessageSquare, shortcut: '4', description: 'Replies, demo requests & tasks due', section: 'work' },
+  { id: 'outreach', label: 'Outreach', Icon: IconMail, shortcut: '5', description: 'Email tracking, deliverability & analytics', section: 'work' },
   // ── AUTOMATE ──
-  { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '8', description: 'Drip campaigns & enrollments', section: 'automate' },
-  { id: 'templates', label: 'Templates', Icon: IconFileText, shortcut: '9', description: 'Author, preview & test reusable emails', section: 'automate' },
+  { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '6', description: 'Drip campaigns & enrollments', section: 'automate' },
+  { id: 'templates', label: 'Templates', Icon: IconFileText, shortcut: '7', description: 'Author, preview & test reusable emails', section: 'automate' },
   // ── ADMIN ──
   { id: 'settings', label: 'Settings', Icon: IconSettings, shortcut: 'S', description: 'Automations & suppressions', section: 'admin' },
 ] as const;
 
 export type TabId = (typeof TABS)[number]['id'];
+
+// ── Coach views ──
+// The three ways to look at the one coach list, switched INSIDE the 'list'
+// destination (segmented control). Same filters, same selection, same data —
+// only the presentation changes. These were previously separate top-level
+// tabs, which fragmented filter state and tripled the nav surface.
+export const COACH_VIEWS = [
+  { id: 'table', label: 'Table', Icon: ClipboardList },
+  { id: 'board', label: 'Board', Icon: IconLayers },
+  { id: 'conferences', label: 'Conferences', Icon: Building2 },
+] as const;
+
+export type CoachViewId = (typeof COACH_VIEWS)[number]['id'];
+
+// ── Legacy deep-link aliases ──
+// Old bookmarkable ids (?tab=pipeline etc.) from before the consolidation.
+// Every alias maps to a live destination plus the state that recreates the
+// old surface. Applied in page.tsx's URL-sync effect.
+export const LEGACY_TAB_ALIASES: Record<
+  string,
+  { tab: TabId; view?: CoachViewId; outreach?: OutreachSubTabId }
+> = {
+  pipeline: { tab: 'list', view: 'board' },
+  conferences: { tab: 'list', view: 'conferences' },
+  email: { tab: 'outreach', outreach: 'email' },
+  resend: { tab: 'outreach', outreach: 'resend' },
+  insights: { tab: 'outreach', outreach: 'insights' },
+  // Demo requests moved from an Outreach sub-tab into Inbox.
+  inbound: { tab: 'inbox' },
+};
 
 // ── Outreach sub-tabs ──
 // The four legacy email surfaces, merged behind a horizontal sub-tab switcher
@@ -59,15 +92,22 @@ export const OUTREACH_SUBTABS = [
   { id: 'email', label: 'Tracking', Icon: IconSend },
   { id: 'resend', label: 'Deliverability', Icon: IconGauge },
   { id: 'insights', label: 'Analytics', Icon: IconChartBar },
-  // NOTE: this renders InboundLeadsView, which is backed by `demo_requests`
-  // (landing-page "request a demo" submissions) — a different object from
-  // coach replies to outreach emails (crm_replies, surfaced under the
-  // top-level "Inbox" tab). Label must stay accurate to that data source;
-  // do not relabel this "Replies".
-  { id: 'inbound', label: 'Demo Requests', Icon: IconMessage },
+  // Demo requests (demo_requests-backed InboundLeadsView) moved to the Inbox
+  // destination — everything INCOMING (replies, demo requests, tasks) lives
+  // in one place now. ?tab=inbound deep links alias there.
 ] as const;
 
 export type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
+
+// ── Inbox sections ──
+// Inbox owns everything incoming: coach replies + tasks due (the original
+// feed) and landing-page demo requests (moved from an Outreach sub-tab).
+export const INBOX_SECTIONS = [
+  { id: 'replies', label: 'Replies & tasks', Icon: IconMessageSquare },
+  { id: 'demos', label: 'Demo requests', Icon: IconMessage },
+] as const;
+
+export type InboxSectionId = (typeof INBOX_SECTIONS)[number]['id'];
 
 // ── Mobile bottom tab bar ──
 // Below `lg` the dark desktop sidebar is hidden and replaced by a fixed,
@@ -78,9 +118,8 @@ export type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
 // exactly like the sidebar.
 export const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'sequences'] as const;
 // Destinations that live behind the "More" sheet (everything not on the bar).
-// Must cover every TABS id not already on the bar — 'templates' was missing
-// here (present in neither array), making it unreachable on mobile touch.
-export const MOBILE_MORE_TABS = ['dashboard', 'pipeline', 'conferences', 'inbox', 'templates', 'settings'] as const;
+// Must cover every TABS id not already on the bar.
+export const MOBILE_MORE_TABS = ['dashboard', 'inbox', 'templates', 'settings'] as const;
 
 // Email statuses that must never receive a manual Gmail send. Mirrors the
 // email_status/suppression gate that already exists server-side for the

@@ -37,11 +37,14 @@ import {
 import {
   TABS,
   OUTREACH_SUBTABS,
+  COACH_VIEWS,
+  LEGACY_TAB_ALIASES,
   MOBILE_BAR_TABS,
   MOBILE_MORE_TABS,
   isSuppressedEmailStatus,
   type TabId,
   type OutreachSubTabId,
+  type CoachViewId,
 } from './page-contracts';
 import { CRMDashboard } from './components/CRMDashboard';
 import { TodayQueue } from './components/TodayQueue';
@@ -56,7 +59,6 @@ import { ImportModal } from './components/ImportModal';
 import { BulkActionsBar } from './components/BulkActionsBar';
 import { BulkEmailModal } from './components/BulkEmailModal';
 import { EmailTrackingView } from './components/EmailTrackingView';
-import { InboundLeadsView } from './components/InboundLeadsView';
 import { ResendActivityView } from './components/resend/ResendActivityView';
 // FAB removed — actions available via sidebar buttons
 import { QuickActionsPanel } from './components/QuickActionsPanel';
@@ -147,6 +149,7 @@ export default function CRMPage() {
   // searchParams sync effect below runs on mount and promotes the URL tab
   // post-hydration, so deep links still work.
   const [activeTab, setActiveTabState] = useState<TabId>('today');
+  const [coachView, setCoachViewState] = useState<CoachViewId>('table');
 
   // Active sub-tab within the merged Outreach panel. Kept in local state and
   // mirrored to the URL via ?outreach= (same history.replaceState pattern as
@@ -261,6 +264,18 @@ export default function CRMPage() {
     }
   }, []);
 
+  // Switch the coach view (table / board / conferences) inside the 'list'
+  // destination, mirrored to ?view= for deep links.
+  const setCoachView = useCallback((view: CoachViewId) => {
+    setCoachViewState(view);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('view', view);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, []);
+
   // Register the keyboard shortcut once, using a ref so we don't churn
   // listeners on every tab change. Shortcuts bind to STABLE tab ids via a
   // key→id lookup (not array index) so regrouping never re-points a key.
@@ -328,14 +343,28 @@ export default function CRMPage() {
   // uses back/forward — sync local state to match. This does not trigger
   // for the normal setActiveTab path since we only use history.replaceState.
   useEffect(() => {
-    const urlTab = searchParams.get('tab') as TabId | null;
-    if (urlTab && TABS.some((t) => t.id === urlTab) && urlTab !== activeTabRef.current) {
-      setActiveTabState(urlTab);
+    const rawTab = searchParams.get('tab');
+    // Pre-consolidation ids (?tab=pipeline, ?tab=inbound, …) resolve through
+    // the alias map to a live destination + the state that recreates them.
+    const alias = rawTab ? LEGACY_TAB_ALIASES[rawTab] : undefined;
+    if (alias) {
+      if (alias.tab !== activeTabRef.current) setActiveTabState(alias.tab);
+      if (alias.view) setCoachViewState(alias.view);
+      if (alias.outreach) setOutreachSubTabState(alias.outreach);
+    } else {
+      const urlTab = rawTab as TabId | null;
+      if (urlTab && TABS.some((t) => t.id === urlTab) && urlTab !== activeTabRef.current) {
+        setActiveTabState(urlTab);
+      }
     }
-    // Promote a deep-linked Outreach sub-tab as well.
+    // Promote a deep-linked Outreach sub-tab / coach view as well.
     const urlSub = searchParams.get('outreach') as OutreachSubTabId | null;
     if (urlSub && OUTREACH_SUBTABS.some((s) => s.id === urlSub)) {
       setOutreachSubTabState(urlSub);
+    }
+    const urlView = searchParams.get('view') as CoachViewId | null;
+    if (urlView && COACH_VIEWS.some((v) => v.id === urlView)) {
+      setCoachViewState(urlView);
     }
   }, [searchParams]);
 
@@ -1476,7 +1505,11 @@ export default function CRMPage() {
             />
           )}
 
-          {/* ── Coaches List Tab ── */}
+          {/* ── Coaches Tab ── ONE destination for the coach list, with a
+              segmented view switcher (Table / Board / Conferences). The three
+              views share the same filters, selection, and Gmail template bar —
+              previously these were three top-level tabs with fragmented
+              state (the board ignored filters entirely). */}
           {activeTab === 'list' && (
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -1490,6 +1523,33 @@ export default function CRMPage() {
                   domainAuth={domainAuth}
                 />
                 <AssigneeScopeBar scope={assigneeScope} onChange={setAssigneeScope} />
+                <div
+                  role="tablist"
+                  aria-label="Coach views"
+                  className="ml-auto flex items-center gap-1 rounded-2xl glass-standard p-1"
+                >
+                  {COACH_VIEWS.map((v) => {
+                    const isActive = coachView === v.id;
+                    const ViewIcon = v.Icon;
+                    return (
+                      <Button variant="ghost"
+                        key={v.id}
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => setCoachView(v.id)}
+                        className={cn(
+                          'flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
+                          isActive
+                            ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
+                            : 'text-warm-500 hover:text-warm-900 hover:bg-cream-100'
+                        )}
+                      >
+                        <ViewIcon size={15} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} aria-hidden />
+                        {v.label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
               <CoachFilters
                 filters={filters}
@@ -1497,85 +1557,66 @@ export default function CRMPage() {
                 conferences={conferences}
                 statusConfig={STATUS_CONFIG}
               />
-              <div className="rounded-2xl overflow-clip glass-standard">
-                <CoachTable
+              {coachView === 'table' && (
+                <div className="rounded-2xl overflow-clip glass-standard">
+                  <CoachTable
+                    coaches={filteredCoaches}
+                    loading={loading}
+                    selectedIds={selectedIds}
+                    onSelectionChange={setSelectedIds}
+                    onStatusChange={handleStatusChange}
+                    onToggleStar={toggleStar}
+                    onCoachClick={handleCoachClick}
+                    onLogContact={handleLogContact}
+                    statusConfig={STATUS_CONFIG}
+                    priorityConfig={PRIORITY_CONFIG}
+                    coachEngagement={engagementMap}
+                    coachEnrollments={sequenceEnrollmentMap}
+                    onOpenInGmail={openInGmail}
+                    manualTemplateArmed={!!activeManualTemplate}
+                    getGmailHref={getGmailHref}
+                    onGmailTouch={logGmailTouch}
+                    gmailDirectSend={gmailDirectEnabled}
+                  />
+                </div>
+              )}
+              {coachView === 'board' && (
+                <PipelineView
+                  loading={loading}
+                  coaches={filteredCoaches}
+                  onCoachClick={handleCoachClick}
+                  onStatusChange={handleStatusChange}
+                  onToggleStar={toggleStar}
+                  statusConfig={STATUS_CONFIG}
+                  priorityConfig={PRIORITY_CONFIG}
+                  pipelineStages={PIPELINE_STAGES}
+                  stats={stats}
+                  onBulkUpdate={bulkUpdateCoaches}
+                  onRefresh={refreshData}
+                />
+              )}
+              {coachView === 'conferences' && (
+                <ConferenceGroupView
                   coaches={filteredCoaches}
                   loading={loading}
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
+                  onCoachClick={handleCoachClick}
                   onStatusChange={handleStatusChange}
                   onToggleStar={toggleStar}
-                  onCoachClick={handleCoachClick}
                   onLogContact={handleLogContact}
                   statusConfig={STATUS_CONFIG}
                   priorityConfig={PRIORITY_CONFIG}
-                  coachEngagement={engagementMap}
                   coachEnrollments={sequenceEnrollmentMap}
-                  onOpenInGmail={openInGmail}
-                  manualTemplateArmed={!!activeManualTemplate}
-                  getGmailHref={getGmailHref}
-                  onGmailTouch={logGmailTouch}
-                  gmailDirectSend={gmailDirectEnabled}
                 />
-              </div>
+              )}
             </div>
           )}
 
-          {/* ── Pipeline Tab ── */}
-          {activeTab === 'pipeline' && (
-            <PipelineView
-              loading={loading}
-              coaches={allCoaches}
-              onCoachClick={handleCoachClick}
-              onStatusChange={handleStatusChange}
-              onToggleStar={toggleStar}
-              statusConfig={STATUS_CONFIG}
-              priorityConfig={PRIORITY_CONFIG}
-              pipelineStages={PIPELINE_STAGES}
-              stats={stats}
-              onBulkUpdate={bulkUpdateCoaches}
-              onRefresh={refreshData}
-            />
-          )}
-
-          {/* ── Conferences Tab ── */}
-          {activeTab === 'conferences' && (
-            <div className="space-y-4">
-              <ManualGmailTemplateBar
-                templates={emailTemplates}
-                active={activeManualTemplate}
-                onChange={setActiveManualTemplate}
-                directEnabled={gmailDirectEnabled}
-                onSendBatch={sendBatchViaGmail}
-                batchSending={gmailBatchSending}
-                domainAuth={domainAuth}
-              />
-              <CoachFilters
-                filters={filters}
-                setFilters={setFilters}
-                conferences={conferences}
-                statusConfig={STATUS_CONFIG}
-              />
-              <ConferenceGroupView
-                coaches={filteredCoaches}
-                loading={loading}
-                selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
-                onCoachClick={handleCoachClick}
-                onStatusChange={handleStatusChange}
-                onToggleStar={toggleStar}
-                onLogContact={handleLogContact}
-                statusConfig={STATUS_CONFIG}
-                priorityConfig={PRIORITY_CONFIG}
-                coachEnrollments={sequenceEnrollmentMap}
-              />
-            </div>
-          )}
-
-          {/* ── Outreach Tab ── merges the four email surfaces (Tracking /
-              Deliverability / Analytics / Replies) behind a horizontal
-              sub-tab switcher. Each sub-tab renders the exact same component
-              as before, with identical props. */}
+          {/* ── Outreach Tab ── the email observability surfaces (Tracking /
+              Deliverability / Analytics) behind a horizontal sub-tab
+              switcher. Demo requests moved to Inbox in the 2026-07-20
+              consolidation — Outreach is about email YOU send. */}
           {activeTab === 'outreach' && (
             <div className="space-y-4">
               <div
@@ -1608,11 +1649,11 @@ export default function CRMPage() {
               {outreachSubTab === 'email' && <EmailTrackingView />}
               {outreachSubTab === 'resend' && <ResendActivityView onSendFollowup={handleSendFollowup} />}
               {outreachSubTab === 'insights' && <InsightsDashboard />}
-              {outreachSubTab === 'inbound' && <InboundLeadsView />}
             </div>
           )}
 
-          {/* ── Inbox Tab (NEW — Phase 3 P3-A) ── */}
+          {/* ── Inbox Tab ── everything incoming: replies + tasks due, and
+              demo requests (moved here from the Outreach sub-tabs). */}
           {activeTab === 'inbox' && <InboxView />}
 
           {/* ── Sequences Tab (NEW — Phase 2) ── */}

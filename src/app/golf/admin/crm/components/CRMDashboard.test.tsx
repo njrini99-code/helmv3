@@ -5,8 +5,10 @@
  *     into a blank-labeled row that can outrank real conferences.
  *  2. [medium] "Division Breakdown" (and the Total Coaches KPI detail) now
  *     reflects every division present in the data, not just D2/D3.
- *  3. [medium] The `get_crm_email_stats` RPC error path is no longer
- *     swallowed silently — it's routed through logError.
+ *  3. Nav consolidation (2026-07-20): the dashboard MEASURES — the old
+ *     Follow-ups Due / Stale Leads action lists and Email Performance box
+ *     (duplicates of Today and Outreach → Analytics) are gone, replaced by
+ *     a "Needs attention" count card that routes to the Today queue.
  *  4. [medium] Follow-up list widgets render a loading skeleton instead of
  *     a misleading "No follow-ups due" / etc. empty state while `loading`
  *     is true.
@@ -146,9 +148,12 @@ describe('CRMDashboard', () => {
     expect(screen.getAllByText('NAIA').length).toBeGreaterThan(0);
   });
 
-  it('logs a failed get_crm_email_stats RPC instead of swallowing it', async () => {
-    rpcResult = { data: null, error: { message: 'Forbidden' } };
-    const coaches = [makeCoach({ id: '1' })];
+  it('replaces the duplicated action lists with a "Needs attention" card that routes to Today', async () => {
+    const onNavigate = vi.fn();
+    const coaches = [
+      makeCoach({ id: '1', status: 'contacted', last_contacted_at: null }),
+      makeCoach({ id: '2', next_follow_up_at: new Date(Date.now() - 3600_000).toISOString() }),
+    ];
     render(
       <CRMDashboard
         allCoaches={coaches}
@@ -157,14 +162,22 @@ describe('CRMDashboard', () => {
         statusConfig={STATUS_COLORS as never}
         onBulkUpdate={noopAsync}
         onRefresh={noop}
-        onNavigate={noop}
+        onNavigate={onNavigate}
       />
     );
 
-    await vi.waitFor(() => {
-      expect(logErrorMock).toHaveBeenCalled();
-    });
-    expect(logErrorMock.mock.calls[0]?.[1]).toMatchObject({ component: 'CRMDashboard' });
+    // The count card exists…
+    expect(screen.getByText('Needs attention')).toBeInTheDocument();
+    expect(screen.getByText('Follow-ups due')).toBeInTheDocument();
+    expect(screen.getByText('Stale leads (7d+)')).toBeInTheDocument();
+    // …the old duplicated surfaces are gone…
+    expect(screen.queryByText('Follow-ups Due')).not.toBeInTheDocument();
+    expect(screen.queryByText('Stale Leads')).not.toBeInTheDocument();
+    expect(screen.queryByText('Email Performance')).not.toBeInTheDocument();
+    // …and the card routes to the Today queue.
+    const { fireEvent } = await import('@testing-library/react');
+    fireEvent.click(screen.getByText('Open Today queue'));
+    expect(onNavigate).toHaveBeenCalledWith('today');
   });
 
   it('renders a loading skeleton instead of misleading empty states while loading', () => {

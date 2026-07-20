@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
 import {
   IconUsers,
   IconTrendingUp,
@@ -14,13 +13,11 @@ import {
   IconArrowRight,
   IconChartBar,
   IconTarget,
-  IconMail,
   IconTrophy,
 } from '@/components/icons';
 import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 import { Button } from '@/components/ui/button';
-import { logError } from '@/lib/error-logging';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { WeeklyPulse } from './dashboard/WeeklyPulse';
 
@@ -43,7 +40,7 @@ interface CRMDashboardProps {
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode }>;
   onBulkUpdate: (ids: string[], updates: Partial<Coach>) => Promise<void>;
   onRefresh: () => void;
-  onNavigate: (tab: 'dashboard' | 'list' | 'pipeline') => void;
+  onNavigate: (tab: 'today' | 'dashboard' | 'list' | 'outreach') => void;
   onCoachClick?: (coach: Coach) => void;
 }
 
@@ -59,32 +56,9 @@ export function CRMDashboard({
   onCoachClick,
 }: CRMDashboardProps) {
   const [processing, setProcessing] = useState<string | null>(null);
-  const [emailStats, setEmailStats] = useState<{
-    total_sent: number;
-    delivered: number;
-    opened: number;
-    clicked: number;
-    bounced: number;
-  } | null>(null);
 
-  // Fetch email performance stats
-  useEffect(() => {
-    async function fetchEmailStats() {
-      const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_crm_email_stats');
-      if (!error && data) {
-        setEmailStats(data as { total_sent: number; delivered: number; opened: number; clicked: number; bounced: number });
-      } else if (error) {
-        logError(
-          error instanceof Error ? error : new Error(error?.message || 'get_crm_email_stats failed'),
-          { component: 'CRMDashboard', action: 'fetch-email-stats', sport: 'golf' },
-          'low'
-        );
-      }
-    }
-    fetchEmailStats();
-  }, []);
+  // Email performance moved to Outreach → Analytics (it was a duplicate of
+  // that surface); the dashboard's email trend now lives in WeeklyPulse.
 
   const allNewLeads = stats.byStatus.new_lead === stats.total && stats.total > 0;
 
@@ -308,10 +282,10 @@ export function CRMDashboard({
               </div>
             </div>
             <Button variant="ghost"
-              onClick={() => onNavigate('pipeline')}
+              onClick={() => onNavigate('list')}
               className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors"
             >
-              View Pipeline <IconArrowRight size={12} />
+              View board <IconArrowRight size={12} />
             </Button>
           </div>
           <div className="space-y-3">
@@ -394,84 +368,43 @@ export function CRMDashboard({
         </div>
       </div>
 
-      {/* ── Three-column: Follow-ups + Stale Leads + Activity ── */}
+      {/* ── Needs attention + Recent Activity ──
+          The old Follow-ups Due / Stale Leads panels duplicated the Today
+          tab's queues (and Email Performance duplicated Outreach analytics).
+          Dashboard now MEASURES; Today/Outreach are where you ACT — this card
+          keeps the counts and points there. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Today's Follow-ups */}
-        <div className="glass-standard rounded-2xl p-5 shadow-sm">
+        <div className="glass-standard rounded-2xl p-5 shadow-sm flex flex-col">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
               <IconClock size={16} className="text-amber-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-warm-900">Follow-ups Due</h3>
-              <p className="text-xs text-warm-500">{followUpsDueToday.length} coaches need attention</p>
+              <h3 className="text-sm font-semibold text-warm-900">Needs attention</h3>
+              <p className="text-xs text-warm-500">Act on these from Today</p>
             </div>
           </div>
-          {loading ? (
-            <ListSkeleton items={3} />
-          ) : followUpsDueToday.length === 0 ? (
-            <EmptyState icon={<IconClock size={18} className="text-warm-300" />} title="No follow-ups due" subtitle="Schedule follow-ups from coach detail" />
-          ) : (
-            <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
-              {followUpsDueToday.slice(0, 8).map(coach => (
-                <CoachRow
-                  key={coach.id}
-                  coach={coach}
-                  onClick={handleCoachRowClick}
-                  badge={
-                    coach.next_follow_up_at
-                      ? formatRelative(coach.next_follow_up_at)
-                      : undefined
-                  }
-                  badgeColor="text-amber-600"
-                />
-              ))}
-              {followUpsDueToday.length > 8 && (
-                <p className="text-xs text-warm-400 text-center pt-2">+{followUpsDueToday.length - 8} more</p>
-              )}
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-warm-700">Follow-ups due</span>
+              <span className="text-sm font-semibold text-amber-600 tabular-nums">{loading ? '—' : followUpsDueToday.length}</span>
             </div>
-          )}
-        </div>
-
-        {/* Stale Leads */}
-        <div className="glass-standard rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-              <IconWarning size={16} className="text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-warm-900">Stale Leads</h3>
-              <p className="text-xs text-warm-500">{staleLeads.length} no contact 7+ days</p>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-warm-700">Stale leads (7d+)</span>
+              <span className="text-sm font-semibold text-red-600 tabular-nums">{loading ? '—' : staleLeads.length}</span>
             </div>
           </div>
-          {loading ? (
-            <ListSkeleton items={3} />
-          ) : staleLeads.length === 0 ? (
-            <EmptyState icon={<IconWarning size={18} className="text-warm-300" />} title="No stale leads" subtitle="All pipeline leads are actively worked" />
-          ) : (
-            <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
-              {staleLeads.slice(0, 8).map(coach => (
-                <CoachRow
-                  key={coach.id}
-                  coach={coach}
-                  onClick={handleCoachRowClick}
-                  badge={
-                    coach.last_contacted_at
-                      ? `${Math.floor((Date.now() - new Date(coach.last_contacted_at).getTime()) / 86400000)}d ago`
-                      : 'Never'
-                  }
-                  badgeColor="text-red-600"
-                />
-              ))}
-              {staleLeads.length > 8 && (
-                <p className="text-xs text-warm-400 text-center pt-2">+{staleLeads.length - 8} more</p>
-              )}
-            </div>
-          )}
+          <Button
+            variant="ghost"
+            onClick={() => onNavigate('today')}
+            className="mt-4 w-full justify-center rounded-xl bg-cream-100 hover:bg-cream-200 text-sm font-medium text-warm-900 min-h-[40px]"
+          >
+            Open Today queue
+          </Button>
         </div>
 
         {/* Recent Activity */}
-        <div className="glass-standard rounded-2xl p-5 shadow-sm">
+        <div className="glass-standard rounded-2xl p-5 shadow-sm lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
               <IconZap size={16} className="text-primary-600" />
@@ -500,47 +433,6 @@ export function CRMDashboard({
         </div>
       </div>
 
-      {/* ── Email Performance ── */}
-      {emailStats && emailStats.total_sent > 0 && (
-        <div className="glass-standard rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-              <IconMail size={16} className="text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-warm-900">Email Performance</h3>
-              <p className="text-xs text-warm-500">{emailStats.total_sent} emails tracked</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <EmailStatBox
-              label="Delivery Rate"
-              value={emailStats.total_sent > 0 ? Math.round((emailStats.delivered / emailStats.total_sent) * 100) : 0}
-              color="text-primary-600"
-              bgColor="bg-primary-50/50"
-            />
-            <EmailStatBox
-              label="Open Rate"
-              value={emailStats.total_sent > 0 ? Math.round((emailStats.opened / emailStats.total_sent) * 100) : 0}
-              color="text-blue-600"
-              bgColor="bg-blue-50/50"
-            />
-            <EmailStatBox
-              label="Click Rate"
-              value={emailStats.total_sent > 0 ? Math.round((emailStats.clicked / emailStats.total_sent) * 100) : 0}
-              color="text-violet-600"
-              bgColor="bg-violet-50/50"
-            />
-            <EmailStatBox
-              label="Bounce Rate"
-              value={emailStats.total_sent > 0 ? Math.round((emailStats.bounced / emailStats.total_sent) * 100) : 0}
-              color="text-red-600"
-              bgColor="bg-red-50/50"
-            />
-          </div>
-        </div>
-      )}
-
       {/* ── Quick Actions + Division Breakdown ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Quick Actions — cleaner callout */}
@@ -567,10 +459,10 @@ export function CRMDashboard({
                   <IconArrowRight size={16} /> Move to Pipeline
                 </Button>
                 <Button variant="ghost"
-                  onClick={() => onNavigate('pipeline')}
+                  onClick={() => onNavigate('list')}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cream-100 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
-                  <IconChartBar size={16} /> Open Pipeline
+                  <IconChartBar size={16} /> Open Coaches
                 </Button>
               </div>
             </div>
@@ -720,15 +612,6 @@ function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: s
       </div>
       <p className="text-sm font-medium text-warm-500">{title}</p>
       <p className="text-xs text-warm-400 mt-0.5">{subtitle}</p>
-    </div>
-  );
-}
-
-function EmailStatBox({ label, value, color, bgColor }: { label: string; value: number; color: string; bgColor: string }) {
-  return (
-    <div className={cn('p-3 rounded-xl border border-warm-100/50', bgColor)}>
-      <p className="text-2xl font-bold tabular-nums text-warm-900">{value}%</p>
-      <p className={cn('text-xs font-medium mt-0.5', color)}>{label}</p>
     </div>
   );
 }

@@ -10,12 +10,17 @@ import {
 import { getInboxFeed, type CrmReply } from '@/app/golf/actions/crm-replies';
 import { completeCrmTask } from '@/app/golf/actions/crm-foundations';
 import type { CrmTask } from '@/app/golf/admin/crm/types/foundations';
+import { INBOX_SECTIONS, type InboxSectionId } from '@/app/golf/admin/crm/page-contracts';
 import { ReplyThread } from './ReplyThread';
+import { InboundLeadsView } from '../InboundLeadsView';
 import { Button } from '@/components/ui/button';
 
 // ============================================================================
-// InboxView — three-column layout (replies left, tasks right, selected
-// thread/task center). On mobile, stacks vertically.
+// InboxView — everything INCOMING, in one destination:
+//  · "Replies & tasks": three-column layout (replies left, tasks right,
+//    selected thread/task center; stacks vertically on mobile)
+//  · "Demo requests": landing-page demo_requests (InboundLeadsView), moved
+//    here from the Outreach sub-tabs in the 2026-07-20 nav consolidation.
 // ============================================================================
 
 type Selection =
@@ -33,6 +38,7 @@ function relTime(iso: string | null): string {
 }
 
 export function InboxView() {
+  const [section, setSection] = useState<InboxSectionId>('replies');
   const [replies, setReplies] = useState<CrmReply[]>([]);
   const [dueTasks, setDueTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,30 +94,61 @@ export function InboxView() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-warm-900 flex items-center gap-2">
             <IconMail size={20} className="text-primary-600" />
             Inbox
           </h2>
           <p className="text-sm text-warm-500 mt-0.5">
-            Inbound replies and tasks due today, side-by-side.
+            Everything incoming — replies, tasks due, and demo requests.
           </p>
         </div>
-        {unreadCount > 0 && (
-          <span className="px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700">
-            {unreadCount} unread
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && section === 'replies' && (
+            <span className="px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700">
+              {unreadCount} unread
+            </span>
+          )}
+          <div
+            role="tablist"
+            aria-label="Inbox sections"
+            className="flex items-center gap-1 rounded-2xl glass-standard p-1"
+          >
+            {INBOX_SECTIONS.map((s) => {
+              const isActive = section === s.id;
+              const SectionIcon = s.Icon;
+              return (
+                <Button variant="ghost"
+                  key={s.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setSection(s.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
+                    isActive
+                      ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
+                      : 'text-warm-500 hover:text-warm-900 hover:bg-cream-100'
+                  )}
+                >
+                  <SectionIcon size={15} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} aria-hidden />
+                  {s.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      {error && (
+      {section === 'demos' && <InboundLeadsView />}
+
+      {section === 'replies' && error && (
         <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
           {error}
         </div>
       )}
 
-      {loading ? (
+      {section === 'replies' && (loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-96 rounded-2xl glass-standard border-warm-200/60 skeleton-shimmer" />
@@ -264,7 +301,7 @@ export function InboxView() {
             )}
           </aside>
         </div>
-      )}
+      ))}
     </div>
   );
 }
