@@ -27,7 +27,7 @@
 -- per-row status shown right next to it.
 CREATE OR REPLACE FUNCTION "public"."get_resend_activity_stats"("p_window" "text" DEFAULT '7d'::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET search_path TO 'public'
     AS $$
 DECLARE
   v_since timestamptz;
@@ -115,7 +115,7 @@ $$;
 -- null (older rows sent before the metadata column existed).
 CREATE OR REPLACE FUNCTION "public"."get_crm_template_performance"("p_window" "text" DEFAULT '30d'::"text") RETURNS TABLE("template_id" "uuid", "template_name" "text", "sent_count" integer, "delivered_count" integer, "opened_count" integer, "clicked_count" integer, "bounced_count" integer, "open_rate" numeric, "click_rate" numeric)
     LANGUAGE "sql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
+    SET search_path TO 'public', 'pg_temp'
     AS $$
   WITH window_days AS (
     SELECT (CASE p_window WHEN '7d' THEN now() - interval '7 days' WHEN '30d' THEN now() - interval '30 days' WHEN '90d' THEN now() - interval '90 days' ELSE now() - interval '30 days' END) AS since
