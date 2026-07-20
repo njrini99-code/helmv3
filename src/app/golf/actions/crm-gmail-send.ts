@@ -154,7 +154,9 @@ async function recordGmailTouch(
         // Stamp the template on every send so usage is reconstructable from the
         // log (usage_count alone is a lossy counter that history showed nobody
         // was incrementing on this path).
-        ...(templateId ? { templateId } : {}),
+        // snake_case key — the canonical form the bulk route, the historical
+        // backfill, and get_crm_template_performance's join all use.
+        ...(templateId ? { template_id: templateId } : {}),
       },
     });
     if (error) throw error;
