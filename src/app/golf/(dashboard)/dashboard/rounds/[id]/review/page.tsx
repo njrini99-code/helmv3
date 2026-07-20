@@ -3,44 +3,32 @@
 /**
  * Round Review Page
  *
- * Displays AI-generated analysis of completed rounds using the
- * RoundReviewDisplay component with CoachHelm integration.
+ * Round Review on the Spine & Stage filmstrip (Task 10): a green hero panel
+ * (score + to-par, `GradeDots`, scoring mix) beside the 18-hole `Filmstrip`,
+ * ONE AI narrative, strokes-lost `RailBars`, a "what to do next" block, coach
+ * notes, the season standing band, and a single "Full breakdown" DrillPanel —
+ * all composed by `FilmstripReview`. This page owns data-fetching + auth
+ * only; see `FilmstripReview` for the presentation.
  */
 
 import { useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import type { ReactElement } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
 import { useToast } from '@/components/ui/sonner';
-import { RoundReviewDisplay } from '@/components/golf/coachhelm/RoundReviewDisplay';
-import { RoundStatsComparison } from '@/components/golf/coachhelm/RoundStatsComparison';
 import {
   getRoundReview,
   generateAndStoreRoundReview,
-  getStatAverages,
   getPlayerStandingForReview,
   shareRoundReviewWithCoach,
-  type ComparisonAverages,
   type RoundReviewWithRound,
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
-import { CoachNotesSection } from './CoachNotesSection';
-import {
-  RoundTakeaway,
-  V2ReviewSummary,
-} from '@/components/golf/coachhelm/round-review';
-import {
-  getRoundTakeawayInsight,
-  getInsightsForPlayer,
-  type EvidenceInsight,
-} from '@/app/golf/actions/insight-delivery';
+import { getRoundTakeawayInsight, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { IconSparkles, IconRefresh } from '@/components/icons';
-import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
 import {
   ViewHeader as FwViewHeader,
   Button as FwButton,
@@ -48,111 +36,15 @@ import {
   InlineNotice as FwInlineNotice,
   EmptyState as FwEmptyState,
   Skeleton as FwSkeleton,
-  Surface as FwSurface,
-  Eyebrow as FwEyebrow,
-  SelectablePill as FwSelectablePill,
 } from '@/components/fairway';
 import { Flag as LucideFlag } from 'lucide-react';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
-import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { cleanCourseName } from '@/lib/golf/course-name';
-
-// ============================================================================
-// CODE-SPLIT BELOW-THE-FOLD PANELS
-// ============================================================================
-// This route is the heaviest First Load JS in the app (bundle scout finding
-// #3). None of these three render during the initial client render anyway —
-// every render path above `reviewBody` returns early while `isLoading`/`error`/
-// `!round` is true, and `round` only resolves after this page's own fetch
-// effects complete — so splitting them into separate chunks trims the route's
-// initial JS without changing when, whether, or in what order they render.
-// RoundReviewDisplay/RoundStatsComparison/RoundTakeaway/V2ReviewSummary are
-// deliberately left as static imports (out of scope — see task notes).
-const RoundReviewLlmCard = dynamic(
-  () =>
-    import('@/components/golf/coachhelm/v3/RoundReviewLlmCard').then(
-      (mod) => mod.RoundReviewLlmCard,
-    ),
-  {
-    // Shape-matches the mounted card: eyebrow + a text-body-lg/md:text-h3
-    // paragraph that can wrap onto a 2nd line, inside the same surface-stone
-    // shell — a single skeleton line under-reserved height for the common
-    // 2-line case (CodeRabbit #797 cluster-4 finding 1).
-    loading: () => (
-      <div className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6 space-y-3">
-        <FwSkeleton className="h-3 w-24" />
-        <FwSkeleton className="h-6 w-full" />
-        <FwSkeleton className="h-6 w-2/3" />
-      </div>
-    ),
-  },
-);
-const HoleByHoleShotPaths = dynamic(
-  () =>
-    import('@/components/golf/coachhelm/round-review/HoleByHoleShotPaths').then(
-      (mod) => mod.HoleByHoleShotPaths,
-    ),
-  {
-    // Mirrors the component's OWN internal skeleton (shown while its shot
-    // ledger fetch is in flight): a surface-stone header block, then a
-    // surface-matte frame holding the same aspect-[140/320] card grid — not
-    // a single h-40 bar, which reserved far less height than the real
-    // header+grid that mounts (CodeRabbit #797 cluster-4 finding 1).
-    loading: () => (
-      <div>
-        <div className="surface-stone rounded-3xl p-6 md:p-8 mb-4 space-y-2">
-          <FwSkeleton className="h-3 w-28" />
-          <FwSkeleton className="h-6 w-64 max-w-full" />
-          <FwSkeleton className="h-4 w-full max-w-md" />
-        </div>
-        <div className="surface-matte rounded-2xl p-4 md:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 max-w-[860px] mx-auto justify-items-center">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <FwSkeleton
-                key={i}
-                className="w-full max-w-[240px] aspect-[140/320] rounded-2xl"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    ),
-  },
-);
-const RoundIntelligence = dynamic(
-  () =>
-    import('@/components/golf/coachhelm/round-review/RoundIntelligence').then(
-      (mod) => mod.RoundIntelligence,
-    ),
-  {
-    // Panel-sized skeleton matching InstrumentPanel's bezel (eyebrow +
-    // header) + opportunity-row body — was `null`, which reserved zero
-    // height for a real multi-row panel (CodeRabbit #797 cluster-4 finding 1).
-    loading: () => (
-      <div className="rounded-card border border-border-subtle bg-surface p-6 space-y-5">
-        <div className="space-y-1">
-          <FwSkeleton className="h-3 w-32" />
-          <FwSkeleton className="h-5 w-64 max-w-full" />
-        </div>
-        <div className="space-y-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="space-y-1.5">
-              <div className="flex items-baseline justify-between gap-3">
-                <FwSkeleton className="h-3.5 w-24" />
-                <FwSkeleton className="h-3.5 w-12" />
-              </div>
-              <FwSkeleton className="h-1.5 w-full rounded-full" />
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-);
+import { FilmstripReview, type PromoteSuggestion } from '@/components/golf/coachhelm/round-review/FilmstripReview';
+import { sanitizeNaN } from '@/components/golf/coachhelm/round-review/buildReviewViewModel';
 
 // ============================================================================
 // TYPES
@@ -223,33 +115,6 @@ function displayCourseName(name: string | null | undefined): string {
     .join(' ');
 }
 
-/** Deterministic 1-sentence opener used as the LLM round-review
- *  card's fallback. Always renders something specific (score +
- *  score-to-par + optional course) so the surface is never empty
- *  when the W30 budget gate trips or the action errors. */
-function buildRoundReviewFallback(
-  totalScore: number,
-  scoreToPar: number | null,
-  courseName: string | null,
-): string {
-  const toParStr =
-    scoreToPar === null || scoreToPar === undefined
-      ? ''
-      : scoreToPar === 0
-        ? ' (even)'
-        : scoreToPar > 0
-          ? ` (+${scoreToPar})`
-          : ` (${scoreToPar})`;
-  const courseClause = courseName ? ` at ${courseName}` : '';
-  return `You shot ${totalScore}${toParStr}${courseClause}. Review the stats and takeaways below.`;
-}
-
-interface PromoteSuggestion {
-  title: string;
-  description: string;
-  areaType: string;
-}
-
 /** Picks the best section-level pre-fill for the Promote-to-Focus-Area CTA.
  *  Prefers the takeaway insight (carries category + concrete framing); falls
  *  back to the top areasForImprovement entry on the stored review. */
@@ -273,24 +138,6 @@ function derivePromoteSuggestion(
     };
   }
   return null;
-}
-
-/** Adapts the null-honest `ComparisonAverages` shape to the optional-number
- *  props `RoundStatsComparison` expects. A null average means "no honest
- *  baseline for this stat" — mapping it to `undefined` makes the component
- *  skip that comparison entirely instead of comparing against a fabricated
- *  number. */
-function toComparisonProps(avg: ComparisonAverages | null): {
-  avgGirPct?: number;
-  avgFairwayPct?: number;
-  avgPutts?: number;
-} | null {
-  if (!avg) return null;
-  return {
-    avgGirPct: avg.avgGirPct ?? undefined,
-    avgFairwayPct: avg.avgFairwayPct ?? undefined,
-    avgPutts: avg.avgPutts ?? undefined,
-  };
 }
 
 // ============================================================================
@@ -317,11 +164,6 @@ export default function RoundReviewPage() {
   // State
   const [round, setRound] = useState<RoundData | null>(null);
   const [storedReview, setStoredReview] = useState<RoundReviewWithRound | null>(null);
-  // Null-honest averages: each field is independently null when the player's
-  // history can't support it (see ComparisonAverages). Comparisons with a
-  // null average are skipped, never faked.
-  const [playerAvg, setPlayerAvg] = useState<ComparisonAverages | null>(null);
-  const [teamAvg, setTeamAvg] = useState<ComparisonAverages | null>(null);
   // Season-level standing (PGA + team + you) keyed by canonical metric_id.
   // Redesign-only: feeds the StandingBar "where this sits" band below the
   // round stats. Empty `{}` until the season standing cron has populated rows
@@ -337,22 +179,20 @@ export default function RoundReviewPage() {
   const [generatingReview, setGeneratingReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Evidence-backed insight delivery — takeaway + supporting list. Fetched
-  // from `golf_coach_insights` (NOT the in-memory engine) so the round-review
-  // surface reads from the same source as the Hub + CoachHelm dashboard.
+  // Evidence-backed takeaway — used ONLY to pre-fill the Promote-to-Focus-Area
+  // CTA (title/description/category). The takeaway is no longer rendered as
+  // its own hero card (spec §3.4: ONE narrative replaces every prose surface,
+  // including the old `RoundTakeaway` hero).
   const [takeawayInsight, setTakeawayInsight] = useState<EvidenceInsight | null>(null);
-  const [supportingInsights, setSupportingInsights] = useState<EvidenceInsight[]>([]);
 
-  // Use existing CoachHelm hook for V2 features. V1 review object is no
-  // longer rendered on this page (IA audit 2026-05-28 trimmed the dual V1/V2
-  // surface down to V2 only — the W30 LLM round-review card lives in V2);
-  // the hook still returns it, but this page's own `coach_notes` reads/writes
-  // go through `storedReview` (round-review-system.ts) + `CoachNotesSection`
-  // instead, not through this hook's `review.coachNotes`.
-  // NOTE: the hook call is retained (it drives V2 hydration side effects), but
-  // its `loading` return is intentionally NOT destructured — the page-level
-  // `isLoading` gate no longer consults it (see the umbrella below). We still
-  // pull `generating` for the Refresh-button spinner state.
+  // Use existing CoachHelm hook for V2 features. The hook's `review` (V1
+  // object) is never rendered on this page — V2's `composedReview.body` is
+  // the narrative's preferred source, with the V1 rule-based `summary` (on
+  // `storedReview`) as the honest fallback. NOTE: the hook call is retained
+  // (it drives V2 hydration side effects) but its `loading` return is
+  // intentionally NOT destructured — the page-level `isLoading` gate no
+  // longer consults it (see the umbrella below). We still pull `generating`
+  // for the Refresh-button spinner state.
   const {
     v2Review,
     isV2Enabled,
@@ -463,11 +303,12 @@ export default function RoundReviewPage() {
     fetchRound();
   }, [roundId, supabase, activeTeamId, coachTeamIdsKey]);
 
-  // Fetch stored review and averages. Resets `loadingStoredReview` regardless
-  // of whether `round` resolved — previously an early `if (!round) return;`
-  // left the flag stuck on its initial `true`, which hung the umbrella
-  // `isLoading` boolean and the page on the "Loading review..." skeleton
-  // whenever the round-fetch step bailed (e.g. error path, auth rejection).
+  // Fetch stored review + season standing. Resets `loadingStoredReview`
+  // regardless of whether `round` resolved — previously an early
+  // `if (!round) return;` left the flag stuck on its initial `true`, which
+  // hung the umbrella `isLoading` boolean and the page on the "Loading
+  // review..." skeleton whenever the round-fetch step bailed (e.g. error
+  // path, auth rejection).
   useEffect(() => {
     if (!loadingRound && !round) {
       setLoadingStoredReview(false);
@@ -476,21 +317,13 @@ export default function RoundReviewPage() {
     if (!round) return;
     let cancelled = false;
 
-    async function fetchReviewAndAverages() {
+    async function fetchReviewAndStanding() {
       if (!round) return;
       setLoadingStoredReview(true);
       try {
-        // Fetch stored review
         const reviewResult = await getRoundReview(roundId);
         if (!cancelled && reviewResult.success && reviewResult.review) {
           setStoredReview(reviewResult.review);
-        }
-
-        // Fetch averages for comparison
-        const avgResult = await getStatAverages(round.player_id);
-        if (!cancelled && avgResult.success) {
-          setPlayerAvg(avgResult.playerAvg ?? null);
-          setTeamAvg(avgResult.teamAvg ?? null);
         }
 
         // Fetch season standing for the PGA/team/you band. Failure-silent
@@ -505,46 +338,36 @@ export default function RoundReviewPage() {
       }
     }
 
-    fetchReviewAndAverages();
+    fetchReviewAndStanding();
     return () => {
       cancelled = true;
     };
   }, [round, roundId, loadingRound]);
 
-  // Fetch evidence-backed takeaway + supporting insights in parallel once we
-  // know which player the round belongs to. Server actions handle auth +
-  // drill pre-fetch — the page stays a 'use client' island but defers all
-  // data access to `getRoundTakeawayInsight` / `getInsightsForPlayer`.
+  // Fetch the evidence-backed takeaway once we know which player the round
+  // belongs to — used only to pre-fill the Promote-to-Focus-Area CTA (see
+  // `derivePromoteSuggestion`). Server action handles auth; this page stays a
+  // 'use client' island but defers all data access to `getRoundTakeawayInsight`.
   useEffect(() => {
     if (!round) return;
     let cancelled = false;
 
-    async function loadInsightDelivery() {
+    async function loadTakeaway() {
       if (!round) return;
       try {
-        const [takeaway, supporting] = await Promise.all([
-          getRoundTakeawayInsight(round.player_id, roundId),
-          getInsightsForPlayer(round.player_id, { limit: 6 }),
-        ]);
+        const takeaway = await getRoundTakeawayInsight(round.player_id, roundId);
         if (cancelled) return;
         setTakeawayInsight(takeaway);
-        // Drop the takeaway row from the supporting list so we never render
-        // it twice. V2ReviewSummary also filters defensively, but clipping
-        // upstream keeps the prop shape tight.
-        setSupportingInsights(
-          takeaway ? supporting.filter((i) => i.id !== takeaway.id) : supporting,
-        );
       } catch {
         // Server actions already route to `logServerError`. Fall through to
-        // the empty state — an insight-delivery failure must never block the
-        // rest of the review.
+        // the fallback-suggestion path — a fetch failure must never block
+        // the rest of the review.
         if (cancelled) return;
         setTakeawayInsight(null);
-        setSupportingInsights([]);
       }
     }
 
-    void loadInsightDelivery();
+    void loadTakeaway();
     return () => {
       cancelled = true;
     };
@@ -601,29 +424,6 @@ export default function RoundReviewPage() {
       // here so we never disrupt the player's view of the review.
     });
   }, [storedReview?.id, viewedMarked]);
-
-  // Hole-jump nav (#34): the shot-reconstruction section renders one card
-  // per hole and can run tens of thousands of px tall on mobile with no way
-  // to skip to a specific hole. `HoleByHoleShotPaths` lays its cards out in
-  // the same ascending hole-number order as this page's own `round.holes`
-  // (sorted once on fetch, above), inside a grid whose per-hole cards share
-  // a stable `max-w-[240px]` marker class both before AND after the shot
-  // ledger loads (the loading skeleton uses the same class) — so matching on
-  // it lets a 1-18 chip nav scroll straight to any hole without reaching
-  // into that component's internals.
-  const holeSectionRef = useRef<HTMLDivElement>(null);
-  // The "Jump to hole" chips scroll to per-hole shot cards that only exist once
-  // shot-level data loads; gate them on this so they never ship as dead
-  // controls for a scorecard-only round (HoleByHoleShotPaths reports it).
-  const [holeShotsAvailable, setHoleShotsAvailable] = useState(false);
-  const scrollToHole = useCallback((holeNumber: number) => {
-    const container = holeSectionRef.current;
-    if (!container || !round?.holes) return;
-    const index = round.holes.findIndex((h) => h.hole_number === holeNumber);
-    if (index < 0) return;
-    const cards = container.querySelectorAll<HTMLElement>('[class*="max-w-[240px]"]');
-    cards[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [round?.holes]);
 
   // Handle share with coach
   const handleShare = async () => {
@@ -789,28 +589,9 @@ export default function RoundReviewPage() {
     );
   }
 
-  // Calculate stats for comparison
-  const girPct = round.total_gir !== null && round.total_gir_possible
-    ? Math.round((round.total_gir / round.total_gir_possible) * 100)
-    : null;
-  const firPct = round.total_fairways_hit !== null && round.total_fairways
-    ? Math.round((round.total_fairways_hit / round.total_fairways) * 100)
-    : null;
-  // avgPutts is an 18-hole figure, so normalize the round's raw putt count to
-  // an 18-hole equivalent (×18/holes_played) before comparing — otherwise a
-  // 9-hole round reads "16 putts vs a 32-putt average". GIR/FIR are already
-  // scale-invariant percentages; score is never compared against an average
-  // on this page (only score-to-par framing), so putts is the lone count stat.
-  const holesPlayed = round.holes_played ?? 18;
-  const putts18 = round.total_putts !== null && holesPlayed > 0
-    ? Math.round(round.total_putts * (18 / holesPlayed))
-    : round.total_putts;
-  // Note: scramble percentage not available at round level - would need hole-level data
-  const scramblePct = null;
-
-  // Round-level score-to-par used for the RoundTakeaway framing line. Prefer
-  // the server-stored `score_to_par`; fall back to (total_score - sum(par))
-  // when the round is missing the cached column.
+  // Round-level score-to-par used for the hero + narrative. Prefer the
+  // server-stored `score_to_par`; fall back to (total_score - sum(par)) when
+  // the round is missing the cached column.
   const roundScoreToPar = (() => {
     if (round.score_to_par !== null && round.score_to_par !== undefined) return round.score_to_par;
     if (round.total_score === null || round.total_score === undefined) return null;
@@ -819,230 +600,48 @@ export default function RoundReviewPage() {
     return round.total_score - parSum;
   })();
 
-  // Round-review BODY, rendered once below inside the Fairway chrome (P203):
-  // LLM card, RoundReviewDisplay, stats comparison, standing band, takeaway,
-  // shot paths, V2 summary, promote CTA.
+  const promoteSuggestion = derivePromoteSuggestion(takeawayInsight, storedReview);
+  const v2Body = isV2Enabled && v2Review?.composedReview?.body ? sanitizeNaN(v2Review.composedReview.body) : null;
+  const v2PracticePriority =
+    isV2Enabled && v2Review?.practicePriority ? sanitizeNaN(v2Review.practicePriority) : null;
+
+  // Round-review BODY, rendered once below inside the Fairway chrome (P203).
   const reviewBody = (
     <m.div variants={itemVariants} className="space-y-6">
-        {/* W30 LLM round-review prose. Renders the deterministic
-            fallback on mount and swaps in Haiku-composed prose once
-            the server action resolves. Failure-silent — when the
-            budget gate trips or the action errors, the fallback stays
-            verbatim. Mirrors HeroNarrativeCard placement (above the
-            primary review surface so it reads as the editorial opener). */}
-        {round && round.total_score !== null && round.score_to_par !== null && (
-          <RoundReviewLlmCard
-            roundId={roundId}
-            fallbackText={buildRoundReviewFallback(
-              round.total_score,
-              roundScoreToPar,
-              displayCourseName(round.course_name) || null,
-            )}
-          />
-        )}
-
-        {/* Primary Review Display - New Component */}
-        {storedReview && storedReview.review_content && (
-          <RoundReviewDisplay
-            review={storedReview.review_content}
-            courseName={displayCourseName(round.course_name) || undefined}
-            roundDate={round.round_date}
-            score={round.total_score ?? undefined}
-            scoreToPar={round.score_to_par ?? undefined}
-            onShare={handleShare}
-            isShared={storedReview.shared_with_coach}
-          />
-        )}
-
-        {/* Coach notes — read-only for the player, editable only for a
-            coach on this player's team. Renders nothing for a player when
-            no note has been left yet (honest-empty). */}
-        {storedReview?.id && (
-          <CoachNotesSection
-            reviewId={storedReview.id}
-            initialNotes={storedReview.coach_notes ?? null}
-            canEdit={isCoachViewer}
-          />
-        )}
-
-        {/* Stats Comparison */}
-        <RoundStatsComparison
-          roundStats={{
-            girPct,
-            firPct,
-            putts: putts18,
-            penalties: null, // Not tracked at round level
-            scramblePct,
-          }}
-          playerAvg={toComparisonProps(playerAvg)}
-          teamAvg={toComparisonProps(teamAvg)}
+      {storedReview?.review_content && round.total_score !== null && roundScoreToPar !== null ? (
+        <FilmstripReview
+          roundId={roundId}
+          playerId={round.player_id}
+          courseName={displayCourseName(round.course_name)}
+          roundDate={round.round_date}
+          totalScore={round.total_score}
+          scoreToPar={roundScoreToPar}
+          review={storedReview.review_content}
+          reviewId={storedReview.id}
+          sharedWithCoach={storedReview.shared_with_coach}
+          onShare={handleShare}
+          v2Body={v2Body}
+          v2PracticePriority={v2PracticePriority}
+          isCoachViewer={isCoachViewer}
+          coachNotes={storedReview.coach_notes ?? null}
+          promoteSuggestion={promoteSuggestion}
+          standing={standing}
+          holes={round.holes ?? []}
         />
-
-        {/* CoachHelm round intelligence. Surfaces this round's stroke-leak
-            board (review.strokesToGain) + the per-round practice priority
-            (review.coachHelm) — both computed by the engine but, until now,
-            all but invisible on the review. Additive; the component itself
-            returns null when neither piece has content. Page is already
-            inside the `.fairway-ds` scope, so no nested scope here. */}
-        {storedReview?.review_content && (
-          <RoundIntelligence
-            strokesToGain={storedReview.review_content.strokesToGain}
-            coachHelm={storedReview.review_content.coachHelm}
-          />
-        )}
-
-        {/* Where this sits vs PGA + team.
-            Season-level standing (NOT round values) for the metrics this round
-            exercised. The standing `player_value` is the season figure the
-            PGA/team markers are calibrated against; mixing a single-round value
-            onto a season scale would lie. Renders only when at least one
-            canonical standing row exists — otherwise the RoundStatsComparison
-            above is the honest fallback (cold-start: <5 rounds / cron unrun). */}
-        {(() => {
-          const bandMetrics = ['gir_pct', 'sg_ott', 'sg_approach', 'sg_putting'] as const;
-          const bars = bandMetrics
-            .map((mid) => {
-              const st = standing[mid];
-              const cfg = getMetricRenderConfig(mid);
-              if (!st || !cfg) return null; // honest-empty: no row → no bar
-              return (
-                <StandingBar
-                  key={mid}
-                  size="card"
-                  metric_id={mid}
-                  metric_label={cfg.display_label}
-                  player_value={st.player_value}
-                  team_avg={st.team_avg}
-                  team_n={st.team_n}
-                  team_pct={st.team_pct}
-                  pga_value={st.pga_value}
-                  pga_omitted={st.pga_omitted}
-                  is_womens={st.is_womens}
-                  direction={cfg.direction}
-                  unit={cfg.unit}
-                  scale={cfg.default_scale}
-                />
-              );
-            })
-            .filter((b): b is ReactElement => b !== null);
-          if (bars.length === 0) return null; // band hidden entirely when no rows
-          // P204: no lone `fairwayScope` island — under the redesign this whole
-          // page is already wrapped in `.fairway-ds` (see the content return),
-          // so a nested scope here is redundant. This band only renders when the
-          // redesign is on, so the outer page scope always supplies the tokens.
-          return (
-            <section className="space-y-3">
-              <div>
-                <FwEyebrow as="h2">Where this sits</FwEyebrow>
-                <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-                  Your season standing vs PGA Tour and your team.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{bars}</div>
-            </section>
-          );
-        })()}
-
-        {/* HERO takeaway — one insight that matters for today.
-            When V2 is enabled (and `v2Review` resolved) we let V2ReviewSummary
-            compose the hero + the AI-prose block + the collapsed "See more
-            analysis" disclosure so the round-review surface reads like a
-            single narrative. When V2 is unavailable (engine disabled or the
-            review row is still hydrating) we fall back to the standalone
-            hero so the surface is never blank. The legacy V1 prose stack
-            (CompletionCard / GoalImpactCard / HighlightsSection / etc.) was
-            removed in the 2026-05-28 IA audit — V2 is the single source of
-            truth for round-review narrative. */}
-        {!(isV2Enabled && v2Review) && (
-          <RoundTakeaway
-            insight={takeawayInsight}
-            roundScore={roundScoreToPar}
-            roundId={roundId}
-          />
-        )}
-
-        {/* Hole-by-hole shot path grid — data-driven (golf_shots). A 1-18
-            chip nav (#34) sits above the section so a player can skip
-            straight to any hole instead of scrolling the whole grid. */}
-        {round.holes && round.holes.length > 0 && (
-          <div className="space-y-3">
-            {holeShotsAvailable && (
-              <div>
-                <FwEyebrow as="h2">Jump to hole</FwEyebrow>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {round.holes.map((h) => (
-                    <FwSelectablePill
-                      key={h.hole_number}
-                      shape="round"
-                      onClick={() => scrollToHole(h.hole_number)}
-                      aria-label={`Jump to hole ${h.hole_number}`}
-                      className="h-8 min-w-[32px] px-0"
-                    >
-                      {h.hole_number}
-                    </FwSelectablePill>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div ref={holeSectionRef}>
-              <HoleByHoleShotPaths
-                roundId={roundId}
-                holes={round.holes}
-                onShotsLoaded={setHoleShotsAvailable}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* V2 narrative — hero + AI prose + collapsed supporting insights. */}
-        {isV2Enabled && v2Review && (
-          <V2ReviewSummary
-            review={v2Review}
-            takeawayInsight={takeawayInsight}
-            supportingInsights={supportingInsights}
-            roundId={roundId}
-            roundScore={roundScoreToPar}
-          />
-        )}
-
-        {/* Promote-to-focus-area CTA. One section-level button — the bottom
-            sheet lets the player edit before confirming. We prefer the
-            takeaway insight (it carries category + concrete framing); fall
-            back to the top "areas for improvement" entry from the stored
-            review content. */}
-        {(() => {
-          const promoteSuggestion = derivePromoteSuggestion(
-            takeawayInsight,
-            storedReview,
-          );
-          if (!storedReview?.id || !promoteSuggestion) return null;
-          return (
-            <FwSurface
-              elevation="border"
-              padding="sm"
-              className="flex items-start gap-3 border-accent-200 bg-accent-50/60"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="font-fw-sans text-body-sm font-medium text-text-primary">
-                  Turn this into a focus area
-                </p>
-                <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
-                  {promoteSuggestion.title}
-                </p>
-              </div>
-              <PromoteToFocusAreaButton
-                source="review"
-                sourceId={storedReview.id}
-                playerId={round.player_id}
-                suggestedTitle={promoteSuggestion.title}
-                suggestedDescription={promoteSuggestion.description}
-                suggestedAreaType={promoteSuggestion.areaType}
-                reviewContext={displayCourseName(round.course_name) || undefined}
-                className="flex-shrink-0"
-              />
-            </FwSurface>
-          );
-        })()}
+      ) : (
+        <FwEmptyState
+          variant="default"
+          icon={LucideFlag}
+          title="No review yet"
+          description="Refresh to generate CoachHelm analysis for this round."
+          action={
+            <FwButton variant="secondary" size="sm" onClick={() => generateReview()} disabled={isGenerating}>
+              <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
+              <span>Generate review</span>
+            </FwButton>
+          }
+        />
+      )}
     </m.div>
   );
 
@@ -1050,8 +649,7 @@ export default function RoundReviewPage() {
   // The whole page renders in the Fairway design system inside `.fairway-ds` on
   // bg-canvas: a single ViewHeader (with the CoachHelm StatusPill + Refresh in
   // the action cluster — no purple-blue gradient pill), the shared body, and a
-  // calm Fairway bottom action row. The standing band's lone scoped island is
-  // gone (P204) — the outer scope supplies the tokens now.
+  // calm Fairway bottom action row.
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
         <m.div
