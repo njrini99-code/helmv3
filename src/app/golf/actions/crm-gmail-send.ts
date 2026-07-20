@@ -378,9 +378,29 @@ export async function sendNextBatchViaGmail(input: {
         && !recentlySent.has(c.id),
     );
 
+    // Mutually-exclusive channels: a coach already being worked by an ACTIVE
+    // Resend sequence enrollment must NOT also be queued in this manual/direct
+    // Gmail batch (mirrors TodayQueue's manual worklist, which hides any school
+    // with an active enrollment for the same reason). Batched in chunks of 500
+    // — same chunk size as getCoachSequenceEnrollmentStatuses in
+    // crm-sequences.ts — so this stays a handful of queries, never one per coach.
+    const activeEnrolledIds = new Set<string>();
+    for (let i = 0; i < candidates.length; i += 500) {
+      const chunk = candidates.slice(i, i + 500).map((c) => c.id);
+      const { data: enrollRows } = await supabase
+        .from('crm_sequence_enrollments')
+        .select('coach_id')
+        .eq('status', 'active')
+        .in('coach_id', chunk);
+      for (const r of (enrollRows ?? []) as Array<{ coach_id: string }>) {
+        activeEnrolledIds.add(r.coach_id);
+      }
+    }
+    const eligibleCandidates = candidates.filter((c) => !activeEnrolledIds.has(c.id));
+
     // One per school — explicit primary preferred, else head-most (priority order).
     const bySchool = new Map<string, BatchCoach>();
-    for (const c of candidates) {
+    for (const c of eligibleCandidates) {
       const key = (c.school ?? '').trim().toLowerCase();
       if (!key) continue;
       const cur = bySchool.get(key);

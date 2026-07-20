@@ -21,6 +21,8 @@ import { TemplatePicker } from './TemplatePicker';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { isSuppressedEmailStatus } from '@/app/golf/admin/crm/page-contracts';
+import { getSuppressions } from '@/app/golf/actions/crm-foundations';
 
 type PrefilledRecipient = {
   email: string;
@@ -79,6 +81,21 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   // included in the recipient list. Skipped entirely when prefilledRecipients are
   // provided (targeted follow-ups must keep their explicit recipient list).
   const [primaryOnly, setPrimaryOnly] = useState(true);
+
+  // Suppression-list gate (crm_email_suppressions) — email_status ('bounced',
+  // 'complained', 'unsubscribed', checked via isSuppressedEmailStatus below)
+  // already covers most do-not-contact addresses, but a row can be suppressed
+  // without that sync landing on crm_coaches (an unlinked webhook event, an
+  // Audiences-level unsubscribe, an email shared across multiple coach rows —
+  // see the identical comment in /api/admin/crm/send-email/route.ts). The Helm
+  // send path is already server-gated against both checks; the Gmail-BCC path
+  // below is NOT (opening a mailto/compose URL is a pure client action with no
+  // server round-trip to enforce it), so this list is fetched here specifically
+  // to keep a suppressed address out of that BCC list before it's ever built.
+  // Defaults to "loading" (fail-safe): the send/compose buttons stay disabled
+  // until the list has been fetched at least once for the current recipients.
+  const [suppressedEmails, setSuppressedEmails] = useState<Set<string>>(new Set());
+  const [suppressionsLoading, setSuppressionsLoading] = useState(true);
 
   // AI Personalization state
   const [personalizing, setPersonalizing] = useState(false);
@@ -167,13 +184,57 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
     return [...matched, ...adHoc];
   }, [coaches, prefilledRecipients]);
 
-  // When prefilledRecipients are provided (targeted follow-up path), skip primaryOnly
-  // filtering so explicit recipients are never silently dropped.
-  const isPrefilled = !!prefilledRecipients && prefilledRecipients.length > 0;
-  const coachesWithEmail = effectiveCoaches.filter(c =>
-    c.email && (!primaryOnly || isPrefilled || c.is_primary_contact)
+  // Fetch the do-not-contact list for the current recipient set. Runs once per
+  // (effectively) distinct set of coaches — re-fires (and re-blocks sends via
+  // suppressionsLoading) if the modal's coach/prefill props change underneath it.
+  useEffect(() => {
+    let cancelled = false;
+    const emails = Array.from(
+      new Set(effectiveCoaches.filter(c => c.email).map(c => c.email!.toLowerCase()))
+    );
+    if (emails.length === 0) {
+      setSuppressedEmails(new Set());
+      setSuppressionsLoading(false);
+      return;
+    }
+    setSuppressionsLoading(true);
+    getSuppressions(emails)
+      .then(rows => {
+        if (cancelled) return;
+        setSuppressedEmails(new Set(rows.map(r => r.email.toLowerCase())));
+      })
+      .catch(err => {
+        // Fail-open on the LIST check only — email_status (checked separately,
+        // synchronously, below) still gates every known-bad address. A transient
+        // fetch failure here must not wedge the modal shut.
+        console.error('Failed to load suppression list:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setSuppressionsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [effectiveCoaches]);
+
+  const isEmailSuppressed = useCallback(
+    (c: Coach) =>
+      isSuppressedEmailStatus(c.email_status) ||
+      (!!c.email && suppressedEmails.has(c.email.toLowerCase())),
+    [suppressedEmails]
   );
+
+  // When prefilledRecipients are provided (targeted follow-up path), skip primaryOnly
+  // filtering so explicit recipients are never silently dropped. Suppressed addresses
+  // (bounced/complained/unsubscribed email_status OR on the crm_email_suppressions
+  // do-not-contact list) are excluded from BOTH send paths, not just Helm's
+  // already-server-gated one — CAN-SPAM applies to the Gmail-BCC path too.
+  const isPrefilled = !!prefilledRecipients && prefilledRecipients.length > 0;
+  const passesSelectionScope = useCallback(
+    (c: Coach) => !!c.email && (!primaryOnly || isPrefilled || c.is_primary_contact),
+    [primaryOnly, isPrefilled]
+  );
+  const coachesWithEmail = effectiveCoaches.filter(c => passesSelectionScope(c) && !isEmailSuppressed(c));
   const coachesWithoutEmail = effectiveCoaches.filter(c => !c.email);
+  const excludedSuppressed = effectiveCoaches.filter(c => passesSelectionScope(c) && isEmailSuppressed(c));
   const bccList = coachesWithEmail.map(c => c.email!).join(',');
 
   // Use first coach's data for merge tag preview
@@ -613,6 +674,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       ({coachesWithoutEmail.length} skipped — no email)
                     </span>
                   )}
+                  {excludedSuppressed.length > 0 && (
+                    <span className="text-amber-500 ml-1.5">
+                      ({excludedSuppressed.length} excluded — unsubscribed/bounced)
+                    </span>
+                  )}
                 </p>
                 {!isPrefilled && (
                   <label className="mt-1 flex items-center gap-1.5 cursor-pointer select-none">
@@ -692,6 +758,15 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     <span>
                       {coachesWithoutEmail.length} coach{coachesWithoutEmail.length !== 1 ? 'es' : ''}{' '}
                       skipped (no email): {coachesWithoutEmail.map(c => c.name).join(', ')}
+                    </span>
+                  </div>
+                )}
+                {excludedSuppressed.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-600">
+                    <IconAlertCircle size={12} />
+                    <span>
+                      {excludedSuppressed.length} coach{excludedSuppressed.length !== 1 ? 'es' : ''}{' '}
+                      excluded (unsubscribed/bounced): {excludedSuppressed.map(c => c.name).join(', ')}
                     </span>
                   </div>
                 )}
@@ -1136,21 +1211,30 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               <Button variant="ghost"
                 type="button"
                 onClick={openInGmail}
-                disabled={coachesWithEmail.length === 0}
+                disabled={suppressionsLoading || coachesWithEmail.length === 0}
                 className={cn(
                   'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
                   'bg-blue-600 text-white hover:bg-blue-700',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
-                <IconExternalLink size={16} />
-                Open in Gmail ({coachesWithEmail.length} BCC)
+                {suppressionsLoading ? (
+                  <>
+                    <IconLoader size={16} className="animate-spin" />
+                    Checking suppressions...
+                  </>
+                ) : (
+                  <>
+                    <IconExternalLink size={16} />
+                    Open in Gmail ({coachesWithEmail.length} BCC)
+                  </>
+                )}
               </Button>
             ) : (
               <Button variant="primary"
                 type="button"
                 onClick={handleSendViaHelm}
-                disabled={sending || coachesWithEmail.length === 0 || !!helmResult}
+                disabled={sending || suppressionsLoading || coachesWithEmail.length === 0 || !!helmResult}
                 className={cn(
                   'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
                   'bg-primary-600 text-white hover:bg-primary-700',
@@ -1161,6 +1245,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   <>
                     <IconLoader size={16} className="animate-spin" />
                     Sending...
+                  </>
+                ) : suppressionsLoading ? (
+                  <>
+                    <IconLoader size={16} className="animate-spin" />
+                    Checking suppressions...
                   </>
                 ) : helmResult ? (
                   <>
