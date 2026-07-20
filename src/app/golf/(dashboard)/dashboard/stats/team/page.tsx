@@ -54,7 +54,7 @@ export interface TeamPlayerStats {
    */
   last_round_score?: number | null;
   /**
-   * Last-10 normalized (18-hole-equivalent) scores, oldest → newest — Team
+   * Last-7 normalized (18-hole-equivalent) scores, oldest → newest — Team
    * Stats board Sparkline. Derived from the SAME `allRounds` fetch below;
    * empty when the player has <2 scored rounds (Sparkline's own honesty
    * contract renders an em-dash). Optional for the same fixture-compat reason.

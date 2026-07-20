@@ -35,6 +35,15 @@ import { getPlayerLeakMaps, getPlayerStandingRows } from '@/app/golf/actions/sta
 import type { PlayerLeakMaps, PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 
+// CoachHelm cause/effect — REUSED VERBATIM from FairwayStatsCockpit. Returns
+// the player's mined patterns (cause = description, effect = strokeImpact,
+// fix = recommendation), gated by verifyPlayerAccess + isCoachHelmEnabledForPlayer
+// inside the action.
+import { getPlayerPatterns } from '@/app/golf/actions/insights';
+export type CoachHelmPattern = NonNullable<
+  Awaited<ReturnType<typeof getPlayerPatterns>>['patterns']
+>[number];
+
 import { biggestLeakArea, buildLedger, buildPriorities, buildStandingTrack, buildVerdict } from './buildStatsViewModel';
 import { StatsSpine } from './StatsSpine';
 import { StatsBento } from './StatsBento';
@@ -68,6 +77,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const [strengths, setStrengths] = useState<StatisticalStrengthWeakness[]>([]);
   const [weaknesses, setWeaknesses] = useState<StatisticalStrengthWeakness[]>([]);
   const [worstHoles, setWorstHoles] = useState<WorstHoleResponse | null>(null);
+  const [patterns, setPatterns] = useState<CoachHelmPattern[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -75,15 +85,17 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     setLoading(true);
     setLoadError(null);
     try {
-      const [detailedRes, trendRes, standingRes, leakRes, sprayRes, swRes, worstRes] = await Promise.allSettled([
-        getDetailedStats(id, 'overall'),
-        getTrendAnalysis(id),
-        getPlayerStandingRows(id),
-        getPlayerLeakMaps(id),
-        getSprayChartData(id, 'overall'),
-        getPlayerStrengthsWeaknesses(id),
-        getWorstHoleAnalysis(id),
-      ]);
+      const [detailedRes, trendRes, standingRes, leakRes, sprayRes, swRes, worstRes, patternsRes] =
+        await Promise.allSettled([
+          getDetailedStats(id, 'overall'),
+          getTrendAnalysis(id),
+          getPlayerStandingRows(id),
+          getPlayerLeakMaps(id),
+          getSprayChartData(id, 'overall'),
+          getPlayerStrengthsWeaknesses(id),
+          getWorstHoleAnalysis(id),
+          getPlayerPatterns(id),
+        ]);
 
       if (detailedRes.status === 'fulfilled') setDetailedStats(detailedRes.value);
       if (trendRes.status === 'fulfilled') setTrendData(trendRes.value);
@@ -108,6 +120,13 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
       }
       if (worstRes.status === 'fulfilled') setWorstHoles(worstRes.value);
       else setWorstHoles(null);
+      // CoachHelm patterns are a non-blocking enrichment — a failure (or a
+      // CoachHelm-disabled player) just hides the section, never errors the page.
+      if (patternsRes.status === 'fulfilled' && patternsRes.value.success) {
+        setPatterns(patternsRes.value.patterns ?? []);
+      } else {
+        setPatterns([]);
+      }
 
       const standingFailed =
         standingRes.status === 'rejected' || (standingRes.status === 'fulfilled' && !standingRes.value.success);
@@ -269,6 +288,8 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           standingRows={standingRows}
           standingViewerContext={standingViewerContext}
           playerName={playerName}
+          playerId={playerId}
+          patterns={patterns}
         />
       ),
     },

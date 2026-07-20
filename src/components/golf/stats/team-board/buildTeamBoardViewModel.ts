@@ -362,7 +362,7 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
         sgPutt: fmtSg(standing?.get('sg_putting')?.player_value ?? null),
         lastRound: fmtScore(p.lastRoundScore),
         links: {
-          fullStats: `/golf/dashboard/stats?playerId=${p.id}`,
+          fullStats: `/golf/dashboard/stats?player=${p.id}`,
           fingerprint: `/golf/dashboard/players/${p.id}/game`,
           prescribe: `/golf/dashboard/development?player=${p.id}`,
         },

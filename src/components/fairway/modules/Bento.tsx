@@ -28,7 +28,7 @@ export function Bento({ children, className }: BentoProps) {
     <div
       data-slot="bento"
       className={cn(
-        'grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle [box-shadow:var(--fw-shadow-card)]',
+        'grid grid-flow-dense grid-cols-2 gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle [box-shadow:var(--fw-shadow-card)]',
         'auto-rows-[minmax(7.375rem,auto)]',
         'lg:grid-cols-4',
         className,

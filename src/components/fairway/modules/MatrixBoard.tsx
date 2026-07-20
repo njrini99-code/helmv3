@@ -18,7 +18,7 @@
  * source CSS.
  * ========================================================================== */
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { MatrixBoardProps, MatrixBoardRow as MatrixBoardRowData, MatrixColumn } from './types';
@@ -123,6 +123,7 @@ function MatrixRow({
 }) {
   const [open, setOpen] = useState(false);
   const hasExpand = row.expand != null;
+  const expandId = useId();
 
   return (
     <div data-slot="matrix-row-group">
@@ -130,6 +131,7 @@ function MatrixRow({
         type="button"
         aria-label={row.ariaLabel}
         aria-expanded={hasExpand ? open : undefined}
+        aria-controls={hasExpand && open ? expandId : undefined}
         onClick={hasExpand ? () => setOpen((v) => !v) : undefined}
         className={cn(
           'grid w-full items-center gap-0 px-5 py-2.5 text-left transition-colors duration-150',
@@ -154,14 +156,15 @@ function MatrixRow({
           );
         })}
       </button>
-      {hasExpand && open ? <MatrixExpand>{row.expand}</MatrixExpand> : null}
+      {hasExpand && open ? <MatrixExpand id={expandId}>{row.expand}</MatrixExpand> : null}
     </div>
   );
 }
 
-function MatrixExpand({ children }: { children: ReactNode }) {
+function MatrixExpand({ id, children }: { id?: string; children: ReactNode }) {
   return (
     <div
+      id={id}
       data-slot="matrix-expand"
       className="border-b border-border-subtle bg-surface-sunken px-5 py-3.5"
     >

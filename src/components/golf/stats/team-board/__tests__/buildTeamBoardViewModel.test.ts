@@ -249,6 +249,14 @@ describe('buildTeamBoardViewModel', () => {
     expect(jacksonRow?.signal.label).toBe('Top performer');
     expect(masonRow?.signal.tone).toBe('watch');
     expect(masonRow?.expand.worstMetricLabel).toBe('SG: Putting');
+
+    // Expand-band links use `?player=<id>` (NOT `?playerId=`), and the
+    // fingerprint link is the player's game page — the shape the stats
+    // surfaces and the roster fingerprint route actually read.
+    expect(jacksonRow?.expand.links.fullStats).toBe('/golf/dashboard/stats?player=jackson');
+    expect(jacksonRow?.expand.links.fingerprint).toBe('/golf/dashboard/players/jackson/game');
+    expect(masonRow?.expand.links.fullStats).toBe('/golf/dashboard/stats?player=mason');
+    expect(masonRow?.expand.links.fingerprint).toBe('/golf/dashboard/players/mason/game');
   });
 
   it('reports "N rds to trend" for a cold-start player under the signal minimum', () => {
