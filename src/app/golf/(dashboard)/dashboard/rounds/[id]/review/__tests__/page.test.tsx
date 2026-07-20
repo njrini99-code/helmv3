@@ -1,40 +1,16 @@
 /**
- * Round Review page — stats-accuracy regression tests (audit 2026-06-09).
+ * Round Review page — integration tests (Task 10 filmstrip rebuild).
  *
- * Fix B: the page passed the round's RAW total_putts to RoundStatsComparison,
- * which compares it against the 18-hole-normalized avgPutts — a 9-hole round
- * read as "16 putts vs a 32-putt average". The round's putt count must be
- * normalized to an 18-hole equivalent (×18/holes_played) before comparing.
- *
- * Fix A consumer: null-honest averages (ComparisonAverages) must map null →
- * undefined so RoundStatsComparison SKIPS that comparison instead of
- * comparing against a fabricated number.
+ * Covers: auth-gated round fetch + course-name casing (#109, carried over
+ * from the pre-filmstrip page), and that `FilmstripReview` actually mounts
+ * with the hero (score/to-par/mix line), the strokes-lost section, the
+ * Share-with-Coach CTA, and the "Full breakdown" DrillPanel toggle wired to
+ * a complete `RoundReviewContent` fixture.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useEffect } from 'react';
-import { render, waitFor } from '@testing-library/react';
-
-// Whether the mocked HoleByHoleShotPaths reports shot-level data exists (#34):
-// the "Jump to hole" nav is gated on it, so tests flip this to exercise both
-// the shots-present (nav visible) and scorecard-only (nav hidden) states.
-const mockShotState = vi.hoisted(() => ({ hasShots: true }));
-
-// --- Captured props from the stubbed RoundStatsComparison -----------------
-
-interface CapturedStatsProps {
-  roundStats: {
-    girPct: number | null;
-    firPct: number | null;
-    putts: number | null;
-    penalties: number | null;
-    scramblePct: number | null;
-  };
-  playerAvg?: { avgGirPct?: number; avgFairwayPct?: number; avgPutts?: number } | null;
-  teamAvg?: { avgGirPct?: number; avgFairwayPct?: number; avgPutts?: number } | null;
-}
-
-let capturedStatsProps: CapturedStatsProps | null = null;
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, waitFor, fireEvent } from '@testing-library/react';
+import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
 
 // --- Mocks (must precede the page import) ---------------------------------
 
@@ -55,44 +31,53 @@ vi.mock('next/link', () => ({
 
 // Stub framer-motion the same way the other coachhelm surface tests do — we
 // only care that the DOM contents render, not that the animation runs.
+//
+// IMPORTANT: cache each tag's component by property name. A Proxy `get` trap
+// that returns a FRESH `forwardRef(...)` on every access (the naive version)
+// hands React a NEW component TYPE for `<m.div>` on every render of the
+// consuming page — React reconciles by type, so it unmounts and remounts the
+// entire subtree under `<m.div>` on every parent re-render, silently
+// discarding any descendant's local state (e.g. FilmstripReview's
+// `breakdownOpen` toggle). The cache makes `m.div`/`motion.div` behave like
+// the real framer-motion export: a stable reference across renders.
 vi.mock('framer-motion', async () => {
   const React = await import('react');
-  const motionProxy = new Proxy(
-    {},
-    {
-      get: (_target, prop) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        React.forwardRef<HTMLElement, any>((props, ref) => {
-          const { children, initial: _i, animate: _a, exit: _e, transition: _t, variants: _v, whileHover: _wh, whileTap: _wt, ...rest } = props;
-          void _i; void _a; void _e; void _t; void _v; void _wh; void _wt;
-          return React.createElement(prop as string, { ...rest, ref }, children);
-        }),
-    },
-  );
+  function makeTagProxy(stripKeys: string[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cache = new Map<string | symbol, React.ComponentType<any>>();
+    return new Proxy(
+      {},
+      {
+        get: (_target, prop) => {
+          const cached = cache.get(prop);
+          if (cached) return cached;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const Comp = React.forwardRef<HTMLElement, any>((props, ref) => {
+            const rest = { ...props };
+            for (const key of stripKeys) delete rest[key];
+            const { children, ...domProps } = rest;
+            return React.createElement(prop as string, { ...domProps, ref }, children);
+          });
+          cache.set(prop, Comp);
+          return Comp;
+        },
+      },
+    );
+  }
+  const STRIP = ['initial', 'animate', 'exit', 'transition', 'variants', 'whileHover', 'whileTap'];
   return {
     useReducedMotion: () => false,
     // Fairway ViewHeader (unconditional after the W1 legacy-tree deletion)
     // imports `motion` directly; LazyMotion surfaces use `m`. Same stub.
-    motion: motionProxy,
-    m: new Proxy(
-      {},
-      {
-        get: (_target, prop) =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          React.forwardRef<HTMLElement, any>((props, ref) => {
-            const { children, initial: _i, animate: _a, exit: _e, transition: _t, variants: _v, ...rest } = props;
-            void _i; void _a; void _e; void _t; void _v;
-            return React.createElement(prop as string, { ...rest, ref }, children);
-          }),
-      },
-    ),
+    motion: makeTagProxy(STRIP),
+    m: makeTagProxy(STRIP),
     AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
   };
 });
 
-// `let` (not `const`) so individual tests (#109 course-name casing, #34
-// hole-jump nav) can swap in a different row shape before rendering — the
-// `golf_rounds` mock below reads this variable at call time, not a snapshot.
+// `let` (not `const`) so the course-name-casing test can swap in a different
+// row shape before rendering — the `golf_rounds` mock below reads this
+// variable at call time, not a snapshot.
 let roundRow: {
   id: string;
   player_id: string;
@@ -122,9 +107,10 @@ let roundRow: {
   holes_played: 9,
   holes: [],
 };
+const DEFAULT_ROUND_ROW = { ...roundRow };
 
 function createChainableMock(maybeSingleData: unknown) {
-  const chain: Record<string, unknown> = { data: null, error: null };
+  const chain: Record<string, unknown> = { data: [], error: null };
   for (const method of ['select', 'eq', 'limit', 'order']) {
     chain[method] = vi.fn(() => chain);
   }
@@ -139,6 +125,8 @@ vi.mock('@/lib/supabase/client', () => ({
       if (table === 'golf_players') return createChainableMock({ id: 'player-1' });
       if (table === 'golf_coaches') return createChainableMock(null);
       if (table === 'golf_rounds') return createChainableMock(roundRow);
+      // golf_shots (FilmstripReview's own ledger fetch) and anything else
+      // resolve to an empty array — no shot-level data in these fixtures.
       return createChainableMock(null);
     }),
   })),
@@ -152,6 +140,79 @@ vi.mock('@/components/ui/sonner', () => ({
   useToast: () => ({ addToast: vi.fn() }),
 }));
 
+/** A complete `RoundReviewContent` fixture — every field `buildReviewViewModel`
+ *  reads must be present, or the real (unmocked) adapter throws. */
+const FULL_REVIEW_CONTENT: RoundReviewContent = {
+  summary: 'You shot 38 (+2) at Pinehurst No. 2. 3 pars, 6 bogeys.',
+  sentiment: 'neutral',
+  overallGrade: 'C',
+  highlights: [],
+  areasForImprovement: [{ area: 'Missed fairways', recommendation: 'Work on tee-shot alignment.' }],
+  keyStats: [],
+  recommendations: [],
+  scoringDistribution: { eagles: [], birdies: [], pars: [3, 5, 7], bogeys: [1, 2, 4, 6, 8, 9], doublePlus: [], holesPlayed: 9 },
+  frontBackSplit: {
+    front: { score: 38, putts: 16, gir: 4, girTotal: 9, fairways: 3, fairwayTotal: 7 },
+    back: { score: 0, putts: 0, gir: 0, girTotal: 0, fairways: 0, fairwayTotal: 0 },
+  },
+  momentumData: [
+    { hole: 1, rollingScoreToPar: 1 },
+    { hole: 2, rollingScoreToPar: 2 },
+  ],
+  puttingBreakdown: {
+    ranges: [
+      { label: '0-5 ft', attempts: 3, made: 3, pct: 100 },
+      { label: '5-15 ft', attempts: 4, made: 1, pct: 25 },
+      { label: '15-25 ft', attempts: 0, made: 0, pct: 0 },
+      { label: '25+ ft', attempts: 0, made: 0, pct: 0 },
+    ],
+    avgFirstPuttDist: 10,
+    threePuttHoles: [],
+    onePuttCount: 3,
+    totalPutts: 16,
+  },
+  drivingAnalysis: {
+    avgDistance: 250,
+    longestDrive: { distance: 270, hole: 5 },
+    fairwayPct: 43,
+    missPattern: { left: 2, right: 2, total: 4 },
+  },
+  shortGameAnalysis: {
+    scramblePct: null,
+    scrambleAttempts: 0,
+    scrambleSuccesses: 0,
+    sandSavePct: null,
+    sandAttempts: 0,
+    sandSuccesses: 0,
+    upAndDownDetails: [],
+  },
+  penaltyAnalysis: { total: 0, holes: [], strokesLost: 0 },
+  strokesToGain: [{ category: 'Putting', potentialStrokes: 1.2, description: '3 three-jacks cost ~1.2 strokes' }],
+  holeByHole: Array.from({ length: 9 }, (_, i) => ({
+    hole: i + 1,
+    par: 4,
+    score: 4,
+    scoreToPar: 0,
+    putts: 2,
+    fairwayHit: true,
+    gir: true,
+    threePutt: false,
+    onePutt: false,
+    penalties: 0,
+    scrambleAttempt: false,
+    scrambleSuccess: false,
+    sandSaveAttempt: false,
+    sandSaveSuccess: false,
+    driveClub: null,
+    driveDist: null,
+    driveMiss: null,
+    firstPuttFeet: null,
+    approachClub: null,
+    approachDist: null,
+    approachMiss: null,
+  })),
+};
+
 vi.mock('@/app/golf/actions/round-review-system', () => ({
   getRoundReview: vi.fn(async () => ({
     success: true,
@@ -159,16 +220,12 @@ vi.mock('@/app/golf/actions/round-review-system', () => ({
       id: 'review-1',
       player_id: 'player-1',
       round_id: 'round-1',
-      review_content: { summary: '', highlights: [], areasForImprovement: [], keyStats: [], recommendations: [] },
+      review_content: FULL_REVIEW_CONTENT,
       shared_with_coach: false,
+      coach_notes: null,
     },
   })),
   generateAndStoreRoundReview: vi.fn(async () => ({ success: false })),
-  // Null-honest averages: avgFairwayPct has no supporting data for this player.
-  getStatAverages: vi.fn(async () => ({
-    success: true,
-    playerAvg: { avgScore: null, avgScoreToPar: null, avgPutts: 33, avgGirPct: 55, avgFairwayPct: null },
-  })),
   getPlayerStandingForReview: vi.fn(async () => ({})),
   shareRoundReviewWithCoach: vi.fn(async () => ({ success: true })),
 }));
@@ -179,50 +236,10 @@ vi.mock('@/app/golf/actions/round-reviews', () => ({
 
 vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getRoundTakeawayInsight: vi.fn(async () => null),
-  getInsightsForPlayer: vi.fn(async () => []),
-}));
-
-vi.mock('@/components/golf/coachhelm/RoundStatsComparison', () => ({
-  RoundStatsComparison: (props: CapturedStatsProps) => {
-    capturedStatsProps = props;
-    return <div data-testid="stats-comparison" />;
-  },
-}));
-
-vi.mock('@/components/golf/coachhelm/RoundReviewDisplay', () => ({
-  RoundReviewDisplay: () => <div data-testid="review-display" />,
-}));
-
-vi.mock('@/components/golf/coachhelm/v3/RoundReviewLlmCard', () => ({
-  RoundReviewLlmCard: () => <div data-testid="llm-card" />,
-}));
-
-vi.mock('@/components/golf/coachhelm/round-review', () => ({
-  RoundTakeaway: () => <div data-testid="round-takeaway" />,
-  V2ReviewSummary: () => <div data-testid="v2-summary" />,
-}));
-
-vi.mock('@/components/golf/coachhelm/round-review/HoleByHoleShotPaths', () => ({
-  HoleByHoleShotPaths: ({ onShotsLoaded }: { onShotsLoaded?: (hasShots: boolean) => void }) => {
-    // Mirror the real component: report shot availability once "loaded" so the
-    // page can gate the hole-jump nav.
-    useEffect(() => {
-      onShotsLoaded?.(mockShotState.hasShots);
-    }, [onShotsLoaded]);
-    return <div data-testid="shot-paths" />;
-  },
 }));
 
 vi.mock('@/components/golf/coachhelm/PromoteToFocusAreaButton', () => ({
   PromoteToFocusAreaButton: () => <div data-testid="promote-button" />,
-}));
-
-vi.mock('@/components/golf/coachhelm/v3/StandingBar', () => ({
-  StandingBar: () => <div data-testid="standing-bar" />,
-}));
-
-vi.mock('@/lib/coachhelm/v3/standing/metric-config', () => ({
-  getMetricRenderConfig: () => null,
 }));
 
 vi.mock('@/lib/redesign/flag', () => ({
@@ -236,66 +253,25 @@ vi.mock('@/lib/golf/resolve-team', () => ({
 import RoundReviewPage from '../page';
 import { GolfUserProvider } from '@/contexts/golf-user-context';
 
-describe('RoundReviewPage — stats comparison inputs', () => {
+function renderAsPlayer() {
+  return render(
+    <GolfUserProvider
+      userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
+    >
+      <RoundReviewPage />
+    </GolfUserProvider>,
+  );
+}
+
+describe('RoundReviewPage — course-name casing (#109)', () => {
   beforeEach(() => {
-    capturedStatsProps = null;
-  });
-
-  it('normalizes a 9-hole round’s putts to an 18-hole equivalent and skips null averages', async () => {
-    // The page reads the layout-resolved user context (active team +
-    // staffed teams) for the coach access check — provide it like the
-    // dashboard layout does. This test exercises the PLAYER own-round path.
-    render(
-      <GolfUserProvider
-        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
-      >
-        <RoundReviewPage />
-      </GolfUserProvider>,
-    );
-
-    await waitFor(() => {
-      expect(capturedStatsProps).not.toBeNull();
-    });
-
-    // 16 putts over 9 holes → 32 putts on an 18-hole basis. Passing the raw
-    // 16 against the 18-normalized avgPutts (33) was the regression.
-    expect(capturedStatsProps?.roundStats.putts).toBe(32);
-
-    // Percentages are scale-invariant — passed through from the round's own
-    // made/possible counts (4/9 GIR → 44%, 3/7 FW → 43%).
-    expect(capturedStatsProps?.roundStats.girPct).toBe(44);
-    expect(capturedStatsProps?.roundStats.firPct).toBe(43);
-
-    // Null averages map to undefined so the comparison is SKIPPED — never a
-    // fabricated 50% fairway baseline.
-    expect(capturedStatsProps?.playerAvg).toEqual({
-      avgGirPct: 55,
-      avgFairwayPct: undefined,
-      avgPutts: 33,
-    });
-    expect(capturedStatsProps?.teamAvg).toBeNull();
-  });
-});
-
-const DEFAULT_ROUND_ROW = { ...roundRow };
-
-describe('RoundReviewPage — course-name casing (#109) + hole-jump nav (#34)', () => {
-  beforeEach(() => {
-    capturedStatsProps = null;
     roundRow = { ...DEFAULT_ROUND_ROW };
-    mockShotState.hasShots = true;
   });
 
   it('title-cases an all-lowercase course name like every sibling course row', async () => {
     roundRow = { ...DEFAULT_ROUND_ROW, course_name: 'pine lakes' };
 
-    const { getByRole } = render(
-      <GolfUserProvider
-        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
-      >
-        <RoundReviewPage />
-      </GolfUserProvider>,
-    );
+    const { getByRole } = renderAsPlayer();
 
     // The ViewHeader title (an <h1>, present on both the loading and loaded
     // surfaces) renders the display-cased name, never the raw lowercase
@@ -304,59 +280,44 @@ describe('RoundReviewPage — course-name casing (#109) + hole-jump nav (#34)', 
       expect(getByRole('heading', { level: 1 }).textContent).toBe('Pine Lakes');
     });
   });
+});
 
-  it('renders a 1-18 hole-jump chip for every hole when shot data exists', async () => {
-    mockShotState.hasShots = true;
-    roundRow = {
-      ...DEFAULT_ROUND_ROW,
-      holes: Array.from({ length: 18 }, (_, i) => ({
-        hole_number: i + 1,
-        score: 4,
-        par: 4,
-        yardage: 380,
-      })),
-    };
-
-    const { findByRole, getByRole } = render(
-      <GolfUserProvider
-        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
-      >
-        <RoundReviewPage />
-      </GolfUserProvider>,
-    );
-
-    await findByRole('button', { name: 'Jump to hole 1' });
-    for (let hole = 1; hole <= 18; hole++) {
-      expect(getByRole('button', { name: `Jump to hole ${hole}` })).toBeInTheDocument();
-    }
+describe('RoundReviewPage — FilmstripReview mount', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
   });
 
-  // #34 dead-control guard: the hole-jump chips scroll to per-hole shot cards
-  // that only exist when shot-level data was logged. For a scorecard-only round
-  // (no shots) the nav must NOT render, or every pill is a silent no-op.
-  it('hides the hole-jump nav for a scorecard-only round (no shot data)', async () => {
-    mockShotState.hasShots = false;
-    roundRow = {
-      ...DEFAULT_ROUND_ROW,
-      holes: Array.from({ length: 18 }, (_, i) => ({
-        hole_number: i + 1,
-        score: 4,
-        par: 4,
-        yardage: 380,
-      })),
-    };
+  it('renders the hero score/to-par and the scoring-mix line', async () => {
+    const { findByText, getByText } = renderAsPlayer();
 
-    const { findByTestId, queryByRole } = render(
-      <GolfUserProvider
-        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
-      >
-        <RoundReviewPage />
-      </GolfUserProvider>,
-    );
+    await findByText('38');
+    expect(getByText('+2')).toBeInTheDocument();
+    expect(getByText(/3 pars · 6 bogeys/)).toBeInTheDocument();
+  });
 
-    // The shot-paths section still renders (it shows its own "no shot data"
-    // message); only the jump nav is withheld.
-    await findByTestId('shot-paths');
-    expect(queryByRole('button', { name: 'Jump to hole 1' })).toBeNull();
+  it('renders the strokes-lost section from strokesToGain', async () => {
+    const { findByText, getByText } = renderAsPlayer();
+
+    await findByText('Where strokes went');
+    expect(getByText('Putting')).toBeInTheDocument();
+  });
+
+  it('renders a working Share-with-Coach CTA wired to shareRoundReviewWithCoach', async () => {
+    const { findByRole } = renderAsPlayer();
+
+    const shareButton = await findByRole('button', { name: 'Share with coach' });
+    expect(shareButton).toBeEnabled();
+  });
+
+  it('toggles the Full breakdown DrillPanel open on click', async () => {
+    const { findByRole, getByRole, getByText } = renderAsPlayer();
+
+    const openButton = await findByRole('button', { name: 'Full breakdown →' });
+    fireEvent.click(openButton);
+
+    await waitFor(() => {
+      expect(getByRole('button', { name: 'Back to summary' })).toBeInTheDocument();
+    });
+    expect(getByText('Full breakdown')).toBeInTheDocument();
   });
 });

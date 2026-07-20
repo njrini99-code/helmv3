@@ -1,6 +1,7 @@
-import { redirect } from 'next/navigation';
+import { redirect, permanentRedirect } from 'next/navigation';
 import { FairwayPlayerStats } from '@/components/fairway/pages/coachhelm/FairwayPlayerStats';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { mapLegacyStatsTab } from '@/components/fairway/modules';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -24,12 +25,24 @@ export const dynamic = 'force-dynamic';
  */
 
 interface GolfStatsPageProps {
-  searchParams: Promise<{ player?: string }>;
+  searchParams: Promise<{ player?: string; tab?: string }>;
 }
 
 export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps) {
   const params = await searchParams;
   const playerId = params.player ?? null;
+
+  // Legacy `?tab=` (the old FairwayStatsCockpit tab strip) → the Spine &
+  // Stage `?area=` param, permanently redirected so old bookmarks/links keep
+  // working. An unrecognized tab value is stripped rather than 404ing.
+  if (params.tab !== undefined) {
+    const area = mapLegacyStatsTab(params.tab);
+    const next = new URLSearchParams();
+    if (playerId) next.set('player', playerId);
+    if (area) next.set('area', area);
+    const qs = next.toString();
+    permanentRedirect(`/golf/dashboard/stats${qs ? `?${qs}` : ''}`);
+  }
 
   // The data-rich Fairway player stats surface (single-player view). It
   // resolves the same player id the route resolves — `?player=` for a coach

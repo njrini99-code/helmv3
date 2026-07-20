@@ -24,11 +24,6 @@ export type {
   CoachHelmRole,
 } from './CoachHelmSubNav';
 
-// ── Brief surface (Brief tab over /golf/dashboard/intelligence) ──────────────
-//   • FairwayBrief — the morning-brief body (renders CoachHelmShell active="brief")
-export { FairwayBrief } from './FairwayBrief';
-export type { FairwayBriefProps } from './FairwayBrief';
-
 // ── Players surface (phase 3 · coach "Players" tab) ──────────────────────────
 //   • PlayersGridView   — the roster grid + re-skinned create-focus-area modal
 //                         (CoachHelmShell active="players"); imports the

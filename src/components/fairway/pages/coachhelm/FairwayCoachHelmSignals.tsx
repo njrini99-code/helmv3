@@ -187,6 +187,15 @@ export interface FairwayCoachHelmSignalsProps {
   title?: React.ReactNode;
   /** Optional shareable initial filter from the URL (?severity=&status=…). */
   initialSearchParams?: Record<string, string | undefined>;
+  /**
+   * True when mounted by `SignalsDrill` inside the Brief home's stage
+   * `DrillPanel`, which already renders its own back-chip + title chrome.
+   * Forwarded to the internally-rendered `CoachHelmShell` to suppress its
+   * masthead + sub-nav (see `CoachHelmShell`'s `embedded` prop). Default
+   * false — the standalone /alerts, /insights, /patterns redirects (and any
+   * other direct mount) are unaffected.
+   */
+  embedded?: boolean;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -357,6 +366,7 @@ export function FairwayCoachHelmSignals({
   showScanTeam = false,
   title,
   initialSearchParams,
+  embedded = false,
 }: FairwayCoachHelmSignalsProps) {
   const router = useRouter();
   const isPatterns = signalSource === 'patterns';
@@ -1709,6 +1719,7 @@ export function FairwayCoachHelmSignals({
       // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
+      embedded={embedded}
       title={title ?? 'Signals'}
       description={
         isPatterns

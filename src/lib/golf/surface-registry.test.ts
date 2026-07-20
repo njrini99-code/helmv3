@@ -51,9 +51,29 @@ describe('surface-registry — data invariants', () => {
     }
   });
 
-  it('my-insights is the only legacy+hidden surface (P12 flag)', () => {
+  it('my-insights + the retired player/coach coachhelm-tab entries are the legacy+hidden surfaces', () => {
+    // Spine & Stage (2026-07-19, plan Task 8): Development / Game Profile /
+    // Standing folded into `?view=` drills of the player Overview home, joining
+    // my-insights as permanent-redirect-shim (legacy+hidden) entries. Plan
+    // Task 9 mirrors this on the coach side: Signals (+ its Alerts/Insights/
+    // Patterns segments), Players, and Effectiveness fold into `?view=` drills
+    // of the coach Brief home.
     const legacyHidden = GOLF_SURFACES.filter((s) => s.legacy && s.hidden);
-    expect(legacyHidden.map((s) => s.id)).toEqual(['my-insights']);
+    expect(legacyHidden.map((s) => s.id).sort()).toEqual(
+      [
+        'my-development-tab',
+        'my-game-profile-tab',
+        'my-insights',
+        'my-standing-tab',
+        'signals',
+        'players-tab',
+        'effectiveness',
+        'alerts',
+        'insights',
+        'patterns',
+        'development',
+      ].sort(),
+    );
   });
 
   it('surfaceName/surfaceHref throw on an unknown id (fail fast, never silently blank)', () => {
@@ -104,31 +124,25 @@ describe('surface-registry — rail resolves the registry canonical name', () =>
 });
 
 describe('surface-registry — CoachHelmSubNav resolves the registry canonical name', () => {
-  it('coach strip renders Brief/Signals/Players/Effectiveness/Ask exactly as the registry names them', () => {
+  it('coach strip renders the single consolidated Brief tab exactly as the registry names it', () => {
+    // Spine & Stage (2026-07-19, plan Task 9): Signals / Players / Effectiveness
+    // are legacy+hidden `?view=` drills of the Brief home now — the strip no
+    // longer carries their tabs (mirroring the player strip's consolidation).
     render(createElement(CoachHelmSubNav, { active: 'brief', role: 'coach' }));
     const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
     const labels = within(nav).getAllByRole('link').map((a) => a.textContent);
 
-    expect(labels).toEqual([
-      surfaceName('brief'),
-      surfaceName('signals'),
-      surfaceName('players-tab'),
-      surfaceName('effectiveness'),
-      surfaceName('ask'),
-    ]);
+    expect(labels).toEqual([surfaceName('brief')]);
   });
 
-  it('player strip renders Overview/Development/Game Profile/Standing exactly as the registry names them', () => {
+  it('player strip renders the single consolidated Overview tab exactly as the registry names it', () => {
+    // Development / Game Profile / Standing are legacy+hidden (?view= drills
+    // of the Overview home now) — the strip no longer carries their tabs.
     render(createElement(CoachHelmSubNav, { active: 'brief', role: 'player' }));
     const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
     const labels = within(nav).getAllByRole('link').map((a) => a.textContent);
 
-    expect(labels).toEqual([
-      surfaceName('overview'),
-      surfaceName('my-development-tab'),
-      surfaceName('my-game-profile-tab'),
-      surfaceName('my-standing-tab'),
-    ]);
+    expect(labels).toEqual([surfaceName('overview')]);
   });
 });
 

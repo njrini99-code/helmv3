@@ -26,53 +26,49 @@ import { CoachHelmSubNav } from './CoachHelmSubNav';
 // path we assert here (the pre-hydration paint).
 
 describe('CoachHelmSubNav — player consolidation', () => {
-  it('renders the four consolidated player tabs with their canonical routes', () => {
+  // Spine & Stage (2026-07-19, plan Task 8): Development / Game Profile /
+  // Standing are now `?view=` drills of the Overview home — the stage IS the
+  // player nav for that content, so the strip collapses to the single
+  // Overview tab (still mounted by e.g. the player Stats identity shell).
+  it('renders the single consolidated Overview tab with its canonical route', () => {
     render(createElement(CoachHelmSubNav, { active: 'brief', role: 'player' }));
 
     const overview = screen.getByRole('link', { name: 'Overview' });
-    const development = screen.getByRole('link', { name: 'Development' });
-    const gameProfile = screen.getByRole('link', { name: 'Game Profile' });
-    const standing = screen.getByRole('link', { name: 'Standing' });
-
     expect(overview.getAttribute('href')).toBe('/golf/dashboard/coachhelm');
-    expect(development.getAttribute('href')).toBe('/golf/dashboard/my-development');
-    expect(gameProfile.getAttribute('href')).toBe('/golf/dashboard/my-game-profile');
-    expect(standing.getAttribute('href')).toBe('/golf/dashboard/my-standing');
+    expect(overview.getAttribute('aria-current')).toBe('page');
 
-    // Exactly four player tabs (Overview · Development · Game Profile · Standing)
-    // — the scattered coach-only surfaces (Signals / Effectiveness / Ask) must
-    // NOT leak into the player nav.
+    // Exactly one player tab — the retired Development / Game Profile /
+    // Standing tabs (now legacy+hidden in the registry) must NOT render, nor
+    // must the coach-only surfaces (Signals / Effectiveness / Ask).
     const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(4);
+    expect(within(nav).getAllByRole('link')).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'Development' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Game Profile' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Standing' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Signals' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Effectiveness' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Ask' })).toBeNull();
   });
 
-  it('paints the Standing tab as active from the SSR `active` prop', () => {
-    render(createElement(CoachHelmSubNav, { active: 'standing', role: 'player' }));
-
-    const standing = screen.getByRole('link', { name: 'Standing' });
-    expect(standing.getAttribute('aria-current')).toBe('page');
-
-    // The other player tabs are not current.
-    expect(
-      screen.getByRole('link', { name: 'Overview' }).getAttribute('aria-current'),
-    ).toBeNull();
-    expect(
-      screen.getByRole('link', { name: 'Development' }).getAttribute('aria-current'),
-    ).toBeNull();
-  });
-
-  it('keeps the coach tab set intact (Standing is player-only)', () => {
+  // Spine & Stage (2026-07-19, plan Task 9): Signals / Players / Effectiveness
+  // are now `?view=` drills of the Brief home — the stage IS the coach nav for
+  // that content, so the strip collapses to the single Brief tab (same shape
+  // as the player Overview consolidation above).
+  it('renders the single consolidated Brief tab with its canonical route', () => {
     render(createElement(CoachHelmSubNav, { active: 'brief', role: 'coach' }));
 
-    const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
-    const labels = within(nav)
-      .getAllByRole('link')
-      .map((a) => a.textContent);
+    const brief = screen.getByRole('link', { name: 'Brief' });
+    expect(brief.getAttribute('href')).toBe('/golf/dashboard/intelligence');
+    expect(brief.getAttribute('aria-current')).toBe('page');
 
-    expect(labels).toEqual(['Brief', 'Signals', 'Players', 'Effectiveness', 'Ask']);
+    // Exactly one coach tab — the retired Signals / Players / Effectiveness
+    // tabs (now legacy+hidden in the registry) must NOT render.
+    const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
+    expect(within(nav).getAllByRole('link')).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'Signals' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Players' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Effectiveness' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Ask' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Standing' })).toBeNull();
   });
 });

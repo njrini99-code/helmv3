@@ -29,7 +29,7 @@ import { Surface, EmptyState } from '@/components/fairway';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { getPlayerDisplayName } from '@/app/golf/actions/stats-data';
 import { CoachHelmShell } from './CoachHelmShell';
-import { FairwayStatsCockpit } from './FairwayStatsCockpit';
+import { StatsSpineStage } from '@/components/golf/stats/spine-stage/StatsSpineStage';
 
 export interface FairwayPlayerStatsProps {
   initialPlayerId?: string | null;
@@ -121,7 +121,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
               />
             </Surface>
           ) : (
-            <FairwayStatsCockpit
+            <StatsSpineStage
               playerId={resolvedPlayerId}
               isOwnStats={!isCoachView}
               // Bug #915: label the coach-facing SG cards with the actual

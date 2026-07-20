@@ -1,16 +1,19 @@
-import { Skeleton, Surface } from '@/components/fairway';
+import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
 /**
  * Route Suspense fallback for /golf/dashboard/rounds/[id]/review.
  *
- * Shape-matches page.tsx's own Fairway `isLoading` surface (the ViewHeader
- * masthead + the bordered card with a centered icon/title/value, a 3-up
- * evidence grid, and two note blocks) at the SAME `max-w-2xl` container the
- * live page uses — so the route-level Suspense fallback and the client
- * component's own "Loading review…" state read as one continuous surface,
- * never the legacy `@/components/ui/skeleton` GenericPageSkeleton (wrong
- * width, wrong tokens).
+ * Task 10 (2026-07-19) moved this route onto the Spine & Stage filmstrip —
+ * `FilmstripReview` composes `ReviewHero` (a green score panel beside the
+ * 18-hole `Filmstrip`, ONE hero unit — see ReviewHero.tsx: `grid-cols-1
+ * sm:grid-cols-[264px_1fr]`, `rounded-fw-lg border border-accent-700
+ * shadow-raise`) above the AI narrative. This fallback reproduces that exact
+ * two-pane hero shape at the SAME `max-w-2xl` container the live page uses —
+ * a left green-block placeholder (the real panel gradient, so the hero's
+ * brand color never "pops in") beside a wide strip block reserving the
+ * Filmstrip's own height (`h-[6.75rem]`) — so the skeleton→content handoff
+ * is a quiet fade, not a layout jump.
  */
 export default function Loading() {
   return (
@@ -34,31 +37,24 @@ export default function Loading() {
         >
           <span className="sr-only">Loading review…</span>
 
-          <Surface>
-            <Surface.Body>
-              <div className="flex flex-col items-center gap-3">
-                <Skeleton className="h-12 w-12 rounded-fw-md" />
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-9 w-20" />
+          {/* Filmstrip hero — left green-block placeholder + wide strip block */}
+          <div className="grid grid-cols-1 overflow-hidden rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise sm:grid-cols-[264px_1fr]">
+            <div className="bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-6" aria-hidden="true" />
+            <div className="bg-surface p-5 sm:p-6">
+              <Skeleton className="h-[6.75rem] w-full rounded-fw-sm" />
+              <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
+                <Skeleton className="h-3.5 w-40" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex flex-col items-center gap-2 rounded-fw-md bg-surface-sunken p-3"
-                  >
-                    <Skeleton className="h-6 w-10" />
-                    <Skeleton className="h-3 w-12" />
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col gap-3">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-16 w-full rounded-fw-md" />
-                <Skeleton className="h-16 w-full rounded-fw-md" />
-              </div>
-            </Surface.Body>
-          </Surface>
+            </div>
+          </div>
+
+          {/* AI narrative body */}
+          <div className="flex flex-col gap-3 rounded-card border border-border-subtle bg-surface p-6">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-11/12" />
+            <Skeleton className="h-3.5 w-3/5" />
+          </div>
 
           <Skeleton className="mx-auto h-4 w-40" />
         </div>

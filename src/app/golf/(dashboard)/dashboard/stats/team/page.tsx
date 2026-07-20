@@ -6,7 +6,7 @@ import { Users } from 'lucide-react';
 import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
+import { TeamStatsBoard } from '@/components/golf/stats/team-board/TeamStatsBoard';
 import { ViewHeader, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
@@ -46,6 +46,20 @@ export interface TeamPlayerStats {
   scoring_average_9: number | null;
   best_round_18: number | null;
   best_round_9: number | null;
+  /**
+   * Most recent completed round's raw score (round_date desc, first entry) —
+   * Team Stats board expand band. Null when the player has no scored rounds.
+   * Optional so existing fixtures (`FairwayTeamStats.test.ts`) that predate
+   * this field keep type-checking; the board falls back to an honest em-dash.
+   */
+  last_round_score?: number | null;
+  /**
+   * Last-7 normalized (18-hole-equivalent) scores, oldest → newest — Team
+   * Stats board Sparkline. Derived from the SAME `allRounds` fetch below;
+   * empty when the player has <2 scored rounds (Sparkline's own honesty
+   * contract renders an em-dash). Optional for the same fixture-compat reason.
+   */
+  recent_scores?: number[];
 }
 
 export default async function TeamStatsPage() {
@@ -159,7 +173,13 @@ export default async function TeamStatsPage() {
     ),
     getTeamStatsIntelligence(teamId),
   ]);
-  const { data: allRounds } = roundsResult;
+  // Honesty flag: a genuinely FAILED rounds fetch must read as "couldn't
+  // load" (with retry), not as a silent cold-start — `fetchAllRowsResult`
+  // resolves `{ data: null, error }` on the first-page error instead of
+  // throwing, so an unchecked `error` here previously rendered every
+  // player's per-round stats as "no rounds yet".
+  const { data: allRounds, error: roundsFetchError } = roundsResult;
+  const roundsError = roundsFetchError !== null;
 
   // Fetch ALL holes for calculating GIR and fairway stats
   const roundIds = (allRounds || []).map(r => r.id);
@@ -360,6 +380,12 @@ export default async function TeamStatsPage() {
       scoring_average_9: scoringAverage9,
       best_round_18: bestRound18,
       best_round_9: bestRound9,
+      // scoredRounds is round_date-desc (the query's order); [0] is the most
+      // recent completed round's raw score.
+      last_round_score: scoredRounds.length > 0 ? (scoredRounds[0]!.total_score as number) : null,
+      // normalizedScores is built in scoredRounds' order (most-recent-first);
+      // take the last 7, then reverse to oldest -> newest for the Sparkline.
+      recent_scores: normalizedScores.slice(0, 7).reverse(),
     };
   });
 
@@ -399,9 +425,15 @@ export default async function TeamStatsPage() {
     loadPlayersStandingMap(playersWithStats.map((p) => p.id)),
   ]);
   const leakError = !leakRes.success;
+  // Team Stats board KPI ("Rounds · 30d") — filtered from the SAME `allRounds`
+  // fetch above (round_date is an ISO date string), no new query.
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoIso = thirtyDaysAgo.toISOString().slice(0, 10);
+  const teamRounds30d = (allRounds || []).filter((r) => r.round_date >= thirtyDaysAgoIso).length;
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <FairwayTeamStats
+      <TeamStatsBoard
         teamName={team?.name ?? 'Your Team'}
         players={playersWithStats}
         intelligenceByPlayer={intelligenceByPlayer}
@@ -409,7 +441,9 @@ export default async function TeamStatsPage() {
         intelligenceSampleSize={intelligenceSampleSize}
         leakMaps={leakRes.success ? leakRes.data ?? null : null}
         leakError={leakError}
+        roundsError={roundsError}
         standingByPlayer={standingByPlayer}
+        teamRounds30d={teamRounds30d}
       />
     </div>
   );

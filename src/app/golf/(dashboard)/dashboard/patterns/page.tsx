@@ -1,81 +1,34 @@
-import { redirect } from 'next/navigation';
-import { getGolfSessionProfile } from '@/lib/auth/session';
-import { createClient } from '@/lib/supabase/server';
-import { getTeamPatterns } from '@/app/golf/actions/pattern-management';
-import { getAlertCounts } from '@/app/golf/actions/alerts';
-import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayCoachHelmSignals, FeatureUnavailable, InlineNotice } from '@/components/fairway';
-import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { surfaceName } from '@/lib/golf/surface-registry';
+import { permanentRedirect } from 'next/navigation';
 
 /**
- * Patterns Page - Server Component
+ * `/golf/dashboard/patterns` — LEGACY, permanently redirected (2026-07-19,
+ * plan Task 9). Patterns is now the `patterns` filter of the consolidated
+ * Signals drill on the coach Intelligence home (spec §5.4) — the stage IS
+ * the nav. `surface-registry.ts`'s `patterns` entry is
+ * `legacy: true, hidden: true` and points its canonical href here-onward.
  *
- * Displays AI-detected patterns for the team with management capabilities.
- * Coach-only page.
+ * Forwards every incoming query param (old bookmarks, deep-links) onto the
+ * target URL — same pattern as `development/page.tsx`'s `?player=`
+ * forwarding. The target's own `view`/`filter` always win on collision so a
+ * stray `?view=`/`?filter=` can never point the shim somewhere other than
+ * the Signals/patterns drill.
  */
-export default async function PatternsPage() {
-  const session = await getGolfSessionProfile();
-  if (!session) redirect('/golf/login');
-
-  const { coach, player } = session;
-  if (!coach) {
-    if (player) {
-      return (
-        <FeatureUnavailable
-          title={surfaceName('patterns')}
-          message="The Patterns dashboard is designed for coaches. Players can view their own patterns from the CoachHelm dashboard."
-          actionHref="/golf/dashboard/coachhelm"
-          actionLabel="Open CoachHelm"
-        />
-      );
+export default async function PatternsRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<never> {
+  const sp = await searchParams;
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(sp)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) params.append(key, v);
+    } else {
+      params.set(key, value);
     }
-    return (
-      <FeatureUnavailable
-        title={surfaceName('patterns')}
-        message="No coach or player profile found. Please complete onboarding."
-        actionHref="/golf/dashboard"
-        actionLabel="Back to Dashboard"
-      />
-    );
   }
-
-  // Fetch patterns for the unified Signals workspace (patterns-only preset,
-  // grouped by player). It renders the CoachHelmShell itself and seeds
-  // initialPatterns from this SAME getTeamPatterns read.
-  const patternsResult = await getTeamPatterns();
-
-  const supabase = await createClient();
-  const teamId = (await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id)) ?? '';
-  const countsRes = await getAlertCounts(coach.id);
-  const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
-  return (
-    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      {!patternsResult.success ? (
-        <div className="px-1 py-6 sm:px-2">
-          <InlineNotice tone="danger" title="Unable to load patterns">
-            {patternsResult.error || 'Failed to load patterns'}
-          </InlineNotice>
-        </div>
-      ) : (
-        <FairwayCoachHelmSignals
-          coachId={coach.id}
-          teamId={teamId}
-          signalSource="patterns"
-          defaultFilter={{
-            signalTypes: ['pattern'],
-            groupBy: 'player',
-            view: 'grouped',
-          }}
-          initialPatterns={patternsResult.patterns || []}
-          signalCount={signalCount}
-        />
-      )}
-    </div>
-  );
+  params.set('view', 'signals');
+  params.set('filter', 'patterns');
+  permanentRedirect(`/golf/dashboard/intelligence?${params.toString()}`);
 }
-
-export const metadata = {
-  title: `${surfaceName('patterns')} | CoachHelm`,
-  description: 'View and manage AI-detected performance patterns for your team',
-};

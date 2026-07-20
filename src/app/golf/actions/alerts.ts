@@ -487,6 +487,11 @@ async function generateAlertsImpl(
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/alerts');
+    // Defense-in-depth: /alerts is a permanent-redirect shim onto the coach
+    // Intelligence home's Signals drill (2026-07-19, plan Task 9) — revalidate
+    // the canonical destination too so a coach landed there already doesn't
+    // see stale data (pattern: v3/goals.ts createTeamGoal).
+    revalidatePath('/golf/dashboard/intelligence');
 
     // P2-14 acceptance test 1: the reported count must equal the rows the
     // canonical V3 feed actually surfaces, NOT `newAlerts.length`. The legacy

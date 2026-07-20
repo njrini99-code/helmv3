@@ -237,6 +237,12 @@ async function createFocusAreaImpl(
 
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
+  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
+  // destinations too so a coach/player landed there already sees this write
+  // (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/intelligence');
+  revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true };
 }
@@ -315,6 +321,11 @@ async function createPlayerFocusAreaImpl(
 
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/development');
+  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
+  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
+  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -367,6 +378,11 @@ async function acceptFocusAreaImpl(
 
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/development');
+  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
+  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
+  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -417,6 +433,11 @@ async function declineFocusAreaImpl(
 
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/development');
+  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
+  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
+  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -495,6 +516,12 @@ async function updateFocusAreaImpl(
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/analytics/coachhelm');
+  // Defense-in-depth: /development, /insights, and /my-development are all
+  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
+  // Task 9) — revalidate the canonical destinations too (pattern: v3/goals.ts
+  // createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -546,6 +573,11 @@ async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult>
 
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
+  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
+  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -666,6 +698,12 @@ async function updateFocusAreaProgressImpl(
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/analytics/coachhelm');
+  // Defense-in-depth: /development, /insights, and /my-development are all
+  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
+  // Task 9) — revalidate the canonical destinations too (pattern:
+  // v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -746,6 +784,12 @@ async function completeFocusAreaImpl(
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/analytics/coachhelm');
+  // Defense-in-depth: /development, /insights, and /my-development are all
+  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
+  // Task 9) — revalidate the canonical destinations too (pattern:
+  // v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -818,6 +862,12 @@ async function reactivateFocusAreaImpl(
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/analytics/coachhelm');
+  // Defense-in-depth: /development, /insights, and /my-development are all
+  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
+  // Task 9) — revalidate the canonical destinations too (pattern:
+  // v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -938,6 +988,11 @@ async function createFocusAreaFromReviewImpl(
 
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/development');
+  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
+  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
+  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true, focusAreaId: row.id };
 }
@@ -1037,6 +1092,12 @@ async function createFocusAreaFromInsightV2Impl(
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/insights');
+  // Defense-in-depth: /my-development, /development, and /insights are all
+  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
+  // Task 9) — revalidate the canonical destinations too (pattern:
+  // v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true, focusAreaId: row.id };
 }
@@ -1254,6 +1315,12 @@ async function createFocusAreaFromInsightImpl(
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/alerts');
+  // Defense-in-depth: /development, /my-development, /insights, and /alerts
+  // are all permanent-redirect shims onto the Spine & Stage homes
+  // (2026-07-19, plan Task 9) — revalidate the canonical destinations too
+  // (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true, data: { focusAreaId: focusArea.id } };
 }
@@ -1363,6 +1430,11 @@ async function recordFocusAreaOutcomeImpl(
   if (!focusArea.from_insight_id) {
     revalidatePath('/golf/dashboard/development');
     revalidatePath('/golf/dashboard/my-development');
+    // Defense-in-depth: both legacy routes are permanent-redirect shims onto
+    // the Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the
+    // canonical destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+    revalidatePath('/golf/dashboard/coachhelm');
+    revalidatePath('/golf/dashboard/intelligence');
     return {
       success: true,
       notice: 'Outcome recorded. This focus area had no source insight to credit.',
@@ -1390,6 +1462,12 @@ async function recordFocusAreaOutcomeImpl(
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/analytics/coachhelm');
+  // Defense-in-depth: /development, /insights, and /my-development are all
+  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
+  // Task 9) — revalidate the canonical destinations too (pattern:
+  // v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/coachhelm');
+  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
