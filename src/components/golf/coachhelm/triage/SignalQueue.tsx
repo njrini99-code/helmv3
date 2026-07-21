@@ -35,6 +35,7 @@ export interface SignalQueueProps {
   categories: string[];
   filter: QueueFilterKey;
   filterHref: (filter: QueueFilterKey) => string;
+  onSelectFilter: (filter: QueueFilterKey) => void;
   selectedSignalId: string | null;
   onSelectSignal: (id: string) => void;
   signalHref: (id: string) => string;
@@ -50,6 +51,7 @@ export function SignalQueue({
   categories,
   filter,
   filterHref,
+  onSelectFilter,
   selectedSignalId,
   onSelectSignal,
   signalHref,
@@ -117,6 +119,20 @@ export function SignalQueue({
             href={filterHref(chip.key)}
             replace
             scroll={false}
+            onClick={(event) => {
+              if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              ) {
+                return;
+              }
+              event.preventDefault();
+              onSelectFilter(chip.key);
+            }}
             aria-current={filter === chip.key ? 'page' : undefined}
             className={cn(
               'inline-flex min-h-[30px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3',
@@ -188,6 +204,7 @@ export function SignalQueue({
                         selected={signal.id === selectedSignalId}
                         tabbable={selectedSignalId ? signal.id === selectedSignalId : signal.id === firstVisibleRowId}
                         href={signalHref(signal.id)}
+                        onSelect={() => onSelectSignal(signal.id)}
                       />
                     ))}
                   </div>

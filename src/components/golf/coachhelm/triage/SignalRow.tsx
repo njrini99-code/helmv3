@@ -44,10 +44,11 @@ export interface SignalRowProps {
    *  instead of every row landing on -1. */
   tabbable: boolean;
   href: string;
+  onSelect: () => void;
 }
 
 export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function SignalRow(
-  { signal, selected, tabbable, href },
+  { signal, selected, tabbable, href, onSelect },
   ref,
 ) {
   return (
@@ -56,6 +57,20 @@ export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function 
       href={href}
       replace
       scroll={false}
+      onClick={(event) => {
+        if (
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+        onSelect();
+      }}
       role="option"
       aria-selected={selected}
       data-signal-id={signal.id}

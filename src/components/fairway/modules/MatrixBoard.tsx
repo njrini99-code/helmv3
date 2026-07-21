@@ -151,6 +151,7 @@ function MatrixRow({
         className={cn(
           'grid w-full items-center gap-0 px-5 py-2.5 text-left transition-colors duration-150',
           'hover:bg-surface-tint',
+          open && 'bg-accent-50 shadow-[inset_3px_0_0_var(--fw-color-accent-500)]',
           !(isLast && !hasExpand) && 'border-b border-border-subtle',
           GRID_COLS_CLASS,
         )}
@@ -180,7 +181,7 @@ function MatrixExpand({ id, children }: { id?: string; children: ReactNode }) {
     <div
       id={id}
       data-slot="matrix-expand"
-      className="border-b border-border-subtle bg-surface-sunken px-5 py-3.5"
+      className="border-b border-border-subtle bg-surface-sunken px-5 py-4 shadow-[inset_3px_0_0_var(--fw-color-accent-300)]"
     >
       {children}
     </div>

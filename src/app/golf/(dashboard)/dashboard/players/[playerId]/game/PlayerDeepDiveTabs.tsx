@@ -31,8 +31,8 @@
  * above already owns the chrome for this route.
  * ========================================================================== */
 
-import { useCallback, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
 import { FairwayPlayerGameFingerprint } from '@/components/fairway/pages/player-game';
 import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
@@ -56,16 +56,19 @@ export interface PlayerDeepDiveTabsProps {
 }
 
 export function PlayerDeepDiveTabs({ fingerprint, insight }: PlayerDeepDiveTabsProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<DeepDiveTab>(
     searchParams.get('tab') === 'scouting' ? 'scouting' : 'fingerprint',
   );
 
+  useEffect(() => {
+    setTab(searchParams.get('tab') === 'scouting' ? 'scouting' : 'fingerprint');
+  }, [searchParams]);
+
   // Shareable, but not a client refetch trigger for THIS render — local state
   // already owns which view is mounted, so the tab flips instantly. The
-  // router.replace only keeps the URL bar honest for copy/paste + the
-  // coach-morning-digest deep link (mirrors SignalsToolbar's syncUrl).
+  // native history update only keeps the URL bar honest for copy/paste + the
+  // coach-morning-digest deep link; it does not rerun the server page.
   const onTabChange = useCallback(
     (next: DeepDiveTab) => {
       setTab(next);
@@ -73,9 +76,13 @@ export function PlayerDeepDiveTabs({ fingerprint, insight }: PlayerDeepDiveTabsP
       if (next === 'scouting') params.set('tab', 'scouting');
       else params.delete('tab');
       const qs = params.toString();
-      router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+      window.history.replaceState(
+        window.history.state,
+        '',
+        qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
+      );
     },
-    [router, searchParams],
+    [searchParams],
   );
 
   const playerName =
@@ -87,8 +94,9 @@ export function PlayerDeepDiveTabs({ fingerprint, insight }: PlayerDeepDiveTabsP
       // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={insight.signalCount}
+      embedded
       breadcrumbs={[
-        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: 'Players', href: '/golf/dashboard/intelligence?view=players' },
         { label: playerName },
       ]}
     >

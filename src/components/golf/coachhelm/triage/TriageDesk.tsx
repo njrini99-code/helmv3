@@ -50,6 +50,14 @@ import {
   resolveTriageView,
 } from './buildTriageViewModel';
 
+type TriageNavigationUpdates = Partial<{
+  view: string;
+  filter: string | null;
+  signal: string | null;
+  player: string | null;
+  playersTab: 'roster' | 'areas' | null;
+}>;
+
 export interface TriageDeskProps {
   coachId: string;
   groups: SignalGroup[];
@@ -74,16 +82,40 @@ export function TriageDesk({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const rosterPlayers = playersDrillProps.players ?? [];
 
-  const view = resolveTriageView(searchParams.get('view'));
-  const queueFilter = resolveQueueFilter(searchParams.get('filter'));
+  const requestedView = resolveTriageView(searchParams.get('view'));
+  const requestedQueueFilter = resolveQueueFilter(searchParams.get('filter'));
   // `signal` is the canonical param this desk writes; `id` is the legacy
   // insight deep-link CommandPalette.tsx:326 and FocusAreaCard.tsx:315 still
   // push (`?id=<insightId>`, forwarded here by the /insights redirect shim).
   // Both key off the same raw `golf_coach_insights`/`golf_patterns_v2` id
   // (signal-groups.ts's `id: row.id`), so falling back to `id` re-opens the
   // dossier for that exact insight instead of landing on an empty selection.
-  const selectedSignalId = searchParams.get('signal') ?? searchParams.get('id');
+  const requestedSignalId = searchParams.get('signal') ?? searchParams.get('id');
+  const requestedPlayerId = searchParams.get('player');
+  const validRequestedPlayerId =
+    requestedPlayerId && rosterPlayers.some((player) => player.id === requestedPlayerId)
+      ? requestedPlayerId
+      : null;
+  const requestedPlayersTab =
+    searchParams.get('playersTab') === 'areas' || validRequestedPlayerId ? 'areas' : 'roster';
+
+  // These query parameters only choose among data that is already present in
+  // this client island. Keep an optimistic local mirror so a tab/filter/row
+  // responds in the same frame instead of waiting for the force-dynamic page
+  // (and all of its Supabase reads) to render again.
+  const [view, setView] = useState(requestedView);
+  const [queueFilter, setQueueFilter] = useState(requestedQueueFilter);
+  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(requestedSignalId);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(validRequestedPlayerId);
+  const [playersTab, setPlayersTab] = useState<'roster' | 'areas'>(requestedPlayersTab);
+
+  useEffect(() => setView(requestedView), [requestedView]);
+  useEffect(() => setQueueFilter(requestedQueueFilter), [requestedQueueFilter]);
+  useEffect(() => setSelectedSignalId(requestedSignalId), [requestedSignalId]);
+  useEffect(() => setSelectedPlayerId(validRequestedPlayerId), [validRequestedPlayerId]);
+  useEffect(() => setPlayersTab(requestedPlayersTab), [requestedPlayersTab]);
 
   const [groups, setGroups] = useState(initialGroups);
   useEffect(() => {
@@ -93,11 +125,36 @@ export function TriageDesk({
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [isScanning, startScanTransition] = useTransition();
 
-  function hrefFor(
-    updates: Partial<{ view: string; filter: string | null; signal: string | null; player: string | null }>,
-  ) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (updates.view !== undefined) params.set('view', updates.view);
+  function hrefFor(updates: TriageNavigationUpdates) {
+    // Read the browser's current query for rapid consecutive clicks. The
+    // useSearchParams snapshot can legitimately trail a prior shallow update.
+    const params = new URLSearchParams(
+      typeof window === 'undefined' ? searchParams.toString() : window.location.search,
+    );
+
+    // Each top-level view owns a disjoint set of params. Clearing foreign
+    // params prevents an old signal/player scope from resurrecting when the
+    // coach moves away and comes back.
+    if (updates.view !== undefined) {
+      const targetView = resolveTriageView(updates.view);
+      params.set('view', targetView);
+      if (targetView === 'signals') {
+        params.delete('player');
+        params.delete('playersTab');
+      } else if (targetView === 'players') {
+        params.delete('filter');
+        params.delete('signal');
+        params.delete('id');
+        if (!('player' in updates)) params.delete('player');
+        if (!('playersTab' in updates)) params.delete('playersTab');
+      } else {
+        params.delete('filter');
+        params.delete('signal');
+        params.delete('id');
+        params.delete('player');
+        params.delete('playersTab');
+      }
+    }
     if ('filter' in updates) {
       if (updates.filter) params.set('filter', updates.filter);
       else params.delete('filter');
@@ -115,14 +172,39 @@ export function TriageDesk({
       if (updates.player) params.set('player', updates.player);
       else params.delete('player');
     }
+    if ('playersTab' in updates) {
+      if (updates.playersTab === 'areas') params.set('playersTab', 'areas');
+      else params.delete('playersTab');
+    }
     const qs = params.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   }
 
-  function navigate(
-    updates: Partial<{ view: string; filter: string | null; signal: string | null; player: string | null }>,
-  ) {
-    router.replace(hrefFor(updates), { scroll: false });
+  function navigate(updates: TriageNavigationUpdates) {
+    const href = hrefFor(updates);
+    const next = new URL(
+      href,
+      typeof window === 'undefined' ? 'https://helmsportslabs.com' : window.location.origin,
+    );
+    const nextPlayerId = next.searchParams.get('player');
+
+    setView(resolveTriageView(next.searchParams.get('view')));
+    setQueueFilter(resolveQueueFilter(next.searchParams.get('filter')));
+    setSelectedSignalId(next.searchParams.get('signal') ?? next.searchParams.get('id'));
+    setSelectedPlayerId(
+      nextPlayerId && rosterPlayers.some((player) => player.id === nextPlayerId)
+        ? nextPlayerId
+        : null,
+    );
+    setPlayersTab(
+      next.searchParams.get('playersTab') === 'areas' || Boolean(nextPlayerId) ? 'areas' : 'roster',
+    );
+
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(window.history.state, '', `${next.pathname}${next.search}${next.hash}`);
+    } else {
+      router.replace(href, { scroll: false });
+    }
   }
 
   const counts = useMemo(() => computeBriefCounts(groups), [groups]);
@@ -206,7 +288,8 @@ export function TriageDesk({
     // re-runs the server page with `?player=` and therefore also reads the
     // freshly revalidated focus-area data; a separate refresh here races the
     // navigation and is unnecessary.
-    navigate({ view: 'players', signal: null, player: signal.playerId });
+    navigate({ view: 'players', signal: null, player: signal.playerId, playersTab: 'areas' });
+    router.refresh();
   }
 
   // A stale bookmark (or a signal reviewed in another tab) can leave a
@@ -229,6 +312,7 @@ export function TriageDesk({
       <ViewSwitch
         view={view}
         hrefFor={(next) => hrefFor({ view: next, signal: null })}
+        onSelect={(next) => navigate({ view: next, signal: null })}
       />
 
       {view === 'signals' ? (
@@ -253,6 +337,7 @@ export function TriageDesk({
                 categories={categories}
                 filter={queueFilter}
                 filterHref={(next) => hrefFor({ filter: next === 'all' ? null : next })}
+                onSelectFilter={(next) => navigate({ filter: next === 'all' ? null : next })}
                 selectedSignalId={selectedSignalId}
                 onSelectSignal={(id) => navigate({ signal: id })}
                 signalHref={(id) => hrefFor({ signal: id })}
@@ -273,7 +358,20 @@ export function TriageDesk({
         )
       ) : null}
 
-      {view === 'players' ? <PlayersGridView {...playersDrillProps} embedded /> : null}
+      {view === 'players' ? (
+        <PlayersGridView
+          {...playersDrillProps}
+          embedded
+          initialSelectedPlayerId={selectedPlayerId}
+          initialPlayersView={playersTab === 'areas' ? 'areas' : 'grid'}
+          onNavigationChange={({ view: nextView, playerId }) =>
+            navigate({
+              player: nextView === 'areas' ? playerId : null,
+              playersTab: nextView === 'areas' ? 'areas' : null,
+            })
+          }
+        />
+      ) : null}
       {view === 'effectiveness' ? (
         <EffectivenessScoreboard
           initialOverview={effectivenessDrillProps.initialOverview}

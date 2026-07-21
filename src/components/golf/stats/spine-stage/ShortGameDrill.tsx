@@ -71,7 +71,7 @@ function LieRing({ label, pct }: { label: string; pct: number | null }) {
     pct === null ? 'No attempts recorded' : `${Math.round(pct)}%`,
   );
   return (
-    <InstrumentPanel depth="base" padding="sm" className="flex flex-col items-center gap-2">
+    <InstrumentPanel depth="base" padding="sm" className="flex min-h-[112px] flex-col items-center justify-center gap-2 overflow-clip">
       <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.08em] text-text-tertiary">
         {label}
       </span>
@@ -185,11 +185,11 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
 
         <div className="flex flex-col gap-4 border-t border-border-subtle pt-6">
           <Eyebrow as="h3" tone="accent">Short-game visuals</Eyebrow>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
-            <RadialGauge title="Scrambling" overline="Short game" value={scramblingPct ?? undefined} max={100} samples={scrambleAttempts} minSamples={1} unit="scrambles" takeaway={scramblingPct !== null ? `${scramblesMade} of ${scrambleAttempts} scrambles converted` : undefined} size="lg" />
-            <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:items-stretch">
+            <RadialGauge className="h-full" title="Scrambling" overline="Short game" value={scramblingPct ?? undefined} max={100} samples={scrambleAttempts} minSamples={1} unit="scrambles" takeaway={scramblingPct !== null ? `${scramblesMade} of ${scrambleAttempts} scrambles converted` : undefined} size="md" />
+            <Surface elevation="border" padding="md" className="grid grid-cols-1 items-center gap-3 min-[430px]:grid-cols-3">
               {lieRings.map((ring) => <LieRing key={ring.label} label={ring.label} pct={ring.pct} />)}
-            </div>
+            </Surface>
           </div>
         </div>
       </div>

@@ -189,27 +189,27 @@ export function HoleShotPath({
       >
         {/* Header — hole number, par, yardage, score */}
         {variant.showHeader && (
-          <div className="flex items-baseline justify-between mb-2 px-1">
-            <div className="flex items-baseline gap-2">
+          <div className="mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-1 gap-y-0.5 overflow-clip px-1">
+            <div className="flex min-w-0 items-baseline gap-1 overflow-hidden whitespace-nowrap">
               {hole_number !== undefined && (
-                <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-500">
+                <span className="shrink-0 text-eyebrow uppercase tracking-[0.12em] text-warm-500">
                   Hole {hole_number}
                 </span>
               )}
               {par !== undefined && (
-                <span className="text-eyebrow text-warm-400 tabular-nums">
+                <span className="shrink-0 text-eyebrow text-warm-400 tabular-nums">
                   Par {par}
-                </span>
-              )}
-              {plot.total_yardage > 0 && (
-                <span className="text-eyebrow text-warm-400 tabular-nums">
-                  · {Math.round(plot.total_yardage)}y
                 </span>
               )}
             </div>
             {scoreLabel && (
-              <span className={`text-sm font-medium tabular-nums tracking-[-0.01em] ${scoreColor}`}>
+              <span className={`min-w-0 max-w-full truncate text-caption font-semibold tabular-nums tracking-[-0.01em] ${scoreColor}`}>
                 {scoreLabel}
+              </span>
+            )}
+            {plot.total_yardage > 0 && (
+              <span className="col-span-2 truncate text-eyebrow text-warm-400 tabular-nums">
+                {Math.round(plot.total_yardage)}y
               </span>
             )}
           </div>

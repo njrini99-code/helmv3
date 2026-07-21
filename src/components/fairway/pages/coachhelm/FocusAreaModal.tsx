@@ -408,7 +408,7 @@ export function FocusAreaModal({
         if (o) onOpenChange(true);
         else requestClose();
       }}
-      size="lg"
+      size="xl"
       title={
         editing
           ? 'Edit focus area'
@@ -425,7 +425,8 @@ export function FocusAreaModal({
       }
     >
       <ModalShell.Body>
-        <div className="space-y-6">
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-start">
           {/* Assignment */}
           <FormSection title="Focus">
             {mode === 'coach' ? (
@@ -514,6 +515,7 @@ export function FocusAreaModal({
               />
             </FormField>
           </FormSection>
+          </div>
 
           {/* Measurable target — catalog-driven picker with real player values */}
           <FormSection

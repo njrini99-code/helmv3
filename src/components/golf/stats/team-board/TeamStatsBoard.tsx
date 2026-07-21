@@ -450,7 +450,7 @@ function ExpandBand({ row }: { row: TeamBoardRowViewModel }) {
       <ExpandStat label={row.expand.worstMetricLabel ?? 'Worst metric'} value={row.expand.worstMetricValue ?? '—'} />
       <ExpandStat label="SG Putt" value={row.expand.sgPutt} />
       <ExpandStat label="Last round" value={row.expand.lastRound} />
-      <div className="col-span-2 flex flex-col justify-center font-fw-sans text-caption text-text-secondary">
+      <div className="col-span-full mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border-subtle pt-3 font-fw-sans text-caption text-text-secondary">
         <Link href={row.expand.links.fullStats} className="font-semibold text-accent-700 hover:underline">
           Full stats
         </Link>

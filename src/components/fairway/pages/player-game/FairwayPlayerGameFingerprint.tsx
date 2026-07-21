@@ -51,11 +51,12 @@ import {
   SegmentBar,
   Sparkline,
   Button,
+  fairwayToast,
   type InsightPriority,
   type SegmentTone,
 } from '@/components/fairway';
 
-import { IconSparkles, IconLayers } from '@/components/icons';
+import { IconLayers } from '@/components/icons';
 
 import type {
   PlayerFingerprint,
@@ -122,10 +123,13 @@ export function FairwayPlayerGameFingerprint({
   // Mirror insight lists per section into local state so actions (ack / dismiss
   // / focus area) can update the UI optimistically — IDENTICAL to legacy.
   const [sections, setSections] = useState(() => fingerprint.sections);
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
 
   const handleAction = useCallback(
     (action: 'acknowledged' | 'dismissed' | 'create_focus_area', insightId: string) => {
+      if (pendingIds.has(insightId)) return;
       const prev = sections;
+      setPendingIds((current) => new Set(current).add(insightId));
       startActionTransition(async () => {
         try {
           if (action === 'acknowledged') {
@@ -137,15 +141,31 @@ export function FairwayPlayerGameFingerprint({
               })),
             );
             const res = await acknowledgeInsight(insightId);
-            if (!res.success) setSections(prev);
+            if (!res.success) {
+              setSections(prev);
+              fairwayToast.error(res.error ?? 'Could not acknowledge this insight.');
+            } else {
+              fairwayToast.success('Insight acknowledged.');
+            }
           } else if (action === 'dismissed') {
             setSections((current) => removeInsight(current, insightId));
             const res = await dismissInsight(insightId);
-            if (!res.success) setSections(prev);
+            if (!res.success) {
+              setSections(prev);
+              fairwayToast.error(res.error ?? 'Could not dismiss this insight.');
+            } else {
+              fairwayToast.success('Insight dismissed.');
+            }
           } else if (action === 'create_focus_area') {
-            if (!coachId) return;
+            if (!coachId) {
+              fairwayToast.error('A coach profile is required to create a focus area.');
+              return;
+            }
             const target = findInsight(sections, insightId);
-            if (!target) return;
+            if (!target) {
+              fairwayToast.error('That insight is no longer available.');
+              return;
+            }
             const res = await createFocusAreaFromInsight({
               insight_id: target.id,
               player_id: target.player_id,
@@ -154,14 +174,28 @@ export function FairwayPlayerGameFingerprint({
               description: target.content ?? '',
               insight_type: (target.category as string | undefined) ?? 'general',
             });
-            if (res.success) router.push('/golf/dashboard/development');
+            if (res.success) {
+              fairwayToast.success('Focus area created.');
+              router.push(
+                `/golf/dashboard/intelligence?view=players&player=${target.player_id}&playersTab=areas`,
+              );
+            } else {
+              fairwayToast.error(res.error ?? 'Could not create the focus area.');
+            }
           }
         } catch {
           setSections(prev);
+          fairwayToast.error('That action did not complete. Try again.');
+        } finally {
+          setPendingIds((current) => {
+            const next = new Set(current);
+            next.delete(insightId);
+            return next;
+          });
         }
       });
     },
-    [coachId, router, sections],
+    [coachId, pendingIds, router, sections],
   );
 
   const orderedSections = useMemo(
@@ -187,31 +221,25 @@ export function FairwayPlayerGameFingerprint({
         : { tone: 'neutral' as const, label: 'Holding steady' };
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-4 py-6 md:px-6">
-      <div className="flex flex-col gap-10">
+    <div className="mx-auto w-full max-w-[1160px] overflow-x-clip">
+      <div className="flex flex-col gap-7 md:gap-9">
         {/* ════════════════ 1 · MASTHEAD (the ONE masthead) ═════════════════ */}
         <ViewHeader
           eyebrow="Game Fingerprint"
           title={fullName}
           description={player.team_name ?? 'No team'}
           primaryAction={
-            <Button asChild variant="primary">
+            <Button asChild variant="secondary">
               <Link href={`/golf/dashboard/players/${player.id}/game/print`}>
                 Print report
               </Link>
             </Button>
           }
           secondaryActions={
-            // Sibling cross-links (P107) — Game ↔ Scouting report ↔ Genome ↔
-            // Profile. "Scouting report" is the same in-page tab the
-            // segmented control above switches to (?tab=scouting) — kept
-            // here too as a masthead-level shortcut.
+            // The Scouting Report is already the adjacent in-page tab. Keep
+            // this action row to true sibling destinations so the header does
+            // not repeat the same control twice.
             <>
-              <Button asChild variant="ghost" size="sm" leftIcon={<IconSparkles size={15} />}>
-                <Link href={`/golf/dashboard/players/${player.id}/game?tab=scouting`}>
-                  Scouting report
-                </Link>
-              </Button>
               <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
                 <Link href={`/golf/dashboard/players/${player.id}/genome`}>Genome</Link>
               </Button>
@@ -222,21 +250,21 @@ export function FairwayPlayerGameFingerprint({
           }
         />
 
-        {/* ════════════════ 2 · HERO — composite rating (one focal read) ════ */}
+        {/* ════════════════ 2 · HERO — compact decision summary ════════════ */}
         <InstrumentCluster
           ariaLabel="Composite rating"
-          balance="focal"
+          balance="even"
           primary={
             <InstrumentPanel
               depth="raised"
               tone="accent"
-              padding="lg"
+              padding="md"
               eyebrow="Composite rating"
               as="section"
-              className="flex h-full flex-col gap-4"
+              className="flex h-full min-h-[190px] flex-col justify-between gap-4 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-raise motion-reduce:transform-none"
             >
               <Readout
-                size="hero"
+                size="lg"
                 value={hasRating ? rating : undefined}
                 format={{ maximumFractionDigits: 0 }}
                 state={hasRating ? 'live' : 'awaiting'}
@@ -260,19 +288,47 @@ export function FairwayPlayerGameFingerprint({
             <InstrumentPanel
               key="trend"
               depth="base"
+              padding="md"
               header="Recent trend"
-              className="flex h-full flex-col gap-4"
+              className="flex h-full min-h-[190px] flex-col justify-center gap-4 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-raise motion-reduce:transform-none"
             >
               <TrendPulse trend={trend} />
             </InstrumentPanel>,
           ]}
         />
 
+        <nav aria-label="Jump to game area" className="min-w-0">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {orderedSections.map((section, index) => {
+              const leadMetric = section.metrics[0];
+              return (
+                <a
+                  key={section.key}
+                  href={`#fingerprint-${section.key}`}
+                  className="group min-w-0 rounded-fw-md border border-border-subtle bg-surface px-3 py-3 outline-none transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-300 hover:shadow-soft focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transform-none"
+                >
+                  <span className="block font-fw-mono text-eyebrow text-text-tertiary tabular-nums">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className="mt-1 block truncate font-fw-display text-label font-semibold text-text-primary">
+                    {section.category}
+                  </span>
+                  <span className="mt-1 block truncate font-fw-mono text-caption text-text-secondary tabular-nums">
+                    {leadMetric ? `${leadMetric.value} · ${leadMetric.label}` : section.sparse ? 'Calibrating' : 'Open area'}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </nav>
+
         {/* ════════════════ 3 · GAME AREAS — the six sections ═══════════════ */}
-        {orderedSections.map((section) => (
+        {orderedSections.map((section, index) => (
           <FingerprintSection
             key={section.key}
             section={section}
+            index={index}
+            pendingIds={pendingIds}
             onAction={handleAction}
           />
         ))}
@@ -339,9 +395,13 @@ function TrendPulse({ trend }: { trend: PlayerFingerprint['trend'] }) {
 
 function FingerprintSection({
   section,
+  index,
+  pendingIds,
   onAction,
 }: {
   section: SectionData;
+  index: number;
+  pendingIds: ReadonlySet<string>;
   onAction: (
     action: 'acknowledged' | 'dismissed' | 'create_focus_area',
     insightId: string,
@@ -349,28 +409,45 @@ function FingerprintSection({
 }) {
   const hasMetrics = section.metrics.length > 0;
   const hasInsights = section.insights.length > 0;
+  const leadInsights = section.insights.slice(0, 2);
+  const additionalInsights = section.insights.slice(2);
 
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="px-1 font-fw-display text-h3 font-medium text-text-primary">
-        {section.category}
-      </h2>
+    <section
+      id={`fingerprint-${section.key}`}
+      className="scroll-mt-28 overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-raise motion-reduce:transform-none"
+    >
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border-subtle bg-surface-tint px-4 py-4 sm:px-5 md:px-6">
+        <div className="flex min-w-0 items-baseline gap-3">
+          <span className="font-fw-mono text-eyebrow text-accent-700 tabular-nums">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <h2 className="font-fw-display text-h3 font-semibold text-text-primary">
+            {section.category}
+          </h2>
+        </div>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          {section.sparse
+            ? 'Calibrating'
+            : `${section.metrics.length} metrics · ${section.insights.length} insights`}
+        </span>
+      </header>
 
       {section.sparse ? (
-        <Surface elevation="border" padding="none">
+        <div className="p-4 sm:p-5 md:p-6">
           <EmptyState
             variant="subtle"
             title="Not enough data yet"
             description={`Needs ${SECTION_SAMPLE_FLOOR}+ rounds before this area calibrates.`}
           />
-        </Surface>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="grid grid-cols-1 gap-5 p-4 sm:p-5 md:p-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
           {/* ── Metrics + chart rail ── */}
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             {hasMetrics ? (
               <InstrumentPanel depth="base" padding="md" header="Key numbers">
-                <div className="flex flex-col gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
                   {section.metrics.map((m) => (
                     <MetricRow key={m.label} metric={m} />
                   ))}
@@ -382,51 +459,39 @@ function FingerprintSection({
           </div>
 
           {/* ── Evidence insights ── */}
-          <div className="flex flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-3">
             {hasInsights ? (
-              section.insights.slice(0, 5).map((insight, i) => (
-                <InsightCard
-                  key={insight.id}
-                  id={`insight-${insight.id}`}
-                  priority={toInsightPriority(insight.priority)}
-                  variant={i === 0 ? 'default' : 'compact'}
-                  title={insight.title}
-                  evidence={<InsightEvidenceLine insight={insight} />}
-                  actions={
-                    insight.status === 'acknowledged' ? (
-                      <Chip tone="success" size="sm">
-                        Acknowledged
-                      </Chip>
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => onAction('create_focus_area', insight.id)}
-                        >
-                          Make focus area
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => onAction('acknowledged', insight.id)}
-                        >
-                          Acknowledge
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onAction('dismissed', insight.id)}
-                        >
-                          Dismiss
-                        </Button>
-                      </div>
-                    )
-                  }
-                >
-                  {insight.content ? insight.content : null}
-                </InsightCard>
-              ))
+              <>
+                {leadInsights.map((insight, i) => (
+                  <FingerprintInsightCard
+                    key={insight.id}
+                    insight={insight}
+                    featured={i === 0}
+                    pending={pendingIds.has(insight.id)}
+                    onAction={onAction}
+                  />
+                ))}
+                {additionalInsights.length > 0 ? (
+                  <details className="group rounded-card border border-border-subtle bg-surface-sunken">
+                    <summary className="cursor-pointer list-none rounded-card px-4 py-3 font-fw-sans text-label font-semibold text-text-secondary outline-none transition-colors hover:bg-surface-tint hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus [&::-webkit-details-marker]:hidden">
+                      <span className="flex items-center justify-between gap-3">
+                        <span>View {additionalInsights.length} more insight{additionalInsights.length === 1 ? '' : 's'}</span>
+                        <span aria-hidden className="text-accent-700 transition-transform group-open:rotate-45">+</span>
+                      </span>
+                    </summary>
+                    <div className="flex flex-col gap-3 border-t border-border-subtle p-3">
+                      {additionalInsights.map((insight) => (
+                        <FingerprintInsightCard
+                          key={insight.id}
+                          insight={insight}
+                          pending={pendingIds.has(insight.id)}
+                          onAction={onAction}
+                        />
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
+              </>
             ) : (
               <Surface elevation="border" padding="none">
                 <EmptyState
@@ -443,16 +508,77 @@ function FingerprintSection({
   );
 }
 
+function FingerprintInsightCard({
+  insight,
+  featured = false,
+  pending,
+  onAction,
+}: {
+  insight: SectionData['insights'][number];
+  featured?: boolean;
+  pending: boolean;
+  onAction: (
+    action: 'acknowledged' | 'dismissed' | 'create_focus_area',
+    insightId: string,
+  ) => void;
+}) {
+  return (
+    <InsightCard
+      id={`insight-${insight.id}`}
+      priority={toInsightPriority(insight.priority)}
+      variant={featured ? 'default' : 'compact'}
+      title={insight.title}
+      evidence={<InsightEvidenceLine insight={insight} />}
+      actions={
+        insight.status === 'acknowledged' ? (
+          <Chip tone="success" size="sm">
+            Acknowledged
+          </Chip>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={pending}
+              onClick={() => onAction('create_focus_area', insight.id)}
+            >
+              {pending ? 'Working…' : 'Make focus area'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={pending}
+              onClick={() => onAction('acknowledged', insight.id)}
+            >
+              Acknowledge
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              onClick={() => onAction('dismissed', insight.id)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        )
+      }
+    >
+      {insight.content ? insight.content : null}
+    </InsightCard>
+  );
+}
+
 /* ── One metric row — label, value, tone dot, optional comparison ── */
 function MetricRow({ metric }: { metric: FingerprintMetric }) {
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className="flex items-center gap-2 font-fw-sans text-body-sm text-text-secondary">
+    <div className="min-w-0 rounded-fw-md bg-surface-sunken px-3 py-3">
+      <span className="flex min-w-0 items-center gap-2 font-fw-sans text-caption text-text-secondary">
         <ToneDot tone={metric.tone} />
-        {metric.label}
+        <span className="truncate">{metric.label}</span>
       </span>
-      <span className="flex items-baseline gap-2 text-right">
-        <span className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
+      <span className="mt-1.5 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">
           {metric.value}
         </span>
         {metric.comparison ? (
@@ -473,7 +599,14 @@ function ToneDot({ tone }: { tone: FingerprintMetric['tone'] }) {
       : tone === 'bad'
         ? 'bg-fw-danger'
         : 'bg-border-strong';
-  return <span aria-hidden className={`inline-block h-1.5 w-1.5 rounded-full ${cls}`} />;
+  const label = tone === 'good' ? 'Strength' : tone === 'bad' ? 'Needs attention' : 'Neutral';
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${cls}`}
+    />
+  );
 }
 
 /* ── Evidence line — the "why" behind the card, quoted verbatim ── */

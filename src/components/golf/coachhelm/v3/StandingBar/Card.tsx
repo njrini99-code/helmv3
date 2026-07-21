@@ -55,40 +55,46 @@ export function Card(props: CardProps) {
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
   const toneColor =
-    delta.tone === 'good' ? 'text-primary-700' :
-    delta.tone === 'bad'  ? 'text-red-600' :
-                            'text-warm-500';
+    delta.tone === 'good' ? 'text-fw-success' :
+    delta.tone === 'bad'  ? 'text-fw-danger' :
+                            'text-text-tertiary';
+
+  const subjectLabel = standingSubjectLabel(props.viewer_context, props.player_name);
 
   return (
     <div
       role="img"
       aria-label={ariaLabel}
       data-state={state}
-      className="glass-standard rounded-2xl shadow-glass p-4 md:p-5"
+      className="overflow-clip rounded-fw-md border border-border-subtle bg-surface p-4 shadow-soft transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-raise motion-reduce:transform-none md:p-5"
     >
       {/* Header: label + vs-team arrow */}
-      <div className="flex items-baseline justify-between gap-2 mb-3">
-        <h3 className="text-sm font-medium text-warm-900 tracking-[-0.01em]">
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <h3 className="font-fw-display text-body-sm font-semibold tracking-[-0.01em] text-text-primary">
           {props.metric_label}
         </h3>
         {showTeam && (
-          <span className={`text-xs tabular-nums ${toneColor}`}>
+          <span className={`shrink-0 font-fw-sans text-caption font-semibold tabular-nums ${toneColor}`}>
             {delta.arrow} vs team
           </span>
         )}
       </div>
 
-      {/* Value row: Team / You / PGA */}
-      <div className="flex items-baseline justify-between text-xs text-warm-600 mb-2 tabular-nums">
-        {showTeam && props.team_avg !== null ? (
-          <span>Team {formatValue(props.team_avg, props.unit)}</span>
-        ) : <span className="opacity-0">·</span>}
-        <span className="text-warm-900 font-medium text-sm">
-          {standingSubjectLabel(props.viewer_context, props.player_name)} {formatValue(props.player_value, props.unit)}
-        </span>
-        {props.pga_omitted
-          ? <span className="opacity-0">·</span>
-          : <span>{refLabel} {formatValue(props.pga_value, props.unit)}</span>}
+      {/* Explicit comparison cells — no cryptic loose labels floating over a rail. */}
+      <div className="mb-4 grid grid-cols-3 gap-2 tabular-nums">
+        <ComparisonCell
+          label="Team"
+          value={showTeam && props.team_avg !== null ? formatValue(props.team_avg, props.unit) : '—'}
+        />
+        <ComparisonCell
+          label={subjectLabel}
+          value={formatValue(props.player_value, props.unit)}
+          emphasis
+        />
+        <ComparisonCell
+          label={refLabel}
+          value={props.pga_omitted ? '—' : formatValue(props.pga_value, props.unit)}
+        />
       </div>
 
       {/* Bar */}
@@ -100,14 +106,14 @@ export function Card(props: CardProps) {
       />
 
       {/* Scale endpoints */}
-      <div className="flex items-baseline justify-between text-eyebrow text-warm-400 mt-1 tabular-nums">
+      <div className="mt-1 flex items-baseline justify-between font-fw-mono text-eyebrow text-text-tertiary tabular-nums">
         <span>{formatValue(props.scale.min, props.unit)}</span>
         <span>{formatValue(props.scale.max, props.unit)}</span>
       </div>
 
       {/* Cohort text */}
       {props.show_cohort_text !== false && cohortText && (
-        <p className={`text-xs mt-2 ${toneColor}`}>{cohortText}</p>
+        <p className={`mt-2 font-fw-sans text-caption font-medium ${toneColor}`}>{cohortText}</p>
       )}
 
       {state === 'cold-start' && (
@@ -115,6 +121,40 @@ export function Card(props: CardProps) {
           Team marker appears once 5+ teammates have 5+ rounds each.
         </p>
       )}
+    </div>
+  );
+}
+
+function ComparisonCell({
+  label,
+  value,
+  emphasis = false,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+}) {
+  return (
+    <div
+      className={
+        emphasis
+          ? 'min-w-0 rounded-fw-sm border border-accent-200 bg-accent-50 px-2.5 py-2 text-center'
+          : 'min-w-0 rounded-fw-sm bg-surface-sunken px-2.5 py-2 text-center'
+      }
+    >
+      <span className="sr-only">{label} {value}</span>
+      <span className="block truncate font-fw-display text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+        {label}
+      </span>
+      <strong
+        className={
+          emphasis
+            ? 'mt-0.5 block truncate font-fw-mono text-body-lg font-semibold text-accent-800 tabular-nums'
+            : 'mt-0.5 block truncate font-fw-mono text-body font-medium text-text-primary tabular-nums'
+        }
+      >
+        {value}
+      </strong>
     </div>
   );
 }

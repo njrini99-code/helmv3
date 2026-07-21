@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlayerCoachHelmNav } from './PlayerCoachHelmNav';
 
@@ -12,6 +12,7 @@ vi.mock('next/navigation', () => ({
 describe('PlayerCoachHelmNav', () => {
   beforeEach(() => {
     params = new URLSearchParams();
+    window.history.replaceState({}, '', '/golf/dashboard/coachhelm');
   });
 
   it('provides working URLs for every CoachHelm section', () => {
@@ -32,5 +33,17 @@ describe('PlayerCoachHelmNav', () => {
     expect(screen.getByRole('link', { name: 'Game profile' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/golf/dashboard/coachhelm?demo=1');
     expect(screen.getByRole('link', { name: 'Insights' })).toHaveAttribute('href', '/golf/dashboard/coachhelm?view=insights&demo=1');
+  });
+
+  it('switches sections immediately without a force-dynamic server navigation', () => {
+    render(<PlayerCoachHelmNav />);
+
+    fireEvent.click(screen.getByRole('link', { name: 'Insights' }));
+
+    expect(screen.getByRole('link', { name: 'Insights' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(window.location.search).toBe('?view=insights');
   });
 });

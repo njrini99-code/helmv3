@@ -186,6 +186,10 @@ export interface PlayersGridViewProps {
    * grid opens on that player instead of silently ignoring the param.
    */
   initialSelectedPlayerId?: string | null;
+  /** URL-backed nested tab when embedded in the consolidated CoachHelm desk. */
+  initialPlayersView?: 'grid' | 'areas';
+  /** Keeps the embedded Roster/Focus areas + player scope deep-linkable. */
+  onNavigationChange?: (state: { view: 'grid' | 'areas'; playerId: string | null }) => void;
   className?: string;
   /**
    * True when mounted by `PlayersDrill` inside the Brief home's stage
@@ -253,6 +257,8 @@ export function PlayersGridView({
   silentPostureByPlayer = {},
   loadError,
   initialSelectedPlayerId = null,
+  initialPlayersView,
+  onNavigationChange,
   className,
   embedded = false,
 }: PlayersGridViewProps) {
@@ -267,8 +273,15 @@ export function PlayersGridView({
   // actually matches the "Showing <name>" chip (F133 contract); landing on the
   // full roster while claiming a single player is a data lie.
   const [view, setView] = React.useState<'grid' | 'areas'>(
-    initialSelectedPlayerId ? 'areas' : 'grid',
+    initialPlayersView ?? (initialSelectedPlayerId ? 'areas' : 'grid'),
   );
+
+  // Unlike a useState initializer, this also honors browser navigation and
+  // same-page shallow URL changes after the embedded view has mounted.
+  React.useEffect(() => {
+    setSelectedPlayerId(initialSelectedPlayerId);
+    setView(initialPlayersView ?? (initialSelectedPlayerId ? 'areas' : 'grid'));
+  }, [initialSelectedPlayerId, initialPlayersView]);
 
   // Modal state — the shared FocusAreaModal owns the form lifecycle + saving.
   const [createOpen, setCreateOpen] = React.useState(false);
@@ -799,7 +812,13 @@ export function PlayersGridView({
       <Segmented
         size="sm"
         value={view}
-        onValueChange={(v) => setView(v as 'grid' | 'areas')}
+        onValueChange={(v) => {
+          const nextView = v as 'grid' | 'areas';
+          const nextPlayerId = nextView === 'grid' ? null : selectedPlayerId;
+          setView(nextView);
+          if (nextView === 'grid') setSelectedPlayerId(null);
+          onNavigationChange?.({ view: nextView, playerId: nextPlayerId });
+        }}
         options={[
           { value: 'grid', label: 'Roster' },
           { value: 'areas', label: 'Focus areas' },
@@ -848,7 +867,14 @@ export function PlayersGridView({
               Showing{' '}
               <span className="font-medium text-text-primary">{playerName(selectedPlayer)}</span>
             </span>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedPlayerId(null)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedPlayerId(null);
+                onNavigationChange?.({ view: 'areas', playerId: null });
+              }}
+            >
               Clear filter
             </Button>
           </div>
@@ -888,6 +914,7 @@ export function PlayersGridView({
                     onOpenAreas={() => {
                       setSelectedPlayerId(row.player.id);
                       setView('areas');
+                      onNavigationChange?.({ view: 'areas', playerId: row.player.id });
                     }}
                     onAddFocusArea={() => openCreate(row.player.id)}
                     onViewGenome={() =>
@@ -912,6 +939,7 @@ export function PlayersGridView({
                 onRowClick={(r) => {
                   setSelectedPlayerId(r.player.id);
                   setView('areas');
+                  onNavigationChange?.({ view: 'areas', playerId: r.player.id });
                 }}
                 emptyState={rosterEmptyState}
               />
@@ -1624,4 +1652,3 @@ function RosterHealthHeader({
     />
   );
 }
-
