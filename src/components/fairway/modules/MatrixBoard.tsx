@@ -28,7 +28,7 @@ import { PressTarget } from '../controls';
 import type { MatrixBoardProps, MatrixBoardRow as MatrixBoardRowData, MatrixColumn } from './types';
 
 /** Columns hidden below the 940px breakpoint (mockup `.h-tr`, `.h-sig`, `.sig`). */
-const HIDE_ON_MOBILE = new Set(['trend', 'signal']);
+const HIDE_ON_MOBILE = new Set(['scor', 'composite', 'trend', 'signal']);
 
 function trackFor(col: MatrixColumn, isFirst: boolean): string {
   if (isFirst) return 'minmax(120px,1.6fr)';
