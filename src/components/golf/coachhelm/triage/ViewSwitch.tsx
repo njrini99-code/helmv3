@@ -19,6 +19,7 @@ import type { TriageView } from './buildTriageViewModel';
 export interface ViewSwitchProps {
   view: TriageView;
   hrefFor: (view: TriageView) => string;
+  onSelect: (view: TriageView) => void;
 }
 
 const OPTIONS: ReadonlyArray<{ value: TriageView; label: string }> = [
@@ -27,7 +28,7 @@ const OPTIONS: ReadonlyArray<{ value: TriageView; label: string }> = [
   { value: 'effectiveness', label: 'Effectiveness' },
 ];
 
-export function ViewSwitch({ view, hrefFor }: ViewSwitchProps) {
+export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
   return (
     <nav
       aria-label="CoachHelm view"
@@ -41,6 +42,20 @@ export function ViewSwitch({ view, hrefFor }: ViewSwitchProps) {
             href={hrefFor(option.value)}
             replace
             scroll={false}
+            onClick={(event) => {
+              if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              ) {
+                return;
+              }
+              event.preventDefault();
+              onSelect(option.value);
+            }}
             aria-current={selected ? 'page' : undefined}
             className={cn(
               'relative inline-flex min-h-9 flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md px-4',

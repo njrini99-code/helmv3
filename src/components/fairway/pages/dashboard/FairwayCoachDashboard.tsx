@@ -21,18 +21,14 @@
  *     — no `.pill-soft`-on-Button, no bespoke Links.
  *   • Date range is a quiet Segmented control in a calm toolbar band (preserves
  *     the ?range router.push contract — logic unchanged).
- *   • NEW CoachHelm signal strip is the ONE glass-hero (InsightCard variant=hero)
- *     + a What's New / Open CoachHelm entry — fixing "AI absent from home". It is
- *     sourced ONLY from counts that exist (see coach-signal.ts); it NEVER renders
- *     an authoritative effectiveness/prediction-accuracy figure (data-gap:high).
  *   • Team KPIs are matte MetricCards that show honest insufficient-data when
  *     round coverage is low (never authoritative zeros, data-gap:medium).
  *   • Recent Rounds becomes a clean DataTable; Performance Trend + Team Pulse +
  *     Top Performers collapse into one calm "Team" region on matte Surfaces.
  *   • Coach-without-team becomes an OnboardingStep funnel, not a zeroed page.
  *
- * Rendered inside the `.fairway-ds` scope on `bg-canvas`. Exactly ONE glass
- * surface (the hero strip); every content card is matte. Single h1; slow
+ * Rendered inside the `.fairway-ds` scope on `bg-canvas`. Every content card is
+ * matte. Single h1; slow
  * cinematic motion via the primitives' own reveal (honors reduced motion).
  * ========================================================================== */
 
@@ -46,7 +42,6 @@ import {
   Surface,
   Inset,
   MetricCard,
-  InsightCard,
   DataTable,
   Segmented,
   Button,
@@ -72,7 +67,6 @@ import {
   IconCheck,
   IconGolf,
   IconTarget,
-  IconSparkles,
   IconArrowRight,
   IconClock,
   IconMapPin,
@@ -98,8 +92,7 @@ import type {
   ActionItem,
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
-import { deriveCoachSignal } from './coach-signal';
-import { buildCoachAttentionCounts, splitActionItems } from './attention-queue';
+import { splitActionItems } from './attention-queue';
 import { parseDueDate } from '@/components/fairway/pages/tasks/FairwayTasks';
 
 // Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
@@ -281,27 +274,6 @@ export function FairwayCoachDashboard({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [team?.join_code]);
-
-  // ONE canonical "needs you" count (attention-queue.ts): actionable tasks +
-  // pending roster approvals, announcements excluded. The hero, the approvals
-  // banner and the Action Items panel all now speak from this same total
-  // instead of each telling a different story. Approvals come from the same
-  // pending join-requests already fetched for the banner (no extra query);
-  // getTeamJoinRequests() returns pending-only, but we filter defensively so a
-  // self-fetched fallback can't over-count.
-  const attention = useMemo(
-    () =>
-      buildCoachAttentionCounts(
-        enhancedData?.actionItems ?? [],
-        (joinRequests ?? []).filter((r) => r.status === 'pending').length,
-      ),
-    [enhancedData?.actionItems, joinRequests],
-  );
-
-  const signal = useMemo(
-    () => deriveCoachSignal(enhancedData, stats.rosterSize, attention),
-    [enhancedData, stats.rosterSize, attention],
-  );
 
   const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
   // Memoized: TrendChart's Area/Line animate in on mount (isAnimationActive).
@@ -562,36 +534,7 @@ export function FairwayCoachDashboard({
           omitted (e.g. any other caller that hasn't wired it). */}
       <FairwayJoinRequestAlert requests={joinRequests} />
 
-      {/* ── 3 · THE ONE GLASS HERO — CoachHelm signal strip ────────────────── */}
-      <InsightCard
-        variant="hero"
-        priority={signal.priority}
-        overline={signal.overline}
-        title={signal.title}
-        icon={<IconSparkles size={20} />}
-        empty={signal.insufficient}
-        emptyMessage={signal.body}
-        actions={
-          <>
-            {/* One filled-green primary per view (masthead's "Add Player" owns
-                it) — this hero card's own CTA is demoted to secondary so it
-                doesn't compete with the page-level primary action. */}
-            <Button variant="secondary" size="sm" asChild>
-              <Link href="/golf/dashboard/intelligence">
-                <span>Open CoachHelm</span>
-                <IconArrowRight size={16} />
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/golf/dashboard/whats-new">What&apos;s New</Link>
-            </Button>
-          </>
-        }
-      >
-        {signal.body}
-      </InsightCard>
-
-      {/* ── 3.5 · TODAY — schedule timeline (matte, calm) ──────────────────── */}
+      {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
       <TodayPanel
         events={enhancedData?.todayEvents ?? []}
         scheduleError={enhancedData?.todayScheduleError ?? false}

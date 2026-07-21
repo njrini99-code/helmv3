@@ -183,6 +183,8 @@ export default async function PlayerGamePage({
     focusAreasResult,
     predictionsResult,
     themesResult,
+    countsRes,
+    trendRes,
   ] = await Promise.all([
     getPlayerFingerprint(playerId),
 
@@ -260,6 +262,12 @@ export default async function PlayerGamePage({
       ).catch(() => undefined);
       return null;
     }),
+
+    // These used to run only after every fingerprint/scouting query above had
+    // finished, adding an avoidable second loading phase to an already dense
+    // page. They are independent, so start them with the rest of the batch.
+    getAlertCounts(coach.id),
+    getPlayerTrendAnalysis(playerId).catch(() => null),
   ]);
 
   if (!fingerprint) notFound();
@@ -402,10 +410,6 @@ export default async function PlayerGamePage({
   // Honest signal-vs-noise trends (FairwayTrendBrain) for THIS player. Best-
   // effort: null on failure → the component renders its own honest-empty
   // state.
-  const [countsRes, trendRes] = await Promise.all([
-    getAlertCounts(coach.id),
-    getPlayerTrendAnalysis(playerId).catch(() => null),
-  ]);
   const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
   const trendData =
     trendRes && trendRes.success

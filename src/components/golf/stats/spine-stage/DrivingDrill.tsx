@@ -95,18 +95,18 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
   return (
     <DrillPanel title="Off the tee" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
-          <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
-            <Readout value={distAvg ?? undefined} unit="yds" label="Driving distance" size="md" state={distAvg != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[132px] min-w-0 items-center overflow-clip transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
+            <Readout className="w-full" value={distAvg ?? undefined} unit="yds" label="Driving distance" size="md" state={distAvg != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
           </InstrumentPanel>
-          <InstrumentPanel depth="base" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
-            <Readout value={distDriver ?? undefined} unit="yds" label="Driver only" size="md" state={distDriver != null ? 'live' : 'awaiting'} awaitingLabel="No driver shots" />
+          <InstrumentPanel depth="base" padding="md" className="flex min-h-[132px] min-w-0 items-center overflow-clip transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
+            <Readout className="w-full" value={distDriver ?? undefined} unit="yds" label="Driver only" size="md" state={distDriver != null ? 'live' : 'awaiting'} awaitingLabel="No driver shots" />
           </InstrumentPanel>
-          <InstrumentPanel depth="base" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
-            <Readout value={distNonDriver ?? undefined} unit="yds" label="Non-driver" size="md" state={distNonDriver != null ? 'live' : 'awaiting'} awaitingLabel="No non-driver shots" />
+          <InstrumentPanel depth="base" padding="md" className="flex min-h-[132px] min-w-0 items-center overflow-clip transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
+            <Readout className="w-full" value={distNonDriver ?? undefined} unit="yds" label="Non-driver" size="md" state={distNonDriver != null ? 'live' : 'awaiting'} awaitingLabel="No non-driver shots" />
           </InstrumentPanel>
-          <InstrumentPanel depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
-            <Readout value={fwPct ?? undefined} unit="%" label="Fairways hit" size="md" state={fwPct != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
+          <InstrumentPanel depth="raised" padding="md" className="flex min-h-[132px] min-w-0 items-center overflow-clip transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
+            <Readout className="w-full" value={fwPct ?? undefined} unit="%" label="Fairways hit" size="md" state={fwPct != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
           </InstrumentPanel>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">

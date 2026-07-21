@@ -225,63 +225,61 @@ export function FilmstripReview({
         </p>
       ) : null}
 
-      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)] lg:items-start">
-        <div className="min-w-0 space-y-6">
-          {/* ONE AI narrative — V2 composed-review body preferred, V1 rule-based
-              summary as the honest fallback. */}
-          <section>
-            <Eyebrow as="h2">The story</Eyebrow>
-            <p className="mt-2 font-fw-sans text-body leading-relaxed text-text-primary">{narrative}</p>
-          </section>
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch">
+        {/* ONE AI narrative — V2 composed-review body preferred, V1 rule-based
+            summary as the honest fallback. */}
+        <Surface elevation="border" padding="md" className="h-full space-y-3 overflow-clip">
+          <Eyebrow as="h2">The story</Eyebrow>
+          <p className="font-fw-sans text-body leading-relaxed text-text-primary">{narrative}</p>
+        </Surface>
 
-          {/* What to do next — practice priority + add-focus-area + share. */}
-          {(practicePriority || promoteSuggestion) ? (
-            <Surface elevation="shadow" padding="md" className="space-y-3 overflow-clip">
-              <Eyebrow as="h2">What to do next</Eyebrow>
-              {practicePriority ? <p className="font-fw-sans text-body-sm text-text-primary">{practicePriority}</p> : null}
-              <div className="flex flex-wrap items-center gap-2.5">
-                {promoteSuggestion ? (
-                  <PromoteToFocusAreaButton
-                    source="review"
-                    sourceId={reviewId}
-                    playerId={playerId}
-                    suggestedTitle={promoteSuggestion.title}
-                    suggestedDescription={promoteSuggestion.description}
-                    suggestedAreaType={promoteSuggestion.areaType}
-                    reviewContext={courseName || undefined}
-                  />
-                ) : null}
-                {!isCoachViewer ? (
-                  <Button variant="secondary" size="sm" onClick={onShare} disabled={sharedWithCoach}>
-                    {sharedWithCoach ? 'Shared with coach' : 'Share with coach'}
-                  </Button>
-                ) : null}
-              </div>
-            </Surface>
-          ) : null}
+        {strokesLostRows.length > 0 ? (
+          <Surface elevation="shadow" padding="md" className="h-full space-y-3 overflow-clip">
+            <Eyebrow as="h2">Where strokes went</Eyebrow>
+            <RailBars rows={strokesLostRows} labelWidth={112} />
+          </Surface>
+        ) : null}
 
+        {/* What to do next — practice priority + add-focus-area + share. */}
+        {(practicePriority || promoteSuggestion) ? (
+          <Surface elevation="shadow" padding="md" className="h-full space-y-3 overflow-clip">
+            <Eyebrow as="h2">What to do next</Eyebrow>
+            {practicePriority ? <p className="font-fw-sans text-body-sm text-text-primary">{practicePriority}</p> : null}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {promoteSuggestion ? (
+                <PromoteToFocusAreaButton
+                  source="review"
+                  sourceId={reviewId}
+                  playerId={playerId}
+                  suggestedTitle={promoteSuggestion.title}
+                  suggestedDescription={promoteSuggestion.description}
+                  suggestedAreaType={promoteSuggestion.areaType}
+                  reviewContext={courseName || undefined}
+                />
+              ) : null}
+              {!isCoachViewer ? (
+                <Button variant="secondary" size="sm" onClick={onShare} disabled={sharedWithCoach}>
+                  {sharedWithCoach ? 'Shared with coach' : 'Share with coach'}
+                </Button>
+              ) : null}
+            </div>
+          </Surface>
+        ) : null}
+
+        <div className="min-w-0">
           <CoachNotesSection reviewId={reviewId} initialNotes={coachNotes} canEdit={isCoachViewer} />
         </div>
-
-        <div className="min-w-0 space-y-6">
-          {strokesLostRows.length > 0 ? (
-            <Surface elevation="border" padding="md" className="space-y-2.5 overflow-clip">
-              <Eyebrow as="h2">Where strokes went</Eyebrow>
-              <RailBars rows={strokesLostRows} labelWidth={112} />
-            </Surface>
-          ) : null}
-
-          {standingBars.length > 0 ? (
-            <section className="space-y-3">
-              <div>
-                <Eyebrow as="h2">Where this sits</Eyebrow>
-                <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">Season standing vs PGA Tour and the team.</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3">{standingBars}</div>
-            </section>
-          ) : null}
-        </div>
       </div>
+
+      {standingBars.length > 0 ? (
+        <section className="space-y-3">
+          <div>
+            <Eyebrow as="h2">Where this sits</Eyebrow>
+            <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">Season standing vs PGA Tour and the team.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{standingBars}</div>
+        </section>
+      ) : null}
 
       <section className="space-y-3">
         <div>

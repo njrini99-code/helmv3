@@ -38,9 +38,10 @@ vi.mock('@/app/golf/actions/signal-groups', () => ({
 }));
 
 vi.mock('../BriefBand', () => ({ BriefBand: () => <div data-testid="brief-band" /> }));
-vi.mock('../ViewSwitch', () => ({ ViewSwitch: () => <div data-testid="view-switch" /> }));
 vi.mock('../SignalQueue', () => ({ SignalQueue: () => <div data-testid="signal-queue" /> }));
-vi.mock('../EffectivenessScoreboard', () => ({ EffectivenessScoreboard: () => <div /> }));
+vi.mock('../EffectivenessScoreboard', () => ({
+  EffectivenessScoreboard: () => <div data-testid="effectiveness-view" />,
+}));
 vi.mock('../SignalDossier', () => ({
   SignalDossier: ({ entry, onPromoted }: { entry: { signal: GroupedSignal } | null; onPromoted: (signal: GroupedSignal) => void }) => (
     <div data-testid="signal-dossier">
@@ -82,7 +83,23 @@ function renderDesk() {
       groups={[group()]}
       scannedAt={null}
       groupsError={null}
-      playersDrillProps={{} as never}
+      playersDrillProps={{
+        players: [
+          {
+            id: 'player-1',
+            first_name: 'Alex',
+            last_name: 'Rivera',
+            avatar_url: null,
+            graduation_year: null,
+            handicap: null,
+            hometown: null,
+            state: null,
+          },
+        ],
+        focusAreas: [],
+        coachId: 'coach-1',
+        playerStats: {},
+      }}
       effectivenessDrillProps={{} as never}
     />,
   );
@@ -93,6 +110,7 @@ describe('TriageDesk URL-driven drill-ins', () => {
     navigation.params = new URLSearchParams();
     navigation.replace.mockReset();
     navigation.refresh.mockReset();
+    window.history.replaceState({}, '', '/golf/dashboard/intelligence');
   });
 
   it('keeps the queue visible when a stale signal deep link no longer resolves', () => {
@@ -111,16 +129,31 @@ describe('TriageDesk URL-driven drill-ins', () => {
     expect(screen.getByTestId('signal-dossier').parentElement).not.toHaveClass('hidden');
   });
 
-  it('preserves player context after Prescribe and avoids a competing refresh', () => {
+  it('switches top-level tabs immediately without rerendering the server page', () => {
+    renderDesk();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Players' }));
+    expect(screen.getByTestId('players-view')).toBeInTheDocument();
+    expect(window.location.search).toBe('?view=players');
+    expect(navigation.replace).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Effectiveness' }));
+    expect(screen.getByTestId('effectiveness-view')).toBeInTheDocument();
+    expect(window.location.search).toBe('?view=effectiveness');
+  });
+
+  it('preserves player context after Prescribe while refreshing data in place', () => {
     navigation.params = new URLSearchParams('signal=signal-1');
+    window.history.replaceState({}, '', '/golf/dashboard/intelligence?signal=signal-1');
     renderDesk();
 
     fireEvent.click(screen.getByRole('button', { name: 'Test prescribe complete' }));
 
-    expect(navigation.replace).toHaveBeenCalledWith(
-      '/golf/dashboard/intelligence?view=players&player=player-1',
-      { scroll: false },
+    expect(window.location.search).toBe(
+      '?view=players&player=player-1&playersTab=areas',
     );
-    expect(navigation.refresh).not.toHaveBeenCalled();
+    expect(screen.getByTestId('players-view')).toBeInTheDocument();
+    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(navigation.refresh).toHaveBeenCalledTimes(1);
   });
 });

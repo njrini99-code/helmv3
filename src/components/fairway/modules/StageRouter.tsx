@@ -32,6 +32,36 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { StageRouterProps } from './types';
 
+const STAGE_NAVIGATION_EVENT = 'helm:stage-navigation';
+
+interface StageNavigationDetail {
+  param: string;
+  key: string;
+}
+
+/**
+ * Swap a query-backed stage without asking the App Router to rerender the
+ * force-dynamic server page. Every StageRouter view is already present in
+ * client props, so a native history update is the correct shallow operation.
+ */
+export function replaceStageUrl(param: string, key: string, homeKey: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const next = new URL(window.location.href);
+  if (key === homeKey) next.searchParams.delete(param);
+  else next.searchParams.set(param, key);
+  window.history.replaceState(
+    window.history.state,
+    '',
+    `${next.pathname}${next.search}${next.hash}`,
+  );
+  window.dispatchEvent(
+    new CustomEvent<StageNavigationDetail>(STAGE_NAVIGATION_EVENT, {
+      detail: { param, key },
+    }),
+  );
+  return true;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
  * useStage() — navigate the nearest StageRouter without prop-drilling
  * ──────────────────────────────────────────────────────────────────────── */
@@ -67,7 +97,19 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
   const requestedKey = searchParams.get(param);
   const knownKeys = React.useMemo(() => new Set(views.map((v) => v.key)), [views]);
   // Unknown/absent param → homeKey. Never render a blank stage.
-  const activeKey = requestedKey && knownKeys.has(requestedKey) ? requestedKey : homeKey;
+  const requestedActiveKey = requestedKey && knownKeys.has(requestedKey) ? requestedKey : homeKey;
+  const [activeKey, setActiveKey] = React.useState(requestedActiveKey);
+
+  React.useEffect(() => setActiveKey(requestedActiveKey), [requestedActiveKey]);
+  React.useEffect(() => {
+    const onStageNavigation = (event: Event) => {
+      const detail = (event as CustomEvent<StageNavigationDetail>).detail;
+      if (detail?.param !== param) return;
+      setActiveKey(knownKeys.has(detail.key) ? detail.key : homeKey);
+    };
+    window.addEventListener(STAGE_NAVIGATION_EVENT, onStageNavigation);
+    return () => window.removeEventListener(STAGE_NAVIGATION_EVENT, onStageNavigation);
+  }, [homeKey, knownKeys, param]);
 
   // Focus management: when the stage swaps to a new view (via open()/home()),
   // move focus onto the new view's container so keyboard/AT users land in
@@ -87,16 +129,17 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
 
   const open = React.useCallback(
     (key: string) => {
-      const next = new URLSearchParams(searchParams.toString());
-      if (key === homeKey) {
-        next.delete(param);
-      } else {
-        next.set(param, key);
+      const nextKey = knownKeys.has(key) ? key : homeKey;
+      setActiveKey(nextKey);
+      if (!replaceStageUrl(param, nextKey, homeKey)) {
+        const next = new URLSearchParams(searchParams.toString());
+        if (nextKey === homeKey) next.delete(param);
+        else next.set(param, nextKey);
+        const qs = next.toString();
+        router.replace(qs ? `?${qs}` : '?', { scroll: false });
       }
-      const qs = next.toString();
-      router.replace(qs ? `?${qs}` : '?', { scroll: false });
     },
-    [router, searchParams, param, homeKey],
+    [router, searchParams, param, homeKey, knownKeys],
   );
 
   const home = React.useCallback(() => open(homeKey), [open, homeKey]);

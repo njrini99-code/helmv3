@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/* eslint-disable helm/no-raw-button -- deliberately minimal context trigger */
 /**
  * StageRouter — smoke coverage for the param ↔ view mapping (Task 3).
  *
@@ -9,7 +10,7 @@
  * per-file override pattern used by
  * src/components/coach/discover/__tests__/DiscoverView.test.tsx.
  */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const replaceMock = vi.fn();
@@ -20,7 +21,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => mockSearchParams,
 }));
 
-import { StageRouter } from '../StageRouter';
+import { StageRouter, useStage } from '../StageRouter';
 import type { StageView } from '../types';
 
 const VIEWS: StageView[] = [
@@ -28,10 +29,21 @@ const VIEWS: StageView[] = [
   { key: 'putting', node: <p>Putting view content</p> },
 ];
 
+function StageTrigger() {
+  const stage = useStage();
+  return <button onClick={() => stage.open('putting')}>Open putting</button>;
+}
+
+const INTERACTIVE_VIEWS: StageView[] = [
+  { key: 'home', node: <StageTrigger /> },
+  { key: 'putting', node: <p>Putting view content</p> },
+];
+
 describe('StageRouter', () => {
   beforeEach(() => {
     replaceMock.mockClear();
     mockSearchParams = new URLSearchParams();
+    window.history.replaceState({}, '', '/golf/dashboard/stats');
   });
 
   it('renders the home view by default (no param present)', () => {
@@ -76,6 +88,16 @@ describe('StageRouter', () => {
     const stageview = container.querySelector('[data-slot="stageview"]');
     expect(stageview).not.toBeNull();
     expect(stageview).not.toHaveFocus();
+  });
+
+  it('swaps an already-loaded drill-in immediately and shallowly updates the URL', () => {
+    render(<StageRouter param="area" homeKey="home" views={INTERACTIVE_VIEWS} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open putting' }));
+
+    expect(screen.getByText('Putting view content')).toBeInTheDocument();
+    expect(window.location.search).toBe('?area=putting');
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it('moves focus to the new view container when the view changes (a re-mount with a new key)', () => {

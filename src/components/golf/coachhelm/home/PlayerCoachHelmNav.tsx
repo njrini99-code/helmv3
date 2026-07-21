@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
+import { replaceStageUrl } from '@/components/fairway/modules/StageRouter';
 
 const SECTIONS = [
   { key: 'home', label: 'Overview' },
@@ -20,7 +22,10 @@ export function PlayerCoachHelmNav() {
   const searchParams = useSearchParams();
   const { ref: fadeRef, fadeStyle } = useScrollFade<HTMLUListElement>('x');
   const requested = searchParams.get('view');
-  const active = requested && SECTION_KEYS.has(requested) ? requested : 'home';
+  const requestedActive = requested && SECTION_KEYS.has(requested) ? requested : 'home';
+  const [active, setActive] = useState(requestedActive);
+
+  useEffect(() => setActive(requestedActive), [requestedActive]);
 
   function hrefFor(key: string): string {
     const next = new URLSearchParams(searchParams.toString());
@@ -43,7 +48,23 @@ export function PlayerCoachHelmNav() {
             <li key={section.key} className="shrink-0">
               <Link
                 href={hrefFor(section.key)}
+                replace
                 scroll={false}
+                onClick={(event) => {
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  setActive(section.key);
+                  replaceStageUrl('view', section.key, 'home');
+                }}
                 aria-current={selected ? 'page' : undefined}
                 className={cn(
                   'relative inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-t-fw-sm px-3.5 py-2',
