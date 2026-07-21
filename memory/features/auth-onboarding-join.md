@@ -50,6 +50,7 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
 ```txt
 User signs in
   -> Supabase auth session
+  -> reset the shared idle marker in the successful login response
   -> role/profile lookup
   -> route to coach/player onboarding or dashboard
 
@@ -70,6 +71,7 @@ Join code
 ## Business Rules
 
 - Server actions must call `supabase.auth.getUser()` before database access.
+- Every successful password/demo sign-in must call `resetSessionIdleMarker()` before redirecting. The idle marker intentionally survives old sessions; failing to replace it makes middleware immediately invalidate a fresh session and forces a second sign-in.
 - Join codes are team-scoped and should be treated case-insensitively where the route expects that behavior.
 - Incomplete player onboarding should redirect to player onboarding with join context preserved.
 - A session that expires mid-request on `/golf/dashboard` (passes the top-of-page check, fails the data-fetch re-validation with `Not authenticated`) redirects to `/golf/login?returnTo=/golf/dashboard` instead of hitting the error boundary. Retryable auth failures (network / GoTrue 5xx) still surface to the error boundary — only a genuinely missing/expired session redirects.

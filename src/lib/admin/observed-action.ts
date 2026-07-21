@@ -32,6 +32,12 @@ export function isNextControlFlowError(err: unknown): boolean {
   return digest.startsWith('NEXT_REDIRECT') || digest === 'NEXT_NOT_FOUND';
 }
 
+/** Authentication/authorization rejections are expected access control. */
+export function isAdminAuthControlFlowError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return /^(Unauthorized|Forbidden|Not authenticated)$/i.test(err.message.trim());
+}
+
 /** Flood-collapse key (Noise Charter N4): `${action}:${errCode ?? errName}`. */
 function throttleKeyFor(name: string, err: unknown): string {
   let code: string | undefined;
@@ -99,7 +105,7 @@ export function withAdminObserved<Args extends unknown[], R>(
       });
       return result;
     } catch (err) {
-      if (!isNextControlFlowError(err)) {
+      if (!isNextControlFlowError(err) && !isAdminAuthControlFlowError(err)) {
         try {
           const throttleKey = throttleKeyFor(name, err);
           if (shouldEmit(throttleKey)) {

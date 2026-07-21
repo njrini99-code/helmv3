@@ -21,6 +21,8 @@ import { sanitizeAuthError } from '@/lib/db-error';
 import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
 import { logServerError } from '@/lib/server-error-logger';
 import { getAppBaseUrl } from '@/lib/app-base-url';
+import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
+import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 
 export type LoginResult = {
   success: boolean;
@@ -105,12 +107,12 @@ async function loginActionImpl(
   // Attempt login
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await signInWithPasswordResilient(supabase, {
     email: normalizedEmail,
     password,
   });
 
-  if (error) {
+  if (error || !data.user) {
     // Record failed attempt (database-persisted for lockout)
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
@@ -149,6 +151,8 @@ async function loginActionImpl(
       error: `Invalid email or password${attemptsWarning}`,
     };
   }
+
+  await resetSessionIdleMarker();
 
   // Successful login - reset both rate limits and lockout tracking
   await Promise.all([

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
 import { AdminMotionProvider } from './_motion-provider';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 export default async function AdminLayout({
   children,
@@ -10,8 +11,8 @@ export default async function AdminLayout({
 }) {
   const supabase = await createClient();
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     redirect('/golf/login');
   }
 

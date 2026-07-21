@@ -1,27 +1,11 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-
 export default async function CRMLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    redirect('/golf/login');
-  }
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (userData?.role !== 'admin') {
-    redirect('/golf/login');
-  }
-
+  // /golf/admin/layout.tsx already performs the resilient session check and
+  // admin-role gate for this entire subtree. Repeating both checks here added
+  // another auth-server round trip to every CRM navigation and doubled the
+  // chance that a transient GoTrue timeout looked like a signed-out session.
   return <>{children}</>;
 }

@@ -18,7 +18,11 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
-import { withAdminObserved, isNextControlFlowError } from '@/lib/admin/observed-action';
+import {
+  withAdminObserved,
+  isNextControlFlowError,
+  isAdminAuthControlFlowError,
+} from '@/lib/admin/observed-action';
 import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
 
 describe('isNextControlFlowError', () => {
@@ -26,6 +30,14 @@ describe('isNextControlFlowError', () => {
     expect(isNextControlFlowError({ digest: 'NEXT_REDIRECT;push;/golf;307' })).toBe(true);
     expect(isNextControlFlowError({ digest: 'NEXT_NOT_FOUND' })).toBe(true);
     expect(isNextControlFlowError(new Error('boom'))).toBe(false);
+  });
+});
+
+describe('isAdminAuthControlFlowError', () => {
+  it('recognizes exact access-control rejections without hiding real failures', () => {
+    expect(isAdminAuthControlFlowError(new Error('Unauthorized'))).toBe(true);
+    expect(isAdminAuthControlFlowError(new Error('Forbidden'))).toBe(true);
+    expect(isAdminAuthControlFlowError(new Error('Unauthorized database request failed'))).toBe(false);
   });
 });
 
@@ -130,6 +142,13 @@ describe('withAdminObserved', () => {
     const redirect = Object.assign(new Error('redirect'), { digest: 'NEXT_REDIRECT;replace;/x;307' });
     const wrapped = withAdminObserved('demo', {}, async () => { throw redirect; });
     await expect(wrapped()).rejects.toBe(redirect);
+    expect(mocks.logServerException).not.toHaveBeenCalled();
+  });
+
+  it('rethrows expected auth control flow without creating an incident', async () => {
+    const unauthorized = new Error('Unauthorized');
+    const wrapped = withAdminObserved('getAdminStats', {}, async () => { throw unauthorized; });
+    await expect(wrapped()).rejects.toBe(unauthorized);
     expect(mocks.logServerException).not.toHaveBeenCalled();
   });
 

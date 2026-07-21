@@ -25,6 +25,8 @@ import { captureServer } from '@/lib/analytics/posthog-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
+import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
+import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 
 export type LoginResult = {
   success: boolean;
@@ -100,12 +102,12 @@ async function loginActionImpl(
   // Attempt login
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await signInWithPasswordResilient(supabase, {
     email: normalizedEmail,
     password,
   });
 
-  if (error) {
+  if (error || !data.user) {
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
     // Log failed login attempt (fire-and-forget)
@@ -133,6 +135,11 @@ async function loginActionImpl(
       error: `Invalid email or password${attemptsWarning}`,
     };
   }
+
+  // Replace any stale marker from the previous session in the same response
+  // that sets the fresh Supabase auth cookies. Otherwise middleware sees the
+  // valid new user plus stale activity and immediately signs them out again.
+  await resetSessionIdleMarker();
 
   // Successful login - reset tracking. Best-effort: resetting the failed-
   // attempt counter must never break a successful login. resetLoginAttempts

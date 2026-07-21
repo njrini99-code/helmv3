@@ -61,6 +61,9 @@ vi.mock('@/lib/supabase/server', () => ({
     },
   })),
 }));
+vi.mock('@/lib/auth/session-idle-server', () => ({
+  resetSessionIdleMarker: vi.fn(async () => {}),
+}));
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(() => ({ from: mocks.adminFrom })),

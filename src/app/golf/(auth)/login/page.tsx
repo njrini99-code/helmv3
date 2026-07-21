@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 function LoginContent() {
   const prefersReducedMotion = useReducedMotion();
@@ -55,7 +56,7 @@ function LoginContent() {
 
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { user } = await getUserResilient(supabase);
       if (user) {
         const { data } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
         const admin = (data?.role as string) === 'admin';

@@ -13,7 +13,11 @@ export type ActionSoftFailureContext = NonNullable<Parameters<typeof logServerEr
 const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
   /^not authenticated$/i,
   /^unauthorized$/i,
+  /^forbidden$/i,
   /^you must be signed in/i,
+  /^invalid email or password/i,
+  /^too many login attempts/i,
+  /^account (?:is )?locked/i,
   /^coach or team not found$/i,
   /^player profile not found$/i,
   /^only coaches can/i,

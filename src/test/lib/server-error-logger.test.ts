@@ -32,7 +32,7 @@ vi.mock('@sentry/nextjs', () => ({
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: () => ({
-      insert: () => Promise.resolve({ data: null, error: null }),
+      upsert: () => Promise.resolve({ data: null, error: null }),
     }),
   }),
 }));

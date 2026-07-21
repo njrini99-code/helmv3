@@ -2,13 +2,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   inserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
+  transientFailures: {} as Record<string, number>,
 }));
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => ({
-      insert: (row: Record<string, unknown>) => {
+      upsert: (row: Record<string, unknown>) => {
         mocks.inserts.push({ table, row });
+        if ((mocks.transientFailures[table] ?? 0) > 0) {
+          mocks.transientFailures[table] = (mocks.transientFailures[table] ?? 0) - 1;
+          return Promise.reject(new TypeError('fetch failed'));
+        }
         return Promise.resolve({ data: null, error: null });
       },
     }),
@@ -30,6 +35,7 @@ import { logServerError } from '@/lib/server-error-logger';
 describe('server-error-logger bridge columns', () => {
   beforeEach(() => {
     mocks.inserts.length = 0;
+    mocks.transientFailures = {};
     // Writers are prod-gated by shouldPersistAdminTables(); the force-capture
     // hatch keeps these column-mapping tests exercising the real write path.
     vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '1');
@@ -102,5 +108,16 @@ describe('server-error-logger bridge columns', () => {
     await logServerError('no-feature', { action: 'test.none' });
     const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');
     expect(adminEvent?.row).toMatchObject({ feature: null });
+  });
+
+  it('retries a transient bridge failure with the same idempotency key', async () => {
+    mocks.transientFailures.error_logs = 1;
+
+    await logServerError('transient write', { action: 'test.retry' });
+
+    const attempts = mocks.inserts.filter((i) => i.table === 'error_logs');
+    expect(attempts).toHaveLength(2);
+    expect(attempts[0]!.row.id).toBeTruthy();
+    expect(attempts[1]!.row.id).toBe(attempts[0]!.row.id);
   });
 });

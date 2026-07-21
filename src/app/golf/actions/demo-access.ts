@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logLogin } from '@/lib/admin-logger';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
 import { isTransientAuthError, signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
+import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { DEMO_COACHHELM_LANDING_PATH, DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { getDemoCoachCredentials } from '@/lib/demo/config.server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -164,6 +165,8 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
         : 'Unable to start the demo session. Please try again or contact support.',
     };
   }
+
+  await resetSessionIdleMarker();
 
   // --- 5b. Stamp the session as a demo session ------------------------------
   //    `user_metadata.is_demo` is readable by BOTH client and server code

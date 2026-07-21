@@ -103,6 +103,7 @@ import { logError } from '@/lib/error-logging';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { nextStepLabel } from './components/next-step-label';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 // ============================================================================
 // SIDEBAR TABS + shell contracts
@@ -257,7 +258,50 @@ export default function CRMPage() {
   // send is configured) — surfaced as an "email auth" indicator in the bar.
   const [domainAuth, setDomainAuth] = useState<DomainAuthResult | null>(null);
 
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
+  const [sessionReady, setSessionReady] = useState(false);
+
+  const redirectToLogin = useCallback(() => {
+    const returnTo = `${window.location.pathname}${window.location.search}`;
+    window.location.assign(`/golf/login?returnTo=${encodeURIComponent(returnTo)}`);
+  }, []);
+
+  // The server layouts protect the initial request, but this page can remain
+  // mounted for hours. Once its refresh token expires, direct browser queries
+  // otherwise continue as `anon` and generate a burst of crm_coaches 42501s.
+  // Stop rendering data-fetching children until auth is confirmed, and leave
+  // the stale tab as soon as Supabase reports a sign-out.
+  useEffect(() => {
+    let active = true;
+
+    void getUserResilient(supabase)
+      .then(({ user }) => {
+        if (!active) return;
+        if (!user) {
+          redirectToLogin();
+          return;
+        }
+        setSessionReady(true);
+      })
+      .catch(() => {
+        if (active) redirectToLogin();
+      });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === 'SIGNED_OUT') {
+        setSessionReady(false);
+        redirectToLogin();
+      } else if (session?.user) {
+        setSessionReady(true);
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [redirectToLogin, supabase]);
 
   // ============================================================================
   // TAB NAVIGATION
@@ -448,13 +492,14 @@ export default function CRMPage() {
   ].join(', ');
 
   const fetchAllCoaches = useCallback(async () => {
+    if (!sessionReady) return;
     try {
       // Paginate: PostgREST caps a single response at 1000 rows, so the old
       // unbounded .select() silently returned only the first 1000 of ~2,300
       // coaches (and the lowest-priority cold leads at that), making every
       // count/funnel/list wrong. fetchAllRowsResult pages through all rows.
       // A final .order('id') tiebreaker keeps pagination deterministic.
-      const { data } = await fetchAllRowsResult((from, to) =>
+      const { data, error: coachesError } = await fetchAllRowsResult((from, to) =>
         supabase
           .from('crm_coaches')
           .select(CRM_COACHES_LIST_COLUMNS)
@@ -469,6 +514,13 @@ export default function CRMPage() {
           .order('updated_at', { ascending: false })
           .order('id', { ascending: true })
           .range(from, to));
+      if (coachesError) {
+        if (coachesError.code === '42501' || /permission denied|jwt/i.test(coachesError.message)) {
+          redirectToLogin();
+          return;
+        }
+        throw new Error(coachesError.message);
+      }
       // Precompute a lowercased search blob once at fetch time so we don't
       // call toLowerCase() 4x per row per keystroke in filteredCoaches.
       // The dropped columns (internal_comments, highlight_color, etc.) are
@@ -537,7 +589,7 @@ export default function CRMPage() {
     }
     // CRM_COACHES_LIST_COLUMNS is a stable string literal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]);
+  }, [redirectToLogin, sessionReady, supabase]);
 
   // Client-side filtering from allCoaches — eliminates server round-trips on every keystroke
   // and fixes the search bar flicker/reset bug caused by the fetch→re-render→state-reset loop.
@@ -723,6 +775,7 @@ export default function CRMPage() {
   // selector. Reuses the page's supabase client. text + html formats both work
   // for a Gmail compose body (the body is plain text either way).
   useEffect(() => {
+    if (!sessionReady) return;
     let cancelled = false;
     (async () => {
       const { data, error: tplError } = await supabase
@@ -751,7 +804,7 @@ export default function CRMPage() {
       );
     })();
     return () => { cancelled = true; };
-  }, [supabase]);
+  }, [sessionReady, supabase]);
 
   // Keep the armed template in sync with the latest DB content. The armed copy is
   // hydrated from localStorage (and may be stale if the template was edited after
@@ -778,6 +831,7 @@ export default function CRMPage() {
   // configured, also run the SPF/DKIM/DMARC self-check so the bar can warn if
   // the sending domain isn't authenticated (the #1 deliverability miss).
   useEffect(() => {
+    if (!sessionReady) return;
     let cancelled = false;
     getGmailSendStatus()
       .then((r) => {
@@ -806,7 +860,7 @@ export default function CRMPage() {
         );
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [sessionReady]);
 
   // ============================================================================
   // ACTIONS
@@ -1285,6 +1339,17 @@ export default function CRMPage() {
   // ============================================================================
   // RENDER
   // ============================================================================
+  if (!sessionReady) {
+    return (
+      <div className="min-h-dvh bg-cream-100 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-sm text-warm-600" role="status">
+          <span className="h-4 w-4 rounded-full border-2 border-warm-300 border-t-primary-500 animate-spin" />
+          Checking admin session…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-dvh bg-cream-100 flex">
       {/* ═══════════════════ Mobile Header ═══════════════════ */}

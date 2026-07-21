@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logLogin } from '@/lib/admin-logger';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
 import { isTransientAuthError, signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
+import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { BASEBALL_DEMO_LANDING_PATH } from '@/lib/demo/baseball-config';
 import {
   getBaseballDemoCoachCredentials,
@@ -177,6 +178,8 @@ async function enterBaseballDemoImpl(
         : 'The demo is not available right now. Please try again later or contact support.',
     };
   }
+
+  await resetSessionIdleMarker();
 
   // --- 6b. Stamp the session as a demo session ------------------------------
   //    `user_metadata.is_demo` is readable by BOTH client and server code
