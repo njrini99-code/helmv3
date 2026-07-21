@@ -25,6 +25,7 @@
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { RotateCw } from 'lucide-react';
 import {
   DrillPanel,
@@ -41,6 +42,7 @@ import {
   InlineNotice,
   InstrumentPanel,
   Readout,
+  Segmented,
   Skeleton,
   Surface,
   type LeakMapBucket,
@@ -189,6 +191,26 @@ function bandThresholds(pga: number | null): [number, number, number] {
  *  single missed putt (1 attempt, 0%) can't outrank a well-sampled cell. */
 const RX_MIN_N = 8;
 
+const PUTTING_DISTANCE_DETAIL = [
+  { label: '0-3ft', key: '0_3', make: 'puttMakePct0_3', efficiency: 'puttEff0_5', proximity: 'puttProximity0_5' },
+  { label: '3-5ft', key: '3_5', make: 'puttMakePct3_5', efficiency: 'puttEff0_5', proximity: 'puttProximity0_5' },
+  { label: '5-10ft', key: '5_10', make: 'puttMakePct5_10', efficiency: 'puttEff5_10', proximity: 'puttProximity5_10' },
+  { label: '10-15ft', key: '10_15', make: 'puttMakePct10_15', efficiency: 'puttEff10_15', proximity: 'puttProximity10_15' },
+  { label: '15-20ft', key: '15_20', make: 'puttMakePct15_20', efficiency: 'puttEff15_20', proximity: 'puttProximity15_20' },
+  { label: '20-25ft', key: '20_25', make: 'puttMakePct20_25', efficiency: 'puttEff20_25', proximity: 'puttProximity20Plus' },
+  { label: '25-30ft', key: '25_30', make: 'puttMakePct25_30', efficiency: 'puttEff25_30', proximity: 'puttProximity20Plus' },
+  { label: '30-35ft', key: '30_35', make: 'puttMakePct30_35', efficiency: 'puttEff30_35', proximity: 'puttProximity20Plus' },
+  { label: '35+ft', key: '35_plus', make: 'puttMakePct35Plus', efficiency: 'puttEff35Plus', proximity: 'puttProximity20Plus' },
+] as const satisfies ReadonlyArray<{
+  label: string;
+  key: string;
+  make: PuttMakePctField;
+  efficiency: keyof GolfStats;
+  proximity: keyof GolfStats;
+}>;
+
+type PuttingDetail = 'distance' | 'breaks' | 'misses';
+
 export interface PuttingDrillProps {
   detailedStats: GolfStats | null;
   leakMaps: PlayerLeakMaps | null;
@@ -211,6 +233,7 @@ export function PuttingDrill({
 }: PuttingDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+  const [detail, setDetail] = useState<PuttingDetail>('distance');
   const puttingByBreak = s?.puttingByBreak ?? null;
 
   // --- Hero: overall (all-break) ALL-PUTT make% by distance band ---------
@@ -334,19 +357,9 @@ export function PuttingDrill({
   return (
     <DrillPanel title="Putting" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <Eyebrow as="h3" tone="accent">Putt make curve</Eyebrow>
-            <span className="font-fw-sans text-caption text-text-tertiary">
-              Make % by distance
-            </span>
-          </div>
-          <MakeCurve points={heroPoints} ariaLabel={heroAriaLabel} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
           {efficiencyReadouts.map((r) => (
-            <InstrumentPanel key={r.label} depth="base" padding="md">
+            <InstrumentPanel key={r.label} depth="base" padding="md" className="min-h-[112px]">
               <Readout
                 value={r.value ?? undefined}
                 format={r.format}
@@ -360,75 +373,86 @@ export function PuttingDrill({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <div className="flex flex-col gap-4">
-            <RampMatrix
-              cols={BREAK_COLS.map((c) => c.colLabel)}
-              rows={rows}
-              legend={[
-                { band: 1, label: 'Well behind Tour' },
-                { band: 2, label: 'Behind' },
-                { band: 3, label: 'Near Tour' },
-                { band: 4, label: 'Ahead of Tour' },
-              ]}
-            />
-            <RailBars rows={breakOverviewRows} labelWidth={64} />
-          </div>
-          <div className="flex flex-col gap-4">
-            {worst ? (
-              <RxCard title="Work on next">
-                {worst.distance} putts breaking {worst.band.toLowerCase()} are converting at {Math.round(worst.pct)}%
-                (n={worst.n}) — the weakest cell with enough tracked putts to trust. Block practice there first.
-              </RxCard>
-            ) : (
-              <RxCard title="Work on next">
-                Not enough putts tracked per cell yet — every distance × break combination has fewer than {RX_MIN_N} recorded putts, so no cell is a reliable practice target.
-              </RxCard>
-            )}
-            {puttingCost > 0 ? (
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.
-              </p>
-            ) : null}
-            {leakError ? (
-              <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
-            ) : (
-              <LeakMap
-                title="Putt make %"
-                overline="Putting"
-                subtitle="Make rate by distance vs PGA Tour"
-                takeaway="Bands below the dashed Tour line are where putts are leaking."
-                direction="higher_better"
-                unit="percent"
-                data={leakMaps ? toBuckets(leakMaps.putting) : []}
-              />
-            )}
-          </div>
-        </div>
+        <Segmented
+          value={detail}
+          onValueChange={setDetail}
+          options={[
+            { value: 'distance', label: 'Distance' },
+            { value: 'breaks', label: 'Breaks' },
+            { value: 'misses', label: 'Misses' },
+          ]}
+          size="lg"
+          fullWidth
+          aria-label="Putting detail"
+        />
 
-        {hasOverallMissData ? (
-          <div className="flex flex-col gap-2">
-            <Eyebrow as="h4">Miss direction</Eyebrow>
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              Low = didn’t break enough (amateur miss) · High = broke too much (pro miss).
-            </p>
-            <RailBars rows={overallMissRows} labelWidth={56} />
-          </div>
+        {detail === 'distance' ? (
+          <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
+            <div>
+              <Eyebrow as="h4">Putting by distance</Eyebrow>
+              <p className="mt-1 text-caption text-text-tertiary">Make rate, where first putts start, average leave, and strokes to hole out.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[650px] border-separate border-spacing-y-2 text-left">
+                <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Make</th><th className="px-3">First-putt share</th><th className="px-3">Avg leave</th><th className="px-3">Efficiency</th><th className="px-3">Proximity</th></tr></thead>
+                <tbody>{PUTTING_DISTANCE_DETAIL.map((band) => {
+                  const num = (value: unknown, digits = 1) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
+                  return (
+                    <tr key={band.key} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary">
+                      <th className="rounded-l-fw-sm px-3 py-3 font-fw-sans font-medium text-text-primary">{band.label}</th>
+                      <td className="px-3">{num(s?.[band.make], 0)}%</td>
+                      <td className="px-3">{num(s?.firstPuttDistanceByBand?.[band.key], 0)}%</td>
+                      <td className="px-3">{num(s?.approachPuttAvgLeaveByBand?.[band.key], 1)} ft</td>
+                      <td className="px-3">{num(s?.[band.efficiency], 2)}</td>
+                      <td className="rounded-r-fw-sm px-3">{num(s?.[band.proximity], 1)} ft</td>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            </div>
+          </Surface>
         ) : null}
 
-        {breakMissGroups.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <Eyebrow as="h4">Miss tendency by break</Eyebrow>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {breakMissGroups.map((g) => (
-                <div key={g.label} className="flex flex-col gap-1.5">
-                  <span className="font-fw-sans text-caption text-text-tertiary">{g.label}</span>
-                  <RailBars rows={g.rows} labelWidth={40} />
-                </div>
-              ))}
+        {detail === 'breaks' ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+            <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
+              <div>
+                <Eyebrow as="h4">Make rate by distance and break</Eyebrow>
+                <p className="mt-1 text-caption text-text-tertiary">Swipe the table on smaller screens.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <RampMatrix cols={BREAK_COLS.map((c) => c.colLabel)} rows={rows} legend={[{ band: 1, label: 'Well behind Tour' }, { band: 2, label: 'Behind' }, { band: 3, label: 'Near Tour' }, { band: 4, label: 'Ahead of Tour' }]} />
+              </div>
+              <RailBars rows={breakOverviewRows} labelWidth={64} />
+            </Surface>
+            <div className="flex flex-col gap-4">
+              <RxCard title="Work on next">
+                {worst ? `${worst.distance} putts breaking ${worst.band.toLowerCase()} are converting at ${Math.round(worst.pct)}% (n=${worst.n}) — the weakest reliable practice target.` : `No distance × break cell has ${RX_MIN_N} tracked putts yet, so there is not a reliable practice target.`}
+              </RxCard>
+              {puttingCost > 0 ? <p className="font-fw-sans text-caption text-text-tertiary">Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.</p> : null}
             </div>
           </div>
         ) : null}
+
+        {detail === 'misses' ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <Surface elevation="shadow" padding="md" className="space-y-3">
+              <Eyebrow as="h4">Overall miss direction</Eyebrow>
+              <p className="text-caption text-text-tertiary">Low = didn’t break enough · High = broke too much.</p>
+              {hasOverallMissData ? <RailBars rows={overallMissRows} labelWidth={56} /> : <p className="text-body-sm text-text-tertiary">No tagged misses yet.</p>}
+            </Surface>
+            <Surface elevation="border" padding="md" className="space-y-3">
+              <Eyebrow as="h4">Miss tendency by break</Eyebrow>
+              {breakMissGroups.length > 0 ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{breakMissGroups.map((g) => <div key={g.label} className="flex flex-col gap-1.5"><span className="font-fw-sans text-caption text-text-tertiary">{g.label}</span><RailBars rows={g.rows} labelWidth={40} /></div>)}</div> : <p className="text-body-sm text-text-tertiary">No break-tagged misses yet.</p>}
+            </Surface>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-4 border-t border-border-subtle pt-6">
+          <Eyebrow as="h3" tone="accent">Putting visuals</Eyebrow>
+          <MakeCurve points={heroPoints} ariaLabel={heroAriaLabel} />
+          {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle="Make rate by distance vs PGA Tour" takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
+        </div>
       </div>
     </DrillPanel>
   );

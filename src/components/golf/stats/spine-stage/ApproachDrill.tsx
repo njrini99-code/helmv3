@@ -13,10 +13,21 @@
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { RotateCw } from 'lucide-react';
 import { DrillPanel, RailBars, useStage } from '@/components/fairway/modules';
 import type { RailBarRow } from '@/components/fairway/modules';
-import { Button, Eyebrow, InlineNotice, Skeleton, Surface, type LeakMapBucket } from '@/components/fairway';
+import {
+  Button,
+  Eyebrow,
+  InlineNotice,
+  InstrumentPanel,
+  Readout,
+  Segmented,
+  Skeleton,
+  Surface,
+  type LeakMapBucket,
+} from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { SprayChartResponse } from '@/app/golf/actions/stats-data-types';
@@ -97,6 +108,23 @@ const GIR_BANDS: ReadonlyArray<{ label: string; field: keyof GolfStats }> = [
   { label: '225+ yds', field: 'girPct225Plus' },
 ];
 
+const APPROACH_DETAIL_BANDS = [
+  { label: '30-75 yds', efficiency: 'approachEff30_75', proximity: 'approachProx30_75', miss: '30_75' },
+  { label: '75-100 yds', efficiency: 'approachEff75_100', proximity: 'approachProx75_100', miss: '75_100' },
+  { label: '100-125 yds', efficiency: 'approachEff100_125', proximity: 'approachProx100_125', miss: '100_125' },
+  { label: '125-150 yds', efficiency: 'approachEff125_150', proximity: 'approachProx125_150', miss: '125_150' },
+  { label: '150-175 yds', efficiency: 'approachEff150_175', proximity: 'approachProx150_175', miss: '150_175' },
+  { label: '175-200 yds', efficiency: 'approachEff175_200', proximity: 'approachProx175_200', miss: '175_200' },
+  { label: '200-225 yds', efficiency: 'approachEff200_225', proximity: 'approachProx200_225', miss: '200_225' },
+  { label: '225+ yds', efficiency: 'approachEff225Plus', proximity: 'approachProx225Plus', miss: '225_plus' },
+] as const;
+
+type ApproachDetail = 'gir' | 'efficiency' | 'misses';
+
+function fmtNumber(value: number | null | undefined, digits = 1): string {
+  return finite(value) === null ? '—' : finite(value)!.toFixed(digits);
+}
+
 /** Real-summary aria-label for the GIR-by-distance BandHistogram — the ONE
  *  non-interactive AT channel, so it must actually describe the data rather
  *  than just naming the chart (mirrors SprayField's `buildSprayAriaSummary`). */
@@ -133,6 +161,7 @@ export function ApproachDrill({
 }: ApproachDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+  const [detail, setDetail] = useState<ApproachDetail>('gir');
 
   // GIR by approach distance — only a percentage is tracked per band (no
   // per-band attempt count on `GolfStats`), so `n` stays honestly `null`
@@ -149,22 +178,119 @@ export function ApproachDrill({
     { label: 'Sand', pct: finite(s?.girPctFromSand) ?? 0, value: fmtPct(finite(s?.girPctFromSand)) },
   ];
 
+  const missRows: RailBarRow[] = [
+    { label: 'Short', pct: finite(s?.approachMissShortPct) ?? 0, value: fmtPct(finite(s?.approachMissShortPct)) },
+    { label: 'Long', pct: finite(s?.approachMissLongPct) ?? 0, value: fmtPct(finite(s?.approachMissLongPct)) },
+    { label: 'Left', pct: finite(s?.approachMissLeftPct) ?? 0, value: fmtPct(finite(s?.approachMissLeftPct)) },
+    { label: 'Right', pct: finite(s?.approachMissRightPct) ?? 0, value: fmtPct(finite(s?.approachMissRightPct)) },
+  ];
+
   return (
     <DrillPanel title="Approach" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Eyebrow as="h3" tone="accent">Approach shot spray</Eyebrow>
-          <SprayField group={sprayData?.approach ?? null} family="approach" compact />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            { label: 'GIR', value: finite(s?.girPercentage), unit: '%', digits: 0 },
+            { label: 'GIR / round', value: finite(s?.girPerRound), digits: 1 },
+            { label: 'Approach proximity', value: finite(s?.approachProximityAvg), unit: 'ft', digits: 1 },
+            { label: 'Proximity · GIR', value: finite(s?.approachProximityWhenHitGreen), unit: 'ft', digits: 1 },
+            { label: 'Proximity · missed GIR', value: finite(s?.approachProximityWhenMissedGreen), unit: 'ft', digits: 1 },
+          ].map((item) => (
+            <InstrumentPanel key={item.label} depth="base" padding="md" className="min-h-[112px]">
+              <Readout
+                value={item.value ?? undefined}
+                unit={item.unit}
+                format={{ maximumFractionDigits: item.digits }}
+                label={item.label}
+                size="sm"
+                state={item.value !== null ? 'live' : 'awaiting'}
+                awaitingLabel="No data"
+              />
+            </InstrumentPanel>
+          ))}
         </div>
-        <Surface elevation="shadow" padding="md" className="flex flex-col gap-3">
-          <Eyebrow as="h4">GIR by distance</Eyebrow>
-          <BandHistogram bands={girBands} ariaLabel={buildGirBandsAriaSummary(girBands)} />
-        </Surface>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <Surface elevation="border" padding="md" className="space-y-3">
-            <Eyebrow as="h4">GIR by lie</Eyebrow>
-            <RailBars rows={byLie} labelWidth={84} />
+
+        <Segmented
+          value={detail}
+          onValueChange={setDetail}
+          options={[
+            { value: 'gir', label: 'GIR detail' },
+            { value: 'efficiency', label: 'Efficiency' },
+            { value: 'misses', label: 'Misses' },
+          ]}
+          size="lg"
+          fullWidth
+          aria-label="Approach detail"
+        />
+
+        {detail === 'gir' ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+            <Surface elevation="shadow" padding="md" className="flex flex-col gap-3">
+              <Eyebrow as="h4">GIR by distance</Eyebrow>
+              <BandHistogram bands={girBands} ariaLabel={buildGirBandsAriaSummary(girBands)} />
+            </Surface>
+            <Surface elevation="border" padding="md" className="space-y-3">
+              <Eyebrow as="h4">GIR by lie</Eyebrow>
+              <RailBars rows={byLie} labelWidth={84} />
+            </Surface>
+          </div>
+        ) : null}
+
+        {detail === 'efficiency' ? (
+          <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
+            <div>
+              <Eyebrow as="h4">Approach efficiency by distance and lie</Eyebrow>
+              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out. Lower is better.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] border-separate border-spacing-y-2 text-left">
+                <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary">
+                  <tr><th className="px-3 py-1">Distance</th><th className="px-3">Proximity</th><th className="px-3">Fairway</th><th className="px-3">Rough</th><th className="px-3">Sand</th></tr>
+                </thead>
+                <tbody>
+                  {APPROACH_DETAIL_BANDS.map((band) => {
+                    const eff = s?.[band.efficiency];
+                    return (
+                      <tr key={band.label} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary">
+                        <th className="rounded-l-fw-sm px-3 py-3 font-fw-sans font-medium text-text-primary">{band.label}</th>
+                        <td className="px-3">{fmtNumber(s?.[band.proximity], 1)} ft</td>
+                        <td className="px-3">{fmtNumber(eff?.fairway, 2)}</td>
+                        <td className="px-3">{fmtNumber(eff?.rough, 2)}</td>
+                        <td className="rounded-r-fw-sm px-3">{fmtNumber(eff?.sand, 2)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </Surface>
+        ) : null}
+
+        {detail === 'misses' ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <Surface elevation="shadow" padding="md" className="space-y-3">
+              <Eyebrow as="h4">Overall miss pattern</Eyebrow>
+              <RailBars rows={missRows} labelWidth={64} />
+              <p className="text-caption text-text-tertiary">{s?.approachMissTotal ?? 0} tracked approach misses</p>
+            </Surface>
+            <Surface elevation="border" padding="md" className="space-y-3 overflow-hidden">
+              <Eyebrow as="h4">Misses by distance</Eyebrow>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[500px] text-caption">
+                  <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="p-2 text-left">Distance</th><th>Short</th><th>Long</th><th>Left</th><th>Right</th><th>n</th></tr></thead>
+                  <tbody>{APPROACH_DETAIL_BANDS.map((band) => {
+                    const miss = s?.approachMissByBand?.[band.miss];
+                    return <tr key={band.label} className="border-t border-border-subtle font-fw-mono tabular-nums"><th className="p-2 text-left font-fw-sans font-medium">{band.label}</th><td className="text-center">{fmtPct(finite(miss?.short))}</td><td className="text-center">{fmtPct(finite(miss?.long))}</td><td className="text-center">{fmtPct(finite(miss?.left))}</td><td className="text-center">{fmtPct(finite(miss?.right))}</td><td className="text-center">{miss?.total ?? '—'}</td></tr>;
+                  })}</tbody>
+                </table>
+              </div>
+            </Surface>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-3 border-t border-border-subtle pt-6">
+          <Eyebrow as="h3" tone="accent">Approach visuals</Eyebrow>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.3fr]">
           {leakError ? (
             <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
           ) : (
@@ -178,6 +304,8 @@ export function ApproachDrill({
               data={leakMaps ? toBuckets(leakMaps.approach) : []}
             />
           )}
+            <SprayField group={sprayData?.approach ?? null} family="approach" compact />
+          </div>
         </div>
       </div>
     </DrillPanel>
