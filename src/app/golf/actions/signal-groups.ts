@@ -226,7 +226,20 @@ async function getSignalGroupsImpl(
     const timestamps = [...(insightRows ?? []), ...(patternRows ?? [])]
       .map((row) => row.created_at)
       .filter((t): t is string => !!t);
-    const scannedAt = timestamps.length > 0 ? timestamps.reduce((latest, t) => (t > latest ? t : latest)) : null;
+    const latestSignalAt = timestamps.length > 0 ? timestamps.reduce((latest, t) => (t > latest ? t : latest)) : null;
+
+    // "Last scan" must describe an engine run, not merely the newest signal.
+    // A clean scan can legitimately emit nothing; using only signal.created_at
+    // made the timestamp appear stuck even though Scan team had completed.
+    // Generation logging is best-effort in the engine, so retain the newest
+    // signal timestamp as a truthful fallback if no log exists yet.
+    const { data: latestGenerationRows } = await supabase
+      .from('golf_insight_generation_log')
+      .select('created_at')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const scannedAt = latestGenerationRows?.[0]?.created_at ?? latestSignalAt;
 
     return { success: true, groups, scannedAt };
   } catch (error) {

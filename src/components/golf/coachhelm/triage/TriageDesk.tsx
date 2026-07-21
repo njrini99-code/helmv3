@@ -93,7 +93,9 @@ export function TriageDesk({
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [isScanning, startScanTransition] = useTransition();
 
-  function navigate(updates: Partial<{ view: string; filter: string | null; signal: string | null }>) {
+  function navigate(
+    updates: Partial<{ view: string; filter: string | null; signal: string | null; player: string | null }>,
+  ) {
     const params = new URLSearchParams(searchParams.toString());
     if (updates.view !== undefined) params.set('view', updates.view);
     if ('filter' in updates) {
@@ -108,6 +110,10 @@ export function TriageDesk({
       // on the first signal navigation so `onBack`'s `navigate({ signal:
       // null })` actually closes the dossier instead of re-resolving `id`.
       params.delete('id');
+    }
+    if ('player' in updates) {
+      if (updates.player) params.set('player', updates.player);
+      else params.delete('player');
     }
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -179,11 +185,21 @@ export function TriageDesk({
 
   function handlePromoted(signal: GroupedSignal) {
     setGroups((prev) => removeSignalFromGroups(prev, signal.id));
-    router.refresh();
-    navigate({ view: 'players', signal: null });
+    // The newly-created focus area belongs to this player. Keep that context
+    // through the drill-in so Prescribe opens the scoped development board
+    // instead of dropping the coach back at the full roster. `router.replace`
+    // re-runs the server page with `?player=` and therefore also reads the
+    // freshly revalidated focus-area data; a separate refresh here races the
+    // navigation and is unnecessary.
+    navigate({ view: 'players', signal: null, player: signal.playerId });
   }
 
-  const isSignalSelected = Boolean(selectedSignalId);
+  // A stale bookmark (or a signal reviewed in another tab) can leave a
+  // `?signal=` that no longer resolves. On narrow screens the queue is hidden
+  // whenever a detail is open, so key this off the resolved entry—not merely
+  // the raw URL param—or an invalid deep link strands the coach on an empty
+  // dossier with no Back control.
+  const isSignalSelected = Boolean(selectedEntry);
 
   return (
     <div className="flex flex-col gap-6">

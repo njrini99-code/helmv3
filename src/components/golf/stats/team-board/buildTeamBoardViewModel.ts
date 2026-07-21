@@ -52,6 +52,24 @@ function fmtScore(value: number | null): string {
   return n === null ? '—' : String(Math.round(n));
 }
 
+function fmtPercent(value: number | null): string {
+  const n = finite(value);
+  return n === null ? '—' : `${n.toFixed(1)}%`;
+}
+
+function fmtPerRound(value: number | null): string {
+  const n = finite(value);
+  return n === null ? '—' : n.toFixed(1);
+}
+
+function ratioPercent(made: number, attempts: number): number | null {
+  return attempts > 0 ? (made / attempts) * 100 : null;
+}
+
+function per18(total: number, holes: number): number | null {
+  return holes > 0 ? (total / holes) * 18 : null;
+}
+
 /** Render a raw metric value with its registry unit — percent/strokes/feet/yards/count. */
 export function formatMetricValue(value: number, unit: Unit): string {
   switch (unit) {
@@ -84,16 +102,9 @@ export interface RankInfo {
  * the count of players who DO carry a value for this metric, so a
  * cold-start category never inflates its own denominator.
  */
-export function rankByValue(
-  entries: ReadonlyArray<{ id: string; value: number | null }>,
-  direction: 'higher_better' | 'lower_better',
-): Map<string, RankInfo> {
-  const usable = entries.filter(
-    (e): e is { id: string; value: number } => e.value !== null && Number.isFinite(e.value),
-  );
-  const sorted = [...usable].sort((a, b) =>
-    direction === 'higher_better' ? b.value - a.value : a.value - b.value,
-  );
+export function rankByValue(entries: ReadonlyArray<{ id: string; value: number | null }>, direction: 'higher_better' | 'lower_better'): Map<string, RankInfo> {
+  const usable = entries.filter((e): e is { id: string; value: number } => e.value !== null && Number.isFinite(e.value));
+  const sorted = [...usable].sort((a, b) => (direction === 'higher_better' ? b.value - a.value : a.value - b.value));
   const of = sorted.length;
   const out = new Map<string, RankInfo>();
   sorted.forEach((entry, i) => out.set(entry.id, { rank: i + 1, of }));
@@ -132,7 +143,10 @@ export type ScoringTrendVerdict = 'improving' | 'declining' | 'stable';
 /** Classify a player's scoring_trend delta through the canonical shared threshold. Null delta = no signal yet (cold-start), NOT "stable". */
 export function scoringTrendVerdict(delta: number | null): ScoringTrendVerdict | null {
   if (delta === null || !Number.isFinite(delta)) return null;
-  return classifyTrendDelta(delta, { lowerIsBetter: true, threshold: SCORE_TREND_THRESHOLD });
+  return classifyTrendDelta(delta, {
+    lowerIsBetter: true,
+    threshold: SCORE_TREND_THRESHOLD,
+  });
 }
 
 export interface SignalToneInput {
@@ -148,17 +162,16 @@ export interface SignalToneInput {
  */
 export function signalToneFor(input: SignalToneInput): SignalTone {
   if (input.isTopPerformer || input.trend === 'improving') return 'hot';
-  if (
-    input.trend === 'declining' ||
-    input.topInsightPriority === 'high' ||
-    input.topInsightPriority === 'critical'
-  ) {
+  if (input.trend === 'declining' || input.topInsightPriority === 'high' || input.topInsightPriority === 'critical') {
     return 'watch';
   }
   return 'quiet';
 }
 
-const CATEGORY_PRIORITY: ReadonlyArray<{ key: 'putt' | 'app' | 'tee' | 'short'; label: string }> = [
+const CATEGORY_PRIORITY: ReadonlyArray<{
+  key: 'putt' | 'app' | 'tee' | 'short';
+  label: string;
+}> = [
   { key: 'putt', label: 'Putting' },
   { key: 'app', label: 'Approach' },
   { key: 'tee', label: 'Off the tee' },
@@ -174,12 +187,7 @@ const CATEGORY_PRIORITY: ReadonlyArray<{ key: 'putt' | 'app' | 'tee' | 'short'; 
  * instead. Ties favor putting (the most common early leak), via
  * `CATEGORY_PRIORITY`'s iteration order + a strict `>` (first-seen wins).
  */
-export function worstCategoryLabel(ranks: {
-  tee: RankInfo | null;
-  app: RankInfo | null;
-  short: RankInfo | null;
-  putt: RankInfo | null;
-}): string | null {
+export function worstCategoryLabel(ranks: { tee: RankInfo | null; app: RankInfo | null; short: RankInfo | null; putt: RankInfo | null }): string | null {
   let worst: { label: string; pct: number } | null = null;
   for (const { key, label } of CATEGORY_PRIORITY) {
     const r = ranks[key];
@@ -195,9 +203,7 @@ export function worstCategoryLabel(ranks: {
 // ============================================================================
 
 /** The player's lowest-team-percentile standing row — the "worst metric" the inline expand band names. Ties break on metric id for determinism. */
-export function worstStandingMetric(
-  map: Map<MetricId, PlayerStanding> | undefined,
-): { metric: MetricId; standing: PlayerStanding } | null {
+export function worstStandingMetric(map: Map<MetricId, PlayerStanding> | undefined): { metric: MetricId; standing: PlayerStanding } | null {
   if (!map) return null;
   let worst: { metric: MetricId; standing: PlayerStanding } | null = null;
   for (const [metric, standing] of map) {
@@ -230,6 +236,21 @@ export interface TeamBoardPlayerInput {
    */
   roundsPlayed18: number;
   scoringAverage18: number | null;
+  fairwayPct: number | null;
+  fairwayHits: number;
+  fairwayAttempts: number;
+  girPct: number | null;
+  girHits: number;
+  girAttempts: number;
+  scramblingPct: number | null;
+  scramblesMade: number;
+  scrambleAttempts: number;
+  puttsPerRound: number | null;
+  totalPutts: number;
+  holesWithPutts: number;
+  birdiesPerRound: number | null;
+  totalBirdies: number;
+  holesWithScore: number;
   /** recent-minus-prior normalized-score delta; null = not enough rounds for a signal yet (never a fabricated 0). */
   scoringTrend: number | null;
   lastRoundScore: number | null;
@@ -269,6 +290,11 @@ export interface TeamBoardRowViewModel {
     worstMetricValue: string | null;
     sgPutt: string;
     lastRound: string;
+    fairways: string;
+    gir: string;
+    scrambling: string;
+    puttsPerRound: string;
+    birdiesPerRound: string;
     links: { fullStats: string; fingerprint: string; prescribe: string };
   };
 }
@@ -281,11 +307,21 @@ export interface TeamBoardViewModel {
     trajectory: { improving: number; steady: number; declining: number };
     rounds30d: number;
   };
+  fundamentals: {
+    fairwayPct: number | null;
+    girPct: number | null;
+    scramblingPct: number | null;
+    puttsPerRound: number | null;
+    birdiesPerRound: number | null;
+  };
   rows: TeamBoardRowViewModel[];
 }
 
 /** SG category → RankCell column, in the mockup's Tee/App/Short/Putt order (all higher-is-better). */
-const RANK_CATEGORY_METRICS: ReadonlyArray<{ key: 'tee' | 'app' | 'short' | 'putt'; metric: MetricId }> = [
+const RANK_CATEGORY_METRICS: ReadonlyArray<{
+  key: 'tee' | 'app' | 'short' | 'putt';
+  metric: MetricId;
+}> = [
   { key: 'tee', metric: 'sg_ott' },
   { key: 'app', metric: 'sg_approach' },
   { key: 'short', metric: 'sg_around_green' },
@@ -308,7 +344,10 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
   };
   for (const { key, metric } of RANK_CATEGORY_METRICS) {
     categoryRanks[key] = rankByValue(
-      players.map((p) => ({ id: p.id, value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null })),
+      players.map((p) => ({
+        id: p.id,
+        value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null,
+      })),
       'higher_better',
     );
   }
@@ -348,7 +387,11 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
 
     const isTopPerformer = p.composite !== null && topComposite !== null && p.composite === topComposite;
     const trend = scoringTrendVerdict(p.scoringTrend);
-    const tone = signalToneFor({ isTopPerformer, trend, topInsightPriority: p.topInsightPriority });
+    const tone = signalToneFor({
+      isTopPerformer,
+      trend,
+      topInsightPriority: p.topInsightPriority,
+    });
 
     let label: string;
     if (tone === 'hot') {
@@ -380,6 +423,11 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
         worstMetricValue: worst && worstCfg ? formatMetricValue(worst.standing.player_value, worstCfg.unit) : null,
         sgPutt: fmtSg(standing?.get('sg_putting')?.player_value ?? null),
         lastRound: fmtScore(p.lastRoundScore),
+        fairways: fmtPercent(p.fairwayPct),
+        gir: fmtPercent(p.girPct),
+        scrambling: fmtPercent(p.scramblingPct),
+        puttsPerRound: fmtPerRound(p.puttsPerRound),
+        birdiesPerRound: fmtPerRound(p.birdiesPerRound),
         links: {
           fullStats: `/golf/dashboard/stats?player=${p.id}`,
           fingerprint: `/golf/dashboard/players/${p.id}/game`,
@@ -403,12 +451,48 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
   // `scoringAverage18`, so `weightedMean` naturally excludes them (matching
   // the dashboard, which only ever sums 18-hole scores).
   const teamScoringRaw = weightedMean(
-    players.map((p) => ({ value: p.scoringAverage18, weight: p.roundsPlayed18 })),
+    players.map((p) => ({
+      value: p.scoringAverage18,
+      weight: p.roundsPlayed18,
+    })),
   );
   const teamScoring = teamScoringRaw === null ? '—' : teamScoringRaw.toFixed(1);
 
   const teamSgRaw = weightedMean(
-    players.map((p) => ({ value: standingByPlayer.get(p.id)?.get('sg_total')?.player_value ?? null, weight: p.roundsPlayed })),
+    players.map((p) => ({
+      value: standingByPlayer.get(p.id)?.get('sg_total')?.player_value ?? null,
+      weight: p.roundsPlayed,
+    })),
+  );
+
+  // Pool raw successes and attempts across the roster. Averaging player
+  // percentages would give a one-round player the same influence as a
+  // full-season player and can materially misstate the team figure.
+  const totals = players.reduce(
+    (sum, p) => ({
+      fairwayHits: sum.fairwayHits + p.fairwayHits,
+      fairwayAttempts: sum.fairwayAttempts + p.fairwayAttempts,
+      girHits: sum.girHits + p.girHits,
+      girAttempts: sum.girAttempts + p.girAttempts,
+      scramblesMade: sum.scramblesMade + p.scramblesMade,
+      scrambleAttempts: sum.scrambleAttempts + p.scrambleAttempts,
+      totalPutts: sum.totalPutts + p.totalPutts,
+      holesWithPutts: sum.holesWithPutts + p.holesWithPutts,
+      totalBirdies: sum.totalBirdies + p.totalBirdies,
+      holesWithScore: sum.holesWithScore + p.holesWithScore,
+    }),
+    {
+      fairwayHits: 0,
+      fairwayAttempts: 0,
+      girHits: 0,
+      girAttempts: 0,
+      scramblesMade: 0,
+      scrambleAttempts: 0,
+      totalPutts: 0,
+      holesWithPutts: 0,
+      totalBirdies: 0,
+      holesWithScore: 0,
+    },
   );
 
   let improving = 0;
@@ -428,6 +512,13 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
       teamSgRaw,
       trajectory: { improving, steady, declining },
       rounds30d,
+    },
+    fundamentals: {
+      fairwayPct: ratioPercent(totals.fairwayHits, totals.fairwayAttempts),
+      girPct: ratioPercent(totals.girHits, totals.girAttempts),
+      scramblingPct: ratioPercent(totals.scramblesMade, totals.scrambleAttempts),
+      puttsPerRound: per18(totals.totalPutts, totals.holesWithPutts),
+      birdiesPerRound: per18(totals.totalBirdies, totals.holesWithScore),
     },
     rows,
   };

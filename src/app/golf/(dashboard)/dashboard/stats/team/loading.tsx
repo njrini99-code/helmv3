@@ -12,8 +12,8 @@ const SKELETON_ROW_COUNT = 6;
  *
  * `TeamStatsBoard` replaced the per-player `InstrumentPanel` tile grid with
  * ONE `MatrixBoard` (spec §5.2 / §3.3 Matrix Board): a sticky KPI band, a
- * header row, then a ranked row per player — roster board FIRST, the team
- * Strokes Gained hero + leak maps demoted below it. This fallback mirrors
+ * header row, then a ranked row per player — roster board FIRST, followed by
+ * team fundamentals, Strokes Gained, and leak maps. This fallback mirrors
  * that exact order inside the same `fairwayScope(...)` → `max-w-[1536px]`
  * column `TeamStatsBoard` renders, so the skeleton→content handoff is a
  * quiet fade, not a layout jump.
@@ -25,23 +25,14 @@ const SKELETON_ROW_COUNT = 6;
 export default function TeamStatsLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <div
-        role="status"
-        aria-busy="true"
-        aria-live="polite"
-        className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24"
-      >
+      <div role="status" aria-busy="true" aria-live="polite" className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
         <span className="sr-only">Loading team stats…</span>
 
         {/* ── MASTHEAD: ViewHeader — eyebrow · title · description · secondary actions ── */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-3">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
-              Team Stats
-            </p>
-            <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">
-              Team Stats
-            </h1>
+            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">Team Stats</p>
+            <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">Team Stats</h1>
             <Skeleton className="h-4 w-64 max-w-full" />
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
@@ -73,13 +64,7 @@ export default function TeamStatsLoading() {
 
             {/* Board rows */}
             {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'flex items-center justify-between gap-4 px-5 py-2.5',
-                  i < SKELETON_ROW_COUNT - 1 && 'border-b border-border-subtle',
-                )}
-              >
+              <div key={i} className={cn('flex items-center justify-between gap-4 px-5 py-2.5', i < SKELETON_ROW_COUNT - 1 && 'border-b border-border-subtle')}>
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <Skeleton className="h-3.5 w-28" />
                   <Skeleton className="h-2.5 w-20" />
@@ -96,6 +81,33 @@ export default function TeamStatsLoading() {
             ))}
           </div>
         </section>
+
+        {/* ── TEAM FUNDAMENTALS — percentage rails + per-18 scoring detail ── */}
+        <div className="mt-10 rounded-card border border-border-subtle bg-surface p-6">
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,1.65fr)_minmax(21rem,0.85fr)] xl:items-center">
+            <div>
+              <Skeleton className="h-3 w-36" />
+              <Skeleton className="mt-3 h-6 w-44" />
+              <Skeleton className="mt-4 h-3.5 w-80 max-w-full" />
+              <div className="mt-6 space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-3.5 w-20 flex-shrink-0" />
+                    <Skeleton className="h-2.5 flex-1 rounded-full" />
+                    <Skeleton className="h-3.5 w-10 flex-shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-border-subtle pt-6 xl:border-l xl:border-t-0 xl:pl-8 xl:pt-0">
+              <div className="grid grid-cols-3 gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* ── TEAM STROKES GAINED — demoted below the board ── */}
         <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
