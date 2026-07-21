@@ -9,7 +9,7 @@
  * fallback — the separate LLM opener card + the old A–F/highlights/areas
  * prose stack are retired), the strokes-lost `RailBars`, a "what to do next"
  * block (practice priority + add-focus-area CTA + share-with-coach), coach
- * notes, the season standing band, and ONE "Full breakdown" `DrillPanel`
+ * notes, the season standing band, and one always-visible round breakdown
  * (front/back, putting bands, momentum, driving/penalties, short game —
  * previously computed but hidden).
  *
@@ -23,8 +23,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Eyebrow, Surface, Button, PressTarget } from '@/components/fairway';
-import { DrillPanel, RailBars } from '@/components/fairway/modules';
+import { Eyebrow, Surface, Button } from '@/components/fairway';
+import { RailBars } from '@/components/fairway/modules';
 import type { ShotInput } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -102,7 +102,6 @@ export function FilmstripReview({
   holes,
   playerName,
 }: FilmstripReviewProps) {
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [shotsByHole, setShotsByHole] = useState<Map<number, ShotInput[]> | null>(null);
   const [shotsError, setShotsError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
@@ -289,9 +288,14 @@ export function FilmstripReview({
         </section>
       ) : null}
 
-      {/* Full breakdown — one door for the old nine accordions. */}
-      {breakdownOpen ? (
-        <DrillPanel title="Full breakdown" backLabel="Back to summary" onBack={() => setBreakdownOpen(false)}>
+      <section className="space-y-3">
+        <div>
+          <Eyebrow as="h2">Round breakdown</Eyebrow>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
+            The key scoring, putting, driving, and short-game details from this round.
+          </p>
+        </div>
+        <Surface elevation="shadow" padding="md">
           <ReviewBreakdown
             frontBack={frontBack}
             puttingRamp={puttingRamp}
@@ -299,16 +303,8 @@ export function FilmstripReview({
             drivingPenaltyLines={drivingPenaltyLines}
             shortGameRows={shortGameRows}
           />
-        </DrillPanel>
-      ) : (
-        <PressTarget
-          onClick={() => setBreakdownOpen(true)}
-          aria-expanded={breakdownOpen}
-          className="w-full rounded-fw-lg border border-border-subtle bg-surface px-5 py-3.5 text-left font-fw-sans text-body-sm font-semibold text-accent-700 transition-colors duration-150 hover:bg-surface-tint"
-        >
-          Full breakdown →
-        </PressTarget>
-      )}
+        </Surface>
+      </section>
     </div>
   );
 }

@@ -60,6 +60,8 @@ export interface SprayFieldProps {
   family: SprayChartShotFamily;
   /** Optional height/sizing class applied to the root instrument panel. */
   heightClass?: string;
+  /** Use a dashboard-scale plot instead of the default near-square hero. */
+  compact?: boolean;
 }
 
 /* ---------------------------------------------------------------------------
@@ -306,7 +308,7 @@ export function buildSprayAriaSummary(
  * Component
  * ------------------------------------------------------------------------- */
 
-export function SprayField({ group, family, heightClass }: SprayFieldProps) {
+export function SprayField({ group, family, heightClass, compact = false }: SprayFieldProps) {
   const reduced = useReducedMotion() ?? false;
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
@@ -358,7 +360,7 @@ export function SprayField({ group, family, heightClass }: SprayFieldProps) {
       <div
         role="img"
         aria-label={ariaSummary}
-        style={heightClass ? undefined : { minHeight: 280 }}
+        style={heightClass ? undefined : { minHeight: compact ? 220 : 280 }}
         className={cn(
           'flex w-full flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-border-subtle bg-inset p-6 text-center',
           heightClass,
@@ -402,7 +404,10 @@ export function SprayField({ group, family, heightClass }: SprayFieldProps) {
       </div>
 
       {/* the field */}
-      <div className="relative w-full" style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}>
+      <div
+        className={cn('relative w-full', compact && 'h-[260px] sm:h-[300px]')}
+        style={compact ? undefined : { aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+      >
         <svg
           viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
           role="img"

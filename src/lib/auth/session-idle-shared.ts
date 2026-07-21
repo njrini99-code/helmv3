@@ -13,8 +13,15 @@
 /** Cookie holding the epoch-ms timestamp of the last real user activity. */
 export const SESSION_IDLE_COOKIE = 'sb_last_activity';
 
-/** Idle window: sign the user out after this long without activity. */
-export const SESSION_IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+/**
+ * Idle window for authenticated staff sessions.
+ *
+ * Five minutes was far too aggressive for a coaching product: reviewing a
+ * round, watching film, or working in another tab could leave a fully rendered
+ * dashboard on screen whose next click was intercepted by middleware and sent
+ * to login. Keep the security boundary, but make it a work-session boundary.
+ */
+export const SESSION_IDLE_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 /**
  * Idle window for SHARED DEMO sessions (golf/baseball demo gate visitors).
@@ -25,7 +32,7 @@ export const SESSION_IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
  * (the June 2026 mass-send failure mode) and loses the prospect. The demo
  * account holds no real user data — a longer window costs nothing.
  */
-export const DEMO_SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+export const DEMO_SESSION_IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 /**
  * While the tab is visible, refresh the activity marker on this interval so

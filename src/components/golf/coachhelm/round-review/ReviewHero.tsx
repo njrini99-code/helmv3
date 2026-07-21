@@ -26,13 +26,14 @@ import { formatHoleDetail, formatToPar } from './buildReviewViewModel';
 
 // Only renders once a reader explicitly taps "View shot path" — code-split so
 // its framer-motion + SVG reconstruction never lands in the review page's
-// first-load JS. Fallback mirrors the `hero` size variant it replaces.
+// first-load JS. Keep the inline detail compact: this is supporting evidence,
+// not a second full-page hero nested inside the review hero.
 const HoleShotPath = dynamic(
   () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((m) => m.HoleShotPath),
   {
     ssr: false,
     loading: () => (
-      <Skeleton className="w-full max-w-[280px] h-[560px] md:max-w-[320px] md:h-[640px] rounded-fw-md" />
+      <Skeleton className="h-[320px] w-[140px] rounded-fw-md md:h-[360px] md:w-[160px]" />
     ),
   },
 );
@@ -185,14 +186,14 @@ export function ReviewHero({
         </div>
 
         {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
-          <div className="mt-5 flex justify-center border-t border-border-subtle pt-5">
+          <div className="mt-5 flex justify-center rounded-fw-md border border-border-subtle bg-surface-tint p-4 shadow-soft">
             <HoleShotPath
               hole_number={openHole}
               par={openPar}
               yardage={openMeta?.yardage ?? null}
               score={openMeta?.score ?? null}
               shots={openHoleShots}
-              size="hero"
+              size="card"
             />
           </div>
         ) : null}

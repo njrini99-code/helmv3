@@ -11,8 +11,9 @@
  * ========================================================================== */
 
 import { forwardRef } from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { Badge, PressTarget } from '@/components/fairway';
+import { Badge } from '@/components/fairway';
 import type { GroupedSignal, SignalSeverity } from '@/lib/coachhelm/signal-grouping';
 import { formatAgeDays, formatCategoryLabel, severityLabel } from './buildTriageViewModel';
 
@@ -42,21 +43,23 @@ export interface SignalRowProps {
    *  visible row, so a keyboard-only user always has one reachable row
    *  instead of every row landing on -1. */
   tabbable: boolean;
-  onSelect: () => void;
+  href: string;
 }
 
-export const SignalRow = forwardRef<HTMLButtonElement, SignalRowProps>(function SignalRow(
-  { signal, selected, tabbable, onSelect },
+export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function SignalRow(
+  { signal, selected, tabbable, href },
   ref,
 ) {
   return (
-    <PressTarget
+    <Link
       ref={ref}
+      href={href}
+      replace
+      scroll={false}
       role="option"
       aria-selected={selected}
       data-signal-id={signal.id}
       tabIndex={tabbable ? 0 : -1}
-      onClick={onSelect}
       className={cn(
         'flex w-full items-start gap-2.5 rounded-fw-sm px-3 py-2.5 text-left',
         'border transition-colors [transition-duration:150ms]',
@@ -85,6 +88,6 @@ export const SignalRow = forwardRef<HTMLButtonElement, SignalRowProps>(function 
       <span className="flex-shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary">
         {formatAgeDays(signal.ageDays)}
       </span>
-    </PressTarget>
+    </Link>
   );
 });

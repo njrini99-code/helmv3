@@ -46,7 +46,7 @@ describe('updateSession — /admin idle timeout (#730 coverage)', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } }, error: null });
     mockSignOut.mockResolvedValue({ error: null });
 
-    const staleTimestamp = Date.now() - 10 * 60 * 1000; // 10 min ago > 5 min window
+    const staleTimestamp = Date.now() - 9 * 60 * 60 * 1000; // 9h ago > 8h window
     const req = buildRequest('/admin/errors', `sb_last_activity=${staleTimestamp}`);
 
     const res = await updateSession(req);
@@ -63,7 +63,7 @@ describe('updateSession — /admin idle timeout (#730 coverage)', () => {
   it('does not idle-timeout a super admin whose session activity is within the window', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } }, error: null });
 
-    const freshTimestamp = Date.now() - 60 * 1000; // 1 min ago, inside 5-min window
+    const freshTimestamp = Date.now() - 60 * 1000; // 1 min ago, inside work-session window
     const req = buildRequest('/admin', `sb_last_activity=${freshTimestamp}`);
 
     const res = await updateSession(req);

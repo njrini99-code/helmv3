@@ -23,7 +23,6 @@ import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 
 // ============================================================================
@@ -117,12 +116,26 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // `.catch()`-degraded: `loadActiveGoalsForPlayers` and `loadCoachIntents`
   // throw on a DB error (unlike the `.success`-shaped actions above), so a
   // hiccup on either must not blank the whole page. ──────────────────────
-  const [overviewResult, countsRes, signalGroupsResult, causalByPlayer, coachIntents] = await Promise.all([
+  const [
+    overviewResult,
+    countsRes,
+    signalGroupsResult,
+    causalByPlayer,
+    coachIntents,
+    coachHelmOverviewResult,
+    effectivenessResult,
+    performanceResult,
+    patternResult,
+  ] = await Promise.all([
     getTeamOverview(teamId),
     getAlertCounts(coach.id),
     getSignalGroups(teamId),
     getTeamCausalRelationships(teamId).catch(() => ({}) as Record<string, CausalRelationshipRow[]>),
     loadCoachIntents(coach.id).catch(() => new Map<string, CoachPlayerIntent>()),
+    getCoachHelmOverview(teamId),
+    getInsightEffectiveness(teamId),
+    getPredictionPerformance(teamId),
+    getPatternImpact(teamId),
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
   const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
@@ -151,46 +164,12 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const players: PlayersGridPlayer[] = rawPlayers ?? [];
   const playerIds = players.map((p) => p.id);
 
-  // ── Progress recompute — MUST be awaited before the focus-area SELECT
-  // below. `runFocusAreaProgressForPlayers` writes golf_player_focus_areas.
-  // current_value; this used to be kicked off from inside an un-awaited
-  // `goalsAndStandingPromise` IIFE while the SELECT ran immediately after it
-  // (both only gated on `playerIds`), so the read reliably won the race and
-  // the grid showed pre-recompute progress for the entire page load. Mirrors
-  // the evaluate-then-read ordering the player side already uses (coachhelm/
-  // page.tsx: `await Promise.all([evaluateAndPersistGoals, evaluateAndPersistFocusAreas])`
-  // BEFORE `loadActiveGoals`). Bounded by roster size — each driver is one
-  // batched query across the whole active roster (not a per-player round
-  // trip), so this adds one bounded pass, not N; best-effort try/catch
-  // (mirrors development/page.tsx P1-07) so a hiccup here falls through to
-  // last-known values instead of failing the whole page.
-  try {
-    await Promise.all([
-      runGoalProgressForPlayers(playerIds),
-      runFocusAreaProgressForPlayers(playerIds),
-    ]);
-  } catch {
-    /* progress refresh is best-effort; fall through to last-known goals */
-  }
-
-  // ── `players` drill goals/standing extra — a restored port of the
-  // pre-redirect development/page.tsx read (PlayersGridView.goalsByPlayer +
-  // playerNameById), dropped when that route consolidated into this one.
-  // Kicked off here (not awaited yet) so it runs concurrently with the
-  // focus-area/stats reads below — both only depend on the recompute above
-  // having finished, not on each other; only awaited once needed, right
-  // before `playersLoadError`. The goals/standing reads are individually
-  // `.catch()`-degraded since `loadActiveGoalsForPlayers` can throw.
-  const goalsAndStandingPromise: Promise<
-    [Map<string, Goal[]>, Map<string, Map<MetricId, PlayerStanding>>]
-  > = Promise.all([
-    loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
-    loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
-  ]);
-
-  const { data: focusAreas, error: focusAreasError } =
+  // Page loads are read-only. Progress evaluation belongs to round ingestion /
+  // scheduled refreshes; running two write-heavy recomputations here made every
+  // tab click wait on database writes before the controls could hydrate.
+  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer] = await Promise.all([
     playerIds.length > 0
-      ? await supabase
+      ? supabase
           .from('golf_player_focus_areas')
           .select(
             `id, player_id, coach_id, area_type, title, description, status, target_metric,
@@ -200,32 +179,45 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
           )
           .in('player_id', playerIds)
           .order('created_at', { ascending: false })
-      : { data: [], error: null };
+      : Promise.resolve({ data: [], error: null }),
+    playerIds.length > 0
+      ? supabase
+          .from('golf_player_stats_cache')
+          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round')
+          .in('player_id', playerIds)
+      : Promise.resolve({ data: [], error: null }),
+    loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
+    loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
+  ]);
+  const { data: focusAreas, error: focusAreasError } = focusResult;
+  const { data: statsRows } = statsResult;
 
   const sourceInsightIds = Array.from(
     new Set((focusAreas || []).map((fa) => fa.from_insight_id).filter((id): id is string => Boolean(id))),
   );
   const outcomeByInsightId: Record<string, string> = {};
-  if (sourceInsightIds.length > 0) {
-    const { data: insightOutcomes } = await supabase
-      .from('golf_coach_insights')
-      .select('id, outcome_status')
-      .in('id', sourceInsightIds)
-      .not('outcome_status', 'is', null);
-    for (const row of insightOutcomes || []) {
-      if (row.outcome_status) outcomeByInsightId[row.id] = row.outcome_status;
-    }
-  }
-
   const reviewIds = Array.from(
     new Set((focusAreas || []).map((fa) => fa.from_review_id).filter((id): id is string => Boolean(id))),
   );
+  const [insightOutcomesResult, reviewRowsResult] = await Promise.all([
+    sourceInsightIds.length > 0
+      ? supabase
+      .from('golf_coach_insights')
+      .select('id, outcome_status')
+      .in('id', sourceInsightIds)
+          .not('outcome_status', 'is', null)
+      : Promise.resolve({ data: [], error: null }),
+    reviewIds.length > 0
+      ? supabase.from('golf_round_reviews').select('id, round_id').in('id', reviewIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  for (const row of insightOutcomesResult.data || []) {
+      if (row.outcome_status) outcomeByInsightId[row.id] = row.outcome_status;
+  }
+
   const roundIdByReviewId: Record<string, string> = {};
-  if (reviewIds.length > 0) {
-    const { data: reviewRows } = await supabase.from('golf_round_reviews').select('id, round_id').in('id', reviewIds);
-    for (const row of reviewRows || []) {
+  for (const row of reviewRowsResult.data || []) {
       if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
-    }
   }
 
   const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
@@ -236,13 +228,6 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
   })) as unknown as PlayersGridFocusArea[];
 
-  const { data: statsRows } =
-    playerIds.length > 0
-      ? await supabase
-          .from('golf_player_stats_cache')
-          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round')
-          .in('player_id', playerIds)
-      : { data: [] };
   const gridStats: Record<string, PlayersGridStats> = {};
   for (const row of statsRows || []) {
     gridStats[row.player_id] = {
@@ -276,7 +261,6 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
 
   // ── Assemble the goals/causal/silent-posture extras (ported verbatim from
   // development/page.tsx, adapted to this page's variable names). ─────────
-  const [goalsByPlayerMap, standingByPlayer] = await goalsAndStandingPromise;
   const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
   for (const pid of playerIds) {
     const g = goalsByPlayerMap.get(pid) ?? [];
@@ -299,14 +283,6 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       silentPostureByPlayer[pid] = true;
     }
   }
-
-  // ── `effectiveness` drill reads — copied from analytics/coachhelm/page.tsx. ─
-  const [coachHelmOverviewResult, effectivenessResult, performanceResult, patternResult] = await Promise.all([
-    getCoachHelmOverview(teamId),
-    getInsightEffectiveness(teamId),
-    getPredictionPerformance(teamId),
-    getPatternImpact(teamId),
-  ]);
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>

@@ -4,12 +4,12 @@
  * Covers: auth-gated round fetch + course-name casing (#109, carried over
  * from the pre-filmstrip page), and that `FilmstripReview` actually mounts
  * with the hero (score/to-par/mix line), the strokes-lost section, the
- * Share-with-Coach CTA, and the "Full breakdown" DrillPanel toggle wired to
- * a complete `RoundReviewContent` fixture.
+ * Share-with-Coach CTA, and the always-visible round breakdown wired to a
+ * complete `RoundReviewContent` fixture without a redundant nested view.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, waitFor, fireEvent } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
 
 // --- Mocks (must precede the page import) ---------------------------------
@@ -309,15 +309,11 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     expect(shareButton).toBeEnabled();
   });
 
-  it('toggles the Full breakdown DrillPanel open on click', async () => {
-    const { findByRole, getByRole, getByText } = renderAsPlayer();
+  it('shows one inline round breakdown without a nested review level', async () => {
+    const { findByText, queryByRole } = renderAsPlayer();
 
-    const openButton = await findByRole('button', { name: 'Full breakdown →' });
-    fireEvent.click(openButton);
-
-    await waitFor(() => {
-      expect(getByRole('button', { name: 'Back to summary' })).toBeInTheDocument();
-    });
-    expect(getByText('Full breakdown')).toBeInTheDocument();
+    await findByText('Round breakdown');
+    expect(queryByRole('button', { name: 'Full breakdown →' })).not.toBeInTheDocument();
+    expect(queryByRole('button', { name: 'Back to summary' })).not.toBeInTheDocument();
   });
 });

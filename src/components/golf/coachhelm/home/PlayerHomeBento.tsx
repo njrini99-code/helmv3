@@ -84,7 +84,7 @@ export function PlayerHomeBento({
   const showThemes = isThemesEnabled() && themes.length > 0;
 
   return (
-    <Bento>
+    <Bento separated>
       <BentoCell
         label="Performance snapshot"
         span={2}

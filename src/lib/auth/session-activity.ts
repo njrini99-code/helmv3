@@ -1,7 +1,7 @@
 /**
  * Session Activity Tracking
  *
- * Enforces an idle-session timeout: after SESSION_IDLE_TIMEOUT_MS (5 minutes) of
+ * Enforces an idle-session timeout: after SESSION_IDLE_TIMEOUT_MS of
  * no user activity while the tab is hidden, the user is signed out and must log
  * in again. While the tab is visible, a heartbeat keeps the session alive so
  * reading a dashboard without mouse/keyboard does not log the user out. Shares the
@@ -219,6 +219,7 @@ export function useSessionActivity() {
     // Track real user interaction. Throttled so we don't rewrite the cookie on
     // every mousemove.
     const activityEvents = [
+      'pointerdown',
       'mousedown',
       'mousemove',
       'keydown',
@@ -239,7 +240,11 @@ export function useSessionActivity() {
     };
 
     activityEvents.forEach((event) => {
-      window.addEventListener(event, handleActivity, { passive: true });
+      // Capture is intentional: navigation controls can start a server request
+      // from their React click handler. Record the interaction before that
+      // request reaches middleware so an active user's click can never be
+      // mistaken for idle time.
+      window.addEventListener(event, handleActivity, { passive: true, capture: true });
     });
 
     // Mobile Safari / PWA reopen restores from bfcache WITHOUT a network request,
@@ -255,7 +260,7 @@ export function useSessionActivity() {
         clearInterval(checkIntervalRef.current);
       }
       activityEvents.forEach((event) => {
-        window.removeEventListener(event, handleActivity);
+        window.removeEventListener(event, handleActivity, { capture: true });
       });
       document.removeEventListener('visibilitychange', syncTabVisibility);
       window.removeEventListener('pageshow', syncTabVisibility);
