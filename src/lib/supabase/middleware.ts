@@ -504,11 +504,13 @@ export async function updateSession(request: NextRequest) {
         },
       },
       global: {
-        // 5s HTTP abort (tighter than server.ts's 10s): middleware runs on
-        // EVERY request — a hung auth server must fail fast into
-        // getUserResilient's transient path, never hold page loads open.
+        // Middleware sits in front of every document/action request. Give
+        // GoTrue a short verification window, then fall back to the locally
+        // stored, sanity-checked session; route data still goes through RLS.
+        // A 5s attempt plus retry exceeded the middleware execution budget and
+        // caused blank pages across the entire authenticated app.
         fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
-          const signal = options.signal ?? AbortSignal.timeout(5_000);
+          const signal = options.signal ?? AbortSignal.timeout(1_500);
           return fetch(fetchUrl, { ...options, signal });
         },
       },
@@ -523,7 +525,7 @@ export async function updateSession(request: NextRequest) {
   // funnels through Vercel egress IPs into Supabase's per-IP rate limits — a
   // throttled auth server must degrade to the local session, not read as
   // "signed out" and bounce every active user to login (resilient-get-user.ts).
-  const { user, degraded } = await getUserResilient(supabase);
+  const { user, degraded } = await getUserResilient(supabase, { retryTransient: false });
   const activeTeamCookie = request.cookies.get(ACTIVE_BASEBALL_TEAM_COOKIE)?.value ?? null;
 
   // ── Helm Bridge Layer 1: /admin gate ──────────────────────────────────────

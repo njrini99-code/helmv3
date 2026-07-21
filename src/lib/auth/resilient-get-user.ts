@@ -171,16 +171,21 @@ export async function signInWithPasswordResilient(
  * rejected the session (or there is no local session at all) — never because
  * the auth server was briefly unreachable.
  */
-export async function getUserResilient(supabase: AuthClientLike): Promise<ResilientUserResult> {
+export async function getUserResilient(
+  supabase: AuthClientLike,
+  options: { retryTransient?: boolean } = {},
+): Promise<ResilientUserResult> {
   const first = await supabase.auth.getUser();
   if (first.data.user) return { user: first.data.user, degraded: false };
   if (!isTransientAuthError(first.error)) return { user: null, degraded: false };
 
-  await jitteredDelay();
+  if (options.retryTransient !== false) {
+    await jitteredDelay();
 
-  const second = await supabase.auth.getUser();
-  if (second.data.user) return { user: second.data.user, degraded: false };
-  if (!isTransientAuthError(second.error)) return { user: null, degraded: false };
+    const second = await supabase.auth.getUser();
+    if (second.data.user) return { user: second.data.user, degraded: false };
+    if (!isTransientAuthError(second.error)) return { user: null, degraded: false };
+  }
 
   // Auth server still unavailable — fall back to the locally-stored session.
   // getSession() reads the cookie without a verification round-trip; if there
