@@ -154,14 +154,17 @@ export function ApproachDrill({
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <Eyebrow as="h3" tone="accent">Approach shot spray</Eyebrow>
-          <SprayField group={sprayData?.approach ?? null} family="approach" />
+          <SprayField group={sprayData?.approach ?? null} family="approach" compact />
         </div>
-        <div className="flex flex-col gap-2">
+        <Surface elevation="shadow" padding="md" className="flex flex-col gap-3">
           <Eyebrow as="h4">GIR by distance</Eyebrow>
           <BandHistogram bands={girBands} ariaLabel={buildGirBandsAriaSummary(girBands)} />
-        </div>
+        </Surface>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <RailBars rows={byLie} labelWidth={84} />
+          <Surface elevation="border" padding="md" className="space-y-3">
+            <Eyebrow as="h4">GIR by lie</Eyebrow>
+            <RailBars rows={byLie} labelWidth={84} />
+          </Surface>
           {leakError ? (
             <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} />
           ) : (
