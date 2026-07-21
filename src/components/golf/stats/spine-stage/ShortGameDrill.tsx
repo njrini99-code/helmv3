@@ -15,9 +15,10 @@
  * now exactly duplicates the three flanking rings above.
  * ========================================================================== */
 
+import { useState } from 'react';
 import { DrillPanel, RailBars, RingGauge, useStage } from '@/components/fairway/modules';
 import type { RailBarRow } from '@/components/fairway/modules';
-import { Eyebrow, InstrumentPanel, Readout, RadialGauge, Surface, chartAriaLabel } from '@/components/fairway';
+import { Eyebrow, InstrumentPanel, Readout, RadialGauge, Segmented, Surface, chartAriaLabel } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 function finite(n: number | null | undefined): number | null {
@@ -90,6 +91,7 @@ export interface ShortGameDrillProps {
 export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+  const [detail, setDetail] = useState<'scrambling' | 'efficiency'>('scrambling');
 
   const scramblingPct = finite(s?.scramblingPercentage);
   const scrambleAttempts = s?.scrambleAttempts ?? 0;
@@ -111,65 +113,83 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
   const sandAtt = s?.sandSaveAttempts ?? 0;
   const penPerRound = finite(s?.penaltiesPerRound);
 
+  const efficiencyByDistance = [
+    { label: '0-10 yds', key: '0_10', value: finite(s?.atgEfficiency0_10) },
+    { label: '10-20 yds', key: '10_20', value: finite(s?.atgEfficiency10_20) },
+    { label: '20+ yds', key: '20_30', value: finite(s?.atgEfficiency20_30) },
+  ] as const;
+
   return (
     <DrillPanel title="Short game" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
-        {/* HERO — scrambling instrument cluster */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
-          <div className="flex flex-col items-center gap-2">
-            <RadialGauge
-              title="Scrambling"
-              overline="Short game"
-              value={scramblingPct ?? undefined}
-              max={100}
-              samples={scrambleAttempts}
-              minSamples={1}
-              unit="scrambles"
-              takeaway={
-                scramblingPct !== null
-                  ? `${scramblesMade} of ${scrambleAttempts} scrambles converted`
-                  : undefined
-              }
-              size="lg"
-            />
-            {scramblingPct !== null ? (
-              <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                {scramblesMade} of {scrambleAttempts} made
-              </p>
-            ) : null}
-          </div>
-          <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-3">
-            {lieRings.map((ring) => (
-              <LieRing key={ring.label} label={ring.label} pct={ring.pct} />
-            ))}
-          </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: 'Scrambling', value: scramblingPct, unit: '%', digits: 0, awaiting: 'No scrambles' },
+            { label: 'Around-green efficiency', value: finite(s?.atgEfficiencyAvg), digits: 2, awaiting: 'No shots' },
+            { label: 'Sand saves', value: sandPct, unit: '%', digits: 0, awaiting: 'No bunkers' },
+            { label: 'Penalties / round', value: penPerRound, digits: 2, awaiting: 'No rounds' },
+          ].map((item) => (
+            <InstrumentPanel key={item.label} depth="base" padding="md" className="min-h-[116px]">
+              <Readout value={item.value ?? undefined} unit={item.unit} format={{ maximumFractionDigits: item.digits }} label={item.label} size="sm" state={item.value !== null ? 'live' : 'awaiting'} awaitingLabel={item.awaiting} />
+            </InstrumentPanel>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <Surface elevation="shadow" padding="md" className="flex flex-col gap-3">
-            <Eyebrow as="h4">Scrambling by distance</Eyebrow>
-            <RailBars rows={byDistance} labelWidth={64} />
+        <Segmented
+          value={detail}
+          onValueChange={setDetail}
+          options={[{ value: 'scrambling', label: 'Scrambling detail' }, { value: 'efficiency', label: 'Efficiency' }]}
+          size="lg"
+          fullWidth
+          aria-label="Short game detail"
+        />
+
+        {detail === 'scrambling' ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Surface elevation="shadow" padding="md" className="flex flex-col gap-3">
+              <Eyebrow as="h4">Scrambling by distance</Eyebrow>
+              <RailBars rows={byDistance} labelWidth={72} />
+              <p className="text-caption text-text-tertiary">{scramblesMade} of {scrambleAttempts} total scramble attempts converted</p>
+            </Surface>
+            <Surface elevation="border" padding="md" className="flex flex-col gap-3">
+              <Eyebrow as="h4">Scrambling by lie</Eyebrow>
+              <RailBars rows={lieRings.map((ring) => ({ label: ring.label, pct: ring.pct ?? 0, value: fmtPct(ring.pct), dim: ring.pct === null }))} labelWidth={72} />
+              <p className="text-caption text-text-tertiary">Sand saves: {s?.sandSavesMade ?? 0} of {sandAtt}</p>
+            </Surface>
+          </div>
+        ) : null}
+
+        {detail === 'efficiency' ? (
+          <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
+            <div>
+              <Eyebrow as="h4">Short-game efficiency by distance and lie</Eyebrow>
+              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out. Lower is better.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[500px] border-separate border-spacing-y-2 text-left">
+                <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Overall</th><th className="px-3">Fairway</th><th className="px-3">Rough</th><th className="px-3">Sand</th></tr></thead>
+                <tbody>{efficiencyByDistance.map((row) => {
+                  const split = s?.atgEffByDistanceLie?.[row.key];
+                  const val = (n: number | null | undefined) => finite(n) === null ? '—' : finite(n)!.toFixed(2);
+                  return <tr key={row.key} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary"><th className="rounded-l-fw-sm px-3 py-3 font-fw-sans font-medium text-text-primary">{row.label}</th><td className="px-3">{val(row.value)}</td><td className="px-3">{val(split?.fairway)}</td><td className="px-3">{val(split?.rough)}</td><td className="rounded-r-fw-sm px-3">{val(split?.sand)}</td></tr>;
+                })}</tbody>
+              </table>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {[{ label: 'Fairway', value: s?.atgEffFairway }, { label: 'Rough', value: s?.atgEffRough }, { label: 'Sand', value: s?.atgEffSand }].map((item) => (
+                <InstrumentPanel key={item.label} depth="base" padding="sm"><Readout value={finite(item.value) ?? undefined} format={{ maximumFractionDigits: 2 }} label={`${item.label} efficiency`} size="sm" state={finite(item.value) !== null ? 'live' : 'awaiting'} awaitingLabel="No shots" /></InstrumentPanel>
+              ))}
+            </div>
           </Surface>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <InstrumentPanel depth="raised" padding="md" className="min-h-[132px]">
-              <Readout
-                value={sandPct ?? undefined}
-                unit="%"
-                label="Sand saves"
-                size="md"
-                state={sandAtt > 0 ? 'live' : 'awaiting'}
-                awaitingLabel="No bunkers"
-              />
-            </InstrumentPanel>
-            <InstrumentPanel depth="base" padding="md" className="min-h-[132px]">
-              <Readout
-                value={penPerRound ?? undefined}
-                label="Penalties / round"
-                size="md"
-                state={penPerRound != null ? 'live' : 'awaiting'}
-                awaitingLabel="No rounds"
-              />
-            </InstrumentPanel>
+        ) : null}
+
+        <div className="flex flex-col gap-4 border-t border-border-subtle pt-6">
+          <Eyebrow as="h3" tone="accent">Short-game visuals</Eyebrow>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
+            <RadialGauge title="Scrambling" overline="Short game" value={scramblingPct ?? undefined} max={100} samples={scrambleAttempts} minSamples={1} unit="scrambles" takeaway={scramblingPct !== null ? `${scramblesMade} of ${scrambleAttempts} scrambles converted` : undefined} size="lg" />
+            <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-3">
+              {lieRings.map((ring) => <LieRing key={ring.label} label={ring.label} pct={ring.pct} />)}
+            </div>
           </div>
         </div>
       </div>

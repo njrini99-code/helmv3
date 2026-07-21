@@ -95,10 +95,6 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
   return (
     <DrillPanel title="Off the tee" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Eyebrow as="h3" tone="accent">Tee shot spray</Eyebrow>
-          <SprayField group={sprayData?.driving ?? null} family="driving" compact />
-        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout value={distAvg ?? undefined} unit="yds" label="Driving distance" size="md" state={distAvg != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
@@ -138,6 +134,10 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
             </div>
           </Surface>
         ) : null}
+        <div className="flex flex-col gap-3 border-t border-border-subtle pt-6">
+          <Eyebrow as="h3" tone="accent">Tee shot visual</Eyebrow>
+          <SprayField group={sprayData?.driving ?? null} family="driving" compact />
+        </div>
       </div>
     </DrillPanel>
   );
