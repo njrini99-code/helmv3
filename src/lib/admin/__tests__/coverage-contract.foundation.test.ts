@@ -293,6 +293,9 @@ describe('global tripwire', () => {
     // refreshTeamAnalysisAsCoach is the authenticated, rate-limited manual
     // team scan. signal-groups.ts is now also represented in the canonical
     // feature manifest instead of relying on this live-tree tripwire alone.
-    expect(total).toBe(426);
+    // 427 as of the player Stats bundle (+1):
+    // getPlayerStatsDashboardBundle consolidates the Stats surface reads into
+    // one bounded, withAdminObserved-wrapped server action.
+    expect(total).toBe(427);
   });
 });

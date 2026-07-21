@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  DEMO_SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
   SESSION_VISIBLE_HEARTBEAT_MS,
@@ -8,17 +9,24 @@ import {
 } from '@/lib/auth/session-idle-shared';
 
 describe('session-idle-shared', () => {
-  it('idle window is 5 minutes', () => {
-    expect(SESSION_IDLE_TIMEOUT_MS).toBe(5 * 60 * 1000);
+  it('staff idle window is 8 hours', () => {
+    expect(SESSION_IDLE_TIMEOUT_MS).toBe(8 * 60 * 60 * 1000);
+  });
+
+  it('demo idle window is 12 hours and longer than the staff window', () => {
+    expect(DEMO_SESSION_IDLE_TIMEOUT_MS).toBe(12 * 60 * 60 * 1000);
+    expect(DEMO_SESSION_IDLE_TIMEOUT_MS).toBeGreaterThan(SESSION_IDLE_TIMEOUT_MS);
   });
 
   it('visible heartbeat is shorter than the idle window', () => {
     expect(SESSION_VISIBLE_HEARTBEAT_MS).toBeLessThan(SESSION_IDLE_TIMEOUT_MS);
   });
 
-  it('cookie lifetime is much longer than the timeout (so a stale marker survives to be detected)', () => {
+  it('cookie lifetime outlives every idle window so a stale marker survives to be detected', () => {
     // The reopen-after-idle case must be "present + stale", never "absent".
-    expect(SESSION_IDLE_COOKIE_MAX_AGE_S * 1000).toBeGreaterThan(SESSION_IDLE_TIMEOUT_MS * 100);
+    expect(SESSION_IDLE_COOKIE_MAX_AGE_S * 1000).toBeGreaterThan(
+      DEMO_SESSION_IDLE_TIMEOUT_MS,
+    );
   });
 
   describe('parseLastActivity', () => {
@@ -49,8 +57,8 @@ describe('session-idle-shared', () => {
     });
 
     it('activity at or beyond the window is expired', () => {
-      expect(isSessionIdleExpired(now - SESSION_IDLE_TIMEOUT_MS, now)).toBe(true); // exactly 5 min
-      expect(isSessionIdleExpired(now - 10 * 60 * 1000, now)).toBe(true); // reopen after 10 min
+      expect(isSessionIdleExpired(now - SESSION_IDLE_TIMEOUT_MS, now)).toBe(true); // exactly 8 hours
+      expect(isSessionIdleExpired(now - (SESSION_IDLE_TIMEOUT_MS + 60 * 1000), now)).toBe(true);
     });
 
     it('a future timestamp (clock skew) is not expired', () => {

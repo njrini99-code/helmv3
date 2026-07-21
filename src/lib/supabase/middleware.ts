@@ -560,7 +560,7 @@ export async function updateSession(request: NextRequest) {
                            pathname.startsWith('/lifting/dashboard');
   const isProtectedRoute = isDashboardRoute;
 
-  // ── Idle-timeout enforcement (5-minute re-auth) ───────────────────────────
+  // ── Idle-timeout enforcement (work-session re-auth) ───────────────────────
   // A user who has been away longer than the idle window must sign in again,
   // rather than the session silently refreshing and auto-loading them back in.
   // The activity marker (sb_last_activity) is written by real user interaction
@@ -588,8 +588,8 @@ export async function updateSession(request: NextRequest) {
   if (user && isIdleGatedRoute) {
     const lastActivity = parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value);
     const now = Date.now();
-    // Demo visitors get the longer window — a prospect who tabs away for 6
-    // minutes must not come back to the gate form (session-idle-shared.ts).
+    // Demo visitors get the longer window so a prospect can evaluate the app,
+    // switch to another task, and return without being bounced to the gate.
     const idleTimeoutMs = isDemoContextUser(user, sport)
       ? DEMO_SESSION_IDLE_TIMEOUT_MS
       : SESSION_IDLE_TIMEOUT_MS;

@@ -27,6 +27,10 @@ vi.mock('@supabase/ssr', () => ({
 }));
 
 import { updateSession } from '@/lib/supabase/middleware';
+import {
+  DEMO_SESSION_IDLE_TIMEOUT_MS,
+  SESSION_IDLE_TIMEOUT_MS,
+} from '@/lib/auth/session-idle-shared';
 
 function buildRequest(pathname: string, cookieHeader?: string) {
   const headers = new Headers({ 'user-agent': 'Mozilla/5.0 (test)' });
@@ -34,9 +38,11 @@ function buildRequest(pathname: string, cookieHeader?: string) {
   return new NextRequest(`https://app.example.com${pathname}`, { headers });
 }
 
-// Demo sessions get the LONGER 30-min idle window (DEMO_SESSION_IDLE_TIMEOUT_MS)
-// — 35 min ago is stale for demo and non-demo alike.
-const STALE = Date.now() - 35 * 60 * 1000;
+// Demo sessions get the longer 12-hour idle window. This marker is stale for
+// demo and non-demo sessions alike.
+const STALE = Date.now() - (DEMO_SESSION_IDLE_TIMEOUT_MS + 60 * 1000);
+const BETWEEN_STAFF_AND_DEMO_WINDOWS =
+  Date.now() - (SESSION_IDLE_TIMEOUT_MS + 60 * 60 * 1000);
 
 describe('updateSession — demo-context idle-timeout redirect (#918)', () => {
   beforeEach(() => {
@@ -151,7 +157,9 @@ describe('updateSession — demo-context idle-timeout redirect (#918)', () => {
           id: 'real-coach-old',
           email: 'coach@university.edu',
           user_metadata: {},
-          last_sign_in_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          last_sign_in_at: new Date(
+            Date.now() - (DEMO_SESSION_IDLE_TIMEOUT_MS + 60 * 60 * 1000),
+          ).toISOString(),
         },
       },
       error: null,
@@ -165,29 +173,33 @@ describe('updateSession — demo-context idle-timeout redirect (#918)', () => {
     expect(url.searchParams.get('message')).toBe('session_expired');
   });
 
-  it('a demo session idle 10 min is INSIDE the 30-min demo window — no bounce', async () => {
+  it('a demo session idle 9 hours is inside the 12-hour demo window — no bounce', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'demo-1', email: 'demo@golfhelmdemo.com', user_metadata: { is_demo: true } } },
       error: null,
     });
 
-    const tenMinAgo = Date.now() - 10 * 60 * 1000;
-    const req = buildRequest('/golf/dashboard', `sb_last_activity=${tenMinAgo}`);
+    const req = buildRequest(
+      '/golf/dashboard',
+      `sb_last_activity=${BETWEEN_STAFF_AND_DEMO_WINDOWS}`,
+    );
     const res = await updateSession(req);
 
-    // Passes through (no idle redirect) — 10 min stale would bounce a
-    // regular user (5-min window) but not a demo visitor (30-min window).
+    // Passes through (no idle redirect) — 9 hours stale bounces a regular
+    // user (8-hour window), but not a demo visitor (12-hour window).
     expect(res.headers.get('location')).toBeNull();
   });
 
-  it('a REGULAR user idle 10 min still bounces (5-min window unchanged)', async () => {
+  it('a regular user idle 9 hours bounces after the 8-hour window', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'real-coach-3', email: 'coach@university.edu', user_metadata: {} } },
       error: null,
     });
 
-    const tenMinAgo = Date.now() - 10 * 60 * 1000;
-    const req = buildRequest('/golf/dashboard', `sb_last_activity=${tenMinAgo}`);
+    const req = buildRequest(
+      '/golf/dashboard',
+      `sb_last_activity=${BETWEEN_STAFF_AND_DEMO_WINDOWS}`,
+    );
     const res = await updateSession(req);
 
     const url = new URL(res.headers.get('location')!);
