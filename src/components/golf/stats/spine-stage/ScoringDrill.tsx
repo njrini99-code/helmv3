@@ -143,7 +143,7 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
           ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout value={finite(s?.scoringAverage) ?? undefined} label="Scoring average" size="md" state={s?.scoringAverage != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
           </InstrumentPanel>
@@ -161,7 +161,7 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
         {hasScoringRates ? (
           <div className="flex flex-col gap-2">
             <Eyebrow as="h4">Per round</Eyebrow>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
               {scoringRates.map((r) => (
                 <InstrumentPanel key={r.label} depth="base" padding="md" className="flex min-h-[132px] flex-col justify-between transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
                   <Readout

@@ -9,9 +9,9 @@
  * bordered hero unit — never two separate cards. Hover/focus/click on any
  * filmstrip column updates the detail line inline (cheap, non-navigating,
  * per spec §3.4's "hover/tap/focus scrubs a detail line"). A deliberate
- * "View shot path" action — separate from the hover scrub — opens that
- * hole's existing `HoleShotPath` reconstruction IN PLACE below the strip
- * (spec §5.5), synced to a shareable `?hole=` search param.
+ * The same hover/focus/tap scrub also previews that hole's existing
+ * `HoleShotPath` reconstruction in place below the strip. A direct `?hole=`
+ * link still opens the same state for sharing.
  * ========================================================================== */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -100,17 +100,15 @@ export function ReviewHero({
     router.replace(qs ? `?${qs}` : '?', { scroll: false });
   }
 
-  // Scrubbing to a different hole while a shot-path panel is open leaves a
-  // stale panel (open hole's shots keep rendering under a detail line that
-  // has moved on). Closing the panel on scrub — rather than repointing it —
-  // keeps "View shot path" an explicit, deliberate action per hole instead
-  // of shot data silently swapping under the reader as they scrub.
+  // Scrubbing is the visual interaction: hover/focus on desktop and tap on
+  // touch devices both update the narrative and available shot path.
   function handleScrub(hole: FilmstripHole) {
     setActiveHole(hole.n);
-    if (openHole != null && openHole !== hole.n) {
-      setOpenHole(null);
-      setHoleParam(null);
-    }
+    // Desktop hover/focus and mobile tap share the same scrub callback. When
+    // shot data exists, preview it immediately so the filmstrip behaves like
+    // film: moving across holes updates the path without a second click.
+    if ((shotsByHole?.get(hole.n)?.length ?? 0) > 0) setOpenHole(hole.n);
+    else if (openHole != null) setOpenHole(null);
   }
 
   function toggleShotPath() {
@@ -174,7 +172,7 @@ export function ReviewHero({
                   aria-expanded={openHole === activeHole}
                   className="mt-2 font-fw-sans text-caption font-semibold text-accent-700 transition-colors duration-150 hover:text-accent-800"
                 >
-                  {openHole === activeHole ? 'Hide shot path' : 'View shot path →'}
+                  {openHole === activeHole ? 'Hide shot path' : 'Show shot path'}
                 </PressTarget>
               ) : null}
             </>

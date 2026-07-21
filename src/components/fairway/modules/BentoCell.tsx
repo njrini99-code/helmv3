@@ -55,7 +55,7 @@ export function BentoCell({
       {...interactiveProps}
       className={cn(
         'relative flex flex-col gap-2 bg-surface px-[18px] py-4 text-left',
-        span === 2 && 'col-span-2',
+        span === 2 && 'sm:col-span-2',
         rows === 2 && 'row-span-2',
         interactive && [
           'cursor-pointer transition-colors duration-150 hover:bg-surface-tint',

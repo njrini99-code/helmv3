@@ -17,7 +17,7 @@
 
 import { DrillPanel, RailBars, RingGauge, useStage } from '@/components/fairway/modules';
 import type { RailBarRow } from '@/components/fairway/modules';
-import { InstrumentPanel, Readout, RadialGauge, chartAriaLabel } from '@/components/fairway';
+import { Eyebrow, InstrumentPanel, Readout, RadialGauge, Surface, chartAriaLabel } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 function finite(n: number | null | undefined): number | null {
@@ -138,7 +138,7 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
               </p>
             ) : null}
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-3">
             {lieRings.map((ring) => (
               <LieRing key={ring.label} label={ring.label} pct={ring.pct} />
             ))}
@@ -146,11 +146,12 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <div className="flex flex-col gap-4">
+          <Surface elevation="shadow" padding="md" className="flex flex-col gap-3">
+            <Eyebrow as="h4">Scrambling by distance</Eyebrow>
             <RailBars rows={byDistance} labelWidth={64} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <InstrumentPanel depth="base" padding="md">
+          </Surface>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <InstrumentPanel depth="raised" padding="md" className="min-h-[132px]">
               <Readout
                 value={sandPct ?? undefined}
                 unit="%"
@@ -160,7 +161,7 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
                 awaitingLabel="No bunkers"
               />
             </InstrumentPanel>
-            <InstrumentPanel depth="base" padding="md">
+            <InstrumentPanel depth="base" padding="md" className="min-h-[132px]">
               <Readout
                 value={penPerRound ?? undefined}
                 label="Penalties / round"
