@@ -97,26 +97,34 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <Eyebrow as="h3" tone="accent">Tee shot spray</Eyebrow>
-          <SprayField group={sprayData?.driving ?? null} family="driving" />
+          <SprayField group={sprayData?.driving ?? null} family="driving" compact />
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <InstrumentPanel depth="base" padding="md">
+          <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout value={distAvg ?? undefined} unit="yds" label="Driving distance" size="md" state={distAvg != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
           </InstrumentPanel>
-          <InstrumentPanel depth="base" padding="md">
+          <InstrumentPanel depth="base" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout value={distDriver ?? undefined} unit="yds" label="Driver only" size="md" state={distDriver != null ? 'live' : 'awaiting'} awaitingLabel="No driver shots" />
           </InstrumentPanel>
-          <InstrumentPanel depth="base" padding="md">
+          <InstrumentPanel depth="base" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout value={distNonDriver ?? undefined} unit="yds" label="Non-driver" size="md" state={distNonDriver != null ? 'live' : 'awaiting'} awaitingLabel="No non-driver shots" />
           </InstrumentPanel>
-          <InstrumentPanel depth="base" padding="md">
+          <InstrumentPanel depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout value={fwPct ?? undefined} unit="%" label="Fairways hit" size="md" state={fwPct != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
           </InstrumentPanel>
         </div>
-        <RailBars rows={byHoleType} labelWidth={80} />
-        <DivergingBars rows={missBias} max={missMax} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Surface elevation="shadow" padding="md" className="space-y-3">
+            <Eyebrow as="h4">Fairways by tee type</Eyebrow>
+            <RailBars rows={byHoleType} labelWidth={80} />
+          </Surface>
+          <Surface elevation="border" padding="md" className="space-y-3">
+            <Eyebrow as="h4">Overall miss pattern</Eyebrow>
+            <DivergingBars rows={missBias} max={missMax} />
+          </Surface>
+        </div>
         {hasClubMiss ? (
-          <div className="flex flex-col gap-2">
+          <Surface elevation="border" padding="md" className="flex flex-col gap-3">
             <Eyebrow as="h4">Tee miss by club</Eyebrow>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
@@ -128,7 +136,7 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
                 <DivergingBars rows={nonDriverMissRows} max={clubMissMax} />
               </div>
             </div>
-          </div>
+          </Surface>
         ) : null}
       </div>
     </DrillPanel>

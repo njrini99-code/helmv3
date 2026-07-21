@@ -61,7 +61,7 @@ describe('updateSession — idle-timeout fires on all authenticated surfaces exc
     vi.unstubAllEnvs();
   });
 
-  const staleTimestamp = () => Date.now() - 10 * 60 * 1000; // 10 min ago > 5 min window
+  const staleTimestamp = () => Date.now() - 9 * 60 * 60 * 1000; // 9h ago > 8h window
 
   it('does NOT idle-bounce a stale session visiting the /baseball marketing root', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });

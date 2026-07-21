@@ -723,12 +723,10 @@ export default function RoundReviewPage() {
 
           <div className="mt-8">{reviewBody}</div>
 
-          {/* Bottom actions — calm Fairway row (Detail / All Stats) */}
-          <m.div variants={itemVariants} className="mt-8 flex gap-3">
-            <FwButton variant="secondary" className="flex-1" asChild>
-              <Link href={`/golf/dashboard/rounds/${roundId}`}>Round Detail</Link>
-            </FwButton>
-            <FwButton variant="primary" className="flex-1" asChild>
+          {/* The review is the detail surface; one clear exit avoids a third
+              nested review level competing with the content above. */}
+          <m.div variants={itemVariants} className="mt-8 flex justify-end">
+            <FwButton variant="primary" className="w-full sm:w-auto sm:min-w-[220px]" asChild>
               <Link href={`/golf/dashboard/stats?player=${round.player_id}`}>All Stats</Link>
             </FwButton>
           </m.div>

@@ -93,7 +93,7 @@ export function TriageDesk({
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [isScanning, startScanTransition] = useTransition();
 
-  function navigate(
+  function hrefFor(
     updates: Partial<{ view: string; filter: string | null; signal: string | null; player: string | null }>,
   ) {
     const params = new URLSearchParams(searchParams.toString());
@@ -116,7 +116,13 @@ export function TriageDesk({
       else params.delete('player');
     }
     const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    return qs ? `${pathname}?${qs}` : pathname;
+  }
+
+  function navigate(
+    updates: Partial<{ view: string; filter: string | null; signal: string | null; player: string | null }>,
+  ) {
+    router.replace(hrefFor(updates), { scroll: false });
   }
 
   const counts = useMemo(() => computeBriefCounts(groups), [groups]);
@@ -125,6 +131,15 @@ export function TriageDesk({
   const categories = useMemo(() => distinctCategories(groups), [groups]);
   const filteredGroups = useMemo(() => filterGroupSignals(groups, queueFilter), [groups, queueFilter]);
   const selectedEntry = useMemo(() => findSignalInGroups(groups, selectedSignalId), [groups, selectedSignalId]);
+  // Keep the desktop dossier useful on first load instead of dedicating half
+  // the command desk to an empty placeholder. The URL remains unselected, so
+  // mobile still opens on the queue and keyboard focus stays predictable.
+  const defaultEntry = useMemo(() => {
+    const group = groups.find((candidate) => candidate.signals.length > 0);
+    const signal = group?.signals[0];
+    return signal && group ? { group, signal } : null;
+  }, [groups]);
+  const dossierEntry = selectedEntry ?? defaultEntry;
 
   function handleScan() {
     startScanTransition(async () => {
@@ -211,7 +226,10 @@ export function TriageDesk({
         onScan={handleScan}
       />
 
-      <ViewSwitch view={view} onChange={(next) => navigate({ view: next, signal: null })} />
+      <ViewSwitch
+        view={view}
+        hrefFor={(next) => hrefFor({ view: next, signal: null })}
+      />
 
       {view === 'signals' ? (
         groupsError ? (
@@ -234,16 +252,17 @@ export function TriageDesk({
                 allGroups={groups}
                 categories={categories}
                 filter={queueFilter}
-                onFilterChange={(next) => navigate({ filter: next === 'all' ? null : next })}
+                filterHref={(next) => hrefFor({ filter: next === 'all' ? null : next })}
                 selectedSignalId={selectedSignalId}
                 onSelectSignal={(id) => navigate({ signal: id })}
+                signalHref={(id) => hrefFor({ signal: id })}
               />
             </div>
             <div className={cn(!isSignalSelected && 'hidden min-[940px]:block')}>
               <SignalDossier
-                entry={selectedEntry}
+                entry={dossierEntry}
                 coachId={coachId}
-                pending={selectedEntry ? pendingIds.has(selectedEntry.signal.id) : false}
+                pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
                 onReview={handleReview}
                 onDismiss={handleDismiss}
                 onPromoted={handlePromoted}

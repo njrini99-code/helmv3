@@ -126,7 +126,7 @@ export function StatsBento({
   const worstCategory = weaknesses[0] ?? null;
 
   return (
-    <Bento>
+    <Bento separated>
       <BentoCell
         label="Core ball striking"
         span={2}

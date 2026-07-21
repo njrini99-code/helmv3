@@ -32,18 +32,23 @@ import { cn } from '@/lib/utils';
 export interface BentoProps {
   children: ReactNode;
   className?: string;
+  /** Render cells as distinct elevated cards instead of one gapless sheet. */
+  separated?: boolean;
 }
 
 /**
  * The gapless bento shell. Compose with `BentoCell` children — the 1px gap
  * shows the shared border color as hairline seams between cells.
  */
-export function Bento({ children, className }: BentoProps) {
+export function Bento({ children, className, separated = false }: BentoProps) {
   return (
     <div
       data-slot="bento"
       className={cn(
-        'grid grid-flow-dense grid-cols-2 gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle [box-shadow:var(--fw-shadow-card)]',
+        'grid grid-flow-dense grid-cols-2',
+        separated
+          ? 'gap-3 overflow-visible bg-transparent [&>[data-slot="bento-cell"]]:rounded-card [&>[data-slot="bento-cell"]]:border [&>[data-slot="bento-cell"]]:border-border-subtle [&>[data-slot="bento-cell"]]:shadow-soft [&>[data-slot="bento-cell"]]:transition-[transform,box-shadow,border-color] [&>[data-slot="bento-cell"]]:duration-200 [&>[data-slot="bento-cell"]]:hover:-translate-y-1 [&>[data-slot="bento-cell"]]:hover:shadow-raise [&>[data-slot="bento-cell"]]:motion-reduce:transform-none'
+          : 'gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle [box-shadow:var(--fw-shadow-card)]',
         'auto-rows-[minmax(7.375rem,auto)]',
         'min-[940px]:grid-cols-4',
         className,

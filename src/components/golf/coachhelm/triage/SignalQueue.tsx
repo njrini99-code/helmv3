@@ -12,9 +12,10 @@
  * ========================================================================== */
 
 import { useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge, EmptyState, FilterPill, PressTarget } from '@/components/fairway';
+import { Badge, EmptyState, PressTarget } from '@/components/fairway';
 import type { SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { SeverityChip } from './SignalRow';
 import { SignalRow } from './SignalRow';
@@ -33,9 +34,10 @@ export interface SignalQueueProps {
   allGroups: SignalGroup[];
   categories: string[];
   filter: QueueFilterKey;
-  onFilterChange: (filter: QueueFilterKey) => void;
+  filterHref: (filter: QueueFilterKey) => string;
   selectedSignalId: string | null;
   onSelectSignal: (id: string) => void;
+  signalHref: (id: string) => string;
 }
 
 function groupKey(group: SignalGroup): string {
@@ -47,9 +49,10 @@ export function SignalQueue({
   allGroups,
   categories,
   filter,
-  onFilterChange,
+  filterHref,
   selectedSignalId,
   onSelectSignal,
+  signalHref,
 }: SignalQueueProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
@@ -75,7 +78,7 @@ export function SignalQueue({
 
   // Reset each render — repopulated below as rows mount, in visible (DOM)
   // order, so arrow-key nav always walks what's actually on screen.
-  const rowRefs = useRef<HTMLButtonElement[]>([]);
+  const rowRefs = useRef<HTMLAnchorElement[]>([]);
   rowRefs.current = [];
 
   // The roving tab stop when nothing is selected yet (first load, before a
@@ -109,15 +112,26 @@ export function SignalQueue({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
         {chips.map((chip) => (
-          <FilterPill
+          <Link
             key={chip.key}
-            size="sm"
-            selected={filter === chip.key}
-            count={countForFilter(allGroups, chip.key)}
-            onClick={() => onFilterChange(chip.key)}
+            href={filterHref(chip.key)}
+            replace
+            scroll={false}
+            aria-current={filter === chip.key ? 'page' : undefined}
+            className={cn(
+              'inline-flex min-h-[30px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3',
+              'font-fw-sans text-caption font-medium outline-none transition-colors',
+              'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
+              filter === chip.key
+                ? 'border-accent-500 bg-accent-50 text-accent-700'
+                : 'border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint hover:text-text-primary',
+            )}
           >
-            {chip.label}
-          </FilterPill>
+            <span>{chip.label}</span>
+            <span className="ml-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-surface-sunken px-1 font-fw-mono text-eyebrow tabular-nums">
+              {countForFilter(allGroups, chip.key)}
+            </span>
+          </Link>
         ))}
       </div>
 
@@ -173,7 +187,7 @@ export function SignalQueue({
                         signal={signal}
                         selected={signal.id === selectedSignalId}
                         tabbable={selectedSignalId ? signal.id === selectedSignalId : signal.id === firstVisibleRowId}
-                        onSelect={() => onSelectSignal(signal.id)}
+                        href={signalHref(signal.id)}
                       />
                     ))}
                   </div>

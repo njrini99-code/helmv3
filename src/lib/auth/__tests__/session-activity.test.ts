@@ -63,10 +63,10 @@ vi.mock('@/lib/supabase/client', () => ({
 
 import { useSessionActivity } from '@/lib/auth/session-activity';
 
-/** 35 min ago — stale beyond BOTH the 5-min standard and 30-min demo windows. */
-const STALE = () => Date.now() - 35 * 60 * 1000;
-/** 10 min ago — stale for a standard session, INSIDE the 30-min demo window. */
-const STALE_FOR_STANDARD_ONLY = () => Date.now() - 10 * 60 * 1000;
+/** 13h ago — stale beyond BOTH the 8h standard and 12h demo windows. */
+const STALE = () => Date.now() - 13 * 60 * 60 * 1000;
+/** 9h ago — stale for a standard session, INSIDE the 12h demo window. */
+const STALE_FOR_STANDARD_ONLY = () => Date.now() - 9 * 60 * 60 * 1000;
 
 function setPath(pathname: string) {
   window.history.pushState({}, '', pathname);
@@ -189,13 +189,13 @@ describe('useSessionActivity — idle-timeout logout demo routing (#918)', () =>
     expect(mocks.signOut).not.toHaveBeenCalled();
   });
 
-  it('a DEMO session restored after 10 idle minutes stays signed in (30-min demo window)', async () => {
+  it('a DEMO session restored after 9 idle hours stays signed in (12-hour demo window)', async () => {
     setPath('/golf/dashboard');
     mockSignedIn(demoUser());
 
     renderHook(() => useSessionActivity());
     // Window resolution must actually run (guards against the false-green
-    // fallback where a missing getSession silently picks the 5-min window).
+    // fallback where a missing getSession silently picks the standard window).
     await waitFor(() => expect(mocks.getSession).toHaveBeenCalled());
     await settleMount();
     await restoreTabWithMarker(STALE_FOR_STANDARD_ONLY());
@@ -207,7 +207,7 @@ describe('useSessionActivity — idle-timeout logout demo routing (#918)', () =>
     expect(mocks.signOut).not.toHaveBeenCalled();
   });
 
-  it('a REGULAR session restored after 10 idle minutes still logs out (5-min window unchanged)', async () => {
+  it('a REGULAR session restored after 9 idle hours still logs out (8-hour window)', async () => {
     setPath('/golf/dashboard');
     mockSignedIn({ id: 'real-coach-9', user_metadata: {} });
 
@@ -231,7 +231,7 @@ describe('useSessionActivity — idle-timeout logout demo routing (#918)', () =>
       // Simulates the exact failure mode this fix targets — a stuck
       // refresh-token exchange whose promise never settles.
       mocks.getUser.mockReturnValue(new Promise<never>(() => {}));
-      setActivityCookie(Date.now() - 35 * 60 * 1000);
+      setActivityCookie(Date.now() - 13 * 60 * 60 * 1000);
       await act(async () => {
         document.dispatchEvent(new Event('visibilitychange'));
       });
