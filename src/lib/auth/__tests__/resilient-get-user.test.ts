@@ -121,6 +121,22 @@ describe('getUserResilient', () => {
     expect(getSession).toHaveBeenCalledTimes(1);
   });
 
+  it('can skip the network retry for latency-sensitive middleware', async () => {
+    const getUser = vi
+      .fn()
+      .mockResolvedValue({ data: { user: null }, error: { name: 'AuthRetryableFetchError' } });
+    const getSession = vi
+      .fn()
+      .mockResolvedValue({ data: { session: { user: USER, access_token: plausibleJwt() } } });
+    const client = authClient({ getUser, getSession });
+
+    const result = await getUserResilient(client, { retryTransient: false });
+
+    expect(result).toEqual({ user: USER, degraded: true });
+    expect(getUser).toHaveBeenCalledTimes(1);
+    expect(getSession).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ['missing access_token', { user: USER }],
     ['malformed token', { user: USER, access_token: 'not-a-jwt' }],
