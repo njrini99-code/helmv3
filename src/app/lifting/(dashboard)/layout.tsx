@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { LabShell } from '@/components/lifting/shell/LabShell';
+import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
 
 /**
@@ -44,9 +45,11 @@ export default async function LiftingDashboardLayout({
   if (coachRow) {
     // Full Lab — coach is active
     return (
-      <LabShell coachRow={coachRow} isViewOnly={false}>
-        {children}
-      </LabShell>
+      <SessionActivityProvider>
+        <LabShell coachRow={coachRow} isViewOnly={false}>
+          {children}
+        </LabShell>
+      </SessionActivityProvider>
     );
   }
 
@@ -59,9 +62,11 @@ export default async function LiftingDashboardLayout({
   if (viewerRows && viewerRows.length > 0) {
     // View-only access for head coaches
     return (
-      <LabShell coachRow={null} isViewOnly={true}>
-        {children}
-      </LabShell>
+      <SessionActivityProvider>
+        <LabShell coachRow={null} isViewOnly={true}>
+          {children}
+        </LabShell>
+      </SessionActivityProvider>
     );
   }
 
@@ -77,9 +82,11 @@ export default async function LiftingDashboardLayout({
 
   if (athleteRows && athleteRows.length > 0) {
     return (
-      <LabShell coachRow={null} isViewOnly={true}>
-        {children}
-      </LabShell>
+      <SessionActivityProvider>
+        <LabShell coachRow={null} isViewOnly={true}>
+          {children}
+        </LabShell>
+      </SessionActivityProvider>
     );
   }
 

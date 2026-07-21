@@ -262,28 +262,19 @@ export function useSessionActivity() {
     });
     };
 
-    // Fast SYNCHRONOUS pre-check: idle beyond the LONGEST window is stale for
-    // every session type — bounce immediately rather than showing the page for
-    // up to ~4s while the async window resolution below settles (matters for
-    // bfcache/pageshow reopens of long-abandoned tabs).
-    if (isSessionTimedOut(DEMO_SESSION_IDLE_TIMEOUT_MS)) {
-      void handleLogout();
-      return;
-    }
-
+    // NO logout decision at mount. A fresh page load only reaches this hook
+    // because the MIDDLEWARE already ran its idle check (with the
+    // last_sign_in_at guard) and let the page render — second-guessing it here
+    // with the 30-day sb_last_activity marker booted freshly-signed-in users
+    // whose marker predated the new session (2026-07-20 "signed out after ~2
+    // minutes" incident). The genuinely-client-only stale case — a bfcache /
+    // hidden-tab restore with NO network request — is still caught by
+    // syncTabVisibility (visibilitychange/pageshow), which checks staleness
+    // BEFORE any marker write. The window is resolved before setup() so that
+    // first visibility check already uses the demo-aware timeout.
     const init = async () => {
       idleTimeoutMsRef.current = await resolveIdleTimeoutMs(supabase);
       if (disposed) return;
-
-      // Check for a stale session BEFORE recording new activity, so a reopen
-      // after the idle window actually logs out — instead of the mount itself
-      // refreshing the marker and masking the timeout (the previous fail-open
-      // behavior).
-      if (isSessionTimedOut(idleTimeoutMsRef.current)) {
-        void handleLogout();
-        return;
-      }
-
       setup();
     };
 

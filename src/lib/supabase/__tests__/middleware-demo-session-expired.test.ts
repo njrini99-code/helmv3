@@ -122,6 +122,49 @@ describe('updateSession — demo-context idle-timeout redirect (#918)', () => {
     expect(url.searchParams.get('returnTo')).toBe('/golf/dashboard');
   });
 
+  it('a FRESHLY signed-in user with a stale marker from a previous session is NOT bounced', async () => {
+    // The sb_last_activity cookie is a 30-day cookie that survives sign-out —
+    // without the last_sign_in_at guard this exact shape bounced users to
+    // login ~minutes after signing in (2026-07-20 incident).
+    mockGetUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'real-coach-fresh',
+          email: 'coach@university.edu',
+          user_metadata: {},
+          last_sign_in_at: new Date(Date.now() - 60 * 1000).toISOString(),
+        },
+      },
+      error: null,
+    });
+
+    const req = buildRequest('/golf/dashboard', `sb_last_activity=${STALE}`);
+    const res = await updateSession(req);
+
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('an OLD session with a stale marker still bounces (guard only shields young sessions)', async () => {
+    mockGetUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'real-coach-old',
+          email: 'coach@university.edu',
+          user_metadata: {},
+          last_sign_in_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+      },
+      error: null,
+    });
+
+    const req = buildRequest('/golf/dashboard', `sb_last_activity=${STALE}`);
+    const res = await updateSession(req);
+
+    const url = new URL(res.headers.get('location')!);
+    expect(url.pathname).toBe('/golf/login');
+    expect(url.searchParams.get('message')).toBe('session_expired');
+  });
+
   it('a demo session idle 10 min is INSIDE the 30-min demo window — no bounce', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'demo-1', email: 'demo@golfhelmdemo.com', user_metadata: { is_demo: true } } },
