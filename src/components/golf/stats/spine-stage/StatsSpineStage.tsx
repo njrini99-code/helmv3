@@ -29,10 +29,9 @@ import { Surface, Button, EmptyState, InlineNotice, Skeleton } from '@/component
 import { StageRouter } from '@/components/fairway/modules';
 import type { StageView } from '@/components/fairway/modules';
 
-import { getDetailedStats, getTrendAnalysis, getSprayChartData, getPlayerStrengthsWeaknesses, getWorstHoleAnalysis } from '@/app/golf/actions/stats-data';
+import { getPlayerStatsDashboardBundle } from '@/app/golf/actions/stats-dashboard';
 import type { TrendAnalysisResponse, SprayChartResponse, WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import { getPlayerLeakMaps, getPlayerStandingRows } from '@/app/golf/actions/stats-leak-maps';
 import type { PlayerLeakMaps, PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 
@@ -92,52 +91,44 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     setLoadError(null);
     setLeakError(false);
     try {
-      const [detailedRes, trendRes, standingRes, leakRes, sprayRes, swRes, worstRes, patternsRes] =
-        await Promise.allSettled([
-          getDetailedStats(id, 'overall'),
-          getTrendAnalysis(id),
-          getPlayerStandingRows(id),
-          getPlayerLeakMaps(id),
-          getSprayChartData(id, 'overall'),
-          getPlayerStrengthsWeaknesses(id),
-          getWorstHoleAnalysis(id),
-          getPlayerPatterns(id),
-        ]);
+      const bundle = await getPlayerStatsDashboardBundle(id);
 
-      if (detailedRes.status === 'fulfilled') setDetailedStats(detailedRes.value);
-      if (trendRes.status === 'fulfilled') setTrendData(trendRes.value);
-      if (standingRes.status === 'fulfilled' && standingRes.value.success) {
-        setStandingRows(standingRes.value.data ?? []);
+      if (bundle.detailed.ok) setDetailedStats(bundle.detailed.value);
+      else setDetailedStats(null);
+      if (bundle.trend.ok) setTrendData(bundle.trend.value);
+      else setTrendData(null);
+      if (bundle.standing.ok && bundle.standing.value.success) {
+        setStandingRows(bundle.standing.value.data ?? []);
       } else {
         setStandingRows([]);
       }
-      if (leakRes.status === 'fulfilled' && leakRes.value.success) {
-        setLeakMaps(leakRes.value.data ?? null);
+      if (bundle.leak.ok && bundle.leak.value.success) {
+        setLeakMaps(bundle.leak.value.data ?? null);
       } else {
         setLeakMaps(null);
       }
-      if (sprayRes.status === 'fulfilled') setSprayData(sprayRes.value);
+      if (bundle.spray.ok) setSprayData(bundle.spray.value);
       else setSprayData(null);
-      if (swRes.status === 'fulfilled' && swRes.value) {
-        setStrengths(swRes.value.strengths ?? []);
-        setWeaknesses(swRes.value.weaknesses ?? []);
+      if (bundle.strengthsWeaknesses.ok && bundle.strengthsWeaknesses.value) {
+        setStrengths(bundle.strengthsWeaknesses.value.strengths ?? []);
+        setWeaknesses(bundle.strengthsWeaknesses.value.weaknesses ?? []);
       } else {
         setStrengths([]);
         setWeaknesses([]);
       }
-      if (worstRes.status === 'fulfilled') setWorstHoles(worstRes.value);
+      if (bundle.worstHoles.ok) setWorstHoles(bundle.worstHoles.value);
       else setWorstHoles(null);
       // CoachHelm patterns are a non-blocking enrichment — a failure (or a
       // CoachHelm-disabled player) just hides the section, never errors the page.
-      if (patternsRes.status === 'fulfilled' && patternsRes.value.success) {
-        setPatterns(patternsRes.value.patterns ?? []);
+      if (bundle.patterns.ok && bundle.patterns.value.success) {
+        setPatterns(bundle.patterns.value.patterns ?? []);
       } else {
         setPatterns([]);
       }
 
       const standingFailed =
-        standingRes.status === 'rejected' || (standingRes.status === 'fulfilled' && !standingRes.value.success);
-      const leakFailed = leakRes.status === 'rejected' || (leakRes.status === 'fulfilled' && !leakRes.value.success);
+        !bundle.standing.ok || !bundle.standing.value.success;
+      const leakFailed = !bundle.leak.ok || !bundle.leak.value.success;
       if (standingFailed && leakFailed) {
         setLoadError('Failed to load stats. Please try again.');
       } else if (leakFailed) {
