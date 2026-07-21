@@ -15,6 +15,8 @@ import {
 } from '@/lib/auth/account-lockout';
 import { validatePassword } from '@/lib/auth/password-validation';
 import { logServerError } from '@/lib/server-error-logger';
+import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
+import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 
 export type LoginResult = {
   success: boolean;
@@ -58,7 +60,7 @@ export async function liftingLoginAction(
 
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await signInWithPasswordResilient(supabase, {
       email: normalizedEmail,
       password,
     });
@@ -69,6 +71,8 @@ export async function liftingLoginAction(
       await recordFailedLogin(normalizedEmail, null, null);
       return { success: false, error: error?.message ?? 'Invalid credentials.' };
     }
+
+    await resetSessionIdleMarker();
 
     await resetLoginAttempts(normalizedEmail);
     await resetRateLimit(`login:email:${normalizedEmail}`);

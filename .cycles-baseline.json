@@ -20,7 +20,6 @@
     "components/fairway/cards-insight/themes/CauseRow.tsx > components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx > components/fairway/cards-insight/themes/index.ts",
     "components/fairway/cards-insight/themes/ThemeCard.tsx > components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx > components/fairway/cards-insight/themes/index.ts",
     "components/fairway/cards-insight/themes/ThemesPanel.tsx > components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx > components/fairway/cards-insight/themes/index.ts",
-    "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayBrief.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayEffectiveness.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx > components/fairway/pages/coachhelm/CausalWhyPanel.tsx",
@@ -35,7 +34,6 @@
     "components/fairway/index.ts > components/fairway/pages/dashboard/index.ts > components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx > components/fairway/pages/dashboard/PlayerActionCenter.tsx",
     "components/fairway/index.ts > components/fairway/pages/dashboard/index.ts > components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx > components/fairway/pages/dashboard/PlayerActionCenter.tsx > components/fairway/pages/dashboard/player-dashboard-parts.tsx",
     "components/fairway/index.ts > components/fairway/pages/dashboard/index.ts > components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx > components/fairway/pages/dashboard/PlayerActionCenter.tsx > components/fairway/pages/hub/hub-parts.tsx",
-    "components/fairway/pages/coachhelm/FairwayBrief.tsx > components/fairway/pages/coachhelm/index.ts",
     "components/golf/coachhelm/insights/DiagnosisPanel.tsx > components/golf/coachhelm/insights/EvidencePanel.tsx",
     "lib/admin/data/incident-feed.ts > lib/admin/data/triage.ts"
   ]

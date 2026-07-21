@@ -57,6 +57,8 @@ describe('observe-action-result', () => {
 
   it('classifies auth-ish copy as expected soft failures', () => {
     expect(isExpectedSoftFailureMessage('Not authenticated')).toBe(true);
+    expect(isExpectedSoftFailureMessage('Invalid email or password (4 attempts remaining)')).toBe(true);
+    expect(isExpectedSoftFailureMessage('Too many login attempts. Please try again in 10 minutes.')).toBe(true);
     expect(isExpectedSoftFailureMessage('Could not complete the calendar action. Please try again.')).toBe(false);
   });
 

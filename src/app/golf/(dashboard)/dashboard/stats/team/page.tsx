@@ -35,9 +35,20 @@ export interface TeamPlayerStats {
   best_round: number | null;
   worst_round: number | null;
   fairway_pct: number | null;
+  fairway_hits: number;
+  fairway_attempts: number;
   gir_pct: number | null;
+  gir_hits: number;
+  gir_attempts: number;
   putts_per_round: number | null;
+  total_putts: number;
+  holes_with_putts: number;
+  scrambling_pct: number | null;
+  scrambles_made: number;
+  scramble_attempts: number;
   birdies_per_round: number | null;
+  total_birdies: number;
+  holes_with_score: number;
   scoring_trend: number | null; // Difference from previous period
   // Per-format stats (9 vs 18 holes)
   rounds_played_18: number;
@@ -76,11 +87,7 @@ export default async function TeamStatsPage() {
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   let team: { name: string } | null = null;
   if (teamId) {
-    const { data: chosenTeam } = await supabase
-      .from('golf_teams')
-      .select('name')
-      .eq('id', teamId)
-      .maybeSingle();
+    const { data: chosenTeam } = await supabase.from('golf_teams').select('name').eq('id', teamId).maybeSingle();
     team = chosenTeam ? { name: chosenTeam.name } : null;
   }
 
@@ -105,22 +112,12 @@ export default async function TeamStatsPage() {
   }
 
   // Get all team members first, then get their player data
-  const { data: teamMembers } = await supabase
-    .from('golf_team_members')
-    .select('player_id')
-    .eq('team_id', teamId)
-    .eq('status', 'active');
+  const { data: teamMembers } = await supabase.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('status', 'active');
 
-  const playerIds = (teamMembers || []).map(tm => tm.player_id);
+  const playerIds = (teamMembers || []).map((tm) => tm.player_id);
 
   // Get player data - use graduation_year (actual DB column name)
-  const { data: players } = playerIds.length > 0
-    ? await supabase
-        .from('golf_players')
-        .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
-        .in('id', playerIds)
-        .order('last_name')
-    : { data: [] };
+  const { data: players } = playerIds.length > 0 ? await supabase.from('golf_players').select('id, first_name, last_name, avatar_url, graduation_year, handicap').in('id', playerIds).order('last_name') : { data: [] };
 
   if (!players || players.length === 0) {
     // A Fairway-styled empty state with a real next action (open the roster)
@@ -128,11 +125,7 @@ export default async function TeamStatsPage() {
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8">
-          <ViewHeader
-            eyebrow="Team Stats"
-            title="Team Stats"
-            description={team?.name || 'Your Team'}
-          />
+          <ViewHeader eyebrow="Team Stats" title="Team Stats" description={team?.name || 'Your Team'} />
           <div className="mt-8">
             <EmptyState
               icon={<Users strokeWidth={1.75} />}
@@ -153,24 +146,14 @@ export default async function TeamStatsPage() {
   // Fetch ALL rounds for ALL players in a single query (performance optimization).
   // Run CoachHelm intelligence fetch in parallel — it reads already-persisted
   // engine output and doesn't block the raw stats query.
-  const allPlayerIds = players.map(p => p.id);
+  const allPlayerIds = players.map((p) => p.id);
 
   const [roundsResult, intelligenceResult] = await Promise.all([
     // Paginated: PostgREST caps each response at 1000 rows; a full roster's
     // season exceeds that and silently dropped the oldest rounds. Keep
     // round_date DESC first (the trend math below expects newest-first) with
     // id ASC as a unique tiebreak so page boundaries are stable.
-    fetchAllRowsResult((from, to) =>
-      supabase
-        .from('golf_rounds')
-        .select('id, player_id, total_score, round_date, holes_played')
-        .in('player_id', allPlayerIds)
-        .eq('status', 'completed')
-        .not('total_score', 'is', null)
-        .order('round_date', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, to),
-    ),
+    fetchAllRowsResult((from, to) => supabase.from('golf_rounds').select('id, player_id, total_score, round_date, holes_played').in('player_id', allPlayerIds).eq('status', 'completed').not('total_score', 'is', null).order('round_date', { ascending: false }).order('id', { ascending: true }).range(from, to)),
     getTeamStatsIntelligence(teamId),
   ]);
   // Honesty flag: a genuinely FAILED rounds fetch must read as "couldn't
@@ -182,7 +165,7 @@ export default async function TeamStatsPage() {
   const roundsError = roundsFetchError !== null;
 
   // Fetch ALL holes for calculating GIR and fairway stats
-  const roundIds = (allRounds || []).map(r => r.id);
+  const roundIds = (allRounds || []).map((r) => r.id);
 
   // Chunked + paginated. The round_id list is chunked (~300 per .in(...)) so the
   // request URL stays well under the ~414 length limit at full-roster scale, and
@@ -194,24 +177,30 @@ export default async function TeamStatsPage() {
   const allHoles: HoleData[] = [];
   for (let i = 0; i < roundIds.length; i += HOLES_ROUND_BATCH) {
     const roundIdBatch = roundIds.slice(i, i + HOLES_ROUND_BATCH);
-    const batchHoles = (await fetchAllRows((from, to) =>
-      supabase
-        .from('golf_holes')
-        .select('round_id, par, fairway_hit, gir, putts, score')
-        .in('round_id', roundIdBatch)
-        .order('id', { ascending: true })
-        .range(from, to),
-    )) as HoleData[];
+    const batchHoles = (await fetchAllRows((from, to) => supabase.from('golf_holes').select('round_id, par, fairway_hit, gir, putts, score').in('round_id', roundIdBatch).order('id', { ascending: true }).range(from, to))) as HoleData[];
     allHoles.push(...batchHoles);
   }
 
   // Define types for the grouped data
-  type RoundData = { id: string; player_id: string; total_score: number | null; round_date: string; holes_played: number | null };
-  type HoleData = { round_id: string; par: number; fairway_hit: boolean | null; gir: boolean | null; putts: number | null; score: number | null };
+  type RoundData = {
+    id: string;
+    player_id: string;
+    total_score: number | null;
+    round_date: string;
+    holes_played: number | null;
+  };
+  type HoleData = {
+    round_id: string;
+    par: number;
+    fairway_hit: boolean | null;
+    gir: boolean | null;
+    putts: number | null;
+    score: number | null;
+  };
 
   // Group data by player in memory
   const roundsByPlayer: Record<string, RoundData[]> = {};
-  for (const round of (allRounds || [])) {
+  for (const round of allRounds || []) {
     const playerId = round.player_id;
     if (!roundsByPlayer[playerId]) {
       roundsByPlayer[playerId] = [];
@@ -220,7 +209,7 @@ export default async function TeamStatsPage() {
   }
 
   const holesByRound: Record<string, HoleData[]> = {};
-  for (const hole of (allHoles || [])) {
+  for (const hole of allHoles || []) {
     const roundId = hole.round_id;
     if (!holesByRound[roundId]) {
       holesByRound[roundId] = [];
@@ -229,9 +218,9 @@ export default async function TeamStatsPage() {
   }
 
   // Calculate comprehensive stats for each player
-  const playersWithStats: TeamPlayerStats[] = players.map(player => {
+  const playersWithStats: TeamPlayerStats[] = players.map((player) => {
     const playerRounds = roundsByPlayer[player.id] || [];
-    const scoredRounds = playerRounds.filter(r => r.total_score !== null);
+    const scoredRounds = playerRounds.filter((r) => r.total_score !== null);
 
     // Normalize to 18-hole equivalents + split by format
     let totalStrokes = 0;
@@ -264,21 +253,15 @@ export default async function TeamStatsPage() {
     }
 
     const roundsPlayed = scoredRounds.length;
-    const scoringAverage18 = roundsPlayed18 > 0
-      ? totalStrokes18 / roundsPlayed18
-      : null;
-    const scoringAverage9 = roundsPlayed9 > 0
-      ? totalStrokes9 / roundsPlayed9
-      : null;
+    const scoringAverage18 = roundsPlayed18 > 0 ? totalStrokes18 / roundsPlayed18 : null;
+    const scoringAverage9 = roundsPlayed9 > 0 ? totalStrokes9 / roundsPlayed9 : null;
     // Canonical scoring average = strictly 18-hole rounds, matching
     // golf_player_stats_cache (and therefore the dashboard / CoachHelm / player
     // surfaces). Previously this card showed an all-rounds 18-normalized figure,
     // which disagreed with the cache by ~0.2-0.4 strokes for players with a
     // 9-hole round. Fall back to the normalized figure only when a player has no
     // full 18-hole rounds, so the card never shows "—".
-    const scoringAverage = scoringAverage18 ?? (totalHolesScored > 0
-      ? (totalStrokes / totalHolesScored) * 18
-      : null);
+    const scoringAverage = scoringAverage18 ?? (totalHolesScored > 0 ? (totalStrokes / totalHolesScored) * 18 : null);
     const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
     const worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
     const bestRound18 = scores18.length > 0 ? Math.min(...scores18) : null;
@@ -300,12 +283,14 @@ export default async function TeamStatsPage() {
     let totalGirOpps = 0;
     let totalPutts = 0;
     let totalHolesWithPutts = 0;
+    let totalScramblesMade = 0;
+    let totalScrambleAttempts = 0;
     let totalBirdies = 0;
     let totalHolesWithScore = 0;
 
-    playerRounds.forEach(round => {
+    playerRounds.forEach((round) => {
       const holes = holesByRound[round.id] || [];
-      holes.forEach(hole => {
+      holes.forEach((hole) => {
         // Fairway (only par 4s and 5s). Exclude holes where fairway_hit was never
         // recorded (NULL) — mirrors the GIR rule below and the player stats page.
         // Counting a NULL flag as a miss understated FW% and disagreed with the
@@ -320,6 +305,13 @@ export default async function TeamStatsPage() {
         if (hole.gir !== null) {
           totalGirOpps++;
           if (hole.gir) totalGirHits++;
+        }
+        // Scrambling: after a missed GIR, save par or better. Keep the
+        // numerator/denominator so the team roll-up can pool attempts exactly
+        // instead of averaging player percentages with incompatible samples.
+        if (hole.gir === false && hole.score !== null && hole.par !== null) {
+          totalScrambleAttempts++;
+          if (hole.score <= hole.par) totalScramblesMade++;
         }
         // Putts — track the holes that actually carry a putts value so the
         // per-round denominator matches the numerator (some holes lack putts;
@@ -337,12 +329,8 @@ export default async function TeamStatsPage() {
       });
     });
 
-    const fairwayPct = totalFairwayOpps > 0
-      ? (totalFairwayHits / totalFairwayOpps) * 100
-      : null;
-    const girPct = totalGirOpps > 0
-      ? (totalGirHits / totalGirOpps) * 100
-      : null;
+    const fairwayPct = totalFairwayOpps > 0 ? (totalFairwayHits / totalFairwayOpps) * 100 : null;
+    const girPct = totalGirOpps > 0 ? (totalGirHits / totalGirOpps) * 100 : null;
     // Normalize putts to 18-hole equivalent. Denominator = holes that actually
     // carry a putts value (totalHolesWithPutts), NOT every scored hole — the
     // numerator only summed holes with a non-null putts, so dividing by all
@@ -352,11 +340,11 @@ export default async function TeamStatsPage() {
     // so the two surfaces can never disagree on the same player again (#917).
     const puttsPerRound = calculatePuttsPerRound(totalPutts, totalHolesWithPutts);
 
+    const scramblingPct = totalScrambleAttempts > 0 ? (totalScramblesMade / totalScrambleAttempts) * 100 : null;
+
     // Birdies per round: normalize to 18-hole equivalent
     // golf_holes.score is stored per-hole — null values indicate pre-score-tracking rounds
-    const birdiesPerRound = totalHolesWithScore > 0
-      ? (totalBirdies / totalHolesWithScore) * 18
-      : null;
+    const birdiesPerRound = totalHolesWithScore > 0 ? (totalBirdies / totalHolesWithScore) * 18 : null;
 
     return {
       id: player.id,
@@ -370,9 +358,20 @@ export default async function TeamStatsPage() {
       best_round: bestRound,
       worst_round: worstRound,
       fairway_pct: fairwayPct,
+      fairway_hits: totalFairwayHits,
+      fairway_attempts: totalFairwayOpps,
       gir_pct: girPct,
+      gir_hits: totalGirHits,
+      gir_attempts: totalGirOpps,
       putts_per_round: puttsPerRound,
+      total_putts: totalPutts,
+      holes_with_putts: totalHolesWithPutts,
+      scrambling_pct: scramblingPct,
+      scrambles_made: totalScramblesMade,
+      scramble_attempts: totalScrambleAttempts,
       birdies_per_round: birdiesPerRound,
+      total_birdies: totalBirdies,
+      holes_with_score: totalHolesWithScore,
       scoring_trend: scoringTrend,
       rounds_played_18: roundsPlayed18,
       rounds_played_9: roundsPlayed9,
@@ -394,20 +393,21 @@ export default async function TeamStatsPage() {
   // (teamId-scoped players + per-player intelligence) plus two thin reads
   // that JOIN already-populated tables: team leak maps (raw shots vs PGA)
   // and per-player standing snapshots.
-  const intelligenceByPlayer = intelligenceResult.success && intelligenceResult.data
-    ? Object.fromEntries(
-        intelligenceResult.data.players.map((p) => [
-          p.playerId,
-          {
-            composite: p.composite,
-            overall: p.categories?.overall ?? null,
-            topInsightTitle: p.topInsight?.title ?? null,
-            topInsightPriority: p.topInsight?.priority ?? null,
-            insightCount: p.insightCount,
-          },
-        ]),
-      )
-    : {};
+  const intelligenceByPlayer =
+    intelligenceResult.success && intelligenceResult.data
+      ? Object.fromEntries(
+          intelligenceResult.data.players.map((p) => [
+            p.playerId,
+            {
+              composite: p.composite,
+              overall: p.categories?.overall ?? null,
+              topInsightTitle: p.topInsight?.title ?? null,
+              topInsightPriority: p.topInsight?.priority ?? null,
+              insightCount: p.insightCount,
+            },
+          ]),
+        )
+      : {};
   // Honesty flags: a FAILED action must read as "couldn't load" (with retry),
   // NOT as a cheerful empty. Distinguish failure (success === false) from a
   // successful-but-empty result so the surface never masks a backend error.
@@ -415,15 +415,10 @@ export default async function TeamStatsPage() {
   // sampleSize = teammates with a stats-cache row that fed the z-score
   // normalization; < 3 makes every composite statistically unstable (the
   // composite UI should down-tone it). 0 when the fetch failed/returned none.
-  const intelligenceSampleSize = intelligenceResult.success && intelligenceResult.data
-    ? intelligenceResult.data.sampleSize
-    : 0;
+  const intelligenceSampleSize = intelligenceResult.success && intelligenceResult.data ? intelligenceResult.data.sampleSize : 0;
   // Batched: ONE chunked .in('player_id', ...) read for every roster player
   // instead of N admin queries (one per player).
-  const [leakRes, standingByPlayer] = await Promise.all([
-    getTeamLeakMaps(teamId),
-    loadPlayersStandingMap(playersWithStats.map((p) => p.id)),
-  ]);
+  const [leakRes, standingByPlayer] = await Promise.all([getTeamLeakMaps(teamId), loadPlayersStandingMap(playersWithStats.map((p) => p.id))]);
   const leakError = !leakRes.success;
   // Team Stats board KPI ("Rounds · 30d") — filtered from the SAME `allRounds`
   // fetch above (round_date is an ISO date string), no new query.
@@ -433,18 +428,7 @@ export default async function TeamStatsPage() {
   const teamRounds30d = (allRounds || []).filter((r) => r.round_date >= thirtyDaysAgoIso).length;
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <TeamStatsBoard
-        teamName={team?.name ?? 'Your Team'}
-        players={playersWithStats}
-        intelligenceByPlayer={intelligenceByPlayer}
-        intelligenceError={intelligenceError}
-        intelligenceSampleSize={intelligenceSampleSize}
-        leakMaps={leakRes.success ? leakRes.data ?? null : null}
-        leakError={leakError}
-        roundsError={roundsError}
-        standingByPlayer={standingByPlayer}
-        teamRounds30d={teamRounds30d}
-      />
+      <TeamStatsBoard teamName={team?.name ?? 'Your Team'} players={playersWithStats} intelligenceByPlayer={intelligenceByPlayer} intelligenceError={intelligenceError} intelligenceSampleSize={intelligenceSampleSize} leakMaps={leakRes.success ? (leakRes.data ?? null) : null} leakError={leakError} roundsError={roundsError} standingByPlayer={standingByPlayer} teamRounds30d={teamRounds30d} />
     </div>
   );
 }

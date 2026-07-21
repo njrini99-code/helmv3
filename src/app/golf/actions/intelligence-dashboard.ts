@@ -616,6 +616,15 @@ async function acknowledgeInsightImpl(
       return { success: false, error: 'Insight not found' };
     }
 
+    // Was missing entirely (2026-07-19 triage diagnosis): every sibling
+    // mutation (dismissInsight above, bulkDismiss/bulkAcknowledge/bulkResolve
+    // in insight-management.ts) revalidates these paths; acknowledging left
+    // the dashboard/insights/intelligence list showing the stale
+    // pre-acknowledge state until an unrelated navigation happened to bust it.
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
+    revalidatePath('/golf/dashboard/intelligence');
+
     return { success: true };
   } catch (error) {
     await logServerError(`Error in acknowledgeInsight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });

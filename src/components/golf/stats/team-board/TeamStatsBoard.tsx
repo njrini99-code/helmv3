@@ -29,41 +29,22 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Download } from 'lucide-react';
 
-import {
-  ViewHeader,
-  StrokesGainedTornado,
-  type SGCategory,
-  LeakMap,
-  type LeakMapBucket,
-  InstrumentPanel,
-  Readout,
-  Button,
-  IconButton,
-  InlineNotice,
-  Sparkline,
-  fairwayToast,
-} from '@/components/fairway';
-import { MatrixBoard, RankCell, RingGauge, SignalChip } from '@/components/fairway/modules';
-import type { MatrixColumn, MatrixBoardRow as MatrixBoardRowData } from '@/components/fairway/modules';
+import { ViewHeader, StrokesGainedTornado, type SGCategory, LeakMap, type LeakMapBucket, InstrumentPanel, Readout, Button, IconButton, InlineNotice, Sparkline, fairwayToast } from '@/components/fairway';
+import { MatrixBoard, RankCell, RailBars, RingGauge, SignalChip } from '@/components/fairway/modules';
+import type { MatrixColumn, MatrixBoardRow as MatrixBoardRowData, RailBarRow } from '@/components/fairway/modules';
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
 import type { TeamLeakMaps, LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 
-import {
-  buildTeamBoardViewModel,
-  fmtSg,
-  weightedMean,
-  type TeamBoardPlayerInput,
-  type TeamBoardRowViewModel,
-} from './buildTeamBoardViewModel';
+import { buildTeamBoardViewModel, fmtSg, weightedMean, type TeamBoardPlayerInput, type TeamBoardRowViewModel } from './buildTeamBoardViewModel';
 
 // ============================================================================
 // PROPS — same shapes the route already resolves (page.tsx reuses its
-// existing fetches verbatim; only two fields are appended to TeamPlayerStats
-// — recent_scores / last_round_score — both derived from rounds the page
-// already fetched, no new query).
+// existing fetches verbatim. Raw make/attempt totals and the recent-score
+// fields are all derived from rounds/holes the page already fetched, with no
+// extra query.
 // ============================================================================
 
 export interface TeamStatsBoardPlayerIntelligence {
@@ -116,11 +97,7 @@ function toLeakMapBuckets(buckets: LeakBucket[] | undefined): LeakMapBucket[] {
 }
 
 /** Worst wrong-side gap in a leak family → drives the chart takeaway honestly. */
-function worstLeakTakeaway(
-  buckets: LeakBucket[],
-  direction: 'higher_better' | 'lower_better',
-  unit: 'percent' | 'feet',
-): string | undefined {
+function worstLeakTakeaway(buckets: LeakBucket[], direction: 'higher_better' | 'lower_better', unit: 'percent' | 'feet'): string | undefined {
   let worst: { label: string; mag: number } | null = null;
   for (const b of buckets) {
     if (b.team_value === null || b.pga_value === null || b.sample_n === 0) continue;
@@ -158,28 +135,11 @@ function csvCell(value: string): string {
 }
 
 function buildBoardCsv(rows: TeamBoardRowViewModel[]): string {
-  const header = [
-    'Player', 'Rounds', 'Scoring Avg', 'Tee Rank', 'App Rank', 'Short Rank', 'Putt Rank', 'Scoring Rank', 'Composite', 'Signal',
-  ];
+  const header = ['Player', 'Rounds', 'Scoring Avg', 'Tee Rank', 'App Rank', 'Short Rank', 'Putt Rank', 'Scoring Rank', 'Composite', 'Signal'];
   const fmtRank = (r: { rank: number; of: number } | null) => (r ? `${r.rank}/${r.of}` : '');
   const lines = [header.join(',')];
   for (const r of rows) {
-    lines.push(
-      [
-        r.name,
-        String(r.roundsPlayed),
-        r.scoringAverage,
-        fmtRank(r.ranks.tee),
-        fmtRank(r.ranks.app),
-        fmtRank(r.ranks.short),
-        fmtRank(r.ranks.putt),
-        fmtRank(r.ranks.scoring),
-        r.composite === null ? '' : String(Math.round(r.composite)),
-        r.signal.label,
-      ]
-        .map(csvCell)
-        .join(','),
-    );
+    lines.push([r.name, String(r.roundsPlayed), r.scoringAverage, fmtRank(r.ranks.tee), fmtRank(r.ranks.app), fmtRank(r.ranks.short), fmtRank(r.ranks.putt), fmtRank(r.ranks.scoring), r.composite === null ? '' : String(Math.round(r.composite)), r.signal.label].map(csvCell).join(','));
   }
   return lines.join('\n');
 }
@@ -196,18 +156,7 @@ const COLUMNS: MatrixColumn[] = [
   { key: 'signal', label: 'Signal' },
 ];
 
-export function TeamStatsBoard({
-  teamName,
-  players,
-  intelligenceByPlayer,
-  intelligenceError = false,
-  intelligenceSampleSize = 0,
-  leakMaps,
-  leakError = false,
-  roundsError = false,
-  standingByPlayer,
-  teamRounds30d,
-}: TeamStatsBoardProps) {
+export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d }: TeamStatsBoardProps) {
   const boardInput = React.useMemo(() => {
     const boardPlayers: TeamBoardPlayerInput[] = players.map((p) => ({
       id: p.id,
@@ -217,6 +166,21 @@ export function TeamStatsBoard({
       scoringAverage: p.scoring_average,
       roundsPlayed18: p.rounds_played_18,
       scoringAverage18: p.scoring_average_18,
+      fairwayPct: p.fairway_pct,
+      fairwayHits: p.fairway_hits,
+      fairwayAttempts: p.fairway_attempts,
+      girPct: p.gir_pct,
+      girHits: p.gir_hits,
+      girAttempts: p.gir_attempts,
+      scramblingPct: p.scrambling_pct,
+      scramblesMade: p.scrambles_made,
+      scrambleAttempts: p.scramble_attempts,
+      puttsPerRound: p.putts_per_round,
+      totalPutts: p.total_putts,
+      holesWithPutts: p.holes_with_putts,
+      birdiesPerRound: p.birdies_per_round,
+      totalBirdies: p.total_birdies,
+      holesWithScore: p.holes_with_score,
       scoringTrend: p.scoring_trend,
       lastRoundScore: p.last_round_score ?? null,
       recentScores: p.recent_scores ?? [],
@@ -224,7 +188,12 @@ export function TeamStatsBoard({
       topInsightTitle: intelligenceByPlayer[p.id]?.topInsightTitle ?? null,
       topInsightPriority: intelligenceByPlayer[p.id]?.topInsightPriority ?? null,
     }));
-    return { players: boardPlayers, standingByPlayer, intelligenceSampleSize, rounds30d: teamRounds30d };
+    return {
+      players: boardPlayers,
+      standingByPlayer,
+      intelligenceSampleSize,
+      rounds30d: teamRounds30d,
+    };
   }, [players, intelligenceByPlayer, standingByPlayer, intelligenceSampleSize, teamRounds30d]);
 
   const vm = React.useMemo(() => buildTeamBoardViewModel(boardInput), [boardInput]);
@@ -235,7 +204,12 @@ export function TeamStatsBoard({
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const slug = teamName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'team';
+      const slug =
+        teamName
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') || 'team';
       a.href = url;
       a.download = `${slug}-team-stats.csv`;
       document.body.appendChild(a);
@@ -246,7 +220,9 @@ export function TeamStatsBoard({
         description: `${vm.rows.length} player${vm.rows.length !== 1 ? 's' : ''} · ${a.download}`,
       });
     } catch {
-      fairwayToast.danger('Export failed', { description: 'Could not generate the CSV. Please try again.' });
+      fairwayToast.danger('Export failed', {
+        description: 'Could not generate the CSV. Please try again.',
+      });
     }
   }, [vm.rows, teamName]);
 
@@ -263,11 +239,41 @@ export function TeamStatsBoard({
     () =>
       SG_CATEGORY_BARS.map(({ metric, label }) => ({
         label,
-        value: weightedMean(players.map((p) => ({ value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null, weight: p.rounds_played }))),
+        value: weightedMean(
+          players.map((p) => ({
+            value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null,
+            weight: p.rounds_played,
+          })),
+        ),
       })).filter((d): d is { label: string; value: number } => d.value !== null),
     [players, standingByPlayer],
   );
   const hasSg = sgData.length > 0;
+
+  const fundamentalsRows: RailBarRow[] = React.useMemo(
+    () => [
+      {
+        label: 'Fairways',
+        pct: vm.fundamentals.fairwayPct ?? 0,
+        value: fmtPct(vm.fundamentals.fairwayPct),
+        dim: vm.fundamentals.fairwayPct === null,
+      },
+      {
+        label: 'GIR',
+        pct: vm.fundamentals.girPct ?? 0,
+        value: fmtPct(vm.fundamentals.girPct),
+        dim: vm.fundamentals.girPct === null,
+      },
+      {
+        label: 'Scrambling',
+        pct: vm.fundamentals.scramblingPct ?? 0,
+        value: fmtPct(vm.fundamentals.scramblingPct),
+        dim: vm.fundamentals.scramblingPct === null,
+      },
+    ],
+    [vm.fundamentals],
+  );
+  const hasFundamentals = fundamentalsRows.some((row) => !row.dim);
 
   const sgTakeaway = React.useMemo(() => {
     if (!hasSg) return undefined;
@@ -284,8 +290,7 @@ export function TeamStatsBoard({
   const leakRoundsIncluded = leakMaps?.roundsIncluded ?? 0;
   const hasPuttSamples = puttBuckets.some((b) => b.sampleN > 0);
   const hasApproachSamples = approachBuckets.some((b) => b.sampleN > 0);
-  const leakColdStartMessage =
-    'Leak maps appear once players log rounds with shot-level tracking (putts and approach distances). Have players enter rounds shot by shot to populate this.';
+  const leakColdStartMessage = 'Leak maps appear once players log rounds with shot-level tracking (putts and approach distances). Have players enter rounds shot by shot to populate this.';
 
   const rows: MatrixBoardRowData[] = vm.rows.map((row) => ({
     id: row.id,
@@ -310,12 +315,7 @@ export function TeamStatsBoard({
           —
         </span>
       ),
-      <Sparkline
-        key="trend"
-        data={row.trendSeries}
-        goodDirection="down"
-        label={`${row.name} scoring trend`}
-      />,
+      <Sparkline key="trend" data={row.trendSeries} goodDirection="down" label={`${row.name} scoring trend`} />,
       <SignalChip key="signal" tone={row.signal.tone}>
         {row.signal.label}
       </SignalChip>,
@@ -326,7 +326,10 @@ export function TeamStatsBoard({
   const kpis = [
     { label: 'Team scoring', value: vm.kpis.teamScoring },
     { label: 'Team SG', value: <TeamSgKpi display={vm.kpis.teamSg} /> },
-    { label: 'Trajectory', value: <TrajectoryKpi trajectory={vm.kpis.trajectory} /> },
+    {
+      label: 'Trajectory',
+      value: <TrajectoryKpi trajectory={vm.kpis.trajectory} />,
+    },
     { label: 'Rounds · 30d', value: vm.kpis.rounds30d },
   ];
 
@@ -342,13 +345,7 @@ export function TeamStatsBoard({
             <Button asChild variant="ghost" size="md">
               <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
             </Button>
-            <IconButton
-              variant="secondary"
-              size="md"
-              aria-label="Export team stats as CSV"
-              onClick={handleExport}
-              disabled={vm.rows.length === 0}
-            >
+            <IconButton variant="secondary" size="md" aria-label="Export team stats as CSV" onClick={handleExport} disabled={vm.rows.length === 0}>
               <Download className="h-4 w-4" aria-hidden />
             </IconButton>
           </div>
@@ -372,31 +369,33 @@ export function TeamStatsBoard({
         )}
       </section>
 
+      {/* ── TEAM FUNDAMENTALS — pooled raw outcomes, visible without opening a player ── */}
+      <section className="mt-10">
+        <InstrumentPanel depth="raised" eyebrow="Core scoring profile" header="Team fundamentals">
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,1.65fr)_minmax(21rem,0.85fr)] xl:items-center">
+            <div>
+              <p className="mb-5 max-w-[62ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">The team’s repeatable outcomes, pooled from every recorded opportunity—not averaged player percentages.</p>
+              {hasFundamentals ? <RailBars rows={fundamentalsRows} labelWidth={84} /> : <p className="font-fw-sans text-body-sm text-text-secondary">Fairways, GIR, and scrambling appear once hole outcomes are recorded.</p>}
+            </div>
+
+            <div className="border-t border-border-subtle pt-6 xl:border-l xl:border-t-0 xl:pl-8 xl:pt-0">
+              <div className="grid grid-cols-3 divide-x divide-border-subtle">
+                <FundamentalReadout label="Score avg" value={vm.kpis.teamScoring} />
+                <FundamentalReadout label="Putts / 18" value={fmtOneDecimal(vm.fundamentals.puttsPerRound)} />
+                <FundamentalReadout label="Birdies / 18" value={fmtOneDecimal(vm.fundamentals.birdiesPerRound)} />
+              </div>
+              <p className="mt-5 font-fw-sans text-caption leading-relaxed text-text-tertiary xl:text-right">Per-18 figures normalize every valid recorded hole.</p>
+            </div>
+          </div>
+        </InstrumentPanel>
+      </section>
+
       {/* ── TEAM STROKES GAINED — demoted below the board ──────────────────────── */}
       <section className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <StrokesGainedTornado
-          overline="Strokes Gained"
-          title="Team Strokes Gained"
-          subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`}
-          takeaway={sgTakeaway}
-          data={sgData}
-          state={hasSg ? undefined : 'insufficient-data'}
-          stateMessage={
-            hasSg
-              ? undefined
-              : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'
-          }
-        />
+        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
         <InstrumentPanel depth="raised" tone="accent" eyebrow="Season to date" header="SG: Total" className="flex flex-col justify-center">
-          {vm.kpis.teamSgRaw !== null ? (
-            <Readout size="hero" label="Team SG · per round" display={fmtSg(vm.kpis.teamSgRaw)} unit="sg" />
-          ) : (
-            <Readout size="hero" label="Team SG · per round" state="awaiting" awaitingLabel="Awaiting standing" />
-          )}
-          <p className="mt-4 font-fw-sans text-caption text-text-tertiary">
-            The sum of every category vs the {tourLabel(isWomens)} baseline. Negative means the team is losing strokes to
-            Tour over a round.
-          </p>
+          {vm.kpis.teamSgRaw !== null ? <Readout size="hero" label="Team SG · per round" display={fmtSg(vm.kpis.teamSgRaw)} unit="sg" /> : <Readout size="hero" label="Team SG · per round" state="awaiting" awaitingLabel="Awaiting standing" />}
+          <p className="mt-4 font-fw-sans text-caption text-text-tertiary">The sum of every category vs the {tourLabel(isWomens)} baseline. Negative means the team is losing strokes to Tour over a round.</p>
         </InstrumentPanel>
       </section>
 
@@ -411,28 +410,8 @@ export function TeamStatsBoard({
           ) : null}
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          <LeakMap
-            overline="Putting"
-            title="Putts Made by Distance"
-            subtitle={`Team make% vs ${tourLabel(isWomens)}`}
-            takeaway={puttTakeaway}
-            data={puttBuckets}
-            direction="higher_better"
-            unit="percent"
-            state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'}
-            stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage}
-          />
-          <LeakMap
-            overline="Approach"
-            title="Approach Proximity by Distance"
-            subtitle={`Avg proximity to hole vs ${tourLabel(isWomens)}`}
-            takeaway={approachTakeaway}
-            data={approachBuckets}
-            direction="lower_better"
-            unit="feet"
-            state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'}
-            stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage}
-          />
+          <LeakMap overline="Putting" title="Putts Made by Distance" subtitle={`Team make% vs ${tourLabel(isWomens)}`} takeaway={puttTakeaway} data={puttBuckets} direction="higher_better" unit="percent" state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage} />
+          <LeakMap overline="Approach" title="Approach Proximity by Distance" subtitle={`Avg proximity to hole vs ${tourLabel(isWomens)}`} takeaway={approachTakeaway} data={approachBuckets} direction="lower_better" unit="feet" state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage} />
         </div>
       </section>
     </div>
@@ -441,11 +420,7 @@ export function TeamStatsBoard({
 
 function RankOrDash({ rank }: { rank: { rank: number; of: number } | null }) {
   if (!rank) {
-    return (
-      <span className="mx-auto grid h-[26px] w-[34px] place-items-center font-fw-mono text-caption text-text-tertiary">
-        —
-      </span>
-    );
+    return <span className="mx-auto grid h-[26px] w-[34px] place-items-center font-fw-mono text-caption text-text-tertiary">—</span>;
   }
   return <RankCell rank={rank.rank} of={rank.of} />;
 }
@@ -466,11 +441,16 @@ function TrajectoryKpi({ trajectory }: { trajectory: { improving: number; steady
 
 function ExpandBand({ row }: { row: TeamBoardRowViewModel }) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+      <ExpandStat label="Fairways" value={row.expand.fairways} />
+      <ExpandStat label="GIR" value={row.expand.gir} />
+      <ExpandStat label="Scrambling" value={row.expand.scrambling} />
+      <ExpandStat label="Putts / 18" value={row.expand.puttsPerRound} />
+      <ExpandStat label="Birdies / 18" value={row.expand.birdiesPerRound} />
       <ExpandStat label={row.expand.worstMetricLabel ?? 'Worst metric'} value={row.expand.worstMetricValue ?? '—'} />
       <ExpandStat label="SG Putt" value={row.expand.sgPutt} />
       <ExpandStat label="Last round" value={row.expand.lastRound} />
-      <div className="col-span-2 flex flex-col justify-center font-fw-sans text-caption text-text-secondary sm:col-span-1">
+      <div className="col-span-2 flex flex-col justify-center font-fw-sans text-caption text-text-secondary">
         <Link href={row.expand.links.fullStats} className="font-semibold text-accent-700 hover:underline">
           Full stats
         </Link>
@@ -481,6 +461,23 @@ function ExpandBand({ row }: { row: TeamBoardRowViewModel }) {
           Prescribe drill
         </Link>
       </div>
+    </div>
+  );
+}
+
+function fmtPct(value: number | null): string {
+  return value === null || !Number.isFinite(value) ? '—' : `${value.toFixed(1)}%`;
+}
+
+function fmtOneDecimal(value: number | null): string {
+  return value === null || !Number.isFinite(value) ? '—' : value.toFixed(1);
+}
+
+function FundamentalReadout({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 px-3 first:pl-0 last:pr-0 sm:px-5 xl:text-right">
+      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">{label}</p>
+      <strong className="mt-1 block truncate font-fw-mono text-h2 font-normal tracking-[-0.03em] tabular-nums text-text-primary">{value}</strong>
     </div>
   );
 }

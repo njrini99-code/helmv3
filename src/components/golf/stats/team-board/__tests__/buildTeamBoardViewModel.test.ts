@@ -1,17 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  rankByValue,
-  weightedMean,
-  signalToneFor,
-  scoringTrendVerdict,
-  worstCategoryLabel,
-  worstStandingMetric,
-  formatMetricValue,
-  fmtSg,
-  buildTeamBoardViewModel,
-  TREND_SIGNAL_MIN_ROUNDS,
-  type TeamBoardPlayerInput,
-} from '../buildTeamBoardViewModel';
+import { rankByValue, weightedMean, signalToneFor, scoringTrendVerdict, worstCategoryLabel, worstStandingMetric, formatMetricValue, fmtSg, buildTeamBoardViewModel, TREND_SIGNAL_MIN_ROUNDS, type TeamBoardPlayerInput } from '../buildTeamBoardViewModel';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
@@ -99,32 +87,80 @@ describe('weightedMean', () => {
 
 describe('signalToneFor — hot/watch/quiet rules', () => {
   it('is hot when the player is the top performer', () => {
-    expect(signalToneFor({ isTopPerformer: true, trend: 'stable', topInsightPriority: null })).toBe('hot');
+    expect(
+      signalToneFor({
+        isTopPerformer: true,
+        trend: 'stable',
+        topInsightPriority: null,
+      }),
+    ).toBe('hot');
   });
 
   it('is hot when improving, even without the top-performer crown', () => {
-    expect(signalToneFor({ isTopPerformer: false, trend: 'improving', topInsightPriority: null })).toBe('hot');
+    expect(
+      signalToneFor({
+        isTopPerformer: false,
+        trend: 'improving',
+        topInsightPriority: null,
+      }),
+    ).toBe('hot');
   });
 
   it('is watch when declining', () => {
-    expect(signalToneFor({ isTopPerformer: false, trend: 'declining', topInsightPriority: null })).toBe('watch');
+    expect(
+      signalToneFor({
+        isTopPerformer: false,
+        trend: 'declining',
+        topInsightPriority: null,
+      }),
+    ).toBe('watch');
   });
 
   it('is watch on a high-priority top insight even without a declining trend', () => {
-    expect(signalToneFor({ isTopPerformer: false, trend: 'stable', topInsightPriority: 'high' })).toBe('watch');
-    expect(signalToneFor({ isTopPerformer: false, trend: null, topInsightPriority: 'critical' })).toBe('watch');
+    expect(
+      signalToneFor({
+        isTopPerformer: false,
+        trend: 'stable',
+        topInsightPriority: 'high',
+      }),
+    ).toBe('watch');
+    expect(
+      signalToneFor({
+        isTopPerformer: false,
+        trend: null,
+        topInsightPriority: 'critical',
+      }),
+    ).toBe('watch');
   });
 
   it('is quiet for a steady player with no flagged insight', () => {
-    expect(signalToneFor({ isTopPerformer: false, trend: 'stable', topInsightPriority: null })).toBe('quiet');
+    expect(
+      signalToneFor({
+        isTopPerformer: false,
+        trend: 'stable',
+        topInsightPriority: null,
+      }),
+    ).toBe('quiet');
   });
 
   it('is quiet (not watch) for a low/medium-priority insight', () => {
-    expect(signalToneFor({ isTopPerformer: false, trend: 'stable', topInsightPriority: 'medium' })).toBe('quiet');
+    expect(
+      signalToneFor({
+        isTopPerformer: false,
+        trend: 'stable',
+        topInsightPriority: 'medium',
+      }),
+    ).toBe('quiet');
   });
 
   it('is quiet for a cold-start player awaiting a trend signal', () => {
-    expect(signalToneFor({ isTopPerformer: false, trend: null, topInsightPriority: null })).toBe('quiet');
+    expect(
+      signalToneFor({
+        isTopPerformer: false,
+        trend: null,
+        topInsightPriority: null,
+      }),
+    ).toBe('quiet');
   });
 });
 
@@ -209,7 +245,14 @@ describe('worstStandingMetric', () => {
 
   it('ignores rows with a null team_pct (cold-start)', () => {
     const map = new Map<MetricId, PlayerStanding>([
-      ['sg_putting', standing({ metric_id: 'sg_putting', player_value: -1.6, team_pct: null })],
+      [
+        'sg_putting',
+        standing({
+          metric_id: 'sg_putting',
+          player_value: -1.6,
+          team_pct: null,
+        }),
+      ],
       ['sg_approach', standing({ metric_id: 'sg_approach', player_value: 0.2, team_pct: 60 })],
     ]);
     expect(worstStandingMetric(map)?.metric).toBe('sg_approach');
@@ -243,6 +286,21 @@ function player(overrides: Partial<TeamBoardPlayerInput>): TeamBoardPlayerInput 
     // the 9-hole/partial-round split keep behaving as an all-18 roster.
     roundsPlayed18: 12,
     scoringAverage18: 73.5,
+    fairwayPct: 58,
+    fairwayHits: 58,
+    fairwayAttempts: 100,
+    girPct: 62,
+    girHits: 62,
+    girAttempts: 100,
+    scramblingPct: 45,
+    scramblesMade: 18,
+    scrambleAttempts: 40,
+    puttsPerRound: 30,
+    totalPutts: 200,
+    holesWithPutts: 120,
+    birdiesPerRound: 2.1,
+    totalBirdies: 14,
+    holesWithScore: 120,
     scoringTrend: null,
     lastRoundScore: 74,
     recentScores: [],
@@ -255,12 +313,45 @@ function player(overrides: Partial<TeamBoardPlayerInput>): TeamBoardPlayerInput 
 
 describe('buildTeamBoardViewModel', () => {
   it('ranks cells from the standing map and marks the top composite hot', () => {
-    const jackson = player({ id: 'jackson', composite: 82, scoringTrend: -0.1 });
-    const mason = player({ id: 'mason', composite: 65, scoringTrend: 0.9, topInsightPriority: 'high' });
+    const jackson = player({
+      id: 'jackson',
+      composite: 82,
+      scoringTrend: -0.1,
+    });
+    const mason = player({
+      id: 'mason',
+      composite: 65,
+      scoringTrend: 0.9,
+      topInsightPriority: 'high',
+    });
 
     const standingByPlayer = new Map<string, Map<MetricId, PlayerStanding>>([
-      ['jackson', new Map([['sg_putting', standing({ metric_id: 'sg_putting', player_value: 0.6, team_pct: 90 })]])],
-      ['mason', new Map([['sg_putting', standing({ metric_id: 'sg_putting', player_value: -1.6, team_pct: 15 })]])],
+      [
+        'jackson',
+        new Map([
+          [
+            'sg_putting',
+            standing({
+              metric_id: 'sg_putting',
+              player_value: 0.6,
+              team_pct: 90,
+            }),
+          ],
+        ]),
+      ],
+      [
+        'mason',
+        new Map([
+          [
+            'sg_putting',
+            standing({
+              metric_id: 'sg_putting',
+              player_value: -1.6,
+              team_pct: 15,
+            }),
+          ],
+        ]),
+      ],
     ]);
 
     const vm = buildTeamBoardViewModel({
@@ -306,13 +397,74 @@ describe('buildTeamBoardViewModel', () => {
     // defaults mirror an all-18-hole player, which would otherwise mask this
     // "no data at all" fixture's intent now that the KPI reads the 18-only fields.
     const vm = buildTeamBoardViewModel({
-      players: [player({ id: 'a', scoringAverage: null, scoringAverage18: null, roundsPlayed18: 0 })],
+      players: [
+        player({
+          id: 'a',
+          scoringAverage: null,
+          scoringAverage18: null,
+          roundsPlayed18: 0,
+        }),
+      ],
       standingByPlayer: new Map(),
       intelligenceSampleSize: 0,
       rounds30d: 0,
     });
     expect(vm.kpis.teamScoring).toBe('—');
     expect(vm.kpis.teamSg).toBe('—');
+  });
+
+  it('pools raw attempts for team fundamentals and exposes player drill-in values', () => {
+    const small = player({
+      id: 'small',
+      fairwayPct: 100,
+      fairwayHits: 1,
+      fairwayAttempts: 1,
+      girPct: 100,
+      girHits: 1,
+      girAttempts: 1,
+      scramblingPct: 100,
+      scramblesMade: 1,
+      scrambleAttempts: 1,
+      totalPutts: 30,
+      holesWithPutts: 18,
+      puttsPerRound: 30,
+      totalBirdies: 2,
+      holesWithScore: 18,
+      birdiesPerRound: 2,
+    });
+    const large = player({
+      id: 'large',
+      fairwayPct: 50,
+      fairwayHits: 50,
+      fairwayAttempts: 100,
+      girPct: 50,
+      girHits: 50,
+      girAttempts: 100,
+      scramblingPct: 25,
+      scramblesMade: 25,
+      scrambleAttempts: 100,
+      totalPutts: 300,
+      holesWithPutts: 180,
+      puttsPerRound: 30,
+      totalBirdies: 20,
+      holesWithScore: 180,
+      birdiesPerRound: 2,
+    });
+
+    const vm = buildTeamBoardViewModel({
+      players: [small, large],
+      standingByPlayer: new Map(),
+      intelligenceSampleSize: 0,
+      rounds30d: 12,
+    });
+
+    // Exact pooled rate is 51/101, not the misleading unweighted mean 75%.
+    expect(vm.fundamentals.fairwayPct).toBeCloseTo((51 / 101) * 100);
+    expect(vm.fundamentals.girPct).toBeCloseTo((51 / 101) * 100);
+    expect(vm.fundamentals.scramblingPct).toBeCloseTo((26 / 101) * 100);
+    expect(vm.fundamentals.puttsPerRound).toBeCloseTo(30);
+    expect(vm.fundamentals.birdiesPerRound).toBeCloseTo(2);
+    expect(vm.rows.find((row) => row.id === 'small')?.expand.scrambling).toBe('100.0%');
   });
 
   // FIX 2: "Team scoring" must be round-weighted like the coach dashboard's
@@ -322,8 +474,20 @@ describe('buildTeamBoardViewModel', () => {
   // all-18-hole, so roundsPlayed18/scoringAverage18 equal roundsPlayed/
   // scoringAverage.
   it('round-weights team scoring across two players with unequal round counts', () => {
-    const heavy = player({ id: 'heavy', scoringAverage: 70, roundsPlayed: 20, scoringAverage18: 70, roundsPlayed18: 20 });
-    const light = player({ id: 'light', scoringAverage: 80, roundsPlayed: 5, scoringAverage18: 80, roundsPlayed18: 5 });
+    const heavy = player({
+      id: 'heavy',
+      scoringAverage: 70,
+      roundsPlayed: 20,
+      scoringAverage18: 70,
+      roundsPlayed18: 20,
+    });
+    const light = player({
+      id: 'light',
+      scoringAverage: 80,
+      roundsPlayed: 5,
+      scoringAverage18: 80,
+      roundsPlayed18: 5,
+    });
 
     const vm = buildTeamBoardViewModel({
       players: [heavy, light],

@@ -56,6 +56,9 @@ vi.mock('@/lib/supabase/server', () => ({
     },
   })),
 }));
+vi.mock('@/lib/auth/session-idle-server', () => ({
+  resetSessionIdleMarker: vi.fn(async () => {}),
+}));
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(() => ({ from: mocks.adminFrom })),
@@ -71,6 +74,7 @@ vi.mock('@/lib/auth/rate-limit', () => ({
 
 vi.mock('@/lib/demo/config', () => ({
   DEMO_LANDING_PATH: '/golf/dashboard',
+  DEMO_COACHHELM_LANDING_PATH: '/golf/dashboard/intelligence',
 }));
 
 vi.mock('@/lib/demo/config.server', () => ({
@@ -154,6 +158,12 @@ describe('enterDemo — lead-row capture', () => {
     await expect(enterDemo(VALID_INPUT)).rejects.toThrow('REDIRECT:/golf/dashboard?demo=1');
 
     expect(mocks.signInWithPassword).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes CoachHelm CRM invites to the new intelligence desk', async () => {
+    await expect(
+      enterDemo({ ...VALID_INPUT, destination: 'coachhelm' }),
+    ).rejects.toThrow('REDIRECT:/golf/dashboard/intelligence?demo=1');
   });
 });
 

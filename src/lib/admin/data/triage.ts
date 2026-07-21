@@ -85,12 +85,15 @@ function normalizeSport(raw: string | null): TriageItem['sport'] {
 export const AUTH_NOISE_MESSAGE_PATTERNS: readonly RegExp[] = [
   /you must be signed in/i,
   /no active baseball team/i,
+  /^\s*(?:unauthorized|not authenticated)\s*$/i,
 ];
 
 /** ILIKE patterns mirroring AUTH_NOISE_MESSAGE_PATTERNS, for PostgREST queries. */
 export const AUTH_NOISE_ILIKE_PATTERNS: readonly string[] = [
   '%you must be signed in%',
   '%no active baseball team%',
+  'Unauthorized',
+  'Not authenticated',
 ];
 
 /**

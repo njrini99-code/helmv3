@@ -168,6 +168,7 @@ const NON_CRM_ACTION_FILES = [
   'round-review-system.ts',
   'round-reviews.ts',
   'shot-analytics.ts',
+  'signal-groups.ts',
   'stats-data.ts',
   'stats-intelligence.ts',
   'stats-leak-maps.ts',
@@ -324,7 +325,7 @@ describe('FEATURE_REGISTRY completeness', () => {
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 422 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 426 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -336,7 +337,7 @@ describe('FEATURE_REGISTRY completeness', () => {
         }
       }
     }
-    expect(total).toBe(422);
+    expect(total).toBe(426);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

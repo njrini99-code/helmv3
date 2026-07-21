@@ -114,6 +114,15 @@ Sentry.init({
     'AbortError',
     // ResizeObserver — benign, fires when layout settles
     /ResizeObserver loop/,
+    // CefSharp's JavaScript bridge emits this when an embedded-browser host
+    // tears down a bound object before a queued callback runs. It originates
+    // outside our application bundle and is not actionable in Helm.
+    /Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/,
+    // Stale deployment assets are already handled by the global one-shot
+    // ChunkLoadError recovery mounted in app/layout.tsx. Keep the recovered
+    // exception from becoming an issue while preserving all other errors.
+    /ChunkLoadError/i,
+    /Loading (?:CSS )?chunk \d+ failed/i,
     // Dev-only Next.js server-action hash mismatches.
     // These fire after any HMR rebuild that changes a server-action file:
     // the client bundle still references the old action ID and a polled

@@ -192,6 +192,33 @@ function allowBridgeWriteFailureAlert(): boolean {
   return bridgeWriteFailureCount <= BRIDGE_WRITE_FAILURE_ALERT_LIMIT;
 }
 
+type BridgeWriteResult = {
+  error?: { code?: string; message?: string } | null;
+};
+
+function isTransientBridgeWriteFailure(error: unknown): boolean {
+  const message = error instanceof Error
+    ? error.message
+    : (error as { message?: string } | null)?.message ?? String(error);
+  return /fetch failed|network|load failed|timed? ?out|econnreset|socket/i.test(message);
+}
+
+async function retryTransientBridgeWrite(
+  write: () => PromiseLike<BridgeWriteResult>,
+): Promise<BridgeWriteResult> {
+  try {
+    const first = await write();
+    if (!first.error || !isTransientBridgeWriteFailure(first.error)) return first;
+  } catch (error) {
+    if (!isTransientBridgeWriteFailure(error)) throw error;
+  }
+
+  // Rows carry a caller-generated UUID and are upserted below, making this
+  // one retry idempotent even if the first HTTP response was lost after the
+  // database committed it.
+  return await write();
+}
+
 async function writeAdminTables(
   message: string,
   error: Error | null,
@@ -205,8 +232,11 @@ async function writeAdminTables(
   const title = buildAdminTitle(message, enriched, severity);
   const stack = error?.stack?.slice(0, 8000) ?? null;
   const timestamp = new Date().toISOString();
+  const errorLogId = crypto.randomUUID();
+  const adminEventId = crypto.randomUUID();
 
-  const errorLogInsert = admin.from('error_logs').insert({
+  const writeErrorLog = () => admin.from('error_logs').upsert({
+    id: errorLogId,
     message: message.slice(0, 2000),
     severity,
     stack,
@@ -214,7 +244,7 @@ async function writeAdminTables(
     user_id: context.userId ?? null,
     url,
     timestamp,
-  });
+  }, { onConflict: 'id' });
 
   const dbFingerprint =
     context.dbFingerprint ??
@@ -225,7 +255,8 @@ async function writeAdminTables(
       message,
     });
 
-  const adminEventInsert = admin.from('admin_events').insert({
+  const writeAdminEvent = () => admin.from('admin_events').upsert({
+    id: adminEventId,
     event_type: 'error',
     title,
     severity,
@@ -241,9 +272,12 @@ async function writeAdminTables(
     fingerprint: dbFingerprint,
     source: enriched.source ?? 'server_action',
     feature: enriched.feature ?? enriched.featureArea ?? null,
-  });
+  }, { onConflict: 'id' });
 
-  const [errorLogResult, adminEventResult] = await Promise.allSettled([errorLogInsert, adminEventInsert]);
+  const [errorLogResult, adminEventResult] = await Promise.allSettled([
+    retryTransientBridgeWrite(writeErrorLog),
+    retryTransientBridgeWrite(writeAdminEvent),
+  ]);
 
   // The Bridge's own persistence must never depend on itself to notice it's
   // failing — this only ever falls through to console + Sentry, never back
@@ -260,14 +294,17 @@ async function writeAdminTables(
 
     const code = (writeError as { code?: string })?.code ?? null;
     const failureMessage = (writeError as { message?: string })?.message ?? String(writeError);
-    console.error('[ServerErrorLogger] Bridge write failed', { table, code, message: failureMessage });
+    // console.error is itself captured as a Sentry issue by the client/server
+    // console integration. Use warn for the log stream and emit exactly one
+    // explicit, stably-grouped issue below.
+    console.warn('[ServerErrorLogger] Bridge write failed', { table, code, message: failureMessage });
     if (allowBridgeWriteFailureAlert()) {
       Sentry.captureMessage('bridge_write_failed', {
         level: 'error',
         tags: { table },
         // Stable fingerprint (not per-message) so repeated failures during
         // an outage collapse into one Sentry issue instead of fanning out.
-        fingerprint: ['bridge_write_failed', table],
+        fingerprint: ['bridge_write_failed'],
       });
     }
   }

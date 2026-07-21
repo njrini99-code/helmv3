@@ -69,7 +69,11 @@ export function StatsBento({
       tickPct: pgaTickPct(standingByMetric, 'putts_made_5_10ft_pct'),
     },
     {
-      label: '15-25ft',
+      // Plots `puttMakePct15_20` — the real 15-20ft bucket. The label matches
+      // the field it renders; the PGA tick is the closest available Tour
+      // benchmark (`putts_made_15_25ft_pct` — no 15-20ft-exact metric exists)
+      // so it stays a reference point rather than an exact-bucket match.
+      label: '15-20ft',
       pct: finite(s?.puttMakePct15_20) ?? 0,
       value: fmtPct(finite(s?.puttMakePct15_20)),
       tickPct: pgaTickPct(standingByMetric, 'putts_made_15_25ft_pct'),
@@ -124,6 +128,31 @@ export function StatsBento({
   return (
     <Bento>
       <BentoCell
+        label="Core ball striking"
+        span={2}
+        sentence="The three conversion rates that shape scoring opportunity."
+      >
+        <div className="grid grid-cols-3 divide-x divide-border-subtle rounded-fw-md border border-border-subtle bg-surface-sunken/45">
+          <CoreMetric label="Fairways" value={fmtPct(finite(s?.fairwayPercentage))} />
+          <CoreMetric label="GIR" value={fmtPct(finite(s?.girPercentage))} />
+          <CoreMetric label="Scrambling" value={fmtPct(finite(s?.scramblingPercentage))} />
+        </div>
+      </BentoCell>
+
+      <BentoCell
+        label="Per 18 holes"
+        span={2}
+        sentence="Normalized to a full round so every scorecard compares cleanly."
+        onOpen={() => stage.open('scoring')}
+      >
+        <div className="grid grid-cols-3 divide-x divide-border-subtle rounded-fw-md border border-border-subtle bg-surface-sunken/45 pr-5">
+          <CoreMetric label="Score avg" value={fmtOne(finite(s?.scoringAverage))} />
+          <CoreMetric label="Putts" value={fmtOne(finite(s?.puttsPerRound))} />
+          <CoreMetric label="Birdies" value={fmtOne(finite(s?.birdiesPerRound))} />
+        </div>
+      </BentoCell>
+
+      <BentoCell
         label="Putting"
         chip={leakArea === 'putting' ? { tone: 'leak', text: 'Leak' } : undefined}
         headline={{ value: fmtPct(finite(s?.puttMakePct5_10)), unit: '5-10ft' }}
@@ -173,7 +202,7 @@ export function StatsBento({
 
       <BentoCell
         label="Scoring"
-        headline={{ value: fmtToPar(s?.avgScoreToPar ?? null), unit: '/ hole' }}
+        headline={{ value: fmtToPar(s?.avgScoreToPar ?? null), unit: '/ 18' }}
         sentence="Average to par by hole type."
         onOpen={() => stage.open('scoring')}
       >
@@ -204,6 +233,23 @@ export function StatsBento({
       </BentoCell>
     </Bento>
   );
+}
+
+function CoreMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 px-2.5 py-2.5 sm:px-3">
+      <p className="truncate font-fw-mono text-[1.15rem] font-semibold leading-none tracking-[-0.03em] text-text-primary tabular-nums sm:text-h3">
+        {value}
+      </p>
+      <p className="mt-1.5 truncate font-fw-sans text-[0.64rem] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function fmtOne(v: number | null): string {
+  return v === null ? '—' : v.toFixed(1);
 }
 
 function fmtToPar(v: number | null): string {

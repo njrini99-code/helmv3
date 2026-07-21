@@ -27,5 +27,10 @@ export const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
 /** Where a visitor lands after the gate auto-signs them in. */
 export const DEMO_LANDING_PATH = '/golf/dashboard';
 
+/** Destination used by CoachHelm-focused CRM invitations. Kept separate from
+ * the generic demo landing so product/website traffic still starts at the
+ * team dashboard while the email CTA opens the feature it describes. */
+export const DEMO_COACHHELM_LANDING_PATH = '/golf/dashboard/intelligence';
+
 /** PostHog / admin_events event name emitted when someone enters the demo. */
 export const DEMO_ENTER_EVENT = 'demo_coach_entered';

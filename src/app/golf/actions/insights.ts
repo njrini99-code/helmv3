@@ -4239,6 +4239,110 @@ export async function refreshPlayerAnalysisAsCoach(
 }
 
 // ============================================================================
+// REFRESH TEAM ANALYSIS (coach Triage Desk "Scan team")
+// ============================================================================
+
+/**
+ * Re-runs the canonical CoachHelm engine for every active player on the
+ * coach's currently selected team. The engine's Tier-1 generators own V3
+ * upsert/retraction semantics, so refreshed signals replace stale rows under
+ * stable `v3:` signatures instead of creating a second, legacy alert feed.
+ *
+ * Auth, cookie-aware team resolution, and the expensive-engine rate limit are
+ * performed once for the batch. The trusted per-player implementation stays
+ * private to this module; callers cannot supply a team or player id.
+ */
+async function refreshTeamAnalysisAsCoachImpl(): Promise<{
+  success: boolean;
+  playersAnalyzed?: number;
+  insightsCreated?: number;
+  playersSkipped?: number;
+  playersFailed?: number;
+  error?: string;
+}> {
+  const session = await getGolfSessionProfile();
+  if (!session?.coach) return { success: false, error: 'Unauthorized' };
+
+  const rateLimit = await gateCoachHelmEngineCall(session.coach.id);
+  if (!rateLimit.allowed) return { success: false, error: rateLimit.error };
+
+  const orgId = session.coach.organization_id;
+  if (!orgId) return { success: false, error: 'Coach has no organization' };
+
+  const supabase = await createClient();
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, orgId, session.coach.id);
+  if (!teamId) return { success: false, error: 'Coach has no team' };
+
+  const { data: memberships, error: membershipError } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamId)
+    .eq('status', 'active');
+  if (membershipError) {
+    await logServerError(`refreshTeamAnalysisAsCoach roster query failed: ${membershipError.message}`, {
+      action: 'refreshTeamAnalysisAsCoach.roster',
+      featureArea: 'coachhelm',
+      extra: { teamId, errorCode: membershipError.code },
+    });
+    return { success: false, error: 'Could not load the active roster' };
+  }
+
+  const playerIds = Array.from(new Set((memberships ?? []).map((row) => row.player_id).filter(Boolean)));
+  if (playerIds.length === 0) {
+    return { success: true, playersAnalyzed: 0, insightsCreated: 0, playersSkipped: 0, playersFailed: 0 };
+  }
+
+  let playersAnalyzed = 0;
+  let insightsCreated = 0;
+  let playersSkipped = 0;
+  let playersFailed = 0;
+  const concurrency = 3;
+
+  for (let i = 0; i < playerIds.length; i += concurrency) {
+    const batch = playerIds.slice(i, i + concurrency);
+    const results = await Promise.allSettled(
+      batch.map((playerId) => observedTriggerPlayerInsightsAfterRound(playerId)),
+    );
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        playersFailed += 1;
+        continue;
+      }
+      if (!result.value.success) {
+        playersSkipped += 1;
+        continue;
+      }
+      playersAnalyzed += 1;
+      insightsCreated += result.value.insights_created ?? 0;
+      if (result.value.partial) playersFailed += 1;
+    }
+  }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/intelligence');
+  revalidatePath('/golf/dashboard/insights');
+
+  return { success: true, playersAnalyzed, insightsCreated, playersSkipped, playersFailed };
+}
+
+const observedRefreshTeamAnalysisAsCoach = withAdminObserved(
+  'refreshTeamAnalysisAsCoach',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  refreshTeamAnalysisAsCoachImpl,
+);
+
+export async function refreshTeamAnalysisAsCoach(): Promise<{
+  success: boolean;
+  playersAnalyzed?: number;
+  insightsCreated?: number;
+  playersSkipped?: number;
+  playersFailed?: number;
+  error?: string;
+}> {
+  return observedRefreshTeamAnalysisAsCoach();
+}
+
+// ============================================================================
 // TEAM COACHHELM SETTINGS — read/write
 // ============================================================================
 //

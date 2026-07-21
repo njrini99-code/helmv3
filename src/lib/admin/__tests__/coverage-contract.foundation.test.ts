@@ -282,6 +282,17 @@ describe('global tripwire', () => {
     // was needed (the file is a whole-file 'ALL' owner), so this live scan
     // and feature-registry.test.ts's manifest-length count both move by
     // exactly +1.
-    expect(total).toBe(422);
+    //
+    // 425 as of the 2026-07-19 Triage Desk server layer (+3): NEW file
+    // `signal-groups.ts` (discovered live by `discoverGolfActionFiles()`,
+    // since it's under src/app/golf/actions/** with a 'use server'
+    // directive) adds 3 withAdminObserved-wrapped exports — `getSignalGroups`,
+    // `reviewSignal`, `dismissSignal` — all feature `intelligence_dashboard`
+    // (the Triage Desk lives on the canonical Intelligence route).
+    // 426 as of the completed Triage Desk wiring (+1):
+    // refreshTeamAnalysisAsCoach is the authenticated, rate-limited manual
+    // team scan. signal-groups.ts is now also represented in the canonical
+    // feature manifest instead of relying on this live-tree tripwire alone.
+    expect(total).toBe(426);
   });
 });

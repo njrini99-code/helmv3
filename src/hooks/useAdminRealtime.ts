@@ -80,6 +80,20 @@ const SEVERITY_LEVELS: Record<AdminEventSeverity, number> = {
   critical: 3,
 };
 
+// The browser Supabase client keeps a channel registry beyond an individual
+// hook mount. A per-hook counter restarts at 1 after remount, which can collide
+// with a channel whose async leave has not completed yet. Supabase then returns
+// the already-subscribed channel and rejects the subsequent `.on(...)` calls.
+// Keep the sequence at module scope and include entropy so topics stay unique
+// across remounts, reconnects, and multiple bundles/tabs.
+let adminRealtimeChannelSequence = 0;
+
+export function createAdminRealtimeChannelName(): string {
+  adminRealtimeChannelSequence += 1;
+  const entropy = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+  return `admin-realtime-events-${Date.now()}-${adminRealtimeChannelSequence}-${entropy}`;
+}
+
 // ============================================
 // HOOK
 // ============================================
@@ -100,13 +114,6 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
   const channelRef = useRef<RealtimeChannel | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectedRef = useRef(false);
-  // Monotonic per-connect() counter, suffixed onto the channel topic so a
-  // fresh channel never shares its name with one whose async removeChannel()
-  // leave (phx_leave over the socket) hasn't completed yet — reusing the
-  // static topic name here is what let a channel already in 'joined' state
-  // receive a late .on() call and throw "cannot add postgres_changes
-  // callbacks after subscribe()" in prod.
-  const channelIdRef = useRef(0);
   const [supabase] = useState(() => createClient());
 
   // Calculate event counts by severity
@@ -177,8 +184,7 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
       setIsConnected(false);
       isConnectedRef.current = false;
 
-      channelIdRef.current += 1;
-      const channelName = `admin-realtime-events-${channelIdRef.current}`;
+      const channelName = createAdminRealtimeChannelName();
 
       // Create channel for admin_events table (primary) + fallback to admin_client_errors
       const channel = supabase

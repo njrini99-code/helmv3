@@ -588,6 +588,10 @@ async function dismissPatternImpl(
     }
 
     revalidatePath('/golf/dashboard/patterns');
+    // Triage Desk (signal-groups.ts) reads patterns through this same file
+    // and lives at the canonical Intelligence route — bust it too so a
+    // dismiss-from-Triage doesn't leave a stale row in that list.
+    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`dismissPattern failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -660,6 +664,10 @@ async function markPatternAddressedImpl(
     }
 
     revalidatePath('/golf/dashboard/patterns');
+    // Triage Desk (signal-groups.ts) reads patterns through this same file
+    // and lives at the canonical Intelligence route — bust it too so a
+    // review-from-Triage doesn't leave a stale row in that list.
+    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`markPatternAddressed failed: ${error instanceof Error ? error.message : String(error)}`, {

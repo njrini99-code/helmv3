@@ -13,7 +13,7 @@ import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { createClient } from '@/lib/supabase/client';
-import { DEMO_LANDING_PATH } from '@/lib/demo/config';
+import { DEMO_COACHHELM_LANDING_PATH, DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { enterDemo } from '@/app/golf/actions/demo-access';
 import { probeSignedIn } from '@/lib/demo/gate-probe';
 
@@ -60,6 +60,8 @@ function DemoGateContent() {
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get('message') === 'demo_session_expired';
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isCoachHelmInvite = searchParams.get('destination') === 'coachhelm';
+  const landingPath = isCoachHelmInvite ? DEMO_COACHHELM_LANDING_PATH : DEMO_LANDING_PATH;
 
   // CRM demo-invite emails link here as /golf/demo?ref={email} — prefill the
   // email field so a coach arriving from their inbox doesn't retype the
@@ -128,7 +130,12 @@ function DemoGateContent() {
 
     try {
       // enterDemo either redirects (success) or returns an error result
-      const result = await enterDemo({ name, email, school });
+      const result = await enterDemo({
+        name,
+        email,
+        school,
+        ...(isCoachHelmInvite ? { destination: 'coachhelm' as const } : {}),
+      });
       // If we get here, the action returned an error (redirect throws internally)
       if (!result.success) {
         setServerError(result.error);
@@ -320,7 +327,7 @@ function DemoGateContent() {
                 </div>
                 <Button
                   variant="primary"
-                  onClick={() => router.push(DEMO_LANDING_PATH)}
+                  onClick={() => router.push(landingPath)}
                   className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 active:scale-[0.97] active:duration-75"
                   rightIcon={<ArrowRight className="w-4 h-4" aria-hidden />}
                 >
