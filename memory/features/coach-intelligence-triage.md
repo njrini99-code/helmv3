@@ -6,7 +6,7 @@
 
 ## Current State
 
-Coach Intelligence Triage is the coach-facing operational layer on top of CoachHelm AI. It helps coaches review alerts, inspect patterns, manage insights, see team-wide intelligence, measure AI effectiveness, and tune CoachHelm philosophy.
+Coach Intelligence Triage is the coach-facing operational layer on top of CoachHelm AI. Its canonical `/golf/dashboard/intelligence` surface is a Triage Desk: a horizontal daily brief, a player-grouped open-signal queue, an evidence/action dossier, a roster-development view, and a compact effectiveness scoreboard.
 
 This feature is distinct from the engine itself: `memory/features/coachhelm-ai.md` describes generation/trust behavior, while this document describes coach workflows after intelligence exists.
 
@@ -39,6 +39,7 @@ Coaching philosophy saves use one authoritative hook write path with downstream 
 - `src/app/golf/actions/insight-management.ts`
 - `src/app/golf/actions/insight-evidence.ts`
 - `src/app/golf/actions/intelligence-dashboard.ts`
+- `src/app/golf/actions/signal-groups.ts`
 - `src/app/golf/actions/coachhelm-analytics.ts`
 - `src/app/golf/actions/coaching-philosophy.ts`
 
@@ -69,6 +70,8 @@ CoachHelm generates insight/pattern/prediction
 
 - Coach triage reads must be scoped to assigned teams through correct coach/team access.
 - Acknowledge, dismiss, validate, address, resolve, and bulk actions must persist explicit lifecycle state.
+- The Triage Desk is an open-work queue: acknowledged/addressed/resolved rows leave the queue but remain available to lifecycle/history and effectiveness reads.
+- “Scan team” must run the canonical CoachHelm engine for the active roster. V3 generators own stable-signature upsert/retraction; the UI must not create a parallel legacy alert feed.
 - Insight evidence is part of the trust contract; UI should make supporting evidence reachable when present.
 - Coaching philosophy settings feed future alert/insight prioritization and should not be treated as cosmetic preferences.
 - CoachHelm analytics currently has sparse effectiveness data, so UI and agents should not assume the dashboard is fully populated.

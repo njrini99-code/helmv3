@@ -69,7 +69,11 @@ export function StatsBento({
       tickPct: pgaTickPct(standingByMetric, 'putts_made_5_10ft_pct'),
     },
     {
-      label: '15-25ft',
+      // Plots `puttMakePct15_20` — the real 15-20ft bucket. The label matches
+      // the field it renders; the PGA tick is the closest available Tour
+      // benchmark (`putts_made_15_25ft_pct` — no 15-20ft-exact metric exists)
+      // so it stays a reference point rather than an exact-bucket match.
+      label: '15-20ft',
       pct: finite(s?.puttMakePct15_20) ?? 0,
       value: fmtPct(finite(s?.puttMakePct15_20)),
       tickPct: pgaTickPct(standingByMetric, 'putts_made_15_25ft_pct'),

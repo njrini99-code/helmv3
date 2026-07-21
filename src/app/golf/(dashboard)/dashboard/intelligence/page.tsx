@@ -1,11 +1,9 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { getTeamCategoryInsights, getTeamOverview } from '@/app/golf/actions/team-category-insights';
+import { getTeamOverview } from '@/app/golf/actions/team-category-insights';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
-import { getInsightsForCoachWithMeta } from '@/app/golf/actions/insight-delivery';
-import { getTeamPatterns } from '@/app/golf/actions/pattern-management';
-import { getTeamPlayers } from '@/app/golf/actions/roster';
+import { getSignalGroups } from '@/app/golf/actions/signal-groups';
 import {
   getCoachHelmOverview,
   getInsightEffectiveness,
@@ -17,9 +15,6 @@ import { FeatureUnavailable, type PlayersGridPlayer, type PlayersGridFocusArea, 
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { surfaceName } from '@/lib/golf/surface-registry';
 import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
-import { resolveSignalsFilter } from '@/components/golf/coachhelm/home/buildCoachHomeViewModel';
-import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import type { ExtendedPattern } from '@/app/golf/actions/pattern-management';
 import { getTeamCausalRelationships, type CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
@@ -42,31 +37,20 @@ export const metadata = {
 
 // The coach Brief reflects team data that PLAYERS change (logging rounds). Force
 // dynamic so the route is always freshly rendered and never served from a stale
-// Full Route Cache entry — the CoachIntelligenceHome stage now absorbs Signals/
-// Players/Effectiveness too, all of which are similarly live/mutable.
+// Full Route Cache entry — the Triage Desk absorbs Signals/Players/Effectiveness
+// too, all of which are similarly live/mutable.
 export const dynamic = 'force-dynamic';
 
 interface IntelligencePageProps {
   searchParams: Promise<{
-    view?: string;
-    filter?: string;
-    // Deep-link params forwarded into the `signals` drill (mirrors the old
-    // /insights route's own searchParams contract).
-    q?: string;
+    // `view`/`filter`/`signal` (and the legacy `id` insight deep-link —
+    // CommandPalette.tsx:326, FocusAreaCard.tsx:315, forwarded by the
+    // `/insights` redirect shim) are read client-side by `TriageDesk` via
+    // `useSearchParams()` (mirrors the old `StageRouter`'s self-contained
+    // pattern) — nothing server-side needs to parse them. `player` is the
+    // one deep-link param this page still resolves server-side (F133,
+    // forwarded by the `/development` redirect shim).
     player?: string;
-    type?: string;
-    priority?: string;
-    status?: string;
-    dateRange?: string;
-    startDate?: string;
-    endDate?: string;
-    page?: string;
-    sort?: string;
-    order?: string;
-    lifecycle?: string;
-    categoryChips?: string;
-    category?: string;
-    id?: string;
   }>;
 }
 
@@ -120,64 +104,29 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     redirect('/golf/dashboard');
   }
 
-  // ── Spine data — the SAME two reads FairwayBrief fetched, plus two
-  // `players` drill extras (causalByPlayer, coachIntents) that only depend on
-  // teamId/coach.id — already available here — so they run fully parallel
-  // with the rest of this block instead of adding a serial round trip later.
-  // Individually `.catch()`-degraded: `loadActiveGoalsForPlayers` and
-  // `loadCoachIntents` throw on a DB error (unlike the `.success`-shaped
-  // actions above), so a hiccup on either must not blank the whole Brief. ──
-  const [overviewResult, categoryInsightsResult, countsRes, causalByPlayer, coachIntents] = await Promise.all([
+  // ── Home-gate + Triage Desk data — `getTeamOverview` still drives the
+  // overview-failure-vs-empty-roster gate (Triage Desk spec §5); `alertCounts`
+  // still feeds the Players/Effectiveness drills' `signalCount` badge
+  // (unchanged from before this rebuild); `getSignalGroups` is the FROZEN
+  // contract the Triage Desk itself reads — one unfiltered fetch of every
+  // open signal for the team, with view/queue filtering happening entirely
+  // client-side (see `buildTriageViewModel.ts`). The two `players` drill
+  // extras (causalByPlayer, coachIntents) only depend on teamId/coach.id —
+  // already available here — so they run fully parallel with the rest of
+  // this block instead of adding a serial round trip later. Individually
+  // `.catch()`-degraded: `loadActiveGoalsForPlayers` and `loadCoachIntents`
+  // throw on a DB error (unlike the `.success`-shaped actions above), so a
+  // hiccup on either must not blank the whole page. ──────────────────────
+  const [overviewResult, countsRes, signalGroupsResult, causalByPlayer, coachIntents] = await Promise.all([
     getTeamOverview(teamId),
-    getTeamCategoryInsights(teamId),
     getAlertCounts(coach.id),
+    getSignalGroups(teamId),
     getTeamCausalRelationships(teamId).catch(() => ({}) as Record<string, CausalRelationshipRow[]>),
     loadCoachIntents(coach.id).catch(() => new Map<string, CoachPlayerIntent>()),
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
-
-  // ── `signals` drill reads — copied from alerts/insights/patterns/page.tsx,
-  // fetching ONLY the preset the active `?filter=` needs (a filter switch is
-  // a real navigation via FairwayCoachHelmSignals's own Segmented control, so
-  // this route re-runs with the new filter — no wasted fetch for the other
-  // two presets on every load). ─────────────────────────────────────────────
-  const signalsFilter = resolveSignalsFilter(sp.filter);
-  const rosterRes = await getTeamPlayers();
-  const signalsPlayerNames: Record<string, string> = {};
-  for (const p of rosterRes.data ?? []) {
-    const name = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
-    if (name) signalsPlayerNames[p.id] = name;
-  }
-
-  let signalsInitialInsights: EvidenceInsight[] = [];
-  let signalsInitialPatterns: ExtendedPattern[] = [];
-  if (signalsFilter === 'patterns') {
-    const patternsResult = await getTeamPatterns();
-    signalsInitialPatterns = patternsResult.success ? (patternsResult.patterns ?? []) : [];
-  } else if (signalsFilter === 'alerts') {
-    // Mirrors alerts/page.tsx exactly — SSR-seeds the urgent/high preset so
-    // the workspace paints on the first frame.
-    const insightsRes = await getInsightsForCoachWithMeta(coach.id, { limit: 100, priorities: ['urgent', 'high'] });
-    signalsInitialInsights = insightsRes.ok ? insightsRes.data : [];
-  }
-  // signalsFilter === 'insights': no SSR seed (mirrors insights/page.tsx —
-  // the surface self-fetches via its own smartDefault client read).
-
-  const signalsInitialSearchParams =
-    signalsFilter === 'insights'
-      ? (() => {
-          // Fold a single `?category=` deep-link token into `categoryChips`,
-          // exactly like the old /insights route did.
-          const merged = Array.from(
-            new Set(
-              [...(sp.category?.split(',') ?? []), ...(sp.categoryChips?.split(',') ?? [])]
-                .map((c) => c.trim())
-                .filter((c) => c.length > 0),
-            ),
-          ).join(',');
-          return { ...sp, category: merged, categoryChips: merged };
-        })()
-      : undefined;
+  const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
+  const signalGroupsError = signalGroupsResult.success ? null : (signalGroupsResult.error ?? 'Could not load signals.');
 
   // ── `players` drill reads — a port of development/page.tsx's roster +
   // focus-area fetch. The goals/causal/silent-posture extras (goalsByPlayer,
@@ -364,15 +313,10 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
         <CoachIntelligenceHome
           overview={overviewResult}
-          categoryInsights={categoryInsightsResult}
           coachId={coach.id}
-          teamId={teamId}
-          alertCounts={alertCounts}
-          signalsFilter={signalsFilter}
-          signalsInitialInsights={signalsInitialInsights}
-          signalsInitialPatterns={signalsInitialPatterns}
-          signalsPlayerNames={signalsPlayerNames}
-          signalsInitialSearchParams={signalsInitialSearchParams}
+          groups={signalGroups}
+          scannedAt={signalGroupsResult.scannedAt}
+          groupsError={signalGroupsError}
           playersDrillProps={{
             players,
             focusAreas: focusAreasWithPlayers,

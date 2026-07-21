@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logLogin } from '@/lib/admin-logger';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
 import { isTransientAuthError, signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
-import { DEMO_LANDING_PATH } from '@/lib/demo/config';
+import { DEMO_COACHHELM_LANDING_PATH, DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { getDemoCoachCredentials } from '@/lib/demo/config.server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 
@@ -21,6 +21,8 @@ export interface EnterDemoInput {
   name: string;
   email: string;
   school: string;
+  /** Closed destination enum — never accept a caller-provided redirect URL. */
+  destination?: 'coachhelm';
 }
 
 export type EnterDemoResult =
@@ -67,7 +69,7 @@ function validateInput(input: EnterDemoInput): string | null {
  * 3. Logs a 'login' admin_event titled "Demo entered" (fire-and-forget).
  * 4. Signs the visitor into the shared demo coach account server-side so the
  *    session cookie is set for this browser.
- * 5. Redirects to DEMO_LANDING_PATH?demo=1 on success.
+ * 5. Redirects to the allowlisted destination with ?demo=1 on success.
  *
  * The shared account holds many concurrent sessions — that is expected.
  *
@@ -88,6 +90,7 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   const name = trimmed(input.name);
   const email = trimmed(input.email).toLowerCase();
   const school = trimmed(input.school);
+  const landingPath = input.destination === 'coachhelm' ? DEMO_COACHHELM_LANDING_PATH : DEMO_LANDING_PATH;
 
   // --- 2. Read request metadata -------------------------------------------
   const headersList = await headers();
@@ -191,7 +194,7 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   }).catch(() => {});
 
   // --- 7. Redirect with ?demo=1 so the client fires the PostHog event ------
-  redirect(`${DEMO_LANDING_PATH}?demo=1`);
+  redirect(`${landingPath}?demo=1`);
 }
 
 // enterDemo's redirect() throws a NEXT_REDIRECT digest, which
