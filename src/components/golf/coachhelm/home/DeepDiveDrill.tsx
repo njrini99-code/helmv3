@@ -29,9 +29,9 @@ export function DeepDiveDrill({ playerId, shotData, profileData }: DeepDiveDrill
   return (
     <DrillPanel title="Deep dive" backLabel="Home" onBack={home}>
       <Tabs defaultValue="shot-analysis" className="gap-3">
-        <TabsList className="justify-end">
-          <TabsTrigger value="shot-analysis">Shot analysis</TabsTrigger>
-          <TabsTrigger value="what-if">What if</TabsTrigger>
+        <TabsList className="w-full">
+          <TabsTrigger value="shot-analysis" className="min-h-11 flex-1 justify-center">Shot analysis</TabsTrigger>
+          <TabsTrigger value="what-if" className="min-h-11 flex-1 justify-center">What if</TabsTrigger>
         </TabsList>
 
         <TabsContent value="shot-analysis">

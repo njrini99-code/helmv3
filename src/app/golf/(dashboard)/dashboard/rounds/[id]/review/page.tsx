@@ -694,7 +694,7 @@ export default function RoundReviewPage() {
           variants={containerVariants}
           initial={prefersReducedMotion ? false : 'hidden'}
           animate="visible"
-          className="mx-auto w-full max-w-2xl px-5 py-8 pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] md:px-8 md:py-10 lg:pb-10"
+          className="mx-auto w-full max-w-6xl px-4 py-6 pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] sm:px-5 md:px-8 md:py-8 lg:pb-10"
         >
           <FwViewHeader
             eyebrow="Round Review"

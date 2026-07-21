@@ -11,6 +11,7 @@
  * rounds/fairways/greens/putts `SpineLedger`.
  * ========================================================================== */
 
+import Link from 'next/link';
 import { Spine } from '@/components/fairway/modules';
 import type { PriorityItem, StandingTrackProps } from '@/components/fairway/modules';
 
@@ -25,15 +26,46 @@ export interface PlayerSpineProps {
 
 export function PlayerSpine({ hero, verdict, track, priorities, ledger, className }: PlayerSpineProps) {
   return (
-    <Spine
-      eyebrow="CoachHelm AI"
-      hero={hero}
-      verdict={verdict}
-      track={track}
-      priorities={priorities}
-      ledger={ledger}
-      cta={{ label: 'Log a round', href: '/golf/dashboard/rounds/new' }}
-      className={className}
-    />
+    <>
+      <aside className="overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 to-accent-800 p-4 text-text-on-accent [box-shadow:var(--fw-shadow-card)] min-[940px]:hidden">
+        <div className="flex min-w-0 items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-300">CoachHelm AI</p>
+            <p className="mt-1.5 flex items-baseline gap-1.5 font-fw-mono text-h2 font-semibold leading-none tracking-[-0.03em] tabular-nums">
+              {hero.value}
+              {hero.unit ? <span className="font-fw-sans text-caption font-normal tracking-normal text-accent-300">{hero.unit}</span> : null}
+            </p>
+            <p className="mt-2 line-clamp-2 font-fw-sans text-caption leading-relaxed text-accent-100">{verdict}</p>
+          </div>
+          <Link href="/golf/dashboard/rounds/new" className="shrink-0 rounded-full border border-white/25 px-3 py-2 text-caption font-semibold text-text-on-accent transition-opacity duration-150 hover:opacity-80">
+            Log round
+          </Link>
+        </div>
+        {(priorities.length > 0 || ledger.length > 0) ? (
+          <div className="mt-3 flex min-w-0 gap-2 overflow-x-auto border-t border-white/15 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {priorities.slice(0, 2).map((item) => (
+              <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-700 px-3 py-1.5 font-fw-sans text-caption text-accent-100">
+                {item.title} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
+              </span>
+            ))}
+            {ledger.slice(0, 2).map((item) => (
+              <span key={item.label} className="shrink-0 rounded-full bg-accent-700 px-3 py-1.5 font-fw-sans text-caption text-accent-100">
+                {item.label} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </aside>
+      <Spine
+        eyebrow="CoachHelm AI"
+        hero={hero}
+        verdict={verdict}
+        track={track}
+        priorities={priorities}
+        ledger={ledger}
+        cta={{ label: 'Log a round', href: '/golf/dashboard/rounds/new' }}
+        className={`hidden min-[940px]:block ${className ?? ''}`}
+      />
+    </>
   );
 }

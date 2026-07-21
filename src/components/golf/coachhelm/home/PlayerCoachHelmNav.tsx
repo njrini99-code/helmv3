@@ -1,0 +1,64 @@
+'use client';
+
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
+
+const SECTIONS = [
+  { key: 'home', label: 'Overview' },
+  { key: 'development', label: 'Development' },
+  { key: 'profile', label: 'Game profile' },
+  { key: 'standing', label: 'Standing' },
+  { key: 'insights', label: 'Insights' },
+  { key: 'deep-dive', label: 'Deep dive' },
+] as const;
+
+const SECTION_KEYS = new Set<string>(SECTIONS.map((section) => section.key));
+
+export function PlayerCoachHelmNav() {
+  const searchParams = useSearchParams();
+  const { ref: fadeRef, fadeStyle } = useScrollFade<HTMLUListElement>('x');
+  const requested = searchParams.get('view');
+  const active = requested && SECTION_KEYS.has(requested) ? requested : 'home';
+
+  function hrefFor(key: string): string {
+    const next = new URLSearchParams(searchParams.toString());
+    if (key === 'home') next.delete('view');
+    else next.set('view', key);
+    const query = next.toString();
+    return query ? `/golf/dashboard/coachhelm?${query}` : '/golf/dashboard/coachhelm';
+  }
+
+  return (
+    <nav aria-label="CoachHelm sections" className="min-w-0 border-b border-border-subtle">
+      <ul
+        ref={fadeRef}
+        style={fadeStyle}
+        className="flex max-w-full items-center gap-1 overflow-x-auto pb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {SECTIONS.map((section) => {
+          const selected = active === section.key;
+          return (
+            <li key={section.key} className="shrink-0">
+              <Link
+                href={hrefFor(section.key)}
+                scroll={false}
+                aria-current={selected ? 'page' : undefined}
+                className={cn(
+                  'relative inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-t-fw-sm px-3.5 py-2',
+                  'font-fw-sans text-label font-medium outline-none transition-colors duration-150',
+                  'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                  selected ? 'text-text-primary' : 'text-text-secondary hover:bg-surface-tint hover:text-text-primary',
+                )}
+              >
+                {section.label}
+                {selected ? <span aria-hidden className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent-500" /> : null}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}

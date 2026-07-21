@@ -63,6 +63,7 @@ import { ProfileDrill, type GameProfileAxis, type GameProfileDimensionCell, type
 import { StandingDrill } from './StandingDrill';
 import { InsightsDrill } from './InsightsDrill';
 import { DeepDiveDrill } from './DeepDiveDrill';
+import { PlayerCoachHelmNav } from './PlayerCoachHelmNav';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -389,16 +390,21 @@ export function PlayerCoachHelmHome({
   ];
 
   return (
-    <div className={cn('flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start')}>
-      <PlayerSpine
-        className="min-[940px]:sticky min-[940px]:top-20"
-        hero={hero}
-        verdict={verdict}
-        track={track}
-        priorities={priorities}
-        ledger={ledger}
-      />
-      <StageRouter param="view" homeKey="home" views={views} />
+    <div className="flex min-w-0 flex-col gap-5">
+      <PlayerCoachHelmNav />
+      <div className={cn('flex min-w-0 flex-col gap-5 min-[940px]:grid min-[940px]:grid-cols-[280px_minmax(0,1fr)] min-[940px]:items-start min-[1180px]:grid-cols-[300px_minmax(0,1fr)]')}>
+        <PlayerSpine
+          className="min-[940px]:sticky min-[940px]:top-20"
+          hero={hero}
+          verdict={verdict}
+          track={track}
+          priorities={priorities}
+          ledger={ledger}
+        />
+        <div className="min-w-0">
+          <StageRouter param="view" homeKey="home" views={views} />
+        </div>
+      </div>
     </div>
   );
 }

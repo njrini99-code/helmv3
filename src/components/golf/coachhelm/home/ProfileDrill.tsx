@@ -23,7 +23,7 @@ import { expectedEmptyStateCopy } from '@/lib/view-state/expected-empty-states';
 
 const GenomeRadar = nextDynamic(
   () => import('@/components/fairway').then((m) => ({ default: m.GenomeRadar })),
-  { ssr: false, loading: () => <Skeleton className="h-[260px] w-full rounded-card" /> },
+  { ssr: false, loading: () => <Skeleton className="h-[220px] w-full rounded-card" /> },
 );
 
 export interface GameProfileAxis {
@@ -84,7 +84,7 @@ export function ProfileDrill({
             <InstrumentPanel depth="raised" tone="accent" padding="lg" eyebrow="Your shape" header="Genome" as="section">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:items-center">
                 <div className="w-full min-w-0">
-                  <GenomeRadar title="Score by dimension" seriesName="Score" data={axes} max={100} height={280} />
+                  <GenomeRadar title="Score by dimension" seriesName="Score" data={axes} max={100} height={220} />
                 </div>
                 <div className="flex flex-col gap-5">
                   {courseProfile ? (

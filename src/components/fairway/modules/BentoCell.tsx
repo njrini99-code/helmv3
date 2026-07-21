@@ -54,9 +54,9 @@ export function BentoCell({
       data-slot="bento-cell"
       {...interactiveProps}
       className={cn(
-        'relative flex flex-col gap-2 bg-surface px-[18px] py-4 text-left',
+        'relative min-w-0 overflow-clip flex flex-col gap-2 bg-surface px-[18px] py-4 text-left',
         span === 2 && 'sm:col-span-2',
-        rows === 2 && 'row-span-2',
+        rows === 2 && 'sm:row-span-2',
         interactive && [
           'cursor-pointer transition-colors duration-150 hover:bg-surface-tint',
           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
@@ -92,7 +92,7 @@ export function BentoCell({
       {children}
 
       {sentence ? (
-        <p className="m-0 font-fw-sans text-caption text-text-secondary">{sentence}</p>
+        <p className="m-0 line-clamp-3 font-fw-sans text-caption text-text-secondary">{sentence}</p>
       ) : null}
 
       {interactive ? (

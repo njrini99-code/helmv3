@@ -455,7 +455,7 @@ export function DevelopmentDrill({
   );
 
   const headerActions = (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {total > 0 ? (
         <Button asChild variant="secondary">
           <Link href="/golf/dashboard/messages">Message coach</Link>

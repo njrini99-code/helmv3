@@ -38,7 +38,7 @@ export function DrillPanel({ title, backLabel, onBack, chip, children }: DrillPa
           onClick={onBack}
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50',
-            'px-3 py-1.5 text-caption font-bold text-accent-700',
+            'min-h-11 px-3 py-1.5 text-caption font-bold text-accent-700',
             'transition-colors [transition-duration:150ms]',
             'hover:bg-accent-100',
           )}
@@ -49,7 +49,7 @@ export function DrillPanel({ title, backLabel, onBack, chip, children }: DrillPa
         <span className="font-fw-display text-body-lg font-semibold text-text-primary">
           {title}
         </span>
-        {chip ? <span className="ml-auto">{chip}</span> : null}
+        {chip ? <span className="w-full min-w-0 sm:ml-auto sm:w-auto">{chip}</span> : null}
       </div>
       <div className="mt-3">{children}</div>
     </div>

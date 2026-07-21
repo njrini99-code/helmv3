@@ -33,7 +33,7 @@ const HoleShotPath = dynamic(
   {
     ssr: false,
     loading: () => (
-      <Skeleton className="h-[320px] w-[140px] rounded-fw-md md:h-[360px] md:w-[160px]" />
+      <Skeleton className="h-[240px] w-[112px] rounded-fw-md md:h-[264px] md:w-[124px]" />
     ),
   },
 );
@@ -128,12 +128,12 @@ export function ReviewHero({
   return (
     <div
       data-slot="review-hero"
-      className="grid grid-cols-1 overflow-hidden rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise sm:grid-cols-[264px_1fr]"
+      className="grid min-w-0 grid-cols-1 overflow-clip rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise sm:grid-cols-[240px_minmax(0,1fr)]"
     >
       {/* Green left panel */}
-      <div className="bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-6 text-text-on-accent">
+      <div className="bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 text-text-on-accent sm:p-6">
         <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-300">
-          Round Review
+          Round score
         </p>
         <p className="mt-2 flex items-baseline gap-1.5">
           <span className="font-fw-mono text-stat-lg font-semibold leading-none tracking-[-0.03em] tabular-nums">
@@ -155,7 +155,7 @@ export function ReviewHero({
       </div>
 
       {/* Filmstrip + scrub detail */}
-      <div className="bg-surface p-5 sm:p-6">
+      <div className="min-w-0 bg-surface p-4 sm:p-5">
         <Filmstrip
           holes={filmstripHoles}
           activeHole={activeHole ?? undefined}
@@ -183,19 +183,47 @@ export function ReviewHero({
           )}
         </div>
 
-        {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
-          <div className="mt-5 flex justify-center rounded-fw-md border border-border-subtle bg-surface-tint p-4 shadow-soft">
+      </div>
+
+      {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
+        <div className="min-w-0 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">
+          <div className="grid min-w-0 grid-cols-[112px_minmax(0,1fr)] items-start gap-4 md:grid-cols-[124px_minmax(0,1fr)] md:gap-6">
             <HoleShotPath
               hole_number={openHole}
               par={openPar}
               yardage={openMeta?.yardage ?? null}
               score={openMeta?.score ?? null}
               shots={openHoleShots}
-              size="card"
+              size="inline"
             />
+            <div className="min-w-0 pt-1">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-fw-display text-body-lg font-semibold text-text-primary">Hole {openHole} shot path</p>
+                  <p className="mt-1 font-fw-sans text-caption text-text-tertiary">Hover or focus a numbered shot to inspect it.</p>
+                </div>
+                <PressTarget onClick={toggleShotPath} className="shrink-0 rounded-full px-3 py-2 font-fw-sans text-caption font-semibold text-accent-700 hover:bg-accent-50">
+                  Close
+                </PressTarget>
+              </div>
+              <ol className="mt-4 space-y-2">
+                {openHoleShots.slice(0, 6).map((shot, index) => (
+                  <li key={`${shot.shot_number}-${index}`} className="min-w-0 rounded-fw-sm border border-border-subtle bg-surface px-3 py-2">
+                    <p className="truncate font-fw-sans text-caption font-medium text-text-primary">
+                      Shot {index + 1}: {shot.lie_before || 'start'} → {shot.lie_after || 'result'}
+                    </p>
+                    <p className="mt-0.5 truncate font-fw-mono text-eyebrow font-normal tabular-nums text-text-tertiary">
+                      {typeof shot.distance_to_hole_after === 'number' ? `${Math.round(shot.distance_to_hole_after)} yds left` : 'Distance not logged'}
+                      {shot.miss_direction ? ` · ${shot.miss_direction}` : ''}
+                      {shot.is_penalty ? ' · penalty' : ''}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

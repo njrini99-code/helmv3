@@ -53,6 +53,16 @@ const SIZES = {
     showFlag: false,
     interactive: false,
   },
+  inline: {
+    /** Compact round-review preview: enough room to read the flight without
+     * turning the review hero into a full-height course map. */
+    className: 'w-[112px] h-[240px] md:w-[124px] md:h-[264px]',
+    showShotNumbers: true,
+    showScore: true,
+    showHeader: true,
+    showFlag: true,
+    interactive: true,
+  },
   card: {
     /** ~140×320 — inline next to per-hole text in round review */
     className: 'w-[140px] h-[320px] md:w-[160px] md:h-[360px]',

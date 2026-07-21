@@ -389,7 +389,7 @@ export default async function PlayerCoachHelmPage() {
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
+      <div className="mx-auto w-full max-w-[1440px] px-4 py-5 md:px-6 md:py-6">
         <PlayerCoachHelmHome
           data={dashboardResult.data}
           playerId={player.id}

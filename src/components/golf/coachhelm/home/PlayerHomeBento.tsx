@@ -25,7 +25,7 @@
  * ========================================================================== */
 
 import { Bento, BentoCell, useStage } from '@/components/fairway/modules';
-import { Button, GenomeRadar, type GenomeAxis } from '@/components/fairway';
+import { Button, type GenomeAxis } from '@/components/fairway';
 import { IconClock } from '@/components/icons';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { isThemesEnabled } from '@/lib/redesign/flag';
@@ -84,14 +84,14 @@ export function PlayerHomeBento({
   const showThemes = isThemesEnabled() && themes.length > 0;
 
   return (
-    <Bento separated>
+    <Bento separated className="min-[940px]:grid-cols-2">
       <BentoCell
         label="Performance snapshot"
         span={2}
         sentence="Your scoring inputs, together—not isolated stat cards."
         onOpen={() => stage.open('standing')}
       >
-        <div className="grid grid-cols-5 divide-x divide-border-subtle rounded-fw-md border border-border-subtle bg-surface-sunken/45 pr-5">
+        <div className="grid grid-cols-2 overflow-clip rounded-fw-md border border-border-subtle bg-surface-sunken/45 min-[520px]:grid-cols-5 min-[520px]:divide-x min-[520px]:divide-border-subtle">
           <SnapshotMetric label="Score" value={fmtOne(performanceSnapshot.scoringAverage)} />
           <SnapshotMetric label="Fairways" value={fmtPct(performanceSnapshot.fairwayPct)} />
           <SnapshotMetric label="GIR" value={fmtPct(performanceSnapshot.girPct)} />
@@ -100,7 +100,7 @@ export function PlayerHomeBento({
         </div>
       </BentoCell>
 
-      <BentoCell label="Your edge this week" span={2} rows={2}>
+      <BentoCell label="Your edge this week" span={2} rows={topInsight ? 2 : 1}>
         {topInsight ? (
           <div className="flex h-full flex-col gap-3">
             <p className="font-fw-sans text-body-sm leading-snug text-text-primary">
@@ -156,19 +156,23 @@ export function PlayerHomeBento({
       <BentoCell
         label="Game profile"
         sentence="Your 8-dimension game shape."
+        onOpen={() => stage.open('profile')}
       >
         {genomeAxes.length > 0 ? (
-          <GenomeRadar
-            data={genomeAxes}
-            seriesName="Score"
-            max={100}
-            height={96}
-            className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
-          />
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {genomeAxes.slice(0, 4).map((axis) => (
+              <div key={axis.label} className="min-w-0">
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                  <span className="truncate font-fw-sans text-eyebrow text-text-tertiary">{axis.label}</span>
+                  <span className="shrink-0 font-fw-mono text-eyebrow tabular-nums text-text-secondary">{Math.round(axis.value)}</span>
+                </div>
+                <span className="mt-1 block h-1 overflow-clip rounded-full bg-surface-sunken">
+                  <span className="block h-full rounded-full bg-accent-500" style={{ width: `${Math.max(0, Math.min(100, axis.value))}%` }} />
+                </span>
+              </div>
+            ))}
+          </div>
         ) : null}
-        <Button variant="ghost" size="sm" className="mt-auto w-fit" onClick={() => stage.open('profile')}>
-          Open profile →
-        </Button>
       </BentoCell>
 
       <BentoCell

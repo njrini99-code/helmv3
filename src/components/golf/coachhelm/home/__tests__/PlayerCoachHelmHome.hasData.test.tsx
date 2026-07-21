@@ -17,6 +17,7 @@ import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('@/components/ui/sonner', () => ({
