@@ -49,6 +49,14 @@ export interface PlayerHomeBentoProps {
   standingByMetric: Record<string, PlayerStanding>;
   trendSummary: string | null;
   themes: ThemeNode[];
+  insightCount: number;
+  performanceSnapshot: {
+    scoringAverage: number | null;
+    fairwayPct: number | null;
+    girPct: number | null;
+    scramblingPct: number | null;
+    puttsPerRound: number | null;
+  };
   onRateTopInsight: (rating: 'helpful' | 'dismissed') => void;
 }
 
@@ -60,6 +68,8 @@ export function PlayerHomeBento({
   standingByMetric,
   trendSummary,
   themes,
+  insightCount,
+  performanceSnapshot,
   onRateTopInsight,
 }: PlayerHomeBentoProps) {
   const stage = useStage();
@@ -75,6 +85,21 @@ export function PlayerHomeBento({
 
   return (
     <Bento>
+      <BentoCell
+        label="Performance snapshot"
+        span={2}
+        sentence="Your scoring inputs, together—not isolated stat cards."
+        onOpen={() => stage.open('standing')}
+      >
+        <div className="grid grid-cols-5 divide-x divide-border-subtle rounded-fw-md border border-border-subtle bg-surface-sunken/45 pr-5">
+          <SnapshotMetric label="Score" value={fmtOne(performanceSnapshot.scoringAverage)} />
+          <SnapshotMetric label="Fairways" value={fmtPct(performanceSnapshot.fairwayPct)} />
+          <SnapshotMetric label="GIR" value={fmtPct(performanceSnapshot.girPct)} />
+          <SnapshotMetric label="Scramble" value={fmtPct(performanceSnapshot.scramblingPct)} />
+          <SnapshotMetric label="Putts" value={fmtOne(performanceSnapshot.puttsPerRound)} />
+        </div>
+      </BentoCell>
+
       <BentoCell label="Your edge this week" span={2} rows={2}>
         {topInsight ? (
           <div className="flex h-full flex-col gap-3">
@@ -131,7 +156,6 @@ export function PlayerHomeBento({
       <BentoCell
         label="Game profile"
         sentence="Your 8-dimension game shape."
-        onOpen={() => stage.open('profile')}
       >
         {genomeAxes.length > 0 ? (
           <GenomeRadar
@@ -142,6 +166,9 @@ export function PlayerHomeBento({
             className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
           />
         ) : null}
+        <Button variant="ghost" size="sm" className="mt-auto w-fit" onClick={() => stage.open('profile')}>
+          Open profile →
+        </Button>
       </BentoCell>
 
       <BentoCell
@@ -185,6 +212,31 @@ export function PlayerHomeBento({
           onOpen={() => stage.open('insights')}
         />
       ) : null}
+
+      <BentoCell
+        label="Insight library"
+        span={2}
+        headline={{ value: String(insightCount), unit: insightCount === 1 ? 'signal' : 'signals' }}
+        sentence="Evidence, prescribed drills, and feedback in one place."
+        onOpen={() => stage.open('insights')}
+      />
     </Bento>
   );
+}
+
+function SnapshotMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 px-1.5 py-2.5 text-center sm:px-2.5 sm:text-left">
+      <p className="truncate font-fw-mono text-[0.92rem] font-semibold leading-none tracking-[-0.03em] text-text-primary tabular-nums sm:text-h3">
+        {value}
+      </p>
+      <p className="mt-1.5 truncate font-fw-sans text-[0.55rem] font-semibold uppercase tracking-[0.06em] text-text-tertiary sm:text-[0.62rem]">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function fmtOne(v: number | null): string {
+  return v === null ? '—' : v.toFixed(1);
 }

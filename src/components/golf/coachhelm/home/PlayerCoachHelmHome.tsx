@@ -73,7 +73,9 @@ function finite(n: number | null | undefined): number | null {
 function trendSummaryFrom(trendData: Record<string, unknown> | null | undefined): string | null {
   const trends = (trendData as { trends?: { signal?: unknown } } | null | undefined)?.trends;
   const signal = trends?.signal;
-  return typeof signal === 'string' && signal.length > 0 ? signal : null;
+  if (typeof signal !== 'string' || signal.length === 0) return null;
+  const normalized = signal.replace(/[_-]+/g, ' ').trim();
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 export interface PlayerCoachHelmHomeProps {
@@ -313,6 +315,14 @@ export function PlayerCoachHelmHome({
           standingByMetric={standingByMetric}
           trendSummary={trendSummary}
           themes={themes}
+          insightCount={(topInsight ? 1 : 0) + secondaryDeduped.length}
+          performanceSnapshot={{
+            scoringAverage: finite(developmentPlayerStats?.avg_score),
+            fairwayPct: finite(developmentPlayerStats?.fairway_pct),
+            girPct: finite(developmentPlayerStats?.gir_pct),
+            scramblingPct: finite(developmentPlayerStats?.scrambling_pct),
+            puttsPerRound: finite(developmentPlayerStats?.avg_putts),
+          }}
           onRateTopInsight={(rating) => topInsight && void handleRate(topInsight.id, rating)}
         />
       ),
