@@ -112,7 +112,7 @@ export function FilmstripReview({
       const { data, error } = await supabase
         .from('golf_shots')
         .select(
-          'hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, miss_direction, is_penalty',
+          'hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, miss_direction, is_penalty, club_type, penalty_type, putt_break, putt_slope, notes',
         )
         .eq('round_id', roundId)
         .order('hole_number', { ascending: true })
@@ -289,6 +289,7 @@ export function FilmstripReview({
           </p>
         </div>
         <ReviewBreakdown
+          roundId={roundId}
           frontBack={frontBack}
           puttingRamp={puttingRamp}
           momentum={momentum}

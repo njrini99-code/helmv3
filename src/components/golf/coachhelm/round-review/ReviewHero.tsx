@@ -12,6 +12,13 @@
  * The same hover/focus/tap scrub also previews that hole's existing
  * `HoleShotPath` reconstruction in place below the strip. A direct `?hole=`
  * link still opens the same state for sharing.
+ *
+ * The `Filmstrip` itself now renders the premium `HoleShotPath` visual (size
+ * "strip") for all 18 holes by default — the SVG shot-path reconstruction IS
+ * the first thing a reader sees, not a plain bar chart. Scrubbing a hole
+ * additionally opens a BIGGER "reviewCard" detail below the strip (header,
+ * numbered shots, hover tooltips) — the strip stays a compact at-a-glance
+ * row while the detail panel is where a reader actually inspects a hole.
  * ========================================================================== */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -29,11 +36,13 @@ import { formatHoleDetail, formatToPar } from './buildReviewViewModel';
 // first-load JS. Keep the inline detail compact: this is supporting evidence,
 // not a second full-page hero nested inside the review hero.
 const HoleShotPath = dynamic(
-  () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((m) => m.HoleShotPath),
+  () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((mod) => mod.HoleShotPath),
   {
     ssr: false,
+    // Matches the "reviewCard" variant's fluid box at this panel's grid
+    // column width (140px / 160px at md), aspect-locked 140:320.
     loading: () => (
-      <Skeleton className="h-[240px] w-[112px] rounded-fw-md md:h-[264px] md:w-[124px]" />
+      <Skeleton className="h-[320px] w-[140px] rounded-fw-md md:h-[366px] md:w-[160px]" />
     ),
   },
 );
@@ -160,6 +169,7 @@ export function ReviewHero({
           holes={filmstripHoles}
           activeHole={activeHole ?? undefined}
           onScrub={handleScrub}
+          shotsByHole={shotsByHole}
         />
         <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
           {detail ? (
@@ -187,14 +197,14 @@ export function ReviewHero({
 
       {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
         <div className="min-w-0 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">
-          <div className="grid min-w-0 grid-cols-[112px_minmax(0,1fr)] items-start gap-4 md:grid-cols-[124px_minmax(0,1fr)] md:gap-6">
+          <div className="grid min-w-0 grid-cols-[140px_minmax(0,1fr)] items-start gap-4 md:grid-cols-[160px_minmax(0,1fr)] md:gap-6">
             <HoleShotPath
               hole_number={openHole}
               par={openPar}
               yardage={openMeta?.yardage ?? null}
               score={openMeta?.score ?? null}
               shots={openHoleShots}
-              size="inline"
+              size="reviewCard"
             />
             <div className="min-w-0 pt-1">
               <div className="flex min-w-0 items-start justify-between gap-3">
@@ -215,7 +225,7 @@ export function ReviewHero({
                     <p className="mt-0.5 truncate font-fw-mono text-eyebrow font-normal tabular-nums text-text-tertiary">
                       {typeof shot.distance_to_hole_after === 'number' ? `${Math.round(shot.distance_to_hole_after)} yds left` : 'Distance not logged'}
                       {shot.miss_direction ? ` · ${shot.miss_direction}` : ''}
-                      {shot.is_penalty ? ' · penalty' : ''}
+                      {shot.is_penalty ? ` · penalty${shot.penalty_type ? `: ${shot.penalty_type}` : ''}` : ''}
                     </p>
                   </li>
                 ))}

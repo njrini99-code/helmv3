@@ -27,6 +27,20 @@ export type Lie =
 
 export type MissDirection = 'left' | 'right' | 'long' | 'short' | null;
 
+/** `golf_shots.club_type` — the 3-bucket model referenced above. Kept out of
+ *  the geometry/visual language (no club-specific rendering), but useful as
+ *  tooltip context. */
+export type ClubType = 'driver' | 'non_driver' | 'putter';
+
+/** `golf_shots.penalty_type` — the specific rule violation, when logged.
+ *  Richer than the boolean `is_penalty` flag alone. */
+export type PenaltyType = 'ob' | 'water' | 'unplayable' | 'lost';
+
+/** `golf_shots.putt_break` / `putt_slope` — green-reading context, only
+ *  meaningful when the shot's `lie_after` is `'green'`. */
+export type PuttBreak = 'right_to_left' | 'left_to_right' | 'straight' | 'multiple';
+export type PuttSlope = 'uphill' | 'downhill' | 'level' | 'severe';
+
 /** Minimum shape the component needs from a `golf_shots` row. */
 export interface ShotInput {
   shot_number: number;
@@ -41,6 +55,18 @@ export interface ShotInput {
   /** Miss direction the player logged for this shot. */
   miss_direction?: MissDirection | string | null;
   is_penalty?: boolean | null;
+  /** Club bucket used for this shot — tooltip-only context, never drives
+   *  geometry or color (the 3-bucket model isn't part of the v3 visual
+   *  vocabulary; see the module doc above). */
+  club_type?: ClubType | string | null;
+  /** Specific penalty rule, when `is_penalty` is true — replaces the generic
+   *  "penalty" tooltip label with e.g. "penalty: water". */
+  penalty_type?: PenaltyType | string | null;
+  /** Green-read context — only rendered when `lie_after === 'green'`. */
+  putt_break?: PuttBreak | string | null;
+  putt_slope?: PuttSlope | string | null;
+  /** Free-text note the player logged on this shot, if any. */
+  notes?: string | null;
 }
 
 export interface HoleShotPathProps {
@@ -69,6 +95,11 @@ export interface HoleShotPathProps {
   onClick?: () => void;
   /** Tone of the score chip vs par. */
   className?: string;
+  /** Override the SVG box's ring color (default a neutral hairline). Used by
+   *  the 18-hole strip filmstrip to lay a score-vs-par tone ring over the
+   *  premium visual (birdie/bogey/double) without touching the lie-based
+   *  shot coloring inside the SVG itself. */
+  ringClassName?: string;
 }
 
 /**

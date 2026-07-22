@@ -8,15 +8,23 @@
  * Button-as-tab strips. Single-select, roving-focus, keyboard-driven (engine:
  * @radix-ui/react-toggle-group, `type="single"`).
  *
- * Design (DESIGN-SYSTEM §4.3 #5): the TRACK stays matte (`bg-surface-sunken`),
- * and the moving selection pill may carry a *whisper* of glass — here a solid
- * warm `bg-surface` pill with `shadow-soft` that slides between segments via
- * framer-motion `layoutId`. Reduced-motion disables the slide (pill snaps).
+ * Design (DESIGN-SYSTEM §4.3 #5): the TRACK stays matte (`bg-surface-sunken`)
+ * but reads as genuinely SUNKEN — a warm inset shadow (`TRACK_SUNKEN_SHADOW`,
+ * same low-alpha oklch hue-60 language as `--fw-shadow-*`) gives the well real
+ * depth instead of a flat tint. The moving selection pill sits UP off that
+ * well: a solid warm `bg-surface` pill with the outer `--fw-shadow-soft`
+ * elevation PLUS an inset top highlight (`PILL_SHADOW`, the same "lit from
+ * above" recipe `--fw-shadow-card` uses for light matte cards) for a slight
+ * brightness lift, a hairline border, and a springy (slightly underdamped)
+ * framer-motion `layoutId` glide between segments. Reduced-motion disables
+ * the slide (pill snaps, no spring).
  *
  * States: each segment has hover (text warms) + focus-visible (green ring) +
- * active/selected (sits on the moving pill, text → primary). Sizes sm | md | lg.
- * `lg` exists for primary, high-frequency mobile toggles (e.g. the calendar
- * view switcher) that must clear the WCAG 2.2 AA (2.5.8) 44px touch target.
+ * active/selected (sits on the moving pill, text → primary + semibold for a
+ * crisper active/inactive hierarchy). Sizes sm | md | lg — all comfortable hit
+ * targets (44px on coarse pointers). `lg` exists for primary, high-frequency
+ * mobile toggles (e.g. the calendar view switcher) that must clear the WCAG
+ * 2.2 AA (2.5.8) 44px touch target.
  * ========================================================================== */
 
 import { type ReactNode, useId } from 'react';
@@ -67,6 +75,25 @@ const sizeItem: Record<'sm' | 'md' | 'lg', string> = {
   lg: 'min-h-[44px] px-4 text-[13px] leading-4 gap-1.5',
 };
 
+/**
+ * The sunken track's inset shadow — a warm, low-alpha two-layer inset (same
+ * hue-60 oklch language as `--fw-shadow-flat`/`--fw-shadow-soft` in
+ * design-tokens.css) so the well reads as genuinely carved into the surface,
+ * not just a flat tint swap. Inline (not a new Tailwind shadow key) so the
+ * track and the pill's brightness-lift below can share this file without a
+ * design-tokens.css change.
+ */
+const TRACK_SUNKEN_SHADOW =
+  'inset 0 1px 3px oklch(0.18 0.01 60 / 0.10), inset 0 1px 0 oklch(0.18 0.01 60 / 0.04)';
+
+/**
+ * The moving pill's shadow: the existing `--fw-shadow-soft` elevation (the
+ * exact recipe the `shadow-soft` utility already applied) PLUS an inset warm-
+ * white top highlight — the same "lit from above" tell `--fw-shadow-card`
+ * uses for light matte cards — for the requested slight brightness lift.
+ */
+const PILL_SHADOW = 'inset 0 1px 0 oklch(1 0 0 / 0.6), var(--fw-shadow-soft)';
+
 export function Segmented<T extends string = string>({
   options,
   value,
@@ -102,7 +129,7 @@ export function Segmented<T extends string = string>({
       }}
       aria-label={aria['aria-label']}
       data-slot="fw-segmented"
-      style={fadeStyle}
+      style={{ ...fadeStyle, boxShadow: TRACK_SUNKEN_SHADOW }}
       className={cn(
         'inline-flex max-w-full items-center overflow-x-auto rounded-fw-sm bg-surface-sunken',
         '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
@@ -132,25 +159,35 @@ export function Segmented<T extends string = string>({
               // enough room even for that, the same content-size floor kicks
               // in and the row scrolls, same as the non-fullWidth case.
               'relative isolate inline-flex items-center justify-center rounded-md',
-              'font-fw-sans font-medium',
+              'font-fw-sans',
               fwTransition,
               fwFocusRing,
               'disabled:opacity-40 disabled:pointer-events-none',
               sizeItem[size],
               fullWidth ? 'flex-1' : 'flex-shrink-0',
-              selected ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary',
+              // Crisper active/inactive hierarchy: the selected label sits on
+              // the elevated pill and reads semibold + primary; everything
+              // else stays medium-weight and secondary until hovered.
+              selected
+                ? 'font-semibold text-text-primary'
+                : 'font-medium text-text-secondary hover:text-text-primary',
             )}
           >
             {selected && (
               <motion.span
-                // The moving selection pill (matte warm surface + soft shadow).
+                // The moving selection pill — matte warm surface, elevated off
+                // the sunken track via PILL_SHADOW (soft outer shadow + inset
+                // brightness-lift highlight) + a hairline border.
                 layoutId={reduceMotion ? undefined : `fw-segment-pill-${pillId}`}
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 rounded-md bg-surface shadow-soft border border-border-subtle"
+                className="absolute inset-0 -z-10 rounded-md bg-surface border border-border-subtle"
+                style={{ boxShadow: PILL_SHADOW }}
                 transition={
                   reduceMotion
                     ? { duration: 0 }
-                    : { type: 'spring', stiffness: 380, damping: 34, mass: 0.7 }
+                    // Slightly underdamped (ζ≈0.85) — a real, physical settle
+                    // with the faintest single overshoot, not a dead-flat snap.
+                    : { type: 'spring', stiffness: 450, damping: 28, mass: 0.6 }
                 }
               />
             )}

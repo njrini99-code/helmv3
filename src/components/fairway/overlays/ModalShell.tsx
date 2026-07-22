@@ -128,6 +128,36 @@ function ModalShellRoot({
     [isControlled, onOpenChange],
   );
 
+  // Escape-close regression guard (2026-07-21, post portal-into-dialog fix):
+  // Radix's Dialog `DismissableLayer` listens for Escape on `document` in the
+  // CAPTURE phase (@radix-ui/react-use-escape-keydown), which — being on
+  // `document` itself — fires before the event ever reaches the focused
+  // element inside a nested Base UI popup (Select/Combobox). A floating Base
+  // UI popup's OWN Escape-to-close comes from floating-ui-react's
+  // `useDismiss`, which listens on `document` too but in the BUBBLE phase
+  // (fires last). Left alone, that ordering means a single Escape press
+  // closes BOTH the popup and the dialog at once — the popup never gets a
+  // press "to itself" before the dialog goes away under it.
+  //
+  // Base UI stamps `data-popup-open` on a popup's trigger/input element (the
+  // Select trigger, the Combobox input, …) for exactly as long as that
+  // popup is open — see @base-ui-components/react's CommonTriggerDataAttributes.
+  // We use it as a live, DOM-truth signal: if any such element inside this
+  // dialog currently has an open popup, this Escape press was meant for the
+  // popup, not the dialog — `preventDefault()` so DismissableLayer's own
+  // `if (!event.defaultPrevented) onDismiss()` guard skips closing the
+  // dialog, while Base UI's independent listener still closes the popup on
+  // this same keystroke. The *next* Escape press finds no `data-popup-open`
+  // descendant left and falls through to the normal dialog dismiss.
+  const handleContentEscapeKeyDown = React.useCallback(
+    (event: KeyboardEvent) => {
+      if (contentNode?.querySelector('[data-popup-open]')) {
+        event.preventDefault();
+      }
+    },
+    [contentNode],
+  );
+
   const titleIsString = typeof title === 'string';
 
   return (
@@ -159,6 +189,7 @@ function ModalShellRoot({
               // The fairway-ds scope gives child elements the warm tokens/fonts.
               className="fairway-ds"
               aria-describedby={description ? undefined : ''}
+              onEscapeKeyDown={handleContentEscapeKeyDown}
             >
               <motion.div
                 ref={setContentNode}

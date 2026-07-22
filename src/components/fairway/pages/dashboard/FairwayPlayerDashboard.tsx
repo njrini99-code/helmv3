@@ -49,6 +49,7 @@ import {
   InlineNotice,
   EmptyState,
   Skeleton,
+  Sparkline,
 } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { getGreeting, getTimeOfDay } from '@/lib/utils/time-of-day';
@@ -221,6 +222,22 @@ function metricEmpty(card: SparklineStatCard | undefined, value: number | null):
   return false;
 }
 
+/** Honest first→last delta over a sparkline series (oldest → newest), or null
+ *  when there are fewer than two finite points to compare. Mirrors
+ *  FairwayCoachDashboard.tsx's own `seriesDelta` (not exported from that
+ *  file — this is a same-shape local copy, kept in lockstep by convention)
+ *  so the player KPI row's delta chips are sourced from the series the exact
+ *  same way the coach row's are, and the same way Sparkline classifies its
+ *  own color. */
+function seriesDelta(series: number[] | undefined): number | null {
+  if (!series) return null;
+  const finite = series.filter((v) => Number.isFinite(v));
+  if (finite.length < 2) return null;
+  const first = finite[0] as number;
+  const last = finite[finite.length - 1] as number;
+  return last - first;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
  * Component
  * ──────────────────────────────────────────────────────────────────────── */
@@ -260,6 +277,20 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
 
   const sparklines = enhancedData?.sparklines;
   const secondary = enhancedData?.secondaryStats;
+
+  // KPI sparkline parity with the coach dashboard (FairwayCoachDashboard.tsx
+  // Team KPI row): the same enhancedData.sparklines.* series was already
+  // being fetched for this page but never wired into the player MetricCards
+  // — they rendered as plain numbers with no inline trend. Same series →
+  // same Sparkline + delta-chip pattern the coach row uses.
+  const scoringSeries = sparklines?.scoringAvg.sparkline ?? [];
+  const girSeries = sparklines?.girPct.sparkline ?? [];
+  const puttsSeries = sparklines?.puttsPerRound.sparkline ?? [];
+  const handicapSeries = sparklines?.handicap.sparkline ?? [];
+  const scoringDelta = seriesDelta(scoringSeries);
+  const girDelta = seriesDelta(girSeries);
+  const puttsDelta = seriesDelta(puttsSeries);
+  const handicapDelta = seriesDelta(handicapSeries);
 
   // CONSOLIDATION (review): TodayCard's "what's next" preview and the Action
   // center section below it must read from ONE source, not two independent
@@ -422,15 +453,36 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   icon={<TrendingUp />}
                   empty={metricEmpty(sparklines?.scoringAvg, sparklines?.scoringAvg.value ?? stats.scoringAverage ?? null)}
                   emptyMessage="—"
+                  delta={
+                    scoringDelta != null
+                      ? { value: Number(scoringDelta.toFixed(1)), label: 'last 5 rounds' }
+                      : undefined
+                  }
+                  sparkline={
+                    scoringSeries.length >= 2 ? (
+                      <Sparkline data={scoringSeries} goodDirection="down" label="Scoring average" />
+                    ) : undefined
+                  }
                 />
                 <MetricCard
                   label="GIR"
                   value={Number(sparklines?.girPct.value ?? 0)}
                   decimals={0}
                   suffix="%"
+                  goodDirection="up"
                   icon={<Target />}
                   empty={metricEmpty(sparklines?.girPct, sparklines?.girPct.value ?? null)}
                   emptyMessage="—"
+                  delta={
+                    girDelta != null
+                      ? { value: Number(girDelta.toFixed(0)), suffix: '%', label: 'last 5 rounds' }
+                      : undefined
+                  }
+                  sparkline={
+                    girSeries.length >= 2 ? (
+                      <Sparkline data={girSeries} goodDirection="up" label="Greens in regulation" />
+                    ) : undefined
+                  }
                 />
                 <MetricCard
                   label="Putts / round"
@@ -440,6 +492,16 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   icon={<Activity />}
                   empty={metricEmpty(sparklines?.puttsPerRound, sparklines?.puttsPerRound.value ?? null)}
                   emptyMessage="—"
+                  delta={
+                    puttsDelta != null
+                      ? { value: Number(puttsDelta.toFixed(1)), label: 'last 5 rounds' }
+                      : undefined
+                  }
+                  sparkline={
+                    puttsSeries.length >= 2 ? (
+                      <Sparkline data={puttsSeries} goodDirection="down" label="Putts per round" />
+                    ) : undefined
+                  }
                 />
                 <MetricCard
                   label="Handicap"
@@ -448,12 +510,23 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                       (stats.handicap != null ? Number(Number(stats.handicap).toFixed(1)) : 0),
                   )}
                   decimals={1}
+                  goodDirection="down"
                   icon={<Trophy />}
                   empty={metricEmpty(
                     sparklines?.handicap,
                     sparklines?.handicap.value ?? stats.handicap ?? null,
                   )}
                   emptyMessage="—"
+                  delta={
+                    handicapDelta != null
+                      ? { value: Number(handicapDelta.toFixed(1)), label: 'last 5 rounds' }
+                      : undefined
+                  }
+                  sparkline={
+                    handicapSeries.length >= 2 ? (
+                      <Sparkline data={handicapSeries} goodDirection="down" label="Handicap" />
+                    ) : undefined
+                  }
                 />
               </div>
 

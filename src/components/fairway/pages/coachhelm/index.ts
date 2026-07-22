@@ -104,6 +104,12 @@ export type {
 export { AskThreadPane } from './AskThreadPane';
 export type { AskThreadPaneProps } from './AskThreadPane';
 
+// ── TeamCategoryLeakBand (Wave 2 · coach Brief "where the team is bleeding
+//    strokes" band) — team-wide category rollup over getTeamCategoryInsights'
+//    categories[]/teamHealth, mounted at the top of TriageDesk. ────────────
+export { TeamCategoryLeakBand } from './TeamCategoryLeakBand';
+export type { TeamCategoryLeakBandProps } from './TeamCategoryLeakBand';
+
 // ── Effectiveness surface (phase 3 · coach "Effectiveness" tab) ──────────────
 // The "Effectiveness" tab over /golf/dashboard/analytics/coachhelm. Renders the
 // CoachHelmShell wrapper itself and consumes the four coachhelm-analytics.ts

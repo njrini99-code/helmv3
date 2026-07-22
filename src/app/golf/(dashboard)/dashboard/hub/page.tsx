@@ -15,6 +15,13 @@ import { redirect } from 'next/navigation';
  * command palette's stale entries still land somewhere real, rather than
  * 404ing. No new nav entry points here (removed from the rail — see
  * src/lib/golf/nav-registry.ts).
+ *
+ * BELT-AND-BRACES (2026-07-22): next.config.mjs `redirects()` now intercepts
+ * `/golf/dashboard/hub` at the framework routing layer, before this page ever
+ * renders — the fix for the React #310 "rendered more hooks" crash on
+ * client-navigation into bare redirect() shims. This component is left in
+ * place only as a fallback for anything the config layer misses; it should
+ * no longer actually execute in normal operation.
  * ========================================================================== */
 export default function PlayerHubRedirectPage() {
   redirect('/golf/dashboard');

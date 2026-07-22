@@ -18,10 +18,10 @@
 
 'use client';
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useId } from 'react';
 import type { PlottedHazard } from './geometry';
-import { EASE_CINEMATIC } from '@/lib/coachhelm/v3/motion';
+import { EASE_CINEMATIC, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface HazardsProps {
   hazards: PlottedHazard[];
@@ -30,7 +30,7 @@ interface HazardsProps {
 }
 
 export function Hazards({ hazards, staticRender = false }: HazardsProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const rawId = useId();
   const id = rawId.replace(/:/g, '-');
   const sandGrad = `sandGrad-${id}`;

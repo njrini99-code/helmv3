@@ -5,8 +5,10 @@
  *  - Auth gating — anonymous / denied callers get null.
  *  - Sections emit in the stable FINGERPRINT_SECTION_ORDER.
  *  - Insights are routed to the correct section by `category`.
- *  - Composite rating is derived from stats cache when present; falls back
- *    to recent rounds otherwise.
+ *  - Composite rating is derived from the canonical
+ *    `@/lib/coachhelm/composite-rating` formula (recent rounds + active
+ *    severe-pattern penalty) — NEVER from `golf_player_stats_cache` (Wave 2
+ *    unification with the Scouting Report tab's composite).
  *
  * The supabase client is mocked at the module boundary — the aggregator
  * never touches a live DB in tests. We also mock `getInsightsForCoach` so
@@ -119,6 +121,7 @@ interface SupabaseMockOpts {
   } | null>;
   stats?: Queued<Record<string, unknown> | null>;
   rounds?: Queued<Array<Record<string, unknown>>>;
+  patterns?: Queued<Array<Record<string, unknown>>>;
 }
 
 function makeSupabaseMock(opts: SupabaseMockOpts) {
@@ -132,6 +135,7 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
   };
   const statsResponse = opts.stats ?? { data: null, error: null };
   const roundsResponse = opts.rounds ?? { data: [], error: null };
+  const patternsResponse = opts.patterns ?? { data: [], error: null };
 
   return {
     auth: {
@@ -170,6 +174,14 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
           not: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),
           limit: vi.fn().mockResolvedValue(roundsResponse),
+        };
+      }
+      if (table === 'golf_patterns_v2') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockResolvedValue(patternsResponse),
         };
       }
       // Unknown table — return an empty builder.
@@ -288,32 +300,48 @@ describe('getPlayerFingerprint', () => {
     expect(result!.sections.putting.insights[1]!.id).toBe('high-1');
   });
 
-  it('computes composite rating from stats cache when available', async () => {
+  it('computes composite rating from recent rounds, IGNORING the stats cache (Wave 2 unification)', async () => {
+    // Composite unification (see src/lib/coachhelm/composite-rating.ts): the
+    // Game Fingerprint tab's composite used to prefer
+    // `golf_player_stats_cache.scoring_average_vs_par` over the fetched
+    // rounds — the exact reason the Scouting Report tab (which always used
+    // recent rounds) could show a DIFFERENT number for the same player at the
+    // same moment. Both tabs now import the SAME canonical function, which
+    // never reads the stats cache for the composite. `scoring_average_vs_par:
+    // 999` below would produce a wildly different (clamped) rating if it were
+    // still consulted — asserting 65 (derived purely from the one round)
+    // proves the cache is ignored.
     const sb = makeSupabaseMock({
       userId: 'u-1',
       stats: {
         data: {
           rounds_in_calculation: 12,
-          scoring_average_vs_par: 5,
+          scoring_average_vs_par: 999,
           last_5_average: 75,
           last_10_average: 78,
-          // Everything else null.
           scoring_average: 77,
         },
+        error: null,
+      },
+      rounds: {
+        data: [
+          { id: 'r1', round_date: '2026-04-20', total_score: 77, score_to_par: 5, course_name: null, holes_played: 18, round_type: 'practice' },
+        ],
         error: null,
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getPlayerFingerprint('p-1', sb as any);
     expect(result).not.toBeNull();
-    // 80 - (5 * 3) = 65.
+    // 80 - (5 * 3) = 65 — derived from the ROUND, not scoring_average_vs_par.
     expect(result!.composite.rating).toBe(65);
-    expect(result!.composite.rounds_in_calculation).toBe(12);
-    // last_10 (78) - last_5 (75) = 3 > 0.8 → trending "up" (recent is lower).
-    expect(result!.composite.trend).toBe('up');
+    expect(result!.composite.rounds_in_calculation).toBe(1);
+    // A single round can't establish a windowed trend — honest 'flat', not the
+    // stats-cache last_5/last_10 delta the old formula would have used.
+    expect(result!.composite.trend).toBe('flat');
   });
 
-  it('falls back to recent rounds when stats cache is empty', async () => {
+  it('derives composite rating from recent rounds when stats cache is empty', async () => {
     const rounds = [
       { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'practice' },
       { id: 'r2', round_date: '2026-04-15', total_score: 78, course_par: 72, score_to_par: 6, course_name: null, holes_played: 18, round_type: 'practice' },
@@ -330,6 +358,27 @@ describe('getPlayerFingerprint', () => {
     // avg score_to_par = (4+6+2+8)/4 = 5 → 80 - 15 = 65.
     expect(result!.composite.rating).toBe(65);
     expect(result!.composite.rounds_in_calculation).toBe(4);
+  });
+
+  it('penalizes active severe patterns in the composite (mirrors the Scouting Report tab)', async () => {
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      rounds: {
+        data: [
+          { id: 'r1', round_date: '2026-04-20', total_score: 72, score_to_par: 0, course_name: null, holes_played: 18, round_type: 'practice' },
+        ],
+        error: null,
+      },
+      patterns: {
+        data: [{ severity: 'critical' }, { severity: 'high' }],
+        error: null,
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPlayerFingerprint('p-1', sb as any);
+    expect(result).not.toBeNull();
+    // 80 (even par) - 10 (two severe patterns) = 70.
+    expect(result!.composite.rating).toBe(70);
   });
 
   it('marks sections as sparse when there are no metrics + no rounds', async () => {

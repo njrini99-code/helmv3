@@ -9,6 +9,15 @@
  * you/team/Tour `StandingTrack` (anchored on SG: Total — same rail idiom as
  * the Stats spine), the top-3 focus-area `PriorityList`, and the
  * rounds/fairways/greens/putts `SpineLedger`.
+ *
+ * The desktop rail (`<Spine>`, ≥940px) is `Spine.tsx`'s own layout —
+ * everything it needs (hero/verdict/track/priorities/ledger) is already
+ * real, non-empty data whenever it exists, so each optional section either
+ * renders in full or collapses cleanly (no leftover blank block). The
+ * compact mobile hero below (<940px, owned entirely by this file) shows the
+ * SAME priorities + ledger content in full — not a 2-item teaser — in its
+ * horizontally-scrolling pill row, so the mobile summary is exactly as dense
+ * as the desktop rail it stands in for.
  * ========================================================================== */
 
 import Link from 'next/link';
@@ -43,12 +52,12 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
         </div>
         {(priorities.length > 0 || ledger.length > 0) ? (
           <div className="mt-3 flex min-w-0 gap-2 overflow-x-auto border-t border-white/15 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {priorities.slice(0, 2).map((item) => (
+            {priorities.map((item) => (
               <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-700 px-3 py-1.5 font-fw-sans text-caption text-accent-100">
                 {item.title} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
               </span>
             ))}
-            {ledger.slice(0, 2).map((item) => (
+            {ledger.map((item) => (
               <span key={item.label} className="shrink-0 rounded-full bg-accent-700 px-3 py-1.5 font-fw-sans text-caption text-accent-100">
                 {item.label} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
               </span>

@@ -626,7 +626,25 @@ function FairwayDashboardContent({
         bottomNav={bottomNav}
         className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
       >
-        <div id="main-content" tabIndex={-1} className="outline-none">
+        <div
+          id="main-content"
+          tabIndex={-1}
+          className={cn(
+            'outline-none',
+            // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
+            // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
+            // only), mounted once for every coach dashboard route. Nothing in
+            // AppShell's own bottom padding (see AppShell.tsx's home-indicator
+            // + mobile bottom-nav clearance, both md:-scoped away to near-zero)
+            // accounts for it, so the last row of any content that reaches the
+            // page's true bottom edge sat directly under the FAB on desktop —
+            // confirmed on roster/dashboard/round-review at 1440x900. Reserve
+            // real clearance (the FAB's ~80px footprint + a comfortable buffer)
+            // at md+ ONLY, and only for coach routes (players never render the
+            // launcher at all, so their pages keep the tighter default).
+            role === 'coach' && 'md:pb-28',
+          )}
+        >
           <NoTeamBanner />
           {children}
         </div>

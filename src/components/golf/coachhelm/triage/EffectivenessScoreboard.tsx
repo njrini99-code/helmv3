@@ -90,9 +90,21 @@ export function EffectivenessScoreboard({
   const calibration = summarizeCalibration(initialPerformance);
   const trendPoints = (initialPerformance?.accuracyOverTime ?? []).map((p) => ({ x: p.date, y: p.accuracyRate }));
 
+  // The Working / Not-working / calibration line each independently render an
+  // honest "no data yet" — fine when only one is starved (its siblings carry
+  // real content), but when ALL THREE are starved at once (a fresh team with
+  // no resolved outcomes) that's 3 boxes repeating the same non-finding.
+  // Collapse to ONE clear state instead of the triple stack.
+  const rankingsEmpty = working.length === 0 && notWorking.length === 0;
+  const showConsolidatedEmptyState = rankingsEmpty && !calibration.live;
+
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <Surface padding="md" className="flex flex-col justify-center gap-3">
+    // `items-start` — each card sizes to its OWN content (intrinsic height)
+    // instead of CSS Grid's default row-stretch, which was forcing the
+    // compact Adoption ring+caption to stretch to match its taller Ribbon
+    // row-mate and center-float in the resulting empty middle.
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+      <Surface padding="md" className="flex flex-col gap-3">
         <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">Adoption</p>
         <div className="flex items-center gap-3">
           <RingGauge value={adoption.pct} size={48} />
@@ -116,25 +128,37 @@ export function EffectivenessScoreboard({
         />
       </Surface>
 
-      <Surface padding="md">
-        <RankedList title="Working" tone="success" items={working} />
-      </Surface>
-      <Surface padding="md">
-        <RankedList title="Not working" tone="danger" items={notWorking} />
-      </Surface>
+      {showConsolidatedEmptyState ? (
+        <Surface padding="md" className="lg:col-span-2">
+          <EmptyState
+            variant="subtle"
+            title="Not enough resolved outcomes yet"
+            description="Working / not-working rankings and prediction calibration fill in together once insights get acted on and predictions resolve."
+          />
+        </Surface>
+      ) : (
+        <>
+          <Surface padding="md">
+            <RankedList title="Working" tone="success" items={working} />
+          </Surface>
+          <Surface padding="md">
+            <RankedList title="Not working" tone="danger" items={notWorking} />
+          </Surface>
 
-      <Surface padding="md" className="lg:col-span-2">
-        <p
-          className={cn(
-            'font-fw-sans text-body-sm',
-            calibration.tone === 'positive' && 'text-fw-success',
-            calibration.tone === 'warning' && 'text-fw-warning-ink',
-            calibration.tone === 'neutral' && 'text-text-tertiary',
-          )}
-        >
-          {calibration.label}
-        </p>
-      </Surface>
+          <Surface padding="md" className="lg:col-span-2">
+            <p
+              className={cn(
+                'font-fw-sans text-body-sm',
+                calibration.tone === 'positive' && 'text-fw-success',
+                calibration.tone === 'warning' && 'text-fw-warning-ink',
+                calibration.tone === 'neutral' && 'text-text-tertiary',
+              )}
+            >
+              {calibration.label}
+            </p>
+          </Surface>
+        </>
+      )}
     </div>
   );
 }

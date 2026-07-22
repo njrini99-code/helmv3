@@ -33,7 +33,7 @@ import { getPlayerTrendAnalysis } from '@/app/golf/actions/coachhelm-data';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { computeCompositeRating } from '../composite-rating';
+import { computeCompositeRating } from '@/lib/coachhelm/composite-rating';
 import { PlayerDeepDiveTabs } from './PlayerDeepDiveTabs';
 import type { FairwayPlayerInsightProps } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 
@@ -394,7 +394,9 @@ export default async function PlayerGamePage({
   // round" state (it gates every rating/bar/verdict on `rounds.length > 0`), so
   // the numeric prop is never displayed in that case. Coalesce to 0 only to
   // satisfy the component's `number` contract; the zero-data guard owns honesty.
-  const compositeRating = computeCompositeRating(rounds, patterns) ?? 0;
+  // (Wave 2 — this now imports the SAME canonical formula the Game
+  // Fingerprint tab's composite uses, so the two tabs can never disagree.)
+  const compositeRating = computeCompositeRating(rounds, patterns).rating ?? 0;
   const categoryBreakdown = computeCategoryBreakdown(rounds);
   const trendSummary = computeTrendSummary(rounds);
   const playerStatus = derivePlayerStatus(trendSummary.trend);

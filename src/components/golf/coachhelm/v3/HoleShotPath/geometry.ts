@@ -79,6 +79,12 @@ export interface PlottedShot {
   miss_direction: 'left' | 'right' | 'long' | 'short' | null;
   /** Yardage of this shot itself (start→end), if computable. */
   shot_yards: number | null;
+  /** Tooltip-only pass-through fields — no effect on geometry. */
+  club_type?: ShotInput['club_type'];
+  penalty_type?: ShotInput['penalty_type'];
+  putt_break?: ShotInput['putt_break'];
+  putt_slope?: ShotInput['putt_slope'];
+  notes?: ShotInput['notes'];
 }
 
 export interface PlottedSegment {
@@ -248,6 +254,11 @@ export function plotHole(args: {
       is_penalty: !!s.is_penalty,
       miss_direction: miss,
       shot_yards,
+      club_type: s.club_type,
+      penalty_type: s.penalty_type,
+      putt_break: s.putt_break,
+      putt_slope: s.putt_slope,
+      notes: s.notes,
     });
 
     // Segment from previous endpoint to this one — Bezier control above

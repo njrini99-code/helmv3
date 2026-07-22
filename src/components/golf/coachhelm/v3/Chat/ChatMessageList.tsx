@@ -19,6 +19,14 @@ import {
 interface Props {
   messages: ChatMessage[];
   pending: boolean;
+  /**
+   * #948 follow-up — when the thread ends on an orphaned user turn (no
+   * assistant reply persisted), this fires the SAME text as a fresh send so
+   * the coach can recover with one tap instead of retyping the question.
+   * Omit to hide the retry affordance entirely (falls back to a plain
+   * notice with no action).
+   */
+  onRetryMissingReply?: (text: string) => void;
 }
 
 /**
@@ -33,7 +41,7 @@ interface Props {
  *   - Uses canonical enterVariants / enterTransition (no inline
  *     cubic-bezier or hand-rolled durations).
  */
-export function ChatMessageList({ messages, pending }: Props) {
+export function ChatMessageList({ messages, pending, onRetryMissingReply }: Props) {
   const prefersReducedMotion = useReducedMotion() ?? false;
 
   // Stagger the last N bubbles only. When a coach scrolls back through
@@ -75,8 +83,34 @@ export function ChatMessageList({ messages, pending }: Props) {
       })}
       {showMissingReplyNotice && (
         <li role="status">
-          <div className="max-w-[85%] rounded-2xl border border-dashed border-warm-300 bg-warm-50/60 px-4 py-3 text-sm italic text-warm-500">
-            No response recorded for this message.
+          {/* #948 follow-up — a dashed border + italic copy reads as an
+              unfinished placeholder ("todo: wire this up"), not a fact about
+              the data. A solid quiet card with a plain-language explanation
+              + a one-tap recovery action reads as intentional instead. */}
+          <div className="flex max-w-[85%] flex-col items-start gap-2 rounded-2xl border border-warm-200 bg-cream-50 px-4 py-3 text-sm text-warm-700">
+            <span>This conversation didn&rsquo;t get an answer.</span>
+            {onRetryMissingReply && lastMessage ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3"
+                onClick={() => onRetryMissingReply(lastMessage.content ?? '')}
+                rightIcon={
+                  <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden>
+                    <path
+                      d="M3 8h9 M9 4 l4 4 l-4 4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+              >
+                Ask again
+              </Button>
+            ) : null}
           </div>
         </li>
       )}

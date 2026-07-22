@@ -94,7 +94,15 @@ export function AskThreadPane({
       depth="raised"
       padding="none"
       aria-label="Conversation"
-      className={cn('flex min-h-[60vh] flex-col overflow-hidden', className)}
+      // #948 follow-up — this used to carry a forced `min-h-[60vh]` PLUS a
+      // `flex-1` scroll region, so a short thread (or the one-bubble orphaned-
+      // turn case) still stretched the pane to ~60% of viewport height, most
+      // of it empty air between the last bubble and the composer (the
+      // "~950px dead pane" complaint). The panel now sizes to its own
+      // content — header + thread + composer, nothing forced — and the two
+      // scroll-region variants below (empty vs. populated) each own their
+      // own height contract instead of the outer shell imposing one.
+      className={cn('flex flex-col overflow-hidden', className)}
     >
       {/* Bezel header — ONLY the optional origin context line (the factual
           "About <player/insight/round>" that spawned the thread). The shell
@@ -126,13 +134,24 @@ export function AskThreadPane({
           embedded ChatMessageList is UNCHANGED. */}
       <div
         ref={scrollRef}
-        // #63: the trailing message used to run straight up against the
-        // composer track below with no real breathing room (an even `py-5`
-        // reads as "no bottom spacing" once the last bubble's own shadow/
-        // radius is accounted for). Bottom padding is intentionally DEEPER
-        // than top so the newest message always has clear air above the
-        // input bar, matching the composer's own `p-3` + safe-area inset.
-        className="flex-1 overflow-y-auto bg-surface px-4 pt-5 pb-8 sm:px-5"
+        className={cn(
+          'overflow-y-auto bg-surface px-4 sm:px-5',
+          isEmptyThread
+            ? // #948 follow-up — the truly-empty "no thread open" state gets
+              // its OWN composed, centered treatment (icon + title +
+              // description vertically centered in a real minimum height),
+              // not top-aligned content in a stretched pane.
+              'flex min-h-[420px] flex-col items-center justify-center py-8'
+            : // #63 + #948 follow-up — content top-aligns at its natural
+              // height (no forced fill); `max-h` caps a genuinely long
+              // thread so the composer stays reachable without scrolling the
+              // whole page, while a short thread (incl. the one-bubble
+              // orphaned-turn case) just sits at its real height instead of
+              // stretching into a dead void. Bottom padding stays strictly
+              // deeper than top (#63) so the newest message always clears
+              // the composer.
+              'max-h-[60vh] pt-5 pb-8',
+        )}
       >
         {isEmptyThread ? (
           <EmptyState
@@ -141,7 +160,11 @@ export function AskThreadPane({
             description="Choose a thread on the left, or ask CoachHelm a new question below."
           />
         ) : (
-          <ChatMessageList messages={messages} pending={pending} />
+          <ChatMessageList
+            messages={messages}
+            pending={pending}
+            onRetryMissingReply={(text) => void onSend(text)}
+          />
         )}
 
         {/* Recoverable error — InlineNotice + Retry (replaces the flat red chip). */}

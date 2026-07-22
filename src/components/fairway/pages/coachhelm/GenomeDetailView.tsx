@@ -71,6 +71,7 @@ import {
   IconWarning,
   IconCheckCircle2,
   IconLock,
+  IconMinus,
   IconArrowRight,
   IconSparkles,
   IconChartRadar,
@@ -143,6 +144,12 @@ interface DimRow {
   confidence: number | null;
   /** True when the dimension has no computed value (needs more rounds). */
   locked: boolean;
+  /**
+   * True for a permanent stub dimension (e.g. weather) that can never
+   * resolve, regardless of sample size — distinct from an ordinary locked
+   * dim that just needs more rounds. Only meaningful when `locked` is true.
+   */
+  notTracked: boolean;
 }
 
 function buildDimRows(vector: GenomeVector): DimRow[] {
@@ -164,6 +171,7 @@ function buildDimRows(vector: GenomeVector): DimRow[] {
       raw: r?.value ?? null,
       confidence: r?.confidence ?? null,
       locked,
+      notTracked: dim.neverAvailable === true,
     };
   });
 }
@@ -737,6 +745,33 @@ function PersonaRow({ entry, tone }: { entry: PersonaEntry; tone: 'accent' }) {
  * ─────────────────────────────────────────────────────────────────────────── */
 
 function DimensionCell({ dim }: { dim: DimRow }) {
+  // Permanent stub (e.g. weather) — visually distinct from "needs more
+  // rounds": more muted, a dash/off icon instead of a lock (a lock implies
+  // it opens later), and an honest "Not tracked" label so a coach never
+  // waits on rounds to unlock a spoke that has no data source at all.
+  if (dim.locked && dim.notTracked) {
+    return (
+      <InstrumentPanel
+        depth="inset"
+        padding="sm"
+        className={cn('flex flex-col gap-1 opacity-45')}
+        aria-label={`${dim.label}: not tracked`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+            {dim.label}
+          </span>
+          <IconMinus size={12} className="text-text-tertiary" />
+        </div>
+        <Readout
+          size="md"
+          state="awaiting"
+          awaitingLabel={dim.qualitative ?? 'Not tracked'}
+        />
+      </InstrumentPanel>
+    );
+  }
+
   if (dim.locked) {
     return (
       <InstrumentPanel

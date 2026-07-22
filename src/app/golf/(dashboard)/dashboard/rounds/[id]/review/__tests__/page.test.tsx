@@ -72,6 +72,10 @@ vi.mock('framer-motion', async () => {
     motion: makeTagProxy(STRIP),
     m: makeTagProxy(STRIP),
     AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+    // The strip filmstrip (Filmstrip.tsx) and several fairway modules now
+    // wrap their `m.*` entrances in a real `<LazyMotion>` — a pass-through
+    // stub keeps that subtree rendering under this mock.
+    LazyMotion: ({ children }: { children: React.ReactNode }) => children,
   };
 });
 
@@ -299,7 +303,10 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     const { findByText, getByText } = renderAsPlayer();
 
     await findByText('Where strokes went');
-    expect(getByText('Putting')).toBeInTheDocument();
+    // `{ selector: 'span' }` scopes this to the RailBars row label — the
+    // round breakdown's putting section also renders an (unrelated) "Putting"
+    // <h3> heading, so an unscoped text query is ambiguous between the two.
+    expect(getByText('Putting', { selector: 'span' })).toBeInTheDocument();
   });
 
   it('renders a working Share-with-Coach CTA wired to shareRoundReviewWithCoach', async () => {

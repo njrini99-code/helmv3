@@ -14,6 +14,17 @@ import { permanentRedirect } from 'next/navigation';
  * `development/page.tsx`'s `?player=` forwarding. The target's own
  * `view`/`filter` always win on collision so a stray `?view=`/`?filter=`
  * can never point the shim somewhere other than the Signals/alerts drill.
+ *
+ * BELT-AND-BRACES (2026-07-22): next.config.mjs `redirects()` now intercepts
+ * `/golf/dashboard/alerts` at the framework routing layer, before this page
+ * ever renders — the fix for the React #310 "rendered more hooks" crash on
+ * client-navigation into bare redirect() shims (this file's own hand-rolled
+ * query forwarding above is reproduced there by Next's automatic
+ * query-merge). This component stays only as a fallback for anything the
+ * config layer misses (and because `alerts.ts`, `insight-management.ts`,
+ * `intelligence-dashboard.ts`, `coaching-philosophy.ts` still call
+ * `revalidatePath('/golf/dashboard/alerts')`); it should no longer actually
+ * execute in normal operation.
  */
 export default async function AlertsPage({
   searchParams,

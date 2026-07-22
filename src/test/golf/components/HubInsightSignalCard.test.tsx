@@ -221,10 +221,11 @@ describe('HubInsightSignalCard', () => {
 
   it('wires rate_helpful action to rateInsightAsPlayer', async () => {
     render(<HubInsightSignalCard insight={makeInsight()} />);
-    // Default density is collapsed — expand to surface action buttons.
+    // Wave 3 token port: the card now renders on the fairway InsightCard
+    // primitive (`variant="default"`), which has no collapse/expand step —
+    // its action row is always visible, unlike the legacy DefaultInsightCard
+    // this replaced.
     await screen.findByTestId('insight-card-default');
-    const expandBtn = screen.getByRole('button', { name: /Expand insight/i });
-    fireEvent.click(expandBtn);
 
     const helpful = await screen.findByTestId('action-rate-helpful');
     fireEvent.click(helpful);

@@ -11,7 +11,7 @@
  * `src/components/golf/stats/spine-stage/buildStatsViewModel.ts`).
  * ========================================================================== */
 
-import type { PriorityItem, StandingTrackProps } from '@/components/fairway/modules';
+import type { PriorityItem, SignalTone, StandingTrackProps, TickerItem } from '@/components/fairway/modules';
 import { clampPct } from '@/components/fairway/modules';
 
 function finite(n: number | null | undefined): number | null {
@@ -180,4 +180,213 @@ export function pickBestWorstStandingIds(
     if (worst === null || pct < worst.pct) worst = { id, pct };
   }
   return { bestId: best?.id ?? null, worstId: worst?.id ?? null };
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Standing preview rows — the bento's "Standing" mini rail (`RailBars`).
+ * Picks the strongest `max - 1` metrics plus the single weakest one, so the
+ * leak the headline sentence names ("leaking most in …") is always visible
+ * in the visual too, not just implied by text — never a fabricated/synthetic
+ * row, only real `team_pct` snapshots that exist.
+ * ────────────────────────────────────────────────────────────────────────── */
+export interface StandingPreviewRow {
+  id: string;
+  pct: number;
+}
+
+export function buildStandingPreviewRows(
+  standingByMetric: Readonly<Record<string, StandingPctEntry | undefined>>,
+  max = 3,
+): StandingPreviewRow[] {
+  const entries = Object.entries(standingByMetric)
+    .map(([id, row]) => ({ id, pct: finite(row?.team_pct) }))
+    .filter((e): e is { id: string; pct: number } => e.pct !== null)
+    .sort((a, b) => b.pct - a.pct);
+
+  if (entries.length <= max || max <= 0) return entries.slice(0, Math.max(0, max));
+
+  const strongest = entries.slice(0, max - 1);
+  const weakest = entries[entries.length - 1]!;
+  return strongest.some((e) => e.id === weakest.id) ? strongest : [...strongest, weakest];
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Game-profile mini radar — pure SVG geometry for the bento's "Game profile"
+ * cell. Per the nested-button contract (see `PlayerHomeBento`'s header
+ * comment), this is the ONLY chart shape allowed inside an `onOpen` bento
+ * cell: a plain polygon + spokes, no `ChartFrame`/`GenomeRadar` (which owns
+ * its own interactive `ViewToggle` button). No React — trig only, data in,
+ * geometry out.
+ * ────────────────────────────────────────────────────────────────────────── */
+export interface RadarSpoke {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/** Spoke lines from center to the rail edge, one per axis, evenly spaced
+ *  starting at 12 o'clock and going clockwise — the SAME angular convention
+ *  `genomeRadarPolygonPoints` uses, so spokes and polygon vertices always
+ *  line up regardless of axis count. */
+export function genomeRadarSpokes(axisCount: number, size = 64): RadarSpoke[] {
+  if (axisCount <= 0) return [];
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 4;
+  return Array.from({ length: axisCount }, (_, i) => {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / axisCount;
+    return {
+      x1: round2(cx),
+      y1: round2(cy),
+      x2: round2(cx + r * Math.cos(angle)),
+      y2: round2(cy + r * Math.sin(angle)),
+    };
+  });
+}
+
+/** SVG `points` attribute for the value polygon — each axis's `value`
+ *  (0..maxValue) maps to a radius along its spoke. A dimension with no
+ *  signal (0) collapses honestly to the center rather than a fabricated
+ *  minimum radius. */
+export function genomeRadarPolygonPoints(
+  axes: ReadonlyArray<{ value: number }>,
+  size = 64,
+  maxValue = 100,
+): string {
+  const n = axes.length;
+  if (n === 0 || maxValue <= 0) return '';
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 4;
+  return axes
+    .map((axis, i) => {
+      const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+      const value = Math.max(0, Math.min(maxValue, finite(axis.value) ?? 0));
+      const radius = (value / maxValue) * r;
+      return `${round2(cx + radius * Math.cos(angle))},${round2(cy + radius * Math.sin(angle))}`;
+    })
+    .join(' ');
+}
+
+/** The single strongest / weakest genome axis by value — mirrors
+ *  `pickBestWorstStandingIds`'s best/worst framing so the "Game profile"
+ *  cell's sentence can read as concretely as "Standing"'s does. */
+export function pickStrongestWeakestAxis(
+  axes: ReadonlyArray<{ label: string; value: number }>,
+): { strongest: string | null; weakest: string | null } {
+  let strongest: { label: string; value: number } | null = null;
+  let weakest: { label: string; value: number } | null = null;
+  for (const axis of axes) {
+    const value = finite(axis.value);
+    if (value === null) continue;
+    if (strongest === null || value > strongest.value) strongest = { label: axis.label, value };
+    if (weakest === null || value < weakest.value) weakest = { label: axis.label, value };
+  }
+  return { strongest: strongest?.label ?? null, weakest: weakest?.label ?? null };
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Theme previews — the bento's "Themes" (magnitude bars) and "Insight
+ * library" (leak/strength cause counts) mini-visuals. Both read the SAME
+ * `themes` scaffold the composition root already threads through, which
+ * ALWAYS carries all 7 canonical categories (honest degradation — a
+ * starved category is a thin stub, never an absent one), so these previews
+ * never need a synthetic placeholder row.
+ * ────────────────────────────────────────────────────────────────────────── */
+const THEME_LABEL_ABBR: Record<string, string> = {
+  Putting: 'Putt',
+  Approach: 'App',
+  'Off the Tee': 'Tee',
+  'Around the Green': 'ATG',
+  Scoring: 'Score',
+  'Course Management': 'Mgmt',
+  Pressure: 'Press',
+};
+
+function abbreviateThemeLabel(label: string): string {
+  return THEME_LABEL_ABBR[label] ?? label.slice(0, 6);
+}
+
+export interface ThemeMagnitudeInput {
+  displayLabel: string;
+  themeStrokesPerRound: number;
+}
+
+/** Per-theme `|strokes/round|` normalized to the largest magnitude present,
+ *  so the biggest leak or strength always reaches full bar height — a
+ *  relative read of "which patterns matter most right now", sorted
+ *  strongest-signal-first. */
+export function buildThemeMagnitudeBars(themes: ReadonlyArray<ThemeMagnitudeInput>, max = 7): TickerItem[] {
+  const magnitudes = themes.map((t) => ({
+    label: abbreviateThemeLabel(t.displayLabel),
+    mag: Math.abs(finite(t.themeStrokesPerRound) ?? 0),
+  }));
+  const maxMag = Math.max(0, ...magnitudes.map((m) => m.mag));
+  return magnitudes
+    .slice()
+    .sort((a, b) => b.mag - a.mag)
+    .slice(0, max)
+    .map((m) => ({
+      label: m.label,
+      heightPct: maxMag > 0 ? clampPct((m.mag / maxMag) * 100) : 0,
+      emphasis: maxMag > 0 && m.mag === maxMag,
+    }));
+}
+
+export interface ThemeCauseCounts {
+  leakCount: number;
+  strengthCount: number;
+}
+
+export interface ThemeCauseCountsInput {
+  state: 'leak' | 'strength' | 'thin';
+  causes: ReadonlyArray<unknown>;
+}
+
+/** Counts identified causes (the individual insights a theme is built from)
+ *  by whether their parent theme currently reads as a leak or a strength —
+ *  the "Insight library" cell's count-chip pair. */
+export function summarizeThemeCauseCounts(themes: ReadonlyArray<ThemeCauseCountsInput>): ThemeCauseCounts {
+  let leakCount = 0;
+  let strengthCount = 0;
+  for (const theme of themes) {
+    if (theme.state === 'leak') leakCount += theme.causes.length;
+    else if (theme.state === 'strength') strengthCount += theme.causes.length;
+  }
+  return { leakCount, strengthCount };
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Trend signal chip — maps the composition root's humanized `trendSummary`
+ * string (built from `MultiWindowAnalysis['signal']`:
+ * 'strong_improving' | 'strong_declining' | 'short_term_dip' |
+ * 'short_term_spike' | 'trajectory_change' | 'mixed' | 'stable', see
+ * src/lib/coachhelm/v2/trends/multi-window.ts) to a compact `SignalChip`
+ * tone + label for the bento's "Trend" cell. Matched case-insensitively
+ * against the space-normalized text so it survives the composition root's
+ * exact capitalization choice without importing its formatter.
+ * ────────────────────────────────────────────────────────────────────────── */
+export interface TrendSignalChip {
+  tone: SignalTone;
+  label: string;
+}
+
+const TREND_SIGNAL_CHIPS: Record<string, TrendSignalChip> = {
+  'strong improving': { tone: 'hot', label: 'Improving' },
+  'short term spike': { tone: 'hot', label: 'Spiking' },
+  'strong declining': { tone: 'watch', label: 'Declining' },
+  'short term dip': { tone: 'watch', label: 'Dipping' },
+  'trajectory change': { tone: 'watch', label: 'Shifting' },
+  mixed: { tone: 'quiet', label: 'Mixed signals' },
+  stable: { tone: 'quiet', label: 'Stable' },
+};
+
+export function classifyTrendSignal(trendSummary: string | null | undefined): TrendSignalChip | null {
+  if (!trendSummary) return null;
+  return TREND_SIGNAL_CHIPS[trendSummary.trim().toLowerCase()] ?? null;
 }

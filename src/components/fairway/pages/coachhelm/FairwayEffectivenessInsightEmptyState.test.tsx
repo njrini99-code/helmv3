@@ -79,8 +79,12 @@ describe('InsightEffectivenessSection — one honest empty-state pattern', () =>
     // The single surviving message reads once, not twice.
     expect(getAllByText(/none has a recorded outcome yet/i)).toHaveLength(1);
 
-    // The actionable CTA from the richer panel is still present.
-    expect(container.querySelector('a[href="/golf/dashboard/development"]')).not.toBeNull();
+    // The actionable CTA from the richer panel is still present, pointing at
+    // the canonical Players drill directly (React #310 legacy-link audit,
+    // 2026-07-22 — was the /development redirect shim).
+    expect(
+      container.querySelector('a[href="/golf/dashboard/intelligence?view=players"]'),
+    ).not.toBeNull();
   });
 
   it('renders the by-type BarCompare chart (no empty-state surface) once outcomes exist', () => {

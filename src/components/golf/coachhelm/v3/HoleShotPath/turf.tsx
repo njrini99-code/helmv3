@@ -19,9 +19,10 @@
 
 'use client';
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useId } from 'react';
 import { VB } from './geometry';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // Visual constants — calibrated to match the canonical viewBox (100×200).
 const FAIRWAY_TOP_HALF = 7;
@@ -50,7 +51,7 @@ interface TurfProps {
 }
 
 export function Turf({ showPinFlag = true }: TurfProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // useId so multiple HoleShotPath instances on the same page don't
   // clash on gradient IDs (e.g. the 18-hole grid renders 18 of these).
   const rawId = useId();

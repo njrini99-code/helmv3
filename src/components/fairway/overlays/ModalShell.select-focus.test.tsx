@@ -50,9 +50,10 @@
  */
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ModalShell } from './ModalShell';
 import { Select } from '@/components/fairway/forms/Select';
+import { Combobox } from '@/components/fairway/forms/Combobox';
 
 const OPTIONS = [
   { value: 'putting', label: 'Putting' },
@@ -179,5 +180,141 @@ describe('ModalShell + fairway Select — popup portals inside the dialog, not d
     // container" and would leave every non-modal Select permanently
     // unopenable).
     expect(document.body.contains(listbox)).toBe(true);
+  });
+});
+
+/**
+ * ============================================================================
+ * Escape-close regression (2026-07-21, post portal-into-dialog fix)
+ * ----------------------------------------------------------------------------
+ * Live browser QA on FocusAreaModal: after Wave 0's portal-into-dialog fix
+ * (above), the dropdowns paint and click correctly, but pressing Escape no
+ * longer closes the ModalShell dialog at all — tested twice, dialog stayed
+ * open both times.
+ *
+ * Root cause: the fairway Select popup is Base UI's `Select`, whose dismiss
+ * behavior comes from floating-ui-react's `useDismiss` — it registers its own
+ * `keydown` listener directly on `document` (bubble phase, no `capture`) via
+ * `doc.addEventListener('keydown', closeOnEscapeKeyDown)`. By DEFAULT
+ * (`bubbles` prop unset → `escapeKeyBubbles: false`), that handler calls
+ * `event.stopPropagation()` after closing the popup. Radix Dialog's
+ * `DismissableLayer` (ModalShell's escape-to-close) listens for `keydown` on
+ * `document` too, but in the CAPTURE phase
+ * (`ownerDocument.addEventListener('keydown', handleKeyDown, {capture:true})`,
+ * see @radix-ui/react-use-escape-keydown) — capture listeners on `document`
+ * fire before the event ever reaches the target, i.e. BEFORE Base UI's
+ * bubble-phase document listener runs. So in isolation Radix should win the
+ * race and close the dialog on the very first Escape. What actually breaks
+ * the second Escape (and, depending on where focus lands after the popup
+ * closes, sometimes the first) is that `stopPropagation()` on the initial
+ * native event does not stop Radix's *own* independent capture listener +
+ * React's re-dispatch path, but a SECOND, later Escape press lands with focus
+ * already back on the Select trigger INSIDE the modal, where a stale
+ * `data-[popup-open]` / Base UI internal keydown guard can still intercept
+ * the key before it ever reaches Radix's listener's dismiss branch, because
+ * `event.defaultPrevented` was already flipped by Base UI's own dismiss path
+ * running first for that keystroke. Whichever exact interleaving fires, the
+ * observable, QA-confirmed symptom is: SOME Escape press while (or right
+ * after) the popup was open gets swallowed and the dialog never closes.
+ *
+ * The fix must NOT revert the portal-into-dialog architecture — it targets
+ * how the popup's dismiss keydown is scoped so it never fights Radix's own
+ * escape-to-close for the dialog.
+ * ============================================================================
+ */
+describe('ModalShell + fairway Select — Escape closes the popup, then the dialog', () => {
+  function renderControlledModalWithSelect(onOpenChange: (open: boolean) => void) {
+    return render(
+      <ModalShell open onOpenChange={onOpenChange} title="Prescribe a focus area">
+        <ModalShell.Body>
+          <Select placeholder="Select a category…" options={OPTIONS} />
+        </ModalShell.Body>
+      </ModalShell>,
+    );
+  }
+
+  it('first Escape (popup open) closes only the popup — dialog stays open', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderControlledModalWithSelect(onOpenChange);
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    await screen.findByRole('listbox');
+
+    await user.keyboard('{Escape}');
+
+    // The popup must close…
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    // …but the dialog must NOT have been asked to close by this same
+    // keypress. This is the literal regression: onOpenChange(false) either
+    // never fires (dialog stuck open forever) or fires prematurely on the
+    // same Escape that was only meant to dismiss the popup.
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('second Escape (popup already closed) closes the dialog', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderControlledModalWithSelect(onOpenChange);
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    await screen.findByRole('listbox');
+
+    await user.keyboard('{Escape}'); // closes the popup
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    await user.keyboard('{Escape}'); // must now close the dialog
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
+  it('Escape with no popup open closes the dialog immediately', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderControlledModalWithSelect(onOpenChange);
+
+    // Never opened the Select — focus starts inside the dialog by virtue of
+    // Radix's FocusScope auto-focus-on-mount.
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
+  it('same fix covers Combobox (data-popup-open lives on its Input, not a Select-only affordance)', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(
+      <ModalShell open onOpenChange={onOpenChange} title="Prescribe a focus area">
+        <ModalShell.Body>
+          <Combobox placeholder="Search…" options={OPTIONS} />
+        </ModalShell.Body>
+      </ModalShell>,
+    );
+
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await screen.findByRole('listbox');
+
+    await user.keyboard('{Escape}'); // closes only the popup
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+
+    await user.keyboard('{Escape}'); // now closes the dialog
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
   });
 });

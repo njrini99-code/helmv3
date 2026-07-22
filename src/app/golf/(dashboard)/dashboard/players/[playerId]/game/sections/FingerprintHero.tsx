@@ -165,7 +165,9 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
           </Link>
 
           <Link
-            href={`/golf/dashboard/development?player=${player.id}`}
+            // Canonical destination directly, not the /development redirect
+            // shim (React #310 legacy-link audit, 2026-07-22).
+            href={`/golf/dashboard/intelligence?view=players&player=${player.id}`}
             className={cn(
               'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium',
               'bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 hover:border-warm-300',

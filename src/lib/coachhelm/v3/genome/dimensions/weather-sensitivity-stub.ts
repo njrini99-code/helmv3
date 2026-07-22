@@ -17,6 +17,9 @@ const dim: GenomeDimension = {
   id: 'weather_sensitivity_stub',
   category: 'weather_sensitivity',
   label: 'Weather sensitivity',
+  // Permanent stub — see file header. Never resolves no matter the sample
+  // size, so the UI must render "Not tracked", not "needs more rounds".
+  neverAvailable: true,
 
   compute(): DimensionResult {
     return {

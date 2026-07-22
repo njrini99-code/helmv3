@@ -32,6 +32,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import { ChatMessageList } from './ChatMessageList';
 import { ChatComposer } from './ChatComposer';
@@ -67,6 +68,29 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion() ?? false;
+
+  // #948 follow-up — a light polish on top of the shell-level bottom-padding
+  // fix (FairwayDashboardShell reserves real clearance so nothing ever sits
+  // UNDER the launcher): shrink the resting FAB while the page is mid-scroll
+  // so it reads as less of a page-wide obstruction, then settle back to full
+  // size once scrolling stops. Skipped entirely under reduced motion — it's
+  // a size change, not a translate, but there's no reason to animate it for
+  // someone who's asked for stillness.
+  const [isScrolling, setIsScrolling] = useState(false);
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    function onScroll() {
+      setIsScrolling(true);
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => setIsScrolling(false), 220);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (settleTimer) clearTimeout(settleTimer);
+    };
+  }, [prefersReducedMotion]);
 
   // Dead-code cleanup: the optimistic send/rollback logic that used to live
   // inline here is now the ONE shared `useCoachChatSend` hook (a byte-for-byte
@@ -115,7 +139,14 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
             // collided with FairwayBottomNav's More tab in the same corner.
             // "Ask" already has a bottom-nav destination on phone, so the
             // launcher is hidden there rather than re-offset to clear the bar.
-            className="hidden md:flex fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-primary-600 text-white shadow-[0_10px_24px_-12px_rgba(22,163,74,0.55)] hover:bg-primary-700 items-center justify-center"
+            // #948 follow-up — FairwayDashboardShell now reserves real
+            // bottom-right clearance on coach dashboard content (md:pb-28) so
+            // nothing ever sits UNDER this FAB; the shrink here is the light
+            // polish on top of that guarantee (see `isScrolling` above).
+            className={cn(
+              'hidden md:flex fixed bottom-6 right-6 z-40 rounded-full bg-primary-600 text-white shadow-[0_10px_24px_-12px_rgba(22,163,74,0.55)] hover:bg-primary-700 items-center justify-center transition-[width,height] duration-200 ease-out',
+              isScrolling ? 'h-11 w-11' : 'h-14 w-14',
+            )}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
@@ -240,7 +271,11 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                     </div>
                   </m.div>
                 )}
-                <ChatMessageList messages={messages} pending={pending} />
+                <ChatMessageList
+                  messages={messages}
+                  pending={pending}
+                  onRetryMissingReply={handleSend}
+                />
                 {error && (
                   <p className="mt-3 text-xs text-red-700 bg-red-50 px-3 py-2 rounded-lg">
                     {error}

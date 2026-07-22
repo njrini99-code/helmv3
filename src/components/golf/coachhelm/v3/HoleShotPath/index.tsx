@@ -17,7 +17,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { Turf } from './turf';
 import { Hazards } from './hazards';
@@ -37,6 +37,7 @@ import {
   stagger,
   liftHover,
   tapPress,
+  useReducedMotionGuard,
 } from '@/lib/coachhelm/v3/motion';
 
 // -----------------------------------------------------------------------------
@@ -52,6 +53,9 @@ const SIZES = {
     showHeader: false,
     showFlag: false,
     interactive: false,
+    // Too narrow to hold the "No shots logged" caption without overflow —
+    // the turf/pin visual alone reads fine as an empty state at this scale.
+    showEmptyLabel: false,
   },
   inline: {
     /** Compact round-review preview: enough room to read the flight without
@@ -62,6 +66,7 @@ const SIZES = {
     showHeader: true,
     showFlag: true,
     interactive: true,
+    showEmptyLabel: true,
   },
   card: {
     /** ~140×320 — inline next to per-hole text in round review */
@@ -71,6 +76,7 @@ const SIZES = {
     showHeader: true,
     showFlag: true,
     interactive: true,
+    showEmptyLabel: true,
   },
   reviewCard: {
     /** Fluid round-review card — fills its framed grid cell (capped by the
@@ -83,6 +89,7 @@ const SIZES = {
     showHeader: true,
     showFlag: true,
     interactive: true,
+    showEmptyLabel: true,
   },
   hero: {
     /** ~280×560 — primary visual on a hole-detail page. Fluid on narrow
@@ -94,6 +101,7 @@ const SIZES = {
     showHeader: true,
     showFlag: true,
     interactive: true,
+    showEmptyLabel: true,
   },
 } as const;
 
@@ -132,6 +140,35 @@ const LIE_LABEL: Record<Lie | 'other', string> = {
   other: '—',
 };
 
+// Tooltip-only labels for the richer shot fields (never drive geometry or
+// color — see ShotInput's doc comment on the 3-bucket club model).
+const CLUB_LABEL: Record<string, string> = {
+  driver: 'Driver',
+  non_driver: 'Approach',
+  putter: 'Putter',
+};
+
+const PENALTY_LABEL: Record<string, string> = {
+  ob: 'OB',
+  water: 'water',
+  unplayable: 'unplayable',
+  lost: 'lost ball',
+};
+
+const PUTT_BREAK_LABEL: Record<string, string> = {
+  right_to_left: 'Right-to-left break',
+  left_to_right: 'Left-to-right break',
+  straight: 'Straight putt',
+  multiple: 'Multiple breaks',
+};
+
+const PUTT_SLOPE_LABEL: Record<string, string> = {
+  uphill: 'uphill',
+  downhill: 'downhill',
+  level: 'level',
+  severe: 'severe slope',
+};
+
 // -----------------------------------------------------------------------------
 // Component
 // -----------------------------------------------------------------------------
@@ -145,8 +182,9 @@ export function HoleShotPath({
   size = 'card',
   onClick,
   className,
+  ringClassName,
 }: HoleShotPathProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const variant = SIZES[size];
   const [hovered, setHovered] = useState<PlottedShot | null>(null);
 
@@ -219,7 +257,8 @@ export function HoleShotPath({
         <div
           className={[
             variant.className,
-            'rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_18px_40px_-22px_rgba(15,42,30,0.55)]',
+            'rounded-2xl overflow-hidden shadow-[0_18px_40px_-22px_rgba(15,42,30,0.55)]',
+            ringClassName ?? 'ring-1 ring-white/10',
             'bg-[#1a382e]',
           ].join(' ')}
         >
@@ -336,6 +375,9 @@ export function HoleShotPath({
             <div className="flex items-baseline gap-2">
               <span className="font-medium text-warm-900">Shot {hovered.display_index}</span>
               <span className="text-warm-500">→ {LIE_LABEL[hovered.lie]}</span>
+              {hovered.club_type && (
+                <span className="text-warm-400">· {CLUB_LABEL[hovered.club_type] ?? hovered.club_type}</span>
+              )}
             </div>
             <div className="text-warm-500 tabular-nums">
               {formatYards(hovered.shot_yards)}
@@ -346,14 +388,33 @@ export function HoleShotPath({
                 <> · missed {hovered.miss_direction}</>
               )}
               {hovered.is_penalty && (
-                <span className="ml-1.5 text-rose-600 font-medium">penalty</span>
+                <span className="ml-1.5 font-medium text-danger">
+                  {hovered.penalty_type
+                    ? `penalty: ${PENALTY_LABEL[hovered.penalty_type] ?? hovered.penalty_type}`
+                    : 'penalty'}
+                </span>
               )}
             </div>
+            {hovered.lie === 'green' && (hovered.putt_break || hovered.putt_slope) && (
+              <div className="text-warm-500">
+                {[
+                  hovered.putt_break ? PUTT_BREAK_LABEL[hovered.putt_break] ?? hovered.putt_break : null,
+                  hovered.putt_slope ? PUTT_SLOPE_LABEL[hovered.putt_slope] ?? hovered.putt_slope : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </div>
+            )}
+            {hovered.notes && (
+              <div className="mt-0.5 max-w-[200px] whitespace-normal text-warm-500 italic">
+                “{hovered.notes}”
+              </div>
+            )}
           </m.div>
         )}
 
         {/* Empty state */}
-        {plot.shots.length === 0 && (
+        {variant.showEmptyLabel && plot.shots.length === 0 && (
           <m.div
             variants={enterVariants}
             initial="hidden"

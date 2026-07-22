@@ -686,8 +686,12 @@ function SectionChart({ section }: { section: SectionData }) {
 
   if (chart.kind === 'pills') {
     if (chart.pills.length === 0) return null;
+    // `tee`'s pills are a fairway hit/miss split (no direction data exists
+    // for tee shots); `approach`'s pills are the four-way miss direction —
+    // the panel header stays honest to which one is actually rendering.
+    const header = section.key === 'tee' ? 'Fairways' : 'Miss direction';
     return (
-      <InstrumentPanel depth="base" padding="md" header="Miss direction">
+      <InstrumentPanel depth="base" padding="md" header={header}>
         <div className="flex flex-wrap gap-2">
           {chart.pills.map((p) => (
             <span
@@ -710,20 +714,24 @@ function SectionChart({ section }: { section: SectionData }) {
   // bars
   if (chart.bars.length === 0) return null;
   // Honest tone: keep bars neutral — the aggregator's bar charts are descriptive
-  // distributions (make-% by distance / par-type averages), not good/bad calls.
+  // distributions (make-% by distance / par-type averages / short-game rates),
+  // not good/bad calls.
   const parts = chart.bars.map((b) => ({
     label: b.label,
     value: b.value,
     tone: 'neutral' as SegmentTone,
   }));
 
-  return (
-    <SegmentBar
-      overline={section.key === 'putting' ? 'Make %' : 'By type'}
-      title={section.key === 'putting' ? 'Make % by distance' : 'Averages'}
-      parts={parts}
-    />
-  );
+  const overline =
+    section.key === 'putting' ? 'Make %' : section.key === 'short_game' ? 'Around the green' : 'By type';
+  const title =
+    section.key === 'putting'
+      ? 'Make % by distance'
+      : section.key === 'short_game'
+        ? 'Recovery rates'
+        : 'Averages';
+
+  return <SegmentBar overline={overline} title={title} parts={parts} />;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
