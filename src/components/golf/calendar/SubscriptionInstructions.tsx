@@ -8,12 +8,9 @@
  * - Google Calendar (web, mobile)
  * - Microsoft Outlook (web, desktop, mobile)
  *
- * Features:
- * - Tab-based platform selector
- * - Step-by-step instructions with icons
- * - Copy URL button integrated
- * - Visual hierarchy for easy scanning
- * - Responsive layout (mobile-first)
+ * Fairway tokens only — renders inline inside FeedCard (itself inside the
+ * live Fairway "Subscribe to your calendar" Sheet), so no legacy cream/warm/
+ * amber/blue chrome.
  */
 
 import { useState } from 'react';
@@ -27,9 +24,9 @@ import {
   Smartphone,
   Monitor,
   Globe,
+  type LucideIcon,
 } from 'lucide-react';
-import '@/styles/calendar-tokens.css';
-import { Button } from '@/components/ui/button';
+import { SelectablePill, Inset, InlineNotice, IconButton } from '@/components/fairway';
 
 interface SubscriptionInstructionsProps {
   feedUrl: string;
@@ -39,25 +36,10 @@ interface SubscriptionInstructionsProps {
 
 type Platform = 'apple' | 'google' | 'outlook';
 
-const PLATFORMS = [
-  {
-    id: 'apple' as Platform,
-    name: 'Apple',
-    icon: Apple,
-    devices: ['iPhone/iPad', 'Mac'],
-  },
-  {
-    id: 'google' as Platform,
-    name: 'Google',
-    icon: CalendarDays,
-    devices: ['Web', 'Android'],
-  },
-  {
-    id: 'outlook' as Platform,
-    name: 'Outlook',
-    icon: Globe,
-    devices: ['Web', 'Desktop', 'Mobile'],
-  },
+const PLATFORMS: Array<{ id: Platform; name: string; icon: LucideIcon }> = [
+  { id: 'apple', name: 'Apple', icon: Apple },
+  { id: 'google', name: 'Google', icon: CalendarDays },
+  { id: 'outlook', name: 'Outlook', icon: Globe },
 ];
 
 export function SubscriptionInstructions({
@@ -83,94 +65,64 @@ export function SubscriptionInstructions({
       {/* Platform tabs */}
       <div>
         {!compact && (
-          <p className="text-sm font-medium text-warm-700 mb-3">
+          <p className="mb-3 font-fw-sans text-body-sm font-medium text-text-secondary">
             Choose your calendar app:
           </p>
         )}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2">
           {PLATFORMS.map((platform) => {
             const Icon = platform.icon;
             const isSelected = selectedPlatform === platform.id;
 
             return (
-              <Button variant="primary"
+              <SelectablePill
                 key={platform.id}
-                type="button"
+                shape="round"
+                active={isSelected}
                 onClick={() => setSelectedPlatform(platform.id)}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm',
-                  'border-2 transition-all duration-200',
-                  isSelected
-                    ? 'bg-primary-600 text-white border-primary-600 shadow-md'
-                    : 'bg-cream-50 text-warm-700 border-warm-200 hover:border-warm-300'
-                )}
               >
-                <Icon className="w-4 h-4" />
-                <span>{platform.name}</span>
-              </Button>
+                <span className="flex items-center gap-2">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {platform.name}
+                </span>
+              </SelectablePill>
             );
           })}
         </div>
       </div>
 
-      {/* Copy URL button (prominent) */}
+      {/* Copy URL (prominent) */}
       {!compact && (
-        <div className="p-4 rounded-lg bg-primary-50 border border-primary-200">
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-primary-900 mb-1">
-                First, copy this URL:
-              </p>
-              <code className="text-xs text-primary-700 font-mono break-all block">
-                {feedUrl}
-              </code>
-            </div>
-            <Button variant="primary"
-              type="button"
-              onClick={handleCopy}
-              className={cn(
-                'shrink-0 px-3 py-2 rounded-lg font-medium text-sm transition-all',
-                copied
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-cream-50 text-primary-700 border border-primary-200 hover:bg-primary-100'
-              )}
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4 inline mr-1.5" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4 inline mr-1.5" />
-                  Copy
-                </>
-              )}
-            </Button>
+        <Inset padding="sm" className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="mb-1 font-fw-sans text-body-sm font-medium text-text-primary">
+              First, copy this URL:
+            </p>
+            <code className="block break-all font-mono text-caption text-text-secondary">{feedUrl}</code>
           </div>
-        </div>
+          <IconButton
+            variant={copied ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={handleCopy}
+            aria-label={copied ? 'URL copied' : 'Copy feed URL'}
+          >
+            {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+          </IconButton>
+        </Inset>
       )}
 
       {/* Platform-specific instructions */}
-      <div className={cn('rounded-lg border border-warm-200', compact ? 'p-3' : 'p-4', 'bg-cream-50')}>
+      <Inset padding={compact ? 'sm' : 'md'}>
         {selectedPlatform === 'apple' && <AppleInstructions compact={compact} />}
         {selectedPlatform === 'google' && <GoogleInstructions compact={compact} />}
         {selectedPlatform === 'outlook' && <OutlookInstructions compact={compact} />}
-      </div>
+      </Inset>
 
       {/* Help footer */}
       {!compact && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
-          <ExternalLink className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-blue-900 mb-0.5">
-              Need more help?
-            </p>
-            <p className="text-xs text-blue-700">
-              Contact support or check our detailed guide on subscribing to calendar feeds
-            </p>
-          </div>
-        </div>
+        <InlineNotice tone="info" icon={ExternalLink} title="Need more help?">
+          Contact support or check our detailed guide on subscribing to calendar feeds.
+        </InlineNotice>
       )}
     </div>
   );
@@ -205,37 +157,7 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
     },
   ];
 
-  return (
-    <div className={cn('space-y-4', compact && 'space-y-3')}>
-      {steps.map((section, idx) => {
-        const Icon = section.icon;
-        return (
-          <div key={idx}>
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-warm-500" />
-              <h4 className={cn('font-medium text-warm-900', compact ? 'text-xs' : 'text-sm')}>
-                {section.title}
-              </h4>
-            </div>
-            <ol className="space-y-1.5 pl-6">
-              {section.steps.map((step, stepIdx) => (
-                <li
-                  key={stepIdx}
-                  className={cn(
-                    'text-warm-600 flex items-baseline gap-2',
-                    compact ? 'text-xs' : 'text-sm'
-                  )}
-                >
-                  <span className="text-primary-600 font-medium shrink-0">{stepIdx + 1}.</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <InstructionSections sections={steps} compact={compact} />;
 }
 
 /**
@@ -269,39 +191,10 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
 
   return (
     <div className={cn('space-y-4', compact && 'space-y-3')}>
-      {steps.map((section, idx) => {
-        const Icon = section.icon;
-        return (
-          <div key={idx}>
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-warm-500" />
-              <h4 className={cn('font-medium text-warm-900', compact ? 'text-xs' : 'text-sm')}>
-                {section.title}
-              </h4>
-            </div>
-            <ol className="space-y-1.5 pl-6">
-              {section.steps.map((step, stepIdx) => (
-                <li
-                  key={stepIdx}
-                  className={cn(
-                    'text-warm-600 flex items-baseline gap-2',
-                    compact ? 'text-xs' : 'text-sm'
-                  )}
-                >
-                  <span className="text-primary-600 font-medium shrink-0">{stepIdx + 1}.</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        );
-      })}
-
-      <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-        <p className={cn('text-amber-800', compact ? 'text-xs' : 'text-sm')}>
-          <strong>Note:</strong> Google Calendar may take 12-24 hours to fully sync external calendars
-        </p>
-      </div>
+      <InstructionSections sections={steps} compact={compact} />
+      <InlineNotice tone="info">
+        Google Calendar may take 12-24 hours to fully sync external calendars.
+      </InlineNotice>
     </div>
   );
 }
@@ -335,15 +228,33 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
     },
   ];
 
+  return <InstructionSections sections={steps} compact={compact} />;
+}
+
+/**
+ * Shared step-list renderer for the three platform instruction sets.
+ */
+function InstructionSections({
+  sections,
+  compact,
+}: {
+  sections: Array<{ icon: LucideIcon; title: string; steps: string[] }>;
+  compact?: boolean;
+}) {
   return (
     <div className={cn('space-y-4', compact && 'space-y-3')}>
-      {steps.map((section, idx) => {
+      {sections.map((section, idx) => {
         const Icon = section.icon;
         return (
           <div key={idx}>
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-warm-500" />
-              <h4 className={cn('font-medium text-warm-900', compact ? 'text-xs' : 'text-sm')}>
+            <div className="mb-2 flex items-center gap-2">
+              <Icon className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
+              <h4
+                className={cn(
+                  'font-fw-sans font-medium text-text-primary',
+                  compact ? 'text-caption' : 'text-body-sm',
+                )}
+              >
                 {section.title}
               </h4>
             </div>
@@ -352,11 +263,11 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
                 <li
                   key={stepIdx}
                   className={cn(
-                    'text-warm-600 flex items-baseline gap-2',
-                    compact ? 'text-xs' : 'text-sm'
+                    'flex items-baseline gap-2 font-fw-sans text-text-secondary',
+                    compact ? 'text-caption' : 'text-body-sm',
                   )}
                 >
-                  <span className="text-primary-600 font-medium shrink-0">{stepIdx + 1}.</span>
+                  <span className="shrink-0 font-medium text-accent-600">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -367,4 +278,3 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
     </div>
   );
 }
-

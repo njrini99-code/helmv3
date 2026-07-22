@@ -894,6 +894,7 @@ export function FairwayCalendar({
         onSelectDate={(d) => setFocusDate(d)}
         onPrimaryAction={primaryAction}
         primaryActionLabel={primaryActionLabel}
+        teamTimezone={teamTimezone}
       />
 
       {/* ── View toggle (default Agenda) + Subscribe entry point ─────────────── */}

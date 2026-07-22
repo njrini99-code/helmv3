@@ -23,13 +23,34 @@
  * `suppressHydrationWarning` needed.
  *
  * GOTCHA (a): native <button> per pill, never `Surface as="button"`.
+ *
+ * DENSITY-DOT BUCKETING (timezone): events are keyed by calendar day via
+ * `getZonedDateParts(iso, teamTimezone)`, NOT a raw `.slice(0, 10)` of the
+ * event's ISO instant. `start_date`/`start_time` are `timestamptz` values
+ * (UTC on the wire) — naively slicing the first 10 chars reads the UTC
+ * calendar date, which silently disagrees with the team-timezone date for
+ * any event within the UTC offset window straddling midnight (e.g. an
+ * 11 PM ET event is already "tomorrow" in UTC) — a late-evening event's dot
+ * would render on the wrong day pill. `getZonedDateParts` is the same
+ * explicit-timezone helper the Wave-0 hydration fix (`zonedMidnight`) uses
+ * for `focusDate`/`nowRef`, so density dots and the day pills they annotate
+ * agree on "which day" an event belongs to.
  * ========================================================================== */
 
 import * as React from 'react';
 import { startOfWeek, addDays, isSameDay, isBefore, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
+import { getZonedDateParts } from '@/lib/calendar/timezone';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+
+/** Same `yyyy-MM-dd` shape as `format(day, 'yyyy-MM-dd')` on the local pill
+ *  Dates below, but derived from the event's ISO instant AS SEEN in
+ *  `timezone` rather than the calling process's own ambient zone. */
+function zonedDayKey(iso: string, timezone: string | null | undefined): string {
+  const { year, month, day } = getZonedDateParts(iso, timezone);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
 
 const WEEK_STARTS_ON = 0 as const;
 
@@ -58,6 +79,12 @@ export interface FairwayDayStripProps {
    * Seeded from `serverNow` so SSR + first client render agree.
    */
   nowRef: Date;
+  /**
+   * Team timezone (IANA name, e.g. "America/New_York") used to bucket events
+   * into calendar days for the density dots — see the file-header note.
+   * `null` falls back to `DEFAULT_TIMEZONE` inside `getZonedDateParts`.
+   */
+  teamTimezone: string | null;
   /** Called when the user taps a day pill. */
   onSelectDate: (date: Date) => void;
   className?: string;
@@ -68,6 +95,7 @@ export function FairwayDayStrip({
   selectedDate,
   events,
   nowRef,
+  teamTimezone,
   onSelectDate,
   className,
 }: FairwayDayStripProps) {
@@ -76,18 +104,20 @@ export function FairwayDayStrip({
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   }, [focusDate]);
 
-  // Bucket events by yyyy-MM-dd for O(1) per-pill lookup.
+  // Bucket events by yyyy-MM-dd (team-timezone calendar day, not raw UTC) for
+  // O(1) per-pill lookup — see the file-header DENSITY-DOT BUCKETING note.
   const eventsByDay = React.useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
     for (const ev of events) {
-      const key = (ev.start_date || ev.start_time || '').slice(0, 10);
-      if (!key) continue;
+      const iso = ev.start_date || ev.start_time;
+      if (!iso) continue;
+      const key = zonedDayKey(iso, teamTimezone);
       const list = map.get(key);
       if (list) list.push(ev);
       else map.set(key, [ev]);
     }
     return map;
-  }, [events]);
+  }, [events, teamTimezone]);
 
   // Local-midnight projection of `nowRef` — stable today/past reference.
   const todayRef = React.useMemo(
