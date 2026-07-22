@@ -70,13 +70,39 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
   const [unseenAnnouncements, setUnseenAnnouncements] = useState<GolfAnnouncementMeta[]>([]);
   const isVisibleRef = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /**
+   * Circuit breaker for a session that has gone away mid-tab (logout in
+   * another tab, idle-timeout expiry — see project_helmv3_demo_mass_traffic_
+   * hardening's 30-min demo idle). `isActive` below only reflects the role/
+   * ids captured at mount from the server-resolved session; it can't see a
+   * session that WAS live and has since expired. Once a poll reports
+   * `authExpired`, stop hammering the same expected miss every 45s until a
+   * fresh identity (re-login → new coachId/userId) proves the session is
+   * live again.
+   */
+  const sessionExpiredRef = useRef(false);
 
   const isPlayer = role === 'player' && !!playerId && !!userId && !!teamId;
   const isCoach = role === 'coach' && !!coachId && !!userId;
   const isActive = isPlayer || isCoach;
 
+  const stopPolling = useCallback(() => {
+    sessionExpiredRef.current = true;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  // A fresh identity (new userId/coachId — e.g. re-login after the breaker
+  // tripped) means the session is live again; let polling resume.
+  useEffect(() => {
+    sessionExpiredRef.current = false;
+  }, [userId, coachId, playerId]);
+
   const fetchCounts = useCallback(async () => {
     if (!isActive) return;
+    if (sessionExpiredRef.current) return;
     if (!isVisibleRef.current) return;
 
     try {
@@ -92,7 +118,9 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
         }
       } else if (isCoach && userId) {
         const result = await getCoachNotificationCounts(userId, teamId);
-        if (result.success && result.data) {
+        if (result.authExpired) {
+          stopPolling();
+        } else if (result.success && result.data) {
           setMessages(result.data.unreadMessages);
           setCalendarNotifications(result.data.calendarNotifications);
           setAnnouncements(0);
@@ -102,10 +130,15 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
         }
         // CoachHelm unread-signal badge — same poll, additive. Failure/empty
         // leaves the count at 0 (honest: no badge), never a fabricated value.
-        if (coachId) {
+        // Skip when the session already proved expired above — no point
+        // spending a second round-trip to learn the same thing twice.
+        if (coachId && !result.authExpired) {
           try {
             const alerts = await getAlertCounts(coachId);
             setCoachhelm(alerts.success ? (alerts.counts?.critical ?? 0) : 0);
+            if (alerts.authExpired) {
+              stopPolling();
+            }
           } catch {
             setCoachhelm(0);
           }
@@ -114,7 +147,7 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
     } catch (err) {
       if (process.env.NODE_ENV === 'development') console.error(err);
     }
-  }, [isActive, isPlayer, isCoach, playerId, userId, teamId, coachId]);
+  }, [isActive, isPlayer, isCoach, playerId, userId, teamId, coachId, stopPolling]);
 
   const handleMarkSeen = useCallback(async () => {
     setUnseenAnnouncements([]);

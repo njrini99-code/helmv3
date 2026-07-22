@@ -40,6 +40,7 @@ import {
   panelTransition,
   GLASS_STRONG_CLASS,
   CLOSE_BUTTON_CLASS,
+  ModalPortalContext,
 } from './_shared';
 
 /* ── size variants ────────────────────────────────────────────────────────── */
@@ -102,6 +103,17 @@ function ModalShellRoot({
 }: ModalShellProps) {
   const reduced = useReducedMotion() ?? false;
 
+  // The Dialog.Content DOM node, captured once mounted — provided down via
+  // ModalPortalContext so a floating popup (fairway/forms/Select.tsx) can
+  // portal INSIDE this modal's own DOM subtree instead of document.body,
+  // where Radix's FocusScope (real-DOM-containment focus trap) would
+  // otherwise fight it and yank focus back the instant the popup opens
+  // (see _shared.ts's ModalPortalContext docblock). A state (not a plain
+  // ref) so descendants re-render once the node is available — the parent's
+  // ref attaches AFTER descendant layout effects in React's commit order,
+  // so a plain ref read during a child's layout effect could still be null.
+  const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(null);
+
   // Track presence ourselves so framer-motion can run the exit tween before
   // Radix unmounts the forceMount tree.
   const isControlled = open !== undefined;
@@ -149,6 +161,7 @@ function ModalShellRoot({
               aria-describedby={description ? undefined : ''}
             >
               <motion.div
+                ref={setContentNode}
                 data-slot={dataSlot}
                 role="dialog"
                 // `position: fixed` is set inline because `.fw-glass-strong` is an
@@ -172,44 +185,50 @@ function ModalShellRoot({
                 exit="hidden"
                 transition={panelTransition(reduced, true)}
               >
-                {/* Always render a Dialog.Title for a11y; visually hide if asked. */}
-                {hideTitle || !titleIsString ? (
-                  <Dialog.Title className="sr-only">
-                    {titleIsString ? title : 'Dialog'}
-                  </Dialog.Title>
-                ) : null}
+                {/* Provide our own DOM node so floating popups mounted inside
+                    (fairway/forms/Select.tsx et al.) can portal INTO this
+                    subtree instead of document.body — see _shared.ts's
+                    ModalPortalContext docblock for why that's required. */}
+                <ModalPortalContext.Provider value={contentNode}>
+                  {/* Always render a Dialog.Title for a11y; visually hide if asked. */}
+                  {hideTitle || !titleIsString ? (
+                    <Dialog.Title className="sr-only">
+                      {titleIsString ? title : 'Dialog'}
+                    </Dialog.Title>
+                  ) : null}
 
-                {!hideTitle && (titleIsString || description) ? (
-                  <ModalHeader>
-                    {titleIsString ? <ModalTitle>{title}</ModalTitle> : null}
-                    {description ? (
-                      <ModalDescription>{description}</ModalDescription>
-                    ) : null}
-                  </ModalHeader>
-                ) : description ? (
-                  <Dialog.Description className="sr-only">
-                    {description}
-                  </Dialog.Description>
-                ) : null}
+                  {!hideTitle && (titleIsString || description) ? (
+                    <ModalHeader>
+                      {titleIsString ? <ModalTitle>{title}</ModalTitle> : null}
+                      {description ? (
+                        <ModalDescription>{description}</ModalDescription>
+                      ) : null}
+                    </ModalHeader>
+                  ) : description ? (
+                    <Dialog.Description className="sr-only">
+                      {description}
+                    </Dialog.Description>
+                  ) : null}
 
-                {children}
+                  {children}
 
-                {!hideClose ? (
-                  <Dialog.Close
-                    aria-label="Close"
-                    className={cn(
-                      CLOSE_BUTTON_CLASS,
-                      // Invisible hit-slop expands the tap target to 44px
-                      // without changing the 36px visual (iOS touch floor,
-                      // §7.4). The button is already `absolute`, so it is the
-                      // positioning context for `::before` — no `relative` needed.
-                      "before:absolute before:-inset-1.5 before:content-['']",
-                      'absolute right-4 top-4',
-                    )}
-                  >
-                    <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                  </Dialog.Close>
-                ) : null}
+                  {!hideClose ? (
+                    <Dialog.Close
+                      aria-label="Close"
+                      className={cn(
+                        CLOSE_BUTTON_CLASS,
+                        // Invisible hit-slop expands the tap target to 44px
+                        // without changing the 36px visual (iOS touch floor,
+                        // §7.4). The button is already `absolute`, so it is the
+                        // positioning context for `::before` — no `relative` needed.
+                        "before:absolute before:-inset-1.5 before:content-['']",
+                        'absolute right-4 top-4',
+                      )}
+                    >
+                      <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                    </Dialog.Close>
+                  ) : null}
+                </ModalPortalContext.Provider>
               </motion.div>
             </Dialog.Content>
           </Dialog.Portal>

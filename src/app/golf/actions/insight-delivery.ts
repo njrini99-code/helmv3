@@ -367,6 +367,14 @@ async function getTopInsightForPlayerImpl(
 
   // 1. Urgent-priority first pass. We run it as a separate query so the JSON
   //    ordering below never accidentally starves an urgent row.
+  // Query shape (tables/filters/order) — logged for the index-review this
+  // warning intentionally does NOT escalate to: golf_coach_insights filtered
+  // by (player_id, evidence NOT NULL) + the shared applyInsightVisibility
+  // predicates (v3 engine OR-filter, visible lifecycle_state IN, status !=
+  // dismissed), then priority='urgent', ordered by created_at desc, limit 1.
+  // Same BEST_EFFORT_QUERY_TIMEOUT_MS budget as fetchShotDriversByCategory —
+  // deliberately shorter than the DB's 8s statement_timeout so a slow/
+  // unindexed scan aborts client-side instead of holding the request open.
   const { data: urgent, error: urgentError } = await applyInsightVisibility(
     supabase
       .from('golf_coach_insights')
@@ -376,13 +384,20 @@ async function getTopInsightForPlayerImpl(
   )
     .eq('priority', 'urgent')
     .order('created_at', { ascending: false })
-    .limit(1);
+    .limit(1)
+    .abortSignal(AbortSignal.timeout(BEST_EFFORT_QUERY_TIMEOUT_MS));
 
   if (urgentError) {
-    await logServerError(
-      `getTopInsightForPlayer.urgent failed: ${urgentError.message}`,
-      { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId },
-    );
+    // Best-effort: falls through to the ranked pass below on ANY failure
+    // (statement timeout or our own abort budget tripping first), so a
+    // handled miss here is a single warning — not a paging error and NOT a
+    // Sentry-escalated exception (skipSentry: true — expected degradation,
+    // not an incident to page on).
+    void logServerError(
+      `getTopInsightForPlayer.urgent failed (continuing without urgent pass): ${urgentError.message}`,
+      { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId, skipSentry: true },
+      'warning',
+    ).catch(() => undefined);
   } else if (urgent && urgent.length > 0) {
     const urgentInsight = mapRowToEvidenceInsight(urgent[0] as unknown as RawInsightRowWithDrills);
     // P1-09: only return the urgent row if the player hasn't dismissed it; a
@@ -1105,6 +1120,19 @@ const SHOT_DRIVERS_FETCH_CAP = 25000;
 /** Recent-rounds cap when resolving completed round ids for the shot fetch. */
 const SHOT_DRIVERS_ROUNDS_CAP = 200;
 
+/**
+ * Best-effort query budget for the (optional) shot-drivers + urgent-insight
+ * reads below — deliberately SHORTER than the DB's own 8s `statement_timeout`
+ * (see src/lib/supabase/server.ts's `AbortSignal.timeout(10_000)` comment:
+ * "DB statement_timeout is 8s, so DB error bubbles up first"). Both callers
+ * degrade to "render without this data" on ANY failure, so there is no reason
+ * to let a heavy/unindexed query hold the request open for the full 8s before
+ * Postgres cancels it with a 57014 — aborting client-side at 5s frees the
+ * page to finish rendering sooner and turns the failure mode into a fast,
+ * predictable abort instead of a slow one.
+ */
+const BEST_EFFORT_QUERY_TIMEOUT_MS = 5_000;
+
 /** Recent-rounds cap for the SG-trend fetch (PLAY G). Two windows of ~5 each
  *  plus headroom; 40 is ample for a recent-vs-prior split and bounds the query. */
 const SG_TREND_ROUNDS_CAP = 40;
@@ -1122,14 +1150,24 @@ async function fetchShotDriversByCategory(
   supabase: SupabaseClient,
   playerId: string,
 ): Promise<Partial<Record<InsightCategory, RootDriver[]>> | undefined> {
+  // Shared abort budget for both queries below — see BEST_EFFORT_QUERY_TIMEOUT_MS.
+  const controller = new AbortController();
+  const budgetTimer = setTimeout(() => controller.abort(), BEST_EFFORT_QUERY_TIMEOUT_MS);
   try {
+    // Query shape (tables/filters/order) — logged here for the index-review
+    // this warning intentionally does NOT escalate to: golf_rounds filtered by
+    // (player_id, status='completed'), ordered by round_date desc, capped 200;
+    // then golf_shots filtered by round_id IN (<=200 ids), NO .order(), capped
+    // 25000, with 1:1 joins to putt_details + approach_miss_details. The
+    // unordered, high-cap, joined golf_shots scan is the likely 57014 source.
     const { data: rounds, error: roundsError } = await supabase
       .from('golf_rounds')
       .select('id')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
-      .limit(SHOT_DRIVERS_ROUNDS_CAP);
+      .limit(SHOT_DRIVERS_ROUNDS_CAP)
+      .abortSignal(controller.signal);
     if (roundsError) throw new Error(roundsError.message);
 
     const roundIds = (rounds ?? []).map((r) => r.id as string);
@@ -1151,21 +1189,26 @@ async function fetchShotDriversByCategory(
         approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
       `)
       .in('round_id', roundIds)
-      .limit(SHOT_DRIVERS_FETCH_CAP);
+      .limit(SHOT_DRIVERS_FETCH_CAP)
+      .abortSignal(controller.signal);
     if (shotsError) throw new Error(shotsError.message);
     if (!shots || shots.length === 0) return undefined;
 
     return buildShotDrivers(shots as unknown as ShotDriverInput[]);
   } catch (err) {
     // Best-effort enrichment — the page renders fine without shot drivers, so a
-    // handled failure here (e.g. statement timeout) is a warning, not a paging
-    // error. Captured as a non-exception message via the 'warning' severity.
+    // handled failure here (e.g. statement timeout, or our own abort budget
+    // above tripping first) is a single warning, not a paging error and NOT a
+    // Sentry-escalated exception (skipSentry: true — this is expected
+    // degradation, not an incident to page on).
     void logServerError(
       `fetchShotDriversByCategory failed (continuing without shot drivers): ${err instanceof Error ? err.message : String(err)}`,
-      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
+      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId, skipSentry: true },
       'warning',
     ).catch(() => undefined);
     return undefined;
+  } finally {
+    clearTimeout(budgetTimer);
   }
 }
 

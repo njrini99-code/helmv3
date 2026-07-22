@@ -23,7 +23,11 @@ import {
   DrawerDescription,
 } from '@/components/ui/drawer';
 import { Input, Textarea } from '@/components/ui/input';
-import { Select, type SelectOption } from '@/components/ui/select';
+import {
+  Select as FairwaySelect,
+  FormField as FairwayFormField,
+  type SelectOption,
+} from '@/components/fairway/forms';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
@@ -133,6 +137,10 @@ export function PromoteToFocusAreaButton({
   // custom text, mirroring FocusAreaModal).
   const areaMetrics = metricsForArea(suggestedAreaType);
   const metricOptions: SelectOption[] = [
+    // Leading empty-value option preserves the old `clearable` affordance
+    // (fairway's Select has no built-in clear button) — picking it resets
+    // back to "no metric chosen" instead of leaving no way to undo a pick.
+    { value: '', label: 'No target metric' },
     ...areaMetrics.map((m) => ({ value: m.key, label: m.label })),
     { value: CUSTOM_METRIC_VALUE, label: 'Other (custom)' },
   ];
@@ -306,14 +314,32 @@ export function PromoteToFocusAreaButton({
               coachhelm/FocusAreaModal.tsx selectMetric, ~269-281). */}
           <div className="grid grid-cols-2 gap-3">
             {areaMetrics.length > 0 ? (
-              <Select
-                label="Target metric (optional)"
-                options={metricOptions}
-                value={metricSelection || undefined}
-                onChange={(v) => setMetricSelection(v)}
-                placeholder="Select a metric…"
-                clearable
-              />
+              // FairwayFormField (Base UI Field), not a bare sibling <label>:
+              // Base UI's Select registers with the surrounding Field context
+              // to associate its trigger with the label (id/aria-labelledby)
+              // automatically — the same pattern FocusAreaModal.tsx uses for
+              // its Player/Category Selects. A plain unassociated <label>
+              // here fails jsx-a11y/label-has-associated-control since the
+              // Select's trigger is a <button>, not a native labelable
+              // control.
+              <FairwayFormField label="Target metric (optional)">
+                {/* Fairway Select, not the legacy ui/select.tsx: this Drawer
+                    wraps @radix-ui/react-dialog (via vaul) which traps focus
+                    by real DOM containment, and ui/select.tsx's dropdown
+                    portals to document.body with its own hand-rolled
+                    fixed-position math that isn't containing-block-aware —
+                    nesting it inside the Drawer's transformed content would
+                    both fight the focus trap AND mis-place the popup. The
+                    fairway Select (Base UI + floating-ui) handles both
+                    correctly once ui/drawer.tsx's DrawerContent hands it a
+                    portal container via ModalPortalContext. */}
+                <FairwaySelect
+                  options={metricOptions}
+                  value={metricSelection || undefined}
+                  onValueChange={(v) => setMetricSelection(v ?? '')}
+                  placeholder="Select a metric…"
+                />
+              </FairwayFormField>
             ) : (
               <Input
                 label="Target metric (optional)"

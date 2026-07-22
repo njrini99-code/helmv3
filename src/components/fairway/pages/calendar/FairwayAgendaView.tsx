@@ -26,6 +26,7 @@ import { Surface, EmptyState, Button } from '@/components/fairway';
 import { CalendarDays } from 'lucide-react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
+import { zonedMidnight } from '@/lib/calendar/timezone';
 import { FairwayEventCard } from './FairwayEventCard';
 
 export interface FairwayAgendaViewProps {
@@ -80,13 +81,18 @@ function bucketEvents(
   rangeStart?: Date,
   rangeEnd?: Date,
   nowRef?: Date,
+  timezone?: string | null,
 ): DayBucket[] {
   if (mode === 'day') {
     const dayEvents = events
       .filter((ev) => {
         const start = ev.start_date || ev.start_time;
         if (!start) return false;
-        return isSameDay(new Date(start), focusDate);
+        // `zonedMidnight` (explicit `timezone`), NOT `new Date(start)`
+        // (implicit-local) — an event's own calendar day must agree with
+        // `focusDate` (already zoned) regardless of which process is doing
+        // the comparing (audit W1/cal-tz, React #418 on /calendar).
+        return isSameDay(zonedMidnight(start, timezone), focusDate);
       })
       .sort(sortByStart);
     return [
@@ -109,7 +115,15 @@ function bucketEvents(
   for (const ev of events) {
     const startStr = ev.start_date || ev.start_time;
     if (!startStr) continue;
-    const evDate = startOfDay(new Date(startStr));
+    // `zonedMidnight` — the DEFAULT agenda view (mode="range") is what's
+    // actually SSR'd on first paint (see FairwayCalendar's initial `view`
+    // state), so this bucket key/date is directly hydration-sensitive: the
+    // previous `startOfDay(new Date(startStr))` read the CALLING PROCESS's
+    // own local zone, so an event within ~4-5h of midnight ET could land in
+    // a DIFFERENT day bucket — with a DIFFERENT rendered header string via
+    // `formatDayLabel` below — between the SSR pass (Vercel, UTC) and the
+    // first client render (the visitor's browser), tripping React #418.
+    const evDate = zonedMidnight(startStr, timezone);
     if (evDate < start || evDate > end) continue;
     const key = format(evDate, 'yyyy-MM-dd');
     const bucket = buckets.get(key);
@@ -145,8 +159,8 @@ export function FairwayAgendaView({
   className,
 }: FairwayAgendaViewProps) {
   const buckets = React.useMemo(
-    () => bucketEvents(events, mode, focusDate, rangeStart, rangeEnd, nowRef),
-    [events, mode, focusDate, rangeStart, rangeEnd, nowRef],
+    () => bucketEvents(events, mode, focusDate, rangeStart, rangeEnd, nowRef, timezone),
+    [events, mode, focusDate, rangeStart, rangeEnd, nowRef, timezone],
   );
 
   const totalEvents = buckets.reduce((sum, b) => sum + b.events.length, 0);

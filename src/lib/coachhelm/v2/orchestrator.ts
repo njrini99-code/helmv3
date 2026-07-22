@@ -258,6 +258,7 @@ class CoachHelmIntelligence {
       includeTrajectory = false,
       includeShotPatterns = true,
       includeLieAnalysis = true,
+      persistPatterns = true,
       depth = 'standard',
       verbosity,
     } = options;
@@ -460,7 +461,7 @@ class CoachHelmIntelligence {
         ? new PatternMiner(playerId).minePatterns()
         : Promise.resolve<MinedPattern[]>([]),
       wantShotPatterns
-        ? new ShotPatternMiner(playerId).analyzeShotPatterns()
+        ? new ShotPatternMiner(playerId).analyzeShotPatterns({ persistPatterns })
         : Promise.resolve(null),
       wantLieAnalysis
         ? analyzeLieSpecificMissPatterns(playerId)

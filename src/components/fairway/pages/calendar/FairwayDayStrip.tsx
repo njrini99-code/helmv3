@@ -16,8 +16,11 @@
  *
  * HYDRATION: `nowRef` is parent-owned (seeded from serverNow, rehydrated post
  * mount). We NEVER call `Date.now()` / date-fns `isToday()` here — that would
- * race the server clock and trip React #418. Day numbers are stable text;
- * `suppressHydrationWarning` scopes any post-hydration reflow.
+ * race the server clock and trip React #418. `focusDate`/`nowRef` are seeded
+ * via `zonedMidnight` (an explicit team timezone, not the calling process's
+ * own ambient zone — see FairwayCalendar) so the day numbers rendered here
+ * are byte-identical between SSR and the first client render; no
+ * `suppressHydrationWarning` needed.
  *
  * GOTCHA (a): native <button> per pill, never `Surface as="button"`.
  * ========================================================================== */
@@ -174,7 +177,6 @@ export function FairwayDayStrip({
                       ? 'text-text-tertiary/70'
                       : 'text-text-primary',
                 )}
-                suppressHydrationWarning
               >
                 {format(day, 'd')}
               </span>

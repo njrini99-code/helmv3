@@ -1251,10 +1251,29 @@ async function markReviewAsViewedImpl(reviewId: string): Promise<{
       return { success: false, error: 'Review not found' };
     }
 
-    // Verify the current user is the player who owns this review
-    const access = await verifyReviewAccess(supabase, review.player_id, 'player');
+    // Verify the current user owns this review (player) OR is a coach
+    // staffing ANY team the round's player is an active member of — the
+    // same authz model the review PAGE enforces
+    // (rounds/[id]/review/page.tsx:220-334: player-owns-round OR
+    // coach-staffs-any-team-of-player) and every other reader in this file
+    // (getReviewById, getReviewByRoundId, getReviewGenerationStatus, etc).
+    // This action previously restricted access to role: 'player' only,
+    // which rejected every legitimate coach viewer with "Review not found
+    // or not accessible" on every page open (7 prod events, 2 users incl.
+    // a coach) even though the page itself grants the coach access.
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
     if (!access.authorized) {
       return { success: false, error: 'Review not found or not accessible' };
+    }
+
+    // "Viewed" here is PLAYER-viewed semantics: the schema tracks it as
+    // `patterns_detected.player_viewed_at`, distinct from the real
+    // `coach_viewed_at` column a coach's view is tracked through (see
+    // `markReviewViewedByCoach` below). A coach opening the same review page
+    // must not flip the player's viewed flag — treat a coach caller as a
+    // successful no-op instead.
+    if (access.callerRole !== 'player') {
+      return { success: true };
     }
 
     const extData = review.patterns_detected as ReviewExtendedData | null;

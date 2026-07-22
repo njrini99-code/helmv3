@@ -13,6 +13,7 @@
  * ============================================================================
  */
 
+import * as React from 'react';
 import type { Variants, Transition } from 'framer-motion';
 
 /* ── Escalation rule (documented, lightest wins) ────────────────────────────
@@ -121,3 +122,40 @@ export const CLOSE_BUTTON_CLASS =
   'active:translate-y-[0.5px] ' +
   'disabled:pointer-events-none disabled:opacity-50 ' +
   FOCUS_RING;
+
+/* ── Portal-container context (focus-trap fix) ───────────────────────────────
+ *
+ * Radix's Dialog FocusScope traps focus via real DOM containment
+ * (`container.contains(target)`), not React-tree containment (verified:
+ * @radix-ui/react-focus-scope). A floating popup (Select, Combobox, …) that
+ * portals to `document.body` by default renders as a DOM SIBLING of the
+ * Dialog, not a descendant — so the instant the popup tries to take/keep
+ * focus, FocusScope's document-wide `focusin` listener sees focus land
+ * outside its container and yanks it straight back into the modal. The
+ * popup becomes unusable: options can't be focused or clicked-through. This
+ * is the "dead dropdown inside a modal" bug class (CoachHelm Prescribe
+ * focus-area modal, 2026-07-21).
+ *
+ * ModalShell — and the vaul-backed Drawer in src/components/ui/drawer.tsx,
+ * which wraps the SAME @radix-ui/react-dialog primitive internally and so
+ * inherits the identical trap — provide the DOM node of their own
+ * Dialog.Content/Drawer.Content here once mounted. A floating popup
+ * consumes it (e.g. fairway/forms/Select.tsx passes it as Base UI Select's
+ * `Portal container` prop) so its popup renders as a genuine DOM descendant
+ * of the overlay instead of a document.body sibling — Base UI Select (via
+ * floating-ui) is containing-block-aware, so this works correctly even
+ * though the overlay panel itself is a transformed/animated ancestor.
+ *
+ * `null` outside any overlay (the default) — consumers MUST treat `null` as
+ * "no override, use the floating library's own default (document.body)",
+ * never pass `null` straight through as an explicit portal `container` prop
+ * (libraries built on floating-ui-react treat an explicit `null` container
+ * as "wait for a real target", not "use body", which would silently break
+ * every standalone Select outside a modal).
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const ModalPortalContext = React.createContext<HTMLElement | null>(null);
+
+/** The nearest ModalShell/Drawer's content DOM node, or `null` outside one. */
+export function useModalPortalContainer(): HTMLElement | null {
+  return React.useContext(ModalPortalContext);
+}

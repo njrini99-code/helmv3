@@ -70,6 +70,7 @@ import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint
 import { acknowledgeInsight, dismissInsight } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { useGolfUser } from '@/contexts/golf-user-context';
+import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props
@@ -106,6 +107,33 @@ function formatToPar(stp: number | null): string {
   if (stp == null) return '—';
   if (stp === 0) return 'E';
   return stp > 0 ? `+${stp}` : `−${Math.abs(stp)}`;
+}
+
+/**
+ * Format the aggregator's `generated_at` ISO timestamp deterministically —
+ * an explicit `timeZone` (not the calling process's own ambient zone) so SSR
+ * and the first client render always compute the identical string.
+ *
+ * ROOT CAUSE (prod React #418 on /players/[id]/game): this footnote used to
+ * call `new Date(generatedAt).toLocaleString()` with no locale/timeZone
+ * argument, which resolves to whatever default `Intl` locale AND timezone
+ * the CALLING PROCESS happens to have — Vercel SSR (Node, typically UTC) vs.
+ * the visitor's own browser (any locale, any zone). This component is the
+ * default tab on the route (PlayerDeepDiveTabs renders it on the initial
+ * server + first client render whenever `?tab` isn't `scouting`), so the two
+ * environments produced two different strings for the SAME instant and
+ * React's hydration diff failed on this exact text node. Anchoring to a
+ * fixed, explicit zone (the same `DEFAULT_TIMEZONE` the calendar surfaces
+ * already use) makes the output independent of which process computes it.
+ */
+export function formatGeneratedAt(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: DEFAULT_TIMEZONE,
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -335,7 +363,7 @@ export function FairwayPlayerGameFingerprint({
 
         {/* ════════════════ 4 · GENERATED-AT footnote ═══════════════════════ */}
         <p className="text-center font-fw-sans text-caption text-text-tertiary">
-          Generated {new Date(generatedAt).toLocaleString()}
+          Generated {formatGeneratedAt(generatedAt)}
         </p>
       </div>
     </div>

@@ -173,6 +173,9 @@ function makeSupabaseMock(opts: {
       contains: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      // getTopInsightForPlayer's urgent-priority pass applies a best-effort
+      // abort budget (BEST_EFFORT_QUERY_TIMEOUT_MS) via `.abortSignal(...)`.
+      abortSignal: vi.fn().mockReturnThis(),
       then: (resolve: (v: typeof terminal) => void) => Promise.resolve(resolve(terminal)),
     };
     return builder;
