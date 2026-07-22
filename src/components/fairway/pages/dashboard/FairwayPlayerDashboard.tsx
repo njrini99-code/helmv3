@@ -71,6 +71,7 @@ import {
   type ActionCenterSummary,
 } from './player-dashboard-parts';
 import { PlayerActionCenter } from './PlayerActionCenter';
+import { NotificationsLatestModule } from '@/components/fairway/notifications';
 
 // Fairway TrendChart, lazy + ssr:false — preserves the legacy load contract
 // (the recharts bundle stays out of the server render path / first paint).
@@ -616,6 +617,13 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                 hubSummary={actionCenterSummary}
               />
             </section>
+
+            {/* Latest notifications — compact digest of the unified feed
+                (CoachHelm signals, event/RSVP lifecycle, task reminders…).
+                Self-fetching client module; renders nothing when there's
+                genuinely nothing new. "View all" opens the same bell panel
+                mounted in the top bar via NotificationPanelContext. */}
+            <NotificationsLatestModule />
 
             {/* ── Recent rounds ─────────────────────────────────────────────── */}
             <section>

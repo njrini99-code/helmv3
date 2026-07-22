@@ -276,7 +276,7 @@ export function GenomeDetailView({
       });
       if (res.success) {
         fairwayToast.success(`Focus area created — ${w.label}`);
-        router.push(`/golf/dashboard/development?player=${playerId}`);
+        router.push(`/golf/dashboard/intelligence?view=players&player=${playerId}`);
       } else {
         fairwayToast.error(res.error ?? 'Could not create focus area');
       }
@@ -328,7 +328,7 @@ export function GenomeDetailView({
           : 'Genome not computed yet'
       }
       breadcrumbs={[
-        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: 'Players', href: '/golf/dashboard/intelligence?view=players' },
         { label: playerName },
       ]}
       actions={headerActions}
@@ -395,7 +395,7 @@ export function GenomeDetailView({
               as="section"
               readout={
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/golf/dashboard/development?player=${playerId}`}>Manage</Link>
+                  <Link href={`/golf/dashboard/intelligence?view=players&player=${playerId}`}>Manage</Link>
                 </Button>
               }
             >
@@ -689,7 +689,7 @@ function PersonaInstrument({
                     asChild
                   >
                     <Link
-                      href={`/golf/dashboard/development?player=${playerId}`}
+                      href={`/golf/dashboard/intelligence?view=players&player=${playerId}`}
                       aria-label={`Open Development for ${playerName} to add a focus area for "${w.label}"`}
                     >
                       Focus area

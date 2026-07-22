@@ -458,7 +458,7 @@ function ExpandBand({ row }: { row: TeamBoardRowViewModel }) {
           Fingerprint
         </Link>
         <Link href={row.expand.links.prescribe} className="font-semibold text-accent-700 hover:underline">
-          Prescribe drill
+          Prescribe focus area
         </Link>
       </div>
     </div>

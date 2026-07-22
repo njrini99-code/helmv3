@@ -5,6 +5,7 @@ import { useGolfUser } from '@/contexts/golf-user-context';
 import { getPlayerNotificationCounts, markAnnouncementsSeen as markSeenAction } from '@/app/golf/actions/player-notifications';
 import { getCoachNotificationCounts } from '@/app/golf/actions/coach-notifications';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { getNotificationsUnreadCount } from '@/app/golf/actions/unified-notifications';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { isNativeApp } from '@/lib/utils/capacitor';
 
@@ -24,6 +25,15 @@ interface NotificationBadges {
    * never a fake "0"); players always read 0.
    */
   coachhelm: number;
+  /**
+   * Unread rows in the generic `notifications` table — CoachHelm dispatch.ts
+   * lifecycle receipts + task-reminders.ts reminders, both roles. This is
+   * HALF of the unified notifications bell's badge; the other half is
+   * `calendarNotifications` above (golf_calendar_notifications is already
+   * counted there) — NotificationBell sums the two client-side rather than
+   * this provider adding a second poll loop for the same feed.
+   */
+  notificationsUnread: number;
   total: number;
   unseenAnnouncements: GolfAnnouncementMeta[];
   hasUnseenAnnouncements: boolean;
@@ -38,6 +48,7 @@ const EMPTY_BADGES: NotificationBadges = {
   travel: 0,
   calendarNotifications: 0,
   coachhelm: 0,
+  notificationsUnread: 0,
   total: 0,
   unseenAnnouncements: [],
   hasUnseenAnnouncements: false,
@@ -67,6 +78,7 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
   const [travel, setTravel] = useState(0);
   const [calendarNotifications, setCalendarNotifications] = useState(0);
   const [coachhelm, setCoachhelm] = useState(0);
+  const [notificationsUnread, setNotificationsUnread] = useState(0);
   const [unseenAnnouncements, setUnseenAnnouncements] = useState<GolfAnnouncementMeta[]>([]);
   const isVisibleRef = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -105,6 +117,12 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
     if (sessionExpiredRef.current) return;
     if (!isVisibleRef.current) return;
 
+    // Tracks whether THIS poll already learned the session is gone, so the
+    // additive `notifications` unread fetch below can skip a second
+    // round-trip to relearn the same thing (same spirit as the CoachHelm
+    // badge's own skip-on-expired check).
+    let sessionExpiredThisPoll = false;
+
     try {
       if (isPlayer && playerId && userId && teamId) {
         const result = await getPlayerNotificationCounts(playerId, userId, teamId);
@@ -120,6 +138,7 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
         const result = await getCoachNotificationCounts(userId, teamId);
         if (result.authExpired) {
           stopPolling();
+          sessionExpiredThisPoll = true;
         } else if (result.success && result.data) {
           setMessages(result.data.unreadMessages);
           setCalendarNotifications(result.data.calendarNotifications);
@@ -138,10 +157,31 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
             setCoachhelm(alerts.success ? (alerts.counts?.critical ?? 0) : 0);
             if (alerts.authExpired) {
               stopPolling();
+              sessionExpiredThisPoll = true;
             }
           } catch {
             setCoachhelm(0);
           }
+        }
+      }
+
+      // Unified notifications bell badge, half 2/2: unread rows in the
+      // generic `notifications` table (CoachHelm dispatch.ts lifecycle
+      // receipts + task-reminders.ts reminders). Same 45s poll, additive,
+      // BOTH roles (CoachHelm dispatches to players; task-reminders notifies
+      // assigned players AND the assigning coach) — never a second poll loop
+      // (NotificationBell reads this + `calendarNotifications` above from
+      // this same context instead of fetching its own count).
+      if (userId && !sessionExpiredThisPoll) {
+        try {
+          const unread = await getNotificationsUnreadCount();
+          if (unread.authExpired) {
+            stopPolling();
+          } else {
+            setNotificationsUnread(unread.success ? (unread.data?.unread ?? 0) : 0);
+          }
+        } catch {
+          setNotificationsUnread(0);
         }
       }
     } catch (err) {
@@ -198,16 +238,18 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
       travel,
       calendarNotifications,
       coachhelm,
-      // `coachhelm` is intentionally excluded from `total` — the rail badge map
-      // reads it directly; the aggregate "total" stays the messaging/calendar
-      // unread sum it has always been.
+      notificationsUnread,
+      // `coachhelm` and `notificationsUnread` are intentionally excluded from
+      // `total` — the rail badge map / NotificationBell read them directly;
+      // the aggregate "total" stays the messaging/calendar unread sum it has
+      // always been.
       total: announcements + tasks + messages + travel + calendarNotifications,
       unseenAnnouncements,
       hasUnseenAnnouncements: unseenAnnouncements.length > 0,
       markAnnouncementsSeen: handleMarkSeen,
       refetch: fetchCounts,
     };
-  }, [isActive, announcements, tasks, messages, travel, calendarNotifications, coachhelm, unseenAnnouncements, handleMarkSeen, fetchCounts]);
+  }, [isActive, announcements, tasks, messages, travel, calendarNotifications, coachhelm, notificationsUnread, unseenAnnouncements, handleMarkSeen, fetchCounts]);
 
   return (
     <NotificationBadgeContext.Provider value={value}>

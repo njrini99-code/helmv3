@@ -1192,6 +1192,17 @@ interface CreateFocusAreaFromInsightData {
   title: string;
   description: string | null;
   insight_type: string;
+  /**
+   * Optional explicit area_type override. When the caller has already
+   * resolved a category — e.g. the coach edited FocusAreaModal's Category
+   * picker before confirming a "Prescribe focus area" click (see
+   * triage/PromoteToFocusAreaButton.tsx) — trust it verbatim instead of the
+   * insight_type/metadata-derived guess below. An explicit coach choice must
+   * win outright: silently overriding it with a server guess would break
+   * "what you see in the modal is what saves." Omitted (every pre-existing
+   * caller) keeps the original derived behavior unchanged.
+   */
+  area_type?: string;
   target_metric?: string | null;
   current_value?: number | null;
   target_value?: number | null;
@@ -1245,13 +1256,17 @@ async function createFocusAreaFromInsightImpl(
     return { success: false, error: 'Failed to fetch insight details' };
   }
 
-  // Determine the area type based on insight type and metadata
-  const baseAreaType = mapInsightTypeToAreaType(data.insight_type);
-  const areaType = refineAreaTypeFromMetadata(
-    baseAreaType,
-    data.insight_type,
-    insight?.metadata as Record<string, unknown> | null
-  );
+  // Determine the area type based on insight type and metadata — unless the
+  // caller already resolved one explicitly (see `area_type` doc above). An
+  // explicit choice wins outright: overriding it with a metadata-derived
+  // guess would silently discard what the coach just confirmed in the modal.
+  const areaType = data.area_type
+    ? data.area_type
+    : refineAreaTypeFromMetadata(
+        mapInsightTypeToAreaType(data.insight_type),
+        data.insight_type,
+        insight?.metadata as Record<string, unknown> | null
+      );
 
   // Build description - combine provided description with recommendation if available
   let finalDescription = data.description || '';

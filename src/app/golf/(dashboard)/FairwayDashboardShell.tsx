@@ -53,6 +53,8 @@ import { MobileNavProvider } from '@/contexts/mobile-nav-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
 import { NotificationBadgeProvider, useNotificationBadges } from '@/contexts/notification-badge-context';
+import { NotificationBell } from '@/components/fairway/notifications/NotificationBell';
+import { NotificationPanelProvider } from '@/components/fairway/notifications/NotificationPanelContext';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
@@ -432,6 +434,24 @@ function FairwayDashboardContent({
     [showSwitcher, coachTeams, userData.teamId],
   );
 
+  // The ONE app-wide notifications entry point (both roles, every dashboard
+  // route) — reads NotificationBadgeProvider/NotificationPanelContext
+  // internally, so it takes no props and is stable across every re-render.
+  const notificationBell = useMemo(() => <NotificationBell />, []);
+
+  // Same stability contract as `teamSwitcher`/`brand`/etc below — combined
+  // once here so `topBarActions` (passed verbatim into AppShell → FairwayTopBar)
+  // only changes identity when one of its two children actually changes.
+  const topBarActions = useMemo(
+    () => (
+      <>
+        {notificationBell}
+        {teamSwitcher}
+      </>
+    ),
+    [notificationBell, teamSwitcher],
+  );
+
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
 
@@ -589,7 +609,7 @@ function FairwayDashboardContent({
         user={shellUser}
         brand={brand}
         sidebarFooter={sidebarFooter}
-        topBarActions={teamSwitcher}
+        topBarActions={topBarActions}
         accentColor={accentColor}
         pathname={pathname}
         linkComponent={ShellLink}
@@ -676,20 +696,26 @@ export function FairwayDashboardShell({
         <SessionActivityProvider>
           <GolfUserProvider userData={userData}>
             <NotificationBadgeProvider>
-              <LazyMotion features={loadFeatures}>
-                <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                  <LastSeenUpdater />
-                  {/* Must mount BEFORE DemoEnterTracker — see DemoPricingNudge.tsx
-                      header: it reads window.location.search for `demo=1` before
-                      DemoEnterTracker's own effect strips that param from the URL. */}
-                  <DemoPricingNudge />
-                  {/* B36/F012: the demo_coach_entered PostHog event must fire in the
-                      flag-ON shell too — prod demo entries land here, not on the legacy
-                      GolfDashboardShell. Pure side-effect leaf (renders null). */}
-                  <DemoEnterTracker />
-                  <FairwayDashboardContent userData={userData}>{children}</FairwayDashboardContent>
-                </OfflineProvider>
-              </LazyMotion>
+              {/* Shared open-state for the ONE notifications feed (the bell in
+                  FairwayTopBar's actions cluster below + every "View all" entry
+                  point on a home page) — wraps the whole content tree so both
+                  ends of that wire share the same instance. */}
+              <NotificationPanelProvider>
+                <LazyMotion features={loadFeatures}>
+                  <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                    <LastSeenUpdater />
+                    {/* Must mount BEFORE DemoEnterTracker — see DemoPricingNudge.tsx
+                        header: it reads window.location.search for `demo=1` before
+                        DemoEnterTracker's own effect strips that param from the URL. */}
+                    <DemoPricingNudge />
+                    {/* B36/F012: the demo_coach_entered PostHog event must fire in the
+                        flag-ON shell too — prod demo entries land here, not on the legacy
+                        GolfDashboardShell. Pure side-effect leaf (renders null). */}
+                    <DemoEnterTracker />
+                    <FairwayDashboardContent userData={userData}>{children}</FairwayDashboardContent>
+                  </OfflineProvider>
+                </LazyMotion>
+              </NotificationPanelProvider>
             </NotificationBadgeProvider>
           </GolfUserProvider>
         </SessionActivityProvider>

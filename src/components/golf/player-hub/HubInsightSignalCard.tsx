@@ -46,11 +46,15 @@ import {
   type InsightAction,
 } from '@/components/golf/coachhelm/insight-card';
 import { ResolutionCelebration } from '@/components/golf/coachhelm/insight-card/ResolutionCelebration';
-import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
+import {
+  FocusAreaModal,
+  type FocusAreaModalSubmit,
+} from '@/components/fairway/pages/coachhelm/FocusAreaModal';
+import { createFocusAreaFromInsightV2 } from '@/app/golf/actions/development';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightMovement } from '@/lib/coachhelm/v2/insights/types';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
-import { IconSparkles, IconCheck, IconHelp, IconX } from '@/components/icons';
+import { IconSparkles, IconCheck, IconHelp, IconX, IconTarget } from '@/components/icons';
 import { useToast } from '@/components/ui/sonner';
 
 export interface HubInsightSignalCardProps {
@@ -135,6 +139,68 @@ function priorityFor(insight: EvidenceInsight): DerivedPriority {
   if (insight.priority === 'high') return 'high';
   if (strokesImpact * confidence > 1.0) return 'high';
   return 'info';
+}
+
+/**
+ * Promote-to-focus-area — the shared FocusAreaModal (fixed player, mode=
+ * 'player' — this card only ever renders on the player's own home). Replaces
+ * the retired vaul-Drawer `PromoteToFocusAreaButton`; still calls
+ * `createFocusAreaFromInsightV2` so the same active-immediately status branch
+ * + `recordInsightAction` ledger side effect inside that action keep firing
+ * exactly as before.
+ */
+function PromoteFocusAreaAction({ insight }: { insight: EvidenceInsight }) {
+  const [open, setOpen] = useState(false);
+  const areaType = mapInsightCategoryToAreaType(insight.category);
+
+  async function handleSubmit(
+    payload: FocusAreaModalSubmit,
+  ): Promise<{ success: boolean; error?: string }> {
+    const res = await createFocusAreaFromInsightV2({
+      playerId: payload.player_id,
+      insightId: insight.id,
+      title: payload.title,
+      description: payload.description ?? '',
+      areaType: payload.area_type,
+      targetMetric: payload.target_metric ?? undefined,
+      targetValue: payload.target_value ?? undefined,
+    });
+    return { success: res.success, error: res.error };
+  }
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        type="button"
+        data-testid="action-create-focus-area"
+        leftIcon={<IconTarget size={13} />}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        Add to focus areas
+      </Button>
+      <FocusAreaModal
+        open={open}
+        onOpenChange={setOpen}
+        mode="player"
+        players={[{ id: insight.player_id, name: 'This player' }]}
+        playerStats={{}}
+        playerId={insight.player_id}
+        sourceInsightId={insight.id}
+        initial={{
+          player_id: insight.player_id,
+          area_type: areaType,
+          title: insight.title,
+          description: insight.content,
+        }}
+        onSubmit={handleSubmit}
+      />
+    </>
+  );
 }
 
 export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
@@ -315,16 +381,7 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
           >
             Got it
           </Button>
-          {promotable ? (
-            <PromoteToFocusAreaButton
-              source="insight"
-              sourceId={insight.id}
-              playerId={insight.player_id}
-              suggestedTitle={insight.title}
-              suggestedDescription={insight.content}
-              suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
-            />
-          ) : null}
+          {promotable ? <PromoteFocusAreaAction insight={insight} /> : null}
           <Button
             variant="ghost"
             size="sm"

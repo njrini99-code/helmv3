@@ -78,12 +78,16 @@ export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
         // My Development (no onClick at all). My Development is the SAME
         // golf_player_focus_areas row (id-for-id) rendered with the full
         // detail + actions (progress, complete, drills) — send the player
-        // there instead of leaving a plain, unclickable card.
+        // there instead of leaving a plain, unclickable card. Push the
+        // canonical `?view=development` URL directly (not the legacy
+        // `/my-development` permanent-redirect shim) — client-navigating into
+        // a bare `redirect()` shim is the React #310 "rendered more hooks"
+        // crash class (see my-development/page.tsx's belt-and-braces note).
         <FocusAreaCard
           key={area.id}
           focusArea={area}
           index={i}
-          onClick={() => router.push('/golf/dashboard/my-development')}
+          onClick={() => router.push('/golf/dashboard/coachhelm?view=development')}
         />
       ))}
       {hiddenCount > 0 ? (

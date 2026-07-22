@@ -84,6 +84,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
+import { NotificationsLatestModule } from '@/components/fairway/notifications';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import type {
   CoachDashboardPayload,
@@ -543,6 +544,13 @@ export function FairwayCoachDashboard({
           the fold. Falls back to the component's own self-fetch when the prop is
           omitted (e.g. any other caller that hasn't wired it). */}
       <FairwayJoinRequestAlert requests={joinRequests} />
+
+      {/* Latest notifications — compact digest of the unified feed (CoachHelm
+          signals, event/RSVP lifecycle, task reminders…). Self-fetching client
+          module; renders nothing when there's genuinely nothing new (the bell
+          in the top bar stays the source of truth either way). "View all"
+          opens that same bell panel via NotificationPanelContext. */}
+      <NotificationsLatestModule />
 
       {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
       <TodayPanel

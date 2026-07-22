@@ -167,7 +167,13 @@ export function SignalDossier({
         <Button variant="ghost" size="sm" busy={pending} disabled={pending} onClick={() => onDismiss(signal)}>
           Dismiss
         </Button>
-        <PromoteToFocusAreaButton signal={signal} coachId={coachId} onPromoted={() => onPromoted(signal)} />
+        <PromoteToFocusAreaButton
+          signal={signal}
+          coachId={coachId}
+          onPromoted={() => onPromoted(signal)}
+          playerName={group.playerName}
+          playerStats={playerStats}
+        />
         {group.playerId ? (
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/golf/dashboard/stats?player=${group.playerId}`}>View stats</Link>

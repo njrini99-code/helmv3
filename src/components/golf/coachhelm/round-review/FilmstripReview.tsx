@@ -29,7 +29,11 @@ import type { ShotInput } from '@/components/golf/coachhelm/v3/HoleShotPath/type
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
-import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
+import {
+  FocusAreaModal,
+  type FocusAreaModalSubmit,
+} from '@/components/fairway/pages/coachhelm/FocusAreaModal';
+import { createFocusAreaFromReview } from '@/app/golf/actions/development';
 import { CoachNotesSection } from '@/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection';
 import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
 import { ReviewHero, type ReviewHoleMeta } from './ReviewHero';
@@ -105,6 +109,30 @@ export function FilmstripReview({
   const [shotsByHole, setShotsByHole] = useState<Map<number, ShotInput[]> | null>(null);
   const [shotsError, setShotsError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
+
+  // Focus-area prescription — the same FocusAreaModal PlayersGridView and
+  // DevelopmentDrill use, pre-filled from the round-review takeaway
+  // (promoteSuggestion) with the from_review_id linkage preserved via
+  // createFocusAreaFromReview. Replaces the legacy vaul-Drawer
+  // PromoteToFocusAreaButton so round review carries the same fidelity as
+  // every other "prescribe" entry point.
+  const [focusAreaModalOpen, setFocusAreaModalOpen] = useState(false);
+
+  async function handlePromoteFocusArea(
+    payload: FocusAreaModalSubmit,
+  ): Promise<{ success: boolean; error?: string }> {
+    const res = await createFocusAreaFromReview({
+      playerId: payload.player_id,
+      reviewId,
+      title: payload.title,
+      description: payload.description ?? '',
+      areaType: payload.area_type,
+      targetMetric: payload.target_metric ?? undefined,
+      targetValue: payload.target_value ?? undefined,
+      reviewContext: courseName || undefined,
+    });
+    return { success: res.success, error: res.error };
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -247,15 +275,9 @@ export function FilmstripReview({
             {practicePriority ? <p className="font-fw-sans text-body-sm text-text-primary">{practicePriority}</p> : null}
             <div className="flex flex-wrap items-center gap-2.5">
               {promoteSuggestion ? (
-                <PromoteToFocusAreaButton
-                  source="review"
-                  sourceId={reviewId}
-                  playerId={playerId}
-                  suggestedTitle={promoteSuggestion.title}
-                  suggestedDescription={promoteSuggestion.description}
-                  suggestedAreaType={promoteSuggestion.areaType}
-                  reviewContext={courseName || undefined}
-                />
+                <Button variant="secondary" size="sm" onClick={() => setFocusAreaModalOpen(true)}>
+                  {isCoachViewer ? 'Prescribe focus area' : 'Add focus area'}
+                </Button>
               ) : null}
               {!isCoachViewer ? (
                 <Button variant="secondary" size="sm" onClick={onShare} disabled={sharedWithCoach}>
@@ -264,6 +286,24 @@ export function FilmstripReview({
               ) : null}
             </div>
           </Surface>
+        ) : null}
+
+        {promoteSuggestion ? (
+          <FocusAreaModal
+            open={focusAreaModalOpen}
+            onOpenChange={setFocusAreaModalOpen}
+            mode={isCoachViewer ? 'coach' : 'player'}
+            players={[{ id: playerId, name: playerName || 'This player' }]}
+            playerStats={{}}
+            playerId={playerId}
+            initial={{
+              player_id: playerId,
+              area_type: promoteSuggestion.areaType,
+              title: promoteSuggestion.title,
+              description: promoteSuggestion.description,
+            }}
+            onSubmit={handlePromoteFocusArea}
+          />
         ) : null}
 
         <div className="min-w-0">

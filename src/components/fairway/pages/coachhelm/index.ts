@@ -119,19 +119,11 @@ export { FairwayEffectiveness } from './FairwayEffectiveness';
 export type { FairwayEffectivenessProps } from './FairwayEffectiveness';
 
 // ── Signals surface (phase 3 · coach "Signals" tab) ──────────────────────────
-// ONE component for alerts + insights + patterns, discriminated by signalSource
-// + defaultFilter. Insights+alerts share getInsightsForCoach; patterns come
-// from getTeamPatterns projected via the pure patternToInsightVocabulary adapter.
-// Renders the CoachHelmShell wrapper itself (active='signals'). Ports the
-// optimistic-removal-with-rollback shape (CoachAlertCenter) + the URL-as-state
-// filter contract (InsightsPageContent). All loaders/mutations UNCHANGED.
-export { FairwayCoachHelmSignals } from './FairwayCoachHelmSignals';
-export type {
-  FairwayCoachHelmSignalsProps,
-  SignalsDefaultFilter,
-  SignalsView,
-  SignalGroupBy,
-} from './FairwayCoachHelmSignals';
+// The monolithic FairwayCoachHelmSignals (alerts/insights/patterns discriminated
+// union) was deleted 2026-07-22 (dead code purge) — all three routes are
+// permanent-redirect shims onto the Signals drill of TriageDesk, which is fed
+// by SignalQueue/SignalDossier instead. SignalsToolbar/ScanTeamControl/the
+// patternToInsightVocabulary adapter below remain live, reused elsewhere.
 export { SignalsToolbar } from './signals/SignalsToolbar';
 export type {
   SignalsToolbarProps,

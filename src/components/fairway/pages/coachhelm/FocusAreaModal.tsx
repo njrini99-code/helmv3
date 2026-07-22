@@ -7,7 +7,7 @@
  * One modal, two surfaces:
  *   • mode='coach'  → PlayersGridView. Picks a player, PRESCRIBES a focus area
  *     (the server defaults a coach-created area to 'proposed' → the player
- *     accepts before the window starts). Button: "Prescribe to player".
+ *     accepts before the window starts). Button: "Prescribe focus area".
  *   • mode='player' → FairwayMyDevelopment. The player is fixed (no picker) and
  *     the area is created 'active' immediately. Button: "Add focus area".
  *
@@ -53,6 +53,7 @@ import {
   NumberField,
 } from '@/components/fairway/forms';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { PracticeRxForInsight } from './PracticeRxForInsight';
 
 const AREA_OPTIONS = AREA_TYPES.map((a) => ({ value: a.value, label: a.label }));
 
@@ -127,6 +128,18 @@ export interface FocusAreaModalProps {
   playerId?: string;
   /** Edit pre-fill. */
   initial?: FocusAreaModalInitial;
+  /**
+   * The insight this prescription originated from (the triage "Prescribe"
+   * flow — see triage/PromoteToFocusAreaButton.tsx). When present, a compact
+   * read-only "Practice Rx" preview (drill names, rank order) renders inside
+   * the modal so the coach/player can see what practice this prescription
+   * already carries before confirming. Purely informational: reuses
+   * `PracticeRxForInsight`'s existing self-fetch + honest-empty contract
+   * verbatim — no new write path, no schema change. Omitted for the other
+   * create surfaces (PlayersGridView, DevelopmentDrill), which have no
+   * source insight.
+   */
+  sourceInsightId?: string | null;
   /** Persist. Returns success so the modal can toast + close. */
   onSubmit: (payload: FocusAreaModalSubmit) => Promise<{ success: boolean; error?: string }>;
 }
@@ -190,6 +203,7 @@ export function FocusAreaModal({
   playerStats,
   playerId,
   initial,
+  sourceInsightId = null,
   onSubmit,
 }: FocusAreaModalProps) {
   const [form, setForm] = React.useState<FocusAreaForm>(() =>
@@ -398,7 +412,7 @@ export function FocusAreaModal({
   const ctaLabel = editing
     ? 'Save changes'
     : mode === 'coach'
-      ? 'Prescribe to player'
+      ? 'Prescribe focus area'
       : 'Add focus area';
 
   return (
@@ -516,6 +530,19 @@ export function FocusAreaModal({
             </FormField>
           </FormSection>
           </div>
+
+          {/* Practice Rx preview — read-only, no new write path. Only present
+              when this prescription originates from an insight that carries
+              attached drills; self-fetches + honest-empties via the same
+              contract every other Practice Rx surface uses. Guarded on
+              `open` (not just `sourceInsightId`) so a closed-but-forceMounted
+              modal never fires the drills fetch. */}
+          {sourceInsightId ? (
+            <PracticeRxForInsight
+              insightId={open ? sourceInsightId : null}
+              variant="sheet"
+            />
+          ) : null}
 
           {/* Measurable target — catalog-driven picker with real player values */}
           <FormSection
