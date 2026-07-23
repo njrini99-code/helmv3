@@ -6,7 +6,7 @@
  * cue of which team they're viewing: the toggle's active segment, a faint top
  * wash, and a 2px top-bar underline all adopt the active team's accent.
  *
- * Men's = the locked helm green; Women's = a refined violet (tokens in
+ * Men's = the locked helm green; Women's = a warm rosewood (tokens in
  * design-tokens.css). The accent is intentionally scoped to these few
  * affordances — the rest of the UI stays green-forward.
  */

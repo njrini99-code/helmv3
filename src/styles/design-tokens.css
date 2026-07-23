@@ -39,7 +39,12 @@
           gradient app-wide). The wash derives a low-alpha tint from these via
           color-mix at the consumer. ---- */
   --fw-color-team-mens:   var(--fw-color-accent-500);
-  --fw-color-team-womens: oklch(0.554 0.213 293);
+  /* Warm rosewood — a refined clay-rose that reads clearly against the helm
+     green (and against baseball's terracotta), staying on the brand's warm
+     axis rather than the old electric violet. One value serves light + dark:
+     at L0.575 it lifts off both the cream pill and the dark toasted-walnut
+     pill, and carries cream (text-on-accent) copy at AA. */
+  --fw-color-team-womens: oklch(0.575 0.125 16);
   --fw-color-accent-600: oklch(0.567 0.142 149.6); /* hover / pressed */
   --fw-color-accent-700: oklch(0.488 0.124 150);
   --fw-color-accent-800: oklch(0.415 0.103 150);

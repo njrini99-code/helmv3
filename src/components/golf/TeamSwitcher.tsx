@@ -10,8 +10,8 @@
  *   1. PILL TOGGLE — when the coach staffs exactly 2 teams with distinct
  *      genders (the classic men's/women's program). A rounded-full segmented
  *      pill: the active segment is filled with the TEAM ACCENT (men's = helm
- *      green, women's = violet) so the colour itself signals which team you're
- *      viewing; inactive is transparent warm-500. 44px tap targets.
+ *      green, women's = warm rosewood) so the colour itself signals which team
+ *      you're viewing; inactive is transparent warm-500. 44px tap targets.
  *   2. DROPDOWN — fallback for >2 teams or missing/duplicate genders. A
  *      Radix DropdownMenu listing each team.
  *
