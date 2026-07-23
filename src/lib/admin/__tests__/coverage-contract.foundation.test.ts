@@ -300,6 +300,9 @@ describe('global tripwire', () => {
     // getNotificationsUnreadCount, markNotificationRead, markAllNotificationsRead
     // in src/app/golf/actions/unified-notifications.ts — the notifications
     // wave's bounded, withAdminObserved-wrapped server actions.
-    expect(total).toBe(431);
+    // 432 as of the class-schedule screenshot import (+1):
+    // extractClassesFromScheduleImage in src/app/golf/actions/schedule-image.ts
+    // — the vision-extraction action, withAdminObserved-wrapped.
+    expect(total).toBe(432);
   });
 });

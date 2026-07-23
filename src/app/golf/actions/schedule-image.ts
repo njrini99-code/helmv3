@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerException } from '@/lib/server-error-logger';
 import {
   extractScheduleFromImage,
@@ -36,7 +37,7 @@ const MAX_TOTAL_BASE64_CHARS = 16 * 1024 * 1024; // ~12MB of image data
  * `images` is usually a single image; a tall scrolling capture arrives as
  * sequential overlapping slices (the model is told to merge them).
  */
-export async function extractClassesFromScheduleImage(
+async function extractClassesFromScheduleImageImpl(
   images: ScheduleImageInput[],
 ): Promise<ScheduleImageResult> {
   const supabase = await createClient();
@@ -102,4 +103,20 @@ export async function extractClassesFromScheduleImage(
         "Couldn't read this image right now. Please try again in a moment, or use the Paste Text option.",
     };
   }
+}
+
+// Helm Bridge observability wrapper (foundation coverage contract — every
+// non-CRM golf action is withAdminObserved-wrapped with its FeatureKey). The
+// impl above already returns friendly errors (and logs swallowed ones via
+// logServerException); this wrapper adds the standard action-level trace.
+const observedExtractClassesFromScheduleImage = withAdminObserved(
+  'extractClassesFromScheduleImage',
+  { sport: 'golf', feature: 'academics_classes', featureArea: 'classes' },
+  extractClassesFromScheduleImageImpl,
+);
+
+export async function extractClassesFromScheduleImage(
+  images: ScheduleImageInput[],
+): Promise<ScheduleImageResult> {
+  return observedExtractClassesFromScheduleImage(images);
 }
