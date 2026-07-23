@@ -79,7 +79,11 @@ import {
   IconCheck,
   IconRefresh,
   IconRuler,
+  IconSun,
+  IconMoon,
+  IconMonitor,
 } from '@/components/icons';
+import { useGolfTheme, type GolfTheme } from '@/lib/golf/theme';
 
 import {
   ViewHeader,
@@ -94,6 +98,19 @@ import {
 } from '@/components/fairway';
 
 const EM_DASH = '—';
+
+/**
+ * Recruiting-only notification categories that GolfHelm never emits. The shared
+ * DELIVERY_NOTIFICATION_GROUPS list carries `pipeline` (recruiting pipeline) and
+ * `profile_views` (recruit profile views) for the baseball recruiting product;
+ * surfacing them here gave golf users toggles that persist a preference nothing
+ * golf ever fires. Filtered out of the golf notifications panel (presentation
+ * only — the delivery-gate keys + defaults are untouched).
+ */
+const GOLF_HIDDEN_NOTIFICATION_IDS: ReadonlySet<string> = new Set(['pipeline', 'profile_views']);
+const GOLF_NOTIFICATION_GROUPS = DELIVERY_NOTIFICATION_GROUPS.filter(
+  (g) => !GOLF_HIDDEN_NOTIFICATION_IDS.has(g.id),
+);
 
 /* ── unsaved-changes plumbing (P379 dirty-tracking · P380 leave guard) ──────── */
 
@@ -1088,14 +1105,64 @@ function OptionTile({
   );
 }
 
+/**
+ * A premium theme tile — icon over label, active = accent border + wash. The
+ * whole appearance/theme system is token-driven, so the tile styling itself
+ * adapts to light/dark automatically (accent-50/accent-500 are themed).
+ */
+function ThemeTile({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'h-auto min-h-[76px] flex-col items-center justify-center gap-2 rounded-fw-sm border p-3 font-normal',
+        'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
+        active
+          ? 'border-accent-500 bg-accent-50 text-accent-700 hover:bg-accent-50'
+          : 'border-border-subtle text-text-secondary hover:border-border-strong',
+      )}
+    >
+      <span aria-hidden className={active ? 'text-accent-600' : 'text-text-tertiary'}>
+        {icon}
+      </span>
+      <span className="font-fw-sans text-body-sm font-medium text-text-primary">{label}</span>
+    </Button>
+  );
+}
+
+const THEME_TILES: Array<{ value: GolfTheme; label: string; icon: React.ReactNode }> = [
+  { value: 'light', label: 'Light', icon: <IconSun size={20} /> },
+  { value: 'dark', label: 'Dark', icon: <IconMoon size={20} /> },
+  { value: 'system', label: 'System', icon: <IconMonitor size={20} /> },
+];
+
 function AppearancePanel() {
   const { displayDensity, dateFormat, showAnimations, scoreDisplay, updatePreferences } =
     useAppearancePreferences();
+  const { theme, setTheme } = useGolfTheme();
   // P384: signal that this panel auto-saves (no Save button) and flash "Saved"
   // after each instant commit.
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const update: typeof updatePreferences = (patch) => {
     updatePreferences(patch);
+    setSavedAt(Date.now());
+  };
+  const chooseTheme = (next: GolfTheme) => {
+    void triggerHaptic('light');
+    setTheme(next);
     setSavedAt(Date.now());
   };
 
@@ -1110,6 +1177,28 @@ function AppearancePanel() {
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="space-y-5">
+        {/* Theme — the most prominent appearance choice. System follows the OS
+            light/dark setting live. */}
+        <div>
+          <FieldLabel>Theme</FieldLabel>
+          <div className="grid grid-cols-3 gap-2">
+            {THEME_TILES.map(({ value, label, icon }) => (
+              <ThemeTile
+                key={value}
+                active={theme === value}
+                onClick={() => chooseTheme(value)}
+                icon={icon}
+                label={label}
+              />
+            ))}
+          </div>
+          <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+            {theme === 'system'
+              ? 'Matches your device’s light or dark setting automatically.'
+              : `Always ${theme}, on this device.`}
+          </p>
+        </div>
+
         <div>
           <FieldLabel>Display density</FieldLabel>
           <div className="grid grid-cols-2 gap-2">
@@ -1371,7 +1460,7 @@ function NotificationsPanel() {
 
         {/* Per-category rows */}
         <ul className="divide-y divide-border-subtle">
-          {DELIVERY_NOTIFICATION_GROUPS.map((group) => {
+          {GOLF_NOTIFICATION_GROUPS.map((group) => {
             const silenced = prefs.quiet_mode && !group.quietExempt;
             return (
               <li
