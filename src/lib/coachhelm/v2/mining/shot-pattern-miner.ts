@@ -77,6 +77,43 @@ export function isTeeBand(label: string): boolean {
   return label.startsWith('Driver');
 }
 
+/**
+ * Retries a Postgres write once or twice on a detected deadlock (40P01),
+ * with jittered backoff, so a transient lock collision doesn't bubble up
+ * as a hard failure. Mirrors the supersede retry in
+ * `pattern-miner.ts`'s `savePatterns` (same table, same failure mode):
+ * `golf_patterns_v2` is written concurrently by the coachhelm-safety-net,
+ * coachhelm-validation, coachhelm-calibration, and coachhelm-roster-sweep
+ * crons AND by this miner's own upsert, so two writers landing in the same
+ * instant can deadlock each other. The upsert is idempotent (deterministic
+ * row ids via `deterministicShotPatternId`), so re-running it after a
+ * deadlock is always safe.
+ *
+ * Any error other than 40P01 (or the final attempt) is returned as-is —
+ * this only absorbs the specific retryable failure mode, never masks a
+ * real data/permission error.
+ */
+export async function upsertWithDeadlockRetry<T>(
+  attempt: () => Promise<{ data: T | null; error: { code?: string; message?: string } | null }>,
+  retries = 2,
+): Promise<{ data: T | null; error: { code?: string; message?: string } | null }> {
+  let result: { data: T | null; error: { code?: string; message?: string } | null } = {
+    data: null,
+    error: null,
+  };
+  for (let i = 0; i <= retries; i++) {
+    if (i > 0) {
+      // Jitter decorrelates retries from the concurrent writer we deadlocked
+      // with — fixed delays would just re-collide in lock-step.
+      const backoff = 200 * i + Math.floor(Math.random() * 150);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+    result = await attempt();
+    if (!result.error || result.error.code !== '40P01') return result;
+  }
+  return result;
+}
+
 export interface DistanceControlInput {
   /** avg distance_to_hole_after in yards. */
   avgProximityYds: number;
@@ -161,8 +198,18 @@ export class ShotPatternMiner {
 
   /**
    * Main entry point - analyzes all shots and returns patterns
+   *
+   * @param options.persistPatterns - Whether to upsert the mined patterns
+   *   into `golf_patterns_v2` as a side effect (default `true`, matching
+   *   the pre-existing behavior for crons and post-round triggers). Pass
+   *   `false` for read-only callers (e.g. a dashboard page load) so
+   *   analysis never has a write on its critical path — see the
+   *   `persistPatterns` doc on `AnalysisOptions` in `../types.ts`.
    */
-  async analyzeShotPatterns(): Promise<ShotPatternAnalysis | null> {
+  async analyzeShotPatterns(
+    options: { persistPatterns?: boolean } = {},
+  ): Promise<ShotPatternAnalysis | null> {
+    const { persistPatterns = true } = options;
     await this.loadShots();
 
     if (this.shots.length < MIN_SAMPLE_SIZE * 3) {
@@ -193,8 +240,12 @@ export class ShotPatternMiner {
       primaryStrength,
     };
 
-    // Save patterns to database
-    await this.savePatterns(patterns);
+    // Save patterns to database — skipped entirely for read-only callers
+    // (persistPatterns: false) so a dashboard page load never has a write
+    // on its critical path.
+    if (persistPatterns) {
+      await this.savePatterns(patterns);
+    }
 
     return analysis;
   }
@@ -857,7 +908,14 @@ export class ShotPatternMiner {
 
     if (rows.length === 0) return;
 
-    const { error } = await table.upsert(rows, { onConflict: 'id' });
+    // Wrapped with retry-on-deadlock: this upsert races the
+    // coachhelm-safety-net / coachhelm-validation / coachhelm-calibration /
+    // coachhelm-roster-sweep crons (and any other analyzePlayer caller with
+    // persistPatterns left at its default true) writing the same
+    // `golf_patterns_v2` rows. See `upsertWithDeadlockRetry` above.
+    const { error } = await upsertWithDeadlockRetry(() =>
+      table.upsert(rows, { onConflict: 'id' }),
+    );
 
     if (error) {
       throw new Error(`Failed to save CoachHelm shot patterns: ${error.message}`);

@@ -959,24 +959,31 @@ async function createFocusAreaFromReviewImpl(
   // promoting their own review needs no consent step (active immediately).
   const isCoachPromoting = access.reason === 'coach';
   const nowIso = new Date().toISOString();
-  const { data: row, error } = await supabase
-    .from('golf_player_focus_areas')
-    .insert({
-      player_id: args.playerId,
-      team_id: teamId,
-      coach_id: coachId,
-      area_type: args.areaType,
-      title: args.title,
-      description: args.description,
-      status: isCoachPromoting ? 'proposed' : 'active',
-      target_metric: args.targetMetric ?? null,
-      target_value: args.targetValue ?? null,
-      from_review_id: args.reviewId,
-      review_context: args.reviewContext ?? null,
-      started_at: isCoachPromoting ? null : nowIso,
-    })
-    .select('id')
-    .single();
+  const insertPayload = {
+    player_id: args.playerId,
+    team_id: teamId,
+    coach_id: coachId,
+    area_type: args.areaType,
+    title: args.title,
+    description: args.description,
+    status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
+    target_metric: args.targetMetric ?? null,
+    target_value: args.targetValue ?? null,
+    from_review_id: args.reviewId,
+    review_context: args.reviewContext ?? null,
+    started_at: isCoachPromoting ? null : nowIso,
+  };
+  // RLS on golf_player_focus_areas has a COACH-ONLY insert policy and NO player
+  // self-insert policy. A coach's write satisfies that policy via the scoped
+  // client. A PLAYER self-promoting (verifyPlayerAccess reason==='self', which
+  // already proved the authed user owns args.playerId) has no policy to satisfy,
+  // so route that write through the service-role admin client — the verified
+  // self-ownership above is the sole gate (mirrors createPlayerFocusAreaImpl).
+  // Without this, every player self-promote from Round Review was silently
+  // rejected by RLS (the "Add focus area" button did nothing).
+  const { data: row, error } = isCoachPromoting
+    ? await supabase.from('golf_player_focus_areas').insert(insertPayload).select('id').single()
+    : await fromUntyped(createAdminClient(), 'golf_player_focus_areas').insert(insertPayload).select('id').single();
 
   if (error || !row) {
     await logServerError(
@@ -1052,23 +1059,27 @@ async function createFocusAreaFromInsightV2Impl(
   // promoting their own insight needs no consent step (active immediately).
   const isCoachPromoting = access.reason === 'coach';
   const nowIso = new Date().toISOString();
-  const { data: row, error } = await supabase
-    .from('golf_player_focus_areas')
-    .insert({
-      player_id: args.playerId,
-      team_id: teamId,
-      coach_id: coachId,
-      area_type: args.areaType,
-      title: args.title,
-      description: args.description,
-      status: isCoachPromoting ? 'proposed' : 'active',
-      target_metric: args.targetMetric ?? null,
-      target_value: args.targetValue ?? null,
-      from_insight_id: args.insightId,
-      started_at: isCoachPromoting ? null : nowIso,
-    })
-    .select('id')
-    .single();
+  const insertPayload = {
+    player_id: args.playerId,
+    team_id: teamId,
+    coach_id: coachId,
+    area_type: args.areaType,
+    title: args.title,
+    description: args.description,
+    status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
+    target_metric: args.targetMetric ?? null,
+    target_value: args.targetValue ?? null,
+    from_insight_id: args.insightId,
+    started_at: isCoachPromoting ? null : nowIso,
+  };
+  // Same RLS gap as createFocusAreaFromReviewImpl: coach-only insert policy, no
+  // player self-insert policy. Player self-promote (verifyPlayerAccess
+  // reason==='self', ownership proven) routes through the admin client; coach
+  // stays on the scoped client. Without this, promoting your own CoachHelm/Hub
+  // insight to a focus area was silently rejected by RLS.
+  const { data: row, error } = isCoachPromoting
+    ? await supabase.from('golf_player_focus_areas').insert(insertPayload).select('id').single()
+    : await fromUntyped(createAdminClient(), 'golf_player_focus_areas').insert(insertPayload).select('id').single();
 
   if (error || !row) {
     await logServerError(
@@ -1192,6 +1203,17 @@ interface CreateFocusAreaFromInsightData {
   title: string;
   description: string | null;
   insight_type: string;
+  /**
+   * Optional explicit area_type override. When the caller has already
+   * resolved a category — e.g. the coach edited FocusAreaModal's Category
+   * picker before confirming a "Prescribe focus area" click (see
+   * triage/PromoteToFocusAreaButton.tsx) — trust it verbatim instead of the
+   * insight_type/metadata-derived guess below. An explicit coach choice must
+   * win outright: silently overriding it with a server guess would break
+   * "what you see in the modal is what saves." Omitted (every pre-existing
+   * caller) keeps the original derived behavior unchanged.
+   */
+  area_type?: string;
   target_metric?: string | null;
   current_value?: number | null;
   target_value?: number | null;
@@ -1245,13 +1267,17 @@ async function createFocusAreaFromInsightImpl(
     return { success: false, error: 'Failed to fetch insight details' };
   }
 
-  // Determine the area type based on insight type and metadata
-  const baseAreaType = mapInsightTypeToAreaType(data.insight_type);
-  const areaType = refineAreaTypeFromMetadata(
-    baseAreaType,
-    data.insight_type,
-    insight?.metadata as Record<string, unknown> | null
-  );
+  // Determine the area type based on insight type and metadata — unless the
+  // caller already resolved one explicitly (see `area_type` doc above). An
+  // explicit choice wins outright: overriding it with a metadata-derived
+  // guess would silently discard what the coach just confirmed in the modal.
+  const areaType = data.area_type
+    ? data.area_type
+    : refineAreaTypeFromMetadata(
+        mapInsightTypeToAreaType(data.insight_type),
+        data.insight_type,
+        insight?.metadata as Record<string, unknown> | null
+      );
 
   // Build description - combine provided description with recommendation if available
   let finalDescription = data.description || '';
@@ -1412,6 +1438,12 @@ async function recordFocusAreaOutcomeImpl(
       status: 'completed',
       completed_at: nowIso,
       updated_at: nowIso,
+      // Persist the verdict on the focus area ITSELF (column added by migration
+      // 20260621140000 for exactly this) — previously it was written only to the
+      // source insight, so a focus area with no from_insight_id silently lost its
+      // Improved/No-change/Worsened outcome. Now the Dev-Plans outcome tally can
+      // read it directly, insight-join only as a legacy fallback.
+      outcome_status: outcome,
     })
     .eq('id', focusAreaId)
     .in('status', ACTIONABLE_FOCUS_AREA_STATUSES)
@@ -1437,7 +1469,7 @@ async function recordFocusAreaOutcomeImpl(
     revalidatePath('/golf/dashboard/intelligence');
     return {
       success: true,
-      notice: 'Outcome recorded. This focus area had no source insight to credit.',
+      notice: 'Outcome recorded on this focus area. (No source insight to also credit.)',
     };
   }
 

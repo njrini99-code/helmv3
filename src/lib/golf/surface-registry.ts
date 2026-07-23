@@ -152,7 +152,12 @@ export const GOLF_SURFACES: readonly GolfSurfaceEntry[] = [
   // Legacy — permanent redirect shim, intentionally retired (not orphaned).
   // Never rendered in generated nav UI.
   // ---------------------------------------------------------------------
-  { id: 'my-insights', canonicalName: 'My Insights', href: '/golf/dashboard/my-insights', role: 'player', group: 'page', legacy: true, hidden: true },
+  // href points at the CANONICAL destination directly (not the /my-insights
+  // shim itself) — same convention as every other legacy entry above. The
+  // shim route still exists (now belt-and-braces behind a next.config.mjs
+  // redirect, see hub/page.tsx's comment) but nothing in this registry should
+  // hand a consumer a URL that just bounces again.
+  { id: 'my-insights', canonicalName: 'My Insights', href: '/golf/dashboard/coachhelm', role: 'player', group: 'page', legacy: true, hidden: true },
 ] as const;
 
 const SURFACE_BY_ID: ReadonlyMap<string, GolfSurfaceEntry> = new Map(

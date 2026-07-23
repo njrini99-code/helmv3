@@ -60,16 +60,28 @@ import 'server-only';
  * never reflected the rounds the player actually went out and played.
  *
  * This driver closes that gap, in the SAME spirit as the goal-progress driver
- * above. For each ACTIVE focus area with a windowable measurable metric it:
- *   1. measures the metric over the area's OWN window — rounds played since it
- *      started (started_at) — NOT the diluted all-time average, and on the SAME
- *      scale as the baseline captured at creation (both come from the per-round
+ * above. For each ACTIVE focus area it tries TWO sources, in order:
+ *   1. (legacy-catalog path) if `target_metric` resolves to one of the 14
+ *      windowable keys in `focus-areas/catalog.ts` (METRIC_CATALOG), measure it
+ *      over the area's OWN window — rounds played since it started (started_at)
+ *      — NOT the diluted all-time average, and on the SAME scale as the
+ *      baseline captured at creation (both come from the per-round
  *      golf_round_stats_cache written by the gender-aware recalculate RPC),
- *   2. writes the windowed value to `current_value` so the bar advances.
+ *      then write the windowed value to `current_value`.
+ *   2. (standing fallback — P0 fix) otherwise, if `target_metric` is a
+ *      recognized id in the v3 metric registry (`isMetricId`,
+ *      `@/lib/coachhelm/v3/metrics/registry`), read the player's LIVE
+ *      `golf_player_standing` value for it (the SAME source Goals already use
+ *      via `loadPlayerStandingMap`/`loadPlayersStandingMap`) and write that to
+ *      `current_value`. This is the namespace the primary insight/standing
+ *      -prescribed "create focus area" flow actually writes into
+ *      `target_metric` — before this fallback those areas matched NEITHER
+ *      source and `evaluateAreas` silently no-op'd them forever.
  *
- * HONESTY: metrics with no clean per-round source (proximity, up&down, 1/3-putt
- * %, per-par averages) are NOT windowable — {@link aggregateFocusMetric} returns
- * null and we SKIP the write, leaving `current_value` as last set rather than
+ * HONESTY: metrics recognized by neither source (custom/free-text, or a
+ * legacy-catalog metric with no clean per-round window like proximity, up&down,
+ * 1/3-putt %, per-par averages — {@link aggregateFocusMetric} returns null for
+ * those) SKIP the write, leaving `current_value` as last set rather than
  * fabricating a number. Areas still in 'proposed' (awaiting player acceptance)
  * are ignored — their window hasn't started. We never auto-complete: hitting the
  * target is the player's/coach's call, so only `current_value` is touched.
@@ -99,7 +111,7 @@ import {
 } from '@/lib/coachhelm/v3/goals/window-metric';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
-import type { MetricDirection, MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { isMetricId, type MetricDirection, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import {
   aggregateFocusMetric,
   isWindowableFocusMetric,
@@ -318,14 +330,15 @@ export async function runGoalProgressForPlayers(playerIds: string[]): Promise<Ba
 // ============================================================================
 
 export interface FocusAreaProgressSummary {
-  /** Active focus areas examined (windowable, with a target + start). */
+  /** Active focus areas examined (legacy-catalog windowable, OR a recognized
+   *  v3-registry metric id tracked via the golf_player_standing fallback). */
   evaluated: number;
   /** Areas whose current_value was written this pass. */
   updated: number;
 }
 
 export interface BatchFocusAreaProgressSummary extends FocusAreaProgressSummary {
-  /** Distinct players that had ≥1 windowable active focus area. */
+  /** Distinct players that had ≥1 trackable (windowable or standing-fallback) active focus area. */
   players_with_areas: number;
 }
 
@@ -402,10 +415,11 @@ async function loadWindowRoundsByPlayer(
 }
 
 /**
- * Core: window each area against its player's rounds-since-start and persist the
- * new current_value. Skips non-windowable metrics, areas with no target window
- * start, and any area whose window yields no value (no fabrication) or an
- * unchanged value (no-op write).
+ * Core: advance each area's `current_value` from whichever of the two sources
+ * (see the FOCUS-AREA PROGRESS header doc) recognizes its `target_metric`, and
+ * persist the result. Skips areas recognized by neither source, areas with no
+ * target window start (legacy path only), and any area whose source yields no
+ * value (no fabrication) or an unchanged value (no-op write).
  */
 async function evaluateAreas(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -416,44 +430,82 @@ async function evaluateAreas(
   const players = new Set<string>();
   let updated = 0;
 
-  // Only areas we can actually window: have a start + a recognized windowable metric.
+  // Path 1 (legacy catalog): have a start + a key in the 14-metric windowable
+  // catalog — unchanged behavior.
   const windowable = areas.filter(
     (a) => a.started_at && isWindowableFocusMetric(a.target_metric),
   );
-  if (windowable.length === 0) {
+
+  // Path 2 (P0 fix — standing fallback): target_metric is NOT one of the 14
+  // legacy-catalog windowable keys, but IS a recognized v3-registry metric id
+  // (the namespace the primary insight/standing-prescribed create-focus-area
+  // flow actually writes). Read the player's live golf_player_standing value
+  // instead of silently no-oping forever.
+  const standingFallback = areas.filter(
+    (a) =>
+      !isWindowableFocusMetric(a.target_metric) &&
+      !!a.target_metric &&
+      isMetricId(a.target_metric),
+  );
+
+  if (windowable.length === 0 && standingFallback.length === 0) {
     return { evaluated: 0, updated, players };
   }
 
   windowable.forEach((a) => players.add(a.player_id));
+  standingFallback.forEach((a) => players.add(a.player_id));
 
-  // Earliest start across the batch → one rounds load covers every window.
-  const earliest = windowable
-    .map((a) => a.started_at!.slice(0, 10))
-    .reduce((min, d) => (d < min ? d : min));
+  if (windowable.length > 0) {
+    // Earliest start across the batch → one rounds load covers every window.
+    const earliest = windowable
+      .map((a) => a.started_at!.slice(0, 10))
+      .reduce((min, d) => (d < min ? d : min));
 
-  const roundsByPlayer = await loadWindowRoundsByPlayer(
-    supabase,
-    [...players],
-    earliest,
-  );
+    const roundsByPlayer = await loadWindowRoundsByPlayer(
+      supabase,
+      [...new Set(windowable.map((a) => a.player_id))],
+      earliest,
+    );
 
-  for (const area of windowable) {
-    const startDate = area.started_at!.slice(0, 10);
-    const playerRounds = roundsByPlayer.get(area.player_id) ?? [];
-    const inWindow = playerRounds.filter((r) => r.round_date >= startDate);
-    const raw = aggregateFocusMetric(area.target_metric, inWindow);
-    if (raw == null) continue; // no usable rounds yet → leave current_value as-is
+    for (const area of windowable) {
+      const startDate = area.started_at!.slice(0, 10);
+      const playerRounds = roundsByPlayer.get(area.player_id) ?? [];
+      const inWindow = playerRounds.filter((r) => r.round_date >= startDate);
+      const raw = aggregateFocusMetric(area.target_metric, inWindow);
+      if (raw == null) continue; // no usable rounds yet → leave current_value as-is
 
-    const next = roundToMetric(area.target_metric, raw);
-    if (area.current_value != null && area.current_value === next) continue; // no-op
+      const next = roundToMetric(area.target_metric, raw);
+      if (area.current_value != null && area.current_value === next) continue; // no-op
 
-    const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
-      .update({ current_value: next, updated_at: nowIso }) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
-      .eq('id', area.id);
-    if (!error) updated += 1;
+      const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
+        .update({ current_value: next, updated_at: nowIso }) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
+        .eq('id', area.id);
+      if (!error) updated += 1;
+    }
   }
 
-  return { evaluated: windowable.length, updated, players };
+  if (standingFallback.length > 0) {
+    const standingByPlayer = await loadPlayersStandingMap([
+      ...new Set(standingFallback.map((a) => a.player_id)),
+    ]);
+
+    for (const area of standingFallback) {
+      const metricId = area.target_metric;
+      if (!metricId || !isMetricId(metricId)) continue; // re-narrow (defensive; already filtered)
+      const standing = standingByPlayer.get(area.player_id)?.get(metricId);
+      if (!standing) continue; // no standing reading yet → leave current_value as-is (honest)
+
+      const next = roundToMetric(metricId, standing.player_value);
+      if (area.current_value != null && area.current_value === next) continue; // no-op
+
+      const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
+        .update({ current_value: next, updated_at: nowIso }) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
+        .eq('id', area.id);
+      if (!error) updated += 1;
+    }
+  }
+
+  return { evaluated: windowable.length + standingFallback.length, updated, players };
 }
 
 /**

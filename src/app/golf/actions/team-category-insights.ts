@@ -300,6 +300,16 @@ export interface TeamOverviewResult {
   error?: string;
 }
 
+/**
+ * `getTeamOverview`'s shot-analysis payload — topWeaknesses/deadZones/
+ * yardageCurve for the team's roster. Exported so intelligence UI consumers
+ * (CoachIntelligenceHome → TriageDesk) can thread it straight through without
+ * re-declaring the shape. Data-completeness audit 2026-07-23: this payload
+ * was computed fresh on every `/intelligence` load and discarded down to
+ * `playerCount` — nothing rendered `topWeaknesses`/`deadZones`.
+ */
+export type TeamShotAnalysis = NonNullable<TeamOverviewResult['data']>['teamShotAnalysis'];
+
 // ============================================================================
 // GET TEAM OVERVIEW
 // ============================================================================

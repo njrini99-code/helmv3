@@ -143,65 +143,64 @@ import type { Player, Coach, Organization } from '@/lib/types';
 
 ## Design System
 
-> Source of truth: `src/app/globals.css:600-712` (glass surface classes)
-> and `tailwind.config.ts` (color/type/radius tokens). This section is a
-> summary for speed — if it and the config ever disagree, the config wins.
+**Fairway is the only dashboard design system.** `src/lib/redesign/flag.ts`
+`isRedesignEnabled()` is hardcoded `return true` (Wave W1, 2026-07-09) — on
+in every environment including prod. The old GolfDashboardShell/GolfSidebar
+fork and its `glass-standard`/`cream-100`/`warm-*` visual language are
+retired under `src/app/golf/(dashboard)/` — don't reintroduce them.
 
-### Colors
-```
-Primary:    primary-600 #16A34A (brand green) - buttons, accents, active states
-Background: cream-100 #F7F5F2 (California linen) - primary page backdrop
-Glass:      .glass-standard / .glass-subtle / .glass-prominent (cream-derived — NOT white)
-Text:       warm-900 #1c1917 (primary), warm-500 #78716c (secondary)
-Status:     success #16A34A, destructive #FF3B30, warning #F59E0B, info #0EA5E9
-```
+> Source of truth: `src/styles/design-tokens.css` (`--fw-*` custom
+> properties) bridged into Tailwind via `tailwind.config.ts`
+> (`bg-canvas`/`bg-surface`/`text-text-primary`/`rounded-card`/
+> `shadow-soft` etc.). If this doc and the tokens disagree, tokens win.
 
-Only these color families are canonical: `primary-*` (brand green),
-`destructive` (#FF3B30), `warm-*` (neutrals), plus `cream-*` for surfaces.
-`helm-green-*`, `sf-green`, `emerald-*`, raw `green-*`, and `#DC2626` are
-deleted/banned — `helm/no-banned-color` (`eslint-rules/no-banned-color.mjs`)
-flags them at lint time.
+### Primitives (`src/components/fairway`)
+`Surface`/`Inset`/`Elevated` (`surfaces/`, THE card — `bg-surface` +
+`rounded-card` + border-subtle *or* `shadow-soft`, never both, no forced
+min-height) · `InstrumentPanel`/`Readout` (`instrument/`, dense metric
+displays) · `Segmented` (`controls/segmented.tsx`, THE tab-switcher —
+~15 call sites, style once here) · `ViewHeader` (`view-header/`) ·
+`EmptyState`/`InsufficientData` (`feedback/`, never hand-roll a raw
+"No X yet" line) · `InlineNotice` · `ModalShell`/`Sheet` (`overlays/`,
+the ONE modal / ONE slide-over) · `Skeleton` (`feedback/Skeleton.tsx` —
+`loading.tsx` must shape-match its page's real Fairway first paint;
+see `stats/loading.tsx` for the bar).
 
-### Glass Surfaces
+### Type roles + banned classes
+`font-fw-display`/`font-fw-sans`/`font-fw-mono` — Fraunces and General
+Sans were **deliberately removed**; display/sans now resolve to the
+system SF Pro stack, only `fw-mono` still loads a webfont (Fragment
+Mono). Banned in golf-dashboard surfaces: raw `red-*`/`amber-*`/
+`rose-*`/`violet-*`, `glass-*`, new `cream-*`/`warm-*`. **Legacy
+exception**: `src/components/ui/skeleton.tsx`
+(`GenericPageSkeleton`/`DetailPageSkeleton`/`FormPageSkeleton`) is still
+correctly used by non-golf routes (admin, auth, baseball, onboarding) —
+don't import it for new golf `loading.tsx` files.
 
-Three cream-derived tiers (not white — a plain white glass over the linen
-background reads as a washed-out gray card):
-
-```
-.glass-subtle     — large surfaces, filter panels, secondary UI
-.glass-standard   — cards, panels, metrics (most common)
-.glass-prominent  — navigation, modals, overlays
-```
-
-**Never use `bg-white/N` outside `src/components/ui`** —
-`helm/no-arbitrary-bg-white` (`eslint-rules/no-arbitrary-bg-white.mjs`)
-flags it. Use `.glass-standard`, `bg-cream-50`, or a token-backed
-`bg-surface-*` utility instead.
-
-### Key Patterns
-```typescript
-// Glass card
-"glass-standard border border-cream-400/40 rounded-2xl shadow-glass"
-// Hover
-"hover:shadow-card-hover transition-all duration-200"
-
-// Typography — canonical 9-step scale. Never text-[Npx] outside
-// src/components/ui (helm/no-arbitrary-text-px flags it):
-// text-display, text-h1, text-h2, text-h3, text-body-lg, text-body,
-// text-body-sm, text-caption, text-eyebrow
-
-// Radius — canonical scale (rounded-2xl is THE card radius):
-// rounded-sm 6px (tags/chips) · rounded-md 10px (buttons/inputs)
-// rounded-lg 12px (small cards) · rounded-xl 16px (cards)
-// rounded-2xl 20px (modals) · rounded-3xl 24px (hero plinths only)
-
-// Spacing: card p-6/p-8, gap-6 between cards
-```
+### Hard-won invariants
+- Never nest interactive children inside a `BentoCell` with `onOpen` —
+  the whole cell is one `<button>`; a nested button/link is invalid
+  HTML and a hydration-crash class.
+- CoachHelm motion: always `useReducedMotionGuard()`
+  (`src/lib/coachhelm/v3/motion.ts`) with initial-prop gating
+  (`initial={prefersReducedMotion ? false : {...}}`), never raw
+  `useReducedMotion()` (returns `null` pre-hydration → #418 mismatch).
+- Select/Combobox popups inside a `ModalShell` portal into the dialog;
+  z-index goes on the **Positioner**, not the Popup — the Popup is
+  `position: static` so z-index there does nothing, and options mount
+  in the DOM but paint invisibly below the dialog.
+- Escape closes popup-then-dialog, one level per keypress —
+  `ModalShell`'s `handleContentEscapeKeyDown` stops Radix's dialog-level
+  Escape from swallowing the open popup's own Escape.
+- Two z-index ladders, not interchangeable: `--fw-z-*` in
+  `design-tokens.css` (current) vs. a second ladder in
+  `src/styles/tokens.css` — a `z-modal` class doesn't reliably mean the
+  Fairway ladder's `--fw-z-modal`; check which token file backs it.
 
 ### Quality Bar
-Apple-grade premium polish:
-- Skeleton loaders (not spinners), helpful empty states, user-friendly errors
-- Subtle framer-motion animations, proper accessibility, server components by default
+Apple-grade premium polish: dense, even, honest empty states (no
+full-screen monolith cards on mobile), accessible, server components
+by default, reduced-motion-safe animation.
 
 ---
 
@@ -377,12 +376,12 @@ Approve and squash-merge.
   (W12/W20/W27/W33/W35) with room to spare. Local dev runs on
   `npx inngest-cli@latest dev`; production needs `INNGEST_EVENT_KEY` +
   `INNGEST_SIGNING_KEY` env vars. See `.env.example`.
-- **Mapbox** (maps) — token helper at `src/lib/mapbox/client.ts`,
-  React component at `src/components/maps/CourseMap.tsx`. Free tier:
-  50K web loads / 25K mobile MAU per month. Public token only —
-  restrict by URL in the Mapbox dashboard. Used for course maps in
-  Round Review (#23), Travel itineraries (#10), and recruiting
-  heat-maps.
+- **No Mapbox / no map provider** — there is no `src/lib/mapbox/` and no
+  `CourseMap` component in the repo. Round Review (#23) hole visuals are a
+  synthetic SVG shot-path reconstruction built from `golf_shots` data
+  (`HoleShotPath`, `src/components/golf/coachhelm/v3/HoleShotPath/`), not a
+  map. If a map provider is added later, document it here — don't assume
+  one exists.
 - **Sonner** (toasts), **cmdk** (command palette), **Number Flow**
   (animated stats) — already wired. Toaster lives in `src/app/layout.tsx`;
   command palettes at `src/components/CommandPalette.tsx` and

@@ -26,6 +26,8 @@ const DAYS = [
   { abbrev: 'W', label: 'Wed' },
   { abbrev: 'Th', label: 'Thu' },
   { abbrev: 'F', label: 'Fri' },
+  { abbrev: 'Sa', label: 'Sat' },
+  { abbrev: 'Su', label: 'Sun' },
 ];
 
 // Canonical brand green fallback when a parsed class has no assigned color.
@@ -83,7 +85,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
       const days = c.days.includes(day)
         ? c.days.filter(d => d !== day)
         : [...c.days, day].sort((a, b) => {
-            const order = ['M', 'T', 'W', 'Th', 'F'];
+            const order = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
             return order.indexOf(a) - order.indexOf(b);
           });
       return { ...c, days };

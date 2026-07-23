@@ -633,7 +633,7 @@ function CockpitView({
         description="As CoachHelm surfaces insights and predictions resolve, these instruments power up. Until outcomes are recorded, effectiveness reads as ‘awaiting signal,’ never 0%."
         action={
           <Button asChild rightIcon={<ArrowRight className="h-4 w-4" />}>
-            <Link href="/golf/dashboard/development">Set up player focus areas</Link>
+            <Link href="/golf/dashboard/intelligence?view=players">Set up player focus areas</Link>
           </Button>
         }
       />
@@ -816,7 +816,7 @@ function OutcomesInstrument({
             asChild
             rightIcon={<ArrowRight className="h-4 w-4" />}
           >
-            <Link href="/golf/dashboard/development">Record focus-area outcomes</Link>
+            <Link href="/golf/dashboard/intelligence?view=players">Record focus-area outcomes</Link>
           </Button>
         </div>
       </InstrumentPanel>
@@ -1332,7 +1332,7 @@ export function InsightEffectivenessSection({
                 asChild
                 rightIcon={<ArrowRight className="h-4 w-4" />}
               >
-                <Link href="/golf/dashboard/development">Go to Players to record outcomes</Link>
+                <Link href="/golf/dashboard/intelligence?view=players">Go to Players to record outcomes</Link>
               </Button>
             </div>
           </div>

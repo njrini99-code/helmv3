@@ -115,3 +115,53 @@ export function formatEventDateLabel(iso: string, timezone: string | null | unde
     day: 'numeric',
   }).format(date);
 }
+
+/**
+ * The {year, month, day} calendar fields of an ISO instant AS SEEN in
+ * `timezone` — computed via `Intl.DateTimeFormat`'s explicit `timeZone`, so
+ * the result never depends on the calling process's own ambient zone.
+ */
+export function getZonedDateParts(
+  iso: string,
+  timezone: string | null | undefined,
+): { year: number; month: number; day: number } {
+  const date = new Date(iso);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: getValidTimezone(timezone),
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+  return { year: get('year'), month: get('month'), day: get('day') };
+}
+
+/**
+ * The calendar-day "midnight" of an ISO instant, anchored to `timezone`, as a
+ * plain local `Date` (constructed via `new Date(year, month - 1, day)`).
+ *
+ * WHY a "local" Date and not a UTC one: every downstream consumer (date-fns
+ * `isSameDay` / `startOfDay` / `format('yyyy-MM-dd')` / `addDays`, etc.)
+ * reads a Date's calendar fields through its OWN process's local getters
+ * (`getFullYear`/`getMonth`/`getDate`). Those getters are the exact inverse
+ * of the `new Date(y, m, d)` constructor WITHIN THE SAME PROCESS, so once the
+ * (y, m, d) triple itself is derived deterministically (via the explicit
+ * `timeZone` above, not the process's own ambient zone), every date-fns call
+ * downstream reproduces that identical triple on server and client alike —
+ * even though the two processes disagree about what absolute instant that
+ * local Date object actually represents internally.
+ *
+ * ROOT CAUSE this guards against (calendar audit — React #418 on /calendar):
+ * the previous seed was `new Date(year, month, date)` built directly from
+ * `d.getFullYear()/d.getMonth()/d.getDate()` of an ISO-parsed instant — i.e.
+ * implicit-local. SSR (Vercel, UTC) and the browser (America/New_York) read
+ * DIFFERENT calendar fields for the same instant whenever that instant falls
+ * within the ~4-5h UTC/ET offset window straddling midnight (a serverNow of
+ * "10:30 PM ET" is already "the next day" in UTC), so `focusDate`/`nowRef`
+ * — and every event bucketed by day — could silently disagree between the
+ * server-rendered HTML and the first client render.
+ */
+export function zonedMidnight(iso: string, timezone: string | null | undefined): Date {
+  const { year, month, day } = getZonedDateParts(iso, timezone);
+  return new Date(year, month - 1, day);
+}

@@ -431,7 +431,10 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
         links: {
           fullStats: `/golf/dashboard/stats?player=${p.id}`,
           fingerprint: `/golf/dashboard/players/${p.id}/game`,
-          prescribe: `/golf/dashboard/development?player=${p.id}`,
+          // Canonical destination directly, not the /development redirect
+          // shim (React #310 legacy-link audit, 2026-07-22) — was a 2-hop
+          // bounce through next.config.mjs's now-belt-and-braces redirect.
+          prescribe: `/golf/dashboard/intelligence?view=players&player=${p.id}`,
         },
       },
     };

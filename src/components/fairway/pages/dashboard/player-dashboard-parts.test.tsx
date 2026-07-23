@@ -12,10 +12,14 @@
  * wrapper overrides every descendant `<svg>` to `overflow: visible`.
  * ========================================================================== */
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
-import { GenomeFingerprintTeaser } from './player-dashboard-parts';
-import type { StrokesGainedSnapshot } from '@/app/golf/actions/dashboard-data';
+import { GenomeFingerprintTeaser, TodayCard } from './player-dashboard-parts';
+import type {
+  StrokesGainedSnapshot,
+  TodayEvent,
+  ActionItem,
+} from '@/app/golf/actions/dashboard-data';
 
 const FULL_SG: StrokesGainedSnapshot = {
   sg_total: 1.2,
@@ -33,5 +37,68 @@ describe('GenomeFingerprintTeaser — radar axis labels are never clipped by the
       el.className.includes('[&_svg]:overflow-visible'),
     );
     expect(wrapper).toBeDefined();
+  });
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * TodayCard — Wave 3 player-home premium pass (Nick's flagged element)
+ * ----------------------------------------------------------------------------
+ * The old "What needs you" subtitle + populated "N thing(s) need(s) you"
+ * preview row (a hero-style restatement of the SAME count the Action center
+ * section already shows in full below it) is gone. The card's body now
+ * always shows the player's real today content — next event + lead task —
+ * regardless of whether a Hub feed (`hubSummary`) is present; `hubSummary`
+ * only gates the footer's "See details" link.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+const EVENT: TodayEvent = {
+  id: 'e1',
+  title: 'Team practice',
+  event_type: 'practice',
+  start_time: '2026-07-22T14:00:00.000Z',
+  end_time: null,
+  location: 'Range',
+};
+
+const TASK: ActionItem = {
+  id: 't1',
+  type: 'task',
+  title: 'Submit round',
+  date: '2026-07-22',
+  overdue: false,
+};
+
+describe('TodayCard — no restated "N thing(s) need(s) you" preview row', () => {
+  it('renders the real next event + lead task even when a hubSummary is present', () => {
+    render(
+      <TodayCard
+        events={[EVENT]}
+        actionItems={[TASK]}
+        hubSummary={{ visible: true, count: 3 }}
+      />,
+    );
+
+    expect(screen.getByText('Team practice')).toBeInTheDocument();
+    expect(screen.getByText('Submit round')).toBeInTheDocument();
+    // The old preview copy must never render again, in any form.
+    expect(screen.queryByText(/things? needs? you/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/what needs you/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the honest "Nothing scheduled" empty state when there is no local today content, even with a visible hubSummary', () => {
+    render(<TodayCard events={[]} actionItems={[]} hubSummary={{ visible: true, count: 2 }} />);
+
+    expect(screen.getByText('Nothing scheduled')).toBeInTheDocument();
+    expect(screen.queryByText(/things? needs? you/i)).not.toBeInTheDocument();
+  });
+
+  it('gates the "See details" CTA on hubSummary.visible, independent of local today content', () => {
+    render(<TodayCard events={[]} actionItems={[]} hubSummary={{ visible: true, count: 2 }} />);
+    expect(screen.getByRole('link', { name: /see details/i })).toBeInTheDocument();
+  });
+
+  it('renders no "See details" CTA when there is no hubSummary (teamless player)', () => {
+    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
+    expect(screen.queryByRole('link', { name: /see details/i })).not.toBeInTheDocument();
   });
 });

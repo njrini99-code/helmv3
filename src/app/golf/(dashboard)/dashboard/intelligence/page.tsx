@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { getTeamOverview } from '@/app/golf/actions/team-category-insights';
+import { getTeamOverview, getTeamCategoryInsights } from '@/app/golf/actions/team-category-insights';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { getSignalGroups } from '@/app/golf/actions/signal-groups';
 import {
@@ -126,6 +126,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     effectivenessResult,
     performanceResult,
     patternResult,
+    categoryInsightsResult,
   ] = await Promise.all([
     getTeamOverview(teamId),
     getAlertCounts(coach.id),
@@ -136,6 +137,14 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     getInsightEffectiveness(teamId),
     getPredictionPerformance(teamId),
     getPatternImpact(teamId),
+    // Team-wide "where is the team bleeding strokes" band (categories[] +
+    // teamHealth) — computed on every request already by
+    // getTeamCategoryInsights, previously never fetched by this page at all
+    // (a DISTINCT, richer action from `getTeamOverview` above: per-category
+    // team avg/trend/per-player breakdown/insights, not just the 5-number
+    // teamCategories rating used by the empty-roster gate). Additive read,
+    // same team-scoped RLS as every other fetch in this block.
+    getTeamCategoryInsights(teamId),
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
   const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
@@ -183,7 +192,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     playerIds.length > 0
       ? supabase
           .from('golf_player_stats_cache')
-          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round')
+          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction')
           .in('player_id', playerIds)
       : Promise.resolve({ data: [], error: null }),
     loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
@@ -237,10 +246,12 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       fairway_pct: row.driving_accuracy_percentage ?? null,
       gir_pct: row.gir_percentage ?? null,
       best_score: row.best_round ?? null,
-      // Trend computation (the canonical scoring-trend classifier) is
-      // omitted here — Team Stats (`/stats/team`) is this surface's linked
-      // full-fidelity roster view; honest null, never a fabricated trend.
-      recent_trend: null,
+      // `golf_player_stats_cache.trend_direction` is written by the same
+      // canonical trend classifier Team Stats/the Players roster read
+      // (CHECK constraint: 'improving' | 'stable' | 'declining') — pass it
+      // straight through rather than the old hard-coded null so the Trend
+      // column actually renders instead of always reading '—'.
+      recent_trend: (row.trend_direction as 'improving' | 'declining' | 'stable' | null) ?? null,
     };
   }
   for (const pid of playerIds) {
@@ -289,6 +300,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
         <CoachIntelligenceHome
           overview={overviewResult}
+          categoryInsights={categoryInsightsResult}
           coachId={coach.id}
           groups={signalGroups}
           scannedAt={signalGroupsResult.scannedAt}

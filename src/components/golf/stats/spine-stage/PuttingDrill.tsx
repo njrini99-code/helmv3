@@ -25,11 +25,12 @@
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RotateCw } from 'lucide-react';
 import {
   DrillPanel,
   RampMatrix,
+  RAMP_CLASSES,
   RailBars,
   RxCard,
   useStage,
@@ -42,17 +43,31 @@ import {
   InlineNotice,
   InstrumentPanel,
   Readout,
+  Ribbon,
   Segmented,
   Skeleton,
   Surface,
+  type InstrumentPanelDepth,
+  type InstrumentPanelTone,
   type LeakMapBucket,
+  type ReadoutDelta,
+  type RibbonPoint,
 } from '@/components/fairway';
 import { chartAriaLabel } from '@/components/fairway/charts/theme';
 import type { MakeCurvePoint } from '@/components/fairway/charts/MakeCurve';
+import { cn } from '@/lib/utils';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
+import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import {
+  buildCategoryInsights,
+  buildCategoryTrends,
+  type CategorizablePatternWithImpact,
+  type CategoryTrend,
+} from './buildStatsViewModel';
+import { CategoryInsightStrip } from './CategoryInsightStrip';
 
 function ChartLoading() {
   return (
@@ -119,6 +134,44 @@ function countAt(breakStats: BreakStats | undefined, field: keyof BreakStats): n
   const v = breakStats?.[field];
   return typeof v === 'number' ? v : 0;
 }
+
+/**
+ * Adapt a `CategoryTrend`'s pre-formatted, direction-aware delta into a
+ * `Readout`'s `delta` shape — mirrors the identical helper the sibling
+ * DrivingDrill already uses (`readoutDeltaFromTrend`). The numeric `value`
+ * is the SAME first→last diff `buildCategoryTrend` computed (so
+ * `direction`'s glyph/sign agree with the displayed text), `format` renders
+ * the trend's OWN already-signed text verbatim rather than re-deriving it,
+ * and `direction` is remapped from the trend's `good`-aware semantic — never
+ * the raw up/down `Readout`'s `DeltaLine` would otherwise color a
+ * lower-is-better metric with (a FALLING putts-per-round is a real
+ * improvement; bug #915's class of defect).
+ */
+function readoutDeltaFromTrend(trend: CategoryTrend | null | undefined, caption: string): ReadoutDelta | undefined {
+  if (!trend?.delta || trend.series.length < 2) return undefined;
+  const last = trend.series[trend.series.length - 1];
+  const first = trend.series[0];
+  if (last === undefined || first === undefined) return undefined;
+  const diff = last - first;
+  const { delta } = trend;
+  return {
+    value: diff,
+    direction: delta.direction === 'flat' ? 'flat' : delta.good ? 'up' : 'down',
+    format: () => delta.text,
+    caption,
+  };
+}
+
+/** Shared band → label wording for the make-rate ramp — feeds BOTH the
+ *  Breaks tab's `RampMatrix` legend and the Distance tab's own compact
+ *  legend, so the two sub-tabs' color language is never independently
+ *  worded (the whole point of banding both the same way). */
+const RAMP_LEGEND: Array<{ band: 1 | 2 | 3 | 4; label: string }> = [
+  { band: 1, label: 'Well behind Tour' },
+  { band: 2, label: 'Behind' },
+  { band: 3, label: 'Near Tour' },
+  { band: 4, label: 'Ahead of Tour' },
+];
 
 const BREAK_COLS: ReadonlyArray<{ colLabel: string; breakKey: keyof GolfStats['puttingByBreak'] }> = [
   { colLabel: 'L → R', breakKey: 'left_to_right' },
@@ -220,6 +273,19 @@ export interface PuttingDrillProps {
   leakError?: boolean;
   onRetryLeak?: () => void;
   retryingLeak?: boolean;
+  /** `getTrendAnalysis`'s 4 round-level series (`trendData.trends`) — the
+   *  SAME object `RoundsDrill`/`StatsSpineStage` already thread through.
+   *  Feeds both the putts-per-round `Ribbon` (needs the raw `{date,value}`
+   *  points for its x-axis) and, via `buildCategoryTrends`, the putting
+   *  `CategoryInsightStrip`'s inline sparkline + delta chip. Optional and
+   *  omit-safe — every field the strip/ribbon read honestly falls back to
+   *  their own "awaiting" states when this is `undefined`. */
+  trends?: TrendAnalysisResponse['trends'] | null;
+  /** Mined CoachHelm patterns (`getPlayerPatterns`) — the same array
+   *  `StandingDrill` already receives. Feeds
+   *  `buildCategoryInsights(...).putting` for the "What CoachHelm sees"
+   *  strip. Optional — defaults to `[]` (an honest empty strip). */
+  patterns?: ReadonlyArray<CategorizablePatternWithImpact>;
 }
 
 export function PuttingDrill({
@@ -230,11 +296,19 @@ export function PuttingDrill({
   leakError = false,
   onRetryLeak,
   retryingLeak = false,
+  trends = null,
+  patterns = [],
 }: PuttingDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
   const [detail, setDetail] = useState<PuttingDetail>('distance');
   const puttingByBreak = s?.puttingByBreak ?? null;
+
+  // --- CoachHelm "what it sees" + putts-per-round trend (FIX 2/3/4) --------
+  const categoryTrends = useMemo(() => buildCategoryTrends(trends), [trends]);
+  const puttingTrend = categoryTrends.putting;
+  const categoryInsights = useMemo(() => buildCategoryInsights(patterns), [patterns]);
+  const puttsRibbonPoints: RibbonPoint[] = (trends?.putts ?? []).map((p) => ({ x: p.date, y: p.value }));
 
   // --- Hero: overall (all-break) ALL-PUTT make% by distance band ---------
   // n prefers the EXACT top-level attempt count (`puttMakeCount*`, 5 of 9
@@ -298,6 +372,7 @@ export function PuttingDrill({
     .reduce((sum, w) => sum + Math.abs(w.strokeImpact), 0);
 
   // --- Putting efficiency readouts (FIX 4) ---------------------------------
+  const puttsPerRound = finite(s?.puttsPerRound);
   const puttsPerHole = finite(s?.puttsPerHole);
   const puttsPerGir = finite(s?.puttsPerGir);
   const threePuttsPerRound = finite(s?.threePuttsPerRound);
@@ -312,12 +387,35 @@ export function PuttingDrill({
     unit?: string;
     format?: { maximumFractionDigits: number };
     awaitingLabel: string;
+    /** One-line honest context under the readout — never a fabricated
+     *  benchmark, just plain-language framing of what the number counts. */
+    caption: string;
+    /** Only the one metric with a real `buildCategoryTrends` series
+     *  (putts-per-round) carries a delta — the rest stay flat rather than
+     *  fabricating a period comparison that isn't wired for them. */
+    delta?: ReadoutDelta;
+    /** The ONE accent-toned, raised panel — reserved for the headline metric
+     *  that's actually backed by live trend data (InstrumentPanel doctrine:
+     *  accent is a single focal rim, never a repeated treatment — same
+     *  convention the sibling DrivingDrill uses for its own headline card). */
+    tone?: InstrumentPanelTone;
+    depth?: InstrumentPanelDepth;
   }> = [
-    { label: 'Putts / hole', value: puttsPerHole, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No putts' },
-    { label: 'Putts / GIR', value: puttsPerGir, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No GIR putts' },
-    { label: '3-putts / round', value: threePuttsPerRound, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No rounds' },
-    { label: '1-putts (total)', value: onePuttsTotal, awaitingLabel: 'No putts' },
-    { label: 'Approach-putt avg leave', value: approachPuttAvgLeave, unit: 'ft', format: { maximumFractionDigits: 1 }, awaitingLabel: 'No leave data' },
+    {
+      label: 'Putts / round',
+      value: puttsPerRound,
+      format: { maximumFractionDigits: 1 },
+      awaitingLabel: 'No rounds',
+      caption: 'All putts, 18 holes',
+      delta: readoutDeltaFromTrend(puttingTrend, 'vs prior period'),
+      tone: 'accent',
+      depth: 'raised',
+    },
+    { label: 'Putts / hole', value: puttsPerHole, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No putts', caption: 'Per hole played' },
+    { label: 'Putts / GIR', value: puttsPerGir, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No GIR putts', caption: 'Putts after hitting the green' },
+    { label: '3-putts / round', value: threePuttsPerRound, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No rounds', caption: 'Two-plus putts, per round' },
+    { label: '1-putts (total)', value: onePuttsTotal, awaitingLabel: 'No putts', caption: 'Makes on the first try' },
+    { label: 'Approach-putt avg leave', value: approachPuttAvgLeave, unit: 'ft', format: { maximumFractionDigits: 1 }, awaitingLabel: 'No leave data', caption: 'Left after the first putt' },
   ];
 
   // --- Miss direction (overall) — first-putt misses with a tagged
@@ -357,9 +455,23 @@ export function PuttingDrill({
   return (
     <DrillPanel title="Putting" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
+        <CategoryInsightStrip
+          insights={categoryInsights.putting}
+          series={puttingTrend?.series}
+          delta={puttingTrend?.delta}
+          trendLabel={puttingTrend?.label}
+          goodDirection="down"
+        />
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
           {efficiencyReadouts.map((r) => (
-            <InstrumentPanel key={r.label} depth="base" padding="md" className="min-h-[112px]">
+            <InstrumentPanel
+              key={r.label}
+              depth={r.depth ?? 'base'}
+              padding="md"
+              tone={r.tone}
+              className="flex min-h-[132px] flex-col justify-between overflow-clip transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none"
+            >
               <Readout
                 value={r.value ?? undefined}
                 format={r.format}
@@ -368,7 +480,9 @@ export function PuttingDrill({
                 size="sm"
                 state={r.value != null ? 'live' : 'awaiting'}
                 awaitingLabel={r.awaitingLabel}
+                delta={r.delta}
               />
+              <p className="mt-2 line-clamp-2 font-fw-sans text-caption text-text-tertiary">{r.caption}</p>
             </InstrumentPanel>
           ))}
         </div>
@@ -395,12 +509,29 @@ export function PuttingDrill({
             <div className="overflow-x-auto">
               <table className="w-full min-w-[650px] border-separate border-spacing-y-2 text-left">
                 <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Make</th><th className="px-3">First-putt share</th><th className="px-3">Avg leave</th><th className="px-3">Efficiency</th><th className="px-3">Proximity</th></tr></thead>
-                <tbody>{PUTTING_DISTANCE_DETAIL.map((band) => {
+                <tbody>{PUTTING_DISTANCE_DETAIL.map((band, i) => {
                   const num = (value: unknown, digits = 1) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
+                  // Same RampMatrix band language the Breaks tab uses for this
+                  // exact metric (all-break ALL-PUTT make%) — banding both
+                  // tabs off the SAME `bandThresholds`/`rampBandForValue` call
+                  // (and the SAME n, reused from `heroPoints` by index — both
+                  // arrays share the DISTANCE_BANDS ordering) is what makes
+                  // the two sub-tabs read as one system rather than two
+                  // independently-styled tables.
+                  const bandMeta = DISTANCE_BANDS[i];
+                  const makePct = finite(s?.[band.make]);
+                  const pga = bandMeta?.pgaMetricId ? finite(standingByMetric.get(bandMeta.pgaMetricId)?.pga_value ?? null) : null;
+                  const makeBand = rampBandForValue(makePct, bandThresholds(pga));
+                  const makeN = heroPoints[i]?.n ?? 0;
                   return (
                     <tr key={band.key} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary">
                       <th className="rounded-l-fw-sm px-3 py-3 font-fw-sans font-medium text-text-primary">{band.label}</th>
-                      <td className="px-3">{num(s?.[band.make], 0)}%</td>
+                      <td className="px-3 py-1.5 text-center">
+                        <span className={cn('inline-flex min-w-[46px] items-center justify-center rounded-fw-sm px-1.5 py-1 font-fw-mono', RAMP_CLASSES[makeBand])}>
+                          {num(s?.[band.make], 0)}%
+                        </span>
+                        {makeN > 0 ? <span className="mt-0.5 block font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary opacity-75">n={makeN}</span> : null}
+                      </td>
                       <td className="px-3">{num(s?.firstPuttDistanceByBand?.[band.key], 0)}%</td>
                       <td className="px-3">{num(s?.approachPuttAvgLeaveByBand?.[band.key], 1)} ft</td>
                       <td className="px-3">{num(s?.[band.efficiency], 2)}</td>
@@ -409,6 +540,15 @@ export function PuttingDrill({
                   );
                 })}</tbody>
               </table>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary">
+              <span className="font-medium text-text-secondary">Make % ·</span>
+              {RAMP_LEGEND.map((item) => (
+                <span key={item.band} className="inline-flex items-center gap-1">
+                  <i aria-hidden="true" className={cn('inline-block h-1.5 w-1.5 rounded-fw-sm', RAMP_CLASSES[item.band].split(' ')[0])} />
+                  {item.label}
+                </span>
+              ))}
             </div>
           </Surface>
         ) : null}
@@ -421,7 +561,7 @@ export function PuttingDrill({
                 <p className="mt-1 text-caption text-text-tertiary">Swipe the table on smaller screens.</p>
               </div>
               <div className="overflow-x-auto">
-                <RampMatrix cols={BREAK_COLS.map((c) => c.colLabel)} rows={rows} legend={[{ band: 1, label: 'Well behind Tour' }, { band: 2, label: 'Behind' }, { band: 3, label: 'Near Tour' }, { band: 4, label: 'Ahead of Tour' }]} />
+                <RampMatrix cols={BREAK_COLS.map((c) => c.colLabel)} rows={rows} legend={RAMP_LEGEND} />
               </div>
               <RailBars rows={breakOverviewRows} labelWidth={64} />
             </Surface>
@@ -450,6 +590,15 @@ export function PuttingDrill({
 
         <div className="flex flex-col gap-4 border-t border-border-subtle pt-6">
           <Eyebrow as="h3" tone="accent">Putting visuals</Eyebrow>
+          <Ribbon
+            title="Putts by round"
+            overline="Trend"
+            data={puttsRibbonPoints}
+            valueFormatter={(v) => v.toFixed(1)}
+            seriesName="Putts"
+            goodDirection="down"
+            height={200}
+          />
           <MakeCurve points={heroPoints} ariaLabel={heroAriaLabel} />
           {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle="Make rate by distance vs PGA Tour" takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
         </div>

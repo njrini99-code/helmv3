@@ -296,6 +296,13 @@ describe('global tripwire', () => {
     // 427 as of the player Stats bundle (+1):
     // getPlayerStatsDashboardBundle consolidates the Stats surface reads into
     // one bounded, withAdminObserved-wrapped server action.
-    expect(total).toBe(427);
+    // 431 as of the unified notifications feed (+4): getUnifiedNotifications,
+    // getNotificationsUnreadCount, markNotificationRead, markAllNotificationsRead
+    // in src/app/golf/actions/unified-notifications.ts — the notifications
+    // wave's bounded, withAdminObserved-wrapped server actions.
+    // 432 as of the class-schedule screenshot import (+1):
+    // extractClassesFromScheduleImage in src/app/golf/actions/schedule-image.ts
+    // — the vision-extraction action, withAdminObserved-wrapped.
+    expect(total).toBe(432);
   });
 });

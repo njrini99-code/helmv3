@@ -2,7 +2,7 @@
 
 /**
  * AttendancePanel — roll-call UI for a calendar event. Mounts inside the
- * event drawer (EventDetailModal / MobileEventSheet).
+ * live Fairway event-detail drawer (FairwayEventDetailDrawer.tsx).
  *
  * Coach view (canManage): the event's invitee roster with each player's RSVP
  * response, one-tap Present / Late / No-show toggles (tap the active mark
@@ -340,7 +340,7 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
       <div
         role="group"
         aria-label={`Attendance for ${row.name}`}
-        className={cn('flex items-center gap-1', pending && 'opacity-60')}
+        className={cn('flex flex-shrink-0 items-center gap-1', pending && 'opacity-60')}
       >
         {MARK_OPTIONS.map((option) => {
           const active = row.mark === option.value;

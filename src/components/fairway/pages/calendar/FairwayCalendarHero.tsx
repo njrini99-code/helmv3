@@ -59,6 +59,11 @@ export interface FairwayCalendarHeroProps {
   onNavigate: (direction: 'prev' | 'next' | 'today') => void;
   /** Day-strip selection. */
   onSelectDate: (date: Date) => void;
+  /** Team timezone — threaded straight through to FairwayDayStrip's
+   *  timezone-aware density-dot bucketing (see that file's header note).
+   *  Optional (defaults to `null`, which `getZonedDateParts` treats as
+   *  DEFAULT_TIMEZONE) so existing callers/tests need no changes. */
+  teamTimezone?: string | null;
   /**
    * The single primary action. Coach → fires the legacy create flow; player →
    * opens the most-imminent un-RSVP'd event's drawer. Undefined (e.g. player on
@@ -84,6 +89,7 @@ export function FairwayCalendarHero({
   onSelectDate,
   onPrimaryAction,
   primaryActionLabel,
+  teamTimezone = null,
 }: FairwayCalendarHeroProps) {
   const monthTitle = format(focusDate, 'MMMM yyyy');
   const focusIsToday = isSameDay(focusDate, nowRef);
@@ -237,6 +243,7 @@ export function FairwayCalendarHero({
           selectedDate={selectedDate}
           events={events}
           nowRef={nowRef}
+          teamTimezone={teamTimezone}
           onSelectDate={onSelectDate}
         />
       </div>

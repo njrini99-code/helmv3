@@ -1303,7 +1303,7 @@ async function getSprayChartDataImpl(
 
     const { data: fetchedRounds, error: roundsError } = await query;
     if (roundsError) {
-      await logServerError(`[Stats] Spray rounds query error: ${roundsError instanceof Error ? roundsError.message : String(roundsError)}`, { action: 'stats_data.getSprayChartData' });
+      await logServerError(`[Stats] Spray rounds query error: ${describeError(roundsError)}`, { action: 'stats_data.getSprayChartData' });
       return emptyResponse();
     }
 
@@ -1486,7 +1486,12 @@ async function getSprayChartDataImpl(
       },
     };
   } catch (error) {
-    await logServerError(`[Stats] getSprayChartData failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getSprayChartData' });
+    // `holesError`/`shotsError` thrown above from fetchAllRowsResult are
+    // plain PostgREST-shaped objects (not Error instances), so a bare
+    // `String(error)` collapsed to the useless "[object Object]" in
+    // telemetry — describeError() renders `code=... msg=... details=...`
+    // instead. Degrades the same way either way: empty response, no throw.
+    await logServerError(`[Stats] getSprayChartData failed: ${describeError(error)}`, { action: 'stats_data.getSprayChartData' });
     return emptyResponse();
   }
 }

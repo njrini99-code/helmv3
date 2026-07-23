@@ -4,7 +4,7 @@
  * Create Feed Section Component
  *
  * Workflow for creating new calendar feeds:
- * - Feed type selection with icon buttons
+ * - Feed type selection with icon tiles
  * - Feed name input
  * - Optional description
  * - Team/player selection (context-based)
@@ -12,20 +12,25 @@
  * - Create action
  *
  * Features:
- * - Large icon buttons (touch-friendly)
+ * - Large icon tiles (touch-friendly)
  * - Visual feedback on selection
  * - Form validation
  * - Loading states
  * - Auto-generated feed names
+ *
+ * Fairway tokens only — renders inside CalendarFeedManager's `<Inset>`, which
+ * itself mounts flush inside the live Fairway "Subscribe to your calendar"
+ * Sheet, so it must read as the same app (no legacy cream/warm/amber/violet/
+ * rose). Tone mapping matches FeedCard's FEED_TYPE_META exactly (team/personal
+ * → accent, tournament → warning, all_events → the neutral-but-stronger
+ * "info" treatment) so a feed type reads the same color here and in the list.
  */
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Calendar, Users, Trophy, Globe, Sparkles } from 'lucide-react';
+import { Calendar, Users, Trophy, Globe, Sparkles, type LucideIcon } from 'lucide-react';
 import { type FeedType } from './CalendarFeedManager';
-import '@/styles/calendar-tokens.css';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button, Input, Inset, InlineNotice, type FwStatusTone } from '@/components/fairway';
 
 interface CreateFeedSectionProps {
   onCreate: (type: FeedType, name: string) => Promise<void>;
@@ -36,48 +41,32 @@ interface CreateFeedSectionProps {
   className?: string;
 }
 
-const FEED_TYPE_OPTIONS = [
-  {
-    type: 'team' as FeedType,
-    icon: Users,
-    label: 'Team Events',
-    description: 'All events for your team',
-    colorClass: 'text-primary-700',
-    bgClass: 'bg-primary-50',
-    borderClass: 'border-primary-200',
-    selectedClass: 'bg-primary-600 text-white ring-4 ring-primary-200 shadow-lg',
-  },
-  {
-    type: 'personal' as FeedType,
-    icon: Calendar,
-    label: 'Personal Events',
-    description: 'Only your events',
-    colorClass: 'text-primary-700',
-    bgClass: 'bg-primary-50',
-    borderClass: 'border-primary-200',
-    selectedClass: 'bg-primary-600 text-white ring-4 ring-primary-200 shadow-lg',
-  },
-  {
-    type: 'tournament' as FeedType,
-    icon: Trophy,
-    label: 'Tournaments',
-    description: 'Tournament events only',
-    colorClass: 'text-amber-700',
-    bgClass: 'bg-amber-50',
-    borderClass: 'border-amber-200',
-    selectedClass: 'bg-amber-600 text-white ring-4 ring-amber-200 shadow-lg',
-  },
-  {
-    type: 'all_events' as FeedType,
-    icon: Globe,
-    label: 'All Events',
-    description: 'Every event on your calendar',
-    colorClass: 'text-violet-700',
-    bgClass: 'bg-violet-50',
-    borderClass: 'border-violet-200',
-    selectedClass: 'bg-violet-600 text-white ring-4 ring-violet-200 shadow-lg',
-  },
+interface FeedTypeOption {
+  type: FeedType;
+  icon: LucideIcon;
+  label: string;
+  description: string;
+  tone: FwStatusTone;
+}
+
+const FEED_TYPE_OPTIONS: FeedTypeOption[] = [
+  { type: 'team', icon: Users, label: 'Team Events', description: 'All events for your team', tone: 'accent' },
+  { type: 'personal', icon: Calendar, label: 'Personal Events', description: 'Only your events', tone: 'accent' },
+  { type: 'tournament', icon: Trophy, label: 'Tournaments', description: 'Tournament events only', tone: 'warning' },
+  { type: 'all_events', icon: Globe, label: 'All Events', description: 'Every event on your calendar', tone: 'info' },
 ];
+
+/** Selected-tile treatment per tone — mirrors StatusPill's tone→token pairing
+ *  (green-forward; amber the only off-green hue; "info" stays neutral-but-
+ *  stronger rather than inventing a blue/violet family). */
+const TONE_SELECTED_CLASSES: Record<FwStatusTone, string> = {
+  neutral: 'border-border-strong bg-surface-sunken text-text-primary',
+  accent: 'border-accent-500 bg-accent-50 text-accent-700',
+  success: 'border-accent-500 bg-fw-success-bg text-accent-700',
+  warning: 'border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink',
+  danger: 'border-fw-danger/40 bg-fw-danger-bg text-fw-danger',
+  info: 'border-border-strong bg-surface-sunken text-text-primary',
+};
 
 export function CreateFeedSection({
   onCreate,
@@ -133,72 +122,64 @@ export function CreateFeedSection({
     <div className={cn('space-y-6', className)}>
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-primary-600" />
-          <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Create Calendar Feed</h3>
+        <div className="mb-2 flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-accent-600" aria-hidden="true" />
+          <h3 className="font-fw-sans text-body-lg font-medium tracking-[-0.012em] text-text-primary">
+            Create Calendar Feed
+          </h3>
         </div>
-        <p className="text-sm text-warm-600">
+        <p className="font-fw-sans text-body-sm text-text-secondary">
           Choose what events to include in your calendar feed
         </p>
       </div>
 
       {/* Feed type selection */}
       <div>
-        <p className="block text-sm font-medium text-warm-700 mb-3">
+        <p className="mb-3 font-fw-sans text-caption font-medium text-text-secondary">
           Feed Type
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {availableOptions.map((option) => {
             const Icon = option.icon;
             const isSelected = selectedType === option.type;
 
             return (
-              <Button variant="ghost"
+              // Intentional raw <button>: this is a per-tone, multi-line (icon +
+              // label + description) selectable tile — Fairway's <Button> is a
+              // pill-shaped single-child-span primitive (button.tsx's "CHILDREN
+              // CONTRACT") that doesn't fit a flex-col tile grid, same class of
+              // exception FilterPill.tsx and InlineNotice.tsx take. The full
+              // interactive-state contract (focus-visible ring, active feedback,
+              // disabled) is implemented inline below.
+              // eslint-disable-next-line helm/no-raw-button
+              <button
                 key={option.type}
                 type="button"
                 onClick={() => handleTypeSelect(option.type)}
                 disabled={loading}
+                aria-pressed={isSelected}
                 className={cn(
-                  // Base styles
-                  'flex flex-col items-center justify-center gap-2',
-                  'min-h-[100px] p-4 rounded-xl border-2',
-                  'transition-all duration-200 active:scale-95',
-                  'touch-manipulation',
-                  // Default state
-                  !isSelected && option.bgClass,
-                  !isSelected && option.borderClass,
-                  !isSelected && 'hover:shadow-md',
-                  // Selected state
-                  isSelected && option.selectedClass,
-                  // Disabled state
-                  loading && 'opacity-50 cursor-not-allowed'
+                  'flex min-h-[100px] flex-col items-center justify-center gap-2 rounded-fw-md border p-4',
+                  'touch-manipulation [transition-duration:180ms]',
+                  'transition-[color,background-color,border-color,transform] motion-reduce:transition-none',
+                  'active:translate-y-[0.5px] motion-reduce:active:translate-y-0',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                  'disabled:cursor-not-allowed disabled:opacity-50',
+                  isSelected
+                    ? TONE_SELECTED_CLASSES[option.tone]
+                    : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-tint',
                 )}
               >
-                <Icon
-                  className={cn(
-                    'shrink-0 w-6 h-6',
-                    isSelected ? 'text-white' : option.colorClass
-                  )}
-                />
+                <Icon className="h-6 w-6 shrink-0" aria-hidden="true" />
                 <div className="text-center">
-                  <p
-                    className={cn(
-                      'text-eyebrow font-medium uppercase tracking-wide',
-                      isSelected ? 'text-white' : option.colorClass
-                    )}
-                  >
+                  <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide">
                     {option.label}
                   </p>
-                  <p
-                    className={cn(
-                      'text-xs mt-1',
-                      isSelected ? 'text-white/90' : 'text-warm-500'
-                    )}
-                  >
+                  <p className={cn('mt-1 text-caption', isSelected ? 'opacity-80' : 'text-text-tertiary')}>
                     {option.description}
                   </p>
                 </div>
-              </Button>
+              </button>
             );
           })}
         </div>
@@ -207,7 +188,7 @@ export function CreateFeedSection({
       {/* Feed name */}
       {showNameInput && (
         <div>
-          <label htmlFor="feed-name" className="block text-sm font-medium text-warm-700 mb-2">
+          <label htmlFor="feed-name" className="mb-2 block font-fw-sans text-caption font-medium text-text-secondary">
             Feed Name
           </label>
           <Input
@@ -224,7 +205,7 @@ export function CreateFeedSection({
             autoCorrect="on"
             enterKeyHint="done"
           />
-          <p className="text-xs text-warm-500 mt-1.5">
+          <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
             This name will help you identify the feed in your calendar app
           </p>
         </div>
@@ -232,46 +213,31 @@ export function CreateFeedSection({
 
       {/* Preview URL (when type is selected) */}
       {selectedType && (
-        <div className="p-4 rounded-lg bg-warm-50 border border-warm-200">
-          <p className="text-xs font-medium text-warm-700 mb-2">Feed URL Preview</p>
-          <code className="text-xs text-warm-600 font-mono break-all">
+        <Inset padding="md">
+          <p className="mb-2 font-fw-sans text-caption font-medium text-text-secondary">Feed URL Preview</p>
+          <code className="block break-all font-mono text-caption text-text-secondary">
             webcal://helmsportslabs.com/api/calendar/{selectedType}/[token]
           </code>
-          <p className="text-xs text-warm-500 mt-2">
+          <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
             The actual URL will be generated when you create the feed
           </p>
-        </div>
+        </Inset>
       )}
 
       {/* Error message */}
-      {error && (
-        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200">
-          <p className="text-sm text-rose-700">{error}</p>
-        </div>
-      )}
+      {error && <InlineNotice tone="danger">{error}</InlineNotice>}
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-warm-200">
-        <Button variant="ghost"
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="px-4 py-2.5 rounded-lg font-medium text-sm
-                   bg-cream-50 text-warm-700 border border-warm-200
-                   hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300
-                   disabled:opacity-50 disabled:cursor-not-allowed
-                   transition-colors"
-        >
+      <div className="flex items-center justify-end gap-3 border-t border-border-subtle pt-4">
+        <Button variant="ghost" type="button" onClick={onCancel} disabled={loading}>
           Cancel
         </Button>
-        <Button variant="primary"
+        <Button
+          variant="primary"
           type="button"
           onClick={handleCreate}
           disabled={loading || !selectedType || (showNameInput && !feedName.trim())}
-          className="px-4 py-2.5 rounded-lg font-medium text-sm
-                   bg-primary-600 text-white hover:bg-primary-700
-                   disabled:opacity-50 disabled:cursor-not-allowed
-                   transition-colors"
+          busy={loading}
         >
           {loading ? 'Creating...' : 'Create Feed'}
         </Button>

@@ -156,7 +156,9 @@ export function GenomeCompareView({
       signalCount={signalCount}
       title={title}
       description={anySelected ? maturityCaption : 'Overlay two players to see who is stronger where.'}
-      breadcrumbs={[{ label: 'Players', href: '/golf/dashboard/development' }, { label: 'Compare' }]}
+      // Canonical destination directly, not the /development redirect shim
+      // (React #310 legacy-link audit, 2026-07-22).
+      breadcrumbs={[{ label: 'Players', href: '/golf/dashboard/intelligence?view=players' }, { label: 'Compare' }]}
       className={className}
     >
       <div className="flex flex-col gap-6">

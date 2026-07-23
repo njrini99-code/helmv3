@@ -15,7 +15,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CoachIntelligenceHome } from '../CoachIntelligenceHome';
-import type { TeamOverviewResult } from '@/app/golf/actions/team-category-insights';
+import type { TeamOverviewResult, TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
 
 vi.mock('next/navigation', () => ({
@@ -42,6 +42,15 @@ function overview(playerCount: number): TeamOverviewResult {
 function failedOverview(error = 'Query timed out'): TeamOverviewResult {
   return { success: false, error };
 }
+
+// Not the gate under test here (the mocked TriageDesk absorbs it) — a benign
+// empty-but-successful fixture so every render() call below stays honest
+// about the now-required prop without pulling category-band assertions into
+// this file's scope (see TeamCategoryLeakBand.test.tsx for those).
+const emptyCategoryInsights: TeamCategoryInsightsResult = {
+  success: true,
+  data: { categories: [], teamHealth: 0, lastAnalyzed: '' },
+};
 
 function playersDrillProps(players: PlayersGridViewProps['players']): PlayersGridViewProps {
   return {
@@ -71,6 +80,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
     render(
       <CoachIntelligenceHome
         overview={overview(0)}
+        categoryInsights={emptyCategoryInsights}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}
@@ -88,6 +98,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
     render(
       <CoachIntelligenceHome
         overview={overview(5)}
+        categoryInsights={emptyCategoryInsights}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}
@@ -105,6 +116,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
     render(
       <CoachIntelligenceHome
         overview={failedOverview('Query timed out')}
+        categoryInsights={emptyCategoryInsights}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}
@@ -124,6 +136,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
     render(
       <CoachIntelligenceHome
         overview={failedOverview()}
+        categoryInsights={emptyCategoryInsights}
         coachId="coach-1"
         groups={[]}
         scannedAt={null}

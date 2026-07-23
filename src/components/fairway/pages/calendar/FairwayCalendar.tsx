@@ -66,6 +66,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
+import { zonedMidnight } from '@/lib/calendar/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -174,7 +175,23 @@ export function FairwayCalendar({
   const router = useRouter();
   const badges = useNotificationBadges();
   // ── serverNow → nowRef deferred hydration (mirrors the legacy surface) ──────
-  const initialFocus = React.useMemo(() => toLocalMidnight(new Date(serverNow)), [serverNow]);
+  // MUST use `zonedMidnight` (explicit `teamTimezone`), NOT `toLocalMidnight`
+  // (implicit-local getFullYear/getMonth/getDate) here: this specific call
+  // computes the value BOTH the SSR pass and the very first client render
+  // seed their state from, and those two passes run in DIFFERENT processes
+  // (Vercel Lambda, ambient UTC vs. the visitor's own browser zone). Reading
+  // `new Date(serverNow)`'s calendar fields with the process's own local zone
+  // — the previous `toLocalMidnight(new Date(serverNow))` — silently
+  // disagreed on "today" whenever serverNow fell inside the ~4-5h UTC/ET
+  // offset window straddling midnight, which cascaded into a focusDate/
+  // nowRef mismatch across the whole hero + day-strip + agenda subtree
+  // (React #418 on /calendar). `zonedMidnight` derives the (y, m, d) triple
+  // via `Intl.DateTimeFormat`'s explicit `timeZone` so it's identical
+  // regardless of which process computes it.
+  const initialFocus = React.useMemo(
+    () => zonedMidnight(serverNow, teamTimezone),
+    [serverNow, teamTimezone],
+  );
   const [focusDate, setFocusDate] = React.useState<Date>(initialFocus);
   const [nowRef, setNowRef] = React.useState<Date>(initialFocus);
 
@@ -622,7 +639,11 @@ export function FairwayCalendar({
       return events.filter((e) => {
         const s = e.start_date || e.start_time;
         if (!s) return false;
-        return isSameDay(new Date(s), focusDate);
+        // Zoned bucketing (not implicit-local `new Date(s)`) — must agree
+        // with what FairwayAgendaView mode="day" actually renders for the
+        // same day (both bucket by `teamTimezone`), or the hero count and
+        // the visible list could silently disagree near a midnight boundary.
+        return isSameDay(zonedMidnight(s, teamTimezone), focusDate);
       }).length;
     }
     const startMs = visibleWindow.start.getTime();
@@ -633,7 +654,7 @@ export function FairwayCalendar({
       const t = new Date(s).getTime();
       return t >= startMs && t <= endMs;
     }).length;
-  }, [events, visibleWindow, view, focusDate]);
+  }, [events, visibleWindow, view, focusDate, teamTimezone]);
 
   // Upcoming count — derived from the SAME canonical `events` list as
   // `windowCount` (finding #37/#166/#185/#83). The server-computed
@@ -873,6 +894,7 @@ export function FairwayCalendar({
         onSelectDate={(d) => setFocusDate(d)}
         onPrimaryAction={primaryAction}
         primaryActionLabel={primaryActionLabel}
+        teamTimezone={teamTimezone}
       />
 
       {/* ── View toggle (default Agenda) + Subscribe entry point ─────────────── */}
@@ -964,6 +986,7 @@ export function FairwayCalendar({
             rangeStart={availWindow.start}
             rangeEnd={availWindow.end}
             nowRef={nowRef}
+            timezone={teamTimezone}
           />
         )
       ) : isAgenda ? (

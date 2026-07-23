@@ -53,6 +53,8 @@ import { MobileNavProvider } from '@/contexts/mobile-nav-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
 import { NotificationBadgeProvider, useNotificationBadges } from '@/contexts/notification-badge-context';
+import { NotificationBell } from '@/components/fairway/notifications/NotificationBell';
+import { NotificationPanelProvider } from '@/components/fairway/notifications/NotificationPanelContext';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
@@ -432,6 +434,24 @@ function FairwayDashboardContent({
     [showSwitcher, coachTeams, userData.teamId],
   );
 
+  // The ONE app-wide notifications entry point (both roles, every dashboard
+  // route) — reads NotificationBadgeProvider/NotificationPanelContext
+  // internally, so it takes no props and is stable across every re-render.
+  const notificationBell = useMemo(() => <NotificationBell />, []);
+
+  // Same stability contract as `teamSwitcher`/`brand`/etc below — combined
+  // once here so `topBarActions` (passed verbatim into AppShell → FairwayTopBar)
+  // only changes identity when one of its two children actually changes.
+  const topBarActions = useMemo(
+    () => (
+      <>
+        {notificationBell}
+        {teamSwitcher}
+      </>
+    ),
+    [notificationBell, teamSwitcher],
+  );
+
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
 
@@ -589,7 +609,7 @@ function FairwayDashboardContent({
         user={shellUser}
         brand={brand}
         sidebarFooter={sidebarFooter}
-        topBarActions={teamSwitcher}
+        topBarActions={topBarActions}
         accentColor={accentColor}
         pathname={pathname}
         linkComponent={ShellLink}
@@ -626,7 +646,25 @@ function FairwayDashboardContent({
         bottomNav={bottomNav}
         className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
       >
-        <div id="main-content" tabIndex={-1} className="outline-none">
+        <div
+          id="main-content"
+          tabIndex={-1}
+          className={cn(
+            'outline-none',
+            // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
+            // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
+            // only), mounted once for every coach dashboard route. Nothing in
+            // AppShell's own bottom padding (see AppShell.tsx's home-indicator
+            // + mobile bottom-nav clearance, both md:-scoped away to near-zero)
+            // accounts for it, so the last row of any content that reaches the
+            // page's true bottom edge sat directly under the FAB on desktop —
+            // confirmed on roster/dashboard/round-review at 1440x900. Reserve
+            // real clearance (the FAB's ~80px footprint + a comfortable buffer)
+            // at md+ ONLY, and only for coach routes (players never render the
+            // launcher at all, so their pages keep the tighter default).
+            role === 'coach' && 'md:pb-28',
+          )}
+        >
           <NoTeamBanner />
           {children}
         </div>
@@ -658,20 +696,26 @@ export function FairwayDashboardShell({
         <SessionActivityProvider>
           <GolfUserProvider userData={userData}>
             <NotificationBadgeProvider>
-              <LazyMotion features={loadFeatures}>
-                <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                  <LastSeenUpdater />
-                  {/* Must mount BEFORE DemoEnterTracker — see DemoPricingNudge.tsx
-                      header: it reads window.location.search for `demo=1` before
-                      DemoEnterTracker's own effect strips that param from the URL. */}
-                  <DemoPricingNudge />
-                  {/* B36/F012: the demo_coach_entered PostHog event must fire in the
-                      flag-ON shell too — prod demo entries land here, not on the legacy
-                      GolfDashboardShell. Pure side-effect leaf (renders null). */}
-                  <DemoEnterTracker />
-                  <FairwayDashboardContent userData={userData}>{children}</FairwayDashboardContent>
-                </OfflineProvider>
-              </LazyMotion>
+              {/* Shared open-state for the ONE notifications feed (the bell in
+                  FairwayTopBar's actions cluster below + every "View all" entry
+                  point on a home page) — wraps the whole content tree so both
+                  ends of that wire share the same instance. */}
+              <NotificationPanelProvider>
+                <LazyMotion features={loadFeatures}>
+                  <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                    <LastSeenUpdater />
+                    {/* Must mount BEFORE DemoEnterTracker — see DemoPricingNudge.tsx
+                        header: it reads window.location.search for `demo=1` before
+                        DemoEnterTracker's own effect strips that param from the URL. */}
+                    <DemoPricingNudge />
+                    {/* B36/F012: the demo_coach_entered PostHog event must fire in the
+                        flag-ON shell too — prod demo entries land here, not on the legacy
+                        GolfDashboardShell. Pure side-effect leaf (renders null). */}
+                    <DemoEnterTracker />
+                    <FairwayDashboardContent userData={userData}>{children}</FairwayDashboardContent>
+                  </OfflineProvider>
+                </LazyMotion>
+              </NotificationPanelProvider>
             </NotificationBadgeProvider>
           </GolfUserProvider>
         </SessionActivityProvider>

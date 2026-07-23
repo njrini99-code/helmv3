@@ -3,8 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FocusAreaCard } from './FocusAreaCard';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway/controls/button';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import { SkeletonList } from '@/components/fairway/feedback/Skeleton';
 import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
 import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
 
@@ -55,30 +57,18 @@ export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
   const hiddenCount = focusAreas.length - visibleAreas.length;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <span className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-        </span>
-      </div>
-    );
+    return <SkeletonList rows={VISIBLE_CAP} label="Loading focus areas" />;
   }
 
   if (error) {
-    return (
-      <div className="text-center py-6">
-        <p className="text-sm text-red-600">{error}</p>
-      </div>
-    );
+    return <InlineNotice tone="danger">{error}</InlineNotice>;
   }
 
   if (focusAreas.length === 0) {
     return (
       <EmptyState
-        variant="compact"
-        title="No Focus Areas Yet"
+        variant="subtle"
+        title="No focus areas yet"
         description="Your coach will set personalized focus areas based on your performance."
       />
     );
@@ -86,16 +76,21 @@ export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
 
   return (
     <div className="space-y-3">
-      {visibleAreas.map((area) => (
+      {visibleAreas.map((area, i) => (
         // conn-golf-player Finding 2: these cards were a dead-end duplicate of
         // My Development (no onClick at all). My Development is the SAME
         // golf_player_focus_areas row (id-for-id) rendered with the full
         // detail + actions (progress, complete, drills) — send the player
-        // there instead of leaving a plain, unclickable card.
+        // there instead of leaving a plain, unclickable card. Push the
+        // canonical `?view=development` URL directly (not the legacy
+        // `/my-development` permanent-redirect shim) — client-navigating into
+        // a bare `redirect()` shim is the React #310 "rendered more hooks"
+        // crash class (see my-development/page.tsx's belt-and-braces note).
         <FocusAreaCard
           key={area.id}
           focusArea={area}
-          onClick={() => router.push('/golf/dashboard/my-development')}
+          index={i}
+          onClick={() => router.push('/golf/dashboard/coachhelm?view=development')}
         />
       ))}
       {hiddenCount > 0 ? (

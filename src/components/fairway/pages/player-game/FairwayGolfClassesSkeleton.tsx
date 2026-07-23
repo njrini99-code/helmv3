@@ -10,8 +10,9 @@
  * The live surface is:
  *   • masthead — eyebrow + large title + description + a right action cluster
  *     (a primary "Add class" + secondary "Import" / "Delete all" buttons)
- *   • a 4-up flat readout grid (Classes / Credits / Days·week / Buildings)
- *   • the "Weekly schedule" section — a 5-column day grid of class chips
+ *   • the today strip — one instrument row (up-next reading + 3 tallies)
+ *   • the "This week" section — a time-axis timeline grid
+ *   • the "All classes" section — a two-column roster of event-card rows
  *
  * loading.tsx cannot know the resolved counts (the page fetches client-side),
  * so every block is a shape-matched placeholder. Tokens + the Fairway Skeleton
@@ -25,16 +26,6 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 const DAY_COUNT = 5;
-
-/** One bordered matte readout tile mirroring an InstrumentPanel depth="base". */
-function ReadoutTileSkeleton() {
-  return (
-    <div className="rounded-card border border-border-subtle bg-surface p-4">
-      <Skeleton className="h-7 w-12" />
-      <Skeleton className="mt-2 h-3 w-20" />
-    </div>
-  );
-}
 
 export function FairwayGolfClassesSkeleton() {
   return (
@@ -62,32 +53,43 @@ export function FairwayGolfClassesSkeleton() {
             </div>
           </div>
 
-          {/* ════════════ 2 · QUICK READOUTS (4-up) ══════════ */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <ReadoutTileSkeleton key={i} />
-            ))}
+          {/* ════════════ 2 · TODAY STRIP (one instrument row) ══════════ */}
+          <div className="rounded-card border border-border-subtle bg-surface p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-4 w-64 max-w-full" />
+              </div>
+              <div className="flex shrink-0 items-center gap-5">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            </div>
           </div>
 
-          {/* ════════════ 3 · WEEKLY SCHEDULE (5 day columns) ═════════ */}
+          {/* ════════════ 3 · WEEK TIMELINE (time-axis grid) ═════════ */}
           <section className="flex flex-col gap-3">
-            <Skeleton className="ml-1 h-3 w-36" />
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-              {Array.from({ length: DAY_COUNT }).map((_, day) => (
-                <div key={day} className="flex flex-col">
-                  <Skeleton className="mx-auto mb-2 h-3 w-16" />
-                  <div className="flex min-h-[160px] flex-col gap-2">
-                    {/* 1–2 class chips per day, deterministic for SSR/client match. */}
-                    {Array.from({ length: day % 2 === 0 ? 2 : 1 }).map((_, c) => (
-                      <div
-                        key={c}
-                        className="flex flex-col gap-1 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
-                      >
-                        <Skeleton className="h-3 w-12" />
-                        <Skeleton className="h-3.5 w-24" />
-                        <Skeleton className="h-3 w-16" />
-                      </div>
-                    ))}
+            <Skeleton className="ml-1 h-3 w-24" />
+            <Skeleton className="h-[420px] w-full rounded-card" />
+          </section>
+
+          {/* ════════════ 4 · ALL CLASSES (2-col roster) ══════════════ */}
+          <section className="flex flex-col gap-3">
+            <Skeleton className="ml-1 h-3 w-24" />
+            <div className="grid gap-2.5 md:grid-cols-2">
+              {Array.from({ length: DAY_COUNT }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 rounded-card border border-border-subtle bg-surface p-4"
+                >
+                  <div className="flex w-[68px] flex-shrink-0 flex-col gap-1 md:w-[76px]">
+                    <Skeleton className="h-4 w-14" />
+                    <Skeleton className="h-3 w-12" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-4 w-40 max-w-full" />
+                    <Skeleton className="h-3 w-52 max-w-full" />
                   </div>
                 </div>
               ))}

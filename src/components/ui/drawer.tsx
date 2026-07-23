@@ -17,6 +17,7 @@
 import * as React from 'react';
 import { Drawer as VaulDrawer } from 'vaul';
 import { cn } from '@/lib/utils';
+import { ModalPortalContext } from '@/components/fairway/overlays/_shared';
 
 const Drawer = ({
   shouldScaleBackground = true,
@@ -45,28 +46,52 @@ DrawerOverlay.displayName = VaulDrawer.Overlay.displayName;
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
   React.ComponentPropsWithoutRef<typeof VaulDrawer.Content>
->(({ className, children, ...props }, ref) => (
-  <DrawerPortal>
-    <DrawerOverlay />
-    <VaulDrawer.Content
-      ref={ref}
-      className={cn(
-        'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[92vh] flex-col rounded-t-3xl',
-        'surface-stone',
-        // Desktop center-mode: when the parent uses Drawer.Root with
-        // direction="bottom" (default) on desktop, callers can override
-        // via className with sm:* utilities (e.g. sm:rounded-3xl
-        // sm:max-w-2xl sm:mx-auto sm:bottom-1/2 sm:translate-y-1/2)
-        className,
-      )}
-      {...props}
-    >
-      {/* Handle bar — iOS sheet motif */}
-      <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-warm-300/65" aria-hidden />
-      {children}
-    </VaulDrawer.Content>
-  </DrawerPortal>
-));
+>(({ className, children, ...props }, forwardedRef) => {
+  // vaul's Drawer.Content wraps @radix-ui/react-dialog internally, so it
+  // inherits the same trapped FocusScope (real-DOM-containment focus trap)
+  // as ModalShell. Capture our own DOM node — via state, not a plain ref,
+  // so descendants re-render once it's attached (parent refs commit AFTER
+  // descendant layout effects, so a plain ref read from a child's layout
+  // effect could still be null) — and provide it through the same
+  // ModalPortalContext ModalShell uses, so a floating popup rendered inside
+  // this Drawer (e.g. fairway/forms/Select.tsx) can portal INTO this
+  // subtree instead of document.body. See fairway/overlays/_shared.ts's
+  // ModalPortalContext docblock for the full mechanism.
+  const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(null);
+  const setRefs = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      setContentNode(node);
+      if (typeof forwardedRef === 'function') forwardedRef(node);
+      else if (forwardedRef) forwardedRef.current = node;
+    },
+    [forwardedRef],
+  );
+
+  return (
+    <DrawerPortal>
+      <DrawerOverlay />
+      <VaulDrawer.Content
+        ref={setRefs}
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[92vh] flex-col rounded-t-3xl',
+          'surface-stone',
+          // Desktop center-mode: when the parent uses Drawer.Root with
+          // direction="bottom" (default) on desktop, callers can override
+          // via className with sm:* utilities (e.g. sm:rounded-3xl
+          // sm:max-w-2xl sm:mx-auto sm:bottom-1/2 sm:translate-y-1/2)
+          className,
+        )}
+        {...props}
+      >
+        {/* Handle bar — iOS sheet motif */}
+        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-warm-300/65" aria-hidden />
+        <ModalPortalContext.Provider value={contentNode}>
+          {children}
+        </ModalPortalContext.Provider>
+      </VaulDrawer.Content>
+    </DrawerPortal>
+  );
+});
 DrawerContent.displayName = 'DrawerContent';
 
 const DrawerHeader = ({

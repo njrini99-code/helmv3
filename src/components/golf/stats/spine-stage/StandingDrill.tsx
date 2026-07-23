@@ -10,14 +10,23 @@
  * now, so the content behind it opens straight to the full board).
  * ========================================================================== */
 
+import { Fragment } from 'react';
 import Link from 'next/link';
-import { Sparkles, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { StandingStrip, Surface } from '@/components/fairway';
+import { DrillPanel, StandingTrack, useStage } from '@/components/fairway/modules';
+import { StandingStrip } from '@/components/fairway';
+import { TABULAR_NUMS } from '@/components/fairway/charts/theme';
 import { cn } from '@/lib/utils';
 import { getMetricRenderConfig, type MetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import {
+  toScalePct,
+  shouldShowTeamMarker,
+  pgaReferenceLabel,
+} from '@/components/golf/coachhelm/v3/StandingBar';
+import { formatSgSigned } from './buildStatsViewModel';
+import { CategoryInsightStrip } from './CategoryInsightStrip';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 
 // CoachHelm cause/effect — REUSED VERBATIM from FairwayStatsCockpit. Returns
@@ -40,60 +49,79 @@ function prettyPatternType(t: string | null | undefined): string {
   return t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// CoachHelm cause/effect card — one mined pattern as cause → quantified stroke
-// effect → fix. Honest sign: negative strokeImpact = a leak (cost), positive =
-// a strength (gain). The data + framing come straight from getPlayerPatterns
-// (ported from FairwayStatsCockpit's CauseEffectCard verbatim).
-function CauseEffectCard({ pattern }: { pattern: CoachHelmPattern }) {
-  const isLeak = pattern.strokeImpact < 0;
-  const magnitude = Math.abs(pattern.strokeImpact).toFixed(1);
-  const cause = pattern.description?.trim() || prettyPatternType(pattern.patternType);
-  const fix = pattern.recommendation?.trim() || null;
-  const rounds = finite(pattern.occurrenceCount);
+// On-dark hairline — matches `Spine`'s own `HAIRLINE_COLOR` exactly (no
+// `bg-surface-*` token covers a translucent-white overlay on the accent
+// gradient, so both components share this inline value rather than the
+// Tailwind `border-white/N` opacity utility).
+const SG_INSTRUMENT_HAIRLINE = 'oklch(1 0 0 / 0.14)';
+
+/**
+ * StrokesGainedInstrument — the "grouped visually apart from traditional
+ * stats" SG cluster: all 4 sg_* rows plus sg_total, in ONE shared CSS grid
+ * (so the label / You-value / rail columns align pixel-for-pixel across
+ * every row — the plain generic `StandingStrip` cards below can't do this,
+ * each is its OWN box with its own internal layout) mounted on the SAME
+ * dark accent-gradient surface `Spine` uses for exactly this "you vs
+ * benchmarks" read. Each row's You/Team/Tour reference ticks are drawn by
+ * the REAL, fixed `StandingTrack` (not a reimplementation) — the component
+ * doc on `StandingTrack.tsx` calls out standalone reuse outside `Spine` as
+ * the intended pattern.
+ */
+function StrokesGainedInstrument({
+  rows,
+}: {
+  rows: ReadonlyArray<{ id: MetricId; row: PlayerStandingRow; cfg: MetricRenderConfig }>;
+}) {
+  if (rows.length === 0) return null;
 
   return (
-    <Surface elevation="border" padding="md" className="flex h-full flex-col gap-3">
-      <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
-        {prettyPatternType(pattern.patternType)}
-      </span>
-
-      {/* Effect — the quantified stroke cost / gain. */}
-      <span
-        className={cn(
-          'inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 font-fw-mono text-caption font-medium tabular-nums',
-          isLeak ? 'bg-fw-warning-bg text-fw-warning' : 'bg-fw-success-bg text-fw-success',
-        )}
-      >
-        {isLeak ? (
-          <TrendingDown className="h-3.5 w-3.5" aria-hidden />
-        ) : (
-          <TrendingUp className="h-3.5 w-3.5" aria-hidden />
-        )}
-        {isLeak ? `≈ ${magnitude} strokes / round` : `+${magnitude} strokes / round`}
-      </span>
-
-      {/* Cause */}
-      <p className="font-fw-sans text-body-sm leading-snug text-text-primary">{cause}</p>
-
-      {/* Fix (the actionable handoff) */}
-      {fix ? (
-        <p className="mt-auto font-fw-sans text-caption leading-snug text-text-tertiary">
-          <span className="font-medium text-text-secondary">Fix · </span>
-          {fix}
-        </p>
-      ) : null}
-
-      {rounds != null && rounds > 0 ? (
-        <p className={cn('font-fw-sans text-caption text-text-tertiary', fix ? '' : 'mt-auto')}>
-          Seen across {rounds} {rounds === 1 ? 'round' : 'rounds'}
-        </p>
-      ) : null}
-    </Surface>
+    <div
+      data-slot="sg-instrument"
+      className="rounded-fw-lg border border-accent-700 bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise"
+    >
+      <div className="grid grid-cols-[1fr_4.25rem] items-baseline gap-x-3 gap-y-1.5">
+        {rows.map(({ id, row, cfg }) => {
+          const isTotal = id === 'sg_total';
+          const youPct = toScalePct(row.player_value, cfg.default_scale);
+          const showTeam = shouldShowTeamMarker({ team_avg: row.team_avg, team_n: row.team_n });
+          const refLabel = pgaReferenceLabel(id, row.is_womens).short;
+          const benchmarks: { label: string; pct: number; emphasis?: boolean }[] = [
+            ...(showTeam && row.team_avg !== null
+              ? [{ label: 'Team', pct: toScalePct(row.team_avg, cfg.default_scale) }]
+              : []),
+            { label: refLabel, pct: toScalePct(row.pga_value, cfg.default_scale), emphasis: true },
+          ];
+          return (
+            <Fragment key={id}>
+              <span
+                className={cn(
+                  'truncate font-fw-sans text-body-sm',
+                  isTotal ? 'font-semibold text-text-on-accent' : 'text-accent-100',
+                )}
+              >
+                {cfg.display_label}
+              </span>
+              <span
+                style={TABULAR_NUMS}
+                className="text-right font-fw-mono text-body-sm font-semibold tabular-nums text-text-on-accent"
+              >
+                {formatSgSigned(row.player_value)}
+              </span>
+              <div className={cn('col-span-2', isTotal ? 'pb-2.5' : 'pb-1')}>
+                <StandingTrack pct={youPct} subjectLabel="You" benchmarks={benchmarks} />
+              </div>
+              {isTotal ? (
+                <div aria-hidden="true" className="col-span-2 mb-1 border-t" style={{ borderTopColor: SG_INSTRUMENT_HAIRLINE }} />
+              ) : null}
+            </Fragment>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 const CATEGORY_ORDER: ReadonlyArray<{ category: string; label: string; description: string }> = [
-  { category: 'sg', label: 'Strokes Gained', description: 'Off the tee, approach, around the green, and putting.' },
   { category: 'putting', label: 'Putting', description: 'Make % by distance and miss patterns.' },
   { category: 'approach', label: 'Approach', description: 'Proximity to hole + greens in regulation.' },
   { category: 'short_game', label: 'Short Game', description: 'Scrambling by lie type.' },
@@ -153,16 +181,32 @@ export function StandingDrill({
     byCategory.get(cat)!.push({ id, row, cfg });
   }
 
+  // Strokes Gained renders as its own aligned instrument group (below),
+  // separate from the generic per-category `StandingStrip` grids — excluded
+  // from `groups` so it's never ALSO rendered as a plain card row.
+  const sgRows = byCategory.get('sg') ?? [];
   const groups = CATEGORY_ORDER.filter((g) => (byCategory.get(g.category) ?? []).length > 0);
 
   return (
     <DrillPanel title="Standing" backLabel="All areas" onBack={home}>
-      {groups.length === 0 ? (
+      {groups.length === 0 && sgRows.length === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">
           The full standing board fills in after 5+ rounds with shot detail.
         </p>
       ) : (
         <div className="flex flex-col gap-6">
+          {sgRows.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              <div className="px-1">
+                <h4 className="font-fw-sans text-body font-medium text-text-primary">Strokes Gained</h4>
+                <p className="font-fw-sans text-caption text-text-tertiary">
+                  Off the tee, approach, around the green, and putting — your edge over the field, in strokes per
+                  round.
+                </p>
+              </div>
+              <StrokesGainedInstrument rows={sgRows} />
+            </div>
+          ) : null}
           {groups.map((group) => {
             const rows = byCategory.get(group.category) ?? [];
             return (
@@ -199,13 +243,9 @@ export function StandingDrill({
       )}
 
       {coachHelmReads.length > 0 ? (
-        <div className="mt-6 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3 px-1">
-            <span className="inline-flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-accent-600" aria-hidden />
-              <h4 className="font-fw-sans text-body font-medium text-text-primary">What CoachHelm sees</h4>
-            </span>
-            {playerId ? (
+        <div className="mt-6 flex flex-col gap-2">
+          {playerId ? (
+            <div className="flex justify-end px-1">
               <Link
                 href={
                   standingViewerContext === 'self'
@@ -217,13 +257,21 @@ export function StandingDrill({
                 Open CoachHelm
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
-            ) : null}
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {coachHelmReads.map((p) => (
-              <CauseEffectCard key={p.id} pattern={p} />
-            ))}
-          </div>
+            </div>
+          ) : null}
+          {/* Restyled via the shared CategoryInsightStrip (§ per-drill "What
+              CoachHelm sees" vocabulary) — same card, same leak/strength chip
+              language every other drill uses. `max={3}` keeps the existing
+              top-3-by-|strokeImpact| selection above, just presented through
+              the shared component instead of a bespoke card grid. */}
+          <CategoryInsightStrip
+            insights={coachHelmReads.map((p) => ({
+              title: p.description?.trim() || prettyPatternType(p.patternType),
+              strokeImpact: p.strokeImpact,
+              recommendation: p.recommendation?.trim() || null,
+            }))}
+            max={3}
+          />
         </div>
       ) : null}
     </DrillPanel>

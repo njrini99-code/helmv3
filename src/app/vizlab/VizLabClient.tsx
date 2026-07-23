@@ -14,7 +14,6 @@ import {
   FairwayTrendBrain,
   type FairwayTrendBrainProps,
 } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
-import { RoundIntelligence } from '@/components/golf/coachhelm/round-review/RoundIntelligence';
 import { LeakBoard, type LeakInsight } from '@/components/golf/coachhelm/coach/LeakBoard';
 import {
   GoalsSection,
@@ -62,16 +61,6 @@ const TREND_FORMING: FairwayTrendBrainProps = {
   },
 };
 
-const ROUND_OPPS = [
-  { category: 'Putting', potentialStrokes: 1.7, description: 'Eliminating 2 three-putts saves ~1.7 strokes' },
-  { category: 'Course Management', potentialStrokes: 1.0, description: '1 penalty stroke cost 1 stroke' },
-  {
-    category: 'Short Game',
-    potentialStrokes: 0.6,
-    description: 'Improving scramble rate to 50% saves ~0.6 strokes from 5 attempts',
-  },
-];
-
 const TEAM_LEAKS: LeakInsight[] = [
   { id: '1', category: 'putting', title: 'Lag distance 3-putts', strokesImpact: 0.8, priority: 'high', playerName: 'A. Rivera' },
   { id: '2', category: 'putting', title: 'Short putt misses', strokesImpact: 0.4, priority: 'medium', playerName: 'J. Park' },
@@ -81,13 +70,6 @@ const TEAM_LEAKS: LeakInsight[] = [
   { id: '6', category: 'approach', title: 'Rough approach', strokesImpact: 0.3, priority: 'low', playerName: 'J. Park' },
   { id: '7', category: 'tee', title: 'Driver accuracy', strokesImpact: 0.2, priority: 'low', playerName: 'M. Chen' },
 ];
-
-const ROUND_COACH = {
-  primaryTakeaway: 'Your putter cost you today.',
-  practicePriority: 'Spend 20 minutes on lag putting from 30+ feet before your next round.',
-  focusAreas: ['Lag putting', 'Tee accuracy'],
-  confidence: 0.62,
-};
 
 /* ── Goals demo data (DUG-shaped) ─────────────────────────────────────────── */
 
@@ -320,15 +302,6 @@ export function VizLabClient() {
           <div className="grid gap-6 sm:grid-cols-2">
             <FairwayTrendBrain {...TREND_CONFIRMED} />
             <FairwayTrendBrain {...TREND_FORMING} />
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          <p className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
-            Round review · this round
-          </p>
-          <div className="max-w-md">
-            <RoundIntelligence strokesToGain={ROUND_OPPS} coachHelm={ROUND_COACH} />
           </div>
         </section>
 

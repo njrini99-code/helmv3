@@ -19,7 +19,8 @@
 import * as React from "react";
 import { Combobox as BaseCombobox } from "@base-ui-components/react/combobox";
 import { cn } from "@/lib/utils";
-import { popupClasses, optionClasses, type FieldSize } from "./styles";
+import { useModalPortalContainer } from "@/components/fairway/overlays/_shared";
+import { popupClasses, popupPositionerClasses, optionClasses, type FieldSize } from "./styles";
 
 export interface ComboboxOption {
   label: string;
@@ -75,6 +76,12 @@ export function Combobox(props: ComboboxProps) {
   } = props;
 
   const isMulti = props.multiple === true;
+
+  // Same ModalShell/Drawer portal-container + z-index fix as Select.tsx —
+  // see fairway/overlays/_shared.ts's ModalPortalContext docblock and
+  // styles.ts's popupPositionerClasses docblock for the two independent bugs
+  // this addresses (focus-trap fight + z-index on the wrong element).
+  const modalPortalContainer = useModalPortalContainer();
 
   return (
     // The generic args are erased here intentionally: the discriminated union
@@ -151,8 +158,8 @@ export function Combobox(props: ComboboxProps) {
         </BaseCombobox.Icon>
       </div>
 
-      <BaseCombobox.Portal>
-        <BaseCombobox.Positioner sideOffset={6}>
+      <BaseCombobox.Portal container={modalPortalContainer ?? undefined}>
+        <BaseCombobox.Positioner sideOffset={6} className={popupPositionerClasses}>
           <BaseCombobox.Popup data-slot="combobox-popup" className={popupClasses}>
             <BaseCombobox.Empty className="px-3 py-6 text-center text-caption text-text-tertiary">
               {emptyMessage}
