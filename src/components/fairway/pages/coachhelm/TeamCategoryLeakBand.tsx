@@ -28,7 +28,9 @@
 
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Badge, Surface, TrendGlyph } from '@/components/fairway';
+import { Badge } from '@/components/fairway/controls/badge';
+import { Surface } from '@/components/fairway/surfaces/surface';
+import { TrendGlyph } from '@/components/fairway/charts/TrendChip';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { RingGauge } from '@/components/fairway/modules/RingGauge';
 import type { TeamCategory } from '@/app/golf/actions/team-category-insights';

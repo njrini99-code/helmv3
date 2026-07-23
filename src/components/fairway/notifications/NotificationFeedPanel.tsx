@@ -14,7 +14,11 @@
  * ========================================================================== */
 
 import { BellOff, Inbox } from 'lucide-react';
-import { Segmented, Button, EmptyState, InlineNotice, SkeletonList, type SegmentedOption } from '@/components/fairway';
+import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
+import { Button } from '@/components/fairway/controls/button';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import { SkeletonList } from '@/components/fairway/feedback/Skeleton';
 import { NotificationRow } from './NotificationRow';
 import { categoryShortLabel } from './category-meta';
 import {

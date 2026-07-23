@@ -38,7 +38,8 @@
  */
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { InsightCard as FairwayInsightCard, Button } from '@/components/fairway';
+import { InsightCard as FairwayInsightCard } from '@/components/fairway/cards-insight/InsightCard';
+import { Button } from '@/components/fairway/controls/button';
 import { TrendChip } from '@/components/fairway/charts/TrendChip';
 import {
   DrillChips,

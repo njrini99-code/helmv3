@@ -14,7 +14,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Surface, Button, SkeletonList } from '@/components/fairway';
+import { Surface } from '@/components/fairway/surfaces/surface';
+import { Button } from '@/components/fairway/controls/button';
+import { SkeletonList } from '@/components/fairway/feedback/Skeleton';
 import { NotificationRow } from './NotificationRow';
 import { useNotificationPanel } from './NotificationPanelContext';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';

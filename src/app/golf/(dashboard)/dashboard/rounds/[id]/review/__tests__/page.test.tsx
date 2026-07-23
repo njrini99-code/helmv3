@@ -304,14 +304,15 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     expect(getByText(/3 pars · 6 bogeys/)).toBeInTheDocument();
   });
 
-  it('renders the strokes-lost section from strokesToGain', async () => {
-    const { findByText, getByText } = renderAsPlayer();
+  it('renders the round-level Strokes Gained summary section', async () => {
+    const { findByText } = renderAsPlayer();
 
-    await findByText('Where strokes went');
-    // `{ selector: 'span' }` scopes this to the RailBars row label — the
-    // round breakdown's putting section also renders an (unrelated) "Putting"
-    // <h3> heading, so an unscoped text query is ambiguous between the two.
-    expect(getByText('Putting', { selector: 'span' })).toBeInTheDocument();
+    // The V1 heuristic "Where strokes went" RailBars block was removed
+    // (2026-07-23) — it contradicted the authoritative per-shot Strokes Gained
+    // rollup (RoundSGSummary) that now leads the review body. RoundSGSummary
+    // renders its "This round" headline even when SG hasn't been computed
+    // (honest awaiting state), so this asserts the replacement section mounts.
+    await findByText('This round');
   });
 
   it('renders a working Share-with-Coach CTA wired to shareRoundReviewWithCoach', async () => {

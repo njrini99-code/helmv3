@@ -23,13 +23,10 @@
  * Honest: a starved instrument dims to "awaiting", never a fabricated 0.
  * ========================================================================== */
 
-import {
-  InstrumentPanel,
-  InstrumentCluster,
-  Readout,
-  SegmentBar,
-  type SegmentBarPart,
-} from '@/components/fairway';
+import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
+import { InstrumentCluster } from '@/components/fairway/instrument/InstrumentCluster';
+import { Readout } from '@/components/fairway/instrument/Readout';
+import { SegmentBar, type SegmentBarPart } from '@/components/fairway/charts/SegmentBar';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { Button } from '@/components/fairway/controls/button';
 import type { PlayersGridPlayer, PlayersGridFocusArea, PlayersGridStats, RosterRow } from './PlayersGridView';

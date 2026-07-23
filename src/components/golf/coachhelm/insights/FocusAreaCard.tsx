@@ -25,7 +25,11 @@
 import type { ComponentType } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Surface, Button, Badge, Sparkline, type FwStatusTone } from '@/components/fairway';
+import { Surface } from '@/components/fairway/surfaces/surface';
+import { Button } from '@/components/fairway/controls/button';
+import { Badge } from '@/components/fairway/controls/badge';
+import { Sparkline } from '@/components/fairway/charts/Sparkline';
+import type { FwStatusTone } from '@/components/fairway/controls/_internal';
 import {
   IconChevronRight,
   IconTarget,

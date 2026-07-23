@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FocusAreaCard } from './FocusAreaCard';
-import { Button, EmptyState, InlineNotice, SkeletonList } from '@/components/fairway';
+import { Button } from '@/components/fairway/controls/button';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import { SkeletonList } from '@/components/fairway/feedback/Skeleton';
 import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
 import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
 

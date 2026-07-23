@@ -70,11 +70,22 @@ describe('Filmstrip', () => {
     await waitFor(() => {
       expect(container.querySelectorAll('svg')).toHaveLength(2);
     });
-    // Hole 1 has a logged sand shot — its strip renders the sand-lie dot
-    // color; hole 2 has none in the map, so it draws the empty turf only.
+    // Hole 1 has a logged sand shot — its strip renders a dot at all (a
+    // cream-fill marker, never the old lie-colored fill — see
+    // `HoleShotPath`'s 2026-07-22 "cream markers" redesign) AND, because a
+    // sand lie with no logged miss_direction is a MISS with no direction
+    // (Wave B's shape-based hit/miss signal), a neutral radiating burst
+    // glyph. Hole 2 has no entry in the map at all — no dot, no glyph, just
+    // the empty turf.
     const [hole1Svg, hole2Svg] = container.querySelectorAll('svg');
-    expect(hole1Svg!.innerHTML).toContain('#d4b97a'); // LIE_COLOR.sand
-    expect(hole2Svg!.querySelectorAll('circle[fill="#d4b97a"]')).toHaveLength(0);
+    expect(hole1Svg!.querySelectorAll('circle[fill="#fbf3e0"]').length).toBeGreaterThan(0);
+    expect(hole1Svg!.querySelectorAll('[data-shot-outcome="miss"]')).toHaveLength(1);
+    expect(hole1Svg!.querySelectorAll('[data-miss-burst="true"]')).toHaveLength(1);
+    expect(hole1Svg!.querySelectorAll('[data-miss-wedge="true"]')).toHaveLength(0);
+    // Never the old (2026-07-22-and-earlier, now-legacy) lie-colored fill.
+    expect(hole1Svg!.querySelectorAll('circle[fill="#d4b97a"]')).toHaveLength(0);
+    expect(hole2Svg!.querySelectorAll('circle[fill="#fbf3e0"]')).toHaveLength(0);
+    expect(hole2Svg!.querySelectorAll('[data-shot-outcome]')).toHaveLength(0);
   });
 });
 

@@ -17,7 +17,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
-import { IconButton, PopoverPanel, Sheet } from '@/components/fairway';
+import { IconButton } from '@/components/fairway/controls/button';
+import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useNotificationPanel } from './NotificationPanelContext';
