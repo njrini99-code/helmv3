@@ -330,8 +330,11 @@ export function ExerciseWizard({ initial, onSubmit, onClose }: ExerciseWizardPro
         </AnimatePresence>
       </div>
 
-      {/* Sticky footer */}
-      <div className="sticky bottom-0 -mx-6 -mb-6 border-t border-warm-100 bg-cream-50/95 px-6 py-4">
+      {/* Sticky footer — rounded-b matches Modal's own outer radius (rounded-[24px]
+          on md+ once sheetOnMobile collapses to a fully-rounded dialog; flush
+          rounded-b-none on mobile where the sheet sits bottom-anchored) so this
+          full-bleed footer doesn't paint square corners over Modal's rounded shape. */}
+      <div className="sticky bottom-0 -mx-6 -mb-6 rounded-b-none md:rounded-b-[24px] border-t border-warm-100 bg-cream-50/95 px-6 py-4">
         {(stepError ?? submitError) && (
           <InkNotice role="alert" className="mb-3">
             {stepError ?? submitError}

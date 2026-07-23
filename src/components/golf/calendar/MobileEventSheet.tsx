@@ -324,7 +324,6 @@ export function MobileEventSheet({
           'transform transition-transform duration-300 ease-out',
           isOpen ? 'translate-y-0' : 'translate-y-full'
         )}
-        style={{ paddingBottom: safeAreaBottom }}
       >
         {/* Drag handle */}
         <div className="flex justify-center py-3" aria-hidden="true">

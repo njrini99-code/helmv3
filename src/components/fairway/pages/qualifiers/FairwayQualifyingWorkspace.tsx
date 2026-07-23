@@ -487,7 +487,14 @@ function CoachPicks({
             description="Every entry is auto-locked on merit — no discretionary picks needed."
           />
         ) : (
-          <ul className="flex flex-col">
+          // Same rationale as SlotLeaderboard above: the name column plus the
+          // Edit/Remove (or Pick) button cluster don't fit a ~320px phone, and
+          // this list has no scroll container of its own — so the tail of the
+          // row (including the action buttons) was silently clipped by the
+          // global mobile `overflow-x: clip` on html/body instead of merely
+          // wrapping the page. Give it the same horizontal scroller.
+          <div className="-mx-1 overflow-x-auto px-1">
+          <ul className="flex min-w-[420px] flex-col">
             {eligible.map((c) => {
               const isPicked = c.selection?.selection_type === 'coach_pick';
               const isEditing = drafts[c.player_id] !== undefined;
@@ -495,7 +502,7 @@ function CoachPicks({
               const draftEmpty = (drafts[c.player_id] ?? '').trim().length === 0;
               return (
                 <li key={c.player_id} className="border-b border-border-subtle py-3.5 last:border-b-0">
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 items-center gap-4">
                     <span className="w-7 font-fw-mono text-body-sm tabular-nums text-text-tertiary">
                       {c.leaderboard_rank ?? '—'}
                     </span>
@@ -573,6 +580,7 @@ function CoachPicks({
               );
             })}
           </ul>
+          </div>
         )}
       </Surface.Body>
     </Surface>

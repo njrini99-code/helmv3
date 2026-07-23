@@ -164,11 +164,11 @@ export function EventDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${uid}-title`}
-        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-warm-100">
+        <div className="px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TypeIcon size={16} className="text-warm-600" />
@@ -188,7 +188,7 @@ export function EventDetailModal({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Time Info */}
           <div className="flex items-center gap-4 p-4 bg-warm-50 rounded-xl">
             <div className="text-center">
@@ -334,7 +334,7 @@ export function EventDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between flex-shrink-0">
           <Button variant="danger"
             onClick={handleDelete}
             disabled={submitting}

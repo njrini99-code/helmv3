@@ -202,7 +202,7 @@ function PipelineBoardSkeleton() {
       >
         {BOARD_STAGES.map((s) => (
           <div key={s.id} className="w-[280px] flex-shrink-0 lg:w-auto">
-            <PaperCard className="flex h-full min-h-[420px] flex-col p-4">
+            <PaperCard className="flex h-full min-h-[520px] flex-col p-4">
               <div className="mb-4 flex items-center justify-between">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton circle className="h-5 w-5" />

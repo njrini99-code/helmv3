@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { cn, getFullName } from '@/lib/utils';
@@ -214,8 +215,25 @@ export function PositionPlayerStack({
     return nameA.localeCompare(nameB);
   });
 
-  const visiblePlayers = expanded ? sortedPlayers : sortedPlayers.slice(0, maxVisible);
-  const hiddenCount = players.length - maxVisible;
+  // The diamond scales down with viewport width (aspect-[4/3], no min-height)
+  // while each stacked pill keeps a fixed pixel height, so on narrow phone
+  // widths adjacent position stacks (e.g. Pitcher/Catcher) can end up close
+  // enough that 2-player stacks visually interleave. Clamp to a single
+  // visible pill (plus the existing "+N" overflow chip) below that width so
+  // collapsed stacks stay well under the vertical gap between anchors.
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 480px)');
+    const update = () => setIsNarrowViewport(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, []);
+
+  const effectiveMaxVisible = !expanded && isNarrowViewport ? Math.min(maxVisible, 1) : maxVisible;
+  const visiblePlayers = expanded ? sortedPlayers : sortedPlayers.slice(0, effectiveMaxVisible);
+  const hiddenCount = players.length - effectiveMaxVisible;
 
   if (players.length === 0) {
     return null;

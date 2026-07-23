@@ -103,7 +103,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         </div>
         
         {/* Content */}
-        <div className="px-6 pb-6 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 space-y-4">
           {/* Schedule */}
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">

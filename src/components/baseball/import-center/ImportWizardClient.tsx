@@ -1214,28 +1214,30 @@ export function ImportWizardClient({
               skipped.
             </p>
             <div className="overflow-hidden rounded-card border border-[color:var(--hairline)]">
-              <table className="w-full text-body-sm">
-                <thead className="text-left text-text-tertiary">
-                  <tr>
-                    <th className="px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Stat field</th>
-                    <th className="px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Source column</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(preview.mapping).map(([field, col]) => (
-                    <tr key={field} className="border-t border-[color:var(--hairline)]">
-                      <td className="px-4 py-2 text-text-primary">{field}</td>
-                      <td className="px-4 py-2">
-                        {col ? (
-                          <span className="text-text-secondary">{col}</span>
-                        ) : (
-                          <span className="text-text-tertiary">— not found —</span>
-                        )}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[420px] text-body-sm">
+                  <thead className="text-left text-text-tertiary">
+                    <tr>
+                      <th className="px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Stat field</th>
+                      <th className="px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Source column</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {Object.entries(preview.mapping).map(([field, col]) => (
+                      <tr key={field} className="border-t border-[color:var(--hairline)]">
+                        <td className="px-4 py-2 text-text-primary">{field}</td>
+                        <td className="px-4 py-2">
+                          {col ? (
+                            <span className="whitespace-nowrap text-text-secondary">{col}</span>
+                          ) : (
+                            <span className="text-text-tertiary">— not found —</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
             <StepNav
               onBack={() => setStep('detect')}

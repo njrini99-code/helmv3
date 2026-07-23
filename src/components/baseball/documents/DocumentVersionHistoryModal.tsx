@@ -139,7 +139,7 @@ export function DocumentVersionHistoryModal({
         />
 
         {/* Modal */}
-        <div className="relative bg-cream-50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-clip">
+        <div className="relative bg-cream-50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85dvh] flex flex-col overflow-clip">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200 flex-shrink-0">
             <div className="min-w-0">
