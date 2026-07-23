@@ -20,11 +20,16 @@
  *      columns appear only when a class meets on them. Mobile swaps the grid
  *      for a day picker + a time-railed list of the selected day. Classes
  *      with no fixed meeting (online/arranged) sit in a "Flexible" tray.
- *   4. All classes — the editable roster, sorted by first meeting of the
- *      week, two columns on desktop.
- *   Class blocks/rows are plain <button> elements — the Button primitive's
- *   base styles (whitespace-nowrap, row flex) fought multi-line card content
- *   and produced the jammed single-line cards this pass replaces.
+ *   4. All classes — the editable roster as FairwayEventCard-shaped rows
+ *      (mono time block · title · meta), sorted by first meeting of the week,
+ *      two columns on desktop.
+ *   On-system idioms throughout: roster rows are Fairway <Button variant="ghost">
+ *   in the canonical event-card recipe; per-class color is a leading DOT
+ *   (never a side rail); the mobile day picker is the shared <Segmented>
+ *   primitive; timeline cells use the month-grid chip idiom (soft tinted fill
+ *   + dot). The absolutely-positioned timeline cells + mobile list rows stay
+ *   raw <button>s (justified disables) because the Button primitive's fixed
+ *   min-height/row-flex can't size a duration-positioned calendar cell.
  *
  * PRESERVED PLUMBING (owned by the legacy page, passed in — NEVER touched here):
  *   • fetchClasses + the golf_player_classes select.
@@ -58,6 +63,8 @@ import {
   Surface,
   EmptyState,
   Skeleton,
+  SkeletonCard,
+  Segmented,
   Chip,
   Button,
 } from '@/components/fairway';
@@ -355,7 +362,7 @@ export function FairwayGolfClasses({
   // otherwise see an empty schedule with Add/Import CTAs that silently no-op. ──
   if (isWrongRole) {
     return (
-      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6">
+      <div className="mx-auto w-full max-w-[1100px] px-4 py-6 md:px-6">
         <Surface elevation="border" padding="lg">
           <EmptyState
             icon={BookOpen}
@@ -375,7 +382,7 @@ export function FairwayGolfClasses({
   // ── No-team gate — honest, with the join CTA (mirrors legacy behavior) ──────
   if (!hasTeam) {
     return (
-      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6">
+      <div className="mx-auto w-full max-w-[1100px] px-4 py-6 md:px-6">
         <Surface elevation="border" padding="lg">
           <EmptyState
             icon={BookOpen}
@@ -463,13 +470,21 @@ export function FairwayGolfClasses({
         />
 
         {loading ? (
-          /* ── Loading skeleton — mirrors the real shell (strip → grid → list) ── */
-          <div className="flex flex-col gap-8">
+          /* ── Loading skeleton — mirrors the real shell (strip → timeline →
+             2-col list). role/aria + sr-only match the codebase skeleton
+             a11y contract (SkeletonGroup); SkeletonCard carries it per-card. ── */
+          <div
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+            className="flex flex-col gap-8"
+          >
+            <span className="sr-only">Loading classes…</span>
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-[420px] w-full" />
             <div className="grid gap-2.5 md:grid-cols-2">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
+              <SkeletonCard />
+              <SkeletonCard />
             </div>
           </div>
         ) : !hasClasses ? (
@@ -497,55 +512,58 @@ export function FairwayGolfClasses({
           </Surface>
         ) : (
           <>
-            {/* ════════════ 2 · TODAY STRIP (one instrument row) ════════════ */}
-            <InstrumentPanel depth="base" padding="md">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0">
-                  <p className="whitespace-nowrap font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-                    {todayLabel}
-                  </p>
-                  {upNext ? (
-                    <p className="mt-1.5 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span className="flex items-center gap-1.5 font-fw-sans text-caption font-medium uppercase tracking-wide text-accent-700">
-                        <span
-                          aria-hidden
-                          className="h-1.5 w-1.5 rounded-full"
-                          style={{ backgroundColor: dotColor(upNext.block.cls.color) }}
-                        />
-                        {upNext.kind === 'now'
-                          ? 'In class now'
-                          : upNext.kind === 'today'
-                            ? 'Up next'
-                            : upNext.offset === 1
-                              ? 'Tomorrow'
-                              : DAY_NAMES[upNext.day]}
+            {/* ════════════ 2 · TODAY STRIP (one instrument row) ════════════
+                Uses InstrumentPanel's own bezel slots (eyebrow/header/readout)
+                rather than hand-rolling the label row — the eyebrow token then
+                comes from the primitive, not a local copy. */}
+            <InstrumentPanel
+              depth="base"
+              padding="md"
+              eyebrow={todayLabel}
+              header={
+                upNext ? (
+                  <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span className="flex items-center gap-1.5 font-fw-sans text-caption font-medium uppercase tracking-wide text-accent-700">
+                      <span
+                        aria-hidden
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: dotColor(upNext.block.cls.color) }}
+                      />
+                      {upNext.kind === 'now'
+                        ? 'In class now'
+                        : upNext.kind === 'today'
+                          ? 'Up next'
+                          : upNext.offset === 1
+                            ? 'Tomorrow'
+                            : DAY_NAMES[upNext.day]}
+                    </span>
+                    <span className="font-fw-mono text-body-sm font-semibold text-text-primary">
+                      {parseClassName(upNext.block.cls.class_name).code ||
+                        parseClassName(upNext.block.cls.class_name).name}
+                    </span>
+                    <span className="min-w-0 truncate font-fw-sans text-body-sm text-text-secondary">
+                      {parseClassName(upNext.block.cls.class_name).name}
+                    </span>
+                    <span className="font-fw-mono text-body-sm tabular-nums text-text-secondary">
+                      {upNext.block.cls.start_time ? formatTimeDisplay(upNext.block.cls.start_time) : ''}
+                    </span>
+                    {getLocationDisplay(upNext.block.cls) ? (
+                      <span className="flex min-w-0 items-center gap-1 font-fw-sans text-body-sm text-text-tertiary">
+                        <MapPin className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                        <span className="truncate">{getLocationDisplay(upNext.block.cls)}</span>
                       </span>
-                      <span className="font-fw-mono text-body-sm font-semibold text-text-primary">
-                        {parseClassName(upNext.block.cls.class_name).code ||
-                          parseClassName(upNext.block.cls.class_name).name}
-                      </span>
-                      <span className="min-w-0 truncate font-fw-sans text-body-sm text-text-secondary">
-                        {parseClassName(upNext.block.cls.class_name).name}
-                      </span>
-                      <span className="font-fw-mono text-body-sm tabular-nums text-text-secondary">
-                        {upNext.block.cls.start_time ? formatTimeDisplay(upNext.block.cls.start_time) : ''}
-                      </span>
-                      {getLocationDisplay(upNext.block.cls) ? (
-                        <span className="flex min-w-0 items-center gap-1 font-fw-sans text-body-sm text-text-tertiary">
-                          <MapPin className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
-                          <span className="truncate">{getLocationDisplay(upNext.block.cls)}</span>
-                        </span>
-                      ) : null}
-                    </p>
-                  ) : (
-                    <p className="mt-1.5 font-fw-sans text-body-sm text-text-secondary">
-                      {flexClasses.length === count
-                        ? 'All classes are online or arranged — no fixed meetings this week.'
-                        : 'Done for today — no more scheduled classes.'}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-shrink-0 items-center gap-5 border-t border-border-subtle pt-3 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+                    ) : null}
+                  </span>
+                ) : (
+                  <span className="font-fw-sans text-body-sm text-text-secondary">
+                    {flexClasses.length === count
+                      ? 'All classes are online or arranged — no fixed meetings this week.'
+                      : 'Done for today — no more scheduled classes.'}
+                  </span>
+                )
+              }
+              readout={
+                <div className="flex items-center gap-5">
                   {[
                     { value: count, label: count === 1 ? 'class' : 'classes' },
                     { value: totalCredits, label: totalCredits === 1 ? 'credit' : 'credits' },
@@ -559,8 +577,8 @@ export function FairwayGolfClasses({
                     </p>
                   ))}
                 </div>
-              </div>
-            </InstrumentPanel>
+              }
+            />
 
             {/* ════════════ 3 · WEEK TIMELINE (the signature) ═══════════════ */}
             <section className="flex flex-col gap-3">
@@ -681,46 +699,31 @@ export function FairwayGolfClasses({
 
               {/* ── Mobile: day picker + time-railed list ── */}
               <div className="flex flex-col gap-3 md:hidden">
-                <div
-                  role="tablist"
+                {/* Shared Segmented primitive (moving pill, haptics, scroll-fade
+                    overflow guard) — replaces the hand-rolled tab strip. */}
+                <Segmented
+                  value={selectedDay}
+                  onValueChange={setSelectedDay}
+                  size="sm"
+                  fullWidth
                   aria-label="Day of week"
-                  className="grid gap-1 rounded-fw-md border border-border-subtle bg-surface p-1"
-                  style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))` }}
-                >
-                  {visibleDays.map((day) => {
-                    const isSelected = day === selectedDay;
-                    const isToday = day === todayToken;
+                  options={visibleDays.map((day) => {
                     const dayCount = (classesByDay[day] ?? []).length;
-                    return (
-                      // eslint-disable-next-line helm/no-raw-button -- segmented day tab needs its own compact two-line hit target, not <Button>'s pill
-                      <button
-                        key={day}
-                        type="button"
-                        role="tab"
-                        aria-selected={isSelected}
-                        onClick={() => setSelectedDay(day)}
-                        className={`flex flex-col items-center gap-0.5 rounded-fw-sm px-1 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus ${
-                          isSelected
-                            ? 'bg-accent-600 text-text-on-accent'
-                            : 'text-text-secondary hover:bg-surface-sunken'
-                        }`}
-                      >
-                        <span className="font-fw-sans text-caption font-medium">{DAY_SHORT[day]}</span>
-                        <span
-                          className={`font-fw-mono text-caption tabular-nums ${
-                            isSelected
-                              ? 'text-text-on-accent opacity-80'
-                              : isToday
-                                ? 'text-accent-700'
-                                : 'text-text-tertiary'
-                          }`}
-                        >
-                          {dayCount > 0 ? dayCount : '·'}
+                    return {
+                      value: day,
+                      label: (
+                        <span className="flex items-baseline gap-1">
+                          <span className="font-fw-sans font-medium">{DAY_SHORT[day]}</span>
+                          {dayCount > 0 ? (
+                            <span className="font-fw-mono text-caption tabular-nums opacity-60">
+                              {dayCount}
+                            </span>
+                          ) : null}
                         </span>
-                      </button>
-                    );
+                      ),
+                    };
                   })}
-                </div>
+                />
 
                 <div className="flex flex-col gap-2">
                   {(classesByDay[selectedDay] ?? []).length > 0 ? (
@@ -778,11 +781,12 @@ export function FairwayGolfClasses({
                       );
                     })
                   ) : (
-                    <div className="flex items-center justify-center rounded-fw-md border border-dashed border-border-subtle py-8">
-                      <span className="font-fw-sans text-caption text-text-tertiary">
-                        No classes on {DAY_NAMES[selectedDay]}
-                      </span>
-                    </div>
+                    <EmptyState
+                      variant="subtle"
+                      icon={BookOpen}
+                      title="No classes"
+                      description={`Nothing scheduled for ${DAY_NAMES[selectedDay]}.`}
+                    />
                   )}
                 </div>
               </div>
@@ -845,7 +849,7 @@ export function FairwayGolfClasses({
                       type="button"
                       variant="ghost"
                       onClick={() => onClassClick(cls)}
-                      className="group block h-auto min-h-[68px] w-full rounded-card border border-border-subtle bg-surface p-4 text-left font-normal shadow-flat transition-[box-shadow,transform,border-color] duration-[180ms] hover:-translate-y-px hover:border-border-strong hover:bg-surface hover:shadow-soft focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                      className="group block h-auto min-h-[68px] w-full rounded-card border border-border-subtle bg-surface p-4 text-left font-normal shadow-flat transition-[box-shadow,transform,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-px hover:border-border-strong hover:bg-surface hover:shadow-soft active:translate-y-[0.5px] active:shadow-flat focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0"
                     >
                       <span className="flex w-full items-stretch gap-4">
                         {/* Time block — fixed width, mono tabular (event-card idiom). */}
