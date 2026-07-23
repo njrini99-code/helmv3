@@ -26,9 +26,19 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: () => createClientMock(),
 }));
 
+// Player self-promote to a focus area routes its INSERT through the service-role
+// admin client (RLS has no player insert policy) — mock it so the self path is
+// observable and doesn't touch a real service key.
+const createAdminClientMock = vi.fn();
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => createAdminClientMock(),
+}));
+
 import {
   createFocusAreaFromInsight,
   createFocusAreaFromInsightV2,
+  createFocusAreaFromReview,
+  recordFocusAreaOutcome,
   updateFocusAreaProgress,
   deleteFocusArea,
   reactivateFocusArea,
@@ -204,13 +214,24 @@ describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
     vi.clearAllMocks();
   });
 
-  function harness(reason: 'coach' | 'self') {
-    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason });
-    const insertSpy = vi.fn().mockReturnValue({
+  function makeInsertSpy() {
+    return vi.fn().mockReturnValue({
       select: () => ({
         single: async () => ({ data: { id: 'fa-new' }, error: null }),
       }),
     });
+  }
+
+  // reason='coach' → INSERT goes through the scoped client (coach RLS policy);
+  // reason='self' → INSERT goes through the admin client (no player RLS policy,
+  // ownership already proven by verifyPlayerAccess). Returns both spies so each
+  // test asserts the path it exercises.
+  function harness(reason: 'coach' | 'self' | 'denied') {
+    verifyPlayerAccessMock.mockResolvedValue(
+      reason === 'denied' ? { allowed: false, reason: 'denied' } : { allowed: true, reason },
+    );
+    const scopedInsert = makeInsertSpy();
+    const adminInsert = makeInsertSpy();
     createClientMock.mockResolvedValue({
       auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
       from: (table: string) => {
@@ -239,16 +260,20 @@ describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
           };
         }
         if (table === 'golf_player_focus_areas') {
-          return { insert: insertSpy };
+          return { insert: scopedInsert };
         }
         return {};
       },
     });
-    return insertSpy;
+    createAdminClientMock.mockReturnValue({
+      from: (table: string) =>
+        table === 'golf_player_focus_areas' ? { insert: adminInsert } : {},
+    });
+    return { scopedInsert, adminInsert };
   }
 
-  it('inserts status="proposed" and started_at=null when a coach promotes', async () => {
-    const insertSpy = harness('coach');
+  it('inserts status="proposed" and started_at=null when a coach promotes (scoped client)', async () => {
+    const { scopedInsert, adminInsert } = harness('coach');
 
     const result = await createFocusAreaFromInsightV2({
       playerId: 'player-1',
@@ -259,13 +284,15 @@ describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
     });
 
     expect(result.success).toBe(true);
-    const payload = insertSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    // Coach path uses the RLS-scoped client, NOT the admin client.
+    expect(adminInsert).not.toHaveBeenCalled();
+    const payload = scopedInsert.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload).toHaveProperty('status', 'proposed');
     expect(payload).toHaveProperty('started_at', null);
   });
 
-  it('inserts status="active" and a real started_at when the player self-promotes', async () => {
-    const insertSpy = harness('self');
+  it('inserts status="active" via the ADMIN client when the player self-promotes (P0 RLS fix)', async () => {
+    const { scopedInsert, adminInsert } = harness('self');
 
     const result = await createFocusAreaFromInsightV2({
       playerId: 'player-1',
@@ -276,9 +303,110 @@ describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
     });
 
     expect(result.success).toBe(true);
-    const payload = insertSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    // Player self-promote must go through the admin client (RLS has no player
+    // insert policy) — previously it used the scoped client and was rejected.
+    expect(scopedInsert).not.toHaveBeenCalled();
+    expect(adminInsert).toHaveBeenCalledTimes(1);
+    const payload = adminInsert.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload).toHaveProperty('status', 'active');
+    expect(payload).toHaveProperty('player_id', 'player-1');
     expect(typeof payload.started_at).toBe('string');
+  });
+
+  it('rejects with Forbidden and writes nothing when verifyPlayerAccess denies', async () => {
+    const { scopedInsert, adminInsert } = harness('denied');
+
+    const result = await createFocusAreaFromInsightV2({
+      playerId: 'not-mine',
+      insightId: 'insight-1',
+      title: 'x',
+      description: 'y',
+      areaType: 'putting',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Forbidden');
+    expect(scopedInsert).not.toHaveBeenCalled();
+    expect(adminInsert).not.toHaveBeenCalled();
+  });
+});
+
+describe('createFocusAreaFromReview — player self-promote RLS fix (P0)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('routes the player self-promote INSERT through the admin client (active, from_review_id set)', async () => {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'self' });
+    const scopedInsert = vi.fn();
+    const adminInsert = vi.fn().mockReturnValue({
+      select: () => ({ single: async () => ({ data: { id: 'fa-r' }, error: null }) }),
+    });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: (table: string) => {
+        if (table === 'golf_team_members') {
+          return { select: () => ({ eq: () => ({ eq: () => ({ limit: () => ({ maybeSingle: async () => ({ data: { team_id: 'team-1' }, error: null }) }) }) }) }) };
+        }
+        if (table === 'golf_team_coach_staff') {
+          return { select: () => ({ eq: () => ({ limit: () => ({ maybeSingle: async () => ({ data: { coach_id: 'coach-1' }, error: null }) }) }) }) };
+        }
+        if (table === 'golf_player_focus_areas') {
+          return { insert: scopedInsert };
+        }
+        return {};
+      },
+    });
+    createAdminClientMock.mockReturnValue({
+      from: (t: string) => (t === 'golf_player_focus_areas' ? { insert: adminInsert } : {}),
+    });
+
+    const result = await createFocusAreaFromReview({
+      playerId: 'player-1',
+      reviewId: 'rev-1',
+      title: 'Tidy up lag putting',
+      description: 'desc',
+      areaType: 'putting',
+    });
+
+    expect(result.success).toBe(true);
+    expect(scopedInsert).not.toHaveBeenCalled();
+    expect(adminInsert).toHaveBeenCalledTimes(1);
+    const payload = adminInsert.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('status', 'active');
+    expect(payload).toHaveProperty('from_review_id', 'rev-1');
+  });
+});
+
+describe('recordFocusAreaOutcome — persists outcome_status on the focus area (B5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('writes outcome_status onto golf_player_focus_areas even when there is no source insight', async () => {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'self' });
+    const faUpdateSpy = vi.fn().mockReturnValue({
+      eq: () => ({ in: () => ({ select: async () => ({ data: [{ id: 'fa-1' }], error: null }) }) }),
+    });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: (table: string) => {
+        if (table === 'golf_player_focus_areas') {
+          return {
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { player_id: 'player-1', from_insight_id: null, status: 'active' }, error: null }) }) }),
+            update: faUpdateSpy,
+          };
+        }
+        return {};
+      },
+    });
+
+    const result = await recordFocusAreaOutcome('fa-1', 'improved');
+
+    expect(result.success).toBe(true);
+    const payload = faUpdateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('outcome_status', 'improved');
+    expect(payload).toHaveProperty('status', 'completed');
   });
 });
 
