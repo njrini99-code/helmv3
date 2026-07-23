@@ -66,6 +66,20 @@ vi.mock('@/lib/utils/capacitor', () => ({
   isNativeApp: () => false,
 }));
 
+// Invite-code regeneration now goes through the `regenerateJoinCode` server
+// action (server-side auth + ownership check + crypto code + uniqueness),
+// replacing the old client-side Math.random golf_teams.update. Stub it so we can
+// assert it is invoked for the ACTIVE team, not the men's team.
+const teamsActions = vi.hoisted(() => ({
+  regenerateJoinCode: vi.fn(async (_teamId: string) => ({
+    success: true as const,
+    data: { joinCode: 'NEWCODE9' },
+  })),
+}));
+vi.mock('@/app/golf/actions/teams', () => ({
+  regenerateJoinCode: teamsActions.regenerateJoinCode,
+}));
+
 // ── Recording Supabase client mock ──────────────────────────────────────────
 interface Call {
   table: string;
@@ -234,16 +248,21 @@ describe('Fairway settings panels follow the active-team toggle', () => {
     ).toBe(true);
 
     calls.length = 0; // isolate the write
+    teamsActions.regenerateJoinCode.mockClear();
+    teamsActions.regenerateJoinCode.mockResolvedValueOnce({
+      success: true,
+      data: { joinCode: 'NEWCODE9' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Regenerate invite code' }));
 
+    // The regenerate goes through the server action, scoped to the ACTIVE team.
     await waitFor(() => {
-      const updates = calls.filter((c) => c.table === 'golf_teams' && c.method === 'update');
-      expect(updates).toHaveLength(1);
-      expect(updates[0]!.args[0]).toMatchObject({ join_code: expect.any(String) });
+      expect(teamsActions.regenerateJoinCode).toHaveBeenCalledWith('team-women');
     });
-
-    const writeFilters = eqCalls('golf_teams');
-    expect(writeFilters.some((c) => c.args[0] === 'id' && c.args[1] === 'team-women')).toBe(true);
-    expect(writeFilters.some((c) => c.args[1] === 'team-men')).toBe(false);
+    // The new code the server returned is surfaced in the panel.
+    await waitFor(() => expect(screen.getByText('NEWCODE9')).toBeInTheDocument());
+    // Never the men's team, and no client-side golf_teams UPDATE (write is server-side).
+    expect(teamsActions.regenerateJoinCode).not.toHaveBeenCalledWith('team-men');
+    expect(calls.filter((c) => c.table === 'golf_teams' && c.method === 'update')).toHaveLength(0);
   });
 });
