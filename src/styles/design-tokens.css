@@ -247,4 +247,170 @@
   --fw-font-sans:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
   --fw-font-mono:    var(--font-fairway-mono), ui-monospace, "SF Mono", monospace;
   --fw-numeric-features: "tnum" 1, "lnum" 1;
+
+  /* ---- Tailwind neutral/brand SCALES as channel triplets (THEME-AWARE) ----
+          The tailwind.config `warm` / `cream` / `primary` scales point at these
+          via `rgb(var(--c-*) / <alpha-value>)`, so the ~1800 raw call sites
+          (`text-warm-900`, `bg-cream-100`, `text-primary-700`, opacity variants
+          like `bg-warm-200/55` …) become theme-aware with NO per-component edit.
+          The light values below are byte-identical to the previous fixed hex, so
+          LIGHT MODE IS UNCHANGED. The `.dark` block flips them: the neutral ramp
+          inverts (text shades → light cream, background shades → dark espresso);
+          the brand green keeps its mid/bright fills and only flips its light
+          washes (50-200 → deep green) and its dark-green text (700-900 → light
+          green) so green-on-dark stays legible. ---- */
+  --c-warm-50: 250 250 249;  --c-warm-100: 245 245 244; --c-warm-200: 231 229 228;
+  --c-warm-300: 214 211 209; --c-warm-400: 168 162 158; --c-warm-500: 120 113 108;
+  --c-warm-600: 87 83 78;    --c-warm-700: 68 64 60;    --c-warm-800: 41 37 36;
+  --c-warm-900: 28 25 23;
+  --c-cream-50: 251 250 247; --c-cream-100: 247 245 242; --c-cream-200: 240 235 227;
+  --c-cream-300: 229 223 211; --c-cream-400: 207 200 184;
+  --c-primary-50: 240 253 244;  --c-primary-100: 220 252 231; --c-primary-200: 187 247 208;
+  --c-primary-300: 134 239 172; --c-primary-400: 74 222 128;  --c-primary-500: 34 197 94;
+  --c-primary-600: 22 163 74;   --c-primary-700: 21 128 61;   --c-primary-800: 22 101 52;
+  --c-primary-900: 20 83 45;
+}
+
+/* ============================================================================
+ * Fairway DARK theme — premium "warm espresso at dusk" (ADDITIVE / SEMANTIC)
+ * ----------------------------------------------------------------------------
+ * Applied when the `.dark` class is present on an ancestor (Tailwind
+ * darkMode:["class"]). The golf theme applier toggles it on <html>. We ALSO
+ * accept `[data-theme="dark"]` so any future/other applier can hang off it.
+ *
+ * PHILOSOPHY: this is the SAME warm California-modern system after dusk, not a
+ * cold slate/zinc dark mode. Every surface keeps the golden warm hue (~68-76)
+ * at low chroma — espresso and toasted-walnut, never blue-black. The helm
+ * green accent is PRESERVED (a brand constant in both themes); only its light
+ * *washes* (accent-50/100) flip to deep-green tints so selected/success states
+ * read on a dark ground. Because the whole Fairway component set consumes these
+ * semantic --fw-* tokens via the Tailwind bridge, re-skinning the tokens here
+ * themes the entire app at once — no per-component dark: classes needed.
+ *
+ * Contrast: text tokens are tuned so primary/secondary/tertiary clear WCAG 2.2
+ * AA (4.5:1 normal) on canvas / surface / sunken. color-scheme:dark makes
+ * native controls, scrollbars and form widgets adopt the dark convention.
+ * ========================================================================== */
+.dark,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* ---- Surfaces — warm espresso, layered so cards LIFT off the page ----
+          Each tier is ~0.03-0.04 L apart (the same premium separation the
+          light theme uses), warm hue ~70, very low chroma. */
+  --fw-color-canvas:         oklch(0.188 0.007 71);  /* deep warm espresso page base */
+  --fw-color-surface:        oklch(0.228 0.008 73);  /* THE card — toasted walnut, lifts off canvas */
+  --fw-color-surface-tint:   oklch(0.250 0.010 74);  /* hero plinth — a touch warmer/lighter */
+  --fw-color-surface-sunken: oklch(0.164 0.006 69);  /* wells / insets / input tracks — recede below canvas */
+  --fw-color-elevated:       oklch(0.268 0.010 75);  /* menus / popovers / modal body — brightest, most lifted */
+
+  /* ---- The page wash: a warm espresso gradient (afternoon → dusk), never a
+          flat black fill. Faint warm lift at the top, deepening to near-black
+          espresso at the foot — the dark twin of the sunlit cream canvas. ---- */
+  --fw-gradient-canvas:
+    radial-gradient(132% 92% at 50% -15%,
+      oklch(0.238 0.011 74) 0%,
+      oklch(0.205 0.009 72) 44%,
+      transparent 78%),
+    linear-gradient(180deg,
+      oklch(0.212 0.009 73) 0%,
+      oklch(0.188 0.007 71) 52%,
+      oklch(0.168 0.006 69) 100%);
+
+  /* ---- Text — warm creams (never pure white) ---- */
+  --fw-color-text-primary:   oklch(0.955 0.006 90);  /* warm near-white ink */
+  --fw-color-text-secondary: oklch(0.788 0.009 82);  /* ≈7:1 on card — labels / secondary copy */
+  --fw-color-text-tertiary:  oklch(0.665 0.011 76);  /* ≥4.5:1 on canvas/surface/sunken — meta / hints */
+  --fw-color-text-on-accent: oklch(0.994 0.006 95);  /* cream text on green (unchanged) */
+  --fw-color-text-on-dark:   oklch(0.955 0.006 90);  /* sidebar text */
+
+  /* ---- Borders — light warm hairlines on dark (the light-theme logic inverted) ---- */
+  --fw-color-border-subtle: oklch(0.44 0.008 74 / 0.55);  /* visible warm hairline — card edges read off canvas */
+  --fw-color-border-strong: oklch(0.52 0.010 74);         /* emphasis / table head */
+  --fw-color-border-focus:  var(--fw-color-accent-500);
+
+  /* ---- Accent WASHES flip to deep-green tints (fills accent-500/600 stay) ---- */
+  --fw-color-accent-50:  oklch(0.305 0.052 150);  /* selection / success wash on dark */
+  --fw-color-accent-100: oklch(0.352 0.070 150);
+  --fw-color-accent-200: oklch(0.410 0.090 150);
+  --fw-color-accent-700: oklch(0.800 0.115 150);  /* light green — TEXT/icon ON the deep-green wash */
+  /* accent-800/900 are intentionally NOT flipped: they stay deep (from :root) so
+     decorative dark-green FILLS — the Brief "spotlight" hero band
+     (from-accent-900 via-accent-800) and hero plinths — keep their deep-green
+     intent in dark with light (text-on-accent) copy on top. Flipping them light
+     turned that band bright green with unreadable text. */
+
+  /* ---- Status — success stays green; amber + red lift for legibility on dark ---- */
+  --fw-color-success:    var(--fw-color-accent-500);
+  --fw-color-success-bg: var(--fw-color-accent-50);
+  --fw-color-warning:    oklch(0.80 0.135 76);
+  --fw-color-warning-bg: oklch(0.315 0.055 72);
+  --fw-color-warning-ink:  oklch(0.885 0.085 82);  /* light amber ink on the deep-amber bg */
+  --fw-color-warning-ring: oklch(0.46 0.055 72);
+  --fw-color-danger:     oklch(0.685 0.185 26);    /* lifted red — reads on espresso */
+  --fw-color-danger-bg:  oklch(0.300 0.075 25);
+
+  /* ---- Dark chrome (sidebar) — make it the DARKEST layer so it still reads as
+          distinct chrome against the (now dark) canvas, not one flat black. ---- */
+  --fw-color-nav-bg:       oklch(0.145 0.006 68);   /* near-black warm — below canvas */
+  --fw-color-nav-surface:  oklch(0.225 0.009 72);   /* hovered/active nav row */
+  --fw-color-nav-text:     var(--fw-color-text-on-dark);
+  --fw-color-nav-text-dim: oklch(0.60 0.008 66);
+  --fw-color-nav-accent:   var(--fw-color-accent-400);
+
+  /* ---- Elevation — on dark, depth comes from the surface L-gaps + hairline +
+          a faint LIGHT top edge; shadows go near-black with higher alpha. The
+          card recipe's light inset highlight drops to a dark-convention whisper. ---- */
+  --fw-shadow-flat:  0 1px 2px oklch(0 0 0 / 0.30),
+                     0 4px 10px oklch(0 0 0 / 0.36);
+  --fw-shadow-soft:  0 1px 2px   oklch(0 0 0 / 0.34),
+                     0 10px 28px oklch(0 0 0 / 0.46);
+  --fw-shadow-raise: 0 2px 4px   oklch(0 0 0 / 0.38),
+                     0 18px 44px oklch(0 0 0 / 0.52);
+  --fw-shadow-card:  inset 0 1px 0 oklch(1 0 0 / 0.05),
+                     0 1px 2px oklch(0 0 0 / 0.30),
+                     0 4px 10px oklch(0 0 0 / 0.38);
+  --fw-shadow-pop:   0 2px 4px   oklch(0 0 0 / 0.34),
+                     0 12px 32px oklch(0 0 0 / 0.44);
+  --fw-shadow-modal: 0 8px 16px  oklch(0 0 0 / 0.42),
+                     0 24px 64px oklch(0 0 0 / 0.58);
+  --fw-glow-accent:  0 0 0 1px var(--fw-color-accent-500),
+                     0 2px 12px oklch(0.648 0.149 149.6 / 0.30);
+
+  /* ---- Liquid Glass — warm dark espresso tint (was champagne cream) ---- */
+  --fw-glass-tint:        44 39 32;                          /* warm espresso, not black */
+  --fw-glass-bg:          rgb(var(--fw-glass-tint) / 0.62);
+  --fw-glass-bg-strong:   rgb(var(--fw-glass-tint) / 0.80);
+  --fw-glass-saturate:    150%;
+  --fw-glass-border:      rgb(255 250 240 / 0.09);           /* faint warm specular rim */
+  --fw-glass-border-bot:  oklch(0 0 0 / 0.35);               /* deep bottom edge */
+  --fw-glass-highlight:   rgb(255 250 240 / 0.07);           /* whisper inner specular */
+  --fw-glass-accent-ring: oklch(0.648 0.149 149.6 / 0.24);
+
+  /* ---- Viz — sequential/diverging read on dark; only the coldest cream anchor
+          darkens so it sits on the dark ground instead of glowing. ---- */
+  --fw-viz-seq-0: oklch(0.28 0.012 88);
+  --fw-viz-div-mid: oklch(0.30 0.012 84);
+
+  /* ---- Tailwind SCALE flips (see the :root block for the mechanism) ----
+          Neutral ramp inverts: warm-900/800/700/600/500 were dark text → now
+          light cream; warm-50/100/200 were light fills/hairlines → now dark
+          espresso; warm-300/400 land mid. cream-* (a light-background family)
+          all go dark. primary keeps its brand fills (500/600) + bright mids
+          (300/400), flips its washes (50-200 → deep green ground) and its
+          dark-green text shades (700-900 → light green). ---- */
+  --c-warm-50: 36 33 28;    --c-warm-100: 44 40 34;    --c-warm-200: 58 53 46;
+  --c-warm-300: 74 68 60;   --c-warm-400: 122 115 106; --c-warm-500: 156 148 137;
+  --c-warm-600: 190 182 170;--c-warm-700: 214 207 196; --c-warm-800: 232 226 216;
+  --c-warm-900: 244 240 232;
+  --c-cream-50: 42 38 32;   --c-cream-100: 36 33 28;    --c-cream-200: 46 42 35;
+  --c-cream-300: 58 53 45;  --c-cream-400: 74 67 58;
+  --c-primary-50: 28 46 34;    --c-primary-100: 32 58 41;   --c-primary-200: 40 78 52;
+  --c-primary-300: 134 239 172;--c-primary-400: 74 222 128; --c-primary-500: 34 197 94;
+  /* 700-900 kept DEEP so decorative dark-green FILLS (the Brief "spotlight" hero
+     band, hero plinths) stay a deep-green band with light text in dark mode,
+     matching their light-mode intent; 700 is nudged brighter so green TEXT on a
+     dark surface still reads. */
+  --c-primary-600: 22 163 74;  --c-primary-700: 46 150 92;  --c-primary-800: 22 101 52;
+  --c-primary-900: 20 83 45;
 }

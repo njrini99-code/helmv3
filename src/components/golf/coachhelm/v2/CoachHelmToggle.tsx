@@ -1,56 +1,55 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconCheck, IconX } from '@/components/icons';
-import { Shimmer } from '@/components/ui/shimmer';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { useCoachHelmSettings } from '@/hooks/coachhelm/useCoachHelmSettings';
-import { Button, IconButton } from '@/components/ui/button';
+import { Surface, Switch } from '@/components/fairway';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface CoachHelmToggleProps {
   coachId: string;
   onToggle?: (enabled: boolean) => void;
 }
 
+/**
+ * CoachHelm AI on/off for the coach's OWN dashboards. Rebuilt on Fairway
+ * primitives + tokens (was legacy glass/warm/cream/amber, which broke the dark
+ * theme and violated the #418 reduced-motion guard). Being token-driven, it now
+ * renders premium in both light and dark automatically.
+ */
 export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const { settings, loading, saving, enable, disable } = useCoachHelmSettings(coachId);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleToggle = async () => {
+  const handleChange = async (next: boolean) => {
     if (!settings) return;
-
-    if (settings.enabled) {
-      // Show confirmation before disabling
+    if (!next) {
+      // Disabling is destructive to the AI surfaces — confirm first.
       setShowConfirm(true);
-    } else {
-      // Enable directly
-      const success = await enable();
-      if (success) {
-        onToggle?.(true);
-      }
+      return;
     }
+    if (await enable()) onToggle?.(true);
   };
 
   const handleConfirmDisable = async () => {
-    const success = await disable('User disabled from settings');
-    if (success) {
-      onToggle?.(false);
-    }
+    if (await disable('User disabled from settings')) onToggle?.(false);
     setShowConfirm(false);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 p-4 bg-warm-50 rounded-xl">
-        <Shimmer className="w-10 h-10 rounded-lg" />
-        <div className="flex-1">
-          <Shimmer className="h-4 w-24 mb-1" />
-          <Shimmer variant="line" className="w-32" />
+      <Surface elevation="border" padding="md" className="flex items-center gap-3">
+        <div className="h-11 w-11 animate-pulse rounded-fw-sm bg-surface-sunken" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-28 animate-pulse rounded bg-surface-sunken" />
+          <div className="h-3 w-48 animate-pulse rounded bg-surface-sunken" />
         </div>
-        <Shimmer className="w-12 h-6 rounded-full" />
-      </div>
+        <div className="h-6 w-11 animate-pulse rounded-full bg-surface-sunken" />
+      </Surface>
     );
   }
 
@@ -58,137 +57,73 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
 
   return (
     <div className="space-y-4">
-      <div
-        className={cn(
-          'relative overflow-clip rounded-2xl border bg-cream-100/75 p-5 backdrop-blur-xl transition-all',
-          enabled ? 'border-primary-100/70 ring-1 ring-primary-200/60' : 'border-warm-200/55 ring-1 ring-warm-200/60'
-        )}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-primary-400/10 pointer-events-none" />
-        <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-primary-500/12 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-10 h-24 w-24 rounded-full bg-primary-400/10 blur-2xl pointer-events-none" />
-
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
-          {/* Icon */}
-          <div
+      <Surface elevation="border" padding="md">
+        <div className="flex items-center gap-4">
+          <span
             className={cn(
-              'w-12 h-12 rounded-xl flex items-center justify-center ring-1 ring-white/70',
-              enabled
-                ? 'bg-gradient-green text-white'
-                : 'bg-warm-200 text-warm-500'
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-fw-sm transition-colors',
+              enabled ? 'bg-accent-50 text-accent-600' : 'bg-surface-sunken text-text-tertiary',
             )}
           >
-            <IconSparkles size={20} />
-          </div>
+            <IconSparkles size={20} aria-hidden />
+          </span>
 
-          {/* Content */}
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-medium text-warm-900">CoachHelm AI</h3>
+              <h3 className="font-fw-sans text-body font-medium text-text-primary">CoachHelm AI</h3>
               {enabled ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100/80 px-2 py-0.5 text-xs font-medium text-primary-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-2 py-0.5 font-fw-sans text-caption font-medium text-accent-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />
                   Active
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-warm-100 px-2 py-0.5 text-xs font-medium text-warm-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-warm-400" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-sunken px-2 py-0.5 font-fw-sans text-caption font-medium text-text-tertiary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-text-tertiary" />
                   Off
                 </span>
               )}
-              <span className="text-xs uppercase tracking-[0.2em] text-warm-400">
-                Premium Insights
-              </span>
             </div>
-            <p className="text-sm text-warm-500">
+            <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">
               {enabled
                 ? 'AI insights, patterns, and predictions tailored to your roster.'
                 : 'Enable CoachHelm to unlock team-level intelligence.'}
             </p>
           </div>
 
-          {/* Toggle */}
-          <IconButton variant="primary"
-            onClick={handleToggle}
+          <Switch
+            checked={enabled}
+            onCheckedChange={(v) => void handleChange(v)}
             disabled={saving}
-            className={cn(
-              'relative h-8 w-16 rounded-full border transition-all',
-              enabled
-                ? 'border-primary-400/40 bg-gradient-to-r from-primary-500 to-primary-500 '
-                : 'border-warm-200 bg-warm-200',
-              saving && 'opacity-60 cursor-not-allowed'
-            )}
             aria-label="Toggle CoachHelm AI"
-          >
-            <motion.div
-              initial={false}
-              animate={{ x: enabled ? 32 : 4 }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
-              className="absolute top-1 h-6 w-6 rounded-full bg-cream-50"
-            />
-          </IconButton>
+          />
         </div>
-      </div>
+      </Surface>
 
-      {/* Disable Confirmation */}
-      {showConfirm && (
+      {enabled ? (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-amber-50 border border-amber-200 rounded-xl"
+          transition={{ duration: prefersReducedMotion ? 0 : 0.28, ease: [0.22, 0.61, 0.36, 1] }}
+          className="grid gap-3 sm:grid-cols-2"
         >
-          <h4 className="font-medium text-amber-800 mb-2">
-            Disable CoachHelm AI?
-          </h4>
-          <p className="text-sm text-amber-700 mb-3">
-            You'll lose access to AI-powered insights, pattern detection, and
-            performance predictions. Your data will be preserved.
-          </p>
-          <div className="flex gap-2">
-            <Button variant="ghost"
-              onClick={handleConfirmDisable}
-              disabled={saving}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-            >
-              <IconX size={14} />
-              Disable
-            </Button>
-            <Button variant="ghost"
-              onClick={() => setShowConfirm(false)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100 rounded-lg transition-colors"
-            >
-              <IconCheck size={14} />
-              Keep Enabled
-            </Button>
-          </div>
+          <FeaturePill label="Pattern mining" detail="Repeatable scoring leaks & trends" enabled={settings?.showPatterns ?? true} />
+          <FeaturePill label="Predictions" detail="Forward-looking scoring outlooks" enabled={settings?.showPredictions ?? true} />
+          <FeaturePill label="AI insights" detail="Actionable coaching narratives" enabled={settings?.showInsights ?? true} />
+          <FeaturePill label="Learning" detail="Adapts to your coaching feedback" enabled />
         </motion.div>
-      )}
+      ) : null}
 
-      {/* Feature List */}
-      {enabled && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FeaturePill
-            label="Pattern Mining"
-            detail="Repeatable scoring leaks & trends"
-            enabled={settings?.showPatterns ?? true}
-          />
-          <FeaturePill
-            label="Predictions"
-            detail="Forward-looking scoring outlooks"
-            enabled={settings?.showPredictions ?? true}
-          />
-          <FeaturePill
-            label="AI Insights"
-            detail="Actionable coaching narratives"
-            enabled={settings?.showInsights ?? true}
-          />
-          <FeaturePill
-            label="Learning"
-            detail="Adapts to coach feedback loops"
-            enabled
-          />
-        </div>
-      )}
+      <ConfirmDialog
+        open={showConfirm}
+        title="Disable CoachHelm AI?"
+        message="You'll lose AI-powered insights, pattern detection, and performance predictions on your dashboards. Your data is preserved and you can re-enable any time."
+        confirmLabel="Disable"
+        cancelLabel="Keep enabled"
+        variant="warning"
+        isLoading={saving}
+        onConfirm={handleConfirmDisable}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }
@@ -197,27 +132,21 @@ function FeaturePill({ label, detail, enabled }: { label: string; detail: string
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-xl border px-3 py-2 text-xs font-medium ',
-        enabled
-          ? 'border-white/70 bg-cream-100/75 text-warm-700'
-          : 'border-warm-200/55 bg-cream-100/60 text-warm-400'
+        'flex items-start gap-3 rounded-fw-md border px-3 py-2.5',
+        enabled ? 'border-border-subtle bg-surface-sunken' : 'border-border-subtle bg-surface opacity-70',
       )}
     >
-      <div
+      <span
         className={cn(
-          'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full',
-          enabled ? 'bg-primary-100 text-primary-600' : 'bg-warm-100 text-warm-400'
+          'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
+          enabled ? 'bg-accent-50 text-accent-600' : 'bg-surface-sunken text-text-tertiary',
         )}
       >
-        {enabled ? <IconCheck size={12} /> : <IconX size={12} />}
-      </div>
-      <div>
-        <p className={cn('text-xs font-medium', enabled ? 'text-warm-700' : 'text-warm-400')}>
-          {label}
-        </p>
-        <p className={cn('text-xs leading-snug', enabled ? 'text-warm-500' : 'text-warm-400')}>
-          {detail}
-        </p>
+        {enabled ? <IconCheck size={12} aria-hidden /> : <IconX size={12} aria-hidden />}
+      </span>
+      <div className="min-w-0">
+        <p className="font-fw-sans text-body-sm font-medium text-text-primary">{label}</p>
+        <p className="font-fw-sans text-caption leading-snug text-text-tertiary">{detail}</p>
       </div>
     </div>
   );
