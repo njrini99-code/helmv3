@@ -36,7 +36,7 @@ import { useRouter } from 'next/navigation';
 
 import { completeTask } from '@/app/golf/actions/tasks';
 import { respondToEvent } from '@/app/golf/actions/golf';
-import { fairwayToast, Surface } from '@/components/fairway';
+import { fairwayToast, Surface, Eyebrow } from '@/components/fairway';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import {
@@ -161,6 +161,15 @@ export function PlayerActionCenter({
 
   return (
     <div className="flex flex-col gap-8" id="action-center">
+      {/* WAVE 3 restyle: a quiet identity for this whole zone — a ruled
+          eyebrow, not a headline — so it reads as one calm utility region
+          (triage: tasks / RSVPs / trips) distinct from the analytical
+          overview above it, never a second hero competing for attention. */}
+      <div className="flex items-center gap-3">
+        <Eyebrow>Action center</Eyebrow>
+        <span aria-hidden="true" className="h-px flex-1 bg-border-subtle" />
+      </div>
+
       {pendingTasks.length > 0 ? (
         <section>
           <SectionTitle action={{ label: 'Open Team Hub', href: TEAM_HUB_TASKS }}>Tasks</SectionTitle>

@@ -18,12 +18,18 @@ import { useRouter } from 'next/navigation';
 import { RotateCw } from 'lucide-react';
 import { Surface, EmptyState, Button, InlineNotice } from '@/components/fairway';
 import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
-import type { TeamOverviewResult } from '@/app/golf/actions/team-category-insights';
+import type { TeamOverviewResult, TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { TriageDesk } from '@/components/golf/coachhelm/triage/TriageDesk';
 
 export interface CoachIntelligenceHomeProps {
   overview: TeamOverviewResult;
+  /** "Where the team is bleeding strokes" band data (categories[] +
+   *  teamHealth) — a DISTINCT, richer fetch from `overview` above. Threaded
+   *  straight through to `TriageDesk`; this component doesn't read it (the
+   *  empty-roster gate still keys off `overview`/`playersDrillProps`, same
+   *  as before). */
+  categoryInsights: TeamCategoryInsightsResult;
   coachId: string;
 
   /** Triage Desk — the frozen `getSignalGroups` contract's full payload. */
@@ -40,6 +46,7 @@ export interface CoachIntelligenceHomeProps {
 
 export function CoachIntelligenceHome({
   overview,
+  categoryInsights,
   coachId,
   groups,
   scannedAt,
@@ -105,6 +112,8 @@ export function CoachIntelligenceHome({
         groups={groups}
         scannedAt={scannedAt}
         groupsError={groupsError}
+        categoryInsights={categoryInsights}
+        teamShotAnalysis={ov?.teamShotAnalysis}
         playersDrillProps={playersDrillProps}
         effectivenessDrillProps={effectivenessDrillProps}
       />

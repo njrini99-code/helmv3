@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { formatEventTimeCompact } from '@/lib/calendar/timezone';
+import { formatEventTimeCompact, zonedMidnight } from '@/lib/calendar/timezone';
 import { typeMeta } from './FairwayEventCard';
 
 /** A color-coded busy period for the coach availability overlay. */
@@ -116,23 +116,27 @@ export function FairwayMonthGrid({
       if (arr) arr.push(item);
       else map.set(key, [item]);
     };
+    // `zonedMidnight` (explicit `timezone`), not `format(new Date(iso), ...)`
+    // (implicit-local): a bucket key derived from the calling process's own
+    // ambient zone could place the SAME event under a different day cell on
+    // an SSR pass (UTC) vs. a client render (audit W1/cal-tz).
     if (overlayMode) {
       for (const o of overlays!) {
         if (!o.start) continue;
         const at = new Date(o.start).getTime();
-        push(format(new Date(o.start), 'yyyy-MM-dd'), { kind: 'overlay', at, overlay: o });
+        push(format(zonedMidnight(o.start, timezone), 'yyyy-MM-dd'), { kind: 'overlay', at, overlay: o });
       }
     } else {
       for (const e of events) {
         const s = eventStart(e);
         if (!s) continue;
         const at = new Date(s).getTime();
-        push(format(new Date(s), 'yyyy-MM-dd'), { kind: 'event', at, event: e });
+        push(format(zonedMidnight(s, timezone), 'yyyy-MM-dd'), { kind: 'event', at, event: e });
       }
     }
     for (const arr of map.values()) arr.sort((a, b) => a.at - b.at);
     return map;
-  }, [events, overlays, overlayMode]);
+  }, [events, overlays, overlayMode, timezone]);
 
   return (
     <div className="overflow-hidden rounded-card border border-border-subtle bg-surface shadow-flat">

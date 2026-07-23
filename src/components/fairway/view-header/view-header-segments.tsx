@@ -5,27 +5,31 @@
  * ----------------------------------------------------------------------------
  * The optional compact "quiet" tab / segmented row that can sit under a
  * ViewHeader (e.g. CoachHelm's Brief / Signals / Players / Effectiveness / Ask
- * sub-nav). It is a single-select control built on Radix ToggleGroup so it gets
- * roving-tabindex keyboard nav, ARIA, and disabled handling for free.
+ * sub-nav). Public props are UNCHANGED — this file used to hand-roll its own
+ * Radix ToggleGroup + moving pill; it now DELEGATES all track/pill rendering
+ * to `Segmented` (`@/components/fairway/controls/segmented`), the ONE shared
+ * segmented-control primitive, so there is a single pill implementation
+ * app-wide instead of two visually-drifting ones. ViewHeaderSegments' own job
+ * shrinks to: (1) adapt its richer `segments` shape (icon + trailing
+ * badge) onto Segmented's `options` shape, (2) own the controlled/
+ * uncontrolled value bookkeeping Segmented itself doesn't provide, (3) map
+ * `size: "default" | "compact"` onto Segmented's `"md" | "sm"`.
  *
- * Visual register (DESIGN-SYSTEM §4 / §7): matte by default — the track is a
- * warm `surface-sunken` well with NO border; the *active* segment is the one
- * element that lifts onto an opaque `bg-surface` pill with a whisper of
- * `shadow-soft` (border OR shadow, never both). Inactive segments are quiet
- * `text-text-secondary` and warm to `text-text-primary` on hover. A slow
- * framer-motion `layoutId` pill glides between segments (the moving-pill idiom
- * §4.3), honoring `prefers-reduced-motion`.
- *
- * Styled to render correctly inside a `.fairway-ds` scope on a `bg-canvas`
- * page; uses ONLY Fairway token utilities. ADDITIVE — imported by nothing
- * existing.
+ * Nothing in the tree imports this component yet (ADDITIVE), so this rewrite
+ * carries no call-site risk. Every DOCUMENTED prop (segments/value/
+ * defaultValue/onValueChange/size/aria-label/className) is preserved with
+ * identical names and semantics. The old type signature also structurally
+ * inherited arbitrary Radix `ToggleGroup.Root` DOM props (dir/loop/
+ * orientation/...) via `Omit<ComponentPropsWithoutRef<...>>` — dropped here
+ * on purpose: Segmented's own public API is intentionally closed (no
+ * passthrough), so silently accepting-and-discarding those props would be a
+ * worse trap for a future caller than not offering them at all.
  * ========================================================================== */
 
 import * as React from "react";
-import * as ToggleGroup from "@radix-ui/react-toggle-group";
-import { motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
+import { Segmented, type SegmentedOption } from "../controls/segmented";
 
 /** One segment in the quiet tab row. */
 export interface ViewHeaderSegment {
@@ -41,11 +45,7 @@ export interface ViewHeaderSegment {
   disabled?: boolean;
 }
 
-export interface ViewHeaderSegmentsProps
-  extends Omit<
-    React.ComponentPropsWithoutRef<typeof ToggleGroup.Root>,
-    "type" | "value" | "defaultValue" | "onValueChange" | "children"
-  > {
+export interface ViewHeaderSegmentsProps {
   /** The segments to render. */
   segments: ViewHeaderSegment[];
   /** Controlled selected value. */
@@ -58,39 +58,38 @@ export interface ViewHeaderSegmentsProps
   size?: "default" | "compact";
   /** Accessible label for the group when there is no visible heading. */
   "aria-label"?: string;
+  className?: string;
 }
 
-/**
- * The shared `layoutId` for the gliding active pill. Module-scoped + suffixed
- * with a React id per instance so multiple segment rows on one page never share
- * a pill animation.
- */
-function usePillLayoutId(): string {
-  const reactId = React.useId();
-  return `fw-vh-seg-pill-${reactId}`;
+/** `badge`'s pill styling — ported verbatim from the pre-delegation render,
+ *  folded into Segmented's `label` ReactNode slot (Segmented's own public API
+ *  has no badge concept — composing it into `label` keeps that API closed). */
+function badgePill(badge: React.ReactNode, isActive: boolean): React.ReactNode {
+  return (
+    <span
+      className={cn(
+        "ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 font-fw-mono text-[0.6875rem] leading-none tabular-nums",
+        isActive ? "bg-accent-50 text-accent-700" : "bg-surface text-text-tertiary",
+      )}
+      style={{ fontFeatureSettings: "var(--fw-numeric-features)" }}
+    >
+      {badge}
+    </span>
+  );
 }
 
-export const ViewHeaderSegments = React.forwardRef<
-  React.ElementRef<typeof ToggleGroup.Root>,
-  ViewHeaderSegmentsProps
->(function ViewHeaderSegments(
-  {
-    segments,
-    value,
-    defaultValue,
-    onValueChange,
-    size = "default",
-    className,
-    "aria-label": ariaLabel,
-    ...rest
-  },
-  ref,
-) {
-  const reduceMotion = useReducedMotion();
-  const pillLayoutId = usePillLayoutId();
-
-  // Track the active value internally so the moving pill renders correctly in
-  // both controlled and uncontrolled usage, without owning selection state.
+export function ViewHeaderSegments({
+  segments,
+  value,
+  defaultValue,
+  onValueChange,
+  size = "default",
+  className,
+  "aria-label": ariaLabel,
+}: ViewHeaderSegmentsProps) {
+  // Track the active value internally so both controlled and uncontrolled
+  // usage work without Segmented (fully controlled) needing to know the
+  // difference — this component is the adapter, not Segmented.
   const [internalValue, setInternalValue] = React.useState<string | undefined>(
     value ?? defaultValue,
   );
@@ -98,100 +97,46 @@ export const ViewHeaderSegments = React.forwardRef<
 
   const handleChange = React.useCallback(
     (next: string) => {
-      // Radix emits "" when the active item is toggled off; we are single-select
-      // so we ignore the empty case and keep the current selection.
-      if (!next) return;
       if (value === undefined) setInternalValue(next);
       onValueChange?.(next);
     },
     [onValueChange, value],
   );
 
-  const compact = size === "compact";
+  const options: SegmentedOption[] = React.useMemo(
+    () =>
+      segments.map((segment) => {
+        const isActive = segment.value === activeValue;
+        return {
+          value: segment.value,
+          icon: segment.icon,
+          disabled: segment.disabled,
+          label:
+            segment.badge != null ? (
+              <span className="inline-flex items-center">
+                <span>{segment.label}</span>
+                {badgePill(segment.badge, isActive)}
+              </span>
+            ) : (
+              segment.label
+            ),
+        };
+      }),
+    [segments, activeValue],
+  );
 
   return (
-    <ToggleGroup.Root
-      ref={ref}
-      type="single"
-      value={activeValue}
-      defaultValue={value === undefined ? defaultValue : undefined}
+    <Segmented
+      options={options}
+      // Segmented requires a non-optional `value` (fully controlled, single-
+      // select) — an empty string is Radix's own "nothing selected" sentinel
+      // (the same value `onValueChange` emits when a toggle is turned off),
+      // so it is a safe, type-stable stand-in for "no active value yet".
+      value={activeValue ?? ""}
       onValueChange={handleChange}
+      size={size === "compact" ? "sm" : "md"}
       aria-label={ariaLabel}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-fw-md bg-surface-sunken",
-        compact ? "p-0.5" : "p-1",
-        className,
-      )}
-      {...rest}
-    >
-      {segments.map((segment) => {
-        const isActive = segment.value === activeValue;
-        return (
-          <ToggleGroup.Item
-            key={segment.value}
-            value={segment.value}
-            disabled={segment.disabled}
-            className={cn(
-              "group relative inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-fw-sm font-fw-sans font-medium",
-              "outline-none transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
-              // Hit target: keep >=24px tall even in compact (a11y §7.4)
-              compact ? "h-7 px-2.5 text-caption" : "h-9 px-3.5 text-label",
-              // Quiet by default; warm up on hover
-              "text-text-secondary hover:text-text-primary",
-              // Active = primary text sitting on the lifted pill
-              "data-[state=on]:text-text-primary",
-              // Focus ring (survives cream); offset clears the pill
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
-              // Disabled
-              "disabled:pointer-events-none disabled:opacity-50",
-            )}
-          >
-            {/* The gliding active pill (matte opaque surface + soft shadow). */}
-            {isActive ? (
-              <motion.span
-                layoutId={reduceMotion ? undefined : pillLayoutId}
-                aria-hidden="true"
-                className="absolute inset-0 -z-[1] rounded-fw-sm bg-surface shadow-soft"
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : {
-                        type: "spring",
-                        stiffness: 320,
-                        damping: 32,
-                        mass: 0.8,
-                      }
-                }
-              />
-            ) : null}
-            {segment.icon ? (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "shrink-0 [&_svg]:h-4 [&_svg]:w-4",
-                  compact && "[&_svg]:h-3.5 [&_svg]:w-3.5",
-                )}
-              >
-                {segment.icon}
-              </span>
-            ) : null}
-            <span className="relative">{segment.label}</span>
-            {segment.badge != null ? (
-              <span
-                className={cn(
-                  "relative ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 font-fw-mono text-[0.6875rem] leading-none tabular-nums",
-                  isActive
-                    ? "bg-accent-50 text-accent-700"
-                    : "bg-surface text-text-tertiary group-hover:text-text-secondary",
-                )}
-                style={{ fontFeatureSettings: "var(--fw-numeric-features)" }}
-              >
-                {segment.badge}
-              </span>
-            ) : null}
-          </ToggleGroup.Item>
-        );
-      })}
-    </ToggleGroup.Root>
+      className={className}
+    />
   );
-});
+}

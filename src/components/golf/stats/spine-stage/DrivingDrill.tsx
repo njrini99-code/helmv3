@@ -13,9 +13,13 @@
 import dynamic from 'next/dynamic';
 import { DrillPanel, RailBars, DivergingBars, useStage } from '@/components/fairway/modules';
 import type { RailBarRow, DivergingRow } from '@/components/fairway/modules';
-import { Skeleton, Surface, InstrumentPanel, Readout, Eyebrow } from '@/components/fairway';
+import { Skeleton, Surface, InstrumentPanel, Readout, Eyebrow, Ribbon } from '@/components/fairway';
+import type { ReadoutDelta, RibbonPoint } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import type { SprayChartResponse } from '@/app/golf/actions/stats-data-types';
+import type { SprayChartResponse, TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import { CategoryInsightStrip } from './CategoryInsightStrip';
+import { buildCategoryInsights, buildCategoryTrends } from './buildStatsViewModel';
+import type { CategorizablePatternWithImpact, CategoryTrend } from './buildStatsViewModel';
 
 function ChartLoading() {
   return (
@@ -38,14 +42,49 @@ function fmtPct(n: number | null): string {
   return n === null ? '—' : `${Math.round(n)}%`;
 }
 
+/** Adapt a `CategoryTrend`'s pre-formatted, direction-aware delta into a
+ *  `Readout`'s `delta` shape — the numeric `value` is the SAME first→last
+ *  diff `buildCategoryTrend` computed (so `direction`'s glyph/sign agree with
+ *  the displayed text), but `format` renders the trend's OWN text verbatim
+ *  rather than re-deriving it, and `direction` is remapped from the trend's
+ *  `good`-aware semantic (never the raw up/down a lower-is-better metric
+ *  would otherwise mis-color — bug #915's class of defect). */
+function readoutDeltaFromTrend(trend: CategoryTrend | null | undefined, caption: string): ReadoutDelta | undefined {
+  if (!trend?.delta || trend.series.length < 2) return undefined;
+  const last = trend.series[trend.series.length - 1];
+  const first = trend.series[0];
+  if (last === undefined || first === undefined) return undefined;
+  const diff = last - first;
+  const { delta } = trend;
+  return {
+    value: diff,
+    direction: delta.direction === 'flat' ? 'flat' : delta.good ? 'up' : 'down',
+    format: () => delta.text,
+    caption,
+  };
+}
+
 export interface DrivingDrillProps {
   detailedStats: GolfStats | null;
   sprayData: SprayChartResponse | null;
+  /** CoachHelm's mined patterns (`getPlayerPatterns`) — feeds the "What
+   *  CoachHelm sees" driving-category insights via `buildCategoryInsights`. */
+  patterns?: ReadonlyArray<CategorizablePatternWithImpact>;
+  /** `getTrendAnalysis`'s round-level trend series — the `fairway` series
+   *  feeds both the fairway% Ribbon and the Fairways-hit Readout's delta
+   *  via `buildCategoryTrends`. */
+  trends?: TrendAnalysisResponse['trends'] | null;
 }
 
-export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
+export function DrivingDrill({ detailedStats, sprayData, patterns = [], trends = null }: DrivingDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+
+  const categoryInsights = buildCategoryInsights(patterns);
+  const categoryTrends = buildCategoryTrends(trends);
+  const drivingInsights = categoryInsights.driving;
+  const drivingTrend = categoryTrends.driving;
+  const fairwayRibbonPoints: RibbonPoint[] = (trends?.fairway ?? []).map((p) => ({ x: p.date, y: p.value }));
 
   const byHoleType: RailBarRow[] = [
     { label: 'Par 4', pct: finite(s?.fairwayPctPar4) ?? 0, value: fmtPct(finite(s?.fairwayPctPar4)) },
@@ -92,9 +131,19 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
     { label: 'Right', delta: nonDriverMissRight ?? 0, display: fmtPct(nonDriverMissRight) },
   ];
 
+  const fwAttempts = s?.fairwayOpportunities ?? 0;
+  const fwHits = s?.fairwaysHit ?? 0;
+
   return (
     <DrillPanel title="Off the tee" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
+        <CategoryInsightStrip
+          insights={drivingInsights}
+          series={drivingTrend?.series}
+          delta={drivingTrend?.delta}
+          trendLabel={drivingTrend?.label}
+          goodDirection="up"
+        />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[132px] min-w-0 items-center overflow-clip transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout className="w-full" value={distAvg ?? undefined} unit="yds" label="Driving distance" size="md" state={distAvg != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
@@ -106,9 +155,34 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
             <Readout className="w-full" value={distNonDriver ?? undefined} unit="yds" label="Non-driver" size="md" state={distNonDriver != null ? 'live' : 'awaiting'} awaitingLabel="No non-driver shots" />
           </InstrumentPanel>
           <InstrumentPanel depth="raised" padding="md" className="flex min-h-[132px] min-w-0 items-center overflow-clip transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
-            <Readout className="w-full" value={fwPct ?? undefined} unit="%" label="Fairways hit" size="md" state={fwPct != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
+            <div className="flex w-full flex-col gap-1">
+              <Readout
+                className="w-full"
+                value={fwPct ?? undefined}
+                unit="%"
+                label="Fairways hit"
+                size="md"
+                state={fwPct != null ? 'live' : 'awaiting'}
+                awaitingLabel="No tee shots"
+                delta={readoutDeltaFromTrend(drivingTrend, 'vs prior period')}
+              />
+              {fwAttempts > 0 ? (
+                <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                  {fwHits} of {fwAttempts} attempts
+                </p>
+              ) : null}
+            </div>
           </InstrumentPanel>
         </div>
+        <Ribbon
+          title="Fairways hit"
+          overline="Trend"
+          data={fairwayRibbonPoints}
+          valueFormatter={(v) => `${Math.round(v)}%`}
+          seriesName="Fairways hit"
+          goodDirection="up"
+          height={180}
+        />
         <div className="grid gap-4 lg:grid-cols-2">
           <Surface elevation="shadow" padding="md" className="space-y-3">
             <Eyebrow as="h4">Fairways by tee type</Eyebrow>

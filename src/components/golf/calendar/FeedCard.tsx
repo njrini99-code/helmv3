@@ -11,11 +11,11 @@
  * - Last synced timestamp
  * - Regenerate/delete actions
  *
- * Features:
- * - One-click copy URL
- * - Visual feedback on copy
- * - Confirmation before delete
- * - Loading states for actions
+ * Fairway tokens only — this card renders flush inside CalendarFeedManager,
+ * which itself mounts inside the live Fairway "Subscribe to your calendar"
+ * Sheet, so it must read as the same app (no legacy cream/warm/amber/violet/
+ * rose). Tone (which kind of feed) is carried by the StatusPill label, not by
+ * a separately-colored icon chip — one signal, not two competing ones.
  */
 
 import { useState } from 'react';
@@ -33,10 +33,10 @@ import {
   RefreshCw,
   Trash2,
   ExternalLink,
+  type LucideIcon,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import '@/styles/calendar-tokens.css';
-import { Button, IconButton } from '@/components/ui/button';
+import { Surface, Inset, Button, IconButton, StatusPill, type FwStatusTone } from '@/components/fairway';
 
 export interface CalendarFeed {
   id: string;
@@ -54,45 +54,22 @@ interface FeedCardProps {
   className?: string;
 }
 
-const FEED_TYPE_CONFIGS = {
-  team: {
-    icon: Users,
-    label: 'Team Events',
-    colorClass: 'text-primary-700',
-    bgClass: 'bg-primary-50',
-    borderClass: 'border-primary-200',
-  },
-  personal: {
-    icon: Calendar,
-    label: 'Personal Events',
-    colorClass: 'text-primary-700',
-    bgClass: 'bg-primary-50',
-    borderClass: 'border-primary-200',
-  },
-  tournament: {
-    icon: Trophy,
-    label: 'Tournaments',
-    colorClass: 'text-amber-700',
-    bgClass: 'bg-amber-50',
-    borderClass: 'border-amber-200',
-  },
-  all_events: {
-    icon: Globe,
-    label: 'All Events',
-    colorClass: 'text-violet-700',
-    bgClass: 'bg-violet-50',
-    borderClass: 'border-violet-200',
-  },
+const FEED_TYPE_META: Record<CalendarFeed['type'], { icon: LucideIcon; label: string; tone: FwStatusTone }> = {
+  team: { icon: Users, label: 'Team Events', tone: 'accent' },
+  personal: { icon: Calendar, label: 'Personal Events', tone: 'accent' },
+  tournament: { icon: Trophy, label: 'Tournaments', tone: 'warning' },
+  all_events: { icon: Globe, label: 'All Events', tone: 'info' },
 };
 
 export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardProps) {
   const [showInstructions, setShowInstructions] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const config = FEED_TYPE_CONFIGS[feed.type];
-  const Icon = config.icon;
+  const meta = FEED_TYPE_META[feed.type];
+  const Icon = meta.icon;
 
   async function handleCopy() {
     try {
@@ -105,67 +82,48 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
   }
 
   async function handleRegenerate() {
-    setLoading(true);
+    setRegenerating(true);
     try {
       await onRegenerate();
     } catch {
       // Regenerate failed
     } finally {
-      setLoading(false);
+      setRegenerating(false);
     }
   }
 
   async function handleDelete() {
-    setLoading(true);
+    setDeleting(true);
     try {
       await onDelete();
     } catch {
       // Delete failed
-      setLoading(false);
+      setDeleting(false);
     }
   }
 
   return (
-    <div
-      className={cn(
-        'bg-cream-50 rounded-xl border border-warm-200 overflow-hidden',
-        'hover:border-warm-300 transition-all',
-        className
-      )}
-    >
+    <Surface padding="none" elevation="border" className={cn('overflow-hidden', className)}>
       {/* Feed header */}
       <div className="p-4">
         <div className="flex items-start gap-3">
-          {/* Type icon */}
-          <div
-            className={cn(
-              'shrink-0 w-10 h-10 rounded-lg flex items-center justify-center',
-              config.bgClass,
-              'border',
-              config.borderClass
-            )}
-          >
-            <Icon className={cn('w-5 h-5', config.colorClass)} />
+          {/* Type icon — neutral chip; tone lives in the StatusPill below */}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-md bg-surface-sunken text-text-secondary ring-1 ring-border-subtle">
+            <Icon className="h-5 w-5" aria-hidden="true" />
           </div>
 
           {/* Feed info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="font-medium text-warm-900">{feed.name}</h3>
-              <span
-                className={cn(
-                  'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium',
-                  config.bgClass,
-                  config.colorClass
-                )}
-              >
-                {config.label}
-              </span>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex items-start justify-between gap-2">
+              <h3 className="font-fw-sans text-body font-medium text-text-primary">{feed.name}</h3>
+              <StatusPill tone={meta.tone} size="sm" className="shrink-0">
+                {meta.label}
+              </StatusPill>
             </div>
 
             {/* Last synced */}
             {feed.last_synced_at && (
-              <p className="text-xs text-warm-500">
+              <p className="font-fw-sans text-caption text-text-tertiary">
                 Last synced {formatDistanceToNow(new Date(feed.last_synced_at), { addSuffix: true })}
               </p>
             )}
@@ -173,132 +131,93 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
         </div>
 
         {/* Feed URL */}
-        <div className="mt-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-warm-50 border border-warm-200">
-              <code className="text-xs text-warm-600 truncate block font-mono">
-                {feed.url}
-              </code>
-            </div>
+        <div className="mt-3 flex items-center gap-2">
+          <Inset padding="sm" className="min-w-0 flex-1">
+            <code className="block truncate font-mono text-caption text-text-secondary">{feed.url}</code>
+          </Inset>
 
-            {/* Copy button */}
-            <Button variant="primary"
-              type="button"
-              onClick={handleCopy}
-              className={cn(
-                'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-all',
-                copied
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
-              )}
-              title="Copy URL"
-              aria-label={copied ? 'URL copied' : 'Copy feed URL'}
-            >
-              {copied ? (
-                <Check className="w-4 h-4" aria-hidden="true" />
-              ) : (
-                <Copy className="w-4 h-4" aria-hidden="true" />
-              )}
-            </Button>
-          </div>
+          <IconButton
+            variant={copied ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={handleCopy}
+            aria-label={copied ? 'URL copied' : 'Copy feed URL'}
+          >
+            {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+          </IconButton>
         </div>
 
         {/* Subscription instructions toggle */}
-        <Button variant="ghost"
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          fullWidth
           onClick={() => setShowInstructions(!showInstructions)}
-          className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg
-                   bg-warm-50 hover:bg-warm-100 active:bg-warm-200 text-warm-700 text-sm font-medium
-                   transition-colors"
+          className="mt-3 justify-center"
+          aria-expanded={showInstructions}
         >
-          <ExternalLink className="w-4 h-4" />
-          <span>Subscription Instructions</span>
-          {showInstructions ? (
-            <ChevronUp className="w-4 h-4 ml-auto" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-auto" />
-          )}
+          <span className="flex w-full items-center justify-center gap-2">
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            <span>Subscription Instructions</span>
+            {showInstructions ? (
+              <ChevronUp className="ml-auto h-4 w-4" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="ml-auto h-4 w-4" aria-hidden="true" />
+            )}
+          </span>
         </Button>
       </div>
 
       {/* Subscription instructions (collapsible) */}
       {showInstructions && (
-        <div className="px-4 pb-4 border-t border-warm-100">
+        <div className="border-t border-border-subtle px-4 pb-4">
           <SubscriptionInstructions feedUrl={feed.url} compact />
         </div>
       )}
 
       {/* Actions */}
-      <div className="px-4 py-3 border-t border-warm-200 bg-warm-50 flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 border-t border-border-subtle px-4 py-3">
         {showDeleteConfirm ? (
           // Delete confirmation
           <>
-            <p className="text-xs text-warm-600">Delete this feed?</p>
+            <p className="font-fw-sans text-caption text-text-secondary">Delete this feed?</p>
             <div className="flex items-center gap-2">
-              <Button variant="ghost"
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium
-                         bg-cream-50 text-warm-700 border border-warm-200
-                         hover:bg-warm-50 active:bg-warm-100 transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
                 Cancel
               </Button>
-              <Button variant="ghost"
-                type="button"
-                onClick={handleDelete}
-                disabled={loading}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium
-                         bg-rose-600 text-white hover:bg-rose-700
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         transition-colors"
-              >
-                {loading ? 'Deleting...' : 'Delete'}
+              <Button variant="danger" size="sm" busy={deleting} onClick={handleDelete}>
+                Delete
               </Button>
             </div>
           </>
         ) : (
           // Normal actions
           <>
-            <p className="text-xs text-warm-500">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               Created {formatDistanceToNow(new Date(feed.created_at), { addSuffix: true })}
             </p>
-            <div className="flex items-center gap-2">
-              {/* Regenerate button */}
-              <IconButton variant="default"
-                type="button"
+            <div className="flex items-center gap-1">
+              <IconButton
+                variant="ghost"
+                size="sm"
+                busy={regenerating}
                 onClick={handleRegenerate}
-                disabled={loading}
-                className={cn(
-                  'p-2 rounded-lg transition-all',
-                  'text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                  loading && 'animate-spin'
-                )}
-                title="Regenerate URL"
                 aria-label="Regenerate feed URL"
               >
-                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
               </IconButton>
 
-              {/* Delete button */}
-              <IconButton variant="default"
-                type="button"
+              <IconButton
+                variant="danger"
+                size="sm"
                 onClick={() => setShowDeleteConfirm(true)}
-                disabled={loading}
-                className="p-2 rounded-lg transition-colors
-                         text-rose-600 hover:text-rose-700 hover:bg-rose-50
-                         disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Delete feed"
                 aria-label="Delete feed"
               >
-                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
               </IconButton>
             </div>
           </>
         )}
       </div>
-    </div>
+    </Surface>
   );
 }
-

@@ -170,6 +170,24 @@ export function isStaleServerActionError(error: unknown): boolean {
 let staleActionWarnedThisSession = false;
 
 /**
+ * `ResizeObserver loop completed with undelivered notifications` (and its
+ * older Chrome/Firefox alias `ResizeObserver loop limit exceeded`) fires
+ * whenever an observed element's resize callback triggers another resize
+ * within the same frame — routine with elastic/spring layouts — and the
+ * browser simply defers delivery to the next frame. It is not a bug and
+ * never carries a useful stack. Sentry's own `ignoreErrors` (instrumentation
+ * -client.ts) already filters it from becoming an issue, but that filter
+ * only guards Sentry's automatic capture — this module's own Bridge pipeline
+ * (`sendToMonitoringService` → /api/log-error → error_logs/admin_events)
+ * is a separate path and would otherwise persist one row per occurrence.
+ */
+function isResizeObserverLoopNoise(message: string): boolean {
+  return /ResizeObserver loop (completed with undelivered notifications|limit exceeded)/.test(
+    message,
+  );
+}
+
+/**
  * Client-side report de-duplication.
  *
  * A single flaky tab — e.g. a backgrounded `/golf/dashboard/rounds/new` on a
@@ -225,6 +243,12 @@ export function logError(
       staleActionWarnedThisSession = true;
       console.warn('[error-logging] stale server action detected — client will reload to pick up the new bundle');
     }
+    return;
+  }
+
+  // Benign browser noise — filter before Sentry AND before the Bridge write,
+  // not just from Sentry's ignoreErrors. See isResizeObserverLoopNoise above.
+  if (isResizeObserverLoopNoise(error.message)) {
     return;
   }
 

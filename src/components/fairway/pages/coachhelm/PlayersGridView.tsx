@@ -43,6 +43,13 @@
  *
  * ADDITIVE ONLY — imported by nothing live until the route fork; renders inside a
  * `.fairway-ds` scope on a `bg-canvas` page.
+ *
+ * WAVE 2 — the header instrument described above now LIVES in
+ * `RosterHealthHeader.tsx` (component + its pure `computeRosterHealth`/
+ * `computeNeedsAttention` computations), imported here unchanged, so the
+ * canonical Roster page (`FairwayCoachRoster.tsx`) can port the SAME
+ * instrument as its own header band instead of it sitting orphaned behind
+ * this hidden `?view=players` route.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -58,13 +65,18 @@ import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 import {
   // The instrument cockpit kit — the warm-glass hero header (matches
   // FairwayEffectiveness): ranked cluster, frosted bezels, honest big readouts.
+  // (InstrumentCluster/SegmentBar/SegmentBarPart moved to RosterHealthHeader.tsx
+  // with the roster-health instrument itself — InstrumentPanel/Readout stay,
+  // still used by FocusAreaBoard below.)
   InstrumentPanel,
-  InstrumentCluster,
   Readout,
-  SegmentBar,
-  type SegmentBarPart,
   TrendGlyph,
 } from '@/components/fairway';
+import {
+  RosterHealthHeader,
+  computeRosterHealth,
+  computeNeedsAttention,
+} from './RosterHealthHeader';
 import {
   DataTable,
   type ColumnDef,
@@ -84,7 +96,7 @@ import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { Target as LucideTarget } from 'lucide-react';
-import { IconPlus, IconChevronRight } from '@/components/icons';
+import { IconPlus, IconChevronRight, IconCrosshair } from '@/components/icons';
 import {
   createFocusArea,
   updateFocusArea,
@@ -226,20 +238,10 @@ export interface RosterRow {
   completedCount: number;
 }
 
-/** A roster row flagged for coach triage, with a ranked priority + plain reason. */
-interface NeedRow {
-  row: RosterRow;
-  priority: number;
-  reason: string;
-}
-
-/** "Who needs your attention" shows only the top N by priority — the big
- *  number stays the HONEST total (`needs.length`), but the list itself was
- *  silently truncated with no indication it was a "top 5", making the
- *  header count and the visible list disagree (observed live: "7 players to
- *  look at" heading a list of 5). Named so the cap and its caption below
- *  can't drift apart. */
-const NEEDS_ATTENTION_LIST_CAP = 5;
+// `NeedRow` + the roster-health/needs-attention pure computations and the
+// `RosterHealthHeader` instrument itself now live in `RosterHealthHeader.tsx`
+// (Wave 2) — extracted so the canonical Roster page can port the SAME "Who
+// needs your attention" instrument instead of re-deriving it.
 
 /* ---------------------------------------------------------------------------
  * PlayersGridView
@@ -337,84 +339,17 @@ export function PlayersGridView({
     [focusAreas, selectedPlayerId],
   );
 
-  /* ---- roster-health header metrics (derived from the SAME props; no new
-         fetch). Honest counts only — a starved instrument dims, never fakes. -- */
-  const rosterHealth = React.useMemo(() => {
-    const totalPlayers = players.length;
-
-    // Players carrying at least one active/in-progress focus area → coverage.
-    const playersWithActive = new Set(
-      focusAreas
-        .filter((fa) => fa.status === 'active' || fa.status === 'in_progress')
-        .map((fa) => fa.player_id),
-    ).size;
-
-    const activeAreas = focusAreas.filter(
-      (fa) => fa.status === 'active' || fa.status === 'in_progress',
-    ).length;
-    const completedAreas = focusAreas.filter((fa) => fa.status === 'completed').length;
-
-    // Players with at least one recorded round (props-fed stats; no recompute).
-    const playersWithRounds = players.filter(
-      (p) => (playerStats[p.id]?.rounds_played ?? 0) > 0,
-    ).length;
-
-    // Recorded focus-area outcomes → the closed-loop payoff (verbatim verdicts).
-    const outcomeTally = focusAreas.reduce(
-      (acc, fa) => {
-        switch (fa.outcome_status) {
-          case 'improved':
-            acc.improved += 1;
-            break;
-          case 'no_change':
-            acc.noChange += 1;
-            break;
-          case 'worsened':
-            acc.worsened += 1;
-            break;
-          default:
-            break;
-        }
-        return acc;
-      },
-      { improved: 0, noChange: 0, worsened: 0 },
-    );
-
-    return {
-      totalPlayers,
-      playersWithActive,
-      coverage: totalPlayers > 0 ? playersWithActive / totalPlayers : 0,
-      activeAreas,
-      completedAreas,
-      playersWithRounds,
-      outcomeTally,
-      totalOutcomes:
-        outcomeTally.improved + outcomeTally.noChange + outcomeTally.worsened,
-    };
-  }, [players, focusAreas, playerStats]);
-
-  /* ---- coach triage: who needs a look, ranked. Declining (esp. uncoached)
-         first, then players with rounds but no active focus area. Real
-         recent_trend + coverage from the SAME props — no new fetch, no fake. -- */
-  const needsAttention: NeedRow[] = React.useMemo(() => {
-    return rosterRows
-      .map((row): NeedRow => {
-        const trend = row.stats?.recent_trend ?? null;
-        const rounds = row.stats?.rounds_played ?? 0;
-        const uncoached = row.activeCount === 0;
-        if (trend === 'declining' && uncoached)
-          return { row, priority: 3, reason: 'Trending down · no focus area' };
-        if (trend === 'declining') return { row, priority: 2, reason: 'Trending down' };
-        if (rounds > 0 && uncoached) return { row, priority: 1, reason: 'No focus area yet' };
-        return { row, priority: 0, reason: '' };
-      })
-      .filter((n) => n.priority > 0)
-      .sort(
-        (a, b) =>
-          b.priority - a.priority ||
-          (b.row.stats?.avg_score ?? 0) - (a.row.stats?.avg_score ?? 0),
-      );
-  }, [rosterRows]);
+  /* ---- roster-health header metrics + coach triage (RosterHealthHeader.tsx,
+         Wave 2 extraction — SAME computation, now shared with the Roster
+         page). Derived from the SAME props; no new fetch, no fake. -- */
+  const rosterHealth = React.useMemo(
+    () => computeRosterHealth(players, focusAreas, playerStats),
+    [players, focusAreas, playerStats],
+  );
+  const needsAttention = React.useMemo(
+    () => computeNeedsAttention(rosterRows),
+    [rosterRows],
+  );
 
   const selectedPlayer = selectedPlayerId
     ? players.find((p) => p.id === selectedPlayerId) ?? null
@@ -764,6 +699,22 @@ export function PlayersGridView({
               >
                 <IconPlus size={16} aria-hidden />
               </IconButton>
+              {/* Direct Game-fingerprint deep-link (Wave 2) — previously a
+                  coach had to go Players → genome → "Game fingerprint" link
+                  (2 hops) to reach the driving/approach/short-game/putting
+                  section detail; this is the one-hop route. */}
+              <IconButton
+                variant="ghost"
+                size="sm"
+                aria-label={`Open ${name}'s game fingerprint`}
+                title="Game fingerprint"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/golf/dashboard/players/${p.id}/game`);
+                }}
+              >
+                <IconCrosshair size={16} aria-hidden />
+              </IconButton>
               <IconButton
                 variant="ghost"
                 size="sm"
@@ -779,7 +730,7 @@ export function PlayersGridView({
             </div>
           );
         },
-        meta: { align: 'right', cellClassName: 'w-24' },
+        meta: { align: 'right', cellClassName: 'w-32' },
       },
     ],
     [goalsByPlayer, silentPostureByPlayer, openCreate, router],
@@ -917,6 +868,9 @@ export function PlayersGridView({
                       onNavigationChange?.({ view: 'areas', playerId: row.player.id });
                     }}
                     onAddFocusArea={() => openCreate(row.player.id)}
+                    onGameFingerprint={() =>
+                      router.push(`/golf/dashboard/players/${row.player.id}/game`)
+                    }
                     onViewGenome={() =>
                       router.push(`/golf/dashboard/players/${row.player.id}/genome`)
                     }
@@ -1162,12 +1116,16 @@ export function RosterPlayerCard({
   muted,
   onOpenAreas,
   onAddFocusArea,
+  onGameFingerprint,
   onViewGenome,
 }: {
   row: RosterRow;
   muted: boolean;
   onOpenAreas: () => void;
   onAddFocusArea: () => void;
+  /** Direct Game-fingerprint deep-link (Wave 2) — same one-hop shortcut the
+   *  desktop row actions column gained. */
+  onGameFingerprint: () => void;
   onViewGenome: () => void;
 }) {
   const { player, stats } = row;
@@ -1226,25 +1184,38 @@ export function RosterPlayerCard({
         />
       </button>
 
-      <div className="flex items-center gap-2 border-t border-border-subtle pt-3">
+      <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
         <Button
           variant="secondary"
           size="sm"
-          className="flex-1"
+          className="w-full"
           leftIcon={<IconPlus size={15} />}
           onClick={onAddFocusArea}
         >
           Add focus area
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="flex-1"
-          rightIcon={<IconChevronRight size={15} />}
-          onClick={onViewGenome}
-        >
-          View genome
-        </Button>
+        {/* Two secondary deep-links, paired — Game fingerprint (Wave 2 direct
+            link, was previously only reachable via genome) + View genome. */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex-1"
+            leftIcon={<IconCrosshair size={15} />}
+            onClick={onGameFingerprint}
+          >
+            Game fingerprint
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex-1"
+            rightIcon={<IconChevronRight size={15} />}
+            onClick={onViewGenome}
+          >
+            View genome
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -1442,213 +1413,3 @@ function FocusAreaBoard({
   );
 }
 
-/* ---------------------------------------------------------------------------
- * RosterHealthHeader — the hero instrument cluster (ranked focal → secondary →
- * tertiary). Reads from props-derived rosterHealth ONLY (no new fetch). Honest:
- * a starved figure dims to "awaiting", never a fabricated 0.
- * ------------------------------------------------------------------------- */
-
-interface RosterHealth {
-  totalPlayers: number;
-  playersWithActive: number;
-  coverage: number;
-  activeAreas: number;
-  completedAreas: number;
-  playersWithRounds: number;
-  outcomeTally: { improved: number; noChange: number; worsened: number };
-  totalOutcomes: number;
-}
-
-function RosterHealthHeader({
-  health,
-  needs,
-  onAdd,
-}: {
-  health: RosterHealth;
-  needs: NeedRow[];
-  onAdd: (playerId?: string) => void;
-}) {
-  const {
-    totalPlayers,
-    playersWithActive,
-    activeAreas,
-    completedAreas,
-    playersWithRounds,
-    outcomeTally,
-    totalOutcomes,
-  } = health;
-
-  // FOCAL — coach triage: WHO needs a look (trending down or uncoached), ranked.
-  // The program-coverage stat is demoted to a subtext line; the eye lands on the
-  // players, not an abstract percentage. Honest: dims to "awaiting" with no roster.
-  const coveredText =
-    totalPlayers > 0
-      ? `${playersWithActive} of ${totalPlayers} player${totalPlayers === 1 ? '' : 's'} have an active focus area`
-      : 'No players on the roster yet';
-  const primary = (
-    <InstrumentPanel
-      depth="raised"
-      padding="lg"
-      header="Who needs your attention"
-      as="section"
-      className="flex flex-col gap-4"
-    >
-      {needs.length > 0 ? (
-        <>
-          <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-            <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
-              {needs.length}
-            </span>
-            <span className="mb-2 font-fw-sans text-body-sm text-text-secondary">
-              player{needs.length === 1 ? '' : 's'} to look at — trending down or without a focus area.
-            </span>
-          </div>
-          <ul className="flex flex-col">
-            {needs.slice(0, NEEDS_ATTENTION_LIST_CAP).map(({ row, reason }) => (
-              <li
-                key={row.player.id}
-                className="border-t border-border-subtle py-2.5 first:border-t-0"
-              >
-                {/* Shared identity; the warning reason is this surface's meta and
-                    the avg stat + "Add focus area" are its trailing affordances. */}
-                <PlayerIdentity
-                  name={playerName(row.player)}
-                  avatarUrl={row.player.avatar_url}
-                  size="sm"
-                  meta={
-                    <span className="font-fw-sans text-caption font-medium text-fw-warning">
-                      {reason}
-                    </span>
-                  }
-                  trailing={
-                    <div className="flex items-center gap-1.5">
-                      {row.stats?.avg_score != null ? (
-                        <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
-                          {row.stats.avg_score} avg
-                        </span>
-                      ) : null}
-                      <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
-                        Add focus area
-                      </Button>
-                    </div>
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-          {needs.length > NEEDS_ATTENTION_LIST_CAP ? (
-            <span className="font-fw-sans text-caption text-text-tertiary">
-              +{needs.length - NEEDS_ATTENTION_LIST_CAP} more player
-              {needs.length - NEEDS_ATTENTION_LIST_CAP === 1 ? '' : 's'} need a look — showing the top{' '}
-              {NEEDS_ATTENTION_LIST_CAP} by priority.
-            </span>
-          ) : null}
-          <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>
-        </>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
-            {totalPlayers > 0 ? '0' : '—'}
-          </span>
-          <span className="font-fw-sans text-body-sm text-text-secondary">
-            {totalPlayers > 0
-              ? 'Roster’s covered — everyone with rounds has a focus area and no one’s trending down.'
-              : 'Awaiting roster — add players to start tracking who needs attention.'}
-          </span>
-          <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>
-        </div>
-      )}
-    </InstrumentPanel>
-  );
-
-  // SECONDARY — the closed-loop outcome mix + a recorded-outcomes readout.
-  const outcomeParts: SegmentBarPart[] = [
-    { label: 'Improved', value: outcomeTally.improved, tone: 'good' },
-    { label: 'No change', value: outcomeTally.noChange, tone: 'neutral' },
-    { label: 'Worsened', value: outcomeTally.worsened, tone: 'caution' },
-  ];
-
-  const outcomeInstrument =
-    totalOutcomes > 0 ? (
-      <SegmentBar
-        title="Did the coaching land?"
-        takeaway={`${totalOutcomes} focus-area outcome${totalOutcomes === 1 ? '' : 's'} recorded across the roster.`}
-        parts={outcomeParts}
-        primary="good"
-      />
-    ) : (
-      <InstrumentPanel
-        depth="base"
-        header="Did the coaching land?"
-        className="flex h-full flex-col justify-center"
-      >
-        <Readout
-          label="Outcomes recorded"
-          size="md"
-          state="awaiting"
-          samples={{ have: 0, need: 1 }}
-          awaitingLabel="Awaiting outcomes"
-        />
-        <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
-          Mark a focus area improved / no change / worsened to start the
-          effectiveness loop.
-        </p>
-      </InstrumentPanel>
-    );
-
-  return (
-    <InstrumentCluster
-      ariaLabel="Roster development health"
-      balance="focal"
-      tertiaryColumns={4}
-      primary={primary}
-      secondary={[outcomeInstrument]}
-      tertiary={[
-        <InstrumentPanel key="players" depth="base" padding="md" className="h-full">
-          <Readout
-            value={totalPlayers}
-            format={{ maximumFractionDigits: 0 }}
-            label="Players"
-            size="md"
-            state={totalPlayers > 0 ? 'live' : 'awaiting'}
-            samples={totalPlayers === 0 ? { have: 0, need: 1 } : undefined}
-            awaitingLabel="No roster"
-          />
-        </InstrumentPanel>,
-        <InstrumentPanel key="active" depth="base" padding="md" className="h-full">
-          <Readout
-            value={activeAreas}
-            format={{ maximumFractionDigits: 0 }}
-            label="Active focus areas"
-            size="md"
-            state={activeAreas > 0 ? 'live' : 'awaiting'}
-            samples={activeAreas === 0 ? { have: 0, need: 1 } : undefined}
-            awaitingLabel="None active"
-          />
-        </InstrumentPanel>,
-        <InstrumentPanel key="completed" depth="base" padding="md" className="h-full">
-          <Readout
-            value={completedAreas}
-            format={{ maximumFractionDigits: 0 }}
-            label="Completed"
-            size="md"
-            state={completedAreas > 0 ? 'live' : 'awaiting'}
-            samples={completedAreas === 0 ? { have: 0, need: 1 } : undefined}
-            awaitingLabel="None yet"
-          />
-        </InstrumentPanel>,
-        <InstrumentPanel key="rounds" depth="base" padding="md" className="h-full">
-          <Readout
-            value={playersWithRounds}
-            format={{ maximumFractionDigits: 0 }}
-            label="With recent rounds"
-            size="md"
-            state={playersWithRounds > 0 ? 'live' : 'awaiting'}
-            samples={playersWithRounds === 0 ? { have: 0, need: 1 } : undefined}
-            awaitingLabel="No rounds"
-          />
-        </InstrumentPanel>,
-      ]}
-    />
-  );
-}

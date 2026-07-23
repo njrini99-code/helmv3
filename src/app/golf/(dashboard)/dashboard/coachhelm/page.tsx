@@ -93,6 +93,35 @@ function NotPlayerState() {
 }
 
 /**
+ * Soft "still working on it" state for `TRANSIENT_FAILURE` — a retryable DB
+ * hiccup (Postgres deadlock/timeout, most commonly ShotPatternMiner racing a
+ * coachhelm-* cron writer on `golf_patterns_v2`; see
+ * dashboard-error-classifier.ts). By the time this renders, the page has
+ * already retried the dashboard fetch once server-side (see below) and it's
+ * STILL failing — unlike ErrorState this is not framed as broken, since a
+ * refresh a few seconds later is very likely to just work.
+ */
+function DashboardWarmingUpState() {
+  return (
+    <div className={fairwayScope('flex min-h-full items-center justify-center bg-canvas px-4 py-16 md:px-6')}>
+      <div className="w-full max-w-md">
+        <InlineNotice
+          tone="info"
+          title="Still Crunching Your Latest Rounds"
+          action={
+            <Button asChild variant="primary" size="sm">
+              <Link href="/golf/dashboard/coachhelm">Refresh</Link>
+            </Button>
+          }
+        >
+          Your CoachHelm insights are being recalculated right now — refresh in a moment and they&apos;ll be ready.
+        </InlineNotice>
+      </div>
+    </div>
+  );
+}
+
+/**
  * CoachHelm disabled state
  */
 function CoachHelmDisabledState({ reason }: { reason: string }) {
@@ -189,6 +218,16 @@ export default async function PlayerCoachHelmPage() {
     return <ErrorState error={err instanceof Error ? err.message : 'Failed to load dashboard data'} />;
   }
 
+  // A TRANSIENT_FAILURE (retryable DB hiccup — see dashboard-error-classifier.ts,
+  // most commonly ShotPatternMiner's savePatterns racing a concurrently-running
+  // coachhelm-* cron writer) is often gone a moment later. Retry ONLY the
+  // dashboard fetch, once, server-side — not the whole Promise.all above, since
+  // the other reads already succeeded (or degrade gracefully on their own) and
+  // re-running them would just waste time.
+  if (!dashboardResult.success && dashboardResult.errorCode === 'TRANSIENT_FAILURE') {
+    dashboardResult = await getPlayerCoachHelmDashboard(player.id);
+  }
+
   // Fetch additional V3 data (optional — new components). Expected empty-state
   // codes (see src/lib/view-state/expected-empty-states.ts) are preserved so
   // the client empty surfaces can render the registry's copy for the ACTUAL
@@ -219,6 +258,12 @@ export default async function PlayerCoachHelmPage() {
     // Check if CoachHelm is disabled using explicit error code (more reliable than string matching)
     if (dashboardResult.errorCode === 'COACHHELM_DISABLED') {
       return <CoachHelmDisabledState reason={error} />;
+    }
+
+    // Still transient after the one server-side retry above — render the
+    // soft "come back in a moment" state instead of the hard dead-end error.
+    if (dashboardResult.errorCode === 'TRANSIENT_FAILURE') {
+      return <DashboardWarmingUpState />;
     }
 
     return <ErrorState error={error} />;

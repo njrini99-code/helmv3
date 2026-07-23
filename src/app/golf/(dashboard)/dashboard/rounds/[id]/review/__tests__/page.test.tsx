@@ -8,8 +8,8 @@
  * complete `RoundReviewContent` fixture without a redundant nested view.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, waitFor, within } from '@testing-library/react';
 import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
 
 // --- Mocks (must precede the page import) ---------------------------------
@@ -72,6 +72,10 @@ vi.mock('framer-motion', async () => {
     motion: makeTagProxy(STRIP),
     m: makeTagProxy(STRIP),
     AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+    // The strip filmstrip (Filmstrip.tsx) and several fairway modules now
+    // wrap their `m.*` entrances in a real `<LazyMotion>` — a pass-through
+    // stub keeps that subtree rendering under this mock.
+    LazyMotion: ({ children }: { children: React.ReactNode }) => children,
   };
 });
 
@@ -238,8 +242,13 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getRoundTakeawayInsight: vi.fn(async () => null),
 }));
 
-vi.mock('@/components/golf/coachhelm/PromoteToFocusAreaButton', () => ({
-  PromoteToFocusAreaButton: () => <div data-testid="promote-button" />,
+// FilmstripReview's "What to do next" CTA now opens a shared FocusAreaModal
+// (closed by default — ModalShell conditionally renders nothing while
+// closed, see ModalShell.tsx) instead of the retired vaul-Drawer
+// PromoteToFocusAreaButton; stub the one server action it would call on
+// submit so the import graph stays inert (never invoked here — no click).
+vi.mock('@/app/golf/actions/development', () => ({
+  createFocusAreaFromReview: vi.fn(),
 }));
 
 vi.mock('@/lib/redesign/flag', () => ({
@@ -295,11 +304,15 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     expect(getByText(/3 pars · 6 bogeys/)).toBeInTheDocument();
   });
 
-  it('renders the strokes-lost section from strokesToGain', async () => {
-    const { findByText, getByText } = renderAsPlayer();
+  it('renders the round-level Strokes Gained summary section', async () => {
+    const { findByText } = renderAsPlayer();
 
-    await findByText('Where strokes went');
-    expect(getByText('Putting')).toBeInTheDocument();
+    // The V1 heuristic "Where strokes went" RailBars block was removed
+    // (2026-07-23) — it contradicted the authoritative per-shot Strokes Gained
+    // rollup (RoundSGSummary) that now leads the review body. RoundSGSummary
+    // renders its "This round" headline even when SG hasn't been computed
+    // (honest awaiting state), so this asserts the replacement section mounts.
+    await findByText('This round');
   });
 
   it('renders a working Share-with-Coach CTA wired to shareRoundReviewWithCoach', async () => {
@@ -315,5 +328,51 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     await findByText('Round breakdown');
     expect(queryByRole('button', { name: 'Full breakdown →' })).not.toBeInTheDocument();
     expect(queryByRole('button', { name: 'Back to summary' })).not.toBeInTheDocument();
+  });
+});
+
+describe('RoundReviewPage — focus-area prescription (FocusAreaModal migration)', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
+  });
+
+  it('opens a pre-filled FocusAreaModal instead of a silent Drawer create', async () => {
+    const { findByRole } = renderAsPlayer();
+
+    // Player viewing their own round → FocusAreaModal mode='player' CTA copy.
+    const trigger = await findByRole('button', { name: 'Add focus area' });
+    trigger.click();
+
+    const dialog = await findByRole('dialog');
+    // Pre-filled from `derivePromoteSuggestion`'s areasForImprovement[0]
+    // fallback (this fixture has no takeaway insight) — the coach/player sees
+    // and can edit this before anything is written, not a bare direct create.
+    expect(within(dialog).getByDisplayValue('Missed fairways')).toBeInTheDocument();
+  });
+
+  it('submits through createFocusAreaFromReview with the round linkage preserved', async () => {
+    const { createFocusAreaFromReview } = await import('@/app/golf/actions/development');
+    vi.mocked(createFocusAreaFromReview).mockResolvedValue({ success: true, focusAreaId: 'fa-1' });
+
+    const { findByRole } = renderAsPlayer();
+
+    const trigger = await findByRole('button', { name: 'Add focus area' });
+    trigger.click();
+
+    const dialog = await findByRole('dialog');
+    // Both the trigger (still mounted behind the modal) and the modal's own
+    // save CTA read "Add focus area" in player mode — scope to the dialog.
+    const saveButton = within(dialog).getByRole('button', { name: 'Add focus area' });
+    saveButton.click();
+
+    await waitFor(() => {
+      expect(createFocusAreaFromReview).toHaveBeenCalledWith(
+        expect.objectContaining({
+          playerId: 'player-1',
+          reviewId: 'review-1',
+          title: 'Missed fairways',
+        }),
+      );
+    });
   });
 });

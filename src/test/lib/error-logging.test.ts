@@ -223,6 +223,18 @@ describe('logError → monitoring sink', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('does not forward "ResizeObserver loop completed with undelivered notifications"', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('ResizeObserver loop completed with undelivered notifications.'));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not forward "ResizeObserver loop limit exceeded"', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('ResizeObserver loop limit exceeded'));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('forwards non-stale errors to the monitoring endpoint', async () => {
     const { logError } = await import('@/lib/error-logging');
     logError(new Error('Database connection failed'), { component: 'test' }, 'high');

@@ -47,6 +47,7 @@ import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
+import { classifyDashboardFailure } from '@/lib/coachhelm/v2/dashboard-error-classifier';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
@@ -2933,7 +2934,7 @@ export interface PlayerCoachHelmDashboardData {
 
 async function getPlayerCoachHelmDashboardImpl(
   playerId: string
-): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
+): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'TRANSIENT_FAILURE' | 'UNKNOWN' }> {
   const supabase = await createClient();
 
   try {
@@ -2965,12 +2966,20 @@ async function getPlayerCoachHelmDashboardImpl(
       .join(' ')
       .trim() || 'Player';
 
-    // Run analysis to get all insights
+    // Run analysis to get all insights. persistPatterns: false — this is a
+    // page READ, not a write trigger. Without it, analyzePlayer's shot-pattern
+    // mining unconditionally upserts into golf_patterns_v2 as a side effect
+    // of loading the dashboard, which raced the coachhelm-* crons writing the
+    // same table and surfaced as a live Postgres deadlock (40P01) that failed
+    // this whole page load. The crons and the post-round trigger
+    // (triggerPlayerInsightsAfterRoundImpl below) are the legitimate writers
+    // and are unaffected — they don't pass this option, so it defaults true.
     const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
       includePatterns: true,
       includeCausal: true,
       includePredictions: true,
       includeShotPatterns: true,
+      persistPatterns: false,
       depth: 'standard',
     });
 
@@ -3043,7 +3052,19 @@ async function getPlayerCoachHelmDashboardImpl(
       action: 'getPlayerCoachHelmDashboard',
       featureArea: 'insights',
     });
-    return { success: false, error: 'An unexpected error occurred' };
+    // Distinguish a retryable DB hiccup (deadlock/timeout/connection) from a
+    // genuine bug so the page can auto-retry once instead of always dead-ending
+    // on the hard "Unable to Load AI Dashboard" state — see
+    // classifyDashboardFailure's doc for the full rationale.
+    const errorCode = classifyDashboardFailure(error);
+    return {
+      success: false,
+      error:
+        errorCode === 'TRANSIENT_FAILURE'
+          ? 'Your insights are still catching up — please try again in a moment.'
+          : 'An unexpected error occurred',
+      errorCode,
+    };
   }
 }
 
@@ -3054,7 +3075,7 @@ const observedGetPlayerCoachHelmDashboard = withAdminObserved(
 );
 export async function getPlayerCoachHelmDashboard(
   playerId: string
-): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
+): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'TRANSIENT_FAILURE' | 'UNKNOWN' }> {
   return observedGetPlayerCoachHelmDashboard(playerId);
 }
 
@@ -3973,12 +3994,37 @@ async function triggerPlayerInsightsAfterRoundImpl(
     // src/lib/coachhelm/v2/insights/gate-context.ts. Gated insights are
     // now never written, instead of written-then-archived.
 
-    // Archive stale V2 insights so post-round analysis can refresh them.
+    // Age out stale V2 insights so post-round analysis can refresh them.
     // Without this, insights from weeks ago block new ones via dedup, causing 0-insight generations.
+    //
+    // P1 B3 (2026-07-23 accuracy audit): this sweep used to write
+    // status='resolved' on every aged-out row WITHOUT checking whether the
+    // underlying metric actually improved. 'resolved' is the exact value
+    // `resolveInsightImpl` writes for genuine coach/outcome-validated
+    // resolution (paired with resolved_at + lifecycle_state='resolved', and
+    // read by InsightCard's confetti gate on lifecycle_state='resolved',
+    // insight-management.ts's stats.resolved counter, and
+    // coachhelm-analytics.ts effectiveness metrics) — reusing it here
+    // silently hid live problems, including a coach's biggest insight,
+    // under a label that means "this got fixed."
+    //
+    // Fix: age-sweep into a status that does not collide with any genuine
+    // resolution path. `golf_coach_insights_status_check` (verified against
+    // the live schema via pg_constraint, 2026-07-23) only permits
+    // 'active' | 'acknowledged' | 'dismissed' | 'resolved' — there is no
+    // 'superseded'/'stale' enum member, and adding one needs a migration,
+    // which is out of scope (this task is additive APP-code only, no DB
+    // migrations). Of the two remaining non-'active', non-'resolved' values:
+    // 'acknowledged' stays searchable — command-palette.ts's insight search
+    // explicitly whitelists status IN ('active','acknowledged') — so it
+    // would leave the aged row visible in the very surface this sweep exists
+    // to clear it from. 'dismissed' is excluded there and everywhere else
+    // that scopes to 'active', and carries no resolution-outcome semantics,
+    // so it's the correct choice.
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     await admin
       .from('golf_coach_insights')
-      .update({ status: 'resolved' })
+      .update({ status: 'dismissed' })
       .eq('coach_id', coach.id)
       .eq('player_id', playerId)
       .eq('status', 'active')

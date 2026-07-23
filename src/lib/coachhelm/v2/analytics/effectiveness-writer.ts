@@ -20,15 +20,25 @@
  *     inside the window
  *
  * Because writes are upserts on (team_id, insight_type, period_start,
- * period_end), a re-run for the same day is idempotent.
+ * period_end), a re-run for the same day is idempotent — against the
+ * `golf_insight_effectiveness_natural_key` unique index on those four
+ * columns (see the upsert below). No delete-then-insert.
  *
- * NOTE: there is no unique constraint on those four columns in the live
- * schema (only `id` is the PK). To stay idempotent we delete-then-insert
- * the rows for the target window before writing.
+ * VISIBILITY SCOPING (P1 fix): the fetch below applies the SAME
+ * `applyInsightVisibility` contract (v3-engine-only + visible lifecycle +
+ * not-dismissed) that every other `golf_coach_insights` reader uses
+ * (see `src/lib/coachhelm/v3/insight-visibility.ts`). Without it, this
+ * rollup counted dead v2-engine insight rows that no coach can ever see —
+ * those rows form their own (team_id, insight_type) bucket that never gets
+ * acted upon or measured, so it permanently writes an
+ * `effectiveness_score=0` row for a type nobody can see, diluting the
+ * coach-facing analytics page. This only changes what the rollup COUNTS,
+ * never what gets written to `golf_coach_insights` itself.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 /**
  * Compute effectiveness rollups for the day-before-now and write them.
@@ -111,14 +121,21 @@ export async function rollupInsightEffectivenessForRange(
 
   // The generated Database type may lag the live schema. Cast through
   // unknown to keep the rest of the file type-safe.
-  const { data, error } = await supabase
-    .from('golf_coach_insights')
-    .select(
-      'team_id, insight_type, created_at, dismissed_at, acknowledged_at, action_taken, outcome_measured_at, outcome_status',
-    )
-    .gte('created_at', fetchSinceIso)
-    .lt('created_at', endIso)
-    .not('team_id', 'is', null);
+  //
+  // `applyInsightVisibility` scopes this to the same rows every other
+  // surface can see (v3-engine-only, visible lifecycle, not-dismissed) —
+  // see the module-header note above. This changes only what gets
+  // COUNTED here, not what `golf_coach_insights` stores.
+  const { data, error } = await applyInsightVisibility(
+    supabase
+      .from('golf_coach_insights')
+      .select(
+        'team_id, insight_type, created_at, dismissed_at, acknowledged_at, action_taken, outcome_measured_at, outcome_status',
+      )
+      .gte('created_at', fetchSinceIso)
+      .lt('created_at', endIso)
+      .not('team_id', 'is', null),
+  );
 
   if (error) {
     await logServerError(

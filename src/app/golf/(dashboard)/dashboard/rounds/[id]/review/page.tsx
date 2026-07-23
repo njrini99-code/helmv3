@@ -64,6 +64,15 @@ interface RoundData {
   total_gir: number | null;
   total_gir_possible: number | null;
   holes_played: number | null;
+  // Round-level Strokes Gained cache (Wave D — RoundSGSummary headline).
+  // Already selected by the `select('*')` below; declared here only so this
+  // page's TS type reflects the columns it now threads through to
+  // `FilmstripReview` -> `RoundSGSummary`.
+  strokes_gained_total: number | null;
+  strokes_gained_tee: number | null;
+  strokes_gained_approach: number | null;
+  strokes_gained_around_green: number | null;
+  strokes_gained_putting: number | null;
   holes?: Array<{
     hole_number: number;
     score: number | null;
@@ -665,6 +674,11 @@ export default function RoundReviewPage() {
           standing={standing}
           holes={round.holes ?? []}
           playerName={isCoachViewer ? viewedPlayerName : null}
+          strokesGainedTotal={round.strokes_gained_total}
+          strokesGainedTee={round.strokes_gained_tee}
+          strokesGainedApproach={round.strokes_gained_approach}
+          strokesGainedAroundGreen={round.strokes_gained_around_green}
+          strokesGainedPutting={round.strokes_gained_putting}
         />
       ) : (
         <FwEmptyState

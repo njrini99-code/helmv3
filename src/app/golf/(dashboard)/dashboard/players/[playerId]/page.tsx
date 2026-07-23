@@ -11,6 +11,13 @@ import { redirect } from 'next/navigation';
 // updated to link straight to `.../game?tab=scouting` — this bare shim stays
 // the plan's literal, simple redirect target for anyone hitting the old URL
 // with no such intent (a stale bookmark, a browser back-button hit).
+//
+// BELT-AND-BRACES (2026-07-22): next.config.mjs `redirects()` now intercepts
+// `/golf/dashboard/players/:playerId` at the framework routing layer, before
+// this page ever renders — the fix for the React #310 "rendered more hooks"
+// crash on client-navigation into bare redirect() shims. This component
+// stays only as a fallback for anything the config layer misses; it should
+// no longer actually execute in normal operation.
 export default async function LegacyPlayerInsightPage({
   params,
 }: {

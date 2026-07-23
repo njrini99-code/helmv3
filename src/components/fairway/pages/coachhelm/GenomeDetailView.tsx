@@ -71,6 +71,7 @@ import {
   IconWarning,
   IconCheckCircle2,
   IconLock,
+  IconMinus,
   IconArrowRight,
   IconSparkles,
   IconChartRadar,
@@ -143,6 +144,12 @@ interface DimRow {
   confidence: number | null;
   /** True when the dimension has no computed value (needs more rounds). */
   locked: boolean;
+  /**
+   * True for a permanent stub dimension (e.g. weather) that can never
+   * resolve, regardless of sample size — distinct from an ordinary locked
+   * dim that just needs more rounds. Only meaningful when `locked` is true.
+   */
+  notTracked: boolean;
 }
 
 function buildDimRows(vector: GenomeVector): DimRow[] {
@@ -164,6 +171,7 @@ function buildDimRows(vector: GenomeVector): DimRow[] {
       raw: r?.value ?? null,
       confidence: r?.confidence ?? null,
       locked,
+      notTracked: dim.neverAvailable === true,
     };
   });
 }
@@ -268,7 +276,7 @@ export function GenomeDetailView({
       });
       if (res.success) {
         fairwayToast.success(`Focus area created — ${w.label}`);
-        router.push(`/golf/dashboard/development?player=${playerId}`);
+        router.push(`/golf/dashboard/intelligence?view=players&player=${playerId}`);
       } else {
         fairwayToast.error(res.error ?? 'Could not create focus area');
       }
@@ -320,7 +328,7 @@ export function GenomeDetailView({
           : 'Genome not computed yet'
       }
       breadcrumbs={[
-        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: 'Players', href: '/golf/dashboard/intelligence?view=players' },
         { label: playerName },
       ]}
       actions={headerActions}
@@ -387,7 +395,7 @@ export function GenomeDetailView({
               as="section"
               readout={
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/golf/dashboard/development?player=${playerId}`}>Manage</Link>
+                  <Link href={`/golf/dashboard/intelligence?view=players&player=${playerId}`}>Manage</Link>
                 </Button>
               }
             >
@@ -681,7 +689,7 @@ function PersonaInstrument({
                     asChild
                   >
                     <Link
-                      href={`/golf/dashboard/development?player=${playerId}`}
+                      href={`/golf/dashboard/intelligence?view=players&player=${playerId}`}
                       aria-label={`Open Development for ${playerName} to add a focus area for "${w.label}"`}
                     >
                       Focus area
@@ -737,6 +745,33 @@ function PersonaRow({ entry, tone }: { entry: PersonaEntry; tone: 'accent' }) {
  * ─────────────────────────────────────────────────────────────────────────── */
 
 function DimensionCell({ dim }: { dim: DimRow }) {
+  // Permanent stub (e.g. weather) — visually distinct from "needs more
+  // rounds": more muted, a dash/off icon instead of a lock (a lock implies
+  // it opens later), and an honest "Not tracked" label so a coach never
+  // waits on rounds to unlock a spoke that has no data source at all.
+  if (dim.locked && dim.notTracked) {
+    return (
+      <InstrumentPanel
+        depth="inset"
+        padding="sm"
+        className={cn('flex flex-col gap-1 opacity-45')}
+        aria-label={`${dim.label}: not tracked`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+            {dim.label}
+          </span>
+          <IconMinus size={12} className="text-text-tertiary" />
+        </div>
+        <Readout
+          size="md"
+          state="awaiting"
+          awaitingLabel={dim.qualitative ?? 'Not tracked'}
+        />
+      </InstrumentPanel>
+    );
+  }
+
   if (dim.locked) {
     return (
       <InstrumentPanel

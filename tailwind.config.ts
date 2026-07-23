@@ -108,31 +108,36 @@ const config: Config = {
         // src/styles/tokens.css `--color-primary-*`). Wave 1 sweeps
         // consumer code from `helm-green-*` onto `primary-*`.
         // PRIMARY BRAND COLORS
+        // Theme-aware via CSS-var channel triplets (src/styles/design-tokens.css
+        // `--c-primary-*`, flipped under `.dark`). Values in :root are byte-
+        // identical to the previous fixed hex, so light mode is unchanged.
         primary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16A34A',  // PRIMARY BRAND COLOR — matches Helm logo green
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+          50: 'rgb(var(--c-primary-50) / <alpha-value>)',
+          100: 'rgb(var(--c-primary-100) / <alpha-value>)',
+          200: 'rgb(var(--c-primary-200) / <alpha-value>)',
+          300: 'rgb(var(--c-primary-300) / <alpha-value>)',
+          400: 'rgb(var(--c-primary-400) / <alpha-value>)',
+          500: 'rgb(var(--c-primary-500) / <alpha-value>)',
+          600: 'rgb(var(--c-primary-600) / <alpha-value>)',  // PRIMARY BRAND COLOR — matches Helm logo green
+          700: 'rgb(var(--c-primary-700) / <alpha-value>)',
+          800: 'rgb(var(--c-primary-800) / <alpha-value>)',
+          900: 'rgb(var(--c-primary-900) / <alpha-value>)',
         },
 
         // WARM NEUTRALS (stone/warm tones - NOT cool grays)
+        // Theme-aware via CSS-var channel triplets (`--c-warm-*`, inverted under
+        // `.dark`). :root values are byte-identical to the previous fixed hex.
         warm: {
-          50: '#fafaf9',
-          100: '#f5f5f4',
-          200: '#e7e5e4',
-          300: '#d6d3d1',
-          400: '#a8a29e',
-          500: '#78716c',
-          600: '#57534e',
-          700: '#44403c',
-          800: '#292524',
-          900: '#1c1917',
+          50: 'rgb(var(--c-warm-50) / <alpha-value>)',
+          100: 'rgb(var(--c-warm-100) / <alpha-value>)',
+          200: 'rgb(var(--c-warm-200) / <alpha-value>)',
+          300: 'rgb(var(--c-warm-300) / <alpha-value>)',
+          400: 'rgb(var(--c-warm-400) / <alpha-value>)',
+          500: 'rgb(var(--c-warm-500) / <alpha-value>)',
+          600: 'rgb(var(--c-warm-600) / <alpha-value>)',
+          700: 'rgb(var(--c-warm-700) / <alpha-value>)',
+          800: 'rgb(var(--c-warm-800) / <alpha-value>)',
+          900: 'rgb(var(--c-warm-900) / <alpha-value>)',
         },
 
         // CREAM / LINEN BACKGROUND
@@ -142,13 +147,15 @@ const config: Config = {
         // existing classnames continue to read warm but slightly more
         // nuanced. Add cream-500 (the linen base) so we can target it
         // explicitly for matte surfaces.
+        // Theme-aware via CSS-var channel triplets (`--c-cream-*`, → dark
+        // espresso surfaces under `.dark`). :root values byte-identical to hex.
         cream: {
-          DEFAULT: '#F7F5F2',
-          50: '#FBFAF7',      // Lightest — for inset highlights
-          100: '#F7F5F2',     // California linen — primary page backdrop
-          200: '#F0EBE3',     // Tab backgrounds, soft separators
-          300: '#E5DFD3',     // Warm divider tone, table-row alternation
-          400: '#CFC8B8',     // Sand inset, subtle borders
+          DEFAULT: 'rgb(var(--c-cream-100) / <alpha-value>)',
+          50: 'rgb(var(--c-cream-50) / <alpha-value>)',   // Lightest — for inset highlights
+          100: 'rgb(var(--c-cream-100) / <alpha-value>)', // California linen — primary page backdrop
+          200: 'rgb(var(--c-cream-200) / <alpha-value>)', // Tab backgrounds, soft separators
+          300: 'rgb(var(--c-cream-300) / <alpha-value>)', // Warm divider tone, table-row alternation
+          400: 'rgb(var(--c-cream-400) / <alpha-value>)', // Sand inset, subtle borders
         },
 
         // W0 token unification (2026-05-28): `sage-*` scale deleted.

@@ -209,7 +209,11 @@ describe('surface discoverability — no live surface is nav-orphaned', () => {
         'src/lib/golf/nav-registry.ts',
         'src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx',
         'src/components/golf/CommandPalette.tsx',
-        'src/components/fairway/pages/coachhelm/FairwayCoachHelmSignals.tsx',
+        // FairwayCoachHelmSignals.tsx (the legacy monolith this list used to
+        // read) was deleted 2026-07-22 (dead code purge — zero live-route
+        // imports); TriageDesk.tsx is its live replacement for the Signals
+        // surface's discoverability text.
+        'src/components/golf/coachhelm/triage/TriageDesk.tsx',
       ].map((p) => readFile(p, 'utf8')),
     );
     const combined = consumers.join('\n');

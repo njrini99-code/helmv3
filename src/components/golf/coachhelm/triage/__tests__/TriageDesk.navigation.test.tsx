@@ -42,6 +42,9 @@ vi.mock('../SignalQueue', () => ({ SignalQueue: () => <div data-testid="signal-q
 vi.mock('../EffectivenessScoreboard', () => ({
   EffectivenessScoreboard: () => <div data-testid="effectiveness-view" />,
 }));
+vi.mock('@/components/fairway/pages/coachhelm/TeamCategoryLeakBand', () => ({
+  TeamCategoryLeakBand: () => <div data-testid="team-category-leak-band" />,
+}));
 vi.mock('../SignalDossier', () => ({
   SignalDossier: ({ entry, onPromoted }: { entry: { signal: GroupedSignal } | null; onPromoted: (signal: GroupedSignal) => void }) => (
     <div data-testid="signal-dossier">
@@ -83,6 +86,7 @@ function renderDesk() {
       groups={[group()]}
       scannedAt={null}
       groupsError={null}
+      categoryInsights={{ success: false, error: 'not fetched in this test' }}
       playersDrillProps={{
         players: [
           {

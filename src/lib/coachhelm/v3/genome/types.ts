@@ -98,6 +98,16 @@ export interface GenomeDimension {
   label: string;
   /** Min rounds this specific dim requires. Defaults to MIN_ROUNDS_PER_DIMENSION. */
   min_rounds?: number;
+  /**
+   * True for a dimension whose `compute()` is a permanent stub — no data
+   * source exists yet, so it can NEVER resolve regardless of how many
+   * rounds a player logs (e.g. `weather_sensitivity_stub` — no
+   * weather/temperature tracking in shot data at all). Distinct from the
+   * ordinary "needs more rounds" locked state, which resolves once the
+   * player has enough sample size. Drives a separate "Not tracked" UI
+   * treatment so coaches don't read it as "will unlock eventually."
+   */
+  neverAvailable?: boolean;
   compute: (ctx: GenomeContext) => DimensionResult;
 }
 

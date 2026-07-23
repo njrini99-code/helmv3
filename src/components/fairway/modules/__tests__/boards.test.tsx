@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Filmstrip } from '../Filmstrip';
 import { MatrixBoard } from '../MatrixBoard';
 import type { FilmstripHole, MatrixBoardRow } from '../types';
+import type { ShotInput } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 
 const HOLES: FilmstripHole[] = Array.from({ length: 18 }, (_, i) => ({
   n: i + 1,
@@ -33,6 +34,58 @@ describe('Filmstrip', () => {
     const strip = scrollWrap!.querySelector('[data-slot="filmstrip"]');
     expect(strip).not.toBeNull();
     expect(scrollWrap!.contains(strip)).toBe(true);
+  });
+
+  it('renders a HoleShotPath strip SVG per hole (the premium visual, not a plain bar) and tones its ring by score vs par', async () => {
+    const toneHoles: FilmstripHole[] = [
+      { n: 1, par: 4, score: 3 }, // birdie
+      { n: 2, par: 4, score: 4 }, // par
+      { n: 3, par: 4, score: 6 }, // double
+    ];
+    const { container } = render(<Filmstrip holes={toneHoles} />);
+
+    // HoleShotPath is dynamically imported (ssr:false) — wait for the real
+    // component (an <svg>), not the loading Skeleton, to land.
+    await waitFor(() => {
+      expect(container.querySelectorAll('svg')).toHaveLength(3);
+    });
+    const boxes = container.querySelectorAll('svg');
+
+    expect(boxes[0]!.parentElement!.className).toContain('ring-accent-500'); // birdie
+    expect(boxes[1]!.parentElement!.className).toContain('ring-warm-300'); // par
+    expect(boxes[2]!.parentElement!.className).toContain('ring-danger'); // double
+  });
+
+  it('passes each hole its own shots from shotsByHole down to the strip visual', async () => {
+    const holes: FilmstripHole[] = [
+      { n: 1, par: 4, score: 4 },
+      { n: 2, par: 3, score: 3 },
+    ];
+    const shots: ShotInput[] = [
+      { shot_number: 1, lie_after: 'sand', distance_to_hole_after: 80 },
+    ];
+    const shotsByHole = new Map<number, ShotInput[]>([[1, shots]]);
+    const { container } = render(<Filmstrip holes={holes} shotsByHole={shotsByHole} />);
+
+    await waitFor(() => {
+      expect(container.querySelectorAll('svg')).toHaveLength(2);
+    });
+    // Hole 1 has a logged sand shot — its strip renders a dot at all (a
+    // cream-fill marker, never the old lie-colored fill — see
+    // `HoleShotPath`'s 2026-07-22 "cream markers" redesign) AND, because a
+    // sand lie with no logged miss_direction is a MISS with no direction
+    // (Wave B's shape-based hit/miss signal), a neutral radiating burst
+    // glyph. Hole 2 has no entry in the map at all — no dot, no glyph, just
+    // the empty turf.
+    const [hole1Svg, hole2Svg] = container.querySelectorAll('svg');
+    expect(hole1Svg!.querySelectorAll('circle[fill="#fbf3e0"]').length).toBeGreaterThan(0);
+    expect(hole1Svg!.querySelectorAll('[data-shot-outcome="miss"]')).toHaveLength(1);
+    expect(hole1Svg!.querySelectorAll('[data-miss-burst="true"]')).toHaveLength(1);
+    expect(hole1Svg!.querySelectorAll('[data-miss-wedge="true"]')).toHaveLength(0);
+    // Never the old (2026-07-22-and-earlier, now-legacy) lie-colored fill.
+    expect(hole1Svg!.querySelectorAll('circle[fill="#d4b97a"]')).toHaveLength(0);
+    expect(hole2Svg!.querySelectorAll('circle[fill="#fbf3e0"]')).toHaveLength(0);
+    expect(hole2Svg!.querySelectorAll('[data-shot-outcome]')).toHaveLength(0);
   });
 });
 

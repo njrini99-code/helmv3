@@ -366,6 +366,64 @@ export interface GolfStats {
   sandSavesMade: number;
   sandSavePercentage: number | null;
 
+  // --- SHORT GAME "MISSES" TAB (additive) ---
+  // Everything below is derived PURELY from raw shot rows already flowing
+  // through this file (lie_before, miss_direction, distance_to_hole_after)
+  // — no new DB reads. True pin-relative "short-siding" (how much green a
+  // player has to work with) needs pin-position data we don't capture, so
+  // it is NOT approximated here — only what's actually derivable is exposed.
+
+  /**
+   * Scrambling (up-and-down) conversion split by the ORIGINATING miss
+   * direction of the approach shot that missed the green — the same
+   * `hole.approachMissDirection` field `approachMissByBand` above buckets,
+   * scoped to actual scramble attempts. Answers "does missing short / long /
+   * left / right change the up-and-down rate, and how often does each
+   * happen". Compound directions (e.g. `short_left`) count toward BOTH
+   * axes — same convention as `approachMissShortPct`/`approachMissLeftPct`
+   * etc. A direction with zero attempts is OMITTED (key absent), never a
+   * zeroed placeholder.
+   */
+  scramblingByMissDirection: Partial<Record<'short' | 'long' | 'left' | 'right', {
+    attempts: number;
+    made: number;
+    /** Up-and-down % FROM this miss direction. */
+    pct: number | null;
+    /** % of all direction-tagged scramble attempts that missed this way.
+     *  Can sum to more than 100% across the 4 keys for the same reason
+     *  approachMissShortPct/approachMissLeftPct etc. can — compound misses
+     *  count on two axes. */
+    shareOfMisses: number | null;
+  }>>;
+  /** Scramble attempts with a KNOWN originating miss direction — the `shareOfMisses` denominator. */
+  scramblingMissDirectionTotal: number;
+
+  // Up-and-down conversion + sample counts by chip/pitch lie. Fairway/Rough/
+  // Sand mirror `scramblingPctFairway/Rough/Sand` above (counts weren't
+  // previously exposed at top level); Fringe is new — a chip from the
+  // fringe/collar is a materially different shot than one from rough, and
+  // the fairway/rough/sand trio above doesn't cover it.
+  scrambleFairwayAttempts: number;
+  scrambleFairwayMade: number;
+  scrambleRoughAttempts: number;
+  scrambleRoughMade: number;
+  scrambleSandAttempts: number;
+  scrambleSandMade: number;
+  scramblingPctFringe: number | null;
+  scrambleFringeAttempts: number;
+  scrambleFringeMade: number;
+
+  /**
+   * Average distance LEFT after a chip/pitch (around-the-green shot) that
+   * actually found the green, in FEET — the "how close do you leave it"
+   * complement to up-and-down %. ON-GREEN ONLY, mirroring
+   * `approachProximity`'s rule above: a chip that didn't reach the green
+   * doesn't produce a comparable proximity figure. A holed chip contributes
+   * 0. null when no around-green shot reached the green with a known leave.
+   */
+  atgProximityAvg: number | null;
+  atgProximityByLie: { fairway: number | null; rough: number | null; sand: number | null };
+
   // Penalties
   totalPenalties: number;
   penaltiesPerRound: number | null;
@@ -1501,6 +1559,19 @@ function aggregateRoundStats(rounds: Array<{
     sandSaveAttempts: 0,
     sandSavesMade: 0,
     sandSavePercentage: null,
+    scramblingByMissDirection: {},
+    scramblingMissDirectionTotal: 0,
+    scrambleFairwayAttempts: 0,
+    scrambleFairwayMade: 0,
+    scrambleRoughAttempts: 0,
+    scrambleRoughMade: 0,
+    scrambleSandAttempts: 0,
+    scrambleSandMade: 0,
+    scramblingPctFringe: null,
+    scrambleFringeAttempts: 0,
+    scrambleFringeMade: 0,
+    atgProximityAvg: null,
+    atgProximityByLie: { fairway: null, rough: null, sand: null },
     totalPenalties: 0,
     penaltiesPerRound: null,
     strokesGainedTotal: null,
@@ -1651,9 +1722,23 @@ function aggregateRoundStats(rounds: Array<{
   const scrambleFairway = { made: 0, total: 0 };
   const scrambleRough = { made: 0, total: 0 };
   const scrambleSand = { made: 0, total: 0 };
+  const scrambleFringe = { made: 0, total: 0 };
   const scramble0_10 = { made: 0, total: 0 };
   const scramble10_20 = { made: 0, total: 0 };
   const scramble20_30 = { made: 0, total: 0 };
+
+  // ADDITIVE (short-game Misses tab): scrambling outcome bucketed by the
+  // ORIGINATING approach miss direction (short/long/left/right; compound
+  // directions like short_left count toward BOTH axes, matching
+  // approachMissShortPct/approachMissLeftPct etc. above).
+  const scrambleMissDir: Record<'short' | 'long' | 'left' | 'right', { made: number; total: number }> = {
+    short: { made: 0, total: 0 },
+    long: { made: 0, total: 0 },
+    left: { made: 0, total: 0 },
+    right: { made: 0, total: 0 },
+  };
+  // Scramble attempts with a KNOWN miss direction — the shareOfMisses denominator.
+  let scrambleMissDirTotal = 0;
 
   const atgEff0_10: number[] = [];
   const atgEff10_20: number[] = [];
@@ -1661,6 +1746,15 @@ function aggregateRoundStats(rounds: Array<{
   const atgEffFairway: number[] = [];
   const atgEffRough: number[] = [];
   const atgEffSand: number[] = [];
+
+  // ADDITIVE (short-game Misses tab): average distance LEFT (feet) after a
+  // chip/pitch that actually reached the green — see atgProximityAvg doc.
+  const atgProximities: number[] = [];
+  const atgProximityByLie: Record<'fairway' | 'rough' | 'sand', number[]> = {
+    fairway: [],
+    rough: [],
+    sand: [],
+  };
 
   const atgEffByDistanceLie: Record<string, Record<string, number[]>> = {
     '0_10': { fairway: [], rough: [], sand: [] },
@@ -2181,6 +2275,41 @@ function aggregateRoundStats(rounds: Array<{
         } else if (hole.chipLie === 'sand') {
           scrambleSand.total++;
           if (hole.scrambleMade) scrambleSand.made++;
+        } else if (hole.chipLie === 'fringe') {
+          scrambleFringe.total++;
+          if (hole.scrambleMade) scrambleFringe.made++;
+        }
+
+        // Miss-direction breakdown — bucket by the ORIGINATING approach miss
+        // that created this scramble situation (the same field
+        // approachMissByBand buckets above). Compound directions (e.g.
+        // short_left) count toward BOTH axes, matching approachMissShortPct/
+        // approachMissLeftPct etc.'s convention.
+        if (hole.approachMissDirection) {
+          const missDir = hole.approachMissDirection.toLowerCase();
+          const isMissShort = missDir === 'short' || missDir.startsWith('short_');
+          const isMissLong = missDir === 'long' || missDir.startsWith('long_');
+          const isMissLeft = missDir === 'left' || missDir.endsWith('_left');
+          const isMissRight = missDir === 'right' || missDir.endsWith('_right');
+          if (isMissShort || isMissLong || isMissLeft || isMissRight) {
+            scrambleMissDirTotal++;
+            if (isMissShort) {
+              scrambleMissDir.short.total++;
+              if (hole.scrambleMade) scrambleMissDir.short.made++;
+            }
+            if (isMissLong) {
+              scrambleMissDir.long.total++;
+              if (hole.scrambleMade) scrambleMissDir.long.made++;
+            }
+            if (isMissLeft) {
+              scrambleMissDir.left.total++;
+              if (hole.scrambleMade) scrambleMissDir.left.made++;
+            }
+            if (isMissRight) {
+              scrambleMissDir.right.total++;
+              if (hole.scrambleMade) scrambleMissDir.right.made++;
+            }
+          }
         }
 
         // Scrambling by distance - use chipDistance (how far the chip/pitch was)
@@ -2252,6 +2381,23 @@ function aggregateRoundStats(rounds: Array<{
           const bucketData = atgEffByDistanceLie[bucket];
           if (bucketData && bucketData[matrixLie]) {
             bucketData[matrixLie].push(shotsToHoleOut);
+          }
+        }
+
+        // Proximity LEFT after this chip/pitch, in feet — ON-GREEN ONLY
+        // (mirrors approachProximity's rule above: an off-green finish isn't
+        // a comparable "proximity" figure). A holed chip contributes 0.
+        if (isGreenHit(atgShot.result)) {
+          const proximityFeet = atgShot.result === 'hole'
+            ? 0
+            : atgShot.distance_to_hole_after !== null
+              ? normalizeToFeet(atgShot.distance_to_hole_after, atgShot.distance_unit_after)
+              : null;
+          if (proximityFeet !== null) {
+            atgProximities.push(proximityFeet);
+            if (matrixLie === 'fairway' || matrixLie === 'rough' || matrixLie === 'sand') {
+              atgProximityByLie[matrixLie].push(proximityFeet);
+            }
           }
         }
       }
@@ -2778,6 +2924,34 @@ function aggregateRoundStats(rounds: Array<{
   stats.scramblingPct10_20 = safePercent(scramble10_20.made, scramble10_20.total);
   stats.scramblingPct20_30 = safePercent(scramble20_30.made, scramble20_30.total);
 
+  // Short-game "Misses" tab (additive) — scrambling by lie, incl. counts +
+  // the new fringe bucket.
+  stats.scrambleFairwayAttempts = scrambleFairway.total;
+  stats.scrambleFairwayMade = scrambleFairway.made;
+  stats.scrambleRoughAttempts = scrambleRough.total;
+  stats.scrambleRoughMade = scrambleRough.made;
+  stats.scrambleSandAttempts = scrambleSand.total;
+  stats.scrambleSandMade = scrambleSand.made;
+  stats.scramblingPctFringe = safePercent(scrambleFringe.made, scrambleFringe.total);
+  stats.scrambleFringeAttempts = scrambleFringe.total;
+  stats.scrambleFringeMade = scrambleFringe.made;
+
+  // Short-game "Misses" tab (additive) — scrambling by originating miss direction.
+  stats.scramblingMissDirectionTotal = scrambleMissDirTotal;
+  const missDirResult: GolfStats['scramblingByMissDirection'] = {};
+  (['short', 'long', 'left', 'right'] as const).forEach((dir) => {
+    const bucket = scrambleMissDir[dir];
+    if (bucket.total > 0) {
+      missDirResult[dir] = {
+        attempts: bucket.total,
+        made: bucket.made,
+        pct: safePercent(bucket.made, bucket.total),
+        shareOfMisses: safePercent(bucket.total, scrambleMissDirTotal),
+      };
+    }
+  });
+  stats.scramblingByMissDirection = missDirResult;
+
   // Around the green
   const allAtgStrokes = [...atgEff0_10, ...atgEff10_20, ...atgEff20_30];
   stats.atgEfficiencyAvg = safeAverage(
@@ -2829,6 +3003,26 @@ function aggregateRoundStats(rounds: Array<{
       };
     }
   }
+
+  // Short-game "Misses" tab (additive) — average chip/pitch proximity leave.
+  stats.atgProximityAvg = safeAverage(
+    atgProximities.reduce((a, b) => a + b, 0),
+    atgProximities.length
+  );
+  stats.atgProximityByLie = {
+    fairway: safeAverage(
+      atgProximityByLie.fairway.reduce((a, b) => a + b, 0),
+      atgProximityByLie.fairway.length
+    ),
+    rough: safeAverage(
+      atgProximityByLie.rough.reduce((a, b) => a + b, 0),
+      atgProximityByLie.rough.length
+    ),
+    sand: safeAverage(
+      atgProximityByLie.sand.reduce((a, b) => a + b, 0),
+      atgProximityByLie.sand.length
+    ),
+  };
 
   // Sand saves
   stats.sandSavePercentage = safePercent(stats.sandSavesMade, stats.sandSaveAttempts);

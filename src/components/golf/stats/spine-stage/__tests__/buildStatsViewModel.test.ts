@@ -7,6 +7,10 @@ import {
   sgToTrackPct,
   buildStandingTrack,
   buildVerdict,
+  categorizePattern,
+  buildCategoryInsights,
+  buildCategoryTrends,
+  type CategorizablePatternWithImpact,
 } from '../buildStatsViewModel';
 
 describe('biggestLeakArea', () => {
@@ -267,5 +271,291 @@ describe('buildVerdict', () => {
     expect(buildVerdict(-0.4, 'Putting')).toBe(
       '−0.40 strokes per round vs the field. Leaking most in putting.',
     );
+  });
+});
+
+describe('categorizePattern', () => {
+  // Fixtures below are drawn verbatim (or near-verbatim) from the real mined-
+  // pattern copy in src/lib/coachhelm/v2/mining/{team-pattern-generator,
+  // approach-analytics,shot-pattern-miner}.ts — real description/
+  // recommendation prose + real outcome.metric / condition.field names.
+
+  it('categorizes an approach-miss pattern as approach, even when the resulting lie is a short-game word', () => {
+    // approach-analytics.ts:444 — outcome.metric is literally
+    // `approach_miss_lie_${bucket}_bunker` when the miss lands in a greenside
+    // bunker. "bunker" is short-game vocabulary, but "approach" is the more
+    // decisive term and must win.
+    expect(
+      categorizePattern({
+        description: 'Jordan Smith misses left 42% of the time on approach — suggests a consistent swing path issue',
+        recommendation: 'Aim slightly right of target to play the natural miss.',
+        outcome: { metric: 'approach_miss_lie_150_175_bunker' },
+      }),
+    ).toBe('approach');
+  });
+
+  it('categorizes a scrambling/short-game pattern correctly (no "approach" word present)', () => {
+    // team-pattern-generator.ts:493-494
+    expect(
+      categorizePattern({
+        description: 'Team scrambling average is 61% (benchmark: 68%) — the team is leaving strokes around the green',
+        recommendation: 'Dedicate 30% of practice time to up-and-down situations from various lies.',
+        outcome: { metric: 'scrambling_percentage' },
+      }),
+    ).toBe('short_game');
+  });
+
+  it('categorizes a putting pattern from a three-putt outcome metric', () => {
+    // team-pattern-generator.ts:648-653
+    expect(
+      categorizePattern({
+        description: 'Team three-putt rate is 8.2% (benchmark: 5%) — this is costing the team strokes on the green',
+        recommendation: 'Speed control is the #1 factor in avoiding three-putts.',
+        outcome: { metric: 'three_putt_percentage' },
+      }),
+    ).toBe('putting');
+  });
+
+  it('categorizes a driving pattern from a tee-strategy metric with no description text', () => {
+    // tee-strategy.ts:282 — description/recommendation absent for this fixture on purpose.
+    expect(categorizePattern({ outcome: { metric: 'tee_strategy_driver_vs_layback' } })).toBe('driving');
+  });
+
+  it('categorizes a scoring pattern from a penalty-strokes metric', () => {
+    // team-pattern-generator.ts:606-611
+    expect(
+      categorizePattern({
+        description: 'Jordan Smith averages 2.1 penalty strokes per round (team avg: 1.4, benchmark: 1.0)',
+        recommendation: 'Penalty strokes are free strokes to the field. Focus on course management.',
+        outcome: { metric: 'penalty_strokes_per_round' },
+      }),
+    ).toBe('scoring');
+  });
+
+  it('resolves strokes-gained metric ids via the same sg_* → category convention buildStandingTrack/biggestLeakArea use', () => {
+    expect(categorizePattern({ outcome: { metric: 'sg_ott' } })).toBe('driving');
+    expect(categorizePattern({ outcome: { metric: 'sg_approach' } })).toBe('approach');
+    expect(categorizePattern({ outcome: { metric: 'sg_around_green' } })).toBe('short_game');
+    expect(categorizePattern({ outcome: { metric: 'sg_putting' } })).toBe('putting');
+  });
+
+  it('falls back to general for a genuinely ambiguous shot-level pattern (no description text persisted)', () => {
+    // shot-pattern-miner.ts's savePatterns — contextual shot-dispersion rows
+    // persist NO human-readable description/recommendation at all.
+    expect(
+      categorizePattern({
+        outcome: { metric: 'miss_direction' },
+        conditions: [
+          { field: 'distance_range', label: '150-175 yd' },
+          { field: 'lie' },
+        ],
+      }),
+    ).toBe('general');
+  });
+
+  it('falls back to general for a pattern about something outside the five stat categories', () => {
+    // team-pattern-generator.ts:567 description — freshman/upperclassman
+    // experience gap. (The real fixture's paired recommendation mentions
+    // "course management", which this categorizer correctly treats as
+    // scoring-adjacent vocabulary — omitted here to isolate the true
+    // no-signal case: a pattern that names none of the five categories.)
+    expect(
+      categorizePattern({
+        description: 'Freshmen average 76.4 vs upperclassmen 73.1 — a 3.3 stroke gap that narrows with experience',
+        outcome: { metric: 'class_year_gap' },
+      }),
+    ).toBe('general');
+  });
+
+  it('treats course-management / penalty vocabulary as scoring-adjacent (they are literal strokes on the card)', () => {
+    // team-pattern-generator.ts:567-568 — the same freshman fixture's REAL
+    // recommendation does mention course management, and that is a deliberate
+    // categorization choice (not a leak): ScoringDrill is where course-
+    // management/worst-hole content already surfaces on this surface.
+    expect(
+      categorizePattern({
+        description: 'Freshmen average 76.4 vs upperclassmen 73.1 — a 3.3 stroke gap that narrows with experience',
+        recommendation: 'Pair freshmen with upperclassmen mentors for course management tips.',
+        outcome: { metric: 'class_year_gap' },
+      }),
+    ).toBe('scoring');
+  });
+
+  it('falls back to general for a pattern with no text or metric at all', () => {
+    expect(categorizePattern({})).toBe('general');
+  });
+
+  it('is case-insensitive and tolerant of snake_case field/label vocabulary', () => {
+    expect(categorizePattern({ conditions: [{ field: 'PUTT_MISS_DIRECTION' }] })).toBe('putting');
+  });
+});
+
+describe('buildCategoryInsights', () => {
+  const patterns: CategorizablePatternWithImpact[] = [
+    {
+      id: 'p1',
+      strokeImpact: -0.9,
+      patternType: 'contextual',
+      description: 'Misses left 42% of the time on approach — suggests a consistent swing path issue',
+      recommendation: 'Aim slightly right of target to play the natural miss.',
+      outcome: { metric: 'approach_miss_lie_150_175_fairway' },
+    },
+    {
+      id: 'p2',
+      strokeImpact: -0.6,
+      patternType: 'conditional',
+      description: 'Misses short 38% of the time — distance control or club selection issue',
+      recommendation: 'Club up one more often.',
+      outcome: { metric: 'approach_severity_150_175' },
+    },
+    {
+      id: 'p3',
+      strokeImpact: -0.3,
+      patternType: 'conditional',
+      description: 'A third, weaker approach read that should be truncated by max=2',
+      outcome: { metric: 'approach_direction_150_175_left' },
+    },
+    {
+      id: 'p4',
+      strokeImpact: 0.5,
+      patternType: 'conditional',
+      description: 'Makes only 31% from 5-10ft (benchmark: 45%) — a key distance for scoring',
+      recommendation: 'Dedicated putting drills from 5-10ft.',
+      outcome: { metric: 'putting_efficiency' },
+    },
+    {
+      id: 'p5',
+      strokeImpact: 0,
+      patternType: 'conditional',
+      description: 'Zero-impact pattern — must never render',
+      outcome: { metric: 'putting_efficiency' },
+    },
+    {
+      id: 'p6',
+      strokeImpact: null,
+      patternType: 'conditional',
+      description: 'Missing-impact pattern — must never render',
+      outcome: { metric: 'putting_efficiency' },
+    },
+  ];
+
+  it('buckets each pattern into its categorized array, ranked by |strokeImpact| descending', () => {
+    const buckets = buildCategoryInsights(patterns);
+    expect(buckets.approach.map((i) => i.strokeImpact)).toEqual([-0.9, -0.6]);
+    expect(buckets.putting.map((i) => i.strokeImpact)).toEqual([0.5]);
+  });
+
+  it('caps each category at `max` (default 2), dropping the weakest overflow entries', () => {
+    const buckets = buildCategoryInsights(patterns);
+    expect(buckets.approach).toHaveLength(2);
+    expect(buckets.approach.some((i) => i.title.includes('third, weaker'))).toBe(false);
+  });
+
+  it('honors a custom max', () => {
+    const buckets = buildCategoryInsights(patterns, 1);
+    expect(buckets.approach).toHaveLength(1);
+    expect(buckets.approach[0]?.strokeImpact).toBe(-0.9);
+  });
+
+  it('drops zero and null/undefined stroke-impact patterns entirely', () => {
+    const buckets = buildCategoryInsights(patterns);
+    const allTitles = Object.values(buckets).flatMap((rows) => rows.map((r) => r.title));
+    expect(allTitles.some((t) => t.includes('must never render'))).toBe(false);
+  });
+
+  it('honest-falls-back to a pretty pattern-type label when description is missing', () => {
+    const buckets = buildCategoryInsights([
+      { id: 'shot1', strokeImpact: -0.4, patternType: 'contextual', outcome: { metric: 'miss_direction' } },
+    ]);
+    expect(buckets.general[0]?.title).toBe('Shot pattern');
+  });
+
+  it('carries the recommendation through when present, null when absent', () => {
+    const buckets = buildCategoryInsights(patterns);
+    expect(buckets.approach[0]?.recommendation).toBe('Aim slightly right of target to play the natural miss.');
+    expect(buckets.approach[1]?.recommendation).toBe('Club up one more often.');
+  });
+
+  it('returns an entry (possibly empty) for every one of the six categories', () => {
+    const buckets = buildCategoryInsights([]);
+    expect(Object.keys(buckets).sort()).toEqual(
+      ['approach', 'driving', 'general', 'putting', 'scoring', 'short_game'].sort(),
+    );
+    for (const rows of Object.values(buckets)) expect(rows).toEqual([]);
+  });
+});
+
+describe('buildCategoryTrends', () => {
+  it('threads fairway/gir/putts/score series onto driving/approach/putting/scoring respectively', () => {
+    const trends = buildCategoryTrends({
+      fairway: [{ value: 55 }, { value: 61 }],
+      gir: [{ value: 40 }, { value: 48 }],
+      putts: [{ value: 30.1 }, { value: 28.4 }],
+      score: [{ value: 78 }, { value: 74 }],
+    });
+    expect(trends.driving?.series).toEqual([55, 61]);
+    expect(trends.approach?.series).toEqual([40, 48]);
+    expect(trends.putting?.series).toEqual([30.1, 28.4]);
+    expect(trends.scoring?.series).toEqual([78, 74]);
+  });
+
+  it('never fabricates a short_game trend — always null (no source data exists on this surface)', () => {
+    const trends = buildCategoryTrends({
+      fairway: [{ value: 55 }, { value: 61 }],
+      gir: [{ value: 40 }, { value: 48 }],
+      putts: [{ value: 30 }, { value: 28 }],
+      score: [{ value: 78 }, { value: 74 }],
+    });
+    expect(trends.short_game).toBeNull();
+  });
+
+  it('returns null for a category whose series is empty/absent, not a fabricated flat line', () => {
+    const trends = buildCategoryTrends({});
+    expect(trends.driving).toBeNull();
+    expect(trends.approach).toBeNull();
+    expect(trends.putting).toBeNull();
+    expect(trends.scoring).toBeNull();
+  });
+
+  it('returns null for an input of null/undefined entirely', () => {
+    expect(buildCategoryTrends(null)).toEqual({
+      driving: null,
+      approach: null,
+      putting: null,
+      scoring: null,
+      short_game: null,
+    });
+    expect(buildCategoryTrends(undefined).driving).toBeNull();
+  });
+
+  it('marks a higher-is-better rise (fairway%) as a GOOD up delta', () => {
+    const trends = buildCategoryTrends({ fairway: [{ value: 55 }, { value: 63 }] });
+    expect(trends.driving?.delta).toEqual({ text: '+8%', direction: 'up', good: true });
+  });
+
+  it('marks fewer putts per round (lower-is-better) as a GOOD delta even though the raw number fell', () => {
+    const trends = buildCategoryTrends({ putts: [{ value: 30.2 }, { value: 28.6 }] });
+    expect(trends.putting?.delta).toEqual({ text: '−1.6', direction: 'down', good: true });
+  });
+
+  it('marks a rising score (lower-is-better) as a BAD up delta', () => {
+    const trends = buildCategoryTrends({ score: [{ value: 74 }, { value: 78 }] });
+    expect(trends.scoring?.delta).toEqual({ text: '+4.0', direction: 'up', good: false });
+  });
+
+  it('omits the delta (but keeps the series) when fewer than 2 finite points exist', () => {
+    const trends = buildCategoryTrends({ gir: [{ value: 42 }] });
+    expect(trends.approach?.series).toEqual([42]);
+    expect(trends.approach?.delta).toBeUndefined();
+  });
+
+  it('drops non-finite points from the series before computing anything', () => {
+    const trends = buildCategoryTrends({ fairway: [{ value: 50 }, { value: Number.NaN }, { value: 60 }] });
+    expect(trends.driving?.series).toEqual([50, 60]);
+  });
+
+  it('carries a human label per category for the strip/aria-label', () => {
+    const trends = buildCategoryTrends({ fairway: [{ value: 55 }, { value: 61 }] });
+    expect(trends.driving?.label).toBe('Fairways hit');
   });
 });

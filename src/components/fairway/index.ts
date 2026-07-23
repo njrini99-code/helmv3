@@ -513,13 +513,10 @@ export {
   FairwayEffectiveness,
   type FairwayEffectivenessProps,
   // ── Signals surface (coach "Signals" tab over alerts/insights/patterns) ─────
-  // ONE component for all three Signals routes, discriminated by signalSource +
-  // defaultFilter. Consumed by the alerts/insights/patterns flag forks.
-  FairwayCoachHelmSignals,
-  type FairwayCoachHelmSignalsProps,
-  type SignalsDefaultFilter,
-  type SignalsView,
-  type SignalGroupBy,
+  // The monolithic FairwayCoachHelmSignals was deleted 2026-07-22 (dead code
+  // purge) — all three routes are permanent-redirect shims onto TriageDesk's
+  // Signals drill (SignalQueue/SignalDossier). SignalsToolbar/ScanTeamControl
+  // remain live, reused elsewhere.
   SignalsToolbar,
   type SignalsToolbarProps,
   type AppliedFilterChip,

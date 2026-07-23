@@ -169,19 +169,34 @@ async function getCoachAlerts(
 // GET ALERT COUNTS
 // ============================================================================
 
+const EMPTY_ALERT_COUNTS = { critical: 0, warning: 0, info: 0, total: 0 };
+
 async function getAlertCountsImpl(
   coachId: string
 ): Promise<{
   success: boolean;
   counts?: { critical: number; warning: number; info: number; total: number };
   error?: string;
+  /**
+   * True when the caller has no live session/authorization for this coach
+   * record. The 45s badge poll in notification-badge-context.tsx keeps this
+   * action warm for the lifetime of an open tab, so it routinely outlives a
+   * logout or a session/idle-timeout expiry — that's an expected client
+   * state, not an incident. Return a silent, honest empty result (no
+   * `error`, no thrown/logged failure) instead of `{success:false}`, which
+   * `observeActionSoftFailure` would otherwise persist to the Bridge on
+   * every single poll. The flag lets the client stop polling once it learns
+   * the session is gone, rather than repeating the same expected miss
+   * forever.
+   */
+  authExpired?: boolean;
 }> {
   const supabase = await createClient();
 
   // Auth check: verify user owns this coach record
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { success: false, error: 'Not authenticated' };
+    return { success: true, counts: EMPTY_ALERT_COUNTS, authExpired: true };
   }
 
   const { data: coach } = await supabase
@@ -192,7 +207,7 @@ async function getAlertCountsImpl(
     .single();
 
   if (!coach) {
-    return { success: false, error: 'Not authorized' };
+    return { success: true, counts: EMPTY_ALERT_COUNTS, authExpired: true };
   }
 
   try {
@@ -258,6 +273,7 @@ export async function getAlertCounts(
   success: boolean;
   counts?: { critical: number; warning: number; info: number; total: number };
   error?: string;
+  authExpired?: boolean;
 }> {
   return observedGetAlertCounts(coachId);
 }

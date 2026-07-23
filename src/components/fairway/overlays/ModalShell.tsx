@@ -40,6 +40,7 @@ import {
   panelTransition,
   GLASS_STRONG_CLASS,
   CLOSE_BUTTON_CLASS,
+  ModalPortalContext,
 } from './_shared';
 
 /* ── size variants ────────────────────────────────────────────────────────── */
@@ -102,6 +103,17 @@ function ModalShellRoot({
 }: ModalShellProps) {
   const reduced = useReducedMotion() ?? false;
 
+  // The Dialog.Content DOM node, captured once mounted — provided down via
+  // ModalPortalContext so a floating popup (fairway/forms/Select.tsx) can
+  // portal INSIDE this modal's own DOM subtree instead of document.body,
+  // where Radix's FocusScope (real-DOM-containment focus trap) would
+  // otherwise fight it and yank focus back the instant the popup opens
+  // (see _shared.ts's ModalPortalContext docblock). A state (not a plain
+  // ref) so descendants re-render once the node is available — the parent's
+  // ref attaches AFTER descendant layout effects in React's commit order,
+  // so a plain ref read during a child's layout effect could still be null.
+  const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(null);
+
   // Track presence ourselves so framer-motion can run the exit tween before
   // Radix unmounts the forceMount tree.
   const isControlled = open !== undefined;
@@ -114,6 +126,36 @@ function ModalShellRoot({
       onOpenChange?.(next);
     },
     [isControlled, onOpenChange],
+  );
+
+  // Escape-close regression guard (2026-07-21, post portal-into-dialog fix):
+  // Radix's Dialog `DismissableLayer` listens for Escape on `document` in the
+  // CAPTURE phase (@radix-ui/react-use-escape-keydown), which — being on
+  // `document` itself — fires before the event ever reaches the focused
+  // element inside a nested Base UI popup (Select/Combobox). A floating Base
+  // UI popup's OWN Escape-to-close comes from floating-ui-react's
+  // `useDismiss`, which listens on `document` too but in the BUBBLE phase
+  // (fires last). Left alone, that ordering means a single Escape press
+  // closes BOTH the popup and the dialog at once — the popup never gets a
+  // press "to itself" before the dialog goes away under it.
+  //
+  // Base UI stamps `data-popup-open` on a popup's trigger/input element (the
+  // Select trigger, the Combobox input, …) for exactly as long as that
+  // popup is open — see @base-ui-components/react's CommonTriggerDataAttributes.
+  // We use it as a live, DOM-truth signal: if any such element inside this
+  // dialog currently has an open popup, this Escape press was meant for the
+  // popup, not the dialog — `preventDefault()` so DismissableLayer's own
+  // `if (!event.defaultPrevented) onDismiss()` guard skips closing the
+  // dialog, while Base UI's independent listener still closes the popup on
+  // this same keystroke. The *next* Escape press finds no `data-popup-open`
+  // descendant left and falls through to the normal dialog dismiss.
+  const handleContentEscapeKeyDown = React.useCallback(
+    (event: KeyboardEvent) => {
+      if (contentNode?.querySelector('[data-popup-open]')) {
+        event.preventDefault();
+      }
+    },
+    [contentNode],
   );
 
   const titleIsString = typeof title === 'string';
@@ -147,8 +189,10 @@ function ModalShellRoot({
               // The fairway-ds scope gives child elements the warm tokens/fonts.
               className="fairway-ds"
               aria-describedby={description ? undefined : ''}
+              onEscapeKeyDown={handleContentEscapeKeyDown}
             >
               <motion.div
+                ref={setContentNode}
                 data-slot={dataSlot}
                 role="dialog"
                 // `position: fixed` is set inline because `.fw-glass-strong` is an
@@ -172,44 +216,50 @@ function ModalShellRoot({
                 exit="hidden"
                 transition={panelTransition(reduced, true)}
               >
-                {/* Always render a Dialog.Title for a11y; visually hide if asked. */}
-                {hideTitle || !titleIsString ? (
-                  <Dialog.Title className="sr-only">
-                    {titleIsString ? title : 'Dialog'}
-                  </Dialog.Title>
-                ) : null}
+                {/* Provide our own DOM node so floating popups mounted inside
+                    (fairway/forms/Select.tsx et al.) can portal INTO this
+                    subtree instead of document.body — see _shared.ts's
+                    ModalPortalContext docblock for why that's required. */}
+                <ModalPortalContext.Provider value={contentNode}>
+                  {/* Always render a Dialog.Title for a11y; visually hide if asked. */}
+                  {hideTitle || !titleIsString ? (
+                    <Dialog.Title className="sr-only">
+                      {titleIsString ? title : 'Dialog'}
+                    </Dialog.Title>
+                  ) : null}
 
-                {!hideTitle && (titleIsString || description) ? (
-                  <ModalHeader>
-                    {titleIsString ? <ModalTitle>{title}</ModalTitle> : null}
-                    {description ? (
-                      <ModalDescription>{description}</ModalDescription>
-                    ) : null}
-                  </ModalHeader>
-                ) : description ? (
-                  <Dialog.Description className="sr-only">
-                    {description}
-                  </Dialog.Description>
-                ) : null}
+                  {!hideTitle && (titleIsString || description) ? (
+                    <ModalHeader>
+                      {titleIsString ? <ModalTitle>{title}</ModalTitle> : null}
+                      {description ? (
+                        <ModalDescription>{description}</ModalDescription>
+                      ) : null}
+                    </ModalHeader>
+                  ) : description ? (
+                    <Dialog.Description className="sr-only">
+                      {description}
+                    </Dialog.Description>
+                  ) : null}
 
-                {children}
+                  {children}
 
-                {!hideClose ? (
-                  <Dialog.Close
-                    aria-label="Close"
-                    className={cn(
-                      CLOSE_BUTTON_CLASS,
-                      // Invisible hit-slop expands the tap target to 44px
-                      // without changing the 36px visual (iOS touch floor,
-                      // §7.4). The button is already `absolute`, so it is the
-                      // positioning context for `::before` — no `relative` needed.
-                      "before:absolute before:-inset-1.5 before:content-['']",
-                      'absolute right-4 top-4',
-                    )}
-                  >
-                    <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                  </Dialog.Close>
-                ) : null}
+                  {!hideClose ? (
+                    <Dialog.Close
+                      aria-label="Close"
+                      className={cn(
+                        CLOSE_BUTTON_CLASS,
+                        // Invisible hit-slop expands the tap target to 44px
+                        // without changing the 36px visual (iOS touch floor,
+                        // §7.4). The button is already `absolute`, so it is the
+                        // positioning context for `::before` — no `relative` needed.
+                        "before:absolute before:-inset-1.5 before:content-['']",
+                        'absolute right-4 top-4',
+                      )}
+                    >
+                      <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                    </Dialog.Close>
+                  ) : null}
+                </ModalPortalContext.Provider>
               </motion.div>
             </Dialog.Content>
           </Dialog.Portal>

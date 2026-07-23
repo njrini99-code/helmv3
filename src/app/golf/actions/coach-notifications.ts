@@ -15,6 +15,13 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  /**
+   * True when the caller has no live session — the 45s badge poll in
+   * notification-badge-context.tsx keeps calling this after logout/session
+   * expiry until the tab reloads, which is expected, not an incident. Signals
+   * the client to stop polling instead of repeating the same expected miss.
+   */
+  authExpired?: boolean;
 }
 
 export interface CoachNotificationCounts {
@@ -34,7 +41,17 @@ async function getCoachNotificationCountsImpl(
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    if (!user) {
+      // Silent, expected empty result — see ActionResult.authExpired above.
+      // Not a `{success:false}` soft failure: that shape would get persisted
+      // to the Bridge (error_logs/admin_events) by observeActionSoftFailure
+      // on every 45s poll for the lifetime of a stale/logged-out tab.
+      return {
+        success: true,
+        data: { calendarNotifications: 0, unreadMessages: 0 },
+        authExpired: true,
+      };
+    }
 
     // Run queries in parallel
     const [calendarResult, conversationsResult] = await Promise.all([

@@ -17,7 +17,7 @@
  * ranked list (rank IS the leak-severity order).
  * ========================================================================== */
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel, RankCell, useStage } from '@/components/fairway/modules';
 import {
   InstrumentPanel,
   Readout,
@@ -26,13 +26,51 @@ import {
   Eyebrow,
   SegmentBar,
   type SegmentBarPart,
+  type ReadoutDelta,
 } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import type { WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
+import type { TrendAnalysisResponse, WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
 import { DEFAULT_MIN_PLAYS } from '@/lib/golf/worst-hole-ranking';
+import { CategoryInsightStrip } from './CategoryInsightStrip';
+import { buildCategoryInsights, buildCategoryTrends } from './buildStatsViewModel';
+import type { CategorizablePatternWithImpact } from './buildStatsViewModel';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+function fmtShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+/** Signed avg-strokes delta display, e.g. "+0.4" / "−0.4" / "0.0" — mirrors
+ *  `RoundsDrill`'s `fmtSignedNum` verbatim (kept as a small local duplicate
+ *  rather than a cross-drill import, same spirit as this file's other
+ *  formatters). */
+function fmtSignedAvg(diff: number): string {
+  const magnitude = Math.abs(diff).toFixed(1);
+  if (Number(magnitude) === 0) return magnitude;
+  return `${diff > 0 ? '+' : '−'}${magnitude}`;
+}
+/** A period-comparison Readout delta (last-30d vs previous-30d), direction-
+ *  aware so a falling (lower-is-better) scoring average still renders the
+ *  GOOD green ▲ rather than a false amber ▼ — same `good`-vs-raw-direction
+ *  split `RoundsDrill`'s `deltaDirection` applies to the identical data. */
+function readoutDeltaFromPeriod(
+  last: number | null | undefined,
+  previous: number | null | undefined,
+  higherIsBetter: boolean,
+  caption: string,
+): ReadoutDelta | undefined {
+  const l = finite(last);
+  const p = finite(previous);
+  if (l === null || p === null) return undefined;
+  const diff = l - p;
+  const good = higherIsBetter ? diff > 0 : diff < 0;
+  return {
+    value: diff,
+    direction: diff === 0 ? 'flat' : good ? 'up' : 'down',
+    format: () => fmtSignedAvg(diff),
+    caption,
+  };
 }
 function fmtToPar(v: number | null): string {
   if (v === null) return '—';
@@ -56,11 +94,35 @@ const PAR_KEYS = [
 export interface ScoringDrillProps {
   detailedStats: GolfStats | null;
   worstHoles: WorstHoleResponse | null;
+  /** CoachHelm's mined patterns (`getPlayerPatterns`) — feeds the "What
+   *  CoachHelm sees" scoring-category insights via `buildCategoryInsights`. */
+  patterns?: ReadonlyArray<CategorizablePatternWithImpact>;
+  /** `getTrendAnalysis`'s round-level trend series — the `score` series
+   *  feeds the CategoryInsightStrip's inline trend via `buildCategoryTrends`. */
+  trends?: TrendAnalysisResponse['trends'] | null;
+  /** Last-30-days vs previous-30-days comparison — SAME source `RoundsDrill`'s
+   *  comparison band uses — feeds the Scoring-average Readout's delta. */
+  periodComparison?: TrendAnalysisResponse['periodComparison'];
+  /** Personal bests — SAME source `RoundsDrill`'s personal-bests band uses —
+   *  feeds the Best-round Readout's course/date caption. */
+  personalBests?: TrendAnalysisResponse['personalBests'];
 }
 
-export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
+export function ScoringDrill({
+  detailedStats,
+  worstHoles,
+  patterns = [],
+  trends = null,
+  periodComparison,
+  personalBests,
+}: ScoringDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+
+  const categoryInsights = buildCategoryInsights(patterns);
+  const categoryTrends = buildCategoryTrends(trends);
+  const scoringInsights = categoryInsights.scoring;
+  const scoringTrend = categoryTrends.scoring;
 
   const parCards = PAR_KEYS.map(({ key, label }) => ({ label, d: s?.scoringByPar[key] }))
     .filter((c) => (c.d?.total ?? 0) > 0)
@@ -127,6 +189,13 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
   return (
     <DrillPanel title="Scoring" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
+        <CategoryInsightStrip
+          insights={scoringInsights}
+          series={scoringTrend?.series}
+          delta={scoringTrend?.delta}
+          trendLabel={scoringTrend?.label}
+          goodDirection="down"
+        />
         {/* HERO — score mix */}
         <div className="flex flex-col gap-2">
           <SegmentBar
@@ -145,13 +214,32 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
-            <Readout value={finite(s?.scoringAverage) ?? undefined} label="Scoring average" size="md" state={s?.scoringAverage != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
+            <Readout
+              value={finite(s?.scoringAverage) ?? undefined}
+              label="Scoring average"
+              size="md"
+              state={s?.scoringAverage != null ? 'live' : 'awaiting'}
+              awaitingLabel="No rounds"
+              delta={readoutDeltaFromPeriod(
+                periodComparison?.last30Days.scoringAvg,
+                periodComparison?.previous30Days.scoringAvg,
+                false,
+                'vs prior 30d',
+              )}
+            />
           </InstrumentPanel>
           <InstrumentPanel depth="base" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout display={fmtToPar(finite(s?.avgScoreToPar))} label="Avg to par" size="md" state={s?.avgScoreToPar != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
           </InstrumentPanel>
           <InstrumentPanel depth="base" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
-            <Readout value={finite(s?.bestRound) ?? undefined} label="Best round" size="md" state={s?.bestRound != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
+            <div className="flex w-full flex-col gap-1">
+              <Readout value={finite(s?.bestRound) ?? undefined} label="Best round" size="md" state={s?.bestRound != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
+              {personalBests?.bestScore ? (
+                <p className="truncate font-fw-sans text-caption text-text-tertiary">
+                  {personalBests.bestScore.course} · {fmtShortDate(personalBests.bestScore.date)}
+                </p>
+              ) : null}
+            </div>
           </InstrumentPanel>
           <InstrumentPanel depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">
             <Readout value={finite(s?.worstRound) ?? undefined} label="Worst round" size="md" state={s?.worstRound != null ? 'live' : 'awaiting'} awaitingLabel="No rounds" />
@@ -259,10 +347,8 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
             </h4>
             <ol className="grid gap-2.5 rounded-card border border-border-subtle bg-surface p-4">
               {worstItems.map((item) => (
-                <li key={item.rank} className="grid grid-cols-[22px_1fr_auto] items-baseline gap-2.5">
-                  <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                    {String(item.rank).padStart(2, '0')}
-                  </span>
+                <li key={item.rank} className="grid grid-cols-[38px_1fr_auto] items-center gap-2.5">
+                  <RankCell rank={item.rank} of={worstItems.length} />
                   <span className="min-w-0 truncate font-fw-sans text-body-sm font-semibold text-text-primary">
                     {item.title}
                   </span>
