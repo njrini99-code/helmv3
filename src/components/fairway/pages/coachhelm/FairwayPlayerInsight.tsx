@@ -530,7 +530,9 @@ export function FairwayPlayerInsight({
               description: target.content ?? '',
               insight_type: (target.category as string | undefined) ?? 'general',
             });
-            if (res.success) router.push('/golf/dashboard/development');
+            // Canonical destination directly, not the /development redirect
+            // shim (React #310 legacy-link audit, 2026-07-22).
+            if (res.success) router.push(`/golf/dashboard/intelligence?view=players&player=${target.player_id}`);
           }
         } catch {
           setInsights(prev);
@@ -575,7 +577,9 @@ export function FairwayPlayerInsight({
 
           if (res.success) {
             addToast({ type: 'success', title: 'Focus area created' });
-            router.push('/golf/dashboard/development');
+            // Canonical destination directly, not the /development redirect
+            // shim (React #310 legacy-link audit, 2026-07-22).
+            router.push(`/golf/dashboard/intelligence?view=players&player=${player.id}`);
           } else {
             addToast({ type: 'error', title: res.error ?? 'Could not create focus area' });
           }
@@ -897,7 +901,7 @@ export function FairwayPlayerInsight({
           <div className="flex items-center justify-between gap-3">
             <Eyebrow>What we&rsquo;re tracking</Eyebrow>
             <Link
-              href={`/golf/dashboard/development?player=${player.id}`}
+              href={`/golf/dashboard/intelligence?view=players&player=${player.id}`}
               className="font-fw-sans text-caption font-medium text-accent-700 hover:text-accent-600"
             >
               Manage
@@ -1015,7 +1019,7 @@ export function FairwayPlayerInsight({
             <Link href={`/golf/dashboard/messages?player=${player.id}`}>Message player</Link>
           </Button>
           <Button asChild variant="secondary" leftIcon={<IconTarget size={16} />}>
-            <Link href={`/golf/dashboard/development?player=${player.id}`}>Create focus area</Link>
+            <Link href={`/golf/dashboard/intelligence?view=players&player=${player.id}`}>Create focus area</Link>
           </Button>
           <Button asChild variant="ghost" leftIcon={<IconCalendar size={16} />}>
             <Link href="/golf/dashboard/calendar">Open calendar</Link>
@@ -1036,7 +1040,7 @@ export function FairwayPlayerInsight({
       signalCount={signalCount}
       title="Player Insight"
       breadcrumbs={[
-        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: 'Players', href: '/golf/dashboard/intelligence?view=players' },
         { label: playerName },
       ]}
       actions={headerActions}

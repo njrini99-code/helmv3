@@ -29,10 +29,12 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button, fairwayToast, InlineNotice, PlayersGridView } from '@/components/fairway';
-import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
+import type { PlayersGridViewProps, FairwayEffectivenessProps, PlayersGridStats } from '@/components/fairway';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
 import { reviewSignal, dismissSignal } from '@/app/golf/actions/signal-groups';
+import type { TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
+import { TeamCategoryLeakBand } from '@/components/fairway/pages/coachhelm/TeamCategoryLeakBand';
 import { BriefBand } from './BriefBand';
 import { ViewSwitch } from './ViewSwitch';
 import { SignalQueue } from './SignalQueue';
@@ -65,6 +67,12 @@ export interface TriageDeskProps {
   /** Non-null when `getSignalGroups` itself failed — a distinct state from a
    *  genuinely empty (all-clear) queue, rendered as an honest retry notice. */
   groupsError: string | null;
+  /** "Where the team is bleeding strokes" band data — categories[] +
+   *  teamHealth from `getTeamCategoryInsights`. Rendered above `BriefBand` so
+   *  it's visible regardless of which sub-view the coach is on; silently
+   *  omitted (not an error banner) when the fetch failed, mirroring how the
+   *  other best-effort extras on this page degrade. */
+  categoryInsights: TeamCategoryInsightsResult;
   playersDrillProps: PlayersGridViewProps;
   /** Same SSR-fetched shape the retired cockpit consumed — `EffectivenessScoreboard`
    *  only reads its `initialOverview`/`initialEffectiveness`/`initialPerformance` fields. */
@@ -76,6 +84,7 @@ export function TriageDesk({
   groups: initialGroups,
   scannedAt,
   groupsError,
+  categoryInsights,
   playersDrillProps,
   effectivenessDrillProps,
 }: TriageDeskProps) {
@@ -223,6 +232,26 @@ export function TriageDesk({
   }, [groups]);
   const dossierEntry = selectedEntry ?? defaultEntry;
 
+  // Related-context slices for the dossier's right-pane fill (live-QA
+  // "~700-800px dead space" fix) — derived straight from data this desk
+  // already has (`playersDrillProps`), no extra fetch.
+  const dossierPlayerId = dossierEntry?.group.playerId ?? null;
+  const dossierPlayerFocusAreas = useMemo(
+    () =>
+      dossierPlayerId
+        ? playersDrillProps.focusAreas.filter((fa) => fa.player_id === dossierPlayerId)
+        : [],
+    [dossierPlayerId, playersDrillProps.focusAreas],
+  );
+  const dossierPlayerGoals = dossierPlayerId
+    ? (playersDrillProps.goalsByPlayer?.[dossierPlayerId] ?? [])
+    : [];
+  const dossierPlayerStats: PlayersGridStats | null = dossierPlayerId
+    ? (playersDrillProps.playerStats[dossierPlayerId] ?? null)
+    : null;
+
+  const categoryBandData = categoryInsights.success ? categoryInsights.data : undefined;
+
   function handleScan() {
     startScanTransition(async () => {
       try {
@@ -301,6 +330,13 @@ export function TriageDesk({
 
   return (
     <div className="flex flex-col gap-6">
+      {categoryBandData ? (
+        <TeamCategoryLeakBand
+          categories={categoryBandData.categories}
+          teamHealth={categoryBandData.teamHealth}
+        />
+      ) : null}
+
       <BriefBand
         verdict={verdict}
         counts={counts}
@@ -329,7 +365,7 @@ export function TriageDesk({
             {groupsError}
           </InlineNotice>
         ) : (
-          <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-start">
+          <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
             <div className={cn(isSignalSelected && 'hidden min-[940px]:block')}>
               <SignalQueue
                 groups={filteredGroups}
@@ -352,6 +388,10 @@ export function TriageDesk({
                 onDismiss={handleDismiss}
                 onPromoted={handlePromoted}
                 onBack={() => navigate({ signal: null })}
+                onSelectSignal={(id) => navigate({ signal: id })}
+                playerFocusAreas={dossierPlayerFocusAreas}
+                playerGoals={dossierPlayerGoals}
+                playerStats={dossierPlayerStats}
               />
             </div>
           </div>

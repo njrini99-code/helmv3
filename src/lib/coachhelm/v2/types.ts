@@ -608,6 +608,21 @@ export interface AnalysisOptions {
   includeTrajectory?: boolean;
   includeShotPatterns?: boolean;
   includeLieAnalysis?: boolean;
+  /**
+   * Whether ShotPatternMiner.analyzeShotPatterns() should persist its
+   * findings to `golf_patterns_v2` (a write) as a side effect of this
+   * analysis run. Defaults to `true` so existing writers (crons,
+   * post-round triggers) keep persisting exactly as before.
+   *
+   * Set to `false` for READ-ONLY callers (e.g. a dashboard page load) —
+   * mining shot patterns synchronously upserts into `golf_patterns_v2` on
+   * every call, which raced concurrently-running coachhelm-* crons writing
+   * the same table and surfaced as a live Postgres deadlock (40P01) that
+   * failed the whole player CoachHelm page. A dashboard read should never
+   * have a side-effecting write on its critical path — see
+   * shot-pattern-miner.ts's `persistPatterns` option.
+   */
+  persistPatterns?: boolean;
   depth?: 'quick' | 'standard' | 'deep';
   /**
    * Coach's persisted Insight Detail Level (golf_coach_philosophy.insight_verbosity).

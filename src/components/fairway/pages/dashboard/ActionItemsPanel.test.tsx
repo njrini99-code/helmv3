@@ -5,10 +5,11 @@
  * Regression coverage for the count-contradiction finding: the "Action Items"
  * header badge showed the FULL `items.length` while the list below it only
  * ever rendered `items.slice(0, 6)` — on any team with more than 6 open items
- * the header (and the hero's "N items are waiting on you", which sources the
- * SAME `enhancedData.actionItems` array in coach-signal.ts) disagreed with
- * what the coach could actually see. The fix renders the full list so the
- * badge always describes exactly what's on screen.
+ * the header disagreed with what the coach could actually see (the same
+ * `enhancedData.actionItems` array also fed the coach dashboard's "N items
+ * need you" hero at the time, coach-signal.ts — since removed as intentional
+ * product direction; see attention-queue.ts). The fix renders the full list
+ * so the badge always describes exactly what's on screen.
  * ========================================================================== */
 import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';

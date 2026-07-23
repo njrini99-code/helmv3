@@ -5,7 +5,8 @@
  * for the CoachHelm AI system.
  */
 
-// Primary exports — new Intelligence Command Center
-export { IntelligenceCommandCenter } from './IntelligenceCommandCenter';
+// IntelligenceCommandCenter (previous-gen coach home, superseded by
+// TriageDesk) was deleted 2026-07-22 (dead code purge — zero live-route
+// imports).
 
 export { CoachHelmToggle } from './CoachHelmToggle';

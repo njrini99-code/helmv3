@@ -47,6 +47,7 @@ import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
+import { classifyDashboardFailure } from '@/lib/coachhelm/v2/dashboard-error-classifier';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
@@ -2933,7 +2934,7 @@ export interface PlayerCoachHelmDashboardData {
 
 async function getPlayerCoachHelmDashboardImpl(
   playerId: string
-): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
+): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'TRANSIENT_FAILURE' | 'UNKNOWN' }> {
   const supabase = await createClient();
 
   try {
@@ -2965,12 +2966,20 @@ async function getPlayerCoachHelmDashboardImpl(
       .join(' ')
       .trim() || 'Player';
 
-    // Run analysis to get all insights
+    // Run analysis to get all insights. persistPatterns: false — this is a
+    // page READ, not a write trigger. Without it, analyzePlayer's shot-pattern
+    // mining unconditionally upserts into golf_patterns_v2 as a side effect
+    // of loading the dashboard, which raced the coachhelm-* crons writing the
+    // same table and surfaced as a live Postgres deadlock (40P01) that failed
+    // this whole page load. The crons and the post-round trigger
+    // (triggerPlayerInsightsAfterRoundImpl below) are the legitimate writers
+    // and are unaffected — they don't pass this option, so it defaults true.
     const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
       includePatterns: true,
       includeCausal: true,
       includePredictions: true,
       includeShotPatterns: true,
+      persistPatterns: false,
       depth: 'standard',
     });
 
@@ -3043,7 +3052,19 @@ async function getPlayerCoachHelmDashboardImpl(
       action: 'getPlayerCoachHelmDashboard',
       featureArea: 'insights',
     });
-    return { success: false, error: 'An unexpected error occurred' };
+    // Distinguish a retryable DB hiccup (deadlock/timeout/connection) from a
+    // genuine bug so the page can auto-retry once instead of always dead-ending
+    // on the hard "Unable to Load AI Dashboard" state — see
+    // classifyDashboardFailure's doc for the full rationale.
+    const errorCode = classifyDashboardFailure(error);
+    return {
+      success: false,
+      error:
+        errorCode === 'TRANSIENT_FAILURE'
+          ? 'Your insights are still catching up — please try again in a moment.'
+          : 'An unexpected error occurred',
+      errorCode,
+    };
   }
 }
 
@@ -3054,7 +3075,7 @@ const observedGetPlayerCoachHelmDashboard = withAdminObserved(
 );
 export async function getPlayerCoachHelmDashboard(
   playerId: string
-): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
+): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'TRANSIENT_FAILURE' | 'UNKNOWN' }> {
   return observedGetPlayerCoachHelmDashboard(playerId);
 }
 

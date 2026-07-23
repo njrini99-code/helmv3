@@ -285,10 +285,22 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           leakError={leakError}
           onRetryLeak={() => void loadAll(playerId)}
           retryingLeak={loading}
+          patterns={patterns}
+          trends={trendData?.trends}
         />
       ),
     },
-    { key: 'driving', node: <DrivingDrill detailedStats={detailedStats} sprayData={sprayData} /> },
+    {
+      key: 'driving',
+      node: (
+        <DrivingDrill
+          detailedStats={detailedStats}
+          sprayData={sprayData}
+          patterns={patterns}
+          trends={trendData?.trends}
+        />
+      ),
+    },
     {
       key: 'approach',
       node: (
@@ -299,11 +311,25 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           leakError={leakError}
           onRetryLeak={() => void loadAll(playerId)}
           retryingLeak={loading}
+          patterns={patterns}
+          trends={trendData?.trends}
         />
       ),
     },
-    { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} /> },
-    { key: 'scoring', node: <ScoringDrill detailedStats={detailedStats} worstHoles={worstHoles} /> },
+    { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} patterns={patterns} /> },
+    {
+      key: 'scoring',
+      node: (
+        <ScoringDrill
+          detailedStats={detailedStats}
+          worstHoles={worstHoles}
+          patterns={patterns}
+          trends={trendData?.trends}
+          periodComparison={trendData?.periodComparison}
+          personalBests={trendData?.personalBests}
+        />
+      ),
+    },
     {
       key: 'standing',
       node: (

@@ -84,6 +84,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
+import { NotificationsLatestModule } from '@/components/fairway/notifications';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import type {
   CoachDashboardPayload,
@@ -463,8 +464,18 @@ export function FairwayCoachDashboard({
   // stretch the page past the viewport; the owner's phone showed every
   // full-width card running past the screen edge when one sibling went wide
   // (#957).
+  //
+  // Bottom clearance: pb-8/md:pb-28 is deliberately deeper than the matching
+  // top rhythm (pt-8/md:pt-10). ChatDrawer's floating "Ask" button is `fixed
+  // bottom-6 right-6` — a 56px circle occupying roughly the bottom 80px of
+  // the viewport — on every /golf/dashboard route at md+ (below md it lives
+  // in the bottom tab bar instead, see ChatDrawer.tsx). At 1440x900 this
+  // page's content is often shorter than the viewport, so without headroom
+  // here the FAB sits directly over whatever renders last (Recent Rounds /
+  // the Team region) instead of merely floating past the end of a longer,
+  // scrolled page. pb-28 (112px) clears that 80px zone with margin.
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 overflow-x-clip px-5 py-8 md:gap-10 md:px-8 md:py-10">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 overflow-x-clip px-5 pt-8 pb-8 md:gap-10 md:px-8 md:pt-10 md:pb-28">
       {/* ── 1 · MASTHEAD — single h1 + promoted action cluster ─────────────── */}
       <ViewHeader
         eyebrow="Coach Dashboard"
@@ -533,6 +544,13 @@ export function FairwayCoachDashboard({
           the fold. Falls back to the component's own self-fetch when the prop is
           omitted (e.g. any other caller that hasn't wired it). */}
       <FairwayJoinRequestAlert requests={joinRequests} />
+
+      {/* Latest notifications — compact digest of the unified feed (CoachHelm
+          signals, event/RSVP lifecycle, task reminders…). Self-fetching client
+          module; renders nothing when there's genuinely nothing new (the bell
+          in the top bar stays the source of truth either way). "View all"
+          opens that same bell panel via NotificationPanelContext. */}
+      <NotificationsLatestModule />
 
       {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
       <TodayPanel
@@ -690,7 +708,15 @@ export function FairwayCoachDashboard({
         {/* Section hairline — more-green ruling. */}
         <div aria-hidden="true" className="h-px w-full bg-accent-300" />
         {recentRounds.length === 0 ? (
-          <Surface elevation="border" padding="md">
+          // padding="sm" (not the Surface default "md"): EmptyState's own
+          // "subtle" variant already brings ample internal padding
+          // (px-6 py-10) — stacking that on top of a "md" Surface (p-6)
+          // doubled up to a taller box than the honest-compact treatment
+          // every other thin-data state on this page uses (Team Pulse / Top
+          // Performers wrap InsufficientData `compact` in the same "md"
+          // Surface). "sm" removes the doubled padding without touching the
+          // shared EmptyState primitive.
+          <Surface elevation="border" padding="sm">
             <EmptyState
               variant="subtle"
               icon={LucideFlag}

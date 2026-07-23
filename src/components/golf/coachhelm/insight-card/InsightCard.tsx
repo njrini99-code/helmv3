@@ -31,6 +31,7 @@ import {
   IconInfo,
   IconTrophy,
   IconHelp,
+  IconTarget,
 } from '@/components/icons';
 import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -42,7 +43,11 @@ import { MovementPill } from './MovementPill';
 import { WhyPopover } from './WhyPopover';
 import { DrillChips } from './DrillChips';
 import { ResolutionCelebration } from './ResolutionCelebration';
-import { PromoteToFocusAreaButton } from '../PromoteToFocusAreaButton';
+import {
+  FocusAreaModal,
+  type FocusAreaModalSubmit,
+} from '@/components/fairway/pages/coachhelm/FocusAreaModal';
+import { createFocusAreaFromInsightV2 } from '@/app/golf/actions/development';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Button, IconButton } from '@/components/ui/button';
 
@@ -631,6 +636,81 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
 );
 
 // ---------------------------------------------------------------------------
+// Promote-to-focus-area — the shared FocusAreaModal, not the retired
+// vaul-Drawer PromoteToFocusAreaButton. One trigger button + modal, reused by
+// both the player and coach InsightActions branches below. Always calls
+// `createFocusAreaFromInsightV2` (the same action the legacy button called)
+// so the coach-vs-player status/consent branching + `recordInsightAction`
+// ledger side effect inside that action keep firing exactly as before.
+// ---------------------------------------------------------------------------
+
+interface PromoteFocusAreaActionProps {
+  insight: EvidenceInsight;
+  mode: 'coach' | 'player';
+  /** Trigger label override. Defaults per mode below. */
+  label?: string;
+  className?: string;
+}
+
+function PromoteFocusAreaAction({ insight, mode, label, className }: PromoteFocusAreaActionProps) {
+  const [open, setOpen] = useState(false);
+  const areaType = mapInsightCategoryToAreaType(insight.category);
+  const targetMetric = suggestedFocusMetricFromStanding(insight);
+
+  async function handleSubmit(
+    payload: FocusAreaModalSubmit,
+  ): Promise<{ success: boolean; error?: string }> {
+    const res = await createFocusAreaFromInsightV2({
+      playerId: payload.player_id,
+      insightId: insight.id,
+      title: payload.title,
+      description: payload.description ?? '',
+      areaType: payload.area_type,
+      targetMetric: payload.target_metric ?? undefined,
+      targetValue: payload.target_value ?? undefined,
+    });
+    return { success: res.success, error: res.error };
+  }
+
+  return (
+    <>
+      <Button variant="ghost"
+        type="button"
+        data-testid="action-create-focus-area"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        className={cn(
+          'pill-soft pill-soft-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+          className,
+        )}
+      >
+        <IconTarget size={13} />
+        {label ?? (mode === 'coach' ? 'Create focus area' : 'Add to focus areas')}
+      </Button>
+      <FocusAreaModal
+        open={open}
+        onOpenChange={setOpen}
+        mode={mode}
+        players={[{ id: insight.player_id, name: 'This player' }]}
+        playerStats={{}}
+        playerId={insight.player_id}
+        sourceInsightId={insight.id}
+        initial={{
+          player_id: insight.player_id,
+          area_type: areaType,
+          title: insight.title,
+          description: insight.content,
+          target_metric: targetMetric ?? null,
+        }}
+        onSubmit={handleSubmit}
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Action row — shared between default + hero
 // ---------------------------------------------------------------------------
 
@@ -656,7 +736,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
     });
   };
 
-  // The promote button renders its own bottom-sheet flow and calls
+  // The promote button opens the shared FocusAreaModal and calls
   // createFocusAreaFromInsightV2 directly — independent of the parent's
   // onAction handler. For the PLAYER audience we still suppress it on resolved
   // insights (already graduated to a focus area or done). The COACH audience
@@ -701,15 +781,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             Got it
           </Button>
           {promotable && (
-            <PromoteToFocusAreaButton
-              source="insight"
-              sourceId={insight.id}
-              playerId={insight.player_id}
-              suggestedTitle={insight.title}
-              suggestedDescription={insight.content}
-              suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
-              suggestedTargetMetric={suggestedFocusMetricFromStanding(insight)}
-            />
+            <PromoteFocusAreaAction insight={insight} mode="player" />
           )}
           <Button variant="ghost"
             type="button"
@@ -747,21 +819,17 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             Acknowledge
           </Button>
           {/* F056: ONE unified promotion flow for BOTH active and resolved
-              insights. The coach always gets `PromoteToFocusAreaButton` (its
-              editable drawer → createFocusAreaFromInsightV2). The old resolved
-              branch fired `onAction('create_focus_area')`, a divergent path that
-              hit the legacy createFocusAreaFromInsight action and hard-navigated
-              away — unifying removes that second code path entirely. */}
-          <PromoteToFocusAreaButton
-            source="insight"
-            sourceId={insight.id}
-            playerId={insight.player_id}
-            suggestedTitle={insight.title}
-            suggestedDescription={insight.content}
-            suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
-            suggestedTargetMetric={suggestedFocusMetricFromStanding(insight)}
-            className={emphasis ? 'px-4 py-2 text-sm' : undefined}
+              insights. The coach always gets `PromoteFocusAreaAction` (the
+              shared FocusAreaModal → createFocusAreaFromInsightV2). The old
+              resolved branch fired `onAction('create_focus_area')`, a
+              divergent path that hit the legacy createFocusAreaFromInsight
+              action and hard-navigated away — unifying removes that second
+              code path entirely. */}
+          <PromoteFocusAreaAction
+            insight={insight}
+            mode="coach"
             label="Create focus area"
+            className={emphasis ? 'px-4 py-2 text-sm' : undefined}
           />
           <Button variant="ghost"
             type="button"
@@ -820,7 +888,7 @@ function rewriteForPlayer(text: string): string {
 }
 
 /**
- * Best-effort preselect for `PromoteToFocusAreaButton`'s target metric.
+ * Best-effort preselect for `PromoteFocusAreaAction`'s target metric.
  * `evidence.standing.metric_id` is a v3 MetricId (e.g. 'scoring_par_4',
  * 'scrambling_pct_sand', 'putts_made_5_10ft_pct') — a DIFFERENT vocabulary
  * from the focus-area METRIC_CATALOG keys (e.g. 'par4_avg',

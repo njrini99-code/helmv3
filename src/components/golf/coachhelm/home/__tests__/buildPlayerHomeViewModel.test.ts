@@ -4,10 +4,17 @@ import {
   buildPlayerLedger,
   buildPlayerStandingTrack,
   buildPredictionVerdict,
+  buildStandingPreviewRows,
+  buildThemeMagnitudeBars,
+  classifyTrendSignal,
   formatAreaName,
   formatPredictionHero,
+  genomeRadarPolygonPoints,
+  genomeRadarSpokes,
   pickBestWorstStandingIds,
+  pickStrongestWeakestAxis,
   sgToTrackPct,
+  summarizeThemeCauseCounts,
 } from '../buildPlayerHomeViewModel';
 
 describe('formatAreaName', () => {
@@ -170,5 +177,193 @@ describe('pickBestWorstStandingIds', () => {
 
   it('returns nulls when nothing has a finite team_pct', () => {
     expect(pickBestWorstStandingIds({})).toEqual({ bestId: null, worstId: null });
+  });
+});
+
+describe('buildStandingPreviewRows', () => {
+  it('returns every entry, sorted strongest-first, when there are max or fewer', () => {
+    expect(
+      buildStandingPreviewRows({ sg_putting: { team_pct: 82 }, sg_ott: { team_pct: 40 } }, 3),
+    ).toEqual([
+      { id: 'sg_putting', pct: 82 },
+      { id: 'sg_ott', pct: 40 },
+    ]);
+  });
+
+  it('keeps the strongest (max-1) plus the single weakest so the leak the sentence names is always visible', () => {
+    const rows = buildStandingPreviewRows(
+      {
+        sg_putting: { team_pct: 90 },
+        sg_ott: { team_pct: 70 },
+        sg_approach: { team_pct: 50 },
+        sg_around_green: { team_pct: 10 },
+      },
+      3,
+    );
+    expect(rows).toEqual([
+      { id: 'sg_putting', pct: 90 },
+      { id: 'sg_ott', pct: 70 },
+      { id: 'sg_around_green', pct: 10 },
+    ]);
+  });
+
+  it('does not duplicate the weakest row when it is already among the strongest (max-1)', () => {
+    const rows = buildStandingPreviewRows({ sg_putting: { team_pct: 90 } }, 3);
+    expect(rows).toEqual([{ id: 'sg_putting', pct: 90 }]);
+  });
+
+  it('ignores entries with a null/missing team_pct', () => {
+    expect(buildStandingPreviewRows({ sg_putting: { team_pct: null }, sg_ott: undefined }, 3)).toEqual([]);
+  });
+
+  it('returns empty for an empty input', () => {
+    expect(buildStandingPreviewRows({}, 3)).toEqual([]);
+  });
+});
+
+describe('genomeRadarSpokes', () => {
+  it('returns empty for a zero axis count', () => {
+    expect(genomeRadarSpokes(0)).toEqual([]);
+  });
+
+  it('places 4 evenly-spaced spokes starting at 12 o\'clock, all sharing the same center', () => {
+    const spokes = genomeRadarSpokes(4, 64);
+    expect(spokes).toHaveLength(4);
+    for (const spoke of spokes) {
+      expect(spoke.x1).toBe(32);
+      expect(spoke.y1).toBe(32);
+    }
+    // First spoke points straight up (12 o'clock): x2 == cx, y2 < cy.
+    expect(spokes[0]?.x2).toBe(32);
+    expect(spokes[0]?.y2).toBeLessThan(32);
+    // Second spoke (quarter turn clockwise) points straight right: x2 > cx, y2 == cy.
+    expect(spokes[1]?.x2).toBeGreaterThan(32);
+    expect(Math.round(spokes[1]?.y2 ?? -1)).toBe(32);
+  });
+});
+
+describe('genomeRadarPolygonPoints', () => {
+  it('returns an empty string for zero axes or a non-positive max', () => {
+    expect(genomeRadarPolygonPoints([], 64, 100)).toBe('');
+    expect(genomeRadarPolygonPoints([{ value: 50 }], 64, 0)).toBe('');
+  });
+
+  it('collapses a zero-value axis to the exact center', () => {
+    const points = genomeRadarPolygonPoints([{ value: 0 }], 64, 100);
+    expect(points).toBe('32,32');
+  });
+
+  it('places a full-value single axis at the top of the rail (12 o\'clock)', () => {
+    const points = genomeRadarPolygonPoints([{ value: 100 }], 64, 100);
+    const [x, y] = points.split(',').map(Number);
+    expect(x).toBe(32);
+    expect(y).toBeLessThan(32);
+  });
+
+  it('clamps out-of-range values into [0, maxValue] instead of drawing outside the rail', () => {
+    const overMax = genomeRadarPolygonPoints([{ value: 500 }], 64, 100);
+    const atMax = genomeRadarPolygonPoints([{ value: 100 }], 64, 100);
+    expect(overMax).toBe(atMax);
+  });
+
+  it('treats a non-finite value as 0 (center), never a fabricated position', () => {
+    expect(genomeRadarPolygonPoints([{ value: NaN }], 64, 100)).toBe('32,32');
+  });
+});
+
+describe('pickStrongestWeakestAxis', () => {
+  it('picks the highest and lowest value by label', () => {
+    expect(
+      pickStrongestWeakestAxis([
+        { label: 'Putting', value: 82 },
+        { label: 'Driving', value: 40 },
+        { label: 'Approach', value: 15 },
+      ]),
+    ).toEqual({ strongest: 'Putting', weakest: 'Approach' });
+  });
+
+  it('ignores non-finite values', () => {
+    expect(
+      pickStrongestWeakestAxis([
+        { label: 'Putting', value: NaN },
+        { label: 'Driving', value: 55 },
+      ]),
+    ).toEqual({ strongest: 'Driving', weakest: 'Driving' });
+  });
+
+  it('returns nulls for an empty axis list', () => {
+    expect(pickStrongestWeakestAxis([])).toEqual({ strongest: null, weakest: null });
+  });
+});
+
+describe('buildThemeMagnitudeBars', () => {
+  it('normalizes magnitudes to the largest, sorted biggest-first, with the biggest marked emphasis', () => {
+    const bars = buildThemeMagnitudeBars([
+      { displayLabel: 'Putting', themeStrokesPerRound: -0.2 },
+      { displayLabel: 'Off the Tee', themeStrokesPerRound: -0.8 },
+      { displayLabel: 'Scoring', themeStrokesPerRound: 0.4 },
+    ]);
+    expect(bars).toEqual([
+      { label: 'Tee', heightPct: 100, emphasis: true },
+      { label: 'Score', heightPct: 50, emphasis: false },
+      { label: 'Putt', heightPct: 25, emphasis: false },
+    ]);
+  });
+
+  it('falls back to a 6-char slice for an unrecognized label', () => {
+    const bars = buildThemeMagnitudeBars([{ displayLabel: 'Something Unmapped', themeStrokesPerRound: -1 }]);
+    expect(bars[0]?.label).toBe('Someth');
+  });
+
+  it('is honestly all-zero (never fabricated height) when every theme has zero magnitude', () => {
+    const bars = buildThemeMagnitudeBars([{ displayLabel: 'Putting', themeStrokesPerRound: 0 }]);
+    expect(bars).toEqual([{ label: 'Putt', heightPct: 0, emphasis: false }]);
+  });
+
+  it('caps to max and returns empty for an empty input', () => {
+    expect(buildThemeMagnitudeBars([])).toEqual([]);
+    const many = Array.from({ length: 10 }, (_, i) => ({ displayLabel: `Theme ${i}`, themeStrokesPerRound: -(i + 1) }));
+    expect(buildThemeMagnitudeBars(many, 3)).toHaveLength(3);
+  });
+});
+
+describe('summarizeThemeCauseCounts', () => {
+  it('sums causes by leak/strength state and ignores thin themes', () => {
+    expect(
+      summarizeThemeCauseCounts([
+        { state: 'leak', causes: [1, 2] },
+        { state: 'strength', causes: [1] },
+        { state: 'thin', causes: [1, 2, 3] },
+        { state: 'leak', causes: [] },
+      ]),
+    ).toEqual({ leakCount: 2, strengthCount: 1 });
+  });
+
+  it('returns zeros for an empty input', () => {
+    expect(summarizeThemeCauseCounts([])).toEqual({ leakCount: 0, strengthCount: 0 });
+  });
+});
+
+describe('classifyTrendSignal', () => {
+  it('maps every known humanized MultiWindowAnalysis signal to a tone + label', () => {
+    expect(classifyTrendSignal('Strong improving')).toEqual({ tone: 'hot', label: 'Improving' });
+    expect(classifyTrendSignal('Short term spike')).toEqual({ tone: 'hot', label: 'Spiking' });
+    expect(classifyTrendSignal('Strong declining')).toEqual({ tone: 'watch', label: 'Declining' });
+    expect(classifyTrendSignal('Short term dip')).toEqual({ tone: 'watch', label: 'Dipping' });
+    expect(classifyTrendSignal('Trajectory change')).toEqual({ tone: 'watch', label: 'Shifting' });
+    expect(classifyTrendSignal('Mixed')).toEqual({ tone: 'quiet', label: 'Mixed signals' });
+    expect(classifyTrendSignal('Stable')).toEqual({ tone: 'quiet', label: 'Stable' });
+  });
+
+  it('matches case-insensitively', () => {
+    expect(classifyTrendSignal('stable')).toEqual({ tone: 'quiet', label: 'Stable' });
+    expect(classifyTrendSignal('STRONG IMPROVING')).toEqual({ tone: 'hot', label: 'Improving' });
+  });
+
+  it('returns null for null/undefined/unrecognized input', () => {
+    expect(classifyTrendSignal(null)).toBeNull();
+    expect(classifyTrendSignal(undefined)).toBeNull();
+    expect(classifyTrendSignal('')).toBeNull();
+    expect(classifyTrendSignal('some unrelated sentence')).toBeNull();
   });
 });

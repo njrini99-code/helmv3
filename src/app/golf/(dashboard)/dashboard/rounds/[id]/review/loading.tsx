@@ -12,7 +12,8 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * two-pane hero shape at the SAME `max-w-2xl` container the live page uses —
  * a left green-block placeholder (the real panel gradient, so the hero's
  * brand color never "pops in") beside a wide strip block reserving the
- * Filmstrip's own height (`h-[6.75rem]`) — so the skeleton→content handoff
+ * Filmstrip's own height (now the `HoleShotPath` strip band: `h-28 md:h-32`
+ * cells plus the score labels beneath — ~9.5rem/11rem) — so the handoff
  * is a quiet fade, not a layout jump.
  */
 export default function Loading() {
@@ -41,7 +42,7 @@ export default function Loading() {
           <div className="grid grid-cols-1 overflow-hidden rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise sm:grid-cols-[264px_1fr]">
             <div className="bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-6" aria-hidden="true" />
             <div className="bg-surface p-5 sm:p-6">
-              <Skeleton className="h-[6.75rem] w-full rounded-fw-sm" />
+              <Skeleton className="h-[9.5rem] w-full rounded-fw-sm md:h-[11rem]" />
               <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
                 <Skeleton className="h-3.5 w-40" />
               </div>

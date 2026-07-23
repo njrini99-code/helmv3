@@ -14,14 +14,20 @@
  *  - Each section gets its own `SectionData` block with a small set of
  *    metrics, a list of pre-fetched evidence-backed insights (routed to the
  *    right section via `category`), and optional chart data.
- *  - Composite rating + trend arrow come from `golf_player_stats_cache` if
- *    present, with a sensible fallback derived from recent rounds.
+ *  - Composite rating + trend arrow come from the CANONICAL
+ *    `@/lib/coachhelm/composite-rating#computeCompositeRating` — the same
+ *    function the Scouting Report tab's composite reads (Wave 2 unification;
+ *    see that module's doc for why recent-rounds-plus-pattern-penalty won
+ *    over the old cache-shortcut formula). Fed by `rounds` + a small
+ *    active-pattern severity fetch, NOT `golf_player_stats_cache` — so both
+ *    tabs of the same page can never disagree on the same player's number.
  *
  * Data sources:
  *  - `golf_players`              player name + team surface
  *  - `golf_team_members` / `golf_teams`   team name
  *  - `golf_player_stats_cache`   per-category aggregates (primary source)
- *  - `golf_rounds`               trend line + scoring fallback
+ *  - `golf_rounds`               trend line + scoring fallback + composite
+ *  - `golf_patterns_v2`          active-pattern severities → composite penalty
  *  - `getInsightsForCoach`       evidence-backed insights, drill-joined
  *
  * Auth: coach must own the player via `verify_coach_owns_player` (delegated
@@ -39,6 +45,7 @@ import {
   type EvidenceInsight,
 } from '@/app/golf/actions/insight-delivery';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { computeCompositeRating } from '@/lib/coachhelm/composite-rating';
 
 // ---------------------------------------------------------------------------
 // Public types — the Fingerprint shape. Downstream UI imports these.
@@ -239,6 +246,7 @@ async function getPlayerFingerprintImpl(
     teamResult,
     statsResult,
     roundsResult,
+    patternsResult,
     insights,
   ] = await Promise.all([
     supabase
@@ -269,6 +277,18 @@ async function getPlayerFingerprintImpl(
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
       .limit(10),
+    // Wave 2 composite-rating unification — the SAME active-pattern severity
+    // read the Scouting Report tab's composite already used (same table,
+    // same `is_active`/order/limit shape), run in parallel so the canonical
+    // `computeCompositeRating` below gets the identical penalty input on
+    // BOTH tabs. Additive: no other section reads this result.
+    supabase
+      .from('golf_patterns_v2')
+      .select('severity')
+      .eq('player_id', playerId)
+      .eq('is_active', true)
+      .order('stroke_impact', { ascending: true })
+      .limit(8),
     getInsightsForCoach(
       user.id,
       { player_id: playerId, limit: 40 },
@@ -312,11 +332,23 @@ async function getPlayerFingerprintImpl(
   }
   const rounds = (roundsResult.data as RoundRow[] | null) ?? [];
 
+  if (patternsResult.error) {
+    // Non-fatal — composite falls back to the no-penalty score component.
+    await logServerError(
+      `getPlayerFingerprint.patterns failed: ${patternsResult.error.message}`,
+      { action: 'player-fingerprint.getPlayerFingerprint', featureArea: 'insights', playerId },
+    );
+  }
+  const patterns = (patternsResult.data as { severity: string | null }[] | null) ?? [];
+
   // --- Build sections -------------------------------------------------------
   const sections = buildSections(stats, rounds, insights);
 
   // --- Composite + trend ----------------------------------------------------
-  const composite = computeComposite(stats, rounds);
+  // Canonical formula (@/lib/coachhelm/composite-rating) — see module doc for
+  // why this replaced the old cache-shortcut computeComposite() and why the
+  // severe-pattern penalty concept was kept.
+  const composite = computeCompositeRating(rounds, patterns);
   const trend = buildTrend(rounds, insights);
 
   return {
@@ -465,6 +497,12 @@ function buildTeeSection(
     });
   }
 
+  // Fairway hit/miss pill chart — mirrors `buildMissPills` grammar (Approach)
+  // using columns already read on `stats` (no new query). Tee shots don't
+  // carry a miss-direction breakdown the way approach shots do, so this is
+  // the honest two-way split the data actually supports: hit vs missed.
+  const fairwayPills = buildFairwayPills(stats);
+
   const sparse = !hasRounds || metrics.length === 0;
   return {
     key: 'tee',
@@ -472,7 +510,35 @@ function buildTeeSection(
     sparse,
     metrics,
     insights,
-    chart_data: null,
+    chart_data: fairwayPills,
+  };
+}
+
+function buildFairwayPills(stats: StatsCacheRow | null): FingerprintChartData {
+  if (!stats) return null;
+  const hit = stats.fairways_hit;
+  const total = stats.fairways_total;
+  if (hit == null || total == null || total <= 0) return null;
+
+  const missed = Math.max(0, total - hit);
+  const hitPct = toPct((hit / total) * 100);
+  const missPct = toPct((missed / total) * 100);
+
+  return {
+    kind: 'pills',
+    pills: [
+      {
+        label: 'Hit',
+        value: hitPct != null ? `${hitPct}%` : '--',
+        // Diagnostic distribution, same tone convention as `buildMissPills`.
+        tone: 'neutral',
+      },
+      {
+        label: 'Missed',
+        value: missPct != null ? `${missPct}%` : '--',
+        tone: 'neutral',
+      },
+    ],
   };
 }
 
@@ -593,6 +659,10 @@ function buildShortGameSection(
     });
   }
 
+  // Up-and-down / scrambling / sand-save bars — mirrors `buildPuttingBars`
+  // grammar, built from columns already read on `stats` (no new query).
+  const bars = buildShortGameBars(stats);
+
   const sparse = !hasRounds || metrics.length === 0;
   return {
     key: 'short_game',
@@ -600,7 +670,27 @@ function buildShortGameSection(
     sparse,
     metrics,
     insights,
-    chart_data: null,
+    chart_data: bars,
+  };
+}
+
+function buildShortGameBars(stats: StatsCacheRow | null): FingerprintChartData {
+  if (!stats) return null;
+  const buckets: Array<{ label: string; raw: number | null }> = [
+    { label: 'Up-and-down', raw: stats.up_and_down_percentage },
+    { label: 'Scrambling', raw: stats.scrambling_percentage },
+    { label: 'Sand saves', raw: stats.sand_save_percentage },
+  ];
+  const hasAny = buckets.some((b) => typeof b.raw === 'number');
+  if (!hasAny) return null;
+
+  return {
+    kind: 'bars',
+    bars: buckets.map((b) => ({
+      label: b.label,
+      value: toPct(b.raw) ?? 0,
+      max: 100,
+    })),
   };
 }
 
@@ -814,55 +904,9 @@ function buildPressureSection(
 }
 
 // ---------------------------------------------------------------------------
-// Composite rating + trend
+// Trend line (the rolling per-round chart — distinct from composite.trend,
+// see @/lib/coachhelm/composite-rating for the composite formula itself)
 // ---------------------------------------------------------------------------
-
-function computeComposite(
-  stats: StatsCacheRow | null,
-  rounds: RoundRow[],
-): PlayerFingerprint['composite'] {
-  // If we have a proper last-5 / last-10 average, derive trend from the
-  // delta. Otherwise fall back to a naive front-half vs back-half split.
-  let rating: number | null = null;
-  let trend: 'up' | 'flat' | 'down' = 'flat';
-  let sample = stats?.rounds_in_calculation ?? 0;
-
-  if (stats?.scoring_average_vs_par != null) {
-    // Map score-to-par → 0-100 composite. Scratch ≈ 80, +10 ≈ 50, +20 ≈ 20.
-    rating = clamp(Math.round(80 - stats.scoring_average_vs_par * 3), 0, 100);
-  } else if (rounds.length > 0) {
-    sample = rounds.length;
-    const vsPar = avgOf(
-      rounds
-        .filter((r) => typeof r.score_to_par === 'number')
-        .map((r) => r.score_to_par as number),
-    );
-    rating = clamp(Math.round(80 - vsPar * 3), 0, 100);
-  }
-
-  if (stats?.last_5_average != null && stats?.last_10_average != null) {
-    const diff = stats.last_10_average - stats.last_5_average;
-    trend = diff > 0.8 ? 'up' : diff < -0.8 ? 'down' : 'flat';
-  } else if (stats?.trend_direction) {
-    // Cache already derived a direction — trust it. The string is free-form
-    // across the codebase ("improving" / "declining" / "stable"), so coerce.
-    const t = stats.trend_direction.toLowerCase();
-    trend = t.includes('improv') || t.includes('up')
-      ? 'up'
-      : t.includes('declin') || t.includes('down')
-        ? 'down'
-        : 'flat';
-  } else if (rounds.length >= 4) {
-    const sorted = rounds.filter((r) => typeof r.score_to_par === 'number');
-    const mid = Math.floor(sorted.length / 2);
-    const recent = avgOf(sorted.slice(0, mid).map((r) => r.score_to_par as number));
-    const older = avgOf(sorted.slice(mid).map((r) => r.score_to_par as number));
-    const diff = older - recent;
-    trend = diff > 1 ? 'up' : diff < -1 ? 'down' : 'flat';
-  }
-
-  return { rating, trend, rounds_in_calculation: sample };
-}
 
 function buildTrend(
   rounds: RoundRow[],

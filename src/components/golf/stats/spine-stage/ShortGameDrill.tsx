@@ -4,6 +4,12 @@
  * ============================================================================
  * ShortGameDrill — `?area=short-game` (spec §5.1)
  * ----------------------------------------------------------------------------
+ * Top: `CategoryInsightStrip` ("what CoachHelm sees" for the short-game
+ * category). Short game has no round-level trend series anywhere in the
+ * codebase (`buildCategoryTrends(...).short_game` is always `null`) — the
+ * strip renders insights-only and handles the missing series gracefully
+ * (no sparkline/delta chip), same contract every other drill's strip honors.
+ *
  * HERO — a scrambling instrument cluster: one large `RadialGauge` reading
  * overall `scramblingPercentage` (an honest "awaiting" dial when there are no
  * scramble attempts yet) with a "n of n made" mono sub-line, flanked by three
@@ -13,13 +19,22 @@
  * Below the hero: scrambling by distance (`RailBars`) plus sand-save and
  * penalty headline readouts. The old by-lie `RailBars` row was dropped — it
  * now exactly duplicates the three flanking rings above.
+ *
+ * Three detail sub-tabs: Scrambling detail / Efficiency (now RampMatrix-
+ * banded, same grammar as PuttingDrill's make% matrix) / Misses — the new
+ * up-and-down-by-miss-direction and up-and-down-by-lie (incl. fringe)
+ * breakdowns plus average chip proximity, all derived purely from raw shot
+ * rows in golf-stats-calculator-shots.ts (no new DB reads).
  * ========================================================================== */
 
 import { useState } from 'react';
-import { DrillPanel, RailBars, RingGauge, useStage } from '@/components/fairway/modules';
-import type { RailBarRow } from '@/components/fairway/modules';
+import { DrillPanel, RailBars, RampMatrix, RingGauge, rampBandForValue, useStage } from '@/components/fairway/modules';
+import type { RailBarRow, RampCell } from '@/components/fairway/modules';
 import { Eyebrow, InstrumentPanel, Readout, RadialGauge, Segmented, Surface, chartAriaLabel } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { CategoryInsightStrip } from './CategoryInsightStrip';
+import { buildCategoryInsights } from './buildStatsViewModel';
+import type { CategorizablePatternWithImpact } from './buildStatsViewModel';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -27,6 +42,40 @@ function finite(n: number | null | undefined): number | null {
 function fmtPct(n: number | null): string {
   return n === null ? '—' : `${Math.round(n)}%`;
 }
+
+/** Higher-is-better banding for up-and-down %, shared by both Misses-tab
+ *  matrices. Thresholds are informed estimates — no PGA benchmark is
+ *  plumbed into this drill today (the PGA Tour scrambling average is
+ *  ~58%; college short game runs well under that): <35% needs work,
+ *  35-50% fair, 50-65% good, 65%+ ahead of the curve. */
+function udBand(pct: number | null): 0 | 1 | 2 | 3 | 4 {
+  return rampBandForValue(pct, [35, 50, 65]);
+}
+
+/** Lower-is-better banding for strokes-to-hole-out (around-the-green
+ *  efficiency) — the inverse of the usual higher-is-better ramp. Reuses the
+ *  SAME shared `rampBandForValue` (same grammar/RAMP_CLASSES as `udBand`
+ *  above and PuttingDrill's make% matrix) by negating both the value and
+ *  the thresholds. Thresholds are informed estimates, not a plumbed PGA
+ *  benchmark: a perfect up-and-down is 2.0 strokes, a missed one is 3.0 —
+ *  ≤2.2 excellent … >2.8 needs work. */
+function effBand(value: number | null): 0 | 1 | 2 | 3 | 4 {
+  return rampBandForValue(value === null ? null : -value, [-2.8, -2.5, -2.2]);
+}
+
+const UD_LEGEND: Array<{ band: 1 | 2 | 3 | 4; label: string }> = [
+  { band: 1, label: 'Needs work' },
+  { band: 2, label: 'Fair' },
+  { band: 3, label: 'Good' },
+  { band: 4, label: 'Ahead of the curve' },
+];
+
+const EFF_LEGEND: Array<{ band: 1 | 2 | 3 | 4; label: string }> = [
+  { band: 1, label: 'Needs work' },
+  { band: 2, label: 'Fair' },
+  { band: 3, label: 'Good' },
+  { band: 4, label: 'Excellent' },
+];
 
 /**
  * A dim, honest placeholder for a lie ring with no recorded attempts — a
@@ -86,12 +135,21 @@ function LieRing({ label, pct }: { label: string; pct: number | null }) {
 
 export interface ShortGameDrillProps {
   detailedStats: GolfStats | null;
+  /** CoachHelm's mined patterns (`getPlayerPatterns`) — feeds the "What
+   *  CoachHelm sees" short-game-category insights via `buildCategoryInsights`.
+   *  No `trends` prop: short game's own trend is always `null`
+   *  (`buildCategoryTrends(...).short_game`, no round-level scrambling series
+   *  exists anywhere in the codebase) — `CategoryInsightStrip` renders
+   *  insights-only, with no series/delta/trendLabel wired. */
+  patterns?: ReadonlyArray<CategorizablePatternWithImpact>;
 }
 
-export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
+export function ShortGameDrill({ detailedStats, patterns = [] }: ShortGameDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
-  const [detail, setDetail] = useState<'scrambling' | 'efficiency'>('scrambling');
+  const [detail, setDetail] = useState<'scrambling' | 'efficiency' | 'misses'>('scrambling');
+
+  const shortGameInsights = buildCategoryInsights(patterns).short_game;
 
   const scramblingPct = finite(s?.scramblingPercentage);
   const scrambleAttempts = s?.scrambleAttempts ?? 0;
@@ -119,9 +177,66 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
     { label: '20+ yds', key: '20_30', value: finite(s?.atgEfficiency20_30) },
   ] as const;
 
+  // --- Misses tab data prep -------------------------------------------------
+  const missDirCols: ReadonlyArray<{ key: 'short' | 'long' | 'left' | 'right'; label: string }> = [
+    { key: 'short', label: 'Short' },
+    { key: 'long', label: 'Long' },
+    { key: 'left', label: 'Left' },
+    { key: 'right', label: 'Right' },
+  ];
+  const missDirRow = {
+    label: 'Up & down',
+    cells: missDirCols.map((col): RampCell => {
+      const bucket = s?.scramblingByMissDirection?.[col.key];
+      const pct = finite(bucket?.pct ?? null);
+      return {
+        value: pct === null ? '—' : `${Math.round(pct)}%`,
+        n: bucket && bucket.attempts > 0 ? `n=${bucket.attempts}` : undefined,
+        band: udBand(pct),
+      };
+    }),
+  };
+  const missShareRows: RailBarRow[] = missDirCols.map((col) => {
+    const bucket = s?.scramblingByMissDirection?.[col.key];
+    const share = finite(bucket?.shareOfMisses ?? null);
+    return {
+      label: col.label,
+      pct: share ?? 0,
+      value: share === null ? '—' : `${Math.round(share)}%`,
+      dim: share === null,
+    };
+  });
+
+  const lieCols = [
+    { key: 'fairway', label: 'Fairway', pct: s?.scramblingPctFairway ?? null, n: s?.scrambleFairwayAttempts ?? 0 },
+    { key: 'rough', label: 'Rough', pct: s?.scramblingPctRough ?? null, n: s?.scrambleRoughAttempts ?? 0 },
+    { key: 'sand', label: 'Sand', pct: s?.scramblingPctSand ?? null, n: s?.scrambleSandAttempts ?? 0 },
+    { key: 'fringe', label: 'Fringe', pct: s?.scramblingPctFringe ?? null, n: s?.scrambleFringeAttempts ?? 0 },
+  ] as const;
+  const lieRow = {
+    label: 'Up & down',
+    cells: lieCols.map((col): RampCell => {
+      const pct = finite(col.pct);
+      return {
+        value: pct === null ? '—' : `${Math.round(pct)}%`,
+        n: col.n > 0 ? `n=${col.n}` : undefined,
+        band: udBand(pct),
+      };
+    }),
+  };
+
+  const proximityOverall = finite(s?.atgProximityAvg);
+  const proximityByLie: Array<{ label: string; value: number | null }> = [
+    { label: 'Fairway', value: finite(s?.atgProximityByLie?.fairway) },
+    { label: 'Rough', value: finite(s?.atgProximityByLie?.rough) },
+    { label: 'Sand', value: finite(s?.atgProximityByLie?.sand) },
+  ];
+
   return (
     <DrillPanel title="Short game" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
+        <CategoryInsightStrip insights={shortGameInsights} />
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: 'Scrambling', value: scramblingPct, unit: '%', digits: 0, awaiting: 'No scrambles' },
@@ -138,7 +253,7 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
         <Segmented
           value={detail}
           onValueChange={setDetail}
-          options={[{ value: 'scrambling', label: 'Scrambling detail' }, { value: 'efficiency', label: 'Efficiency' }]}
+          options={[{ value: 'scrambling', label: 'Scrambling detail' }, { value: 'efficiency', label: 'Efficiency' }, { value: 'misses', label: 'Misses' }]}
           size="lg"
           fullWidth
           aria-label="Short game detail"
@@ -163,17 +278,24 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
           <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
             <div>
               <Eyebrow as="h4">Short-game efficiency by distance and lie</Eyebrow>
-              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out. Lower is better.</p>
+              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out. Lower is better — darker cells convert in fewer strokes.</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px] border-separate border-spacing-y-2 text-left">
-                <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Overall</th><th className="px-3">Fairway</th><th className="px-3">Rough</th><th className="px-3">Sand</th></tr></thead>
-                <tbody>{efficiencyByDistance.map((row) => {
+              <RampMatrix
+                cols={['Overall', 'Fairway', 'Rough', 'Sand']}
+                rows={efficiencyByDistance.map((row) => {
                   const split = s?.atgEffByDistanceLie?.[row.key];
-                  const val = (n: number | null | undefined) => finite(n) === null ? '—' : finite(n)!.toFixed(2);
-                  return <tr key={row.key} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary"><th className="rounded-l-fw-sm px-3 py-3 font-fw-sans font-medium text-text-primary">{row.label}</th><td className="px-3">{val(row.value)}</td><td className="px-3">{val(split?.fairway)}</td><td className="px-3">{val(split?.rough)}</td><td className="rounded-r-fw-sm px-3">{val(split?.sand)}</td></tr>;
-                })}</tbody>
-              </table>
+                  const cellFor = (v: number | null | undefined): RampCell => {
+                    const val = finite(v);
+                    return { value: val === null ? '—' : val.toFixed(2), band: effBand(val) };
+                  };
+                  return {
+                    label: row.label,
+                    cells: [cellFor(row.value), cellFor(split?.fairway), cellFor(split?.rough), cellFor(split?.sand)],
+                  };
+                })}
+                legend={EFF_LEGEND}
+              />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[{ label: 'Fairway', value: s?.atgEffFairway }, { label: 'Rough', value: s?.atgEffRough }, { label: 'Sand', value: s?.atgEffSand }].map((item) => (
@@ -181,6 +303,46 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
               ))}
             </div>
           </Surface>
+        ) : null}
+
+        {detail === 'misses' ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Surface elevation="shadow" padding="md" className="flex flex-col gap-4">
+              <div>
+                <Eyebrow as="h4">Up-and-down by miss direction</Eyebrow>
+                <p className="mt-1 text-caption text-text-tertiary">Conversion rate when the approach missed short, long, left, or right of the green.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <RampMatrix cols={missDirCols.map((c) => c.label)} rows={[missDirRow]} legend={UD_LEGEND} />
+              </div>
+              <RailBars rows={missShareRows} labelWidth={64} />
+            </Surface>
+            <Surface elevation="border" padding="md" className="flex flex-col gap-4">
+              <div>
+                <Eyebrow as="h4">Up-and-down by lie</Eyebrow>
+                <p className="mt-1 text-caption text-text-tertiary">Fairway, rough, sand, and fringe chips — conversion rate and sample size.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <RampMatrix cols={lieCols.map((c) => c.label)} rows={[lieRow]} legend={UD_LEGEND} />
+              </div>
+            </Surface>
+            <Surface elevation="shadow" padding="md" className="flex flex-col gap-3 lg:col-span-2">
+              <div>
+                <Eyebrow as="h4">Proximity after the chip</Eyebrow>
+                <p className="mt-1 text-caption text-text-tertiary">Average distance left on the green after a chip or pitch that found the putting surface. Lower is better.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                <InstrumentPanel depth="raised" padding="sm">
+                  <Readout value={proximityOverall ?? undefined} unit="ft" format={{ maximumFractionDigits: 1 }} label="Overall" size="sm" state={proximityOverall !== null ? 'live' : 'awaiting'} awaitingLabel="No chips on the green" />
+                </InstrumentPanel>
+                {proximityByLie.map((item) => (
+                  <InstrumentPanel key={item.label} depth="base" padding="sm">
+                    <Readout value={item.value ?? undefined} unit="ft" format={{ maximumFractionDigits: 1 }} label={item.label} size="sm" state={item.value !== null ? 'live' : 'awaiting'} awaitingLabel="No data" />
+                  </InstrumentPanel>
+                ))}
+              </div>
+            </Surface>
+          </div>
         ) : null}
 
         <div className="flex flex-col gap-4 border-t border-border-subtle pt-6">

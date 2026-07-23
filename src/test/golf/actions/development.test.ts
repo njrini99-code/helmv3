@@ -101,6 +101,94 @@ describe('createFocusAreaFromInsight', () => {
     expect(payload).toHaveProperty('from_insight_id', 'insight-1');
     expect(payload).not.toHaveProperty('source_insight_id');
   });
+
+  /**
+   * FocusAreaModal-prefill fidelity (converge-prescribe workflow): a coach
+   * confirming triage/PromoteToFocusAreaButton's modal may have EDITED the
+   * category away from the server's own insight_type/metadata-derived guess.
+   * That explicit choice must win outright — silently falling back to the
+   * derived guess would break "what you see in the modal is what saves."
+   */
+  function insightHarness(metadata: Record<string, unknown> | null) {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+    const insertSpy = vi.fn().mockReturnValue({
+      select: () => ({
+        single: async () => ({ data: { id: 'fa-1' }, error: null }),
+      }),
+    });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: (table: string) => {
+        if (table === 'golf_coaches') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({ data: { id: 'coach-1' }, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_coach_insights') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({
+                  data: { metadata, content: 'insight body' },
+                  error: null,
+                }),
+              }),
+            }),
+            update: () => ({
+              eq: async () => ({ error: null }),
+            }),
+          };
+        }
+        if (table === 'golf_player_focus_areas') {
+          return { insert: insertSpy };
+        }
+        return {};
+      },
+    });
+    return insertSpy;
+  }
+
+  it('an explicit area_type override wins over the insight_type/metadata-derived guess', async () => {
+    // stat_regression + stat_name containing "putt" would normally derive to
+    // 'putting' (refineAreaTypeFromMetadata) — an explicit override must beat
+    // that guess, not be silently discarded.
+    const insertSpy = insightHarness({ stat_name: 'putting_avg' });
+
+    const result = await createFocusAreaFromInsight({
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      coach_id: 'coach-1',
+      title: 'Work on composure',
+      description: null,
+      insight_type: 'stat_regression',
+      area_type: 'mental_game',
+    });
+
+    expect(result.success).toBe(true);
+    const payload = insertSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('area_type', 'mental_game');
+  });
+
+  it('omitting area_type keeps the original insight_type/metadata-derived behavior (no regression for existing callers)', async () => {
+    const insertSpy = insightHarness({ stat_name: 'putting_avg' });
+
+    const result = await createFocusAreaFromInsight({
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      coach_id: 'coach-1',
+      title: 'Work on putts',
+      description: null,
+      insight_type: 'stat_regression',
+    });
+
+    expect(result.success).toBe(true);
+    const payload = insertSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('area_type', 'putting');
+  });
 });
 
 /**

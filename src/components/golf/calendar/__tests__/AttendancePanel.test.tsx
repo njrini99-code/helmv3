@@ -286,6 +286,34 @@ describe('AttendancePanel coach view', () => {
     });
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  // Regression for the min-w-0/flex-shrink-0 contract: the mark-button group
+  // sits beside a truncating name column inside the narrower Fairway drawer
+  // (sm:max-w-xl / full-width on phone). Without flex-shrink-0 the button
+  // group — not the name column — could be the one to compress under the
+  // default flex-shrink:1, the inverse of every other trailing-controls row
+  // in the redesigned calendar (FairwayEventCard, FairwayMonthGrid chips).
+  it('keeps the mark-button group from shrinking beside a long player name', async () => {
+    getAttendanceReport.mockResolvedValue(
+      reportOk([
+        record({
+          id: 'att-1',
+          player_id: 'p1',
+          first_name: 'Maximilian-Alexander',
+          last_name: 'Featherstonehaugh-Worthington',
+          status: 'accepted',
+        }),
+      ]),
+    );
+    renderPanel();
+
+    const presentButton = await screen.findByRole('button', {
+      name: 'Mark Maximilian-Alexander Featherstonehaugh-Worthington present',
+    });
+    const group = presentButton.closest('[role="group"]');
+    expect(group).not.toBeNull();
+    expect(group?.className).toMatch(/\bflex-shrink-0\b/);
+  });
 });
 
 // ---------------------------------------------------------------------------

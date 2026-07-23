@@ -20,9 +20,11 @@
 import * as React from "react";
 import { Select as BaseSelect } from "@base-ui-components/react/select";
 import { cn } from "@/lib/utils";
+import { useModalPortalContainer } from "@/components/fairway/overlays/_shared";
 import {
   sizeClasses,
   popupClasses,
+  popupPositionerClasses,
   optionClasses,
   groupLabelClasses,
   type FieldSize,
@@ -69,6 +71,15 @@ function SelectRoot({
     return map;
   }, [options]);
 
+  // Nearest ModalShell/Drawer's Dialog.Content DOM node, if this Select is
+  // rendered inside one. `?? undefined` matters: Base UI's portal treats an
+  // explicit `container={null}` as "wait for a real target" (renders
+  // nothing), not "use document.body" — only `undefined` falls through to
+  // the default. Without this, the popup portals to document.body while its
+  // host Dialog traps focus via real DOM containment, so the popup can never
+  // keep focus once opened (see fairway/overlays/_shared.ts docblock).
+  const modalPortalContainer = useModalPortalContainer();
+
   return (
     <BaseSelect.Root {...rootProps}>
       <BaseSelect.Trigger
@@ -103,8 +114,12 @@ function SelectRoot({
         </BaseSelect.Icon>
       </BaseSelect.Trigger>
 
-      <BaseSelect.Portal>
-        <BaseSelect.Positioner sideOffset={6} alignItemWithTrigger={false}>
+      <BaseSelect.Portal container={modalPortalContainer ?? undefined}>
+        <BaseSelect.Positioner
+          sideOffset={6}
+          alignItemWithTrigger={false}
+          className={popupPositionerClasses}
+        >
           <BaseSelect.Popup data-slot="select-popup" className={popupClasses}>
             {options
               ? options.map((opt) => (

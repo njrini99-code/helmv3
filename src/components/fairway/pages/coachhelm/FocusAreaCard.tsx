@@ -306,13 +306,15 @@ function SourceChip({
   // ROUND id, so prefer the resolved reviewRoundId; fall back to reviewId only
   // when unresolved). from_insight_id → role-aware: a COACH has no player
   // profile, so `/golf/dashboard/coachhelm` (the player-only front door) always
-  // renders NotPlayerState for them — send coaches to the Insights workspace's
-  // `?id=` deep-link instead (the same insight, in the coach-facing surface).
-  // A player keeps the original in-page anchor.
+  // renders NotPlayerState for them — send coaches to the consolidated Signals
+  // drill's `?id=` deep-link instead (the same insight, in the coach-facing
+  // surface; canonical destination directly, not the /insights redirect shim
+  // — React #310 legacy-link audit, 2026-07-22). A player keeps the original
+  // in-page anchor.
   const href = reviewId
     ? `/golf/dashboard/rounds/${reviewRoundId ?? reviewId}/review`
     : role === 'coach'
-      ? `/golf/dashboard/insights?id=${insightId}`
+      ? `/golf/dashboard/intelligence?view=signals&filter=insights&id=${insightId}`
       : `/golf/dashboard/coachhelm#insight-${insightId}`;
   const label = reviewId ? 'From a round review' : 'From a CoachHelm insight';
   const Icon = reviewId ? IconFileText : IconSparkles;

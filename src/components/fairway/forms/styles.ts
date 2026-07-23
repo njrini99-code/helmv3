@@ -97,7 +97,7 @@ export const messageRowClasses = "min-h-[1.125rem] pt-1.5";
 
 /** Popup surface shared by Select / Combobox / Autocomplete — the Elevated overlay. */
 export const popupClasses = [
-  "z-dropdown max-h-[min(22rem,var(--available-height))] w-[var(--anchor-width)] overflow-y-auto",
+  "max-h-[min(22rem,var(--available-height))] w-[var(--anchor-width)] overflow-y-auto",
   "rounded-fw-md bg-elevated border border-border-subtle shadow-raise",
   "p-1.5 font-fw-sans text-body text-text-primary",
   "outline-none",
@@ -107,6 +107,25 @@ export const popupClasses = [
   "data-[starting-style]:opacity-0 data-[starting-style]:scale-[0.98]",
   "data-[ending-style]:opacity-0 data-[ending-style]:scale-[0.98]",
 ].join(" ");
+
+/**
+ * z-index for the Select/Combobox POSITIONER — deliberately NOT on
+ * `popupClasses` above. `z-dropdown` used to live on the Popup, but the
+ * Popup renders `position: static` (Base UI's `SelectPopup`/`ComboboxPopup`
+ * set no position style of their own) and CSS only honors `z-index` on a
+ * positioned box — on a static element it is silently ignored. The
+ * Positioner IS positioned (`position: absolute`/`fixed`, floating-ui), so
+ * that's where the z-index has to live for it to take effect.
+ *
+ * Confirmed root cause (live QA, 2026-07-21) of the "Prescribe a focus
+ * area" dead-dropdown bug: the popup mounted correctly (aria-expanded=true,
+ * listbox present in the DOM) but was never actually painted/hit-testable
+ * above ModalShell's inline `zIndex: FW_Z.modal` (50) content, because its
+ * z-index had no effect. `z-dropdown` (globals.css, 1000) comfortably clears
+ * every overlay z-index in the app once applied to the right element — keep
+ * it above `.z-modal`/`FW_Z.modal` if either ladder is ever renumbered.
+ */
+export const popupPositionerClasses = "z-dropdown";
 
 /** A selectable option row inside a Select/Combobox popup. */
 export const optionClasses = [

@@ -17,6 +17,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint-types';
 import { cn } from '@/lib/utils';
+import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { MetricPill } from '../sections/FingerprintHero';
 import './print.css';
 
@@ -63,7 +64,17 @@ export default async function PlayerGamePrintPage({
   const fullName =
     `${fingerprint.player.first_name ?? ''} ${fingerprint.player.last_name ?? ''}`.trim() ||
     'Player';
-  const generatedAt = new Date(fingerprint.generated_at).toLocaleString();
+  // Explicit `timeZone` (not the bare `.toLocaleString()` this used to be) —
+  // this route is a pure Server Component so it isn't a hydration-mismatch
+  // source, but an unqualified `.toLocaleString()` still rendered the
+  // SERVER's own ambient locale/zone into the printed report rather than a
+  // stable, predictable one. Matches the fix applied to the main /game route
+  // (FairwayPlayerGameFingerprint) for the same `generated_at` value.
+  const generatedAt = new Intl.DateTimeFormat('en-US', {
+    timeZone: DEFAULT_TIMEZONE,
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(fingerprint.generated_at));
 
   return (
     <div className="print-shell" data-testid="print-shell">

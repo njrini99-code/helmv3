@@ -19,13 +19,18 @@ import {
   DivergingBars,
   TickerStrip,
   useStage,
+  layoutTrackLabels,
+  STANDING_TRACK_SUBJECT_KEY,
 } from '@/components/fairway/modules';
 import type { RailBarRow, DivergingRow, TickerItem } from '@/components/fairway/modules';
+import { Sparkline } from '@/components/fairway/charts/Sparkline';
+import { TrendChip } from '@/components/fairway/charts/TrendChip';
+import { cn } from '@/lib/utils';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
-import type { StatsArea } from './buildStatsViewModel';
+import { sgToTrackPct, formatSgSigned, buildCategoryTrends, type StatsArea } from './buildStatsViewModel';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -112,6 +117,10 @@ export function StatsBento({
     { label: 'Par 5', delta: s?.scoringByPar.par5.avgToPar ?? 0, display: fmtToPar(s?.scoringByPar.par5.avgToPar ?? null) },
   ];
   const scoringMax = Math.max(1, ...scoringDiverging.map((r) => Math.abs(r.delta)));
+  // Score-to-par trend (oldest→newest) — the SAME per-category threading every
+  // drill's CategoryInsightStrip pulls from, so the bento's compact preview and
+  // the drill's own trend chip never disagree.
+  const scoringTrend = trendData ? buildCategoryTrends(trendData.trends).scoring : null;
 
   const rounds = trendData?.rounds.slice(-10) ?? [];
   const worstToPar = Math.max(1, ...rounds.map((r) => Math.abs(r.toPar ?? 0)));
@@ -206,7 +215,32 @@ export function StatsBento({
         sentence="Average to par by hole type."
         onOpen={() => stage.open('scoring')}
       >
-        <DivergingBars rows={scoringDiverging} max={scoringMax} />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkline
+              data={scoringTrend?.series ?? []}
+              goodDirection="down"
+              label={scoringTrend?.label ?? 'Score to par'}
+              width={52}
+              height={16}
+            />
+            {scoringTrend?.delta ? (
+              <TrendChip
+                direction={
+                  scoringTrend.delta.direction === 'flat'
+                    ? 'flat'
+                    : scoringTrend.delta.good
+                      ? 'improving'
+                      : 'declining'
+                }
+                label={scoringTrend.delta.text}
+                size="sm"
+                numeric
+              />
+            ) : null}
+          </div>
+          <DivergingBars rows={scoringDiverging} max={scoringMax} />
+        </div>
       </BentoCell>
 
       <BentoCell
@@ -220,7 +254,9 @@ export function StatsBento({
             : 'Every metric vs PGA Tour and the team.'
         }
         onOpen={() => stage.open('standing')}
-      />
+      >
+        <StandingPinPreview standingByMetric={standingByMetric} />
+      </BentoCell>
 
       <BentoCell
         label="Last 10 rounds"
@@ -232,6 +268,106 @@ export function StatsBento({
         {roundsTicker.length > 0 ? <TickerStrip items={roundsTicker} /> : null}
       </BentoCell>
     </Bento>
+  );
+}
+
+/**
+ * StandingPinPreview — a compressed, LIGHT-toned rendition of the spine's
+ * `StandingTrack` for the "Standing" bento cell (which sits on `bg-surface`,
+ * not the spine's dark accent gradient `StandingTrack` is styled for — its
+ * `oklch(1 0 0 / N)` on-dark overlays would be nearly invisible here). Reuses
+ * the SAME fixed label-layout pass (`layoutTrackLabels` +
+ * `STANDING_TRACK_SUBJECT_KEY`) so You/Team/Tour never collide, just painted
+ * in the light-surface idiom `RailBars`/`DivergingBars` already use on this
+ * cell grid (`bg-surface-sunken` rail, `bg-accent-500`/`bg-fw-warning` fill).
+ * SG: Total is zero-sum (Tour always sits at the rail's center, 50%), so the
+ * fill grows from that center — the SAME diverging convention `DivergingBars`
+ * uses elsewhere on this page — rather than a from-zero bar that would imply
+ * a meaningless "distance from the worst possible score" reading.
+ *
+ * Honest empty state: no fabricated pin when `sg_total` hasn't computed yet —
+ * a muted rail + a one-line caption, never a pin at a guessed position.
+ */
+function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string, PlayerStandingRow> }) {
+  const sgTotalRow = standingByMetric.get('sg_total');
+  const you = finite(sgTotalRow?.player_value ?? null);
+
+  if (you === null) {
+    return (
+      <div data-slot="standing-pin-preview" data-state="empty" className="mt-0.5 flex flex-col gap-1.5">
+        <div aria-hidden="true" className="h-[7px] rounded-full bg-surface-sunken" />
+        <p className="font-fw-sans text-eyebrow text-text-tertiary">Fills in after 5+ rounds</p>
+      </div>
+    );
+  }
+
+  const team = finite(sgTotalRow?.team_avg ?? null);
+  const youPct = sgToTrackPct(you);
+  const teamPct = team === null ? null : sgToTrackPct(team);
+  const tourPct = sgToTrackPct(0); // the zero-sum SG anchor — always the rail's center
+  const isGain = you >= 0;
+  const fillLeft = Math.min(tourPct, youPct);
+  const fillWidth = Math.abs(youPct - tourPct);
+
+  const labelPositions = layoutTrackLabels([
+    { key: STANDING_TRACK_SUBJECT_KEY, pct: youPct },
+    ...(teamPct === null ? [] : [{ key: 'Team', pct: teamPct }]),
+    { key: 'Tour', pct: tourPct },
+  ]);
+
+  return (
+    <div data-slot="standing-pin-preview" className="mt-0.5 flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
+          {formatSgSigned(you)}
+        </span>
+        <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+          SG: Total
+        </span>
+      </div>
+      <div className="relative h-[7px] rounded-full bg-surface-sunken">
+        {teamPct !== null ? (
+          <div
+            aria-hidden="true"
+            className="absolute -top-0.5 -bottom-0.5 w-[1.5px] bg-text-tertiary"
+            style={{ left: `${teamPct}%` }}
+          />
+        ) : null}
+        <div
+          aria-hidden="true"
+          className="absolute -top-0.5 -bottom-0.5 w-[1.5px] bg-text-secondary"
+          style={{ left: `${tourPct}%` }}
+        />
+        <div
+          aria-hidden="true"
+          className={cn('absolute inset-y-0 rounded-full', isGain ? 'bg-accent-500' : 'bg-fw-warning')}
+          style={{ left: `${fillLeft}%`, width: `${fillWidth}%` }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute top-1/2 h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500 shadow-soft ring-2 ring-surface"
+          style={{ left: `${youPct}%` }}
+        />
+      </div>
+      <div className="relative h-[12px] font-fw-mono text-microbadge normal-case tracking-normal text-text-tertiary">
+        {labelPositions.map((pos) => {
+          const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;
+          return (
+            <span
+              key={pos.key}
+              data-slot={isSubject ? 'standing-pin-subject-label' : 'standing-pin-bench-label'}
+              className={cn(
+                'absolute top-0 -translate-x-1/2 whitespace-nowrap',
+                isSubject && 'font-semibold text-accent-700',
+              )}
+              style={{ left: `${pos.pct}%` }}
+            >
+              {isSubject ? 'You' : pos.key}
+            </span>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

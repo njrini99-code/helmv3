@@ -76,13 +76,14 @@ function makeRow(overrides: Partial<RosterRow['player']> = {}): RosterRow {
 }
 
 describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
-  it('renders identity, avg score and trend, plus Add focus area / View genome as real buttons', () => {
+  it('renders identity, avg score and trend, plus Add focus area / Game fingerprint / View genome as real buttons', () => {
     render(
       <RosterPlayerCard
         row={makeRow()}
         muted={false}
         onOpenAreas={vi.fn()}
         onAddFocusArea={vi.fn()}
+        onGameFingerprint={vi.fn()}
         onViewGenome={vi.fn()}
       />,
     );
@@ -93,15 +94,18 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
     expect(screen.getByText('74.2')).toBeInTheDocument();
 
     const addButton = screen.getByRole('button', { name: 'Add focus area' });
+    const fingerprintButton = screen.getByRole('button', { name: 'Game fingerprint' });
     const genomeButton = screen.getByRole('button', { name: 'View genome' });
 
     // Real, always-present controls — not a hover-only reveal, and not a
     // descendant of a <table> (the desktop DataTable's own action column).
     expect(addButton.closest('table')).toBeNull();
+    expect(fingerprintButton.closest('table')).toBeNull();
     expect(genomeButton.closest('table')).toBeNull();
     // Never opacity-gated on rest — the DataTable row-action treatment this
     // replaces starts at `opacity-0` until hover/focus-within.
     expect(addButton.className).not.toMatch(/opacity-0/);
+    expect(fingerprintButton.className).not.toMatch(/opacity-0/);
     expect(genomeButton.className).not.toMatch(/opacity-0/);
   });
 
@@ -109,6 +113,7 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
     const user = userEvent.setup();
     const onOpenAreas = vi.fn();
     const onAddFocusArea = vi.fn();
+    const onGameFingerprint = vi.fn();
     const onViewGenome = vi.fn();
 
     render(
@@ -117,6 +122,7 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
         muted={false}
         onOpenAreas={onOpenAreas}
         onAddFocusArea={onAddFocusArea}
+        onGameFingerprint={onGameFingerprint}
         onViewGenome={onViewGenome}
       />,
     );
@@ -125,12 +131,16 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
     expect(onAddFocusArea).toHaveBeenCalledTimes(1);
     expect(onOpenAreas).not.toHaveBeenCalled();
 
+    await user.click(screen.getByRole('button', { name: 'Game fingerprint' }));
+    expect(onGameFingerprint).toHaveBeenCalledTimes(1);
+    expect(onOpenAreas).not.toHaveBeenCalled();
+
     await user.click(screen.getByRole('button', { name: 'View genome' }));
     expect(onViewGenome).toHaveBeenCalledTimes(1);
     expect(onOpenAreas).not.toHaveBeenCalled();
 
     // The card's identity row is its own (unlabeled) button — the FIRST button
-    // in the card, ahead of the two named action buttons already asserted.
+    // in the card, ahead of the three named action buttons already asserted.
     const openAreasButton = screen.getAllByRole('button')[0]!;
     await user.click(openAreasButton);
     expect(onOpenAreas).toHaveBeenCalledTimes(1);
@@ -143,6 +153,7 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
         muted={false}
         onOpenAreas={vi.fn()}
         onAddFocusArea={vi.fn()}
+        onGameFingerprint={vi.fn()}
         onViewGenome={vi.fn()}
       />,
     );
@@ -154,6 +165,7 @@ describe('RosterPlayerCard — always-visible, non-table tap targets', () => {
         muted
         onOpenAreas={vi.fn()}
         onAddFocusArea={vi.fn()}
+        onGameFingerprint={vi.fn()}
         onViewGenome={vi.fn()}
       />,
     );
@@ -199,28 +211,32 @@ describe('PlayersGridView — desktop roster table row actions are always visibl
     );
   }
 
-  it('renders "Add focus area" / "View genome" as real, always-visible buttons inside the desktop table', () => {
+  it('renders "Add focus area" / "Game fingerprint" / "View genome" as real, always-visible buttons inside the desktop table', () => {
     renderGrid();
 
     const table = screen.getByRole('table');
     const addButton = within(table).getByRole('button', { name: "Add focus area for Jordan Lee" });
+    const fingerprintButton = within(table).getByRole('button', { name: "Open Jordan Lee's game fingerprint" });
     const genomeButton = within(table).getByRole('button', { name: "View Jordan Lee's genome" });
 
     // Real controls, inside the <table> (the desktop path this bug is scoped
     // to) — never opacity-gated on rest, unlike the DataTable `rowActions`
     // treatment they replace.
     expect(addButton.className).not.toMatch(/opacity-0/);
+    expect(fingerprintButton.className).not.toMatch(/opacity-0/);
     expect(genomeButton.className).not.toMatch(/opacity-0/);
     expect(addButton.className).not.toMatch(/group-hover/);
+    expect(fingerprintButton.className).not.toMatch(/group-hover/);
     expect(genomeButton.className).not.toMatch(/group-hover/);
   });
 
-  it('reaches both row actions via Tab with no prior hover/focus on the row', async () => {
+  it('reaches all three row actions via Tab with no prior hover/focus on the row', async () => {
     const user = userEvent.setup();
     renderGrid();
 
     const table = screen.getByRole('table');
     const addButton = within(table).getByRole('button', { name: "Add focus area for Jordan Lee" });
+    const fingerprintButton = within(table).getByRole('button', { name: "Open Jordan Lee's game fingerprint" });
     const genomeButton = within(table).getByRole('button', { name: "View Jordan Lee's genome" });
 
     // Tab through the document until each action is reached — no hover event
@@ -229,6 +245,9 @@ describe('PlayersGridView — desktop roster table row actions are always visibl
       await user.tab();
     }
     expect(document.activeElement).toBe(addButton);
+
+    await user.tab();
+    expect(document.activeElement).toBe(fingerprintButton);
 
     await user.tab();
     expect(document.activeElement).toBe(genomeButton);

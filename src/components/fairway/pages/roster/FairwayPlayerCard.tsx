@@ -9,8 +9,11 @@ import { Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
+import { Badge } from '@/components/fairway/controls/badge';
+import { TrendGlyph } from '@/components/fairway';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
+import type { TrendVerdict } from '@/lib/coachhelm/trend';
 import { FairwayYearBadge } from './FairwayYearBadge';
 import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
 import { FairwayIntentControl } from './FairwayIntentControl';
@@ -31,6 +34,35 @@ export interface RosterPlayer {
   last_seen?: string | null;
   rounds_count?: number;
   avg_score?: number;
+  // ── CoachHelm signal (Wave 2 Players-tab enrichment) — reuses the SAME
+  // classifier/loaders the Players sub-tab (PlayersGridView) already reads,
+  // extended to the roster server payload; see roster/page.tsx. ────────────
+  /** Canonical scoring trend (`@/lib/golf/scoring-trend`) — null when there
+   *  isn't enough round history yet for a real signal. */
+  recent_trend?: TrendVerdict | null;
+  /** golf_player_stats_cache.sg_total_per_round. */
+  sg_total?: number | null;
+  /** Team-percentile cohort caption for the sg_total standing (e.g. "Top
+   *  quartile on team"), empty/null when cold-start. */
+  standing_tier?: string | null;
+  /** Active/in_progress golf_player_focus_areas count. */
+  active_focus_areas?: number;
+  /** Active v3 goals count. */
+  active_goals?: number;
+}
+
+/** SG:Total deadzone — |value| at or below this reads as neutral (matches
+ *  the "roughly even" honesty band the rest of the SG rendering uses). */
+const SG_TONE_DEADZONE = 0.15;
+
+function formatSgTotal(value: number): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
+}
+
+function sgTone(value: number): string {
+  if (value > SG_TONE_DEADZONE) return 'text-fw-success';
+  if (value < -SG_TONE_DEADZONE) return 'text-fw-warning';
+  return 'text-text-primary';
 }
 
 export interface FairwayPlayerCardProps {
@@ -105,9 +137,14 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
       </div>
 
       {/* Anchor stat */}
-      <div className="px-5 pb-4 md:px-6">
+      <div className="px-5 pb-3 md:px-6">
         <div className="flex items-baseline justify-between gap-3 rounded-fw-md bg-surface-sunken px-5 py-4">
-          <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
+          <div className="flex items-center gap-2">
+            <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
+            {player.recent_trend ? (
+              <TrendGlyph direction={player.recent_trend} className="text-caption font-medium" />
+            ) : null}
+          </div>
           <p
             className={cn(
               'font-fw-mono text-h1 leading-none tracking-[-0.025em] tabular-nums',
@@ -116,6 +153,50 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           >
             {hasScore ? (player.avg_score ?? 0).toFixed(1) : '—'}
           </p>
+        </div>
+      </div>
+
+      {/* CoachHelm signal strip — SG:Total (+ standing tier), Focus areas,
+          Goals. The rest of what already gets computed server-side for this
+          player (player-fingerprint.ts, standing/loader.ts, goals/loader.ts)
+          surfaced at the list level so a coach doesn't have to open every
+          player individually to triage the team. */}
+      <div className="grid grid-cols-3 gap-2 px-5 pb-4 md:px-6">
+        <div className="rounded-fw-md bg-surface-sunken px-3 py-2.5">
+          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">SG:Total</p>
+          <p
+            className={cn(
+              'font-fw-mono text-body-lg font-semibold tabular-nums',
+              player.sg_total != null ? sgTone(player.sg_total) : 'text-text-tertiary',
+            )}
+          >
+            {player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
+          </p>
+          {player.standing_tier ? (
+            <p className="mt-0.5 truncate font-fw-sans text-caption leading-tight text-text-tertiary" title={player.standing_tier}>
+              {player.standing_tier}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
+          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Focus</p>
+          {player.active_focus_areas ? (
+            <Badge tone="accent" size="sm" numeric className="w-fit">
+              {player.active_focus_areas} active
+            </Badge>
+          ) : (
+            <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
+          )}
+        </div>
+        <div className="flex flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
+          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Goals</p>
+          {player.active_goals ? (
+            <Badge tone="accent" size="sm" numeric className="w-fit">
+              {player.active_goals}
+            </Badge>
+          ) : (
+            <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
+          )}
         </div>
       </div>
 
