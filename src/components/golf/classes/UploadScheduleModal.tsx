@@ -429,7 +429,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
           {/* Toggle */}
           <div className="flex gap-2 mb-6">
             <Button variant="primary"

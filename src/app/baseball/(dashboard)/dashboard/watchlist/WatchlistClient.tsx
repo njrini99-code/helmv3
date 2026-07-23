@@ -151,7 +151,41 @@ function WatchlistSkeleton() {
           <Skeleton key={i} className="h-9 w-32" />
         ))}
       </div>
-      <PaperCard className="overflow-hidden p-0">
+
+      {/* Mobile card skeleton — shape-matches WatchlistMobileCard, shown below lg
+          (the real loaded content forks the same way at lg:hidden / hidden lg:block). */}
+      <div className="space-y-4 lg:hidden">
+        {[0, 1, 2, 3].map((i) => (
+          <PaperCard key={i} className="p-4">
+            <div className="flex items-start gap-3">
+              <Skeleton className="mt-1 h-4 w-4" />
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <Skeleton circle className="h-10 w-10 shrink-0" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <Skeleton className="h-6 w-20 shrink-0 rounded-full" />
+            </div>
+            <div className="my-3 h-px w-full bg-[color:var(--hairline)]" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <Skeleton className="mt-3 h-9 w-full rounded-fw-sm" />
+            <div className="mt-3 flex gap-2">
+              <Skeleton className="h-8 flex-1 rounded-fw-sm" />
+              <Skeleton className="h-8 w-16 rounded-fw-sm" />
+              <Skeleton className="h-8 w-8 rounded-fw-sm" />
+            </div>
+          </PaperCard>
+        ))}
+      </div>
+
+      {/* Desktop table skeleton — shown at lg and up only, matching the real
+          `hidden overflow-hidden p-0 lg:block` PaperCard. */}
+      <PaperCard className="hidden overflow-hidden p-0 lg:block">
         <div className="border-b border-[color:var(--hairline)] px-6 py-4">
           <div className="flex items-center gap-6">
             <Skeleton className="h-4 w-4" />

@@ -341,7 +341,7 @@ export function DocumentPreview({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-5xl max-h-[90dvh] flex flex-col p-0">
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -373,7 +373,7 @@ export function DocumentPreview({
         </DialogHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-4">{renderPreview()}</div>
+        <div className="flex-1 min-h-0 overflow-auto px-6 py-4">{renderPreview()}</div>
       </DialogContent>
     </Dialog>
   );

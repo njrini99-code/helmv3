@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useId, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Drawer,
@@ -42,6 +42,7 @@ export function LogProgressButton({
 }: LogProgressButtonProps) {
   const router = useRouter();
   const { addToast } = useToast();
+  const formId = useId();
   const [open, setOpen] = useState(false);
   const [newValue, setNewValue] = useState<string>(
     currentValue != null ? String(currentValue) : ''
@@ -119,15 +120,15 @@ export function LogProgressButton({
           if (!next) handleClose();
         }}
       >
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="sm:max-w-lg sm:mx-auto sm:rounded-3xl overflow-hidden flex flex-col">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle>Log progress</DrawerTitle>
             <DrawerDescription>{focusAreaTitle}</DrawerDescription>
           </DrawerHeader>
           <form
+            id={formId}
             onSubmit={handleSubmit}
-            className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
-            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+            className="flex-1 min-h-0 space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
           >
           {/* Current value (read-only) */}
           <div>
@@ -170,7 +171,16 @@ export function LogProgressButton({
             rows={3}
           />
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+        </form>
+
+          {/* Pinned footer — outside the scrollable form so Save/Cancel stay
+              reachable without scrolling, matching the sibling AddClassModal
+              drawer's footer pattern (a plain sibling div after the scroll
+              region, not the last element inside it). */}
+          <div
+            className="flex flex-shrink-0 items-center justify-end gap-2 border-t border-border-subtle bg-surface-sunken px-6 py-4"
+            style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+          >
             <Button
               type="button"
               variant="ghost"
@@ -179,11 +189,10 @@ export function LogProgressButton({
             >
               Cancel
             </Button>
-            <Button type="submit" isLoading={submitting} disabled={submitting}>
+            <Button type="submit" form={formId} isLoading={submitting} disabled={submitting}>
               Save progress
             </Button>
           </div>
-        </form>
         </DrawerContent>
       </Drawer>
     </>

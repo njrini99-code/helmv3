@@ -129,7 +129,7 @@ export function UploadNewVersionModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 space-y-4">
           {/* Error */}
           {error && (
             <div className="p-3 bg-fw-danger-bg border border-fw-danger/30 rounded-lg text-sm text-fw-danger">

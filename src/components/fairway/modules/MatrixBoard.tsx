@@ -93,11 +93,19 @@ export function MatrixBoard({ kpis, columns, rows }: MatrixBoardProps) {
         </div>
       ) : null}
 
-      <MatrixHeader columns={columns} />
+      {/* The header/row grids use `minmax()` tracks with hard px floors
+          (`trackFor` above) — below their combined minimum width the grid
+          overflows its box rather than shrinking. Scope that overflow to its
+          own horizontal scroller instead of letting the board's outer
+          `overflow-hidden` (kept for the rounded-card clip) silently clip the
+          last column. */}
+      <div className="overflow-x-auto">
+        <MatrixHeader columns={columns} />
 
-      {rows.map((row, i) => (
-        <MatrixRow key={row.id} row={row} columns={columns} isLast={i === rows.length - 1} />
-      ))}
+        {rows.map((row, i) => (
+          <MatrixRow key={row.id} row={row} columns={columns} isLast={i === rows.length - 1} />
+        ))}
+      </div>
     </div>
   );
 }
