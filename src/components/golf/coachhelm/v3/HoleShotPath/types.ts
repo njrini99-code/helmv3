@@ -48,13 +48,36 @@ export interface ShotInput {
   lie_after: Lie | string | null;
   /** Lie the ball came from (used for the tee marker on shot 1). */
   lie_before?: Lie | string | null;
-  /** Distance to the hole AFTER the shot (yards). */
+  /** Distance to the hole AFTER the shot — YARDS off the green, FEET on it.
+   *  `lie_after` is the primary signal for that switch (matches every
+   *  write/read path in the app, see geometry.ts's UNIT HANDLING doc);
+   *  `distance_unit_after` is only consulted for non-green lies. */
   distance_to_hole_after: number | null;
-  /** Distance to the hole BEFORE the shot (yards, optional). */
+  /** Distance to the hole BEFORE the shot, optional. Same yards-off/
+   *  feet-on-green convention, gated on `lie_before`. */
   distance_to_hole_before?: number | null;
+  /** Secondary unit signal for `distance_to_hole_before`, consulted only
+   *  when `lie_before` isn't `'green'`. `golf_shots` defaults this column
+   *  to `'yards'`; only an explicit `'feet'` flips interpretation (see
+   *  src/lib/golf/distance-units.ts). Missing/unknown values default to
+   *  yards — the geometry never guesses a unit from a value's magnitude,
+   *  only from the lie or this explicit tag. */
+  distance_unit_before?: string | null;
+  /** Secondary unit signal for `distance_to_hole_after`. Same convention
+   *  as `distance_unit_before`, gated on `lie_after`. */
+  distance_unit_after?: string | null;
   /** Miss direction the player logged for this shot. */
   miss_direction?: MissDirection | string | null;
   is_penalty?: boolean | null;
+  /** Real point-to-point length of this shot, when the app logged it
+   *  directly (`golf_shots.shot_distance`) rather than it being derivable
+   *  from the before/after delta. Same unit convention as the
+   *  distance-to-hole fields — see `distance_unit`. Geometry prefers this
+   *  over the before/after delta when present. */
+  shot_distance?: number | null;
+  /** Unit `shot_distance` is stored in (`golf_shots.distance_unit`). Same
+   *  convention as `distance_unit_before`/`distance_unit_after`. */
+  distance_unit?: string | null;
   /** Club bucket used for this shot — tooltip-only context, never drives
    *  geometry or color (the 3-bucket model isn't part of the v3 visual
    *  vocabulary; see the module doc above). */
@@ -67,6 +90,22 @@ export interface ShotInput {
   putt_slope?: PuttSlope | string | null;
   /** Free-text note the player logged on this shot, if any. */
   notes?: string | null;
+  /** Per-shot Strokes Gained, when the DATA LAYER has already computed it
+   *  (via `golf-stats-calculator-shots.ts`'s `calculateStrokesGainedForShot`
+   *  — geometry.ts stays pure and never runs SG math itself). Null-honest:
+   *  null when unavailable/uncomputed, never a fabricated 0. */
+  sg?: number | null;
+  /** `golf_shots.putt_made` / `putt_details.made` — explicit make/miss for a
+   *  putt (the correct source of truth, not positional inference from
+   *  "is this the pin-snapped last shot"). Null for non-putts / unlogged. */
+  putt_made?: boolean | null;
+  /** `putt_details.miss_tags` — e.g. `['short','low']`. Only meaningful on a
+   *  missed putt; null when unlogged or not a putt. */
+  miss_tags?: string[] | null;
+  /** `putt_details.estimated_break_inches` — a genuinely logged number
+   *  (unlike lateral X, this one IS real when present), 0–120. Null when
+   *  unlogged. */
+  estimated_break_inches?: number | null;
 }
 
 export interface HoleShotPathProps {
@@ -100,6 +139,20 @@ export interface HoleShotPathProps {
    *  premium visual (birdie/bogey/double) without touching the lie-based
    *  shot coloring inside the SVG itself. */
   ringClassName?: string;
+  /**
+   * Controlled "this hole is the active one" signal from a parent that
+   * hosts MANY simultaneous instances (the 18-hole `Filmstrip` strip) and
+   * needs the shot-by-shot draw-in replay to fire on ITS OWN hover state
+   * rather than a self-managed one. A `false → true` edge triggers one
+   * draw-in pass at strip scale (segments only — see the module doc);
+   * `true → false` snaps back to the fully-drawn static path instantly, so
+   * the next `false → true` edge replays from empty (never a loop while
+   * still hovered). Omit for standalone / single-instance usage (e.g. the
+   * round-review detail panel) — those draw in once on mount instead, which
+   * a parent can force to repeat by remounting on a `key` change (see
+   * `ReviewHero`'s `key={openHole}`).
+   */
+  active?: boolean;
 }
 
 /**
@@ -133,5 +186,26 @@ export function normalizeMiss(
   if (s.includes('right')) return 'right';
   if (s.includes('long')) return 'long';
   if (s.includes('short')) return 'short';
+  return null;
+}
+
+/**
+ * Normalize `penalty_type` into the canonical `PenaltyType` union, or
+ * `null` when unlogged/unrecognized. Used ONLY to branch the hazard glyph
+ * (`geometry.ts`'s `plotHole`) — never to overwrite the raw pass-through
+ * `PlottedShot.penalty_type` tooltip field, which stays verbatim. An
+ * unrecognized string must resolve to `null` here, NOT `'water'` — the
+ * caller's job is then to fall back to a generic penalty glyph, never a
+ * water glyph, for anything this function can't confidently classify.
+ */
+export function normalizePenaltyType(
+  raw: PenaltyType | string | null | undefined,
+): PenaltyType | null {
+  if (!raw) return null;
+  const s = String(raw).toLowerCase().trim();
+  if (s === 'water') return 'water';
+  if (s === 'ob' || s === 'out_of_bounds' || s === 'out of bounds') return 'ob';
+  if (s === 'unplayable') return 'unplayable';
+  if (s === 'lost' || s === 'lost_ball' || s === 'lost ball') return 'lost';
   return null;
 }
