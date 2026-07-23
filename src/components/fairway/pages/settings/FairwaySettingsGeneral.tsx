@@ -95,8 +95,9 @@ import {
   Avatar,
   InlineNotice,
   fairwayToast,
-  Skeleton,
 } from '@/components/fairway';
+// Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 const EM_DASH = '—';
 
