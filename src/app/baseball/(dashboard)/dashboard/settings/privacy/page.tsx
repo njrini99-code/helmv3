@@ -37,7 +37,7 @@ export default async function PrivacySettingsPage() {
     : undefined;
 
   return (
-    <div className="min-h-dvh bg-[#FAF6F1]">
+    <div className="min-h-dvh bg-cream-100">
       <div className="max-w-[720px] mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="mb-8">

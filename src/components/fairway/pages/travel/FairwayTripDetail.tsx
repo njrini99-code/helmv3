@@ -369,7 +369,8 @@ export function FairwayTripDetail({
           </div>
 
           {loadingExpenses ? (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3" role="status" aria-busy="true" aria-live="polite">
+              <span className="sr-only">Loading trip…</span>
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-2/3" />

@@ -7,7 +7,8 @@
 
 export default function ImportLoading() {
   return (
-    <div className="space-y-6 animate-pulse">
+    <div className="space-y-6 animate-pulse" role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading import page…</span>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">

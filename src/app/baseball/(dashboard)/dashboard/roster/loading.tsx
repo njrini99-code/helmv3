@@ -14,7 +14,8 @@ import { fairwayScope } from '@/lib/redesign/flag';
  */
 export default function RosterLoading() {
   return (
-    <div className={fairwayScope('min-h-full')}>
+    <div className={fairwayScope('min-h-full')} role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading roster…</span>
       <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
         {/* SectionMasthead — eyebrow + title + primary action + accent rule + view toggle */}
         <div className="flex flex-col gap-3">

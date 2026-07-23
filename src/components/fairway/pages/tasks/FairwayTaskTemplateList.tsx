@@ -191,7 +191,8 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-2.5">
+      <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-2.5">
+        <span className="sr-only">Loading templates…</span>
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} className="h-16 rounded-fw-md" />
         ))}

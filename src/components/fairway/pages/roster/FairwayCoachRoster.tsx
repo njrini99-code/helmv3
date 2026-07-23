@@ -7,7 +7,6 @@ import { Download } from 'lucide-react';
 
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Button } from '@/components/fairway/controls/button';
-import { Surface } from '@/components/fairway/surfaces/surface';
 import { Chip } from '@/components/fairway/controls/badge';
 import { SearchField } from '@/components/fairway/command/search-field';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
@@ -90,20 +89,20 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
       <FairwayJoinRequests requests={joinRequests} />
 
       {empty ? (
-        <Surface elevation="border" padding="lg" className="mt-2 text-center">
-          <h2 className="font-fw-display text-h3 font-semibold text-text-primary">Build your team</h2>
-          <p className="mx-auto mt-2 max-w-sm font-fw-sans text-body-sm text-text-tertiary">
-            Invite players to join {teamName}. Share the code below or send a join link.
-          </p>
-          <div className="mt-5 flex flex-col items-center gap-3">
-            {/* The header above already carries the primary "Invite player" CTA —
-                this card repeats the affordance for a reader who lands mid-page,
-                so it renders ghost to avoid two competing primary buttons on one
-                empty state. */}
+        <EmptyState
+          variant="default"
+          title="Build your team"
+          description={`Invite players to join ${teamName}. Share the code below or send a join link.`}
+          action={
+            // The header above already carries the primary "Invite player" CTA —
+            // this card repeats the affordance for a reader who lands mid-page,
+            // so it renders ghost to avoid two competing primary buttons on one
+            // empty state.
             <FairwayInvitePlayerButton teamName={teamName} joinCode={inviteCode} variant="ghost" />
-            {inviteCode ? <Chip tone="neutral">Join code · {inviteCode}</Chip> : null}
-          </div>
-        </Surface>
+          }
+          secondaryAction={inviteCode ? <Chip tone="neutral">Join code · {inviteCode}</Chip> : undefined}
+          className="mt-2"
+        />
       ) : (
         <>
           {/* Search (P253) — find a player by name without scrolling. */}

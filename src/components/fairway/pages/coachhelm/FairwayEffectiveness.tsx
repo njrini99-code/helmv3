@@ -1544,24 +1544,20 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
           hypothesis, never as success.
         </p>
       </div>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
+      <StatStrip count={4} columns={4} ariaLabel="Insight trust ledger">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="flex flex-col gap-1">
-            <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
-              {kpi.label}
-            </dt>
-            <dd
-              className={cn(
-                'font-fw-mono text-h2 tabular-nums leading-none',
-                kpi.accent ? 'text-accent-700' : 'text-text-primary',
-              )}
-            >
-              {kpi.value}
-            </dd>
-            <span className="font-fw-sans text-caption text-text-tertiary">{kpi.hint}</span>
-          </div>
+          <StatTile
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            format={{ maximumFractionDigits: 0 }}
+            mono
+            hideTrend
+            tone={kpi.accent ? 'accent' : 'neutral'}
+            unit={kpi.hint}
+          />
         ))}
-      </dl>
+      </StatStrip>
     </Surface>
   );
 }

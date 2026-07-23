@@ -13,7 +13,9 @@
 
 import * as React from 'react';
 import { format, isSameDay, addDays } from 'date-fns';
+import { CalendarCheck } from 'lucide-react';
 
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import type { ScheduleOverlay } from './FairwayMonthGrid';
 
 export interface FairwayAvailabilityListProps {
@@ -64,12 +66,12 @@ export function FairwayAvailabilityList({
 
   if (buckets.length === 0) {
     return (
-      <div className="rounded-card border border-border-subtle bg-surface px-6 py-12 text-center shadow-flat">
-        <p className="font-fw-display text-body-lg font-medium text-text-primary">No scheduled time</p>
-        <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-          The selected players have nothing on the books in this window — likely all free.
-        </p>
-      </div>
+      <EmptyState
+        variant="subtle"
+        icon={CalendarCheck}
+        title="No scheduled time"
+        description="The selected players have nothing on the books in this window — likely all free."
+      />
     );
   }
 
@@ -86,11 +88,10 @@ export function FairwayAvailabilityList({
               return (
                 <div
                   key={o.id}
-                  className="relative flex items-stretch gap-4 overflow-hidden rounded-card border border-border-subtle bg-surface p-4 shadow-flat"
+                  className="flex items-stretch gap-4 overflow-hidden rounded-card border border-border-subtle bg-surface p-4 shadow-flat"
                 >
-                  <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: o.color.bg }} />
-                  {/* Time block */}
-                  <div className="flex w-[68px] flex-shrink-0 flex-col items-start justify-center pl-1.5 md:w-[84px]">
+                  {/* Time block — color identity is the owner dot below, not a rail. */}
+                  <div className="flex w-[68px] flex-shrink-0 flex-col items-start justify-center md:w-[84px]">
                     {o.kind === 'blocked' ? (
                       <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">Busy</span>
                     ) : (

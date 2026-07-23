@@ -7,6 +7,7 @@ import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
 import { completeTask } from '@/app/golf/actions/tasks';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTasks } from '@/components/fairway/pages/tasks';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 interface Task {
   id: string;
@@ -143,23 +144,29 @@ export default function GolfTasksPage() {
   if (loading) {
     return (
       <div className="min-h-full bg-transparent">
-        <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+        <div
+          className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6"
+          role="status"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <span className="sr-only">Loading tasks…</span>
           <div className="flex items-center justify-between">
-            <div className="h-7 w-28 skeleton-shimmer rounded-lg" />
-            <div className="h-9 w-24 skeleton-shimmer rounded-lg" />
+            <Skeleton className="h-7 w-28 rounded-lg" />
+            <Skeleton className="h-9 w-24 rounded-lg" />
           </div>
           <div className="flex gap-2">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-8 w-20 skeleton-shimmer rounded-full" />
+              <Skeleton key={i} className="h-8 w-20 rounded-full" />
             ))}
           </div>
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="surface-matte rounded-3xl p-4 space-y-3">
+            <div key={i} className="rounded-card border border-border-subtle bg-surface p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="h-4 w-48 skeleton-shimmer rounded" />
-                <div className="h-5 w-16 skeleton-shimmer rounded-full" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-5 w-16 rounded-full" />
               </div>
-              <div className="h-3 w-32 skeleton-shimmer rounded" />
+              <Skeleton className="h-3 w-32" />
             </div>
           ))}
         </div>
