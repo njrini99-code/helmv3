@@ -113,6 +113,7 @@ export function CoachIntelligenceHome({
         scannedAt={scannedAt}
         groupsError={groupsError}
         categoryInsights={categoryInsights}
+        teamShotAnalysis={ov?.teamShotAnalysis}
         playersDrillProps={playersDrillProps}
         effectivenessDrillProps={effectivenessDrillProps}
       />

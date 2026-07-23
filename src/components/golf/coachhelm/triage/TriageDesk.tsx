@@ -27,14 +27,22 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, fairwayToast, InlineNotice, PlayersGridView } from '@/components/fairway';
 import type { PlayersGridViewProps, FairwayEffectivenessProps, PlayersGridStats } from '@/components/fairway';
+import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
+import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
 import { reviewSignal, dismissSignal } from '@/app/golf/actions/signal-groups';
-import type { TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
+import type { TeamCategoryInsightsResult, TeamShotAnalysis } from '@/app/golf/actions/team-category-insights';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { TeamCategoryLeakBand } from '@/components/fairway/pages/coachhelm/TeamCategoryLeakBand';
+import {
+  formatShotContext,
+  formatLie,
+  formatDistanceRange,
+} from '@/lib/coachhelm/v2/shot-analysis/format';
 import { BriefBand } from './BriefBand';
 import { ViewSwitch } from './ViewSwitch';
 import { SignalQueue } from './SignalQueue';
@@ -51,6 +59,92 @@ import {
   resolveQueueFilter,
   resolveTriageView,
 } from './buildTriageViewModel';
+
+/**
+ * The team-level equivalent of `ShotAnalysisCard`'s "Key Weaknesses" —
+ * `getTeamOverview`'s `teamShotAnalysis` (topWeaknesses + deadZones) was
+ * computed on every `/intelligence` load and discarded down to
+ * `playerCount` (data-completeness audit 2026-07-23). Same row treatment and
+ * format helpers as the per-player card; honest-empty when the payload is
+ * thin (overview failed, or the team simply has no shot data yet).
+ */
+function TeamShotWeaknessesPanel({ data }: { data: TeamShotAnalysis | undefined }) {
+  const topWeaknesses = data?.topWeaknesses ?? [];
+  const deadZones = data?.deadZones ?? [];
+
+  if (topWeaknesses.length === 0 && deadZones.length === 0) {
+    return (
+      <InstrumentPanel depth="base" eyebrow="CoachHelm · team" header="Team shot weaknesses">
+        <InsufficientData
+          title="No team shot analysis yet"
+          description="Log more team rounds and the toughest yardage bands will surface here."
+          unit="rounds"
+          compact
+        />
+      </InstrumentPanel>
+    );
+  }
+
+  return (
+    <InstrumentPanel depth="base" eyebrow="CoachHelm · team" header="Team shot weaknesses">
+      <div className="space-y-4">
+        {topWeaknesses.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-body-sm font-medium text-text-secondary">
+              Where the team loses the most strokes
+            </p>
+            <div className="grid gap-2">
+              {topWeaknesses.map((weakness, i) => (
+                <div
+                  key={`${weakness.context}-${weakness.lie}-${weakness.distanceRange}-${i}`}
+                  className="flex items-center justify-between rounded-fw-md border border-border-subtle bg-surface-sunken p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-body-sm font-medium text-text-primary">
+                      {formatShotContext({
+                        lie: weakness.lie,
+                        distanceRange: weakness.distanceRange,
+                        context: weakness.context,
+                      })}
+                    </p>
+                    <p className="text-caption text-text-tertiary">
+                      {formatLie(weakness.lie)} · {formatDistanceRange(weakness.distanceRange, weakness.lie)}
+                    </p>
+                  </div>
+                  <div className="ml-3 shrink-0 text-right">
+                    <p className="font-fw-mono text-body-sm font-medium tabular-nums text-fw-danger">
+                      {weakness.avgSG.toFixed(2)}
+                    </p>
+                    <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                      {weakness.shotCount} shots
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {deadZones.length > 0 ? (
+          <div className="rounded-fw-md border border-border-subtle bg-fw-danger-bg px-3 py-2.5">
+            <p className="mb-1 text-caption font-medium text-fw-danger">Dead zones</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {deadZones.map((dz, i) => (
+                <span
+                  key={`${dz.rangeStart}-${dz.rangeEnd}-${i}`}
+                  className="inline-flex items-center gap-1 font-fw-mono text-caption tabular-nums text-fw-danger"
+                >
+                  {dz.rangeStart}-{dz.rangeEnd}y
+                  <span className="opacity-80">({dz.deficit.toFixed(2)} deficit)</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </InstrumentPanel>
+  );
+}
 
 type TriageNavigationUpdates = Partial<{
   view: string;
@@ -73,6 +167,12 @@ export interface TriageDeskProps {
    *  omitted (not an error banner) when the fetch failed, mirroring how the
    *  other best-effort extras on this page degrade. */
   categoryInsights: TeamCategoryInsightsResult;
+  /** `getTeamOverview`'s discarded shot-analysis payload (topWeaknesses +
+   *  deadZones) — `undefined` when the overview fetch failed or hasn't
+   *  resolved yet. Rendered by `TeamShotWeaknessesPanel` as an honest-empty
+   *  instrument, never a blocking error (mirrors how `categoryInsights`
+   *  degrades above). */
+  teamShotAnalysis?: TeamShotAnalysis;
   playersDrillProps: PlayersGridViewProps;
   /** Same SSR-fetched shape the retired cockpit consumed — `EffectivenessScoreboard`
    *  only reads its `initialOverview`/`initialEffectiveness`/`initialPerformance` fields. */
@@ -85,6 +185,7 @@ export function TriageDesk({
   scannedAt,
   groupsError,
   categoryInsights,
+  teamShotAnalysis,
   playersDrillProps,
   effectivenessDrillProps,
 }: TriageDeskProps) {
@@ -130,6 +231,12 @@ export function TriageDesk({
   useEffect(() => {
     setGroups(initialGroups);
   }, [initialGroups]);
+
+  // Team diagnostics — the team shot weaknesses instrument, supplementary to
+  // the primary Signal Queue below. Expanded by default: a coach shouldn't
+  // need an extra click to see data that was already being fetched and
+  // simply discarded before this.
+  const [showDiagnostics, setShowDiagnostics] = useState(true);
 
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [isScanning, startScanTransition] = useTransition();
@@ -365,36 +472,64 @@ export function TriageDesk({
             {groupsError}
           </InlineNotice>
         ) : (
-          <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
-            <div className={cn(isSignalSelected && 'hidden min-[940px]:block')}>
-              <SignalQueue
-                groups={filteredGroups}
-                allGroups={groups}
-                categories={categories}
-                filter={queueFilter}
-                filterHref={(next) => hrefFor({ filter: next === 'all' ? null : next })}
-                onSelectFilter={(next) => navigate({ filter: next === 'all' ? null : next })}
-                selectedSignalId={selectedSignalId}
-                onSelectSignal={(id) => navigate({ signal: id })}
-                signalHref={(id) => hrefFor({ signal: id })}
-              />
+          <>
+            <div className="space-y-3">
+              {/* eslint-disable-next-line helm/no-raw-button -- borderless full-bleed disclosure toggle; the Fairway Button's pill surface can't host this justify-between row + chevron layout (matches FairwayCoachAnnouncementCard's identical disclosure toggle) */}
+              <button
+                type="button"
+                onClick={() => setShowDiagnostics((prev) => !prev)}
+                aria-expanded={showDiagnostics}
+                aria-controls="triage-team-diagnostics"
+                className={cn(
+                  'flex w-full items-center justify-between gap-2 rounded-fw-sm border border-border-subtle bg-surface-sunken px-4 py-2.5 text-left',
+                  'font-fw-sans text-body-sm font-medium text-text-secondary transition-colors hover:bg-surface-tint hover:text-text-primary',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
+                )}
+              >
+                <span>Team diagnostics</span>
+                <ChevronDown
+                  className={cn('h-4 w-4 shrink-0 transition-transform duration-medium', showDiagnostics && 'rotate-180')}
+                  aria-hidden
+                />
+              </button>
+              {showDiagnostics ? (
+                <div id="triage-team-diagnostics">
+                  <TeamShotWeaknessesPanel data={teamShotAnalysis} />
+                </div>
+              ) : null}
             </div>
-            <div className={cn(!isSignalSelected && 'hidden min-[940px]:block')}>
-              <SignalDossier
-                entry={dossierEntry}
-                coachId={coachId}
-                pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
-                onReview={handleReview}
-                onDismiss={handleDismiss}
-                onPromoted={handlePromoted}
-                onBack={() => navigate({ signal: null })}
-                onSelectSignal={(id) => navigate({ signal: id })}
-                playerFocusAreas={dossierPlayerFocusAreas}
-                playerGoals={dossierPlayerGoals}
-                playerStats={dossierPlayerStats}
-              />
+
+            <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
+              <div className={cn(isSignalSelected && 'hidden min-[940px]:block')}>
+                <SignalQueue
+                  groups={filteredGroups}
+                  allGroups={groups}
+                  categories={categories}
+                  filter={queueFilter}
+                  filterHref={(next) => hrefFor({ filter: next === 'all' ? null : next })}
+                  onSelectFilter={(next) => navigate({ filter: next === 'all' ? null : next })}
+                  selectedSignalId={selectedSignalId}
+                  onSelectSignal={(id) => navigate({ signal: id })}
+                  signalHref={(id) => hrefFor({ signal: id })}
+                />
+              </div>
+              <div className={cn(!isSignalSelected && 'hidden min-[940px]:block')}>
+                <SignalDossier
+                  entry={dossierEntry}
+                  coachId={coachId}
+                  pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
+                  onReview={handleReview}
+                  onDismiss={handleDismiss}
+                  onPromoted={handlePromoted}
+                  onBack={() => navigate({ signal: null })}
+                  onSelectSignal={(id) => navigate({ signal: id })}
+                  playerFocusAreas={dossierPlayerFocusAreas}
+                  playerGoals={dossierPlayerGoals}
+                  playerStats={dossierPlayerStats}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )
       ) : null}
 
