@@ -615,7 +615,12 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
     return { total, active, positions, withStats };
   }, [roster, aggregates]);
 
-  if (authLoading) return <PageLoading />;
+  // Only fall back to the generic skeleton when there's genuinely nothing to
+  // render yet. page.tsx always seeds `initialModel` server-side (SSR'd
+  // roster data), so gating on the global `authLoading` flag alone discarded
+  // that already-rendered content for a mismatched GenericPageSkeleton on
+  // every mount, then swapped back once auth resolved (#roster-loading-flash).
+  if (authLoading && !initialModel) return <PageLoading />;
 
   // Role-aware "back home" target for the coach-only walls below, so a player
   // who lands here by direct URL is guided back to their own home rather than a
@@ -625,7 +630,9 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
       ? '/baseball/player/today'
       : '/baseball/dashboard/command-center';
 
-  if (loadError === 'unauthorized' || (loadError === null && user?.role !== 'coach')) {
+  // While client auth is still resolving, a legit coach's `user` is null —
+  // don't flash the coach-only wall over server-authorized SSR content.
+  if (loadError === 'unauthorized' || (!authLoading && loadError === null && user?.role !== 'coach')) {
     return (
       <div className={fairwayScope('min-h-full')}>
         <div className="mx-auto w-full max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">

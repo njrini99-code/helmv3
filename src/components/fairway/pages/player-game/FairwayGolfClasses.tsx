@@ -209,10 +209,37 @@ export function FairwayGolfClasses({
         />
 
         {loading ? (
-          /* ── Loading skeleton (not a spinner) ── */
-          <div className="flex flex-col gap-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-64 w-full" />
+          /* ── Loading skeleton — shape-matched to the readout grid + weekly
+             schedule below (not a generic two-bar placeholder). This is the
+             state users actually watch: this page fetches its classes
+             client-side, so the route's own Suspense fallback resolves long
+             before `loading` here goes false. ── */
+          <div className="flex flex-col gap-8">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-card border border-border-subtle bg-surface p-4">
+                  <Skeleton className="h-7 w-12" />
+                  <Skeleton className="mt-2 h-3 w-20" />
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-3">
+              <Skeleton className="ml-1 h-3 w-36" />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                {DAY_ORDER.map((day) => (
+                  <div key={day} className="flex flex-col">
+                    <Skeleton className="mx-auto mb-2 h-3 w-16" />
+                    <div className="flex min-h-[160px] flex-col gap-2">
+                      <div className="flex flex-col gap-1 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5">
+                        <Skeleton className="h-3 w-12" />
+                        <Skeleton className="h-3.5 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : !hasClasses ? (
           /* ── Honest empty state ── */

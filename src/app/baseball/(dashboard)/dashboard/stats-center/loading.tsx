@@ -1,100 +1,113 @@
 import { Skeleton } from '@/components/ui/skeleton';
-import { PaperCard } from '@/components/baseball/living-annual';
 
 /**
- * Stats Center loading skeleton — mirrors the real layout:
- * summary strip (5 tiles) → filter bar → player stat-card grid (6 skeleton cards)
- * → stat-visual gallery placeholder.
+ * Stats Center loading skeleton — mirrors StatsCenterClient's real layout:
+ * SectionMasthead (eyebrow + title + accent rule + Import Center/Export CSV
+ * actions) → 5-up KPIContentsStrip (ruled stat lines, no card/icon wrapper)
+ * → the season/side/position filter row (no card wrapper) → the two-section
+ * Batting/Pitching record-book wall (PlayerRowPlateHeader + PlayerRowPlate
+ * rows on a six-column plate, never a card grid) → the stat-visual gallery
+ * placeholder.
  *
- * Uses <Skeleton> (not animate-spin or a generic spinner) per design system rules.
+ * Uses <Skeleton> (not animate-spin or a generic spinner) per design system
+ * rules.
  */
 export default function StatsCenterLoading() {
   return (
     <div className="min-h-dvh bg-cream-100">
       <div className="mx-auto max-w-[1536px] px-4 py-8 sm:px-6">
-        {/* Header */}
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-20" />
+        {/* SectionMasthead — eyebrow + title + accent rule + actions */}
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-3 w-40" />
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
             <Skeleton className="h-9 w-44" />
-            <Skeleton className="h-4 w-72" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-32 rounded-fw-md" />
+              <Skeleton className="h-9 w-28 rounded-fw-md" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-40 rounded-xl" />
-            <Skeleton className="h-9 w-28 rounded-xl" />
-          </div>
+          <Skeleton className="h-[3px] w-16 rounded-full" />
         </div>
 
-        {/* Summary strip — 5 tiles */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        {/* KPIContentsStrip — 5-up ruled stat cells, no card/icon wrapper */}
+        <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-7 sm:grid-cols-3 xl:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <PaperCard key={i} className="p-4" grain={false}>
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="h-8 w-12" />
-                </div>
-                <Skeleton className="h-10 w-10 rounded-xl" />
-              </div>
-            </PaperCard>
+            <div key={i} className="flex flex-col gap-1">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-9 w-14" />
+              <Skeleton className="h-[1.5px] w-full" />
+            </div>
           ))}
         </div>
 
-        {/* Filter bar */}
-        <PaperCard className="mb-6 px-4 py-3" grain={false}>
+        {/* Filters — season / side / position, no card wrapper */}
+        <div className="mt-6 flex flex-col gap-3 border-t border-warm-200 pt-5">
           <div className="flex flex-wrap items-center gap-4">
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-9 w-36 rounded-xl" />
-            <Skeleton className="h-9 w-28 rounded-xl" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-8 w-28 rounded-fw-md" />
+            <Skeleton className="h-8 w-24 rounded-fw-md" />
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-7 w-14 rounded-full" />
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-7 w-16 rounded-full" />
             ))}
           </div>
-        </PaperCard>
+        </div>
 
-        {/* Player stat card grid — 3 columns × 2 rows */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <PaperCard key={i} className="p-4 space-y-4" grain={false}>
-              {/* Card header — player identity */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-36" />
-                  <Skeleton className="h-3.5 w-20" />
+        {/* The record-book wall — Batting + Pitching spreads, six-column plate. */}
+        <div className="mt-8 flex flex-col gap-10">
+          {['Batting', 'Pitching'].map((heading) => (
+            <div key={heading} className="flex flex-col gap-3">
+              <Skeleton className="h-3 w-16" />
+
+              {/* md+: fixed six-column plate scrolling horizontally as one. */}
+              <div className="hidden md:block overflow-x-auto">
+                <div className="min-w-[680px]">
+                  <div className="flex items-end px-1 pb-2">
+                    <Skeleton className="h-3 w-12" />
+                    <div className="ml-auto flex gap-x-6">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <Skeleton key={i} className="h-3 w-14 shrink-0" />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i}>
+                        <div className="flex items-center gap-3 px-1 py-3">
+                          <Skeleton className="h-[17px] min-w-0 flex-1 max-w-[200px]" />
+                          <div className="flex gap-x-6">
+                            {Array.from({ length: 6 }).map((_, j) => (
+                              <Skeleton key={j} className="h-6 w-20 shrink-0" />
+                            ))}
+                          </div>
+                        </div>
+                        <Skeleton className="h-[1.5px] w-full" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <Skeleton className="h-6 w-20 rounded-full" />
               </div>
-              {/* Batting hero line */}
-              <div className="grid grid-cols-4 gap-2 rounded-xl bg-warm-50/70 px-3 py-2">
-                {Array.from({ length: 4 }).map((_, j) => (
-                  <div key={j} className="flex flex-col items-center gap-1">
-                    <Skeleton className="h-3 w-8" />
-                    <Skeleton className="h-5 w-10" />
+
+              {/* Below md: full-width identity rows, one headline figure
+                  (Rule 8 — never the desktop six-column plate on a phone). */}
+              <div className="md:hidden flex flex-col">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i}>
+                    <div className="flex items-center gap-3 px-1 py-3">
+                      <Skeleton className="h-[17px] min-w-0 flex-1 max-w-[160px]" />
+                      <Skeleton className="h-6 w-20 shrink-0" />
+                    </div>
+                    <Skeleton className="h-[1.5px] w-full" />
                   </div>
                 ))}
               </div>
-              {/* Stat pairs grid */}
-              <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
-                {Array.from({ length: 16 }).map((_, j) => (
-                  <div key={j} className="space-y-1">
-                    <Skeleton className="h-2.5 w-6" />
-                    <Skeleton className="h-4 w-8" />
-                  </div>
-                ))}
-              </div>
-              {/* Footer */}
-              <div className="flex items-center justify-between border-t border-warm-100 pt-3">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            </PaperCard>
+            </div>
           ))}
         </div>
 
-        {/* Stat-visual gallery placeholder */}
-        <div className="mt-10 space-y-4">
+        {/* Stat-visual gallery placeholder. */}
+        <div className="mt-12 space-y-4">
           <Skeleton className="h-7 w-32" />
           <Skeleton className="h-64 w-full rounded-2xl" />
         </div>

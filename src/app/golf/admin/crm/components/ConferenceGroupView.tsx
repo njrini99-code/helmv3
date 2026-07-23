@@ -259,7 +259,7 @@ export function ConferenceGroupView({
         return (
           <div
             key={group.conference}
-            className="glass-standard rounded-2xl overflow-clip"
+            className="glass-standard rounded-2xl"
           >
             {/* Conference Header — checkbox + toggle button are siblings (no nested interactives) */}
             <div className="flex items-center gap-3 p-4">

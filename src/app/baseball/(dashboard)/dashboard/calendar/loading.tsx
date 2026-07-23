@@ -1,8 +1,20 @@
 import { PaperCard } from '@/components/baseball/living-annual';
 
+// Mirrors CalendarFairway's own isCoach-aware shell-height formula (its
+// `SHELL_COACH` constant — see CalendarFairway.tsx's shell-height regression
+// test) instead of a flat `100dvh-64px` guess. This Suspense fallback can't
+// know the viewer's role before the real page's data resolves, so it uses
+// the coach variant (the larger subtraction / shorter height) as the safe
+// default: a player only sees a small height GROWTH once the real, taller
+// player shell mounts, instead of the previous much larger shrink for every
+// viewer. Two full literal strings (not template-built) so Tailwind's
+// static class scanner can generate both.
+const SHELL_HEIGHT_MOBILE = 'h-[calc(100dvh-var(--golf-mobile-header-offset)-45px-(2rem+56px+env(safe-area-inset-bottom,0px)))]';
+const SHELL_HEIGHT_DESKTOP = 'md:h-[calc(100dvh-var(--golf-mobile-header-offset)-45px-(2rem+env(safe-area-inset-bottom,0px)))]';
+
 export default function CalendarLoading() {
   return (
-    <div className="h-[calc(100dvh-64px)] p-6" style={{
+    <div className={`${SHELL_HEIGHT_MOBILE} ${SHELL_HEIGHT_DESKTOP} p-6`} style={{
       background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
     }}>
       <PaperCard className="h-full animate-pulse" grain={false}>

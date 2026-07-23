@@ -509,7 +509,7 @@ export default function RoundReviewPage() {
   if (isLoading) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
-        <div className="mx-auto w-full max-w-2xl px-5 py-8 md:px-8 md:py-10">
+        <div className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8 md:py-10">
           <FwViewHeader
             eyebrow="Round Review"
             title={displayCourseName(round?.course_name) || 'Round Review'}

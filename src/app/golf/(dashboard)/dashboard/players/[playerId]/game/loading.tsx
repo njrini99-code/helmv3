@@ -5,10 +5,15 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 /**
  * P106 — Fairway-native loading state for the Game Fingerprint surface.
  * ----------------------------------------------------------------------------
- * The live page (FairwayPlayerGameFingerprint) is a max-w-[1100px] column with a
- * ViewHeader masthead, then an InstrumentCluster composite-rating hero (focal),
- * then 2-up dimension sections. This reserves the real slots with Fairway
- * tokens to remove the shape/token swap on hydrate (CLS / gate B3).
+ * The live page mounts PlayerDeepDiveTabs, which renders CoachHelmShell
+ * `embedded` (suppressing its masthead + sub-nav, but NOT its leaf
+ * breadcrumb — "Players > {name}") followed by the Game Fingerprint /
+ * Scouting Report Segmented tab switcher, and only then
+ * FairwayPlayerGameFingerprint's own max-w-[1100px] column: a ViewHeader
+ * masthead, an InstrumentCluster composite-rating hero (focal), then 2-up
+ * dimension sections. This reserves the breadcrumb + tab-switcher slots
+ * ahead of that content so the hero doesn't shift down on hydrate, removing
+ * the shape/token swap (CLS / gate B3).
  */
 function FairwayGameLoading() {
   return (
@@ -21,7 +26,18 @@ function FairwayGameLoading() {
       >
         <span className="sr-only">Loading game fingerprint…</span>
 
-        <div className="flex flex-col gap-10">
+        {/* Breadcrumb — "Players > {name}" (still rendered by CoachHelmShell
+            even when `embedded` suppresses the masthead + sub-nav). */}
+        <div className="flex items-center gap-1.5">
+          <Skeleton className="h-3 w-14" />
+          <Skeleton className="h-3 w-3 rounded-full" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+
+        {/* Tab switcher — Game Fingerprint / Scouting Report Segmented control. */}
+        <Skeleton className="mt-4 h-9 w-64 max-w-full rounded-fw-md" />
+
+        <div className="mt-6 flex flex-col gap-10">
           {/* Masthead — eyebrow · title · description + actions */}
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>

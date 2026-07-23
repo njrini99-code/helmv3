@@ -47,11 +47,37 @@ export default function Loading() {
             </div>
           </div>
 
-          {/* Scorecard */}
+          {/* Scorecard — forks the same way ScorecardNine does: a vertical
+              per-hole row-strip list below md, and the grid-cols-10 table
+              only at md and above. */}
           <section className="flex flex-col gap-3">
             <Skeleton className="h-3 w-24" />
             <Surface padding="none" elevation="border" className="overflow-hidden">
-              <div className="space-y-4 p-5">
+              {/* Phone — per-hole row strips */}
+              <div className="flex flex-col gap-4 p-5 md:hidden">
+                {[0, 1].map((nine) => (
+                  <div key={nine} className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between px-1">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {Array.from({ length: 9 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 py-2.5">
+                          <Skeleton className="h-4 w-6" />
+                          <Skeleton className="h-4 w-8" />
+                          <Skeleton className="h-5 w-12 rounded-full" />
+                          <Skeleton className="ml-auto h-4 w-10" />
+                        </div>
+                      ))}
+                    </div>
+                    <Skeleton className="mt-1 h-9 w-full rounded-fw-md" />
+                  </div>
+                ))}
+              </div>
+
+              {/* md+ — the matte table */}
+              <div className="hidden space-y-4 p-5 md:block">
                 {[0, 1].map((nine) => (
                   <div key={nine} className="space-y-2">
                     <Skeleton className="h-4 w-16" />

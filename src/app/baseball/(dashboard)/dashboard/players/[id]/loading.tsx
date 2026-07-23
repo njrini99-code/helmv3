@@ -4,11 +4,16 @@ import { PaperCard } from '@/components/baseball/living-annual';
 /**
  * Player profile loading skeleton — mirrors PlayerProfileClient's layout:
  * header avatar + bio → tab bar → snapshot grid → career stats.
+ *
+ * Container is max-w-6xl to match PlayerProfileClient's real
+ * `mx-auto w-full max-w-6xl` wrapper — NOT max-w-[1536px], which visibly
+ * narrowed the content column on wide viewports the instant real content
+ * replaced this skeleton.
  */
 export default function PlayerProfileLoading() {
   return (
     <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Back link */}
         <Skeleton className="mb-6 h-4 w-24" />
 

@@ -556,7 +556,7 @@ export function MessageThreadPane({
                     </div>
                   )}
 
-                  <div className={cn('group relative flex max-w-[70%] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
+                  <div className={cn('group relative flex min-w-0 max-w-[70%] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name above first incoming bubble */}
                     {!isOwn && isFirstInGroup && (
                       <span className="ml-1 font-fw-sans text-eyebrow font-medium text-text-tertiary">
@@ -616,7 +616,7 @@ export function MessageThreadPane({
                         <Textarea
                           value={editContent}
                           onChange={(e) => onEditContentChange(e.target.value)}
-                          className="min-w-[200px] border-0 bg-transparent p-0 font-fw-sans text-body-sm text-text-primary focus:ring-0"
+                          className="w-full min-w-0 border-0 bg-transparent p-0 font-fw-sans text-body-sm text-text-primary focus:ring-0"
                           rows={Math.min(5, editContent.split('\n').length || 1)}
                           // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus

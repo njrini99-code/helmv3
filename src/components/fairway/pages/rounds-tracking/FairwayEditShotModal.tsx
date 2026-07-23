@@ -104,7 +104,7 @@ export function FairwayEditShotModal({
 
       {/* Modal Body */}
       <div
-        className="flex-1 space-y-5 overflow-y-auto overscroll-contain touch-pan-y px-6 py-4 pb-6"
+        className="min-h-0 flex-auto space-y-5 overflow-y-auto overscroll-contain touch-pan-y px-6 py-4 pb-6"
         style={{ WebkitOverflowScrolling: 'touch' }}
         data-scroll-container
       >

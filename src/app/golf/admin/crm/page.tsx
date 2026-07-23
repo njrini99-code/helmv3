@@ -1678,7 +1678,7 @@ export default function CRMPage() {
                   statusConfig={STATUS_CONFIG}
                 />
                 {coachView === 'table' && (
-                  <div className="rounded-2xl overflow-clip glass-standard">
+                  <div className="rounded-2xl glass-standard">
                     <CoachTable
                       coaches={filteredCoaches}
                       loading={loading}

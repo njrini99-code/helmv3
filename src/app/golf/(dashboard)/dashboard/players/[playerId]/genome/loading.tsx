@@ -32,11 +32,11 @@ function FairwayGenomeLoading() {
           <Skeleton className="h-9 w-28 rounded-fw-md" />
         </div>
 
-        {/* Sub-nav strip */}
+        {/* Sub-nav strip — collapsed to the single "Brief" tab (Spine & Stage
+            redesign folded Signals/Players/Effectiveness into `?view=` drills,
+            so CoachHelmSubNav's coach tab set is now just one entry). */}
         <div className="mt-5 flex items-center gap-2 border-b border-border-subtle pb-3">
-          {[80, 104, 96, 84].map((w) => (
-            <Skeleton key={w} className="h-7 rounded-full" style={{ width: w }} />
-          ))}
+          <Skeleton className="h-7 w-16 rounded-full" />
         </div>
 
         {/* Body — radar-hero cockpit + dimensions grid */}

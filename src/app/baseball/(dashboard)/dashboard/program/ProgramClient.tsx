@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { PageLoading } from '@/components/ui/loading';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -35,6 +35,48 @@ interface OrganizationData {
   conference?: string;
   primary_color?: string;
   secondary_color?: string;
+}
+
+/**
+ * Local fallback shown while this client component resolves its own
+ * auth/org fetch (authLoading || loading). Mirrors program/loading.tsx's
+ * route-level Suspense skeleton exactly — the same `max-w-[720px]` masthead
+ * + logo/form card shape ProgramClient itself renders once loaded — instead
+ * of the generic, differently-shaped <PageLoading/> that used to render
+ * here and discard the well-matched route skeleton on every mount.
+ */
+function ProgramSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-[720px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="text" width={170} height={11} />
+        <Skeleton variant="text" width={200} height={36} />
+        <Skeleton className="h-[3px] w-16 rounded-full" />
+      </div>
+
+      <div className="rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] p-6 space-y-6">
+        <div className="flex items-center gap-6">
+          <Skeleton variant="rectangular" width={96} height={96} className="rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton variant="text" width={180} height={20} />
+            <Skeleton variant="text" width={120} height={14} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton variant="text" width={96} height={14} />
+              <Skeleton variant="rectangular" height={40} className="rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <Skeleton variant="text" width={96} height={14} />
+          <Skeleton variant="rectangular" height={96} className="rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ProgramClient() {
@@ -206,7 +248,7 @@ export default function ProgramClient() {
     }
   };
 
-  if (authLoading || loading) return <PageLoading />;
+  if (authLoading || loading) return <ProgramSkeleton />;
 
   if (user?.role !== 'coach' || !coach) {
     return (

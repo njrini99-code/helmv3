@@ -105,9 +105,9 @@ export function UploadNewVersionModal({
       </Button>
 
       {/* Modal */}
-      <div className="relative bg-cream-50 rounded-2xl shadow-2xl max-w-lg w-full overflow-clip">
+      <div className="relative bg-cream-50 rounded-2xl shadow-2xl max-w-lg w-full max-h-[85dvh] flex flex-col overflow-clip">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200 flex-shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-warm-900">Upload New Version</h2>
             <p className="text-sm text-warm-500 mt-0.5">{documentTitle}</p>
@@ -122,7 +122,7 @@ export function UploadNewVersionModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
           {/* Error */}
           {error && <InkNotice>{error}</InkNotice>}
 
@@ -211,7 +211,7 @@ export function UploadNewVersionModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl flex-shrink-0">
           <Button
             variant="secondary"
             type="button"

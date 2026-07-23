@@ -30,7 +30,41 @@ import {
   type EvidenceReadModel,
 } from '@/app/baseball/actions/videos';
 import { VideoLibraryClient } from '@/components/baseball/video/VideoLibraryClient';
-import { SkeletonVideos } from '@/components/ui/skeleton';
+import { SectionMasthead } from '@/components/baseball/living-annual';
+import { Skeleton } from '@/components/fairway';
+
+// Route-level Suspense fallback shape-matched to VideoLibraryClient's real
+// first viewport: the border-b SectionMasthead header (title + subtitle,
+// no header actions), the 5-item view TabBar row, and the Library tab's
+// card grid (grid-cols-1 sm:grid-cols-2 xl:grid-cols-3) — not the legacy
+// two-button-header SkeletonVideos shape, which this route never renders.
+function VideoLibraryLoading() {
+  return (
+    <>
+      <div className="border-b border-[color:var(--hairline)] px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+        <SectionMasthead title="Video Library" ink="team">
+          <Skeleton className="h-4 w-40" />
+        </SectionMasthead>
+      </div>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="mb-5 flex items-center gap-1 rounded-xl bg-[var(--paper-canvas)] p-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-20 rounded-lg" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-3 rounded-card border border-[color:var(--hairline)] p-3">
+              <Skeleton className="aspect-video w-full rounded-card" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
 
 // Empty model defaults (used when a fetch fails gracefully)
 const EMPTY_LIBRARY: LibraryReadModel = { videos: [], totalCount: 0 };
@@ -97,7 +131,7 @@ async function VideoLibraryPage() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-4 sm:p-6 lg:p-8"><SkeletonVideos /></div>}>
+    <Suspense fallback={<VideoLibraryLoading />}>
       <VideoLibraryPage />
     </Suspense>
   );

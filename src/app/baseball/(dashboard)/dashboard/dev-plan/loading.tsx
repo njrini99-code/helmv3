@@ -5,32 +5,38 @@ import { Skeleton } from '@/components/ui/skeleton';
 // useNotifications() unconditionally (before its own redesign-mode branch),
 // opening a realtime Supabase subscription on every route-transition mount
 // of this skeleton for a screen about to render its own header anyway.
-// Mirrors golf's tasks/loading.tsx convention.
+// Wrapped in the same `mx-auto w-full max-w-[880px] px-4 py-8 sm:px-6
+// lg:py-10` shell DevPlanClient's real masthead + content render inside, so
+// the column doesn't snap narrower once real data mounts (mirrors golf's
+// tasks/loading.tsx convention for the header treatment itself).
 export default function Loading() {
   return (
-    <>
-      <div className="px-4 pt-6 pb-1 sm:px-6 lg:px-8" role="status" aria-busy="true" aria-live="polite">
-        <span className="sr-only">Loading My Development Plan…</span>
-        <Skeleton className="h-8 w-64 rounded-lg" />
-        <Skeleton className="mt-2 h-4 w-80 rounded-lg" />
-      </div>
-      <div className="p-4 md:p-8 space-y-6">
-        {/* Progress overview skeleton */}
+    <div
+      className="mx-auto w-full max-w-[880px] px-4 py-8 sm:px-6 lg:py-10"
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="sr-only">Loading My Development Plan…</span>
+      <Skeleton className="h-3 w-48 rounded-lg" />
+      <Skeleton className="mt-3 h-8 w-64 rounded-lg" />
+      <Skeleton className="mt-2 h-4 w-80 rounded-lg" />
+
+      <div className="mt-8 space-y-6">
+        {/* Progress overview skeleton — RuledStatLine-shaped (label + numeric
+            row), never a ring: the real "Progress" card shows completion as
+            text via RuledStatLine, not a circular gauge. */}
         <Card variant="glass">
           <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Circular progress ring */}
-              <Skeleton className="w-28 h-28 rounded-full flex-shrink-0" />
-              {/* Stats grid */}
-              <div className="flex-1 grid grid-cols-3 gap-4 w-full">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="space-y-2 text-center sm:text-left">
-                    <Skeleton className="h-3 w-16 mx-auto sm:mx-0" />
-                    <Skeleton className="h-8 w-10 mx-auto sm:mx-0" />
-                    <Skeleton className="h-3 w-24 mx-auto sm:mx-0" />
-                  </div>
-                ))}
-              </div>
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="mt-3 h-9 w-16" />
+            <div className="mt-8 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-7 w-10" />
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -67,6 +73,6 @@ export default function Loading() {
           ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }

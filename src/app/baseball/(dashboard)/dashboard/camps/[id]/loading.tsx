@@ -5,8 +5,16 @@ const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 /**
  * Route-level loading skeleton for Camp Details (Lane 4 · THE WAR ROOM, clay
- * ink — coaches manage the camp roster from here). Mirrors CampDetailClient's
- * own `CampDetailSkeleton` (masthead + info card + stat tiles + roster list).
+ * ink — coaches manage the camp roster from here).
+ *
+ * page.tsx only performs a server-side auth check (no data fetch); all camp +
+ * registration data loads client-side in CampDetailClient, which shows its OWN
+ * `CampDetailSkeleton` (masthead + info card + 4 stat tiles, no roster list)
+ * while that fetch is in flight. This file is deliberately kept identical in
+ * shape to that skeleton — masthead + info card + stat tiles only, no roster
+ * rows — so the route-transition flash and the client's own loading state
+ * read as ONE skeleton instead of a roster section popping in, then out,
+ * then back in with real data.
  */
 export default function CampDetailLoading() {
   return (
@@ -25,29 +33,10 @@ export default function CampDetailLoading() {
         {[0, 1, 2, 3].map((i) => (
           <PaperCard key={i} className="p-4">
             <Skeleton variant="text" width="60%" height={11} className="mb-2" />
-            <Skeleton variant="text" width="30%" height={22} />
+            <Skeleton variant="text" width="40%" height={28} />
           </PaperCard>
         ))}
       </div>
-
-      <PaperCard className="overflow-hidden p-0">
-        <div className="flex items-center justify-between border-b border-[color:var(--hairline)] px-6 py-4">
-          <Skeleton variant="text" width={96} height={18} />
-          <Skeleton variant="rectangular" width={180} height={32} className="rounded-lg" />
-        </div>
-        <div className="divide-y divide-[color:var(--hairline)]">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center gap-4 px-6 py-4">
-              <Skeleton variant="circular" width={40} height={40} />
-              <div className="flex-1 space-y-1.5">
-                <Skeleton variant="text" width="30%" height={16} />
-                <Skeleton variant="text" width="50%" height={12} />
-              </div>
-              <Skeleton variant="rectangular" width={80} height={24} className="rounded-full" />
-            </div>
-          ))}
-        </div>
-      </PaperCard>
     </div>
   );
 }

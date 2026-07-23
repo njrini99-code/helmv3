@@ -257,24 +257,24 @@ export function FairwayExpenseSummary({
 
               return (
                 <div key={category} className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <div className="h-3 w-3 rounded-full" style={{ backgroundColor: config.color }} />
                       <span className="font-fw-sans text-body-sm font-medium text-text-secondary">
                         {config.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
                         {formatCurrency(spent)}
                       </span>
                       {editingBudget === category ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-1">
                           <Input
                             type="number"
                             value={budgetValue}
                             onChange={(e) => setBudgetValue(e.target.value)}
-                            className="w-20 min-h-0 px-2 py-1 text-body-sm"
+                            className="w-16 min-w-0 min-h-0 px-2 py-1 text-body-sm sm:w-20"
                             placeholder="Budget"
                             aria-label={`Budget for ${config.label}`}
                             disabled={savingBudget}

@@ -1,92 +1,111 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { PaperCard } from '@/components/baseball/living-annual';
 
+/**
+ * Player stats loading skeleton — mirrors the real page.tsx (same route):
+ * breadcrumb + h1 header (no avatar) → conditional 2/4-col stat-card row →
+ * a SeasonStatsTable-shaped card (tab toggle + season/export controls +
+ * table) → a game-log heading + PlayerGameLog-shaped card. No avatar
+ * circle, no charts, no "Session History" list — none of those exist on
+ * this page.
+ */
 export default function PlayerStatsLoading() {
   return (
     <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Header */}
-        <div className="mb-6">
-          <Skeleton className="h-8 w-32 mb-4" />
-          <div className="flex items-center gap-4">
-            <Skeleton className="w-16 h-16 rounded-full" />
-            <div>
-              <Skeleton className="h-8 w-48 mb-2" />
-              <Skeleton className="h-4 w-64" />
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-3" />
+              <Skeleton className="h-4 w-10" />
             </div>
+            <Skeleton className="h-8 w-48 mb-1.5" />
+            <Skeleton className="h-4 w-40" />
           </div>
+          <Skeleton className="h-4 w-24" />
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        {/* Season stats summary cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <PaperCard key={i} className="p-4" grain={false}>
-              <Skeleton className="h-3 w-16 mb-2" />
-              <Skeleton className="h-6 w-20" />
+            <PaperCard key={i} className="p-4 text-center" grain={false}>
+              <Skeleton className="h-3 w-10 mx-auto mb-2" />
+              <Skeleton className="h-7 w-14 mx-auto" />
             </PaperCard>
           ))}
         </div>
 
-        {/* Stats Overview Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <PaperCard key={i} className="p-4" grain={false}>
-              <Skeleton className="h-3 w-12 mb-2" />
-              <Skeleton className="h-8 w-16 mb-2" />
-              <div className="pt-2 border-t border-warm-100">
-                <Skeleton className="h-3 w-16 mb-1" />
-                <Skeleton className="h-4 w-12" />
-              </div>
-            </PaperCard>
-          ))}
-        </div>
-
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <PaperCard className="p-6" grain={false}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <Skeleton className="h-6 w-40 mb-1" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-              <Skeleton className="h-8 w-32" />
+        {/* Full season stats table */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
+              <Skeleton className="h-7 w-20 rounded-lg" />
+              <Skeleton className="h-7 w-20 rounded-lg" />
             </div>
-            <Skeleton className="h-64 w-full rounded-lg" />
-          </PaperCard>
-          <PaperCard className="p-6" grain={false}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <Skeleton className="h-6 w-40 mb-1" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            </div>
-            <Skeleton className="h-64 w-full rounded-lg" />
-          </PaperCard>
-        </div>
-
-        {/* Session History */}
-        <PaperCard className="overflow-hidden" grain={false}>
-          <div className="px-6 py-4 border-b border-warm-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <Skeleton className="h-6 w-40 mb-1" />
-                <Skeleton className="h-4 w-48" />
-              </div>
-              <Skeleton className="h-8 w-40" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-7 w-16 rounded-lg" />
+              <Skeleton className="h-7 w-20 rounded-lg" />
             </div>
           </div>
-          <div className="divide-y divide-warm-100">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
+          <PaperCard className="overflow-hidden" grain={false}>
+            <div className="px-4 py-3 border-b border-warm-100 flex items-center gap-6">
+              <Skeleton className="h-3 w-16" />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-3 w-8" />
+              ))}
+            </div>
+            <div className="divide-y divide-warm-50">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="px-4 py-2.5 flex items-center gap-6">
+                  <Skeleton className="h-4 w-24" />
+                  {Array.from({ length: 6 }).map((_, j) => (
+                    <Skeleton key={j} className="h-4 w-8" />
+                  ))}
                 </div>
-                <Skeleton className="h-4 w-20" />
+              ))}
+            </div>
+          </PaperCard>
+        </div>
+
+        {/* Game log */}
+        <div>
+          <Skeleton className="h-6 w-40 mb-4" />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
+                <Skeleton className="h-7 w-20 rounded-lg" />
+                <Skeleton className="h-7 w-20 rounded-lg" />
               </div>
-            ))}
+              <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
+                <Skeleton className="h-6 w-10 rounded-lg" />
+                <Skeleton className="h-6 w-14 rounded-lg" />
+                <Skeleton className="h-6 w-20 rounded-lg" />
+              </div>
+            </div>
+            <PaperCard className="overflow-hidden" grain={false}>
+              <div className="px-4 py-2.5 border-b border-warm-100 flex items-center gap-4">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-20" />
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-3 w-6" />
+                ))}
+              </div>
+              <div className="divide-y divide-warm-50">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="px-4 py-2 flex items-center gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <Skeleton key={j} className="h-4 w-6" />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </PaperCard>
           </div>
-        </PaperCard>
+        </div>
       </div>
     </div>
   );
