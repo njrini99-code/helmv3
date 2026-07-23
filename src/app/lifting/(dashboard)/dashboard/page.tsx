@@ -6,6 +6,7 @@ import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { SportTabBar } from '@/components/lifting/shell/SportTabBar';
 import { Card } from '@/components/ui/card';
 import { SectionMasthead, RuledStatLine } from '@/components/baseball/living-annual';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import {
   Activity,
   ClipboardList,
@@ -249,16 +250,19 @@ export default async function LiftingDashboardPage({ searchParams }: PageProps) 
                 ))}
               </div>
             ) : access.isCoach ? (
-              <div className="text-center py-6">
-                <ClipboardList className="w-8 h-8 text-warm-300 mx-auto mb-2" />
-                <p className="text-sm text-warm-500">No teams assigned yet.</p>
-                <Link
-                  href="/lifting/dashboard/settings"
-                  className="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1 inline-block"
-                >
-                  Add teams in settings →
-                </Link>
-              </div>
+              <EmptyState
+                variant="subtle"
+                icon={<ClipboardList />}
+                title="No teams assigned yet."
+                action={
+                  <Link
+                    href="/lifting/dashboard/settings"
+                    className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    Add teams in settings →
+                  </Link>
+                }
+              />
             ) : (
               <div className="space-y-2">
                 <p className="text-sm text-warm-600">

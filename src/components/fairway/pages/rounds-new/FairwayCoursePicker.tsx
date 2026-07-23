@@ -44,7 +44,7 @@ import { useToast } from '@/components/ui/sonner';
 import {
   IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
-import { Skeleton } from '@/components/fairway/feedback';
+import { Skeleton, EmptyState } from '@/components/fairway/feedback';
 import { CourseCard } from '@/components/golf/courses/CourseCard';
 import { formatCourseName } from '@/components/golf/courses/CourseImage';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
@@ -402,18 +402,18 @@ function CoursesStage({
   if (q) {
     if (filtered.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-          <p className="font-fw-sans text-body text-text-secondary">
-            No courses match “{q}”.
-          </p>
-          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-            Add it to the shared library so it’s there next time.
-          </p>
-          <Button variant="primary" className="mt-5 min-w-0" onClick={onCreate}>
-            <IconPlus size={16} aria-hidden />
-            <span className="truncate">Add “{q}”</span>
-          </Button>
-        </div>
+        <EmptyState
+          variant="subtle"
+          icon={<IconFlag aria-hidden />}
+          title={`No courses match “${q}”.`}
+          description="Add it to the shared library so it’s there next time."
+          action={
+            <Button variant="primary" className="min-w-0" onClick={onCreate}>
+              <IconPlus size={16} aria-hidden />
+              <span className="truncate">Add “{q}”</span>
+            </Button>
+          }
+        />
       );
     }
     return (
@@ -633,20 +633,18 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
 
 function EmptyCourses({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-      <span className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-accent-50 text-accent-700">
-        <IconFlag size={24} aria-hidden />
-      </span>
-      <h2 className="font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary">
-        No courses yet
-      </h2>
-      <p className="mt-2 max-w-sm font-fw-sans text-body-sm text-text-tertiary">
-        Add the first course to the shared library — everyone on your team can play it from here.
-      </p>
-      <Button variant="primary" className="mt-6" onClick={onCreate}>
-        <IconPlus size={16} aria-hidden /> Add a course
-      </Button>
-    </div>
+    <EmptyState
+      variant="default"
+      className="flex-1"
+      icon={<IconFlag aria-hidden />}
+      title="No courses yet"
+      description="Add the first course to the shared library — everyone on your team can play it from here."
+      action={
+        <Button variant="primary" onClick={onCreate}>
+          <IconPlus size={16} aria-hidden /> Add a course
+        </Button>
+      }
+    />
   );
 }
 
@@ -666,18 +664,17 @@ function TeesStage({
       {loading ? (
         <SkeletonRows />
       ) : tees.length === 0 ? (
-        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-          <span className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-accent-50 text-accent-700">
-            <IconFlag size={20} aria-hidden />
-          </span>
-          <p className="font-fw-sans text-body font-medium text-text-primary">No tee sets yet</p>
-          <p className="mt-1 max-w-sm font-fw-sans text-body-sm text-text-tertiary">
-            Add the tee you played to start the round and grow the course for your team.
-          </p>
-          <Button variant="primary" className="mt-5" onClick={onAddTee}>
-            <IconPlus size={16} aria-hidden /> Add a tee set
-          </Button>
-        </div>
+        <EmptyState
+          variant="subtle"
+          icon={<IconFlag aria-hidden />}
+          title="No tee sets yet"
+          description="Add the tee you played to start the round and grow the course for your team."
+          action={
+            <Button variant="primary" onClick={onAddTee}>
+              <IconPlus size={16} aria-hidden /> Add a tee set
+            </Button>
+          }
+        />
       ) : (
         <>
           <ul className="space-y-2">

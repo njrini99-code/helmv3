@@ -13,7 +13,13 @@ import { fairwayScope } from '@/lib/redesign/flag';
  */
 export default function CommandCenterLoading() {
   return (
-    <div className={fairwayScope('min-h-full')}>
+    <div
+      className={fairwayScope('min-h-full')}
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="sr-only">Loading command center…</span>
       <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-8 sm:px-6 lg:px-8">
         {/* Masthead line + quick actions */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

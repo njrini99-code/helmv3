@@ -22,6 +22,7 @@ import { Input } from '@/components/fairway/forms/Input';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { openExternalUrl, isNativeApp } from '@/lib/utils/capacitor';
 import { cn } from '@/lib/utils';
 import {
@@ -361,9 +362,12 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
           {loadError}
         </InlineNotice>
       ) : docs.length === 0 && !pendingFile ? (
-        <p className="font-fw-sans text-body-sm text-text-tertiary">
-          No documents yet. Upload notes, schedules, transcripts, or film for this prospect.
-        </p>
+        <EmptyState
+          variant="subtle"
+          icon={FileText}
+          title="No documents yet"
+          description="Upload notes, schedules, transcripts, or film for this prospect."
+        />
       ) : docs.length > 0 && visibleDocs.length === 0 ? (
         // A filter is active but hides every row (the All fallback effect will
         // also clear it if the category itself emptied).

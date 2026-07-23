@@ -96,6 +96,8 @@ import {
   InlineNotice,
   fairwayToast,
 } from '@/components/fairway';
+// Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 const EM_DASH = '—';
 
@@ -594,11 +596,12 @@ export function FairwaySettingsGeneral() {
     return (
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
         <ViewHeader eyebrow="Settings" title="Settings" />
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 space-y-6" role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading settings…</span>
           {[1, 2, 3].map((i) => (
             <Surface key={i} elevation="border" padding="lg">
-              <div className="h-5 w-40 rounded bg-surface-sunken" />
-              <div className="mt-3 h-3 w-64 rounded bg-surface-sunken" />
+              <Skeleton className="h-5 w-40 rounded" />
+              <Skeleton className="mt-3 h-3 w-64 rounded" />
             </Surface>
           ))}
         </div>
@@ -1414,9 +1417,10 @@ function NotificationsPanel() {
   if (!prefs) {
     return (
       <SectionCard icon={<IconBell size={18} aria-hidden />} title="Notifications">
-        <div className="space-y-3">
+        <div className="space-y-3" role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading notification preferences…</span>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-10 w-full rounded-fw-sm bg-surface-sunken" />
+            <Skeleton key={i} className="h-10 w-full" />
           ))}
         </div>
       </SectionCard>
@@ -1623,7 +1627,10 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   if (!loaded) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Scoring & format">
-        <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+        <div role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading scoring and format settings…</span>
+          <Skeleton className="h-8 w-full" />
+        </div>
       </SectionCard>
     );
   }
@@ -2058,7 +2065,10 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   if (!loaded) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Team settings">
-        <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+        <div role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading team settings…</span>
+          <Skeleton className="h-8 w-full" />
+        </div>
       </SectionCard>
     );
   }
@@ -2226,7 +2236,10 @@ export function InviteSettingsPanel() {
   if (!loaded) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Invite settings">
-        <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+        <div role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading invite settings…</span>
+          <Skeleton className="h-8 w-full" />
+        </div>
       </SectionCard>
     );
   }

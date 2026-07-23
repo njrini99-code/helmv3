@@ -263,7 +263,8 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
           className="border-t border-border-subtle px-5 pb-5 pt-4"
         >
           {loadingDetail ? (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3" role="status" aria-busy="true" aria-live="polite">
+              <span className="sr-only">Loading announcement details…</span>
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-4/5" />
               <Skeleton className="h-4 w-2/3" />

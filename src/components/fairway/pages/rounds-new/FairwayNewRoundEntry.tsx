@@ -517,7 +517,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                                 : 'border-border-subtle bg-surface hover:border-border-strong hover:bg-surface-tint',
                             )}
                           >
-                            {isSel && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-accent-500" />}
+                            {/* Selection is carried by the accent border + bg-accent-50
+                                + check icon below — no redundant color rail. */}
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">

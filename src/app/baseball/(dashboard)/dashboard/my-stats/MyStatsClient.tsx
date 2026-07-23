@@ -49,7 +49,8 @@ interface PlayerInfo {
 
 function MyStatsSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading your stats…</span>
       <div className="h-4 w-40 overflow-hidden rounded-fw-sm">
         <div className="h-full w-full skeleton-shimmer" />
       </div>
