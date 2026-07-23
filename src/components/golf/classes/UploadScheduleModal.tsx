@@ -4,8 +4,10 @@ import { useState, useRef } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { IconX, IconUpload, IconFileText, IconSparkles } from '@/components/icons';
+import { IconX, IconUpload, IconFileText, IconImage, IconSparkles } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
+import { extractClassesFromScheduleImage } from '@/app/golf/actions/schedule-image';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   Drawer,
   DrawerContent,
@@ -31,6 +33,126 @@ interface UploadScheduleModalProps {
 // recoverable by switching to TXT/paste; a parse failure usually means a
 // scanned/image-only PDF.
 const PDFJS_LOAD_ERROR = 'pdfjs-load-failed';
+
+// ============================================================================
+// Screenshot / photo import
+// ============================================================================
+
+type ScheduleImage = { base64: string; mediaType: string };
+
+// Formats the vision API accepts directly. HEIC isn't among them — iOS
+// transcodes HEIC to JPEG at pick time because the accept list excludes it,
+// and Safari can decode a dragged HEIC via createImageBitmap below.
+const VISION_MEDIA_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+
+// Claude vision downscales anything past ~1568px on the long edge, so
+// re-encoding client-side costs nothing in fidelity and keeps the upload
+// small (also bakes in EXIF rotation for phone photos).
+const SINGLE_MAX_EDGE = 1568;
+// A capture taller than this ratio is a scrolling screenshot: scaling it to
+// one frame would crush the text, so it's sliced into overlapping segments
+// the model is told to merge.
+const TALL_ASPECT = 2.4;
+const SLICE_WIDTH = 1092;
+const SLICE_HEIGHT = 1568;
+const SLICE_OVERLAP = 120;
+const MAX_SLICES = 6;
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve(dataUrl.slice(dataUrl.indexOf(',') + 1));
+    };
+    reader.onerror = () => reject(new Error('Failed to read the image file.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function canvasToJpegBase64(canvas: HTMLCanvasElement): Promise<string> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) =>
+        blob ? resolve(blobToBase64(blob)) : reject(new Error('Failed to encode the image.')),
+      'image/jpeg',
+      0.9,
+    );
+  });
+}
+
+function drawSlice(
+  bitmap: ImageBitmap,
+  srcY: number,
+  srcH: number,
+  destW: number,
+  destH: number,
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = destW;
+  canvas.height = destH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Failed to process the image in this browser.');
+  // White matte so transparent-background PNGs stay readable as JPEG.
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, destW, destH);
+  ctx.drawImage(bitmap, 0, srcY, bitmap.width, srcH, 0, 0, destW, destH);
+  return canvas;
+}
+
+/** Downscale/re-encode a schedule image; slice tall scrolling captures. */
+async function prepareScheduleImages(file: File): Promise<ScheduleImage[]> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch {
+    // Browser can't decode this format (e.g. HEIC outside Safari). Send the
+    // original untouched when the API supports it; otherwise fail clearly.
+    if (VISION_MEDIA_TYPES.has(file.type)) {
+      return [{ base64: await blobToBase64(file), mediaType: file.type }];
+    }
+    throw new Error(
+      "This image format isn't supported by your browser. Please upload a PNG or JPG (a screenshot works great).",
+    );
+  }
+
+  try {
+    const { width, height } = bitmap;
+    if (width < 1 || height < 1) {
+      throw new Error('This image appears to be empty.');
+    }
+
+    if (height / width <= TALL_ASPECT) {
+      const scale = Math.min(1, SINGLE_MAX_EDGE / Math.max(width, height));
+      const destW = Math.max(1, Math.round(width * scale));
+      const destH = Math.max(1, Math.round(height * scale));
+      const canvas = drawSlice(bitmap, 0, height, destW, destH);
+      return [{ base64: await canvasToJpegBase64(canvas), mediaType: 'image/jpeg' }];
+    }
+
+    // Tall scrolling capture → overlapping slices, capped so extreme lengths
+    // scale down rather than exceeding MAX_SLICES.
+    const maxTotalDestH = MAX_SLICES * SLICE_HEIGHT - (MAX_SLICES - 1) * SLICE_OVERLAP;
+    const scale = Math.min(1, SLICE_WIDTH / width, maxTotalDestH / height);
+    const destW = Math.max(1, Math.round(width * scale));
+    const destTotalH = Math.max(1, Math.round(height * scale));
+
+    const slices: ScheduleImage[] = [];
+    let destY = 0;
+    while (destY < destTotalH) {
+      const remaining = destTotalH - destY;
+      // A tail shorter than the overlap is already fully covered.
+      if (slices.length > 0 && remaining <= SLICE_OVERLAP) break;
+      const destH = Math.min(SLICE_HEIGHT, remaining);
+      const canvas = drawSlice(bitmap, destY / scale, destH / scale, destW, destH);
+      slices.push({ base64: await canvasToJpegBase64(canvas), mediaType: 'image/jpeg' });
+      destY += SLICE_HEIGHT - SLICE_OVERLAP;
+    }
+    return slices;
+  } finally {
+    bitmap.close();
+  }
+}
 
 // Load PDF.js from CDN (avoids Vercel native dependency issues). The runtime
 // pdfjs-dist in node_modules is a transitive *dev* dependency on a different
@@ -81,6 +203,7 @@ const loadPdfJs = async (): Promise<PdfJsLib> => {
 
 export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadScheduleModalProps) {
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [pasteMode, setPasteMode] = useState(false);
@@ -172,9 +295,36 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
 
   const processFile = async (file: File) => {
     setLoading(true);
+    setLoadingMessage('Processing...');
     setError('');
 
     try {
+      const isImage =
+        file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|heif)$/i.test(file.name);
+
+      if (isImage) {
+        setLoadingMessage('Reading your schedule...');
+        const images = await prepareScheduleImages(file);
+        const result = await extractClassesFromScheduleImage(images);
+
+        if (!result.success || !result.classes || result.classes.length === 0) {
+          setError(
+            result.error ??
+              'No classes could be read from this image. Try a clearer screenshot, or paste your schedule text instead.',
+          );
+          return;
+        }
+
+        // Surface per-class review notes (cropped rows, low-confidence times)
+        // without blocking the confirm step, where the player can fix them.
+        for (const warning of result.warnings ?? []) {
+          fairwayToast.warning(warning);
+        }
+
+        onParsed(result.classes);
+        return;
+      }
+
       let text = '';
 
       if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
@@ -182,7 +332,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
         text = await file.text();
       } else {
-        throw new Error('Unsupported file type. Please upload a PDF or TXT file.');
+        throw new Error('Unsupported file type. Please upload a screenshot, PDF, or TXT file.');
       }
 
       const classes = parseScheduleText(text);
@@ -266,7 +416,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <DrawerTitle id="upload-schedule-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
                 Import Schedule
               </DrawerTitle>
-              <p className="text-sm text-text-tertiary">Upload or paste your class schedule</p>
+              <p className="text-sm text-text-tertiary">Screenshot, upload, or paste your class schedule</p>
             </div>
           </div>
           <IconButton variant="default"
@@ -312,7 +462,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             <div
               role="button"
               tabIndex={0}
-              aria-label="Upload a PDF or TXT schedule file. Press Enter or Space to browse files, or drop a file here."
+              aria-label="Upload a screenshot, PDF, or TXT schedule file. Press Enter or Space to browse files, or drop a file here."
               aria-disabled={loading || undefined}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -337,7 +487,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <Input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.txt"
+                accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -355,7 +505,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               </div>
 
               <p className="text-text-primary font-medium mb-1">
-                {loading ? 'Processing...' : 'Drop your PDF or TXT file here'}
+                {loading ? loadingMessage || 'Processing...' : 'Drop a screenshot of your schedule here'}
               </p>
               <p className="text-sm text-text-tertiary mb-4">
                 or click to browse files
@@ -363,8 +513,12 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
 
               <div className="flex items-center justify-center gap-4 text-xs text-text-tertiary">
                 <span className="flex items-center gap-1">
+                  <IconImage size={14} />
+                  Screenshots & photos
+                </span>
+                <span className="flex items-center gap-1">
                   <IconFileText size={14} />
-                  PDF & TXT supported
+                  PDF & TXT
                 </span>
               </div>
             </div>
@@ -404,11 +558,11 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <div className="mt-6 p-4 bg-surface-sunken rounded-xl">
             <p className="text-sm font-medium text-text-secondary mb-2">Tips for best results:</p>
             <ul className="text-xs text-text-tertiary space-y-1">
-              <li>• Export your schedule from your university portal as PDF or TXT</li>
-              <li>• Include course codes like "BUAD 123" or "MATH201"</li>
-              <li>• Days can be formatted as MWF, TTh, MW, etc.</li>
-              <li>• Times like "9:30AM - 10:45AM" work best</li>
-              <li>• Paste Text option works great for most schedules</li>
+              <li>• Screenshot your schedule right from your student portal — Workday, Banner, PeopleSoft, and weekly calendar views all work</li>
+              <li>• Capture the whole schedule; a scrolling screenshot is fine</li>
+              <li>• Photos of a printed schedule work too — shoot straight-on in good light</li>
+              <li>• PDF, TXT, and Paste Text are also supported</li>
+              <li>• You'll review every class before anything is saved</li>
             </ul>
           </div>
         </div>
