@@ -9,10 +9,13 @@
  * the content column (form-level errors, page-level notices, "heads up" rows).
  *
  * Anatomy (§6): tone icon chip · title (label weight) · message (body) ·
- * optional action slot · optional dismiss. A tone-colored left status bar gives
- * the meaning a non-color channel partner (icon + bar + text — color is never
- * the only signal, §7.4). Surface is a soft tinted matte fill with a single
- * hairline border (never border + shadow at rest, §4.1).
+ * optional action slot · optional dismiss. The tone icon (a distinct glyph per
+ * tone, not just a color) is the non-color meaning channel partner to the tint
+ * + text — color is never the only signal, §7.4. No colored side-rail: the
+ * founder-banned "card with a colored left border stripe" idiom was removed
+ * from this primitive (it rendered on every InlineNotice call site — most
+ * visibly the Tasks page overdue banner). Surface is a soft tinted matte fill
+ * with a single hairline border (never border + shadow at rest, §4.1).
  *
  * A11y: assertive tones (warning/danger) render `role="alert"` (interrupts);
  * quiet tones (info/success) render `role="status"` + `aria-live="polite"`.
@@ -85,18 +88,11 @@ export const InlineNotice = forwardRef<HTMLDivElement, InlineNoticeProps>(
             exit="exit"
             className={cn(
               'relative isolate flex gap-3 overflow-hidden rounded-card border p-4 font-fw-sans',
-              'pl-5', // room for the status bar
               t.surface,
               t.border,
               className,
             )}
           >
-            {/* tone-colored left status bar — the non-color meaning channel */}
-            <span
-              aria-hidden="true"
-              className={cn('absolute inset-y-0 left-0 w-1', t.bar)}
-            />
-
             {Icon && (
               <Icon
                 aria-hidden="true"

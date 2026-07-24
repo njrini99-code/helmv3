@@ -41,14 +41,18 @@ describe('GenomeFingerprintTeaser — radar axis labels are never clipped by the
 });
 
 /* ─────────────────────────────────────────────────────────────────────────
- * TodayCard — Wave 3 player-home premium pass (Nick's flagged element)
+ * TodayCard — Wave 3 player-home premium pass (Nick's flagged element) +
+ * the DaySchedule wave (Action center removal)
  * ----------------------------------------------------------------------------
  * The old "What needs you" subtitle + populated "N thing(s) need(s) you"
  * preview row (a hero-style restatement of the SAME count the Action center
- * section already shows in full below it) is gone. The card's body now
- * always shows the player's real today content — next event + lead task —
- * regardless of whether a Hub feed (`hubSummary`) is present; `hubSummary`
- * only gates the footer's "See details" link.
+ * section used to show in full below it) is gone. The card's body always
+ * shows the player's real today content — next event + lead task.
+ *
+ * The Action center section itself is also gone (replaced by the DaySchedule
+ * card further down the page) — TodayCard no longer accepts a `hubSummary`
+ * prop or gates a "See details" jump-link on it. The footer is now a single,
+ * always-honest link straight to the full calendar.
  * ──────────────────────────────────────────────────────────────────────── */
 
 const EVENT: TodayEvent = {
@@ -69,14 +73,8 @@ const TASK: ActionItem = {
 };
 
 describe('TodayCard — no restated "N thing(s) need(s) you" preview row', () => {
-  it('renders the real next event + lead task even when a hubSummary is present', () => {
-    render(
-      <TodayCard
-        events={[EVENT]}
-        actionItems={[TASK]}
-        hubSummary={{ visible: true, count: 3 }}
-      />,
-    );
+  it('renders the real next event + lead task', () => {
+    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
 
     expect(screen.getByText('Team practice')).toBeInTheDocument();
     expect(screen.getByText('Submit round')).toBeInTheDocument();
@@ -85,19 +83,27 @@ describe('TodayCard — no restated "N thing(s) need(s) you" preview row', () =>
     expect(screen.queryByText(/what needs you/i)).not.toBeInTheDocument();
   });
 
-  it('shows the honest "Nothing scheduled" empty state when there is no local today content, even with a visible hubSummary', () => {
-    render(<TodayCard events={[]} actionItems={[]} hubSummary={{ visible: true, count: 2 }} />);
+  it('shows the honest "Nothing scheduled" empty state when there is no local today content', () => {
+    render(<TodayCard events={[]} actionItems={[]} />);
 
     expect(screen.getByText('Nothing scheduled')).toBeInTheDocument();
     expect(screen.queryByText(/things? needs? you/i)).not.toBeInTheDocument();
   });
+});
 
-  it('gates the "See details" CTA on hubSummary.visible, independent of local today content', () => {
-    render(<TodayCard events={[]} actionItems={[]} hubSummary={{ visible: true, count: 2 }} />);
-    expect(screen.getByRole('link', { name: /see details/i })).toBeInTheDocument();
+describe('TodayCard — footer always links to the full calendar, never a stale in-page anchor', () => {
+  it('renders a "Full calendar" link regardless of today content', () => {
+    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
+    const link = screen.getByRole('link', { name: /full calendar/i });
+    expect(link).toHaveAttribute('href', '/golf/dashboard/calendar');
   });
 
-  it('renders no "See details" CTA when there is no hubSummary (teamless player)', () => {
+  it('still renders the calendar link in the honest-empty state (never a dead-end card)', () => {
+    render(<TodayCard events={[]} actionItems={[]} />);
+    expect(screen.getByRole('link', { name: /full calendar/i })).toBeInTheDocument();
+  });
+
+  it('never links to the removed #action-center anchor', () => {
     render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
     expect(screen.queryByRole('link', { name: /see details/i })).not.toBeInTheDocument();
   });

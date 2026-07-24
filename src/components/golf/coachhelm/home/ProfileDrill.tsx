@@ -10,16 +10,33 @@
  * `FairwayTrendBrain`) below the genome — both the bento's "Game profile" AND
  * "Trend" cells open here, since they were always ONE section in the legacy
  * cockpit and neither is its own named drill in spec §5.3's view list.
+ *
+ * Wave: player Game Fingerprint port. When `fingerprint` is present (the
+ * coachhelm page's `?view=profile` load fetches the player's OWN
+ * `getPlayerFingerprint` — see player-fingerprint.ts's `access.reason ===
+ * 'self'` branch), this drill leads with the SAME rich composition the coach
+ * sees at `/dashboard/players/[playerId]/game` — composite hero, six-card
+ * category row, per-category sections + evidence insights — behind a
+ * "Game Fingerprint" / "Genome" tab pair (mirrors the coach route's own
+ * "Game Fingerprint" / "Scouting Report" Segmented pair; the player has no
+ * Scouting Report equivalent, so Genome — the prior sole content of this
+ * drill — takes that slot instead of being dropped). `fingerprint` absent/null
+ * (fetch failed, or not yet backed by enough data) degrades to the prior
+ * Genome-only behavior with zero layout change.
  * ========================================================================== */
 
+import { useState } from 'react';
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
 import { InstrumentPanel, Readout, Surface, Chip, Button, Skeleton, InsufficientData } from '@/components/fairway';
+import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
+import { FairwayPlayerGameFingerprint } from '@/components/fairway/pages/player-game';
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
 import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { expectedEmptyStateCopy } from '@/lib/view-state/expected-empty-states';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 
 const GenomeRadar = nextDynamic(
   () => import('@/components/fairway').then((m) => ({ default: m.GenomeRadar })),
@@ -56,9 +73,22 @@ export interface ProfileDrillProps {
   playerState?: string;
   playerName?: string;
   v3EmptyCodes?: { profile?: string | null; trend?: string | null };
+  /** The player's OWN Game Fingerprint — same shape/composition the coach's
+   *  `/dashboard/players/[playerId]/game` page renders, fetched via
+   *  `getPlayerFingerprint` with the player-self auth branch. Null/undefined
+   *  (fetch failed, or `access.reason` couldn't resolve `self`) degrades to
+   *  the prior Genome-only drill — no tab pair, no layout change. */
+  fingerprint?: PlayerFingerprint | null;
 }
 
 const GENOME_ROUND_FLOOR = 8;
+
+type ProfileTab = 'fingerprint' | 'genome';
+
+const PROFILE_TAB_OPTIONS: SegmentedOption<ProfileTab>[] = [
+  { value: 'fingerprint', label: 'Game Fingerprint' },
+  { value: 'genome', label: 'Genome' },
+];
 
 export function ProfileDrill({
   axes,
@@ -72,12 +102,14 @@ export function ProfileDrill({
   playerState,
   playerName,
   v3EmptyCodes = {},
+  fingerprint = null,
 }: ProfileDrillProps) {
   const { home } = useStage();
   const hasGenome = axes.length > 0;
+  const hasFingerprint = fingerprint != null;
+  const [tab, setTab] = useState<ProfileTab>(hasFingerprint ? 'fingerprint' : 'genome');
 
-  return (
-    <DrillPanel title="Game profile" backLabel="Home" onBack={home}>
+  const genomeSection = (
       <div className="flex flex-col gap-8">
         {hasGenome ? (
           <>
@@ -213,6 +245,27 @@ export function ProfileDrill({
           </p>
         </Surface>
       </div>
+  );
+
+  return (
+    <DrillPanel title="Game profile" backLabel="Home" onBack={home}>
+      {hasFingerprint ? (
+        <div className="flex flex-col gap-6">
+          <Segmented<ProfileTab>
+            options={PROFILE_TAB_OPTIONS}
+            value={tab}
+            onValueChange={setTab}
+            aria-label="Game profile view"
+          />
+          {tab === 'fingerprint' ? (
+            <FairwayPlayerGameFingerprint fingerprint={fingerprint} mode="player" />
+          ) : (
+            genomeSection
+          )}
+        </div>
+      ) : (
+        genomeSection
+      )}
     </DrillPanel>
   );
 }

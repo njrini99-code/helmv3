@@ -127,14 +127,73 @@
  * needed to "unlock" that, the field has always been there.
  *
  * ---------------------------------------------------------------------------
+ * GREEN INSET PUTT-TO-PUTT CONTINUITY (2026-07-24 bugfix — "he hit it
+ * backwards")
+ * ---------------------------------------------------------------------------
+ * A founder-reported screenshot showed a hole where putt 5 finished near
+ * the pin, then putt 6 rendered FARTHER from the pin on the SAME angular
+ * side putt 5 had approached from — reading as "the ball went backward" —
+ * and a holed final putt sat visibly off the flag glyph instead of on it.
+ * Root causes, both in this module:
+ *
+ *   1. MADE-PUTT RADIUS — `true_radius_units` was derived purely from
+ *      `remaining_feet` (`distance_to_hole_after`), never from `putt_made`.
+ *      A made putt whose logged after-distance wasn't exactly 0 (rounding,
+ *      a picked-up-then-marked-made row, etc.) got a small but nonzero
+ *      radius instead of the "definitionally at the pin" radius 0 —
+ *      `resolveInsetGeometry`'s holed-putt exemption (`radius <= 0`) never
+ *      fired for it, so it got floored/fanned like an ordinary near-pin
+ *      miss and rendered visibly off the flag. Fixed: `s.putt_made ===
+ *      true` now forces `true_radius_units` to exactly 0 up front — the
+ *      SAME authoritative signal `PuttingZoom.tsx`'s `classifyPutt` already
+ *      uses to paint the dot green, now also driving where it's drawn.
+ *
+ *   2. ANGLE HAD NO RADIUS AWARENESS — every inset shot's angle was one
+ *      running `insetCumulativeAngle` walk seeded purely by each shot's OWN
+ *      `miss_direction`, entirely independent of whether that shot's real
+ *      distance to the pin (`true_radius_units`, honest and radius-ordered
+ *      on its own) grew or shrank versus the shot before it. Two putts
+ *      logging the same miss direction in a row produced two dots on the
+ *      same angular side regardless of whether the second putt actually
+ *      went IN, came up SHORT, or ran clean PAST the hole — a genuine
+ *      run-by (radius increased) rendered on the same side as the putt
+ *      that set it up, which reads as the ball reversing direction.
+ *
+ *      Fixed: every putt AFTER the green-entry shot now anchors its angle
+ *      to the PREVIOUS inset shot's own angle (not a free-running walk) —
+ *      physically correct, since a putt's start point IS the previous
+ *      putt's end point:
+ *        - finishes CLOSER to the pin than it started → same angular line
+ *          continuing toward the pin (plus the existing small
+ *          break/miss-direction jitter) — the ordinary short/holed case.
+ *        - finishes FARTHER from the pin than it started (a real run-by)
+ *          → the OPPOSITE side of the pin from where it started
+ *          (`angle + π`, plus jitter) — the only geometry consistent with
+ *          "rolled past the hole and kept going."
+ *        - either shot's distance is unlogged → no honest overshoot/short
+ *          signal exists, so this falls back to the same-line case rather
+ *          than fabricate a direction the data doesn't support.
+ *      The green-ENTRY shot itself (the first inset item, an approach shot
+ *      with no prior PUTT to continue from) keeps the original miss-seeded
+ *      free walk, still clamped to `GREEN_INSET_MAX_CUMULATIVE_ANGLE` so it
+ *      alone can never wrap to the far side — only genuine putt-to-putt
+ *      overshoot may do that now. `true_radius_units` itself is untouched
+ *      by any of this — still the exact honest `remaining_feet`-derived (or
+ *      made-putt-zeroed) value, same as every other field this module
+ *      promises never to alter for display purposes alone.
+ *
+ * ---------------------------------------------------------------------------
  * GREEN INSET MIN-SEPARATION (the tap-in bug, + the near-pin floor fix)
  * ---------------------------------------------------------------------------
- * `true_radius_units` is ALWAYS the honest value derived from
- * `remaining_feet` (or a documented positional-only fallback when that's
- * unlogged) and is NEVER altered by anything below — the leader tick always
- * discloses this exact number, and relative distance ordering (a 1-footer's
- * TRUE radius is always less than a 3-footer's) is a static fact of the
- * input data, never touched by the collision-resolve pass.
+ * `true_radius_units` is the honest value derived from `remaining_feet` (or
+ * a documented positional-only fallback when that's unlogged) — EXCEPT for
+ * the `putt_made` override immediately above, which forces it to exactly 0
+ * before this section's own pass ever runs. Either way, by the time this
+ * section sees it, `true_radius_units` is a fixed input it never itself
+ * alters — the leader tick always discloses this exact number, and relative
+ * distance ordering (a 1-footer's TRUE radius is always less than a
+ * 3-footer's) is a static fact of the input data, never touched by the
+ * collision-resolve pass.
  *
  * What CAN differ from `true_radius_units` is where the dot is actually
  * DRAWN (`PlottedInsetShot.x`/`y`), via two combined mechanisms:
@@ -267,8 +326,17 @@ const GREEN_INSET_ANGLE_STEP = (Math.PI / 180) * 40;
 const GREEN_INSET_ANGLE_CENTER_DRIFT = (Math.PI / 180) * 9;
 /** Cumulative angle is clamped to this band so a long run of same-direction
  *  misses can't wrap a shot around to the "far side" of the pin, which
- *  would read as nonsensical. ~153°, well short of a half-wrap. */
+ *  would read as nonsensical. ~153°, well short of a half-wrap. Only
+ *  governs the green-ENTRY shot's own free walk (see PUTT-TO-PUTT
+ *  CONTINUITY above) — a later putt's genuine run-by is explicitly allowed,
+ *  and expected, to cross to the far side via that section's `angle + π`. */
 const GREEN_INSET_MAX_CUMULATIVE_ANGLE = Math.PI * 0.85;
+/** Tolerance (feet) below which two consecutive inset shots' remaining
+ *  distances are treated as "the same" rather than a genuine overshoot —
+ *  guards the run-by angle flip (PUTT-TO-PUTT CONTINUITY, above) against
+ *  flip-flopping on logging noise/rounding rather than a real advance-or-
+ *  overshoot signal. */
+const GREEN_INSET_OVERSHOOT_EPSILON_FEET = 0.3;
 /** Minimum radial gap (inset units) between two shots' TRUE radii — or
  *  between the innermost shot and the pin itself — before the
  *  collision-resolve pass nudges one of them angularly. Sized from the
@@ -941,6 +1009,11 @@ export function plotHole(args: {
   let insetCumulativeAngle = 0;
   let insetPrevMiss: 'left' | 'right' | 'long' | 'short' | null = null;
   let prevInsetFeetRef: number | null = null;
+  /** The previous inset shot's own (pre-collision-resolve) angle — the
+   *  anchor putt-to-putt continuity walks from, see the module doc's
+   *  PUTT-TO-PUTT CONTINUITY section. Meaningless until the first inset
+   *  item sets it (only read once `insetCount > 0`). */
+  let prevInsetAngle = 0;
   let entry_shot_index: number | null = null;
   let insetCount = 0;
 
@@ -1071,16 +1144,27 @@ export function plotHole(args: {
         entry_shot_index = i > 0 ? i - 1 : null;
       }
 
+      // MADE-PUTT RADIUS — `putt_made` is the authoritative make/miss signal
+      // (same field `PuttingZoom.tsx`'s `classifyPutt` keys off to paint the
+      // dot green), so a made putt is pinned to radius EXACTLY 0 regardless
+      // of what `remaining_feet` happens to log (rounding, a picked-up-
+      // then-marked-made row, etc. can leave it a small nonzero value) —
+      // see the module doc's PUTT-TO-PUTT CONTINUITY section, case 1.
+      // Everything below this (the collision-resolve pass) already treats
+      // radius <= 0 as "correctly at the pin," so this is the only place
+      // that needs to know about `putt_made` at all.
       const true_radius_units =
-        n.after_feet !== null
-          ? clamp(n.after_feet / feet_per_unit, 0, GREEN_INSET_BOUNDARY_RADIUS_UNITS)
-          : // Missing distance — a graceful POSITIONAL fallback only. The
-            // displayed `remaining_feet` stays null; nothing here is a
-            // number ever shown to the user.
-            GREEN_INSET_BOUNDARY_RADIUS_UNITS * 0.4;
+        s.putt_made === true
+          ? 0
+          : n.after_feet !== null
+            ? clamp(n.after_feet / feet_per_unit, 0, GREEN_INSET_BOUNDARY_RADIUS_UNITS)
+            : // Missing distance — a graceful POSITIONAL fallback only. The
+              // displayed `remaining_feet` stays null; nothing here is a
+              // number ever shown to the user.
+              GREEN_INSET_BOUNDARY_RADIUS_UNITS * 0.4;
 
       const streakInset = n.miss !== null && n.miss === insetPrevMiss;
-      const angleDelta = lateralDelta(
+      const jitter = lateralDelta(
         n.miss,
         s.shot_number,
         GREEN_INSET_ANGLE_STEP,
@@ -1088,12 +1172,32 @@ export function plotHole(args: {
         streakInset,
         !!s.is_penalty,
       );
-      insetCumulativeAngle = clamp(
-        insetCumulativeAngle + angleDelta,
-        -GREEN_INSET_MAX_CUMULATIVE_ANGLE,
-        GREEN_INSET_MAX_CUMULATIVE_ANGLE,
-      );
       insetPrevMiss = n.miss;
+
+      // PUTT-TO-PUTT CONTINUITY — see the module doc's section of the same
+      // name (case 2). The green-ENTRY shot (no prior PUTT to continue
+      // from) keeps the original miss-seeded free walk, clamped to the
+      // "never wraps to the far side" band. Every putt after it anchors to
+      // the PREVIOUS inset shot's own angle instead — physically correct,
+      // since this putt's start point IS that previous shot's end point —
+      // and flips to the opposite side of the pin (`+ Math.PI`) only when
+      // this shot's own honest distance genuinely grew past where it
+      // started (a real run-by), never for an ordinary short/holed putt.
+      let baseAngle: number;
+      if (insetCount === 0) {
+        insetCumulativeAngle = clamp(
+          insetCumulativeAngle + jitter,
+          -GREEN_INSET_MAX_CUMULATIVE_ANGLE,
+          GREEN_INSET_MAX_CUMULATIVE_ANGLE,
+        );
+        baseAngle = insetCumulativeAngle;
+      } else {
+        const bothDistancesKnown = n.after_feet !== null && prevInsetFeetRef !== null;
+        const isOvershoot =
+          bothDistancesKnown &&
+          n.after_feet! > prevInsetFeetRef! + GREEN_INSET_OVERSHOOT_EPSILON_FEET;
+        baseAngle = prevInsetAngle + (isOvershoot ? Math.PI : 0) + jitter;
+      }
 
       // Prefer the delta from the previous INSET shot's own remaining_feet
       // (accurate putt-to-putt length). When there isn't one — the ball's
@@ -1121,11 +1225,12 @@ export function plotHole(args: {
         remaining_feet: n.after_feet,
         shot_feet,
         true_radius_units,
-        base_angle: insetCumulativeAngle,
+        base_angle: baseAngle,
         symbolic: !!s.is_penalty,
       });
 
       prevInsetFeetRef = n.after_feet;
+      prevInsetAngle = baseAngle;
       insetCount++;
     }
   }

@@ -21,6 +21,7 @@ import {
   pgaReferenceLabel,
   shouldShowTeamMarker,
   teamRelativeText,
+  resolveDisplayScale,
   toScalePct,
 } from './utils';
 
@@ -33,15 +34,22 @@ export function Inline(props: StandingBarProps) {
   if (state === 'empty')   return <InlineEmpty label={props.metric_label} />;
 
   const showTeam = shouldShowTeamMarker(props);
-  const youPct = toScalePct(props.player_value, props.scale);
-  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
+  // Same domain-widening as Card.tsx: props.scale is a typical range, not a
+  // hard bound — never clamp a real value to the edge or off the track.
+  const effectiveScale = resolveDisplayScale(
+    props.scale,
+    [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
+    { symmetric: /^sg_/.test(props.metric_id) },
+  );
+  const youPct = toScalePct(props.player_value, effectiveScale);
+  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
   // P3: omit the reference marker entirely when the anchor is suppressed.
-  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
-  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
+  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, effectiveScale);
+  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction, props.unit);
   // EC-2: suppress the team-relative caption when the team marker is hidden
   // (tiny roster) — same team_n>=5 floor the marker uses.
   const cohortText = showTeam
-    ? teamRelativeText(props.player_value, props.team_avg, props.direction)
+    ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
@@ -84,7 +92,18 @@ export function Inline(props: StandingBarProps) {
       </div>
 
       {/* Bar */}
-      <Bar youPct={youPct} teamPct={teamPct} pgaPct={pgaPct} size="inline" />
+      <Bar
+        youPct={youPct}
+        teamPct={teamPct}
+        pgaPct={pgaPct}
+        size="inline"
+        zeroPct={
+          /^sg_/.test(props.metric_id) && effectiveScale.min < 0 && effectiveScale.max > 0
+            ? toScalePct(0, effectiveScale)
+            : null
+        }
+        fill={teamPct !== null ? { fromPct: teamPct, toPct: youPct, tone: delta.tone } : null}
+      />
 
       {/* Cohort text — single line, compact */}
       {props.show_cohort_text !== false && cohortText && (

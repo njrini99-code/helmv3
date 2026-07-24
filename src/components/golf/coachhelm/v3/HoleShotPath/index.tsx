@@ -769,7 +769,12 @@ export function HoleShotPath({
               className="h-full w-full"
               onPointerUp={handleTouchCycle}
             >
-              <Turf showPinFlag={variant.showFlag} size={size} ticks={plot.ticks} />
+              <Turf
+                showPinFlag={variant.showFlag}
+                size={size}
+                ticks={plot.ticks}
+                totalYardage={plot.total_yardage}
+              />
               <Hazards
                 hazards={plot.hazards}
                 staticRender={!variant.interactive}

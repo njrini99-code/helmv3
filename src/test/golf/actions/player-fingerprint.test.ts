@@ -122,6 +122,9 @@ interface SupabaseMockOpts {
   stats?: Queued<Record<string, unknown> | null>;
   rounds?: Queued<Array<Record<string, unknown>>>;
   patterns?: Queued<Array<Record<string, unknown>>>;
+  /** `golf_insight_player_feedback` rows with `rating='dismissed'` — only
+   *  consulted by the aggregator when `access.reason === 'self'`. */
+  dismissedFeedback?: Queued<Array<{ insight_id: string }>>;
 }
 
 function makeSupabaseMock(opts: SupabaseMockOpts) {
@@ -136,6 +139,7 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
   const statsResponse = opts.stats ?? { data: null, error: null };
   const roundsResponse = opts.rounds ?? { data: [], error: null };
   const patternsResponse = opts.patterns ?? { data: [], error: null };
+  const dismissedFeedbackResponse = opts.dismissedFeedback ?? { data: [], error: null };
 
   return {
     auth: {
@@ -183,6 +187,19 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
           order: vi.fn().mockReturnThis(),
           limit: vi.fn().mockResolvedValue(patternsResponse),
         };
+      }
+      if (table === 'golf_insight_player_feedback') {
+        // The real supabase-js query builder is itself a thenable — the
+        // production code `await`s straight off `.select().eq().eq()` with
+        // no terminal `.maybeSingle()`/`.limit()`, so this mock builder must
+        // resolve on `await`, not on a specific chained call.
+        const builder: Record<string, unknown> = {
+          select: vi.fn(() => builder),
+          eq: vi.fn(() => builder),
+          then: (resolve: (v: typeof dismissedFeedbackResponse) => void) =>
+            resolve(dismissedFeedbackResponse),
+        };
+        return builder;
       }
       // Unknown table — return an empty builder.
       return {
@@ -446,5 +463,75 @@ describe('getPlayerFingerprint', () => {
     expect(getInsightsForCoachMock).toHaveBeenCalledTimes(1);
     const call = getInsightsForCoachMock.mock.calls[0];
     expect(call?.[1]).toMatchObject({ player_id: 'p-1' });
+  });
+
+  // ---------------------------------------------------------------------
+  // Player-self auth path — the player's own "Game profile" tab reuses this
+  // SAME aggregator, authorized via `verifyPlayerAccess`'s `reason: 'self'`
+  // branch (the user IS the requested player, not a coach who staffs their
+  // team). Coverage: the self branch resolves a fingerprint at all, carries
+  // avatar_url through, and additionally filters insights the player has
+  // dismissed from their OWN feedback table — a filter the coach branch must
+  // NEVER apply (a player's dismissal can't hide an insight from their coach).
+  // ---------------------------------------------------------------------
+  describe('player-self access (access.reason === "self")', () => {
+    it('resolves a fingerprint when verifyPlayerAccess grants self-access', async () => {
+      verifyPlayerAccessMock.mockResolvedValueOnce({ allowed: true, reason: 'self' });
+      const sb = makeSupabaseMock({ userId: 'u-1' });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await getPlayerFingerprint('p-1', sb as any);
+      expect(result).not.toBeNull();
+      expect(result!.player.id).toBe('p-1');
+    });
+
+    it('carries avatar_url through to the player object', async () => {
+      verifyPlayerAccessMock.mockResolvedValueOnce({ allowed: true, reason: 'self' });
+      const sb = makeSupabaseMock({
+        userId: 'u-1',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        player: { data: { id: 'p-1', first_name: 'Jake', last_name: 'Doe', avatar_url: 'https://cdn.example/p1.jpg' } as any, error: null },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await getPlayerFingerprint('p-1', sb as any);
+      expect(result).not.toBeNull();
+      expect(result!.player.avatar_url).toBe('https://cdn.example/p1.jpg');
+    });
+
+    it('filters out an insight the player has dismissed via their own feedback', async () => {
+      verifyPlayerAccessMock.mockResolvedValueOnce({ allowed: true, reason: 'self' });
+      getInsightsForCoachMock.mockResolvedValueOnce([
+        makeInsight({ id: 'kept-1', category: 'putting' }),
+        makeInsight({ id: 'dismissed-1', category: 'putting' }),
+      ]);
+      const sb = makeSupabaseMock({
+        userId: 'u-1',
+        dismissedFeedback: { data: [{ insight_id: 'dismissed-1' }], error: null },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await getPlayerFingerprint('p-1', sb as any);
+      expect(result).not.toBeNull();
+      expect(result!.sections.putting.insights.map((i) => i.id)).toEqual(['kept-1']);
+    });
+
+    it('does NOT apply the player-dismissed filter on the coach access path', async () => {
+      // Default beforeEach already stubs verifyPlayerAccess → reason: 'coach'.
+      getInsightsForCoachMock.mockResolvedValueOnce([
+        makeInsight({ id: 'kept-1', category: 'putting' }),
+        makeInsight({ id: 'dismissed-1', category: 'putting' }),
+      ]);
+      const sb = makeSupabaseMock({
+        userId: 'u-1',
+        // Same player-dismissed row as above — a coach viewing the SAME
+        // player must still see both insights.
+        dismissedFeedback: { data: [{ insight_id: 'dismissed-1' }], error: null },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await getPlayerFingerprint('p-1', sb as any);
+      expect(result).not.toBeNull();
+      expect(result!.sections.putting.insights.map((i) => i.id).sort()).toEqual([
+        'dismissed-1',
+        'kept-1',
+      ]);
+    });
   });
 });

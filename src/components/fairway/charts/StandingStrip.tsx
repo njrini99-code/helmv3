@@ -27,6 +27,7 @@ import { Skeleton } from '@/components/fairway/feedback';
 import {
   type StandingBarProps,
   type RenderState,
+  type MarkerLayoutInput,
   toScalePct,
   formatValue,
   deltaVsTeam,
@@ -37,6 +38,9 @@ import {
   pgaReferenceLabel,
   neutralizeForCoach,
   standingSubjectLabel,
+  resolveDisplayScale,
+  layoutMarkerPositions,
+  MARKER_MIN_GAP_PCT,
 } from '@/components/golf/coachhelm/v3/StandingBar';
 
 /** StandingStrip shares the legacy StandingBar prop surface verbatim. */
@@ -51,13 +55,30 @@ export function StandingStrip(props: StandingStripProps) {
   if (state === 'empty') return <StripEmpty label={props.metric_label} />;
 
   const showTeam = shouldShowTeamMarker(props);
-  const youPct = toScalePct(props.player_value, props.scale);
-  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
+  // CF-3's SG-metric detector, hoisted above the scale math below — the SAME
+  // regex `isFieldAvgRef` used to compute on its own further down. SG
+  // metrics anchor to a definitional zero (field average), so the widened
+  // domain (next) must stay symmetric around it, not drift off-center.
+  const isSgMetric = /^sg_/.test(props.metric_id);
+  // Bug: `props.scale` (metric-config's fixed per-metric range, e.g.
+  // sg_approach: -1.5..1.5) is a TYPICAL range, not a hard bound — an
+  // outlier round's team_avg/player_value can land outside it. Clamping
+  // `toScalePct` to that fixed domain used to pin the marker at the literal
+  // 0%/100% edge — which the card's own `overflow-clip` cuts in half, and
+  // which silently draws a -2.43 in the exact same spot as a -1.50. Widen
+  // the domain to cover every value actually being plotted first.
+  const effectiveScale = resolveDisplayScale(
+    props.scale,
+    [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
+    { symmetric: isSgMetric },
+  );
+  const youPct = toScalePct(props.player_value, effectiveScale);
+  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
   // F006: omit the reference tick + value entirely when the anchor is suppressed
   // (mirror legacy Card.tsx). A women's player on a metric with no credible
   // women's baseline must NOT be drawn against a misleading men's-Tour value.
-  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
-  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
+  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, effectiveScale);
+  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction, props.unit);
   // W1 regression fix: the caption MUST derive from the same mean-relative
   // comparison as the ↑/↓ arrow + tone above (both come from `delta`, which is
   // `deltaVsTeam(player_value, team_avg, direction)`). The percentile-based
@@ -73,7 +94,7 @@ export function StandingStrip(props: StandingStripProps) {
   const cohortText =
     props.show_cohort_text !== false && showTeam
       ? neutralizeForCoach(
-          teamRelativeText(props.player_value, props.team_avg, props.direction),
+          teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit),
           props.viewer_context,
         )
       : '';
@@ -91,7 +112,7 @@ export function StandingStrip(props: StandingStripProps) {
   // AVG" text already labeling the reference tick on the bar above. Suppress
   // the redundant readout for SG metrics only — non-SG metrics still anchor
   // to a genuine, informative PGA/LPGA Tour number in that third column.
-  const isFieldAvgRef = /^sg_/.test(props.metric_id);
+  const isFieldAvgRef = isSgMetric;
 
   // ONE "behind-benchmark" hue: 'bad' reads as the neutral/amber system tone
   // (fw-warning) everywhere a strip renders — not red — so it never collides
@@ -108,7 +129,10 @@ export function StandingStrip(props: StandingStripProps) {
       aria-label={ariaLabel}
       data-slot="standing-strip"
       data-state={state}
-      className="rounded-card border border-border-subtle bg-surface p-4 shadow-soft"
+      // overflow-clip: containment safety net for the You-badge + tick
+      // labels in `StripTrack` below — see `clampPct` there for the actual
+      // fix (a wider edge margin so nothing needs to clip in practice).
+      className="overflow-clip rounded-card border border-border-subtle bg-surface p-4 shadow-soft"
     >
       {/* Header: label + vs-team delta as a colored pill (green = better).
           finding [120] — the title used `truncate` (single-line ellipsis),
@@ -197,8 +221,21 @@ export function StandingStrip(props: StandingStripProps) {
 /* Premium meter — green "you" hero on a defined track, dark field ticks      */
 /* -------------------------------------------------------------------------- */
 
-/** Keep markers + the floating badge clear of the very edge so nothing clips. */
-const clampPct = (n: number) => Math.max(5, Math.min(95, n));
+/**
+ * Keep markers + the floating badge clear of the very edge so nothing
+ * clips. 5%/95% (the pre-existing margin) only accounts for the DOT/PIN
+ * marker itself — it doesn't leave room for the wider text mounted beside
+ * it (the "You" value badge, or a tick's "FIELD AVG"/"TEAM" label), which
+ * is centered on the SAME left:% via `-translate-x-1/2`. On a 390px mobile
+ * card the track is ~300-320px wide; "FIELD AVG" at the track's own
+ * font/size runs ~60-70px, so its half-width (~30-35px) needs roughly a
+ * 10-11% margin just to clear the track's own edge — 5% clipped it before
+ * `overflow-clip` was added to the card above. 13% gives real clearance
+ * (not just a clip backstop) for every label this component renders,
+ * verified against the longest ("FIELD AVG") at the narrowest supported
+ * card width.
+ */
+const clampPct = (n: number) => Math.max(13, Math.min(87, n));
 
 function StripTrack({
   youPct,
@@ -215,9 +252,22 @@ function StripTrack({
   /** CF-3: the reference-tick label ("PGA" / "FIELD AVG"). */
   refLabel: string;
 }) {
-  const you = clampPct(youPct);
-  const pga = pgaPct !== null ? clampPct(pgaPct) : null;
-  const team = teamPct !== null ? clampPct(teamPct) : null;
+  // Bug: near-equal values (e.g. player and team landing within a percent
+  // or two of each other) put the You dot directly on top of a tick,
+  // effectively hiding one marker behind the other. Nudge apart any raw
+  // positions within MARKER_MIN_GAP_PCT before drawing — computed ONCE
+  // here so both the tier-1 "You" badge above and the tier-2 dot/ticks
+  // below read the SAME final position (nudging only one of the two would
+  // make the badge point at a different spot than the dot it labels).
+  const rawMarkers: MarkerLayoutInput[] = [{ key: 'you', pct: clampPct(youPct) }];
+  if (pgaPct !== null) rawMarkers.push({ key: 'pga', pct: clampPct(pgaPct) });
+  if (teamPct !== null) rawMarkers.push({ key: 'team', pct: clampPct(teamPct) });
+  const nudged = new Map(
+    layoutMarkerPositions(rawMarkers, MARKER_MIN_GAP_PCT).map((p) => [p.key, clampPct(p.pct)]),
+  );
+  const you = nudged.get('you')!;
+  const pga = pgaPct !== null ? nudged.get('pga')! : null;
+  const team = teamPct !== null ? nudged.get('team')! : null;
   return (
     <div className="relative px-1 pb-7">
       {/* Tier 1 — the floating green "You" value badge gets its OWN row in

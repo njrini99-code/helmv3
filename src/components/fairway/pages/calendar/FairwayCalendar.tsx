@@ -900,9 +900,17 @@ export function FairwayCalendar({
       {/* ── View toggle (default Agenda) + Subscribe entry point ─────────────── */}
       {/* "Add to phone" is reachable for BOTH roles, including mobile — the
           flagship "team schedule in my phone" path was previously desktop-
-          coach-only (audit finding #10). */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <div className="min-w-0 flex-1">
+          coach-only (audit finding #10). Stacks (Segmented full-width, then
+          the button at its natural size) below `sm`; on `sm`+ it's the
+          original side-by-side row. `flex-wrap` alone (Segmented shrinking
+          via `min-w-0 flex-1` + its own internal scroll-fade) left the two
+          controls sharing one line at phone widths, where the button's
+          `whitespace-nowrap` label floors it at its natural width and
+          crowds/overlaps the segmented control's clipped tail — the same
+          stack-then-row idiom used elsewhere in Fairway (e.g. ViewHeader,
+          FairwayQualifierDetail) sidesteps that shrink math entirely. */}
+      <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
           <Segmented<ViewId>
             options={VIEW_OPTIONS}
             value={view}
