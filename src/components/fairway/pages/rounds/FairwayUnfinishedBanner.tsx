@@ -134,7 +134,7 @@ function UnfinishedRow({
   return (
     <Surface
       padding="none"
-      className="overflow-hidden border-l-2 border-l-fw-warning"
+      className="overflow-hidden"
     >
       <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Left: status + progress readout + course */}

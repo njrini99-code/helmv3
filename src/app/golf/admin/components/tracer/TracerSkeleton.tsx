@@ -13,7 +13,7 @@ function KPICardsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="bg-cream-50 rounded-2xl border border-white/20 p-5 md:p-6 border-l-[3px] border-l-warm-200">
+        <div key={i} className="bg-cream-50 rounded-2xl border border-white/20 p-5 md:p-6">
           <div className={`w-24 h-3 ${pulse} mb-3`} />
           <div className={`w-16 h-8 ${pulse} mb-2`} />
           <div className={`w-20 h-3 ${pulseLight}`} />

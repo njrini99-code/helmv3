@@ -1,11 +1,15 @@
+'use client';
+
+import { useRequestDemo } from '@/components/landing/request-demo-context';
 import styles from '../products-landing.module.css';
 
 /**
  * Closing call-to-action band. The mock folded a dark footer into this section;
- * here it ends at the CTA so the shared site <Footer> (used across the marketing
- * site) carries the footer, keeping chrome consistent with the landing page.
+ * here it ends at the CTA so the shared MarketingShell footer carries the
+ * chrome, keeping it consistent with the landing page.
  */
 export function FinalCta() {
+  const openDemo = useRequestDemo();
   return (
     <section id="getdemo" style={{ scrollMarginTop: 90, background: 'var(--dark)', color: 'var(--onacc)' }}>
       <div style={{ maxWidth: 1320, margin: '0 auto', padding: 'clamp(80px,11vw,150px) clamp(20px,4vw,64px)', textAlign: 'center', position: 'relative', overflow: 'clip' }}>
@@ -32,13 +36,14 @@ export function FinalCta() {
             insights, and the development plans built for college programs.
           </p>
           <div style={{ margin: '32px 0 0', display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center' }}>
-            <a
-              href="#top"
+            <button
+              type="button"
+              onClick={openDemo}
               className={styles.btnPrimary}
               style={{ fontSize: 15, fontWeight: 600, padding: '15px 30px', borderRadius: 9999, boxShadow: '0 2px 10px oklch(0.35 0.08 150/0.5)' }}
             >
               Request Demo
-            </a>
+            </button>
             <a href="#coachhelm" className={styles.linkGhostDim} style={{ fontSize: 15, fontWeight: 520, padding: '15px 8px' }}>
               Explore CoachHelm →
             </a>

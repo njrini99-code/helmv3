@@ -130,9 +130,13 @@ export function CoachHelm() {
                     ))}
                   </div>
                 </div>
-                <div style={{ marginTop: 14, display: 'flex', gap: 12, alignItems: 'flex-start', borderLeft: '2px solid var(--accent)', padding: '2px 0 2px 14px' }}>
+                <div style={{ marginTop: 14, display: 'flex', gap: 12, alignItems: 'flex-start', padding: '2px 0' }}>
                   <div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.82 0.11 150)', marginBottom: 4 }}>Practice focus</div>
+                    {/* tone = dot, never a side-rail — matches the app's own idiom */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.82 0.11 150)', marginBottom: 4 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+                      Practice focus
+                    </div>
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: 'oklch(0.86 0.008 85)' }}>
                       Ladder drill from 30 / 40 / 50 ft, three sessions a week. Finish every lag inside 4 ft.
                     </p>

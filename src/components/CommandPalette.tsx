@@ -117,7 +117,7 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-warm-900/40 backdrop-blur-md animate-fade-in"
+        className="absolute inset-0 bg-[oklch(0.18_0.01_55_/_0.32)] backdrop-blur-md animate-fade-in"
         onClick={() => setOpen(false)}
         aria-hidden="true"
       />
@@ -130,16 +130,16 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
           aria-modal="true"
           aria-label="Command palette"
           className={cn(
-            'bg-cream-100/68 backdrop-blur-[24px]',
-            'rounded-2xl',
-            'shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)]',
-            'border border-warm-200/45',
+            'bg-surface',
+            'rounded-fw-lg',
+            'shadow-raise',
+            'border border-border-subtle',
             'overflow-hidden',
           )}
         >
           {/* Search Input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/20 bg-cream-50/30">
-            <IconSearch size={20} className="text-warm-400" aria-hidden="true" />
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle">
+            <IconSearch size={20} className="text-text-tertiary" aria-hidden="true" />
             <Input
               type="text"
               value={search}
@@ -150,9 +150,9 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
               onKeyDown={handleKeyDown}
               placeholder="Search commands..."
               aria-label="Search commands"
-              className="flex-1 min-h-0 w-auto px-0 py-0 rounded-none border-0 bg-transparent outline-none text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="flex-1 min-h-0 w-auto px-0 py-0 rounded-none border-0 bg-transparent outline-none font-fw-sans text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-warm-400 bg-cream-100/68 backdrop-blur-sm rounded-lg border border-warm-200/45">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-fw-mono text-text-tertiary bg-surface rounded-fw-sm border border-border-subtle">
               ESC
             </kbd>
           </div>
@@ -166,7 +166,7 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
             data-scroll-container
           >
             {filteredCommands.length === 0 ? (
-              <div className="text-center py-8 text-sm text-warm-500" role="status">
+              <div className="text-center py-8 text-sm text-text-tertiary" role="status">
                 No commands found
               </div>
             ) : (
@@ -182,42 +182,42 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
                     setOpen(false);
                   }}
                   className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-fw-md text-left transition-colors',
                     index === selectedIndex
-                      ? 'bg-primary-50/80 backdrop-blur-sm text-primary-900'
-                      : 'hover:bg-cream-100/40 text-warm-700',
+                      ? 'bg-accent-50 text-text-primary'
+                      : 'hover:bg-inset text-text-secondary',
                   )}
                 >
                   <div
                     className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center',
-                      index === selectedIndex ? 'bg-primary-100' : 'bg-cream-100/68 backdrop-blur-sm',
+                      'w-8 h-8 rounded-fw-sm flex items-center justify-center',
+                      index === selectedIndex ? 'bg-accent-100 text-accent-700' : 'bg-inset text-text-secondary',
                     )}
                     aria-hidden="true"
                   >
                     {cmd.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{cmd.label}</p>
+                    <p className="font-fw-sans text-sm font-medium truncate">{cmd.label}</p>
                     {cmd.description && (
-                      <p className="text-xs text-warm-500 truncate">{cmd.description}</p>
+                      <p className="text-xs text-text-tertiary truncate">{cmd.description}</p>
                     )}
                   </div>
-                  <IconChevronRight size={16} className="text-warm-400" aria-hidden="true" />
+                  <IconChevronRight size={16} className="text-text-tertiary" aria-hidden="true" />
                 </Button>
               ))
             )}
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-white/20 bg-cream-50/30 backdrop-blur-sm flex items-center justify-between text-xs text-warm-500">
+          <div className="px-4 py-2 border-t border-border-subtle flex items-center justify-between text-xs text-text-tertiary">
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↓</kbd>
+              <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↑</kbd>
+              <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↓</kbd>
               <span>Navigate</span>
             </div>
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↵</kbd>
+              <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↵</kbd>
               <span>Select</span>
             </div>
           </div>

@@ -1,10 +1,15 @@
+'use client';
+
 import Image from 'next/image';
+import { useRequestDemo } from '@/components/landing/request-demo-context';
 import styles from '../products-landing.module.css';
 
-/** Hero — centered logo, thesis headline, and the two primary CTAs. */
+/** Hero — centered logo, thesis headline, and the two primary CTAs.
+ *  (No `id="top"` here — MarketingShell's <main id="top"> owns that anchor.) */
 export function Hero() {
+  const openDemo = useRequestDemo();
   return (
-    <section id="top" style={{ position: 'relative', overflow: 'clip', background: 'var(--canvas)' }}>
+    <section style={{ position: 'relative', overflow: 'clip', background: 'var(--canvas)' }}>
       <div
         aria-hidden
         style={{
@@ -88,8 +93,9 @@ export function Hero() {
             animationDelay: '0.4s',
           }}
         >
-          <a
-            href="#getdemo"
+          <button
+            type="button"
+            onClick={openDemo}
             className={styles.btnPrimary}
             style={{
               fontSize: 15,
@@ -100,7 +106,7 @@ export function Hero() {
             }}
           >
             Request Demo
-          </a>
+          </button>
           <a
             href="#products"
             className={styles.linkGhost}

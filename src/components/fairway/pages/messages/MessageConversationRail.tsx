@@ -151,7 +151,7 @@ function ConversationRow({
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         isSelected
-          ? 'bg-surface-sunken/90 shadow-[inset_2px_0_0_0_var(--fw-color-accent-500)] ring-1 ring-inset ring-accent-200/60'
+          ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
           : 'hover:bg-surface-sunken/60',
       )}
     >

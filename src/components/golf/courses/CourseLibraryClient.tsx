@@ -125,8 +125,8 @@ export function CourseLibraryClient({
           </p>
         </div>
         {canManageTeam && (
-          <Button variant="primary" onClick={() => setCreateOpen(true)} className="self-start sm:self-auto">
-            <IconPlus size={16} aria-hidden /> Add course
+          <Button variant="primary" onClick={() => setCreateOpen(true)} className="self-start sm:self-auto" leftIcon={<IconPlus size={16} aria-hidden />}>
+            Add course
           </Button>
         )}
       </header>
@@ -331,8 +331,8 @@ function EmptyState({ onAdd, canManage }: { onAdd: () => void; canManage: boolea
           : 'Your coach hasn’t added any courses yet.'}
       </p>
       {canManage && (
-        <Button variant="primary" onClick={onAdd} className="mt-5">
-          <IconPlus size={16} aria-hidden /> Add your first course
+        <Button variant="primary" onClick={onAdd} className="mt-5" leftIcon={<IconPlus size={16} aria-hidden />}>
+          Add your first course
         </Button>
       )}
     </div>
