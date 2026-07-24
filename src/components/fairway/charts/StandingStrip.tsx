@@ -108,7 +108,10 @@ export function StandingStrip(props: StandingStripProps) {
       aria-label={ariaLabel}
       data-slot="standing-strip"
       data-state={state}
-      className="rounded-card border border-border-subtle bg-surface p-4 shadow-soft"
+      // overflow-clip: containment safety net for the You-badge + tick
+      // labels in `StripTrack` below — see `clampPct` there for the actual
+      // fix (a wider edge margin so nothing needs to clip in practice).
+      className="overflow-clip rounded-card border border-border-subtle bg-surface p-4 shadow-soft"
     >
       {/* Header: label + vs-team delta as a colored pill (green = better).
           finding [120] — the title used `truncate` (single-line ellipsis),
@@ -197,8 +200,21 @@ export function StandingStrip(props: StandingStripProps) {
 /* Premium meter — green "you" hero on a defined track, dark field ticks      */
 /* -------------------------------------------------------------------------- */
 
-/** Keep markers + the floating badge clear of the very edge so nothing clips. */
-const clampPct = (n: number) => Math.max(5, Math.min(95, n));
+/**
+ * Keep markers + the floating badge clear of the very edge so nothing
+ * clips. 5%/95% (the pre-existing margin) only accounts for the DOT/PIN
+ * marker itself — it doesn't leave room for the wider text mounted beside
+ * it (the "You" value badge, or a tick's "FIELD AVG"/"TEAM" label), which
+ * is centered on the SAME left:% via `-translate-x-1/2`. On a 390px mobile
+ * card the track is ~300-320px wide; "FIELD AVG" at the track's own
+ * font/size runs ~60-70px, so its half-width (~30-35px) needs roughly a
+ * 10-11% margin just to clear the track's own edge — 5% clipped it before
+ * `overflow-clip` was added to the card above. 13% gives real clearance
+ * (not just a clip backstop) for every label this component renders,
+ * verified against the longest ("FIELD AVG") at the narrowest supported
+ * card width.
+ */
+const clampPct = (n: number) => Math.max(13, Math.min(87, n));
 
 function StripTrack({
   youPct,

@@ -4,6 +4,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
+import { getPlayerFingerprint, type PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import {
   getTopInsightForPlayer,
   getInsightsForPlayer,
@@ -425,6 +426,18 @@ export default async function PlayerCoachHelmPage() {
     genomeRoundsBasis = genome?.rounds_basis ?? null;
   } catch { /* genome not yet available — the profile drill degrades honestly */ }
 
+  // ── Player-self Game Fingerprint — same composition/data the coach's
+  // `/dashboard/players/[playerId]/game` page renders, via the player-self
+  // auth branch on `getPlayerFingerprint` (`verifyPlayerAccess` returns
+  // `reason: 'self'` when the authenticated user IS the requested player —
+  // see player-fingerprint.ts). Feeds `ProfileDrill`'s "Game Fingerprint"
+  // tab. Best-effort: any failure degrades to null and `ProfileDrill` falls
+  // back to its prior Genome-only content — never blocks the page.
+  let fingerprint: PlayerFingerprint | null = null;
+  try {
+    fingerprint = await getPlayerFingerprint(player.id, supabase);
+  } catch { /* fingerprint not available — ProfileDrill degrades to Genome-only */ }
+
   // ── `?view=standing` read — the F028 counterfactual baseline (the standing
   // map itself is already fetched above). Copied from my-standing/page.tsx. ──
   let playerBaseline: number | null = null;
@@ -462,6 +475,7 @@ export default async function PlayerCoachHelmPage() {
           genomeWatchouts={genomeWatchouts}
           genomeCourseProfile={genomeCourseProfile}
           genomeRoundsBasis={genomeRoundsBasis}
+          fingerprint={fingerprint}
           playerBaseline={playerBaseline}
         />
       </div>

@@ -22,8 +22,13 @@
  */
 
 import {
+  cloneElement,
   forwardRef,
+  isValidElement,
+  useEffect,
   useMemo,
+  useRef,
+  useState,
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from 'react';
@@ -147,6 +152,37 @@ const TONE_CLASS: Record<'positive' | 'negative' | 'neutral', string> = {
   neutral: 'text-text-tertiary bg-surface-sunken',
 };
 
+/* -- sparkline slot: measure-then-fill ---------------------------------------
+ * Sparkline draws to EXACTLY the pixel `width`/`height` it's handed (its own
+ * `toPoints()` maps the series into that box) — it doesn't stretch to fill a
+ * CSS `w-full` wrapper on its own, and an inline SVG's default
+ * `preserveAspectRatio="xMidYMid meet"` means a plain CSS-width override
+ * would just letterbox the plot rather than genuinely widen it. Rather than
+ * edit Sparkline's own internals (owned by the charts cluster), this slot
+ * measures its OWN rendered width via ResizeObserver and clones the
+ * `sparkline` element with that width — a real full-card-width trend using
+ * Sparkline's already-public `width`/`height` props, nothing else touched.
+ * Falls back to leaving the element's own defaults alone until measured (SSR,
+ * pre-mount, and jsdom in tests all read 0) — never a guessed width that
+ * could overshoot a narrow card. -------------------------------------------- */
+function useSparklineWidth() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setWidth(Math.floor(el.getBoundingClientRect().width));
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return { ref, width };
+}
+
 /* -- component -------------------------------------------------------------- */
 
 export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
@@ -177,6 +213,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     ref,
   ) {
     const prefersReduced = useReducedMotion();
+    const { ref: sparklineWrapRef, width: sparklineWidth } = useSparklineWidth();
 
     const numberFormat = useMemo<Format>(
       () =>
@@ -201,6 +238,18 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     // Compact: a tighter tile for dense 5/6-up KPI grids where full p-6 reads
     // cramped. Hero always wins over compact.
     const isCompact = density === 'compact' && !isHero;
+
+    // Full-width baseline trend: once the slot below has a measured width,
+    // hand the sparkline element that width (+ a taller, more premium height
+    // than its 20px inline default) via cloneElement. `sparkline` is typed as
+    // an opaque ReactNode (this file imports nothing from the charts
+    // cluster), so the clone is generic — it only fires for a real element
+    // that accepts numeric width/height, and no-ops for anything else.
+    const sparklineHeight = isHero ? 40 : isCompact ? 24 : 32;
+    const sparklineNode =
+      sparkline && sparklineWidth > 0 && isValidElement<{ width?: number; height?: number }>(sparkline)
+        ? cloneElement(sparkline, { width: sparklineWidth, height: sparklineHeight })
+        : sparkline;
 
     const base = cn(
       'group relative flex flex-col rounded-card bg-surface',
@@ -311,11 +360,6 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
                 respectMotionPreference
               />
             </div>
-
-            {/* sparkline floats with the value when present (default tile) */}
-            {sparkline && !isHero ? (
-              <div className="min-w-0 shrink text-text-tertiary">{sparkline}</div>
-            ) : null}
           </div>
         )}
 
@@ -338,9 +382,24 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
           </div>
         ) : null}
 
-        {/* hero sparkline spans the full width beneath the value */}
-        {sparkline && isHero ? (
-          <div className="mt-1 w-full text-text-tertiary">{sparkline}</div>
+        {/* Trendline — a full-width baseline mini-trend anchored along the
+            BOTTOM of the card, below the value + delta, never a cramped
+            squiggle floating beside the value (was `min-w-0 shrink` in the
+            value row — read as broken at a glance). `overflow-hidden` +
+            `w-full` on this slot is a hard backstop: even mid-resize, before
+            useSparklineWidth's next measurement lands, the trend can never
+            escape the card (#957-style containment). Hidden alongside the
+            value when the metric itself is `empty` — Sparkline's own honesty
+            contract already refuses to plot <2 points, but a trend under a
+            value that's explicitly marked insufficient-data is its own kind
+            of dishonest. */}
+        {sparkline && !empty ? (
+          <div
+            ref={sparklineWrapRef}
+            className="mt-1 w-full min-w-0 overflow-hidden text-text-tertiary"
+          >
+            {sparklineNode}
+          </div>
         ) : null}
       </div>
     );
