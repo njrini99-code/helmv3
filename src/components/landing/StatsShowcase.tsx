@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { GLASS_BEZEL } from './glass';
-import { MobileMockScroller } from './MockViewport';
+import { FitEmbed } from './MockViewport';
 import { StatsMock } from './mockups/StatsMock';
 import { Reveal, ScaledEmbed, useIsDesktop, useParallax } from './motion';
 
@@ -58,11 +58,11 @@ export function StatsShowcase() {
         </div>
         )}
 
-        {/* Mobile: swipeable band */}
+        {/* Mobile: whole surface fit to width (no horizontal scroll) */}
         {isDesktop !== true && (
-        <MobileMockScroller designWidth={1160} ariaLabel={STATS_ARIA} className="mt-9 md:hidden">
+        <FitEmbed designWidth={1160} ariaLabel={STATS_ARIA} className="mt-9 md:hidden">
           <StatsMock />
-        </MobileMockScroller>
+        </FitEmbed>
         )}
       </div>
     </section>

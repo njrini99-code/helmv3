@@ -14,7 +14,7 @@
  *   └────────────────────────────────────────────────────────┘
  */
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { StandingBarProps } from './types';
 import {
   deltaVsTeam,
@@ -30,7 +30,7 @@ import {
   teamRelativeText,
   toScalePct,
 } from './utils';
-import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
+import { EASE_CINEMATIC, DURATION, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /** Same SG-detection regex `pgaReferenceLabel` uses — SG metrics anchor to
  *  a definitional zero (the field average), so their widened display domain
@@ -288,11 +288,12 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
   const laidOut = layoutMarkerPositions(rawPositions, MARKER_MIN_GAP_PCT);
   const drawnPct = new Map(laidOut.map((p) => [p.key, p.pct]));
 
+  // The rail itself renders IMMEDIATELY (a plain div, no entrance animation).
+  // Gating it behind a framer opacity-fade left the whole bar blank on a slow
+  // machine until the animation caught up — the window Nick photographed. Only
+  // the fill + markers get a (position-stable) entrance now.
   return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
+    <div
       className={`relative ${height} w-full rounded-full bg-surface-sunken shadow-[inset_0_1px_2px_rgb(28_25_23/0.08)] overflow-visible`}
     >
       {/* Zero hairline (SG metrics) — the field-average anchor. */}
@@ -349,7 +350,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
         toneClass="bg-primary-600 text-white ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
         delay={0.22}
       />
-    </m.div>
+    </div>
   );
 }
 
@@ -363,13 +364,20 @@ interface MarkerProps {
 }
 
 function Marker({ kind, leftPct, markerSize, label, toneClass, delay }: MarkerProps) {
-  // Per master plan W13 + v3 feature audit: every marker scales in from
-  // origin AND slides from leftPct=0 to its true position on mount. The
-  // player's eye gets pulled to the "You" marker via a more dramatic
-  // scale (0.4 → 1) vs the reference markers' subtler 0.7 → 1. Both
-  // share canonical EASE_CINEMATIC at DURATION.short. Reduced-motion
-  // users see the marker at its final position immediately, no animation.
-  const reduce = useReducedMotion();
+  // Position is STATIC — `style.left` is the single source of truth and is
+  // always the marker's true `leftPct`. We only animate `opacity` + `scale`
+  // (GPU-safe transform props) so the marker fades/scales in AT its correct
+  // spot.
+  //
+  // Bug it fixes (Nick, 07-24, "these bars are still not fixed… asked 5×"):
+  // the old code animated `left` from '0%' → `${leftPct}%` while ALSO setting
+  // `style.left`. On a slow machine the markers were caught mid-slide —
+  // clustered at the far-left edge, and the hero "You" marker could overshoot
+  // its card. Never animate a layout property (`left`); animating transform/
+  // opacity only means there is no transient where a marker is visible but
+  // mispositioned. Uses `useReducedMotionGuard` (not raw `useReducedMotion`,
+  // which returns null pre-hydration → #418) per CLAUDE.md.
+  const reduce = useReducedMotionGuard();
   const initialScale = kind === 'hero' ? 0.4 : 0.7;
   const transition = {
     duration: DURATION.short,
@@ -378,8 +386,8 @@ function Marker({ kind, leftPct, markerSize, label, toneClass, delay }: MarkerPr
   };
   return (
     <m.div
-      initial={reduce ? false : { opacity: 0, scale: initialScale, left: '0%' }}
-      animate={reduce ? false : { opacity: 1, scale: 1, left: `${leftPct}%` }}
+      initial={reduce ? false : { opacity: 0, scale: initialScale }}
+      animate={reduce ? false : { opacity: 1, scale: 1 }}
       transition={reduce ? undefined : transition}
       className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-eyebrow font-semibold ${toneClass}`}
       style={{ left: `${leftPct}%`, transformOrigin: 'center' }}

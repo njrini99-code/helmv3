@@ -67,10 +67,25 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
 
   return (
     <header className="sticky top-0 z-[100] py-3.5">
+      {/* Frosted bar — transparent while pinned over the hero, fades in once
+          the page scrolls so sections passing underneath don't collide with
+          the floating logo / Request Demo CTA (on mobile the nav lens is
+          hidden, so without this the thesis copy read straight through the
+          button). */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}
+        style={{
+          background: 'color-mix(in srgb, var(--fw-color-canvas) 82%, transparent)',
+          backdropFilter: 'blur(14px) saturate(1.1)',
+          WebkitBackdropFilter: 'blur(14px) saturate(1.1)',
+          borderBottom: '1px solid oklch(0.18 0.01 60 / 0.06)',
+        }}
+      />
       {/* Equal flex-1 side clusters keep the nav lens on the true page
           centerline — with flex-none sides the wider right cluster pushes
           the mx-auto lens visibly left of center. */}
-      <div className="mx-auto flex max-w-[1320px] items-center gap-5 px-[clamp(20px,4vw,64px)]">
+      <div className="relative mx-auto flex max-w-[1320px] items-center gap-5 px-[clamp(20px,4vw,64px)]">
         <div className="flex flex-1 items-center">
           <Link
             href="/#top"
