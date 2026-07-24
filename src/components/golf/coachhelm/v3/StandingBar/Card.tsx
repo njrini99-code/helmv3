@@ -341,13 +341,23 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
           delay={0.14}
         />
       )}
-      {/* You marker — the hero, drawn last so it sits on top */}
+      {/* You marker — the hero, drawn last so it sits on top.
+       *
+       * The label is EMPTY on purpose: the filled circle IS the mark. It used
+       * to pass '●', which rendered an 11px (`text-eyebrow`) white bullet glyph
+       * inside a 12px (`w-3 h-3`) `bg-primary-600` circle — the glyph covered
+       * the middle and the "you" marker read as a hollow white donut with a
+       * thin green rim (Nick's 07-24 round-review screenshot). That inverted
+       * the hierarchy: the two REFERENCE chips ('T'/'P') were legible while the
+       * hero mark looked like an empty placeholder. A solid brand-green dot
+       * against lettered references is the intended read, and it stays
+       * unambiguous at every size variant. */}
       <Marker
         kind="hero"
         leftPct={drawnPct.get('you')!}
         markerSize={markerSize}
-        label="●"
-        toneClass="bg-primary-600 text-white ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
+        label=""
+        toneClass="bg-primary-600 ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
         delay={0.22}
       />
     </div>
