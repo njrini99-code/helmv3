@@ -38,6 +38,7 @@ vi.mock('@/app/golf/actions/signal-groups', () => ({
 }));
 
 vi.mock('../BriefBand', () => ({ BriefBand: () => <div data-testid="brief-band" /> }));
+vi.mock('../TeamSignalSummary', () => ({ TeamSignalSummary: () => <div data-testid="team-signal-summary" /> }));
 vi.mock('../SignalQueue', () => ({ SignalQueue: () => <div data-testid="signal-queue" /> }));
 vi.mock('../EffectivenessScoreboard', () => ({
   EffectivenessScoreboard: () => <div data-testid="effectiveness-view" />,

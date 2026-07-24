@@ -38,6 +38,7 @@ import { ViewSwitch } from './ViewSwitch';
 import { SignalQueue } from './SignalQueue';
 import { SignalDossier } from './SignalDossier';
 import { EffectivenessScoreboard } from './EffectivenessScoreboard';
+import { TeamSignalSummary } from './TeamSignalSummary';
 import {
   computeBriefCounts,
   buildBriefVerdict,
@@ -329,30 +330,41 @@ export function TriageDesk({
             {groupsError}
           </InlineNotice>
         ) : (
-          <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-start">
-            <div className={cn(isSignalSelected && 'hidden min-[940px]:block')}>
-              <SignalQueue
-                groups={filteredGroups}
-                allGroups={groups}
-                categories={categories}
-                filter={queueFilter}
-                filterHref={(next) => hrefFor({ filter: next === 'all' ? null : next })}
-                onSelectFilter={(next) => navigate({ filter: next === 'all' ? null : next })}
-                selectedSignalId={selectedSignalId}
-                onSelectSignal={(id) => navigate({ signal: id })}
-                signalHref={(id) => hrefFor({ signal: id })}
+          <div className="flex flex-col gap-6">
+            <div className="order-2 min-[940px]:order-1">
+              <TeamSignalSummary
+                groups={groups}
+                playerHref={(playerId) => hrefFor({ view: 'players', player: playerId, playersTab: 'areas' })}
+                onOpenPlayer={(playerId) => navigate({ view: 'players', player: playerId, playersTab: 'areas' })}
               />
             </div>
-            <div className={cn(!isSignalSelected && 'hidden min-[940px]:block')}>
-              <SignalDossier
-                entry={dossierEntry}
-                coachId={coachId}
-                pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
-                onReview={handleReview}
-                onDismiss={handleDismiss}
-                onPromoted={handlePromoted}
-                onBack={() => navigate({ signal: null })}
-              />
+            <div className="order-1 grid grid-cols-1 gap-4 min-[940px]:order-2 min-[940px]:h-[min(760px,calc(100vh-180px))] min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
+              <div className={cn('min-h-0', isSignalSelected && 'hidden min-[940px]:block')}>
+                <SignalQueue
+                  groups={filteredGroups}
+                  allGroups={groups}
+                  categories={categories}
+                  filter={queueFilter}
+                  filterHref={(next) => hrefFor({ filter: next === 'all' ? null : next })}
+                  onSelectFilter={(next) => navigate({ filter: next === 'all' ? null : next })}
+                  selectedSignalId={selectedSignalId}
+                  onSelectSignal={(id) => navigate({ signal: id })}
+                  signalHref={(id) => hrefFor({ signal: id })}
+                />
+              </div>
+              <div className={cn('min-h-0', !isSignalSelected && 'hidden min-[940px]:block')}>
+                <SignalDossier
+                  entry={dossierEntry}
+                  coachId={coachId}
+                  pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
+                  onReview={handleReview}
+                  onDismiss={handleDismiss}
+                  onPromoted={handlePromoted}
+                  onBack={() => navigate({ signal: null })}
+                  signalHref={(id) => hrefFor({ signal: id })}
+                  onSelectSignal={(id) => navigate({ signal: id })}
+                />
+              </div>
             </div>
           </div>
         )
@@ -361,6 +373,7 @@ export function TriageDesk({
       {view === 'players' ? (
         <PlayersGridView
           {...playersDrillProps}
+          signalGroups={groups}
           embedded
           initialSelectedPlayerId={selectedPlayerId}
           initialPlayersView={playersTab === 'areas' ? 'areas' : 'grid'}

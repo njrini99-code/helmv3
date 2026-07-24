@@ -104,9 +104,9 @@ export function Segmented<T extends string = string>({
       data-slot="fw-segmented"
       style={fadeStyle}
       className={cn(
-        'inline-flex max-w-full items-center overflow-x-auto rounded-fw-sm bg-surface-sunken',
+        'inline-flex max-w-full items-center overflow-x-auto rounded-fw-md bg-surface-sunken',
         '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'border border-border-subtle',
+        'border border-border-subtle [box-shadow:inset_0_1px_2px_var(--fw-color-border-subtle)]',
         sizeTrack[size],
         fullWidth && 'flex w-full',
         className,
@@ -131,7 +131,7 @@ export function Segmented<T extends string = string>({
               // evenly when there's slack, via flex-1; when there isn't
               // enough room even for that, the same content-size floor kicks
               // in and the row scrolls, same as the non-fullWidth case.
-              'relative isolate inline-flex items-center justify-center rounded-md',
+              'relative isolate inline-flex items-center justify-center rounded-fw-sm',
               'font-fw-sans font-medium',
               fwTransition,
               fwFocusRing,
@@ -146,7 +146,7 @@ export function Segmented<T extends string = string>({
                 // The moving selection pill (matte warm surface + soft shadow).
                 layoutId={reduceMotion ? undefined : `fw-segment-pill-${pillId}`}
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 rounded-md bg-surface shadow-soft border border-border-subtle"
+                className="absolute inset-0 -z-10 rounded-fw-sm border border-border-strong/60 bg-surface [box-shadow:var(--fw-shadow-card)]"
                 transition={
                   reduceMotion
                     ? { duration: 0 }

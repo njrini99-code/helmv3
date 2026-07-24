@@ -30,7 +30,7 @@ export interface ReviewBreakdownProps {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="min-w-0 space-y-3 overflow-clip rounded-fw-md border border-border-subtle bg-surface p-4 shadow-soft">
+    <div className="min-w-0 space-y-3 overflow-clip rounded-fw-md border border-border-subtle bg-surface p-4 shadow-soft transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-raise motion-reduce:hover:translate-y-0">
       <Eyebrow as="h3">{title}</Eyebrow>
       {children}
     </div>
@@ -48,25 +48,19 @@ export function ReviewBreakdown({
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       {frontBack.length > 0 ? (
         <Section title="Front / back">
-          <div className="grid grid-cols-1 gap-2 overflow-x-auto">
+          <div className="grid grid-cols-1 gap-2">
             {frontBack.map((row) => (
               <div
                 key={row.label}
-                className="grid min-w-[420px] grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 rounded-fw-md bg-surface-sunken px-3 py-2"
+                className="rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-3"
               >
-                <span className="font-fw-sans text-body-sm font-medium text-text-primary">{row.label}</span>
-                <span style={TABULAR_NUMS} className="font-fw-mono text-caption tabular-nums text-text-secondary">
-                  {row.score} str
-                </span>
-                <span style={TABULAR_NUMS} className="font-fw-mono text-caption tabular-nums text-text-secondary">
-                  {row.putts} putts
-                </span>
-                <span style={TABULAR_NUMS} className="font-fw-mono text-caption tabular-nums text-text-secondary">
-                  {row.gir} GIR
-                </span>
-                <span style={TABULAR_NUMS} className="font-fw-mono text-caption tabular-nums text-text-secondary">
-                  {row.fairways} FW
-                </span>
+                <span className="font-fw-sans text-body-sm font-semibold text-text-primary">{row.label}</span>
+                <div className="mt-2 grid grid-cols-2 gap-2 min-[420px]:grid-cols-4">
+                  <BreakdownMetric label="Score" value={`${row.score}`} />
+                  <BreakdownMetric label="Putts" value={`${row.putts}`} />
+                  <BreakdownMetric label="GIR" value={`${row.gir}`} />
+                  <BreakdownMetric label="Fairways" value={`${row.fairways}`} />
+                </div>
               </div>
             ))}
           </div>
@@ -104,6 +98,15 @@ export function ReviewBreakdown({
           <RailBars rows={shortGameRows} labelWidth={80} />
         </Section>
       ) : null}
+    </div>
+  );
+}
+
+function BreakdownMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-fw-sm bg-surface px-2.5 py-2">
+      <p className="truncate font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+      <p style={TABULAR_NUMS} className="mt-0.5 font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">{value}</p>
     </div>
   );
 }

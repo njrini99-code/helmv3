@@ -111,8 +111,8 @@ export function SignalQueue({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col gap-3 min-[940px]:h-full min-[940px]:min-h-0">
+      <div className="flex flex-wrap gap-2 min-[940px]:shrink-0">
         {chips.map((chip) => (
           <Link
             key={chip.key}
@@ -135,7 +135,7 @@ export function SignalQueue({
             }}
             aria-current={filter === chip.key ? 'page' : undefined}
             className={cn(
-              'inline-flex min-h-[30px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3',
+              'inline-flex min-h-[30px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3 [@media(pointer:coarse)]:min-h-[44px]',
               'font-fw-sans text-caption font-medium outline-none transition-colors',
               'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
               filter === chip.key
@@ -156,7 +156,7 @@ export function SignalQueue({
         aria-label="Signals queue"
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-fw-lg border border-border-subtle bg-surface p-2"
+        className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-fw-lg border border-border-subtle bg-surface p-2 min-[940px]:min-h-0 min-[940px]:flex-1 min-[940px]:max-h-none"
       >
         {groups.length === 0 ? (
           <div className="p-4">

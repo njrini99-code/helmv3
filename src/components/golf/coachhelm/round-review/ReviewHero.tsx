@@ -74,17 +74,28 @@ export function ReviewHero({
     const n = raw ? Number(raw) : NaN;
     return Number.isFinite(n) ? n : null;
   }, [searchParams]);
+  const firstHole = filmstripHoles[0]?.n ?? null;
 
-  const [activeHole, setActiveHole] = useState<number | null>(initialHole);
+  const [activeHole, setActiveHole] = useState<number | null>(initialHole ?? firstHole);
   const [openHole, setOpenHole] = useState<number | null>(initialHole);
 
   // If the round changes under us (navigating between reviews without a full
   // remount), drop any stale open-hole state from the previous round.
   useEffect(() => {
-    setActiveHole(initialHole);
+    setActiveHole(initialHole ?? filmstripHoles[0]?.n ?? null);
     setOpenHole(initialHole);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filmstripHoles]);
+
+  // Start with a useful, stable preview instead of an empty half-hero. The
+  // shot ledger arrives after the shell, so open the active hole as soon as
+  // its real shots are available. This also reserves the same visual region
+  // before the coach begins scrubbing, avoiding the old jumpy three-level
+  // review behavior.
+  useEffect(() => {
+    if (openHole != null || activeHole == null || shotsByHole == null) return;
+    if ((shotsByHole.get(activeHole)?.length ?? 0) > 0) setOpenHole(activeHole);
+  }, [activeHole, openHole, shotsByHole]);
 
   const activeFilmstripHole = filmstripHoles.find((h) => h.n === activeHole) ?? null;
   const detail = activeFilmstripHole ? formatHoleDetail(activeFilmstripHole) : null;
@@ -161,7 +172,7 @@ export function ReviewHero({
           activeHole={activeHole ?? undefined}
           onScrub={handleScrub}
         />
-        <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
+        <div className="mt-3 min-h-[58px] border-t border-border-subtle pt-3" aria-live="polite">
           {detail ? (
             <>
               <p className="font-fw-mono text-caption font-normal text-text-primary">{detail.header}</p>
@@ -187,7 +198,8 @@ export function ReviewHero({
 
       {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
         <div className="min-w-0 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">
-          <div className="grid min-w-0 grid-cols-[112px_minmax(0,1fr)] items-start gap-4 md:grid-cols-[124px_minmax(0,1fr)] md:gap-6">
+          <div className="grid min-w-0 grid-cols-1 items-start gap-4 min-[520px]:grid-cols-[124px_minmax(0,1fr)] min-[520px]:gap-6">
+            <div className="mx-auto min-[520px]:mx-0">
             <HoleShotPath
               hole_number={openHole}
               par={openPar}
@@ -196,6 +208,7 @@ export function ReviewHero({
               shots={openHoleShots}
               size="inline"
             />
+            </div>
             <div className="min-w-0 pt-1">
               <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -206,9 +219,9 @@ export function ReviewHero({
                   Close
                 </PressTarget>
               </div>
-              <ol className="mt-4 space-y-2">
+              <ol key={openHole} className="mt-4 grid gap-2 md:grid-cols-2">
                 {openHoleShots.slice(0, 6).map((shot, index) => (
-                  <li key={`${shot.shot_number}-${index}`} className="min-w-0 rounded-fw-sm border border-border-subtle bg-surface px-3 py-2">
+                  <li key={`${shot.shot_number}-${index}`} className="min-w-0 rounded-fw-sm border border-border-subtle bg-surface px-3 py-2 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:[box-shadow:var(--fw-shadow-soft)] motion-reduce:hover:translate-y-0">
                     <p className="truncate font-fw-sans text-caption font-medium text-text-primary">
                       Shot {index + 1}: {shot.lie_before || 'start'} → {shot.lie_after || 'result'}
                     </p>
@@ -220,6 +233,17 @@ export function ReviewHero({
                   </li>
                 ))}
               </ol>
+            </div>
+          </div>
+        </div>
+      ) : shotsByHole === null && activeHole != null ? (
+        <div className="grid min-w-0 grid-cols-1 gap-4 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:grid-cols-[124px_minmax(0,1fr)] sm:p-5">
+          <Skeleton className="mx-auto h-[240px] w-[112px] rounded-fw-md sm:mx-0 md:h-[264px] md:w-[124px]" />
+          <div className="grid content-start gap-3 pt-1">
+            <Skeleton className="h-5 w-40 rounded-fw-sm" />
+            <Skeleton className="h-4 w-64 max-w-full rounded-fw-sm" />
+            <div className="mt-2 grid gap-2 md:grid-cols-2">
+              {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-14 rounded-fw-sm" />)}
             </div>
           </div>
         </div>

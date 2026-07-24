@@ -49,7 +49,7 @@ export function PromoteToFocusAreaButton({ signal, coachId, onPromoted }: Promot
           insight_type: signal.category,
         });
         if (res.success) {
-          fairwayToast.success('Focus area created.');
+          fairwayToast.success('Prescription sent for player approval.');
           onPromoted();
         } else {
           fairwayToast.error(res.error ?? 'Could not create the focus area. Try again.');

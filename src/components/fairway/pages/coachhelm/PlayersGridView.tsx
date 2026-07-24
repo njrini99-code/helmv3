@@ -47,6 +47,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import { CoachHelmShell } from './CoachHelmShell';
 import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
 import { GoalsSection } from './GoalsSection';
@@ -64,6 +65,9 @@ import {
   SegmentBar,
   type SegmentBarPart,
   TrendGlyph,
+  Sparkline,
+  Surface,
+  Eyebrow,
 } from '@/components/fairway';
 import {
   DataTable,
@@ -83,8 +87,15 @@ import {
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import { Target as LucideTarget } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  BrainCircuit,
+  ChartNoAxesColumnIncreasing,
+  Target as LucideTarget,
+} from 'lucide-react';
 import { IconPlus, IconChevronRight } from '@/components/icons';
+import type { SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import {
   createFocusArea,
   updateFocusArea,
@@ -147,6 +158,9 @@ export interface PlayersGridViewProps {
   focusAreas: PlayersGridFocusArea[];
   coachId: string;
   playerStats: Record<string, PlayersGridStats>;
+  /** Open CoachHelm evidence grouped by player. This is what makes the Players
+   *  view an intelligence workflow instead of a generic roster browser. */
+  signalGroups?: SignalGroup[];
   /** SSR-known urgent/high open-signal count for the shell badge. */
   signalCount?: number | null;
   /**
@@ -250,6 +264,7 @@ export function PlayersGridView({
   focusAreas,
   coachId,
   playerStats,
+  signalGroups = [],
   signalCount,
   goalsByPlayer = {},
   playerNameById = {},
@@ -419,6 +434,10 @@ export function PlayersGridView({
   const selectedPlayer = selectedPlayerId
     ? players.find((p) => p.id === selectedPlayerId) ?? null
     : null;
+  const signalGroupByPlayer = React.useMemo(
+    () => new Map(signalGroups.filter((group) => group.playerId).map((group) => [group.playerId as string, group])),
+    [signalGroups],
+  );
 
   /* ---- create / edit handlers (the shared modal owns the form) ---- */
 
@@ -855,10 +874,18 @@ export function PlayersGridView({
           </InlineNotice>
         ) : null}
 
-        {/* ── ROSTER-HEALTH HEADER INSTRUMENT — the hero. A ranked cluster on
-              warm glass: coverage gauge focal, outcome-mix rail, micro-readout
-              foot row. Reads from the same props (no new fetch). ── */}
-        <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
+        <DevelopmentCommandMap
+          health={rosterHealth}
+          needs={needsAttention}
+          signalGroups={signalGroups}
+          focusAreas={focusAreas}
+          onAdd={openCreate}
+          onOpenPlayer={(playerId) => {
+            setSelectedPlayerId(playerId);
+            setView('areas');
+            onNavigationChange?.({ view: 'areas', playerId });
+          }}
+        />
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (
@@ -887,11 +914,30 @@ export function PlayersGridView({
           <section aria-label="Team roster" className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">
               <p className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
-                Roster · {rosterRows.length} player{rosterRows.length === 1 ? '' : 's'}
+                Player intelligence · {rosterRows.length} player{rosterRows.length === 1 ? '' : 's'}
               </p>
               <p className="font-fw-sans text-caption text-text-tertiary">
-                Tap a player to scope their focus areas
+                Evidence → focus → progress → outcome
               </p>
+            </div>
+            <PlayerIntelligenceGrid
+              rows={rosterRows}
+              focusAreas={focusAreas}
+              goalsByPlayer={goalsByPlayer}
+              signalGroupByPlayer={signalGroupByPlayer}
+              silentPostureByPlayer={silentPostureByPlayer}
+              onOpenPlayer={(playerId) => {
+                setSelectedPlayerId(playerId);
+                setView('areas');
+                onNavigationChange?.({ view: 'areas', playerId });
+              }}
+              onAddFocusArea={openCreate}
+              onViewGame={(playerId) => router.push(`/golf/dashboard/players/${playerId}/game`)}
+            />
+
+            <div className="mt-3 hidden items-baseline justify-between gap-3 sm:flex">
+              <p className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">Roster comparison</p>
+              <p className="font-fw-sans text-caption text-text-tertiary">Sort the underlying scoring and development measures</p>
             </div>
             {/* MOBILE (< sm) — native player cards: identity + avg score + trend,
                 with "Add focus area" / "View genome" as always-visible tap
@@ -900,7 +946,7 @@ export function PlayersGridView({
                 off-screen entirely, and DataTable's row actions only reveal on
                 hover/focus-within — unreachable without a pointer (audit W2).
                 Desktop keeps the dense table (below) unchanged. */}
-            <div className="flex flex-col gap-3 sm:hidden">
+            <div className="hidden">
               {rosterRows.length === 0 ? (
                 <div className="rounded-card border border-border-subtle bg-surface">
                   {rosterEmptyState}
@@ -947,6 +993,17 @@ export function PlayersGridView({
           </section>
         ) : (
           <div className="flex flex-col gap-6">
+            {selectedPlayer ? (
+              <PlayerDevelopmentProfile
+                player={selectedPlayer}
+                stats={playerStats[selectedPlayer.id]}
+                signalGroup={signalGroupByPlayer.get(selectedPlayer.id)}
+                focusAreas={visibleAreas}
+                goals={goalsByPlayer[selectedPlayer.id] ?? []}
+                onAdd={() => openCreate(selectedPlayer.id)}
+                onViewGame={() => router.push(`/golf/dashboard/players/${selectedPlayer.id}/game`)}
+              />
+            ) : null}
             {/* ---- v3 GOALS (READ-ONLY) — scoped to the selected player, mounted
                    ABOVE the focus-area board. Coaches view assigned/shared goals
                    here; they assign via the focus-area flow, so canCreate={false}
@@ -1147,6 +1204,405 @@ export function PlayersGridView({
       </ModalShell>
     </CoachHelmShell>
   );
+}
+
+/* ---------------------------------------------------------------------------
+ * CoachHelm Players command surface — evidence → prescription → progress →
+ * outcome. These compositions only use route-loaded signals, stats, goals,
+ * focus areas, and outcomes; no decorative or invented values.
+ * ------------------------------------------------------------------------- */
+
+function DevelopmentCommandMap({
+  health,
+  needs,
+  signalGroups,
+  focusAreas,
+  onAdd,
+  onOpenPlayer,
+}: {
+  health: RosterHealth;
+  needs: NeedRow[];
+  signalGroups: SignalGroup[];
+  focusAreas: PlayersGridFocusArea[];
+  onAdd: (playerId?: string) => void;
+  onOpenPlayer: (playerId: string) => void;
+}) {
+  const signalTotal = signalGroups.reduce((sum, group) => sum + group.signals.length, 0);
+  const proposed = focusAreas.filter((area) => area.status === 'proposed').length;
+  const active = focusAreas.filter((area) => area.status === 'active' || area.status === 'in_progress').length;
+  const outcomes = health.totalOutcomes;
+  const coveragePct = Math.round(health.coverage * 100);
+  const improvedPct = outcomes > 0 ? Math.round((health.outcomeTally.improved / outcomes) * 100) : null;
+  const stages = [
+    { label: 'Evidence', value: signalTotal, detail: `${signalGroups.filter((group) => group.playerId).length} players flagged` },
+    { label: 'Awaiting player', value: proposed, detail: 'prescriptions pending' },
+    { label: 'In progress', value: active, detail: `${health.playersWithActive} players covered` },
+    { label: 'Measured', value: outcomes, detail: improvedPct == null ? 'awaiting outcomes' : `${improvedPct}% improved` },
+  ];
+
+  return (
+    <section aria-label="CoachHelm development command map" className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(330px,0.65fr)]">
+      <div className="overflow-hidden rounded-fw-lg border border-accent-700 bg-accent-900 text-white [box-shadow:var(--fw-shadow-raise)]">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 px-5 py-5 sm:px-6">
+          <div>
+            <p className="font-fw-display text-eyebrow uppercase tracking-[0.16em] text-accent-200">Development system</p>
+            <h2 className="mt-2 max-w-2xl font-fw-display text-h2 font-semibold text-white">
+              {health.totalPlayers > 0 ? `${coveragePct}% of the roster is working a measured plan.` : 'Build the first measured player plan.'}
+            </h2>
+            <p className="mt-2 max-w-2xl text-body-sm text-white/70">
+              CoachHelm connects evidence to a player-approved focus, tracks the metric, and closes the loop with an outcome.
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" leftIcon={<IconPlus size={15} />} onClick={() => onAdd()}>
+            Prescribe focus
+          </Button>
+        </div>
+
+        <div className="grid gap-px bg-accent-700 sm:grid-cols-2 xl:grid-cols-4">
+          {stages.map((stage, index) => (
+            <div key={stage.label} className="relative min-h-32 bg-accent-900 px-5 py-5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-fw-mono text-eyebrow tabular-nums text-accent-200">0{index + 1}</span>
+                {index < stages.length - 1 ? <ArrowRight className="h-4 w-4 text-white/30" aria-hidden /> : <Activity className="h-4 w-4 text-accent-300" aria-hidden />}
+              </div>
+              <p className="mt-4 font-fw-mono text-stat-sm font-semibold tabular-nums text-white">{stage.value}</p>
+              <p className="mt-1 text-body-sm font-semibold text-white">{stage.label}</p>
+              <p className="mt-1 text-caption text-white/55">{stage.detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Surface elevation="shadow" padding="md" className="flex h-full flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Eyebrow as="h2">Coach attention</Eyebrow>
+            <p className="mt-1 text-caption text-text-tertiary">Real scoring trend plus development coverage.</p>
+          </div>
+          <div
+            className="grid h-16 w-16 shrink-0 place-items-center rounded-full"
+            style={{ background: `conic-gradient(var(--fw-color-accent-500) ${coveragePct}%, var(--fw-color-surface-sunken) 0)` }}
+            aria-label={`${coveragePct}% roster coverage`}
+          >
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-surface font-fw-mono text-caption font-semibold tabular-nums text-text-primary">{coveragePct}%</span>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-2">
+          {needs.slice(0, 4).map(({ row, reason }, index) => (
+            <Button
+              key={row.player.id}
+              variant="ghost"
+              size="sm"
+              fullWidth
+              onClick={() => onOpenPlayer(row.player.id)}
+              className="group min-h-14 !justify-start !rounded-fw-md border-border-subtle bg-surface-raised !px-3 !py-2.5 text-left hover:border-accent-200 hover:bg-surface-raised hover:[box-shadow:var(--fw-shadow-soft)]"
+            >
+              <span className="flex w-full min-w-0 items-center gap-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fw-warning-bg font-fw-mono text-caption font-semibold text-fw-warning-ink">{String(index + 1).padStart(2, '0')}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-body-sm font-semibold text-text-primary">{playerName(row.player)}</span>
+                  <span className="block truncate text-caption text-text-tertiary">{reason}</span>
+                </span>
+                <span className="font-fw-mono text-caption tabular-nums text-text-secondary">{row.stats?.avg_score?.toFixed(1) ?? '—'}</span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </span>
+            </Button>
+          ))}
+          {needs.length === 0 ? (
+            <div className="rounded-fw-md border border-accent-200 bg-accent-50 px-4 py-5">
+              <p className="text-body-sm font-semibold text-accent-900">Roster is covered</p>
+              <p className="mt-1 text-caption text-accent-800">No player is both declining and missing an active focus area.</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-auto grid grid-cols-3 divide-x divide-border-subtle border-t border-border-subtle pt-4">
+          <CommandMetric label="Players" value={health.totalPlayers} />
+          <CommandMetric label="Active" value={health.activeAreas} />
+          <CommandMetric label="Completed" value={health.completedAreas} />
+        </div>
+      </Surface>
+    </section>
+  );
+}
+
+function CommandMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="px-3 first:pl-0 last:pr-0">
+      <p className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">{value}</p>
+      <p className="mt-1 text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+    </div>
+  );
+}
+
+function PlayerIntelligenceGrid({
+  rows,
+  focusAreas,
+  goalsByPlayer,
+  signalGroupByPlayer,
+  silentPostureByPlayer,
+  onOpenPlayer,
+  onAddFocusArea,
+  onViewGame,
+}: {
+  rows: RosterRow[];
+  focusAreas: PlayersGridFocusArea[];
+  goalsByPlayer: Record<string, FairwayGoalCardData[]>;
+  signalGroupByPlayer: Map<string, SignalGroup>;
+  silentPostureByPlayer: Record<string, boolean>;
+  onOpenPlayer: (playerId: string) => void;
+  onAddFocusArea: (playerId?: string) => void;
+  onViewGame: (playerId: string) => void;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
+      {rows.map((row, index) => {
+        const playerId = row.player.id;
+        const playerAreas = focusAreas.filter((area) => area.player_id === playerId);
+        const active = playerAreas.filter((area) => area.status === 'active' || area.status === 'in_progress').length;
+        const pending = playerAreas.filter((area) => area.status === 'proposed').length;
+        const signalGroup = signalGroupByPlayer.get(playerId);
+        const topSignal = signalGroup?.signals[0];
+        const scoreSeries = row.stats?.score_series?.filter(Number.isFinite) ?? [];
+        return (
+          <article
+            key={playerId}
+            className={cn(
+              'group flex min-h-[310px] flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:[box-shadow:var(--fw-shadow-raise)] motion-reduce:hover:translate-y-0 md:col-span-1',
+              balancedRosterSpan(rows.length, index),
+            )}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border-subtle px-4 py-4">
+              <PlayerIdentity
+                name={playerName(row.player)}
+                avatarUrl={row.player.avatar_url}
+                size="sm"
+                meta={row.player.graduation_year ? `Class of ${row.player.graduation_year}` : undefined}
+              />
+              {silentPostureByPlayer[playerId] ? <Badge tone="neutral" size="sm">Muted</Badge> : signalGroup ? (
+                <Badge tone={signalGroup.worstSeverity === 'urgent' || signalGroup.worstSeverity === 'high' ? 'warning' : 'accent'} size="sm" numeric>
+                  {signalGroup.signals.length} signals
+                </Badge>
+              ) : <Badge tone="neutral" size="sm">All clear</Badge>}
+            </div>
+
+            <div className="grid flex-1 content-start gap-4 px-4 py-4">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-eyebrow uppercase tracking-wide text-text-tertiary">Scoring average</p>
+                  <p className="mt-1 font-fw-mono text-stat-sm font-semibold tabular-nums text-text-primary">{row.stats?.avg_score?.toFixed(1) ?? '—'}</p>
+                </div>
+                <Sparkline data={scoreSeries} goodDirection="down" width={104} height={36} strokeWidth={2} label={`${playerName(row.player)} scoring`} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <PlayerMicroMetric label="GIR" value={formatPercent(row.stats?.gir_pct)} />
+                <PlayerMicroMetric label="Fairways" value={formatPercent(row.stats?.fairway_pct)} />
+                <PlayerMicroMetric label="Putts" value={row.stats?.avg_putts?.toFixed(1) ?? '—'} />
+              </div>
+
+              <div className="rounded-fw-md border border-border-subtle bg-surface-sunken/55 px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-wide text-text-tertiary"><BrainCircuit className="h-3.5 w-3.5 text-accent-700" aria-hidden />CoachHelm read</span>
+                  <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">{signalGroup?.attentionScore ?? 0} priority</span>
+                </div>
+                <p className="mt-2 line-clamp-2 min-h-10 text-caption font-medium text-text-primary">
+                  {topSignal ? `${formatSignalCategory(topSignal.category)} · ${topSignal.title}` : 'No open evidence needs review right now.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 divide-x divide-border-subtle border-t border-border-subtle pt-3">
+                <PlayerCount label="Active" value={active} />
+                <PlayerCount label="Pending" value={pending} />
+                <PlayerCount label="Goals" value={goalsByPlayer[playerId]?.length ?? 0} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 border-t border-border-subtle bg-surface-sunken/35 p-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label={`Open ${playerName(row.player)} development profile`}
+                onClick={() => onOpenPlayer(playerId)}
+              >
+                Open
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label={`Prescribe a focus area for ${playerName(row.player)}`}
+                leftIcon={<IconPlus size={14} />}
+                onClick={() => onAddFocusArea(playerId)}
+              >
+                Focus
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Open ${playerName(row.player)} game fingerprint`}
+                rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
+                onClick={() => onViewGame(playerId)}
+              >
+                Game
+              </Button>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlayerDevelopmentProfile({
+  player,
+  stats,
+  signalGroup,
+  focusAreas,
+  goals,
+  onAdd,
+  onViewGame,
+}: {
+  player: PlayersGridPlayer;
+  stats?: PlayersGridStats;
+  signalGroup?: SignalGroup;
+  focusAreas: PlayersGridFocusArea[];
+  goals: FairwayGoalCardData[];
+  onAdd: () => void;
+  onViewGame: () => void;
+}) {
+  const active = focusAreas.filter((area) => area.status === 'active' || area.status === 'in_progress').length;
+  const pending = focusAreas.filter((area) => area.status === 'proposed').length;
+  const completed = focusAreas.filter((area) => area.status === 'completed').length;
+  const scoreSeries = stats?.score_series?.filter(Number.isFinite) ?? [];
+  const categories = Array.from(new Set(signalGroup?.signals.map((signal) => signal.category) ?? [])).slice(0, 5);
+
+  return (
+    <section aria-label={`${playerName(player)} development profile`} className="overflow-hidden rounded-fw-lg border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-raise)]">
+      <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
+        <div className="border-b border-border-subtle p-5 sm:p-6 lg:border-b-0 lg:border-r">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <Eyebrow tone="accent">Player intelligence profile</Eyebrow>
+              <div className="mt-3">
+                <PlayerIdentity
+                  name={playerName(player)}
+                  avatarUrl={player.avatar_url}
+                  size="md"
+                  meta={[player.graduation_year ? `Class of ${player.graduation_year}` : null, player.handicap != null ? `${player.handicap} HCP` : null].filter(Boolean).join(' · ') || undefined}
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={onViewGame}>Game fingerprint</Button>
+              <Button variant="primary" size="sm" leftIcon={<IconPlus size={15} />} onClick={onAdd}>Prescribe focus</Button>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div>
+              <p className="text-eyebrow uppercase tracking-wide text-text-tertiary">Recent scoring shape</p>
+              <div className="mt-2 flex items-end gap-3">
+                <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">{stats?.avg_score?.toFixed(1) ?? '—'}</span>
+                <span className="mb-1 text-caption text-text-tertiary">average · {stats?.rounds_played ?? 0} rounds</span>
+              </div>
+            </div>
+            <Sparkline data={scoreSeries} goodDirection="down" width={190} height={54} strokeWidth={2.5} label={`${playerName(player)} recent scoring`} />
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <ProfileMetric label="GIR" value={formatPercent(stats?.gir_pct)} />
+            <ProfileMetric label="Fairways" value={formatPercent(stats?.fairway_pct)} />
+            <ProfileMetric label="Putts / round" value={stats?.avg_putts?.toFixed(1) ?? '—'} />
+            <ProfileMetric label="Scrambling" value={formatPercent(stats?.scrambling_pct)} />
+          </div>
+        </div>
+
+        <div className="flex flex-col p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Eyebrow>CoachHelm evidence</Eyebrow>
+              <p className="mt-1 text-caption text-text-tertiary">Current signal load and development state.</p>
+            </div>
+            <ChartNoAxesColumnIncreasing className="h-4 w-4 text-accent-700" aria-hidden />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {categories.length > 0 ? categories.map((category) => (
+              <Badge key={category} tone="neutral" size="sm">{formatSignalCategory(category)}</Badge>
+            )) : <Badge tone="accent" size="sm">No open signals</Badge>}
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-fw-md border border-border-subtle bg-border-subtle">
+            <ProfileState label="Open signals" value={signalGroup?.signals.length ?? 0} />
+            <ProfileState label="Priority" value={signalGroup?.attentionScore ?? 0} />
+            <ProfileState label="Active focus" value={active} />
+            <ProfileState label="Pending" value={pending} />
+            <ProfileState label="Completed" value={completed} />
+            <ProfileState label="Goals" value={goals.length} />
+          </div>
+
+          <p className="mt-auto pt-5 text-caption text-text-secondary">
+            {signalGroup?.signals[0]?.title ?? 'CoachHelm has no open evidence requiring action for this player.'}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PlayerMicroMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-fw-sm bg-surface-sunken/55 px-2.5 py-2">
+      <p className="text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+      <p className="mt-1 font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">{value}</p>
+    </div>
+  );
+}
+
+function PlayerCount({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="px-2 text-center first:pl-0 last:pr-0">
+      <p className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">{value}</p>
+      <p className="mt-1 text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+    </div>
+  );
+}
+
+function ProfileMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-fw-md border border-border-subtle bg-surface-sunken/45 px-3 py-3">
+      <p className="text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+      <p className="mt-2 font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">{value}</p>
+    </div>
+  );
+}
+
+function ProfileState({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-surface-raised px-3 py-3">
+      <p className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">{value}</p>
+      <p className="mt-1 text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+    </div>
+  );
+}
+
+function formatPercent(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return '—';
+  return `${Math.round(value)}%`;
+}
+
+function formatSignalCategory(category: string) {
+  return category.split('_').filter(Boolean).map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+function balancedRosterSpan(total: number, index: number) {
+  if (total === 2) return 'xl:col-span-6';
+  if (total === 1) return 'xl:col-span-12';
+  const remainder = total % 3;
+  if (remainder === 1 && index >= total - 4) return 'xl:col-span-3';
+  if (remainder === 2 && index >= total - 2) return 'xl:col-span-6';
+  return 'xl:col-span-4';
 }
 
 /* ---------------------------------------------------------------------------
@@ -1459,7 +1915,7 @@ interface RosterHealth {
   totalOutcomes: number;
 }
 
-function RosterHealthHeader({
+export function RosterHealthHeader({
   health,
   needs,
   onAdd,

@@ -31,7 +31,11 @@ import {
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { SprayChartResponse } from '@/app/golf/actions/stats-data-types';
+import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import type { BandHistogramBand } from '@/components/fairway/charts/BandHistogram';
+import type { CoachHelmPattern } from './StatsSpineStage';
+import { StatCategoryBrief, findCategoryPattern } from './StatCategoryBrief';
+import { cn } from '@/lib/utils';
 
 function ChartLoading() {
   return (
@@ -125,6 +129,25 @@ function fmtNumber(value: number | null | undefined, digits = 1): string {
   return finite(value) === null ? '—' : finite(value)!.toFixed(digits);
 }
 
+function efficiencyTone(value: number | null | undefined, values: Array<number | null | undefined>): string {
+  const current = finite(value);
+  const valid = values.map(finite).filter((item): item is number => item !== null);
+  if (current === null || valid.length < 2) return 'bg-surface-sunken text-text-tertiary';
+  const best = Math.min(...valid);
+  const worst = Math.max(...valid);
+  if (current === best) return 'bg-accent-50 text-accent-800 ring-1 ring-inset ring-accent-200';
+  if (current === worst && worst - best > 0.2) return 'bg-fw-warning/10 text-fw-warning';
+  return 'bg-surface-sunken/70 text-text-secondary';
+}
+
+function missTone(value: number | null | undefined): string {
+  const current = finite(value);
+  if (current === null) return 'text-text-tertiary';
+  if (current >= 35) return 'bg-fw-danger/10 font-semibold text-fw-danger';
+  if (current >= 22) return 'bg-fw-warning/10 font-medium text-fw-warning';
+  return 'bg-accent-50 text-accent-800';
+}
+
 /** Real-summary aria-label for the GIR-by-distance BandHistogram — the ONE
  *  non-interactive AT channel, so it must actually describe the data rather
  *  than just naming the chart (mirrors SprayField's `buildSprayAriaSummary`). */
@@ -149,6 +172,8 @@ export interface ApproachDrillProps {
   leakError?: boolean;
   onRetryLeak?: () => void;
   retryingLeak?: boolean;
+  trendData?: TrendAnalysisResponse | null;
+  patterns?: CoachHelmPattern[];
 }
 
 export function ApproachDrill({
@@ -158,10 +183,13 @@ export function ApproachDrill({
   leakError = false,
   onRetryLeak,
   retryingLeak = false,
+  trendData = null,
+  patterns = [],
 }: ApproachDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
   const [detail, setDetail] = useState<ApproachDetail>('gir');
+  const categoryPattern = findCategoryPattern(patterns, ['approach', 'gir', 'green', 'iron']);
 
   // GIR by approach distance — only a percentage is tracked per band (no
   // per-band attempt count on `GolfStats`), so `n` stays honestly `null`
@@ -188,7 +216,7 @@ export function ApproachDrill({
   return (
     <DrillPanel title="Approach" backLabel="All areas" onBack={home}>
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[
             { label: 'GIR', value: finite(s?.girPercentage), unit: '%', digits: 0 },
             { label: 'GIR / round', value: finite(s?.girPerRound), digits: 1 },
@@ -196,7 +224,7 @@ export function ApproachDrill({
             { label: 'Proximity · GIR', value: finite(s?.approachProximityWhenHitGreen), unit: 'ft', digits: 1 },
             { label: 'Proximity · missed GIR', value: finite(s?.approachProximityWhenMissedGreen), unit: 'ft', digits: 1 },
           ].map((item) => (
-            <InstrumentPanel key={item.label} depth="base" padding="md" className="min-h-[112px]">
+            <InstrumentPanel key={item.label} depth="base" padding="md" className="min-h-[112px] transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-raise motion-reduce:hover:translate-y-0">
               <Readout
                 value={item.value ?? undefined}
                 unit={item.unit}
@@ -209,6 +237,23 @@ export function ApproachDrill({
             </InstrumentPanel>
           ))}
         </div>
+
+        <StatCategoryBrief
+          category="Approach"
+          metricLabel="GIR %"
+          series={trendData?.trends.gir.map((point) => point.value) ?? []}
+          pattern={categoryPattern}
+          fallbackInsight={
+            finite(s?.girPercentage) !== null
+              ? `${Math.round(finite(s?.girPercentage) ?? 0)}% GIR is shaping the scoring ceiling.`
+              : 'Approach trends will sharpen as more rounds are tracked.'
+          }
+          fallbackAction={
+            finite(s?.approachProximityAvg) !== null
+              ? `Average proximity is ${fmtNumber(s?.approachProximityAvg, 1)} ft. Use the distance and lie splits below to find the most actionable band.`
+              : 'Track approach distance and lie so CoachHelm can separate contact quality from target selection.'
+          }
+        />
 
         <Segmented
           value={detail}
@@ -250,13 +295,14 @@ export function ApproachDrill({
                 <tbody>
                   {APPROACH_DETAIL_BANDS.map((band) => {
                     const eff = s?.[band.efficiency];
+                    const rowEfficiency = [eff?.fairway, eff?.rough, eff?.sand];
                     return (
-                      <tr key={band.label} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary">
-                        <th className="rounded-l-fw-sm px-3 py-3 font-fw-sans font-medium text-text-primary">{band.label}</th>
-                        <td className="px-3">{fmtNumber(s?.[band.proximity], 1)} ft</td>
-                        <td className="px-3">{fmtNumber(eff?.fairway, 2)}</td>
-                        <td className="px-3">{fmtNumber(eff?.rough, 2)}</td>
-                        <td className="rounded-r-fw-sm px-3">{fmtNumber(eff?.sand, 2)}</td>
+                      <tr key={band.label} className="font-fw-mono text-caption tabular-nums text-text-secondary">
+                        <th className="rounded-l-fw-sm border-y border-l border-border-subtle bg-surface px-3 py-3 font-fw-sans font-medium text-text-primary">{band.label}</th>
+                        <td className="border-y border-border-subtle bg-surface px-3">{fmtNumber(s?.[band.proximity], 1)} ft</td>
+                        <td className={cn('border-y border-border-subtle px-3', efficiencyTone(eff?.fairway, rowEfficiency))}>{fmtNumber(eff?.fairway, 2)}</td>
+                        <td className={cn('border-y border-border-subtle px-3', efficiencyTone(eff?.rough, rowEfficiency))}>{fmtNumber(eff?.rough, 2)}</td>
+                        <td className={cn('rounded-r-fw-sm border-y border-r border-border-subtle px-3', efficiencyTone(eff?.sand, rowEfficiency))}>{fmtNumber(eff?.sand, 2)}</td>
                       </tr>
                     );
                   })}
@@ -280,7 +326,7 @@ export function ApproachDrill({
                   <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="p-2 text-left">Distance</th><th>Short</th><th>Long</th><th>Left</th><th>Right</th><th>n</th></tr></thead>
                   <tbody>{APPROACH_DETAIL_BANDS.map((band) => {
                     const miss = s?.approachMissByBand?.[band.miss];
-                    return <tr key={band.label} className="border-t border-border-subtle font-fw-mono tabular-nums"><th className="p-2 text-left font-fw-sans font-medium">{band.label}</th><td className="text-center">{fmtPct(finite(miss?.short))}</td><td className="text-center">{fmtPct(finite(miss?.long))}</td><td className="text-center">{fmtPct(finite(miss?.left))}</td><td className="text-center">{fmtPct(finite(miss?.right))}</td><td className="text-center">{miss?.total ?? '—'}</td></tr>;
+                    return <tr key={band.label} className="border-t border-border-subtle font-fw-mono tabular-nums"><th className="p-2 text-left font-fw-sans font-medium">{band.label}</th><td className={cn('rounded-fw-sm px-2 py-2 text-center', missTone(miss?.short))}>{fmtPct(finite(miss?.short))}</td><td className={cn('rounded-fw-sm px-2 py-2 text-center', missTone(miss?.long))}>{fmtPct(finite(miss?.long))}</td><td className={cn('rounded-fw-sm px-2 py-2 text-center', missTone(miss?.left))}>{fmtPct(finite(miss?.left))}</td><td className={cn('rounded-fw-sm px-2 py-2 text-center', missTone(miss?.right))}>{fmtPct(finite(miss?.right))}</td><td className="text-center text-text-tertiary">{miss?.total ?? '—'}</td></tr>;
                   })}</tbody>
                 </table>
               </div>

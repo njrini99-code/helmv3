@@ -28,8 +28,10 @@ import {
   type SegmentBarPart,
 } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import type { WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
+import type { TrendAnalysisResponse, WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
 import { DEFAULT_MIN_PLAYS } from '@/lib/golf/worst-hole-ranking';
+import type { CoachHelmPattern } from './StatsSpineStage';
+import { StatCategoryBrief, findCategoryPattern } from './StatCategoryBrief';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -56,11 +58,14 @@ const PAR_KEYS = [
 export interface ScoringDrillProps {
   detailedStats: GolfStats | null;
   worstHoles: WorstHoleResponse | null;
+  trendData?: TrendAnalysisResponse | null;
+  patterns?: CoachHelmPattern[];
 }
 
-export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
+export function ScoringDrill({ detailedStats, worstHoles, trendData = null, patterns = [] }: ScoringDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+  const categoryPattern = findCategoryPattern(patterns, ['scor', 'bogey', 'double', 'pressure', 'compound']);
 
   const parCards = PAR_KEYS.map(({ key, label }) => ({ label, d: s?.scoringByPar[key] }))
     .filter((c) => (c.d?.total ?? 0) > 0)
@@ -142,6 +147,24 @@ export function ScoringDrill({ detailedStats, worstHoles }: ScoringDrillProps) {
             </p>
           ) : null}
         </div>
+
+        <StatCategoryBrief
+          category="Scoring"
+          metricLabel="Round score"
+          series={trendData?.trends.score.map((point) => point.value) ?? []}
+          lowerIsBetter
+          pattern={categoryPattern}
+          fallbackInsight={
+            finite(s?.scoringAverage) !== null
+              ? `${finite(s?.scoringAverage)?.toFixed(1)} is the current scoring average, with the outcome mix showing where rounds are separating.`
+              : 'Scoring patterns will sharpen as completed rounds accumulate.'
+          }
+          fallbackAction={
+            finite(s?.doublePlusPerRound) !== null
+              ? `Double-or-worse rate is ${finite(s?.doublePlusPerRound)?.toFixed(2)} per round. Use the par split and worst-hole ranking below to identify preventable damage.`
+              : 'Track complete hole outcomes so CoachHelm can distinguish isolated misses from compounding mistakes.'
+          }
+        />
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           <InstrumentPanel tone="accent" depth="raised" padding="md" className="flex min-h-[138px] items-center transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-raise motion-reduce:transform-none">

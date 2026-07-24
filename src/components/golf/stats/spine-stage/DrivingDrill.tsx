@@ -15,7 +15,9 @@ import { DrillPanel, RailBars, DivergingBars, useStage } from '@/components/fair
 import type { RailBarRow, DivergingRow } from '@/components/fairway/modules';
 import { Skeleton, Surface, InstrumentPanel, Readout, Eyebrow } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import type { SprayChartResponse } from '@/app/golf/actions/stats-data-types';
+import type { SprayChartResponse, TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import type { CoachHelmPattern } from './StatsSpineStage';
+import { StatCategoryBrief, findCategoryPattern } from './StatCategoryBrief';
 
 function ChartLoading() {
   return (
@@ -41,11 +43,14 @@ function fmtPct(n: number | null): string {
 export interface DrivingDrillProps {
   detailedStats: GolfStats | null;
   sprayData: SprayChartResponse | null;
+  trendData?: TrendAnalysisResponse | null;
+  patterns?: CoachHelmPattern[];
 }
 
-export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
+export function DrivingDrill({ detailedStats, sprayData, trendData = null, patterns = [] }: DrivingDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+  const categoryPattern = findCategoryPattern(patterns, ['driv', 'tee', 'fairway', 'dispersion']);
 
   const byHoleType: RailBarRow[] = [
     { label: 'Par 4', pct: finite(s?.fairwayPctPar4) ?? 0, value: fmtPct(finite(s?.fairwayPctPar4)) },
@@ -109,6 +114,22 @@ export function DrivingDrill({ detailedStats, sprayData }: DrivingDrillProps) {
             <Readout className="w-full" value={fwPct ?? undefined} unit="%" label="Fairways hit" size="md" state={fwPct != null ? 'live' : 'awaiting'} awaitingLabel="No tee shots" />
           </InstrumentPanel>
         </div>
+        <StatCategoryBrief
+          category="Off the tee"
+          metricLabel="Fairways %"
+          series={trendData?.trends.fairway.map((point) => point.value) ?? []}
+          pattern={categoryPattern}
+          fallbackInsight={
+            fwPct !== null
+              ? `${Math.round(fwPct)}% fairways is the current baseline for tee-shot control.`
+              : 'Tee-shot control will sharpen as fairway outcomes are recorded.'
+          }
+          fallbackAction={
+            missLeft !== null || missRight !== null
+              ? `The miss pattern is ${fmtPct(missLeft)} left and ${fmtPct(missRight)} right. Use the club split below to see whether the pattern is driver-specific.`
+              : 'Track club and miss direction to separate setup patterns from course-management decisions.'
+          }
+        />
         <div className="grid gap-4 lg:grid-cols-2">
           <Surface elevation="shadow" padding="md" className="space-y-3">
             <Eyebrow as="h4">Fairways by tee type</Eyebrow>

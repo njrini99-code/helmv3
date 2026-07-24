@@ -20,6 +20,10 @@ import { DrillPanel, RailBars, RingGauge, useStage } from '@/components/fairway/
 import type { RailBarRow } from '@/components/fairway/modules';
 import { Eyebrow, InstrumentPanel, Readout, RadialGauge, Segmented, Surface, chartAriaLabel } from '@/components/fairway';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import type { CoachHelmPattern } from './StatsSpineStage';
+import { StatCategoryBrief, findCategoryPattern } from './StatCategoryBrief';
+import { cn } from '@/lib/utils';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -86,12 +90,26 @@ function LieRing({ label, pct }: { label: string; pct: number | null }) {
 
 export interface ShortGameDrillProps {
   detailedStats: GolfStats | null;
+  trendData?: TrendAnalysisResponse | null;
+  patterns?: CoachHelmPattern[];
 }
 
-export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
+function lowerIsBetterTone(value: number | null | undefined, peers: Array<number | null | undefined>): string {
+  const current = finite(value);
+  const valid = peers.map(finite).filter((item): item is number => item !== null);
+  if (current === null || valid.length < 2) return 'bg-surface-sunken text-text-tertiary';
+  const best = Math.min(...valid);
+  const worst = Math.max(...valid);
+  if (current === best) return 'bg-accent-50 text-accent-800 ring-1 ring-inset ring-accent-200';
+  if (current === worst && worst - best > 0.15) return 'bg-fw-warning/10 text-fw-warning';
+  return 'bg-surface-sunken/70 text-text-secondary';
+}
+
+export function ShortGameDrill({ detailedStats, trendData = null, patterns = [] }: ShortGameDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
   const [detail, setDetail] = useState<'scrambling' | 'efficiency'>('scrambling');
+  const categoryPattern = findCategoryPattern(patterns, ['short game', 'scrambl', 'bunker', 'sand', 'recovery']);
 
   const scramblingPct = finite(s?.scramblingPercentage);
   const scrambleAttempts = s?.scrambleAttempts ?? 0;
@@ -129,11 +147,28 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
             { label: 'Sand saves', value: sandPct, unit: '%', digits: 0, awaiting: 'No bunkers' },
             { label: 'Penalties / round', value: penPerRound, digits: 2, awaiting: 'No rounds' },
           ].map((item) => (
-            <InstrumentPanel key={item.label} depth="base" padding="md" className="min-h-[116px]">
+            <InstrumentPanel key={item.label} depth="base" padding="md" className="min-h-[116px] transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-raise motion-reduce:hover:translate-y-0">
               <Readout value={item.value ?? undefined} unit={item.unit} format={{ maximumFractionDigits: item.digits }} label={item.label} size="sm" state={item.value !== null ? 'live' : 'awaiting'} awaitingLabel={item.awaiting} />
             </InstrumentPanel>
           ))}
         </div>
+
+        <StatCategoryBrief
+          category="Short game"
+          metricLabel="Scrambling %"
+          series={trendData?.rounds.map((round) => round.scrambling) ?? []}
+          pattern={categoryPattern}
+          fallbackInsight={
+            scramblingPct !== null
+              ? `${Math.round(scramblingPct)}% scrambling shows how often missed greens are being converted into saves.`
+              : 'Short-game trends will sharpen as recovery shots are recorded.'
+          }
+          fallbackAction={
+            finite(s?.atgEfficiencyAvg) !== null
+              ? `Average recovery efficiency is ${finite(s?.atgEfficiencyAvg)?.toFixed(2)} strokes to hole out. Use the lie and distance splits below to isolate the leak.`
+              : 'Record the starting lie and distance so CoachHelm can separate execution from shot selection.'
+          }
+        />
 
         <Segmented
           value={detail}
@@ -171,7 +206,25 @@ export function ShortGameDrill({ detailedStats }: ShortGameDrillProps) {
                 <tbody>{efficiencyByDistance.map((row) => {
                   const split = s?.atgEffByDistanceLie?.[row.key];
                   const val = (n: number | null | undefined) => finite(n) === null ? '—' : finite(n)!.toFixed(2);
-                  return <tr key={row.key} className="bg-surface-sunken font-fw-mono text-caption tabular-nums text-text-secondary"><th className="rounded-l-fw-sm px-3 py-3 font-fw-sans font-medium text-text-primary">{row.label}</th><td className="px-3">{val(row.value)}</td><td className="px-3">{val(split?.fairway)}</td><td className="px-3">{val(split?.rough)}</td><td className="rounded-r-fw-sm px-3">{val(split?.sand)}</td></tr>;
+                  const peers = [row.value, split?.fairway, split?.rough, split?.sand];
+                  const cells = [row.value, split?.fairway, split?.rough, split?.sand];
+                  return (
+                    <tr key={row.key} className="font-fw-mono text-caption tabular-nums">
+                      <th className="rounded-l-fw-sm border-y border-l border-border-subtle bg-surface-raised px-3 py-3 font-fw-sans font-medium text-text-primary">{row.label}</th>
+                      {cells.map((cell, index) => (
+                        <td
+                          key={`${row.key}-${index}`}
+                          className={cn(
+                            'border-y border-border-subtle px-3 py-2.5',
+                            index === cells.length - 1 && 'rounded-r-fw-sm border-r',
+                            lowerIsBetterTone(cell, peers),
+                          )}
+                        >
+                          {val(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  );
                 })}</tbody>
               </table>
             </div>

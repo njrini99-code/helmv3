@@ -196,12 +196,24 @@ export function FocusAreaModal({
     buildInitialForm(playerId, initial, playerId ? playerStats[playerId] : undefined),
   );
   const [saving, setSaving] = React.useState(false);
+  const [customMode, setCustomMode] = React.useState(false);
+  const baselineRef = React.useRef<FocusAreaForm>(form);
+  const [confirmingDiscard, setConfirmingDiscard] = React.useState(false);
 
-  // Re-seed the form on each open so a reused modal never shows stale input.
+  // Re-seed every piece of form-lifecycle state on the closed -> open edge.
+  // Keep the dirty baseline in this same effect: a later effect would observe
+  // `wasOpen.current === true` and leave the previous player's baseline behind.
   const wasOpen = React.useRef(open);
   React.useEffect(() => {
     if (open && !wasOpen.current) {
-      setForm(buildInitialForm(playerId, initial, playerId ? playerStats[playerId] : undefined));
+      const nextForm = buildInitialForm(
+        playerId,
+        initial,
+        playerId ? playerStats[playerId] : undefined,
+      );
+      setForm(nextForm);
+      baselineRef.current = nextForm;
+      setCustomMode(false);
       setConfirmingDiscard(false);
     }
     wasOpen.current = open;
@@ -235,7 +247,6 @@ export function FocusAreaModal({
   const selectedMetricUnit = selectedMetric?.unit ?? '';
   // "Custom mode": a non-empty metric that ISN'T in the catalog, or the user
   // explicitly chose Custom. Reveals the free-text input.
-  const [customMode, setCustomMode] = React.useState(false);
   const showCustom = customMode || (!!form.target_metric && selectedKey == null);
 
   // Suggested target for the chosen metric + current value (null when unknown).
@@ -305,17 +316,6 @@ export function FocusAreaModal({
   }
 
   /* ---- unsaved-changes guard ---- */
-  const baselineRef = React.useRef<FocusAreaForm>(form);
-  const [confirmingDiscard, setConfirmingDiscard] = React.useState(false);
-  React.useEffect(() => {
-    if (open && !wasOpen.current) baselineRef.current = form;
-    // baseline captured on open (see open effect); form ref updated there.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-  React.useEffect(() => {
-    if (open && wasOpen.current === false) baselineRef.current = form;
-  }, [open, form]);
-
   const isDirty = React.useMemo(() => {
     const b = baselineRef.current;
     return (

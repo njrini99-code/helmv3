@@ -1261,7 +1261,9 @@ async function createFocusAreaFromInsightImpl(
       : insight.content;
   }
 
-  // Create the focus area with link to source insight.
+  // A coach prescription must enter the same consent lifecycle as every other
+  // coach-created focus area. It stays proposed until the player accepts it;
+  // page-level shortcuts must never silently create active work on their behalf.
   // Live schema column is `from_insight_id`, not `source_insight_id`.
   const { data: focusArea, error: insertError } = await supabase
     .from('golf_player_focus_areas')
@@ -1271,12 +1273,12 @@ async function createFocusAreaFromInsightImpl(
       area_type: areaType,
       title: data.title,
       description: finalDescription || null,
-      status: 'active',
+      status: 'proposed',
       target_metric: data.target_metric || null,
       current_value: data.current_value ?? null,
       target_value: data.target_value ?? null,
       from_insight_id: data.insight_id,
-      started_at: new Date().toISOString(),
+      started_at: null,
     })
     .select('id')
     .single();

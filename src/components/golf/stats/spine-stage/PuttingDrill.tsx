@@ -53,6 +53,9 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
+import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import type { CoachHelmPattern } from './StatsSpineStage';
+import { StatCategoryBrief, findCategoryPattern } from './StatCategoryBrief';
 
 function ChartLoading() {
   return (
@@ -213,6 +216,8 @@ type PuttingDetail = 'distance' | 'breaks' | 'misses';
 
 export interface PuttingDrillProps {
   detailedStats: GolfStats | null;
+  trendData?: TrendAnalysisResponse | null;
+  patterns?: CoachHelmPattern[];
   leakMaps: PlayerLeakMaps | null;
   standingByMetric: Map<string, PlayerStandingRow>;
   weaknesses: StatisticalStrengthWeakness[];
@@ -224,6 +229,8 @@ export interface PuttingDrillProps {
 
 export function PuttingDrill({
   detailedStats,
+  trendData = null,
+  patterns = [],
   leakMaps,
   standingByMetric,
   weaknesses,
@@ -235,6 +242,7 @@ export function PuttingDrill({
   const s = detailedStats;
   const [detail, setDetail] = useState<PuttingDetail>('distance');
   const puttingByBreak = s?.puttingByBreak ?? null;
+  const categoryPattern = findCategoryPattern(patterns, ['putt', 'three-putt', 'lag', 'green speed']);
 
   // --- Hero: overall (all-break) ALL-PUTT make% by distance band ---------
   // n prefers the EXACT top-level attempt count (`puttMakeCount*`, 5 of 9
@@ -359,7 +367,7 @@ export function PuttingDrill({
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
           {efficiencyReadouts.map((r) => (
-            <InstrumentPanel key={r.label} depth="base" padding="md" className="min-h-[112px]">
+            <InstrumentPanel key={r.label} depth="base" padding="md" className="min-h-[112px] transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-raise motion-reduce:hover:translate-y-0">
               <Readout
                 value={r.value ?? undefined}
                 format={r.format}
@@ -372,6 +380,24 @@ export function PuttingDrill({
             </InstrumentPanel>
           ))}
         </div>
+
+        <StatCategoryBrief
+          category="Putting"
+          metricLabel="Putts / round"
+          series={trendData?.trends.putts.map((point) => point.value) ?? []}
+          lowerIsBetter
+          pattern={categoryPattern}
+          fallbackInsight={
+            finite(s?.puttsPerRound) !== null
+              ? `${finite(s?.puttsPerRound)?.toFixed(1)} putts per round is the clearest summary of current green performance.`
+              : 'Putting trends will sharpen as more complete rounds are tracked.'
+          }
+          fallbackAction={
+            finite(s?.threePuttsPerRound) !== null
+              ? `Three-putt rate is ${finite(s?.threePuttsPerRound)?.toFixed(2)} per round. Use the distance, break, and miss views below to separate start-line issues from pace control.`
+              : 'Record every putt distance and break so CoachHelm can identify whether pace or start line is costing strokes.'
+          }
+        />
 
         <Segmented
           value={detail}

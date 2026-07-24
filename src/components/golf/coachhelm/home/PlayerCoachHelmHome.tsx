@@ -79,6 +79,19 @@ function trendSummaryFrom(trendData: Record<string, unknown> | null | undefined)
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
+function trendSeriesFrom(trendData: Record<string, unknown> | null | undefined): number[] {
+  const trends = (trendData as {
+    trends?: { windows?: Array<{ magnitude?: unknown; direction?: unknown }> };
+  } | null | undefined)?.trends;
+  if (!Array.isArray(trends?.windows)) return [];
+  return trends.windows.flatMap((window) => {
+    if (typeof window.magnitude !== 'number' || !Number.isFinite(window.magnitude)) return [];
+    if (window.direction === 'improving') return [-Math.abs(window.magnitude)];
+    if (window.direction === 'declining') return [Math.abs(window.magnitude)];
+    return [0];
+  });
+}
+
 export interface PlayerCoachHelmHomeProps {
   data: PlayerCoachHelmDashboardData;
   playerId: string;
@@ -310,13 +323,14 @@ export function PlayerCoachHelmHome({
       node: (
         <PlayerHomeBento
           topInsight={topInsight}
-          activeFocusAreaCount={data.focusAreas.length}
+          activeFocusAreaCount={developmentActiveAreas.length}
           topFocusAreaLabel={priorities[0]?.title ?? null}
           genomeAxes={genomeAxes}
           standingByMetric={standingByMetric}
           trendSummary={trendSummary}
           themes={themes}
           insightCount={(topInsight ? 1 : 0) + secondaryDeduped.length}
+          trendSeries={trendSeriesFrom(trendData)}
           performanceSnapshot={{
             scoringAverage: finite(developmentPlayerStats?.avg_score),
             fairwayPct: finite(developmentPlayerStats?.fairway_pct),

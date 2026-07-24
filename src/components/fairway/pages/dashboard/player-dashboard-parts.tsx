@@ -177,12 +177,12 @@ export function TodayCard({
   return (
     <Surface padding="md" className="flex h-full flex-col">
       <Surface.Header
-        title="Today"
+        title="Activity"
         subtitle={
           nothingToday
-            ? "You're all caught up"
+            ? 'No new notifications'
             : usingHubSummary
-              ? 'What needs you — see the Action center below'
+              ? 'A compact read of tasks, calendar responses, and travel updates'
               : 'Your next event and task — manage everything in the Hub'
         }
       />
@@ -197,11 +197,11 @@ export function TodayCard({
               <div className="min-w-0 flex-1">
                 <p className="font-fw-sans text-body-sm font-medium text-text-primary">
                   {hubSummary.count > 0
-                    ? `${hubSummary.count} thing${hubSummary.count === 1 ? '' : 's'} need${hubSummary.count === 1 ? 's' : ''} you`
-                    : 'New announcements'}
+                    ? `${hubSummary.count} open update${hubSummary.count === 1 ? '' : 's'}`
+                    : 'New team update'}
                 </p>
                 <p className="font-fw-sans text-caption text-text-tertiary">
-                  Tasks, RSVPs, and trips — full list in the Action center.
+                  Tasks, RSVPs, and trips are organized in the activity feed below.
                 </p>
               </div>
             </Inset>

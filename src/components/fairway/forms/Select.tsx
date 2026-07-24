@@ -27,6 +27,7 @@ import {
   groupLabelClasses,
   type FieldSize,
 } from "./styles";
+import { FW_Z } from "../overlays/_shared";
 
 export interface SelectOption {
   label: React.ReactNode;
@@ -104,7 +105,11 @@ function SelectRoot({
       </BaseSelect.Trigger>
 
       <BaseSelect.Portal>
-        <BaseSelect.Positioner sideOffset={6} alignItemWithTrigger={false}>
+        <BaseSelect.Positioner
+          sideOffset={6}
+          alignItemWithTrigger={false}
+          style={{ zIndex: FW_Z.command }}
+        >
           <BaseSelect.Popup data-slot="select-popup" className={popupClasses}>
             {options
               ? options.map((opt) => (

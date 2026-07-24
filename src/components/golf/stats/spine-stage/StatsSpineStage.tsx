@@ -279,6 +279,8 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
       node: (
         <PuttingDrill
           detailedStats={detailedStats}
+          trendData={trendData}
+          patterns={patterns}
           leakMaps={leakMaps}
           standingByMetric={standingByMetric}
           weaknesses={weaknesses}
@@ -288,12 +290,24 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         />
       ),
     },
-    { key: 'driving', node: <DrivingDrill detailedStats={detailedStats} sprayData={sprayData} /> },
+    {
+      key: 'driving',
+      node: (
+        <DrivingDrill
+          detailedStats={detailedStats}
+          sprayData={sprayData}
+          trendData={trendData}
+          patterns={patterns}
+        />
+      ),
+    },
     {
       key: 'approach',
       node: (
         <ApproachDrill
           detailedStats={detailedStats}
+          trendData={trendData}
+          patterns={patterns}
           leakMaps={leakMaps}
           sprayData={sprayData}
           leakError={leakError}
@@ -302,8 +316,21 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         />
       ),
     },
-    { key: 'short-game', node: <ShortGameDrill detailedStats={detailedStats} /> },
-    { key: 'scoring', node: <ScoringDrill detailedStats={detailedStats} worstHoles={worstHoles} /> },
+    {
+      key: 'short-game',
+      node: <ShortGameDrill detailedStats={detailedStats} trendData={trendData} patterns={patterns} />,
+    },
+    {
+      key: 'scoring',
+      node: (
+        <ScoringDrill
+          detailedStats={detailedStats}
+          worstHoles={worstHoles}
+          trendData={trendData}
+          patterns={patterns}
+        />
+      ),
+    },
     {
       key: 'standing',
       node: (

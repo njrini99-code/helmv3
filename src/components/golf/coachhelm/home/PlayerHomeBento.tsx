@@ -27,6 +27,7 @@
 import { Bento, BentoCell, useStage } from '@/components/fairway/modules';
 import { Button, type GenomeAxis } from '@/components/fairway';
 import { IconClock } from '@/components/icons';
+import { Sparkles, TrendingDown } from 'lucide-react';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { isThemesEnabled } from '@/lib/redesign/flag';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -50,6 +51,7 @@ export interface PlayerHomeBentoProps {
   trendSummary: string | null;
   themes: ThemeNode[];
   insightCount: number;
+  trendSeries: number[];
   performanceSnapshot: {
     scoringAverage: number | null;
     fairwayPct: number | null;
@@ -69,6 +71,7 @@ export function PlayerHomeBento({
   trendSummary,
   themes,
   insightCount,
+  trendSeries,
   performanceSnapshot,
   onRateTopInsight,
 }: PlayerHomeBentoProps) {
@@ -88,10 +91,10 @@ export function PlayerHomeBento({
       <BentoCell
         label="Performance snapshot"
         span={2}
-        sentence="Your scoring inputs, together—not isolated stat cards."
+        sentence="The five scoring inputs CoachHelm is reading together."
         onOpen={() => stage.open('standing')}
       >
-        <div className="grid grid-cols-2 overflow-clip rounded-fw-md border border-border-subtle bg-surface-sunken/45 min-[520px]:grid-cols-5 min-[520px]:divide-x min-[520px]:divide-border-subtle">
+        <div className="grid grid-cols-2 overflow-clip rounded-fw-md border border-border-subtle bg-surface-sunken/45 [box-shadow:inset_0_1px_2px_var(--fw-color-border-subtle)] min-[520px]:grid-cols-5 min-[520px]:divide-x min-[520px]:divide-border-subtle">
           <SnapshotMetric label="Score" value={fmtOne(performanceSnapshot.scoringAverage)} />
           <SnapshotMetric label="Fairways" value={fmtPct(performanceSnapshot.fairwayPct)} />
           <SnapshotMetric label="GIR" value={fmtPct(performanceSnapshot.girPct)} />
@@ -103,10 +106,15 @@ export function PlayerHomeBento({
       <BentoCell label="Your edge this week" span={2} rows={topInsight ? 2 : 1}>
         {topInsight ? (
           <div className="flex h-full flex-col gap-3">
-            <p className="font-fw-sans text-body-sm leading-snug text-text-primary">
-              {topInsight.title}
-            </p>
-            <p className="line-clamp-3 font-fw-sans text-caption text-text-secondary">
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
+                <Sparkles className="h-4 w-4" aria-hidden />
+              </span>
+              <p className="pt-1 font-fw-display text-h3 font-semibold leading-snug tracking-[-0.015em] text-text-primary">
+                {topInsight.title}
+              </p>
+            </div>
+            <p className="font-fw-sans text-body-sm leading-relaxed text-text-secondary">
               {topInsight.content}
             </p>
             {firstDrill ? (
@@ -155,12 +163,12 @@ export function PlayerHomeBento({
 
       <BentoCell
         label="Game profile"
-        sentence="Your 8-dimension game shape."
+        sentence="Your complete 8-dimension game fingerprint."
         onOpen={() => stage.open('profile')}
       >
         {genomeAxes.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {genomeAxes.slice(0, 4).map((axis) => (
+            {genomeAxes.slice(0, 8).map((axis) => (
               <div key={axis.label} className="min-w-0">
                 <div className="flex min-w-0 items-center justify-between gap-2">
                   <span className="truncate font-fw-sans text-eyebrow text-text-tertiary">{axis.label}</span>
@@ -193,7 +201,9 @@ export function PlayerHomeBento({
         label="Trend"
         sentence={trendSummary ?? 'Your performance trend fills in with more rounds.'}
         onOpen={() => stage.open('profile')}
-      />
+      >
+        {trendSeries.length > 1 ? <TrendSparkline values={trendSeries} /> : null}
+      </BentoCell>
 
       {/* FIX 2: deliberate entry point for the `deep-dive` stage view (shot
           analysis charts + What-If simulator) — previously registered in
@@ -243,4 +253,35 @@ function SnapshotMetric({ label, value }: { label: string; value: string }) {
 
 function fmtOne(v: number | null): string {
   return v === null ? '—' : v.toFixed(1);
+}
+
+function TrendSparkline({ values: rawValues }: { values: number[] }) {
+  const values = rawValues.filter(Number.isFinite).slice(-10);
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = Math.max(1, max - min);
+  const points = values.map((value, index) => {
+    const x = 4 + (index / Math.max(values.length - 1, 1)) * 152;
+    const y = 38 - ((max - value) / spread) * 28;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const last = values.at(-1) ?? 0;
+
+  return (
+    <div className="mt-3 rounded-fw-md border border-border-subtle bg-surface-sunken/55 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="inline-flex items-center gap-1 text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">
+          <TrendingDown className="h-3.5 w-3.5 text-accent-700" aria-hidden /> Signal windows
+        </span>
+        <span className="font-fw-mono text-caption tabular-nums text-text-secondary">
+          {last < 0 ? 'Improving' : last > 0 ? 'Needs attention' : 'Stable'}
+        </span>
+      </div>
+      <svg className="mt-2 h-10 w-full" viewBox="0 0 160 42" role="img" aria-label={`Trend signal across ${values.length} analysis windows`}>
+        <path d="M4 38H156" stroke="var(--fw-color-border-subtle)" />
+        <polyline points={points} fill="none" stroke="var(--fw-color-accent-600)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
 }

@@ -36,7 +36,7 @@ import { useRouter } from 'next/navigation';
 
 import { completeTask } from '@/app/golf/actions/tasks';
 import { respondToEvent } from '@/app/golf/actions/golf';
-import { fairwayToast, Surface } from '@/components/fairway';
+import { Badge, fairwayToast, Surface } from '@/components/fairway';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import {
@@ -161,6 +161,22 @@ export function PlayerActionCenter({
 
   return (
     <div className="flex flex-col gap-8" id="action-center">
+      <section aria-label="Activity feed summary">
+        <SectionTitle>Notifications</SectionTitle>
+        <Surface elevation="shadow" padding="md" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-fw-display text-h3 font-semibold tracking-[-0.015em] text-text-primary">Your team activity feed</p>
+            <p className="mt-1 text-body-sm text-text-secondary">Tasks, calendar responses, travel, and announcements in one place.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {pendingTasks.length > 0 ? <Badge tone="accent" numeric>{pendingTasks.length} tasks</Badge> : null}
+            {pendingEvents.length > 0 ? <Badge tone="warning" numeric>{pendingEvents.length} RSVPs</Badge> : null}
+            {upcomingTrips.length > 0 ? <Badge tone="neutral" numeric>{upcomingTrips.length} trips</Badge> : null}
+            {announcements.length > 0 ? <Badge tone="neutral" numeric>{announcements.length} updates</Badge> : null}
+          </div>
+        </Surface>
+      </section>
+
       {pendingTasks.length > 0 ? (
         <section>
           <SectionTitle action={{ label: 'Open Team Hub', href: TEAM_HUB_TASKS }}>Tasks</SectionTitle>

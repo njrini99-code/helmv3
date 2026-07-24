@@ -2965,24 +2965,43 @@ async function getPlayerCoachHelmDashboardImpl(
       .join(' ')
       .trim() || 'Player';
 
-    // Run analysis to get all insights
-    const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
-      includePatterns: true,
-      includeCausal: true,
-      includePredictions: true,
-      includeShotPatterns: true,
-      depth: 'standard',
-    });
+    // Dashboard reads must stay read-only. `analyzePlayer()` persists Tier-1
+    // insights, predictions, composites, and shot patterns; invoking it from a
+    // page render made a normal GET contend with sweeps/post-round analysis and
+    // could deadlock `golf_patterns_v2`, blanking the entire player dashboard.
+    // Generation remains in the explicit post-round/cron/analyze flows. This
+    // surface consumes their latest persisted output instead.
+    const [recentRoundsResult, persistedInsights, patternsResult, predictionResult] =
+      await Promise.all([
+        supabase
+          .from('golf_rounds')
+          .select('id, course_name, round_date, total_score, score_to_par')
+          .eq('player_id', playerId)
+          .eq('status', 'completed')
+          .not('total_score', 'is', null)
+          .order('round_date', { ascending: false })
+          .limit(5),
+        loadEvidenceBackedInsights(supabase, playerId),
+        supabase
+          .from('golf_patterns_v2')
+          .select('conditions, stroke_impact, strokes_impact, trend, metadata')
+          .eq('player_id', playerId)
+          .eq('is_active', true)
+          .order('stroke_impact', { ascending: false, nullsFirst: false })
+          .limit(8),
+        supabase
+          .from('golf_predictions')
+          .select(
+            'id, metric, predicted_value, confidence, confidence_interval_low, confidence_interval_high, predicted_low, predicted_high, trend, key_drivers, input_features, due_date, prediction_context, confidence_factors, actual_value, validated_at, was_accurate, created_at, updated_at',
+          )
+          .eq('player_id', playerId)
+          .order('updated_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-    // Get recent rounds for review
-    const { data: recentRoundsData } = await supabase
-      .from('golf_rounds')
-      .select('id, course_name, round_date, total_score, score_to_par')
-      .eq('player_id', playerId)
-      .eq('status', 'completed')
-      .not('total_score', 'is', null)
-      .order('round_date', { ascending: false })
-      .limit(5);
+    const recentRoundsData = recentRoundsResult.data ?? [];
 
     const recentRounds = (recentRoundsData || []).map(r => ({
       id: r.id,
@@ -2993,48 +3012,41 @@ async function getPlayerCoachHelmDashboardImpl(
       hasReview: true, // All completed rounds can have AI review generated
     }));
 
-    // Build focus areas from patterns and features
-    const focusAreas = buildFocusAreasFromAnalysis(analysis);
+    const focusAreas = buildFocusAreasFromPersistedPatterns(patternsResult.data ?? []);
+    const prediction = predictionResult.data
+      ? persistedPredictionToViewModel(playerId, predictionResult.data)
+      : null;
+    const playerState: PlayerCoachHelmDashboardData['playerState'] =
+      predictionResult.data?.trend === 'improving'
+        ? 'improving'
+        : predictionResult.data?.trend === 'declining'
+          ? 'struggling'
+          : predictionResult.data?.trend === 'stable'
+            ? 'stable'
+            : 'unknown';
 
-    // Determine player state from analysis
-    const playerState = analysis?.features?.contextual?.formCycle === 'peak' ||
-                        analysis?.features?.contextual?.formCycle === 'rising'
-      ? 'improving'
-      : analysis?.features?.contextual?.formCycle === 'declining' ||
-        analysis?.features?.contextual?.formCycle === 'trough'
-        ? 'struggling'
-        : analysis?.features?.temporal?.recentFormScore !== undefined
-          ? analysis.features.temporal.recentFormScore > 0.2
-            ? 'improving'
-            : analysis.features.temporal.recentFormScore < -0.2
-              ? 'struggling'
-              : 'stable'
-          : 'unknown';
-
-    // Fold in evidence-backed insights persisted to `golf_coach_insights`
-    // by the new Tier-1 generators (putt-analytics, approach-analytics, …).
-    // These rows carry the canonical `evidence` JSONB shape and should be
-    // surfaced to the player UI alongside the in-memory composed insights.
-    // We prepend them so the evidence-heavy material is the first thing the
-    // player reads — the in-memory engine still produces broader narrative
-    // insights below.
-    const persistedInsights = await loadEvidenceBackedInsights(supabase, playerId);
-
-    const mergedInsights: ComposedInsight[] = [
-      ...persistedInsights,
-      ...(analysis?.insights ?? []),
-    ];
+    const persistedPriorities = persistedInsights.map((insight) =>
+      (insight as ComposedInsight & { priority?: InsightPriority }).priority,
+    );
+    const alertLevel: PlayerCoachHelmDashboardData['alertLevel'] =
+      persistedPriorities.includes('urgent')
+        ? 'critical'
+        : persistedPriorities.includes('high')
+          ? 'warning'
+          : persistedInsights.length > 0
+            ? 'info'
+            : 'none';
 
     const dashboardData: PlayerCoachHelmDashboardData = {
       playerId,
       playerName,
       lastUpdated: new Date().toISOString(),
-      prediction: analysis?.predictions?.[0] ?? null,
-      insights: mergedInsights,
+      prediction,
+      insights: persistedInsights,
       focusAreas,
       recentRounds,
       playerState,
-      alertLevel: analysis?.alertLevel ?? 'none',
+      alertLevel,
     };
 
     return { success: true, data: dashboardData };
@@ -3151,6 +3163,178 @@ async function loadEvidenceBackedInsights(
   } catch {
     return [];
   }
+}
+
+function objectRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function finiteNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+interface PersistedPatternDashboardRow {
+  conditions: unknown;
+  stroke_impact: number | null;
+  strokes_impact: number | null;
+  trend: string | null;
+  metadata: unknown;
+}
+
+/**
+ * Read-only projection of persisted pattern rows into the compact priority
+ * contract used by the player CoachHelm spine.
+ */
+function buildFocusAreasFromPersistedPatterns(
+  rows: PersistedPatternDashboardRow[],
+): PlayerCoachHelmDashboardData['focusAreas'] {
+  const focusAreas: PlayerCoachHelmDashboardData['focusAreas'] = [];
+
+  for (const row of rows) {
+    const impact = finiteNumber(row.stroke_impact ?? row.strokes_impact);
+    if (Math.abs(impact) < 0.1) continue;
+
+    const condition = Array.isArray(row.conditions)
+      ? objectRecord(row.conditions[0])
+      : null;
+    const metadata = objectRecord(row.metadata);
+    const area =
+      (typeof condition?.label === 'string' && condition.label.trim()) ||
+      (typeof condition?.field === 'string' && condition.field.trim()) ||
+      'Scoring pattern';
+    if (focusAreas.some((focus) => focus.area === area)) continue;
+
+    focusAreas.push({
+      area,
+      strokesGained: -Math.abs(impact),
+      value: -Math.abs(impact),
+      unit: 'strokes/round',
+      trend:
+        row.trend === 'weakening'
+          ? 'improving'
+          : row.trend === 'strengthening'
+            ? 'declining'
+            : 'stable',
+      recommendation:
+        typeof metadata?.recommendation === 'string'
+          ? metadata.recommendation
+          : 'Review this recurring pattern with your coach.',
+    });
+  }
+
+  return focusAreas.slice(0, 5);
+}
+
+interface PersistedPredictionDashboardRow {
+  id: string;
+  metric: string;
+  predicted_value: number;
+  confidence: number;
+  confidence_interval_low: number | null;
+  confidence_interval_high: number | null;
+  predicted_low: number | null;
+  predicted_high: number | null;
+  trend: string | null;
+  key_drivers: unknown;
+  input_features: unknown;
+  due_date: string | null;
+  prediction_context: unknown;
+  confidence_factors: unknown;
+  actual_value: number | null;
+  validated_at: string | null;
+  was_accurate: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/** Map the latest persisted prediction without running the write-heavy engine. */
+function persistedPredictionToViewModel(
+  playerId: string,
+  row: PersistedPredictionDashboardRow,
+): PerformancePrediction {
+  const predictionContext = objectRecord(row.prediction_context);
+  const rawContext = objectRecord(predictionContext?.context);
+  const confidenceFactors = objectRecord(row.confidence_factors);
+  const rawSensitivities = objectRecord(confidenceFactors?.sensitivities);
+  const sensitivities = Object.fromEntries(
+    Object.entries(rawSensitivities ?? {}).filter(
+      (entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]),
+    ),
+  );
+
+  const keyFactors: PerformancePrediction['keyFactors'] = Array.isArray(row.key_drivers)
+    ? row.key_drivers.flatMap((raw) => {
+        const factor = objectRecord(raw);
+        if (!factor || typeof factor.name !== 'string') return [];
+        const direction =
+          factor.direction === 'positive' || factor.direction === 'negative'
+            ? factor.direction
+            : 'neutral';
+        return [{
+          name: factor.name,
+          value:
+            typeof factor.value === 'number' || typeof factor.value === 'string'
+              ? factor.value
+              : '',
+          contribution: finiteNumber(factor.contribution),
+          direction,
+          explanation:
+            typeof factor.explanation === 'string' ? factor.explanation : '',
+        }];
+      })
+    : [];
+
+  const inputFeatures = Array.isArray(row.input_features)
+    ? row.input_features.filter((feature): feature is string => typeof feature === 'string')
+    : [];
+  const predictedLow = row.confidence_interval_low ?? row.predicted_low ?? row.predicted_value;
+  const predictedHigh = row.confidence_interval_high ?? row.predicted_high ?? row.predicted_value;
+  const calibratedConfidence = finiteNumber(
+    confidenceFactors?.calibrated_confidence,
+    row.confidence,
+  );
+  const storedPredictionType = predictionContext?.prediction_type;
+  const predictionType: PerformancePrediction['predictionType'] =
+    storedPredictionType === 'metric_value'
+      ? 'metric'
+      : storedPredictionType === 'tournament_score'
+        ? 'round_score'
+        : storedPredictionType === 'trajectory' ||
+            storedPredictionType === 'milestone' ||
+            storedPredictionType === 'comparison'
+          ? storedPredictionType
+          : 'round_score';
+
+  return {
+    id: row.id,
+    playerId,
+    predictionType,
+    metric: row.metric,
+    predictedValue: row.predicted_value,
+    predictedRangeLow: predictedLow,
+    predictedRangeHigh: predictedHigh,
+    confidence: row.confidence,
+    calibratedConfidence,
+    keyFactors,
+    sensitivities,
+    context: (rawContext ?? {}) as PerformancePrediction['context'],
+    dueDate: row.due_date ?? row.updated_at ?? row.created_at ?? new Date().toISOString(),
+    actualValue: row.actual_value ?? undefined,
+    validatedAt: row.validated_at ?? undefined,
+    wasCorrect: row.was_accurate ?? undefined,
+    trend:
+      row.trend === 'improving' || row.trend === 'declining'
+        ? row.trend
+        : 'stable',
+    lowerBound: predictedLow,
+    upperBound: predictedHigh,
+    inputFeatures,
+    keyDrivers: keyFactors.map((factor) => factor.name),
+    predictionRange: { low: predictedLow, high: predictedHigh },
+    factors: keyFactors,
+  };
 }
 
 // ============================================================================
