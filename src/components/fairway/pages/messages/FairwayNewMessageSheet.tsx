@@ -300,7 +300,12 @@ export function FairwayNewMessageSheet({
           : 'Select a team member to start a conversation.'
       }
     >
-      <Sheet.Body className="flex flex-col gap-4">
+      {/* min-h-0 flex-1 (call-site override of Sheet.Body's base flex-auto):
+          without an explicit bound here, the nested results pane's own
+          min-h-0 flex-1 below has nothing definite to shrink against, and
+          silently falls back to natural/unbounded height instead of
+          scrolling — see the Results comment below. */}
+      <Sheet.Body className="flex min-h-0 flex-1 flex-col gap-4">
         {noTeamError ? (
           <InlineNotice tone="warning" title="No team found">
             You need to be assigned to a team before you can message team members.
@@ -317,81 +322,98 @@ export function FairwayNewMessageSheet({
           />
         )}
 
-        {/* Results */}
-        {noTeamError ? null : loading ? (
-          <div className="flex flex-col gap-2" role="status" aria-busy="true" aria-live="polite">
-            <span className="sr-only">Loading…</span>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-fw-md px-3 py-2.5">
-                <Skeleton circle className="h-10 w-10" />
-                <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-3.5 w-2/5" />
-                  <Skeleton className="h-3 w-1/4" />
-                </div>
+        {/* Results — the sheet's ONLY scrolling region. Bounded via
+            `min-h-0 flex-1` against the Sheet.Body flex column above (the
+            search input keeps its natural height and stays pinned instead
+            of scrolling away with the list) so an 8+ player roster reaches
+            every row on a 390px phone instead of clipping to ~1.5 rows with
+            no way to reach the rest. `overscroll-contain` stops list-end
+            scroll from chaining into the vaul drag-to-dismiss gesture;
+            `touch-pan-y` keeps iOS from routing the vertical touch-move
+            into that same drag instead of native list scroll — same idiom
+            as the scroll pane in MessageThreadPane.tsx. (This route,
+            /dashboard/messages, is on SmoothScrollMount's Lenis
+            exclusion list, and Lenis's own `prevent` check already skips
+            any overflow-auto/-scroll node regardless — so no
+            data-lenis-prevent needed here.) */}
+        {noTeamError ? null : (
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+            {loading ? (
+              <div className="flex flex-col gap-2" role="status" aria-busy="true" aria-live="polite">
+                <span className="sr-only">Loading…</span>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-fw-md px-3 py-2.5">
+                    <Skeleton circle className="h-10 w-10" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-3.5 w-2/5" />
+                      <Skeleton className="h-3 w-1/4" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : results.length > 0 ? (
+              <ul className="flex flex-col gap-1">
+                {results.map((result) => {
+                  const isSelected = selectedId === result.userId;
+                  return (
+                    <li key={result.id}>
+                      {/* Intentional raw <button>: a single-select recipient row
+                          with an avatar + stacked name/subtitle + selected check that
+                          the <Button> primitive can't express. The full interactive
+                          -state contract (hover/focus-visible, §7.1) is inline. */}
+                      {/* eslint-disable-next-line helm/no-raw-button */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(result.userId)}
+                        aria-pressed={isSelected}
+                        className={cn(
+                          'block w-full rounded-fw-md px-3 py-2.5 text-left',
+                          'transition-colors [transition-duration:var(--fw-dur-fast)]',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
+                          isSelected
+                            ? 'bg-accent-50 ring-1 ring-inset ring-accent-200'
+                            : 'hover:bg-surface-sunken',
+                        )}
+                      >
+                        {/* Shared identity (avatar + name + subtitle); the selection
+                            check is this surface's trailing affordance. The button
+                            wrapper keeps the transparent-rest / tinted-hover-selected
+                            contract intact. */}
+                        <PlayerIdentity
+                          name={result.name}
+                          avatarUrl={result.avatar}
+                          size="md"
+                          meta={result.subtitle || undefined}
+                          trailing={
+                            isSelected ? (
+                              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
+                                <Check className="h-3.5 w-3.5" aria-hidden />
+                              </span>
+                            ) : undefined
+                          }
+                        />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState
+                variant="subtle"
+                icon={Users}
+                title={
+                  searchQuery.trim()
+                    ? `No ${noun}s found`
+                    : `No ${noun}s on your team yet`
+                }
+                description={
+                  searchQuery.trim()
+                    ? 'Try a different name or clear your search.'
+                    : 'Once your team grows, you can start a conversation with anyone here.'
+                }
+              />
+            )}
           </div>
-        ) : results.length > 0 ? (
-          <ul className="flex flex-col gap-1">
-            {results.map((result) => {
-              const isSelected = selectedId === result.userId;
-              return (
-                <li key={result.id}>
-                  {/* Intentional raw <button>: a single-select recipient row
-                      with an avatar + stacked name/subtitle + selected check that
-                      the <Button> primitive can't express. The full interactive
-                      -state contract (hover/focus-visible, §7.1) is inline. */}
-                  {/* eslint-disable-next-line helm/no-raw-button */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(result.userId)}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      'block w-full rounded-fw-md px-3 py-2.5 text-left',
-                      'transition-colors [transition-duration:var(--fw-dur-fast)]',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
-                      isSelected
-                        ? 'bg-accent-50 ring-1 ring-inset ring-accent-200'
-                        : 'hover:bg-surface-sunken',
-                    )}
-                  >
-                    {/* Shared identity (avatar + name + subtitle); the selection
-                        check is this surface's trailing affordance. The button
-                        wrapper keeps the transparent-rest / tinted-hover-selected
-                        contract intact. */}
-                    <PlayerIdentity
-                      name={result.name}
-                      avatarUrl={result.avatar}
-                      size="md"
-                      meta={result.subtitle || undefined}
-                      trailing={
-                        isSelected ? (
-                          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
-                            <Check className="h-3.5 w-3.5" aria-hidden />
-                          </span>
-                        ) : undefined
-                      }
-                    />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <EmptyState
-            variant="subtle"
-            icon={Users}
-            title={
-              searchQuery.trim()
-                ? `No ${noun}s found`
-                : `No ${noun}s on your team yet`
-            }
-            description={
-              searchQuery.trim()
-                ? 'Try a different name or clear your search.'
-                : 'Once your team grows, you can start a conversation with anyone here.'
-            }
-          />
         )}
       </Sheet.Body>
 

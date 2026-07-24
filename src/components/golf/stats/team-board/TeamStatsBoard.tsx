@@ -148,7 +148,7 @@ const COLUMNS: MatrixColumn[] = [
   { key: 'who', label: 'Player' },
   { key: 'tee', label: 'Tee', align: 'center' },
   { key: 'app', label: 'App', align: 'center' },
-  { key: 'short', label: 'Short', align: 'center' },
+  { key: 'short', label: 'Shrt', align: 'center' },
   { key: 'putt', label: 'Putt', align: 'center' },
   { key: 'scor', label: 'Scor', align: 'center' },
   { key: 'composite', label: 'Composite' },
@@ -486,7 +486,7 @@ function ExpandStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="font-fw-display text-caption font-bold uppercase tracking-[0.09em] text-text-tertiary">{label}</div>
-      <b className="block font-fw-mono text-body font-normal tabular-nums text-text-primary">{value}</b>
+      <b className="block font-fw-mono text-body font-semibold tabular-nums text-text-primary">{value}</b>
     </div>
   );
 }

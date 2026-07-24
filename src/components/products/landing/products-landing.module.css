@@ -103,21 +103,28 @@
 .pRow:hover .glyphHover svg { stroke: var(--onacc) !important; }
 
 /* --- buttons (base colour in-class so :hover can win over it) ------------ */
-.btnPrimary {
+/* `.root` prefix is REQUIRED on these link/button skins: the `.root a` base
+   rule above is (0,1,1) and silently beats a bare class's (0,1,0) — that
+   cascade loss once painted the primary CTA label accent-on-accent
+   (invisible "Request Demo", 2026-07-24). `.root .x` = (0,2,0) always wins. */
+.root .btnPrimary {
   background: var(--accent);
   color: var(--onacc);
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
   transition: transform 0.15s ease, background 0.15s ease;
 }
-.btnPrimary:hover { background: var(--accent700); transform: translateY(-1px); }
+.root .btnPrimary:hover { background: var(--accent700); color: var(--onacc); transform: translateY(-1px); }
 
-.linkGhost { color: var(--ink); transition: color 0.15s ease; }
-.linkGhost:hover { color: var(--ink); }
+.root .linkGhost { color: var(--ink); transition: color 0.15s ease; }
+.root .linkGhost:hover { color: var(--ink); }
 
-.linkGhostDim { color: oklch(0.86 0.008 85); transition: color 0.15s ease; }
-.linkGhostDim:hover { color: var(--onacc); }
+.root .linkGhostDim { color: oklch(0.86 0.008 85); transition: color 0.15s ease; }
+.root .linkGhostDim:hover { color: var(--onacc); }
 
-.footLink { color: oklch(0.82 0.008 85); transition: color 0.15s ease; }
-.footLink:hover { color: var(--onacc); }
+.root .footLink { color: oklch(0.82 0.008 85); transition: color 0.15s ease; }
+.root .footLink:hover { color: var(--onacc); }
 
 /* --- marquee + ambient loops -------------------------------------------- */
 .mq { display: flex; width: max-content; }
@@ -137,9 +144,16 @@
 @media (min-width: 768px) {
   .teamGrid { grid-template-columns: repeat(12, 1fr); }
 }
-/* On a single column the hero tile must not reserve a second empty row. */
+/* On a single column every tile must forfeit BOTH inline placements: the
+   tiles carry `gridColumn: 'span N'` inline for the 12-col layout, and a
+   span on a 1-col grid spawns N-1 implicit columns — tiles rendered as
+   overlapping slivers with one-word-per-line text (2026-07-24 iPhone bug).
+   Only !important outranks an inline style. */
 @media (max-width: 767.98px) {
-  .teamGrid > * { grid-row: auto !important; }
+  .teamGrid > * {
+    grid-row: auto !important;
+    grid-column: auto !important;
+  }
 }
 
 /* --- reduced motion ------------------------------------------------------ */

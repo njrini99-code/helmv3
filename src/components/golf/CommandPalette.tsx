@@ -205,7 +205,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
         type="button"
         aria-label="Close command palette"
         onClick={() => setOpen(false)}
-        className="absolute inset-0 bg-warm-900/40 backdrop-blur-md cursor-default"
+        className="absolute inset-0 bg-[oklch(0.18_0.01_55_/_0.32)] backdrop-blur-md cursor-default"
       ><span className="sr-only">Close command palette</span></IconButton>
 
       {/* Palette frame */}
@@ -220,30 +220,30 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
           label="Command palette"
           loop
           className={cn(
-            'overflow-hidden rounded-2xl surface-stone',
-            'shadow-[0_4px_18px_hsl(42_14%_22%/0.10),0_28px_60px_hsl(42_14%_22%/0.16)]',
+            'overflow-hidden rounded-fw-lg bg-surface border border-border-subtle',
+            'shadow-raise',
           )}
         >
           {/* Search input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/40">
-            <IconSearch size={18} className="text-warm-400" aria-hidden />
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle">
+            <IconSearch size={18} className="text-text-tertiary" aria-hidden />
             <Command.Input
               placeholder="Search commands…"
-              className="flex-1 bg-transparent outline-none text-body text-warm-900 placeholder:text-warm-500 tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
+              className="flex-1 bg-transparent outline-none font-fw-sans text-body text-text-primary placeholder:text-text-tertiary tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-fw-mono font-medium text-text-tertiary bg-surface rounded-fw-sm border border-border-subtle">
               ESC
             </kbd>
           </div>
 
           {/* Results */}
           <Command.List className="max-h-[60vh] overflow-y-auto p-2" data-scroll-container>
-            <Command.Empty className="text-center py-10 text-body-sm text-warm-500">
+            <Command.Empty className="text-center py-10 text-body-sm text-text-tertiary">
               No commands found.
             </Command.Empty>
 
             {/* Quick actions — static jumps */}
-            <Command.Group heading={isCoach ? 'Quick actions' : 'Player'} className="text-warm-500">
+            <Command.Group heading={isCoach ? 'Quick actions' : 'Player'} className="text-text-tertiary">
               {quickActions.map((cmd) => (
                 <Command.Item
                   key={cmd.id}
@@ -253,18 +253,18 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     setOpen(false);
                   }}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-fw-md cursor-pointer outline-none',
                     'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-                    'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+                    'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                   )}
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700 transition-colors data-[selected=true]:bg-primary-100 data-[selected=true]:text-primary-700">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-fw-sm bg-inset text-text-secondary transition-colors data-[selected=true]:bg-accent-100 data-[selected=true]:text-accent-700">
                     {cmd.icon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-body-sm font-medium tracking-[-0.005em] truncate">{cmd.label}</p>
                     {cmd.description && (
-                      <p className="text-caption text-warm-500 truncate">{cmd.description}</p>
+                      <p className="text-caption text-text-tertiary truncate">{cmd.description}</p>
                     )}
                   </div>
                 </Command.Item>
@@ -273,7 +273,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
             {/* Players (coach only — search by name, jump to player profile) */}
             {isCoach && data && data.players.length > 0 && (
-              <Command.Group heading="Players" className="text-warm-500">
+              <Command.Group heading="Players" className="text-text-tertiary">
                 {data.players.map((p) => (
                   <Command.Item
                     key={`player-${p.id}`}
@@ -291,12 +291,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       setOpen(false);
                     }}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
+                      'flex items-center gap-3 px-3 py-2.5 rounded-fw-md cursor-pointer outline-none',
                       'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-                      'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+                      'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                     )}
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cream-200/55 text-warm-700 text-eyebrow font-medium overflow-hidden">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-inset text-text-secondary text-eyebrow font-medium overflow-hidden">
                       {p.avatar_url ? (
                         <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -305,7 +305,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-body-sm font-medium tracking-[-0.005em] truncate">{p.full_name}</p>
-                      <p className="text-caption text-warm-500 truncate">
+                      <p className="text-caption text-text-tertiary truncate">
                         {p.status ?? 'Player'}
                         {p.handicap !== null && ` · HCP ${p.handicap}`}
                       </p>
@@ -317,7 +317,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
             {/* Recent insights (coach only — jump to insight detail) */}
             {isCoach && data && data.recentInsights.length > 0 && (
-              <Command.Group heading="Recent insights" className="text-warm-500">
+              <Command.Group heading="Recent insights" className="text-text-tertiary">
                 {data.recentInsights.map((i) => (
                   <Command.Item
                     key={`insight-${i.id}`}
@@ -327,22 +327,22 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       setOpen(false);
                     }}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
+                      'flex items-center gap-3 px-3 py-2.5 rounded-fw-md cursor-pointer outline-none',
                       'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-                      'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+                      'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                     )}
                   >
                     <div className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+                      'flex h-8 w-8 items-center justify-center rounded-fw-sm transition-colors',
                       i.severity === 'urgent' || i.severity === 'high'
-                        ? 'bg-rose-100 text-rose-700'
-                        : 'bg-cream-200/55 text-warm-700',
+                        ? 'bg-fw-danger-bg text-fw-danger'
+                        : 'bg-inset text-text-secondary',
                     )}>
                       {severityIcon(i.severity)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-body-sm font-medium tracking-[-0.005em] truncate">{i.title}</p>
-                      <p className="text-caption text-warm-500 truncate">
+                      <p className="text-caption text-text-tertiary truncate">
                         {i.player_name ? `${i.player_name} · ` : ''}
                         {i.category ?? 'Insight'}
                       </p>
@@ -354,7 +354,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
             {/* Recent rounds — jump to review */}
             {data && data.recentRounds.length > 0 && (
-              <Command.Group heading="Recent rounds" className="text-warm-500">
+              <Command.Group heading="Recent rounds" className="text-text-tertiary">
                 {data.recentRounds.map((r) => (
                   <Command.Item
                     key={`round-${r.id}`}
@@ -364,12 +364,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       setOpen(false);
                     }}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
+                      'flex items-center gap-3 px-3 py-2.5 rounded-fw-md cursor-pointer outline-none',
                       'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-                      'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+                      'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                     )}
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-fw-sm bg-inset text-text-secondary">
                       <IconGolf size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -377,7 +377,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                         {r.course_name ?? 'Round'}
                         {r.total_score !== null && ` · ${r.total_score}`}
                       </p>
-                      <p className="text-caption text-warm-500 truncate">
+                      <p className="text-caption text-text-tertiary truncate">
                         {isCoach && r.player_name ? `${r.player_name} · ` : ''}
                         {formatRoundDate(r.round_date)}
                       </p>
@@ -389,21 +389,21 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
             {/* Loading hint on first open */}
             {dataLoading && !data && (
-              <div className="text-center py-6 text-caption text-warm-600">
+              <div className="text-center py-6 text-caption text-text-tertiary">
                 Loading team data…
               </div>
             )}
           </Command.List>
 
           {/* Footer hints */}
-          <div className="px-4 py-2 border-t border-warm-200/40 flex items-center justify-between text-eyebrow text-warm-500">
+          <div className="px-4 py-2 border-t border-border-subtle flex items-center justify-between text-eyebrow text-text-tertiary">
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↓</kbd>
+              <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↑</kbd>
+              <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↓</kbd>
               <span>Navigate</span>
             </div>
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↵</kbd>
+              <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↵</kbd>
               <span>Select</span>
             </div>
           </div>

@@ -28,11 +28,13 @@ export interface DemoRequestResult {
   error?: string;
 }
 
-/** Optional lead details from forms that collect more than an email
- *  (the marketing DemoModal asks name + program). */
 export interface DemoRequestDetails {
+  /** Requester's name, from the landing modal. */
   name?: string;
+  /** Program / school, from the landing modal. */
   school?: string;
+  /** Which marketing surface captured the lead (defaults to 'landing'). */
+  source?: 'landing' | 'pricing';
 }
 
 export async function submitDemoRequest(
@@ -43,8 +45,11 @@ export async function submitDemoRequest(
     return { success: false, error: 'Please enter a valid email address' };
   }
 
-  const leadName = details?.name?.trim().slice(0, 200) || null;
-  const leadSchool = details?.school?.trim().slice(0, 200) || null;
+  // Cap free-text lengths — these flow into CRM rows and the ops alert.
+  const name = details?.name?.trim().slice(0, 120) || undefined;
+  const school = details?.school?.trim().slice(0, 160) || undefined;
+  const source = details?.source ?? 'landing';
+
   const requestContext = await captureRequestContext();
 
   try {
@@ -60,12 +65,12 @@ export async function submitDemoRequest(
       interest_type: 'other',
       status: 'pending',
       notes: [
-        'Submitted from landing page',
-        leadName ? `Name: ${leadName}` : null,
-        leadSchool ? `Program: ${leadSchool}` : null,
+        `Submitted from ${source} page`,
+        name ? `Name: ${name}` : null,
+        school ? `Program: ${school}` : null,
       ]
         .filter(Boolean)
-        .join(' — '),
+        .join(' · '),
     });
 
     if (error) {
@@ -105,9 +110,9 @@ export async function submitDemoRequest(
       } else if (!existing) {
         // nosemgrep: coderabbit.semgrep.helmv3-server-action-missing-auth-check -- see above; values are derived server-side from the validated email only
         const { error: coachError } = await admin.from('crm_coaches').insert({
-          name: leadName || email.split('@')[0] || 'Unknown',
+          name: name || email.split('@')[0] || 'Unknown',
           email,
-          school: leadSchool || email.split('@')[1]?.split('.')[0] || 'Unknown',
+          school: school || email.split('@')[1]?.split('.')[0] || 'Unknown',
           conference: 'Unknown',
           division: 'D3',
           program: 'both',
@@ -137,12 +142,10 @@ export async function submitDemoRequest(
     if (process.env.VERCEL_ENV === 'production') {
       try {
         await sendOpsAlert({
-          subject: `New demo request — ${email}`,
+          subject: `New demo request — ${school ? `${school} (${email})` : email}`,
           text: [
-            `${email} just requested a demo from the landing page.`,
-            leadName || leadSchool
-              ? `Lead: ${[leadName, leadSchool].filter(Boolean).join(' — ')}`
-              : null,
+            `${name ? `${name} <${email}>` : email} just requested a demo from the ${source} page.`,
+            school ? `Program: ${school}` : null,
             requestContext.country
               ? `From: ${[requestContext.city, requestContext.country].filter(Boolean).join(', ')}`
               : null,
