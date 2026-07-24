@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
-import { Navigation } from '@/components/landing/Navigation';
-import { Footer } from '@/components/landing/Footer';
+import { MarketingShell } from '@/components/landing/MarketingShell';
 import { SmoothScroll } from '@/components/landing/SmoothScroll';
 import { ProductsLanding } from '@/components/products/landing/ProductsLanding';
 
@@ -12,19 +11,14 @@ export const metadata: Metadata = {
 
 export default function ProductsPage() {
   return (
-    <main className="min-h-dvh overflow-x-hidden bg-[oklch(0.953_0.022_83)]">
-      <a
-        href="#products"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary-600 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
-      >
-        Skip to products
-      </a>
+    <>
       <SmoothScroll anchors />
-      <div className="relative z-modal">
-        <Navigation />
-      </div>
-      <ProductsLanding />
-      <Footer />
-    </main>
+      {/* MarketingShell carries the same header/footer/Request-Demo modal as
+          /, /about and /pricing — the products body keeps its own dark
+          FinalCta band, so the shell's extra CTA band stays off. */}
+      <MarketingShell>
+        <ProductsLanding />
+      </MarketingShell>
+    </>
   );
 }

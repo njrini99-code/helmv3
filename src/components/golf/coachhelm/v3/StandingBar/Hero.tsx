@@ -93,7 +93,18 @@ export function Hero(props: StandingBarProps) {
       </div>
 
       {/* Bar */}
-      <Bar youPct={youPct} teamPct={teamPct} pgaPct={pgaPct} size="hero" />
+      <Bar
+        youPct={youPct}
+        teamPct={teamPct}
+        pgaPct={pgaPct}
+        size="hero"
+        zeroPct={
+          /^sg_/.test(props.metric_id) && effectiveScale.min < 0 && effectiveScale.max > 0
+            ? toScalePct(0, effectiveScale)
+            : null
+        }
+        fill={teamPct !== null ? { fromPct: teamPct, toPct: youPct, tone: delta.tone } : null}
+      />
 
       {/* Scale endpoints */}
       <div className="flex items-baseline justify-between text-eyebrow text-warm-400 mt-1.5 tabular-nums">

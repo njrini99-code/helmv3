@@ -68,7 +68,10 @@ function PricingCapture() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="mx-auto mt-[42px] w-full max-w-[520px]">
-      <div className="rounded-full p-1.5" style={GLASS_CARD}>
+      {/* Stadium radius only works while the form is a single row — stacked
+          on mobile, `rounded-full` curves the card away behind the full-width
+          button so it reads as hanging outside the box (2026-07-24 iPhone). */}
+      <div className="rounded-3xl p-1.5 sm:rounded-full" style={GLASS_CARD}>
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
           <div className="flex-1 [&_input]:rounded-full [&_input]:border-transparent [&_input]:bg-[oklch(1_0_0/0.55)]">
             <Input
@@ -92,7 +95,7 @@ function PricingCapture() {
             variant="primary"
             size="lg"
             isLoading={status === 'sending'}
-            className="rounded-full bg-primary-700 px-7 text-[0.9375rem] font-semibold hover:bg-primary-800 shadow-[0_1px_1px_oklch(0.35_0.08_150/0.4),0_3px_10px_oklch(0.35_0.08_150/0.28)]"
+            className="w-full rounded-full bg-primary-700 px-7 text-[0.9375rem] font-semibold hover:bg-primary-800 shadow-[0_1px_1px_oklch(0.35_0.08_150/0.4),0_3px_10px_oklch(0.35_0.08_150/0.28)] sm:w-auto"
           >
             {status === 'sending' ? 'Sending…' : 'Set up a call'}
           </Button>

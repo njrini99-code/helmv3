@@ -124,6 +124,12 @@ export function Card(props: CardProps) {
         teamPct={teamPct}
         pgaPct={pgaPct}
         size="card"
+        zeroPct={
+          isSgMetric && effectiveScale.min < 0 && effectiveScale.max > 0
+            ? toScalePct(0, effectiveScale)
+            : null
+        }
+        fill={teamPct !== null ? { fromPct: teamPct, toPct: youPct, tone: delta.tone } : null}
       />
 
       {/* Scale endpoints — reflect the WIDENED domain (`effectiveScale`), not
@@ -244,11 +250,29 @@ interface BarProps {
   /** Null → the reference ("P") marker is omitted (audit P3 suppressed anchor). */
   pgaPct: number | null;
   size: 'card' | 'inline' | 'hero';
+  /** Where zero sits on the widened domain (SG metrics only) — draws a hairline
+   *  tick so "ahead of / behind the field" is legible at a glance. */
+  zeroPct?: number | null;
+  /** Tonal span between the team marker and the player marker — the actual
+   *  "this is you vs team" read. Without it the bar is three floating dots. */
+  fill?: { fromPct: number; toPct: number; tone: 'good' | 'bad' | 'neutral' } | null;
 }
 
-export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
-  const height = size === 'inline' ? 'h-1.5' : size === 'hero' ? 'h-3' : 'h-2';
-  const markerSize = size === 'inline' ? 'w-2 h-2' : size === 'hero' ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5';
+/** Inline color + animated opacity — NOT `bg-fw-danger/30`-style utilities:
+ *  these tokens are plain `var(...)` colors without `<alpha-value>`, so
+ *  Tailwind v3 silently drops every opacity-modified class (verified against
+ *  the compiled CSS 2026-07-24 — the fill rendered as nothing). */
+const FILL_TONE: Record<'good' | 'bad' | 'neutral', { color: string; alpha: number }> = {
+  good: { color: 'var(--fw-color-success)', alpha: 0.32 },
+  bad: { color: 'var(--fw-color-danger)', alpha: 0.26 },
+  neutral: { color: 'var(--fw-color-border-strong)', alpha: 0.5 },
+};
+
+export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null }: BarProps) {
+  const height = size === 'inline' ? 'h-1.5' : size === 'hero' ? 'h-3' : 'h-2.5';
+  const markerSize = size === 'inline' ? 'w-2 h-2' : size === 'hero' ? 'w-3.5 h-3.5' : 'w-3 h-3';
+  const fillLeft = fill ? Math.min(fill.fromPct, fill.toPct) : 0;
+  const fillWidth = fill ? Math.abs(fill.toPct - fill.fromPct) : 0;
 
   // Bug: each Marker draws its letter ('T'/'●'/'P') INSIDE a small circle
   // directly on top of the raw scale position — when two values are
@@ -269,8 +293,31 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
-      className={`relative ${height} w-full bg-warm-100 rounded-full overflow-visible`}
+      className={`relative ${height} w-full rounded-full bg-surface-sunken shadow-[inset_0_1px_2px_rgb(28_25_23/0.08)] overflow-visible`}
     >
+      {/* Zero hairline (SG metrics) — the field-average anchor. */}
+      {zeroPct !== null && (
+        <span
+          aria-hidden="true"
+          className="absolute -inset-y-1 w-px -translate-x-1/2 rounded-full bg-border-strong"
+          style={{ left: `${zeroPct}%` }}
+        />
+      )}
+      {/* Team→you delta fill — reads direction + size of the gap in one glance. */}
+      {fill && fillWidth >= 0.75 && (
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: FILL_TONE[fill.tone].alpha }}
+          transition={{ duration: DURATION.short, delay: 0.1, ease: EASE_CINEMATIC }}
+          aria-hidden="true"
+          className="absolute inset-y-0 rounded-full"
+          style={{
+            left: `${fillLeft}%`,
+            width: `${fillWidth}%`,
+            backgroundColor: FILL_TONE[fill.tone].color,
+          }}
+        />
+      )}
       {/* PGA marker (background, light) — omitted when pgaPct is null (P3). */}
       {pgaPct !== null && (
         <Marker
