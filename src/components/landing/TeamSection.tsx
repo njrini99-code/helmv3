@@ -2,7 +2,7 @@
 
 import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { GLASS_BEZEL, GLASS_CARD } from './glass';
-import { MobileMockScroller } from './MockViewport';
+import { FitEmbed } from './MockViewport';
 import { TeamMock } from './mockups/TeamMock';
 import { Reveal, ScaledEmbed, clamp01, prefersReducedMotion, sectionProgress, useIsDesktop, useParallax, useScrollFrame } from './motion';
 
@@ -148,7 +148,7 @@ export function TeamSection() {
   );
 
   return (
-    <section id="team" ref={sectionRef} className="relative scroll-mt-[90px] bg-canvas md:h-[260vh]">
+    <section id="team" ref={sectionRef} className="relative scroll-mt-[90px] bg-canvas md:h-[210vh]">
       {/* Desktop: pinned assembly scene */}
       {isDesktop !== false && (
       <div className="hidden md:sticky md:top-0 md:flex md:min-h-screen md:flex-col md:items-center md:justify-center md:overflow-clip md:px-[clamp(20px,4vw,64px)] md:py-[clamp(56px,7vh,88px)]">
@@ -172,9 +172,9 @@ export function TeamSection() {
       {isDesktop !== true && (
       <div className="flex flex-col items-center px-5 py-16 md:hidden">
         <SectionHeading />
-        <MobileMockScroller designWidth={1180} ariaLabel={TEAM_ARIA} className="w-full">
+        <FitEmbed designWidth={1180} ariaLabel={TEAM_ARIA} className="w-full">
           <TeamMock />
-        </MobileMockScroller>
+        </FitEmbed>
       </div>
       )}
     </section>
