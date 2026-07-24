@@ -727,12 +727,14 @@ export function FairwayPlayerInsight({
               never emit a confident "Stable across the board" line for a player
               who has never recorded a round (P104). */}
           {hasRounds ? (
-            <div
-              className={cn(
-                'mt-5 border-l-2 pl-4',
-                verdict.tone === 'good' ? 'border-accent-500' : 'border-fw-warning',
-              )}
-            >
+            <div className="mt-5 flex items-start gap-2.5">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full',
+                  verdict.tone === 'good' ? 'bg-accent-500' : 'bg-fw-warning',
+                )}
+              />
               <p className="max-w-prose font-fw-sans text-body text-text-secondary">{verdict.text}</p>
             </div>
           ) : (

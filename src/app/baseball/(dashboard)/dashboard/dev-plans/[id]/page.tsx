@@ -33,8 +33,7 @@ const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 const BACK_ACTION = (
   <Link href="/baseball/dashboard/dev-plans">
-    <Button variant="secondary" size="sm">
-      <IconChevronLeft size={16} className="mr-1.5" />
+    <Button variant="secondary" size="sm" leftIcon={<IconChevronLeft size={16} />}>
       Back
     </Button>
   </Link>

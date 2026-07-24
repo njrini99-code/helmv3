@@ -53,9 +53,17 @@ export interface StrokesGainedTornadoProps {
 const ROW_PAD = 0.32;
 // Wide enough for the longest category label ("Around the Green") at labelSize,
 // accounting for the -12px end-anchored offset — 104 clipped it to "round the Green".
-const LABEL_GUTTER = 126;
-const VALUE_GUTTER = 56;
-const MARGIN = { top: 8, right: VALUE_GUTTER, bottom: 22, left: LABEL_GUTTER };
+// This is the DESKTOP ceiling — every consumer (RoundSGSummary,
+// FairwayEffectiveness, VizLabClient, fairway-preview, PatternImpactDeck)
+// renders this chart well past GUTTER_CEIL_WIDTH below, so `scaledGutter`
+// resolves to exactly this constant there (desktop output untouched).
+export const LABEL_GUTTER = 126;
+// Below GUTTER_FLOOR_WIDTH the label gutter never shrinks past this — long
+// labels truncate with an ellipsis (+ a <title> carrying the full text)
+// instead of collapsing the plot further.
+export const LABEL_GUTTER_MIN = 56;
+export const VALUE_GUTTER = 56;
+export const VALUE_GUTTER_MIN = 24;
 
 /**
  * #111: a row's OWN signed value annotation ("−12.34") sits just past its bar
@@ -68,7 +76,33 @@ const MARGIN = { top: 8, right: VALUE_GUTTER, bottom: 22, left: LABEL_GUTTER };
  * clearance for the longest realistic annotation ("−12.34", 6 glyphs at
  * tickSize/600-weight) regardless of how tight the domain padding is.
  */
-const VALUE_INSET = 56;
+export const VALUE_INSET = 56;
+// A narrow card has no width to spare for the full #111 inset — shrinking it
+// toward zero at GUTTER_FLOOR_WIDTH trades a little of that collision margin
+// (short values at narrow widths rarely reach it) for a bar track that isn't
+// crushed to a sliver.
+export const VALUE_INSET_MIN = 8;
+
+// Mobile-squeeze fix: at a ~310px card (phone width minus page + card
+// padding), the old FIXED 126+56 margins plus a 56px-per-side #111 inset
+// left the bar track only ~16px wide — the whole plot rendered as a sliver
+// in the center of the card. Below GUTTER_CEIL_WIDTH, LABEL_GUTTER/
+// VALUE_GUTTER/VALUE_INSET each interpolate linearly down to their _MIN
+// toward GUTTER_FLOOR_WIDTH instead of staying pinned at their desktop
+// constant. At/above GUTTER_CEIL_WIDTH every gutter is exactly its desktop
+// constant — pixel-identical desktop rendering.
+// Exported (alongside the constants above) purely for the colocated unit
+// test — a pure-function assertion on the interpolation is far cheaper and
+// more direct than reconstructing it from rendered SVG geometry.
+export const GUTTER_FLOOR_WIDTH = 280;
+export const GUTTER_CEIL_WIDTH = 480;
+
+export function scaledGutter(width: number, min: number, max: number): number {
+  if (width >= GUTTER_CEIL_WIDTH) return max;
+  if (width <= GUTTER_FLOOR_WIDTH) return min;
+  const t = (width - GUTTER_FLOOR_WIDTH) / (GUTTER_CEIL_WIDTH - GUTTER_FLOOR_WIDTH);
+  return min + t * (max - min);
+}
 
 /**
  * Rough width (px) of a short SVG number label at the given font size — good
@@ -79,6 +113,26 @@ const VALUE_INSET = 56;
  */
 export function estimateLabelWidth(label: string, fontSize: number): number {
   return label.length * fontSize * 0.62;
+}
+
+/**
+ * Truncates `label` to fit `maxWidth`, appending an ellipsis — the row
+ * label's counterpart to `selectNonOverlappingTicks` below, using the same
+ * jsdom/SSR-safe `estimateLabelWidth` heuristic instead of a real DOM
+ * `getBBox`. Only engages once the responsive label gutter has shrunk below
+ * what the label needs (narrow-card mobile squeeze fix) — the caller always
+ * keeps the untruncated text available via a `<title>` child.
+ */
+export function truncateLabel(label: string, maxWidth: number, fontSize: number): string {
+  if (estimateLabelWidth(label, fontSize) <= maxWidth) return label;
+  const ELLIPSIS = '…';
+  let fit = '';
+  for (let i = 1; i <= label.length; i++) {
+    const candidate = label.slice(0, i) + ELLIPSIS;
+    if (estimateLabelWidth(candidate, fontSize) > maxWidth) break;
+    fit = candidate;
+  }
+  return fit || ELLIPSIS;
 }
 
 export function StrokesGainedTornado({
@@ -203,8 +257,14 @@ export function TornadoInner({
   data: SGCategory[];
   domainMax?: number;
 }) {
-  const innerW = Math.max(0, width - MARGIN.left - MARGIN.right);
-  const innerH = Math.max(0, height - MARGIN.top - MARGIN.bottom);
+  // Mobile-squeeze fix: gutters scale with the ACTUAL container width instead
+  // of staying pinned at their desktop pixel constants (see `scaledGutter`).
+  const labelGutter = scaledGutter(width, LABEL_GUTTER_MIN, LABEL_GUTTER);
+  const valueGutter = scaledGutter(width, VALUE_GUTTER_MIN, VALUE_GUTTER);
+  const margin = { top: 8, right: valueGutter, bottom: 22, left: labelGutter };
+
+  const innerW = Math.max(0, width - margin.left - margin.right);
+  const innerH = Math.max(0, height - margin.top - margin.bottom);
 
   const bound = React.useMemo(() => {
     const peak = data.reduce((m, d) => Math.max(m, Math.abs(d.value)), 0);
@@ -216,7 +276,8 @@ export function TornadoInner({
   // domain's extreme always has room to render without crossing x = 0 (into
   // the category-label gutter) or innerW (past the value gutter) — halved on
   // a plot too narrow to afford the full inset rather than going negative.
-  const plotInset = Math.min(VALUE_INSET, innerW / 2);
+  const valueInset = scaledGutter(width, VALUE_INSET_MIN, VALUE_INSET);
+  const plotInset = Math.min(valueInset, innerW / 2);
   const xScale = React.useMemo(
     () =>
       scaleLinear<number>({
@@ -251,9 +312,21 @@ export function TornadoInner({
   const xTickDecimals = tickDecimals(rawXTicks);
   const xTicks = selectNonOverlappingTicks(rawXTicks, xScale, xTickDecimals);
 
+  // Available width for a category label before it must truncate — the text
+  // is end-anchored at x = -12 (local/Group-offset coords), so it grows
+  // leftward from there toward the SVG's own left edge. At the full desktop
+  // gutter this is deliberately unbounded rather than `LABEL_GUTTER - 12`:
+  // `estimateLabelWidth`'s per-char heuristic (tuned for the cheap tick-
+  // collision check above) slightly OVERESTIMATES "Around the Green" versus
+  // LABEL_GUTTER's own real-browser-tuned value, so gating on it even at the
+  // desktop constant would truncate a label the desktop margin was
+  // explicitly sized to fit — a regression. Truncation only ever engages
+  // once the gutter has actually shrunk below the desktop constant.
+  const labelMaxWidth = labelGutter >= LABEL_GUTTER ? Infinity : Math.max(20, labelGutter - 12);
+
   return (
     <svg width={width} height={height} aria-hidden>
-      <Group left={MARGIN.left} top={MARGIN.top}>
+      <Group left={margin.left} top={margin.top}>
         {/* x ticks — sparse, signed, tabular */}
         {xTicks.map((t) => (
           <g key={t}>
@@ -292,9 +365,12 @@ export function TornadoInner({
           const barX = positive ? zeroX : valX;
           const barW = Math.abs(valX - zeroX);
           const fill = positive ? VIZ_DIVERGING.positive : VIZ_DIVERGING.negative;
+          const displayLabel = truncateLabel(d.label, labelMaxWidth, VIZ_FONT.labelSize);
           return (
             <g key={`${i}-${d.label}`}>
-              {/* category label in the left gutter */}
+              {/* category label in the left gutter — truncated with a
+                  <title> fallback once the responsive gutter can't fit it
+                  whole (narrow-card mobile squeeze fix) */}
               <text
                 x={-12}
                 y={y + barH / 2}
@@ -304,7 +380,8 @@ export function TornadoInner({
                 fontFamily={VIZ_FONT.numeric}
                 fill={VIZ_COLOR.textSecondary}
               >
-                {d.label}
+                {displayLabel !== d.label ? <title>{d.label}</title> : null}
+                {displayLabel}
               </text>
               <Bar
                 x={barX}

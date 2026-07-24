@@ -638,6 +638,75 @@ describe('plotHole — green inset NEAR-PIN RADIAL FLOOR (bug 1: the swallowed d
   });
 });
 
+describe('plotHole — green inset PUTT-TO-PUTT CONTINUITY (2026-07-24 bugfix: "he hit it backwards")', () => {
+  const shots: ShotInput[] = [
+    // Entry: the approach shot reaches the green, 10ft from the pin.
+    { shot_number: 1, lie_before: 'fairway', lie_after: 'green', distance_to_hole_after: 10 },
+    // Putt 2: approaches to 2ft, missing left.
+    { shot_number: 2, lie_before: 'green', lie_after: 'green', distance_to_hole_after: 2, miss_direction: 'left' },
+    // Putt 3: a genuine run-by — rolls OUT to 5ft (farther than putt 2
+    // started), logging the SAME miss side as putt 2 — this exact shape
+    // (same logged side, radius grew) is what the old free-running angle
+    // walk rendered as "farther out on the same side," i.e. backward.
+    { shot_number: 3, lie_before: 'green', lie_after: 'green', distance_to_hole_after: 5, miss_direction: 'left' },
+    // Putt 4: holed. `distance_to_hole_after` is deliberately NOT a clean
+    // 0 (mirrors a real putt_made row whose logged distance rounds to a
+    // small nonzero value) — `putt_made` alone must still pin it at the cup.
+    { shot_number: 4, lie_before: 'green', lie_after: 'green', distance_to_hole_after: 0.2, putt_made: true },
+  ];
+  const plot = plotHole({ shots, par: 4, yardage: 400 });
+  const inset = plot.greenInset;
+
+  it('produces one inset shot per ledger row (entry + 3 putts)', () => {
+    expect(inset.shots).toHaveLength(4);
+  });
+
+  it('MADE-PUTT RADIUS: putt_made forces true_radius_units to exactly 0 and draws the dot exactly at the pin, even though the logged distance is not a clean 0', () => {
+    const holed = inset.shots[3]!;
+    expect(holed.true_radius_units).toBe(0);
+    expect(holed.x).toBeCloseTo(inset.pin.x, 6);
+    expect(holed.y).toBeCloseTo(inset.pin.y, 6);
+    // Correctly AT the pin, not colliding with it — never floored/nudged.
+    expect(holed.leader).toBe(false);
+  });
+
+  it('the near-pin putt (2ft) still gets floored outward for legibility, same as the pre-existing near-pin fix', () => {
+    const approach = inset.shots[1]!;
+    expect(approach.true_radius_units).toBeLessThan(GREEN_INSET_MIN_DISPLAY_RADIUS_UNITS);
+    const drawnRadius = Math.hypot(approach.x - inset.pin.x, approach.y - inset.pin.y);
+    expect(drawnRadius).toBeCloseTo(GREEN_INSET_MIN_DISPLAY_RADIUS_UNITS, 6);
+  });
+
+  it('the run-by putt (5ft, same logged miss side as the 2ft putt before it) renders on the OPPOSITE side of the pin from its start — never farther out on the SAME side', () => {
+    const approach = inset.shots[1]!; // 2ft
+    const runBy = inset.shots[2]!; // 5ft — a genuine overshoot vs. approach
+
+    // The overshoot is real: farther from the pin than the putt before it.
+    expect(runBy.true_radius_units).toBeGreaterThan(approach.true_radius_units);
+    // Neither dot is caught by the pre-existing min-separation fan-nudge
+    // in this scenario — isolates the check below to the continuity fix
+    // itself, not the unrelated crowding mechanism.
+    expect(runBy.leader).toBe(false);
+
+    const vApproach = { x: approach.x - inset.pin.x, y: approach.y - inset.pin.y };
+    const vRunBy = { x: runBy.x - inset.pin.x, y: runBy.y - inset.pin.y };
+    const magApproach = Math.hypot(vApproach.x, vApproach.y);
+    const magRunBy = Math.hypot(vRunBy.x, vRunBy.y);
+    const cosAngleBetween =
+      (vApproach.x * vRunBy.x + vApproach.y * vRunBy.y) / (magApproach * magRunBy);
+    // More than 90 degrees apart — genuinely opposite-ish sides of the pin.
+    // The pre-fix geometry (a free-running angle walk with no radius
+    // awareness) put these two dots within ~52 degrees of each other,
+    // which is what read as "the ball went backward."
+    expect(cosAngleBetween).toBeLessThan(-0.3);
+  });
+
+  it('is deterministic — replotting the identical ledger yields the identical continuity geometry (no Math.random)', () => {
+    const again = plotHole({ shots, par: 4, yardage: 400 });
+    expect(again.greenInset.shots).toEqual(inset.shots);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Scenario coverage — the six ledgers the contract must hold up under
 // ---------------------------------------------------------------------------

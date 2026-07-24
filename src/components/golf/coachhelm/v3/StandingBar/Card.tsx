@@ -21,13 +21,21 @@ import {
   deriveAriaLabel,
   deriveState,
   formatValue,
+  layoutMarkerPositions,
+  MARKER_MIN_GAP_PCT,
   pgaReferenceLabel,
+  resolveDisplayScale,
   shouldShowTeamMarker,
   standingSubjectLabel,
   teamRelativeText,
   toScalePct,
 } from './utils';
 import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
+
+/** Same SG-detection regex `pgaReferenceLabel` uses — SG metrics anchor to
+ *  a definitional zero (the field average), so their widened display domain
+ *  must stay symmetric around it (see `resolveDisplayScale`). */
+const SG_METRIC_RE = /^sg_/;
 
 type CardProps = StandingBarProps;
 
@@ -41,16 +49,29 @@ export function Card(props: CardProps) {
   if (state === 'empty') return <CardEmpty label={props.metric_label} />;
 
   const showTeam = shouldShowTeamMarker(props);
-  const youPct = toScalePct(props.player_value, props.scale);
-  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
+  // Bug: `props.scale` (`metric-config.ts`'s fixed `default_scale`, e.g.
+  // sg_approach: -1.5..1.5) is a TYPICAL range, not a hard bound — an
+  // outlier round's team_avg/player_value can land outside it, which used
+  // to clamp `toScalePct` to the literal 0%/100% edge (a marker rendered
+  // "half-clipped" by the card's own `overflow-clip`, or simply drawn at
+  // the wrong spot vs. its real value). Widen the domain to cover every
+  // value actually being plotted before mapping any of them to a percent.
+  const isSgMetric = SG_METRIC_RE.test(props.metric_id);
+  const effectiveScale = resolveDisplayScale(
+    props.scale,
+    [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
+    { symmetric: isSgMetric },
+  );
+  const youPct = toScalePct(props.player_value, effectiveScale);
+  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
   // P3: omit the reference marker entirely when the anchor is suppressed.
-  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
-  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
+  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, effectiveScale);
+  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction, props.unit);
   // EC-2: only narrate "Above/Below team average" when the team marker itself
   // renders (team_n>=5 && team_avg!=null). On a tiny roster the comparison is
   // statistical noise, so we suppress the caption alongside the hidden marker.
   const cohortText = showTeam
-    ? teamRelativeText(props.player_value, props.team_avg, props.direction)
+    ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
@@ -105,10 +126,12 @@ export function Card(props: CardProps) {
         size="card"
       />
 
-      {/* Scale endpoints */}
+      {/* Scale endpoints — reflect the WIDENED domain (`effectiveScale`), not
+          the raw caller-supplied `props.scale`, so the printed range always
+          agrees with where the markers above actually sit. */}
       <div className="mt-1 flex items-baseline justify-between font-fw-mono text-eyebrow text-text-tertiary tabular-nums">
-        <span>{formatValue(props.scale.min, props.unit)}</span>
-        <span>{formatValue(props.scale.max, props.unit)}</span>
+        <span>{formatValue(effectiveScale.min, props.unit)}</span>
+        <span>{formatValue(effectiveScale.max, props.unit)}</span>
       </div>
 
       {/* Cohort text */}
@@ -227,6 +250,20 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
   const height = size === 'inline' ? 'h-1.5' : size === 'hero' ? 'h-3' : 'h-2';
   const markerSize = size === 'inline' ? 'w-2 h-2' : size === 'hero' ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5';
 
+  // Bug: each Marker draws its letter ('T'/'●'/'P') INSIDE a small circle
+  // directly on top of the raw scale position — when two values are
+  // near-equal (e.g. team 0.70 vs player 0.81 on a 3-unit scale is only
+  // ~3.7% apart) their circles land on top of each other and render as a
+  // single unreadable blob. Nudge apart any markers within MARKER_MIN_GAP_PCT
+  // of one another before rendering; the underlying values/positions used
+  // everywhere ELSE (readouts, aria label) are untouched — only the glyph's
+  // drawn position moves.
+  const rawPositions: Array<{ key: 'pga' | 'team' | 'you'; pct: number }> = [{ key: 'you', pct: youPct }];
+  if (pgaPct !== null) rawPositions.push({ key: 'pga', pct: pgaPct });
+  if (teamPct !== null) rawPositions.push({ key: 'team', pct: teamPct });
+  const laidOut = layoutMarkerPositions(rawPositions, MARKER_MIN_GAP_PCT);
+  const drawnPct = new Map(laidOut.map((p) => [p.key, p.pct]));
+
   return (
     <m.div
       initial={{ opacity: 0 }}
@@ -238,7 +275,7 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
       {pgaPct !== null && (
         <Marker
           kind="ref"
-          leftPct={pgaPct}
+          leftPct={drawnPct.get('pga')!}
           markerSize={markerSize}
           label="P"
           toneClass="bg-warm-400 text-white"
@@ -249,7 +286,7 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
       {teamPct !== null && (
         <Marker
           kind="ref"
-          leftPct={teamPct}
+          leftPct={drawnPct.get('team')!}
           markerSize={markerSize}
           label="T"
           toneClass="bg-warm-600 text-white"
@@ -259,7 +296,7 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
       {/* You marker — the hero, drawn last so it sits on top */}
       <Marker
         kind="hero"
-        leftPct={youPct}
+        leftPct={drawnPct.get('you')!}
         markerSize={markerSize}
         label="●"
         toneClass="bg-primary-600 text-white ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"

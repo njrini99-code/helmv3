@@ -46,7 +46,6 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
   const prefersReducedMotion = useReducedMotionGuard();
   const scored = category.players.length;
   const hasData = scored > 0;
-  const attentionShare = hasData ? Math.round((category.attentionCount / scored) * 100) : 0;
 
   // Worst-first: `players` is already sorted best→worst by the source
   // action, so reversing + filtering to the flagged (>1 stddev off-average)
@@ -84,11 +83,21 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
 
         {hasData ? (
           <div className="flex flex-col gap-1.5">
-            <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
-              <div
-                className={cn('h-full rounded-full', attentionShare > 0 ? 'bg-fw-warning' : 'bg-fw-success')}
-                style={{ width: `${Math.max(attentionShare, attentionShare > 0 ? 6 : 0)}%` }}
-              />
+            {/* N-of-`scored` discrete ticks, not a continuous % fill — a
+                percentage-shaped bar under a percentage-shaped headline stat
+                (e.g. "63% FW") reads as filling to THAT number, not to the
+                attention fraction below it. Quantized ticks can't be
+                misread that way. */}
+            <div aria-hidden="true" className="flex items-center gap-[3px]">
+              {Array.from({ length: scored }, (_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'h-1.5 min-w-[3px] flex-1 rounded-sm',
+                    i < category.attentionCount ? 'bg-fw-warning' : 'bg-surface-sunken',
+                  )}
+                />
+              ))}
             </div>
             <Badge tone={category.attentionCount > 0 ? 'warning' : 'success'} size="sm" numeric>
               {category.attentionCount > 0
@@ -106,10 +115,15 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
         )}
 
         {worstOffenders.length > 0 ? (
-          <div className="flex flex-col gap-1 border-t border-border-subtle pt-2">
+          <div className="flex flex-col gap-1.5 border-t border-border-subtle pt-2">
             {worstOffenders.map((p) => (
-              <div key={p.playerId} className="flex items-center justify-between gap-2 text-caption">
-                <span className="min-w-0 truncate text-text-secondary">{p.playerName}</span>
+              <div
+                key={p.playerId}
+                className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-caption"
+              >
+                <span className="min-w-0 truncate text-text-secondary" title={p.playerName}>
+                  {p.playerName}
+                </span>
                 <TrendGlyph
                   direction={p.trend}
                   magnitude={p.trendDelta}
@@ -123,7 +137,13 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
         {strokesChips.length > 0 ? (
           <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
             {strokesChips.map((insight) => (
-              <Badge key={insight.id} tone="accent" size="sm" numeric>
+              <Badge
+                key={insight.id}
+                tone="accent"
+                size="sm"
+                numeric
+                className="h-auto max-w-full whitespace-normal break-words py-1 text-left leading-snug"
+              >
                 +{insight.strokesSavedPerRound.toFixed(1)} str/rd available
               </Badge>
             ))}

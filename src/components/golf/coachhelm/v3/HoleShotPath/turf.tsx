@@ -29,11 +29,25 @@
  *      labels, straight from `PlottedHole.ticks` (the accuracy cue: the
  *      axis really is linear in yards, not merely asserted). 2026-07-23:
  *      the convention (distance-TO-PIN, decreasing toward the green) was
- *      always correct, but nothing SAID so — this is fixed with a one-time
- *      "YDS TO PIN" caption at the pin end, a "y" unit suffix on the
- *      50/100/150 sprinkler-head ticks, and the 0-yard tick itself kept
- *      (labeled "PIN") instead of filtered out, so the ruler's smallest
- *      anchor is explicit rather than implied.
+ *      always correct, but nothing SAID so — this was fixed with a
+ *      one-time "YDS TO PIN" caption at the pin end, a "y" unit suffix on
+ *      the 50/100/150 sprinkler-head ticks, and the 0-yard tick itself
+ *      kept (labeled "PIN") instead of filtered out.
+ *      2026-07-24 RAIL FLIP (Nick, repeated ask — "yards FROM the tee, not
+ *      to the pin"): the tick GEOMETRY is untouched — `PlottedHole.ticks`
+ *      stays `geometry.ts`'s own honest yards-to-pin space, same y
+ *      positions, same 50/100/150 "sprinkler head" emphasis (those really
+ *      are placed by distance-to-green on a real course, so keeping them
+ *      pinned to that value is the honest choice even after the flip).
+ *      Only the printed LABEL changes, to `totalYardage - tick.yards`
+ *      (yards FROM the tee) via the new `totalYardage` prop — the caption
+ *      is now "YDS FROM TEE," the guaranteed pin-end tick (`t.yards ===
+ *      0`, always present) now shows the hole's real total length instead
+ *      of "PIN," and the (only-when-the-yardage-is-an-exact-multiple-of-50)
+ *      tick that lands on `fromTee === 0` shows "TEE" instead of a bare
+ *      "0" — the same "never a bare 0" idiom the old PIN case used. A
+ *      300-yard drive's marker (plotted from its own real yardage,
+ *      untouched by any of this) now sits at the rail's own "300" mark.
  *   6. Pin + animated flag — cream mast, dark cup, the red flag kept as the
  *      one clean accent color.
  *
@@ -172,9 +186,17 @@ export interface TurfProps {
    *  ruler entirely; always skipped at `size="strip"` regardless (too small
    *  to hold legible labels). */
   ticks?: YardageTick[];
+  /** `PlottedHole.total_yardage` — the one extra number the 2026-07-24 rail
+   *  flip needs to convert each tick's honest yards-TO-PIN position
+   *  (`ticks[i].yards`, unchanged) into a yards-FROM-TEE label
+   *  (`totalYardage - ticks[i].yards`). Every real caller has this
+   *  (`plotHole()` always returns it) — omitting it while `ticks` is set
+   *  degrades every label to `0 - ticks[i].yards` rather than crashing,
+   *  never a fabricated yardage. */
+  totalYardage?: number;
 }
 
-export function Turf({ size = 'card', showPinFlag = true, ticks }: TurfProps) {
+export function Turf({ size = 'card', showPinFlag = true, ticks, totalYardage }: TurfProps) {
   const prefersReducedMotion = useReducedMotionGuard();
   // useId so multiple HoleShotPath instances on the same page don't clash on
   // gradient ids (e.g. the 18-hole grid renders 18 of these).
@@ -266,24 +288,38 @@ export function Turf({ size = 'card', showPinFlag = true, ticks }: TurfProps) {
                 fontFamily="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
                 style={{ pointerEvents: 'none', userSelect: 'none', letterSpacing: '0.05em' }}
               >
-                YDS TO PIN
+                YDS FROM TEE
               </text>
             </>
           )}
           {visibleTicks.map((t) => {
-            // The 0-yard tick IS the pin — render it with the same visual
-            // weight as the 50/100/150 sprinkler-head ticks (never the
-            // bare, easy-to-miss "0" a casual glance would read as just
-            // another small number) so the ruler's own smallest anchor is
-            // unambiguous without relying on the caption alone.
-            const isPin = t.yards === 0;
-            const strong = t.emphasis || isPin;
+            // RAIL FLIP (2026-07-24) — `t.yards`/`t.y`/`t.emphasis` stay
+            // geometry.ts's own honest yards-TO-PIN values (unchanged);
+            // only the printed label converts to yards FROM THE TEE.
+            const fromTee = (totalYardage ?? 0) - t.yards;
+            // The 0-yards-to-pin tick is ALWAYS present (geometry.ts's tick
+            // loop starts at n=0) — the rail's one guaranteed anchor. Under
+            // the flip it shows the hole's real total length instead of
+            // "PIN".
+            const isTopAnchor = t.yards === 0;
+            // The mirror image, at the tee end — only exists when the hole
+            // yardage happens to land exactly on a tick (a multiple of the
+            // 50y step); never synthesized. Same "never a bare 0" idiom the
+            // old PIN case used, now for the new zero point.
+            const isTeeAnchor = !isTopAnchor && fromTee === 0;
+            const strong = t.emphasis || isTopAnchor || isTeeAnchor;
             const len = strong ? 3.4 : 2.1;
-            // Unit suffix on the emphasized "sprinkler head" ticks only —
-            // "150" reads as ambiguous (feet? meters? a score?) in
-            // isolation; "150y" doesn't. Plain intermediate ticks (25y
-            // steps at the finer sizes) stay bare to avoid clutter.
-            const label = isPin ? 'PIN' : t.emphasis ? `${t.yards}y` : t.yards;
+            // Unit suffix on the emphasized "sprinkler head" ticks (still
+            // the real distance-to-green markers, see the module doc) and
+            // on the total-length anchor. Plain intermediate ticks stay
+            // bare to avoid clutter; the tee anchor gets its own word.
+            const label = isTopAnchor
+              ? `${fromTee}y`
+              : isTeeAnchor
+                ? 'TEE'
+                : t.emphasis
+                  ? `${fromTee}y`
+                  : fromTee;
             return (
               <g key={t.yards}>
                 <line

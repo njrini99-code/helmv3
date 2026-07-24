@@ -153,8 +153,19 @@ export function FairwayMonthGrid({
         ))}
       </div>
 
-      {/* Day cells — hairline grid via gap-px on a border-tinted track */}
-      <div className="grid grid-cols-7 gap-px bg-border-subtle">
+      {/* Day cells — hairline grid via gap-px on a border-tinted track. Every
+          row shares ONE fixed track height (`auto-rows-*`) instead of the
+          grid's default per-row `auto` sizing, where each row's height is
+          computed independently from its OWN tallest cell — a week with a
+          busy day (3 chips + "+N more") stretched only that row taller,
+          while a light week (e.g. the leading out-of-month row) stayed at
+          the floor, so the grey out-of-month slab read as a jagged,
+          uneven-height block against the row below it (founder iPhone
+          screenshot). A fixed track height makes every row identical
+          regardless of content; `overflow-hidden` + the chip list's own
+          `overflow-y-auto` below keep an unusually busy day's content
+          inside its own cell instead of growing the row again. */}
+      <div className="grid grid-cols-7 gap-px bg-border-subtle auto-rows-[148px] md:auto-rows-[160px]">
         {days.map((day) => {
           const key = format(day, 'yyyy-MM-dd');
           const items = byDay.get(key) ?? [];
@@ -166,7 +177,7 @@ export function FairwayMonthGrid({
             <div
               key={key}
               className={cn(
-                'flex min-h-[96px] flex-col gap-1 p-1.5 md:min-h-[116px]',
+                'flex h-full flex-col gap-1 overflow-hidden p-1.5',
                 inMonth ? 'bg-surface' : 'bg-surface-sunken/50',
               )}
             >
@@ -190,8 +201,13 @@ export function FairwayMonthGrid({
                 {format(day, 'd')}
               </Button>
 
-              {/* Chips */}
-              <div className="flex flex-col gap-1">
+              {/* Chips — `min-h-0` lets this region shrink below its content
+                  size (the default flex-item floor would otherwise fight the
+                  fixed cell height above and force the cell taller again);
+                  `overflow-y-auto` is the rare-case escape valve for a day
+                  right at MAX_CHIPS + the "+N more" row instead of growing
+                  the whole grid row. */}
+              <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
                 {items.slice(0, MAX_CHIPS).map((item) => {
                   if (item.kind === 'overlay') {
                     const o = item.overlay;
@@ -263,7 +279,11 @@ export function FairwayMonthGrid({
                     variant="ghost"
                     haptic="none"
                     onClick={onSelectDate ? () => onSelectDate(day) : undefined}
-                    className="h-auto min-h-0 px-1.5 text-left font-fw-sans text-microlabel font-medium text-text-tertiary transition-colors hover:text-text-secondary"
+                    // `py-1` matches the event/overlay chip rows above (they
+                    // set it explicitly; this button fell through to the
+                    // base Button's `md` `py-2.5`, ~12px taller than its
+                    // siblings — one more source of ragged per-cell height).
+                    className="h-auto min-h-0 px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium text-text-tertiary transition-colors hover:text-text-secondary"
                   >
                     +{overflow} more
                   </Button>
