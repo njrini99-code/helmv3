@@ -26,7 +26,6 @@ import {
   loadPendingGoalSuggestions,
   loadRecentlyAchievedGoals,
 } from '@/lib/coachhelm/v3/goals/loader';
-import { evaluateAndPersistGoals, evaluateAndPersistFocusAreas } from '@/lib/golf/progress-drivers';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
@@ -321,17 +320,6 @@ export default async function PlayerCoachHelmPage() {
   let suggestions: GoalSuggestionView[] = [];
   let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
   try {
-    // Recompute each active goal's + focus area's observed snapshot BEFORE
-    // reading golf_player_focus_areas below — best-effort, mirrors the goals
-    // sequencing (loadActiveGoals runs after evaluateAndPersistGoals too).
-    // Reading the focus-area row BEFORE this evaluate call was the bug: a
-    // player opening Development right after logging a round saw the
-    // pre-round `current_value` because evaluateAndPersistFocusAreas hadn't
-    // written the fresh windowed value yet.
-    try {
-      await Promise.all([evaluateAndPersistGoals(player.id), evaluateAndPersistFocusAreas(player.id)]);
-    } catch { /* progress refresh is best-effort */ }
-
     const { data: focusAreas, error: focusAreasError } = await supabase
       .from('golf_player_focus_areas')
       .select(

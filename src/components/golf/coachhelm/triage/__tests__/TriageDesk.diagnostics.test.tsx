@@ -68,6 +68,12 @@ vi.mock('@/components/fairway/pages/coachhelm/TeamCategoryLeakBand', () => ({
 vi.mock('../SignalDossier', () => ({
   SignalDossier: () => <div data-testid="signal-dossier" />,
 }));
+// Stubbed like every other sibling: this file's subject is Team diagnostics,
+// and TeamSignalSummary pulls Surface/Badge/Eyebrow from the Fairway barrel,
+// which the narrow mock above deliberately does not carry.
+vi.mock('../TeamSignalSummary', () => ({
+  TeamSignalSummary: () => <div data-testid="team-signal-summary" />,
+}));
 
 // The internal TeamShotWeaknessesPanel is intentionally left UNMOCKED — the
 // point of this suite is to verify it renders real, visible content from the

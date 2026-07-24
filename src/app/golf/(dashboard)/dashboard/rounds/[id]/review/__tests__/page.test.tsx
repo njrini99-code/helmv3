@@ -297,9 +297,16 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
   });
 
   it('renders the hero score/to-par and the scoring-mix line', async () => {
-    const { findByText, getByText } = renderAsPlayer();
+    const { findAllByText, getByText } = renderAsPlayer();
 
-    await findByText('38');
+    // Scoped to the hero on purpose. The front/back breakdown legitimately
+    // shows the same figure — the front nine is also 38 in this fixture — and
+    // it became a separate text node when that row stopped being a
+    // `min-w-[420px]` horizontal scroller and became a labelled metric grid.
+    // A bare getByText('38') is therefore ambiguous, and relaxing it to
+    // "some element says 38" would no longer test that the HERO says it.
+    const hero = (await findAllByText('38')).find((el) => el.className.includes('text-stat-lg'));
+    expect(hero, 'the hero should render the score at stat-lg').toBeDefined();
     expect(getByText('+2')).toBeInTheDocument();
     expect(getByText(/3 pars · 6 bogeys/)).toBeInTheDocument();
   });
