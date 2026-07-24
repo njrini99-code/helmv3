@@ -302,9 +302,18 @@ export interface GolfStats {
   };
 
   // Approach
-  approachProximityAvg: number | null;  // ALL approach shots
-  approachProximityWhenHitGreen: number | null;  // Only when result was green
-  approachProximityWhenMissedGreen: number | null;  // When missed green
+  // Partner definition (feedback verbatim): "track total proximity to the
+  // hole which would [be] shots that hit the green and miss the green on
+  // the shot that is the GIR [approach] shot. Then have card for only when
+  // it hits and a card for when it misses." All three are the SAME canonical
+  // unit (feet) so they're directly comparable on one card row.
+  approachProximityAvg: number | null;  // UNION — every logged approach finish, hit + miss
+  approachProximityWhenHitGreen: number | null;  // Hit-only subset of the union above
+  approachProximityWhenMissedGreen: number | null;  // Miss-only subset of the union above
+
+  // Finer-grained proximity cuts (by par / lie / distance) intentionally stay
+  // GREEN-HIT ONLY, matching their conventional "how close did you leave it
+  // when you found the green" meaning — NOT the partner's total union above.
   approachProximityPar3: number | null;
   approachProximityPar4: number | null;
   approachProximityPar5: number | null;
@@ -312,7 +321,7 @@ export interface GolfStats {
   approachProximityRough: number | null;
   approachProximitySand: number | null;
 
-  // Approach proximity by distance
+  // Approach proximity by distance — GREEN-HIT ONLY (see note above)
   approachProx30_75: number | null;
   approachProx75_100: number | null;
   approachProx100_125: number | null;
@@ -870,7 +879,16 @@ interface CalculatedHoleStats {
   approachDistance: number | null;
   approachLie: string | null;
   approachRawLie: string | null; // un-remapped lie (tee NOT folded into fairway) — GIR-by-lie split
-  approachProximity: number | null;
+  approachProximity: number | null; // GREEN-HIT ONLY, feet
+  /**
+   * Miss twin of `approachProximity`: the GIR-attempt approach's finish
+   * distance in FEET when it did NOT find the green. Mutually exclusive with
+   * `approachProximity` — exactly one of the two is non-null whenever an
+   * approach shot with a logged finish distance exists. See the write-up on
+   * `approachProximity` below for why converting the off-green (yards-tagged)
+   * finish via `normalizeToFeet` is honest here, not the ×3 inflation bug.
+   */
+  approachProximityMiss: number | null;
   approachMissDirection: string | null; // Where approach missed when not GIR
   chipLie: string | null;      // Lie of the chip/pitch shot (for scrambling stats)
   chipDistance: number | null; // Distance of the chip/pitch shot (for scrambling by distance)
@@ -917,6 +935,7 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     approachLie: null,
     approachRawLie: null,
     approachProximity: null,
+    approachProximityMiss: null,
     approachMissDirection: null,
     chipLie: null,
     chipDistance: null,
@@ -1028,22 +1047,37 @@ export function calculateHoleStatsFromShots(
   const approachLie = rawLie === 'tee' ? 'fairway' : rawLie;
 
   // Approach proximity - how close to the hole the approach left the ball, in FEET.
-  // ON-GREEN ONLY: the regulation-attempt approach counts ONLY when it actually found
-  // the green — its finish is then stored in feet (a real proximity). When the approach
-  // MISSES, the finish is off-green (stored in YARDS); feeding that through
-  // normalizeToFeet (×3) inflated this stat ~2× and corrupted every approach-proximity
-  // aggregate (overall, by par/lie/distance, and the cockpit leak map). A missed approach
-  // now records NO proximity (null) — green-hit rate is the signal for missed approaches,
-  // not a fabricated distance. (`approachShot` is already reassigned to an earlier
-  // green-finding shot for par-5 eagle attempts above, so this stays correct there.)
-  const approachProximity =
-    approachShot && isGreenHit(approachShot.result)
-      ? approachShot.result === 'hole'
-        ? 0 // holed the approach — best possible proximity (0 ft), not "no data"
-        : approachShot.distance_to_hole_after !== null
-          ? normalizeToFeet(approachShot.distance_to_hole_after, approachShot.distance_unit_after)
-          : null
-      : null;
+  // Split into two mutually-exclusive per-hole fields:
+  //   - `approachProximity`     : GREEN-HIT ONLY (feet finish, conventional meaning —
+  //                                still what by-par/by-lie/by-distance aggregates use).
+  //   - `approachProximityMiss` : OFF-GREEN ONLY — the partner-requested miss twin.
+  // Partner feedback verbatim: "we need to track total proximity to the hole which
+  // would [be] shots that hit the green and miss the green on the shot that is the
+  // GIR [approach] shot. Then have card for only when it hits and a card for when
+  // it misses." Both fields feed the headline "total" card as a union (see the
+  // aggregation below), while the finer by-par/lie/distance cuts stay green-hit-only.
+  //
+  // UNIT HONESTY: an earlier author suspected converting the off-green finish (stored
+  // in YARDS, distance_unit_after='yards') through normalizeToFeet (×3) was an
+  // inflation bug, and hard-coded miss proximity to null. It is not — the live write
+  // path (resolveDistanceAfterShot in FairwayShotTracking.tsx) deterministically tags
+  // 'feet' only for a hole/green finish and 'yards' for every other result; verified
+  // against production golf_shots (2026-07-21): ~99% of off-green approach finishes
+  // carry the correct 'yards' tag with sane yardages (~25-65 yd avg, i.e. ~75-195 ft —
+  // a believable miss distance, not a corrupted one). normalizeToFeet respects the
+  // per-row unit tag, so a 25y miss legitimately converts to 75ft here — that is
+  // correct, not inflated. (`approachShot` is already reassigned to an earlier
+  // green-finding shot for par-5 eagle attempts above, so both fields stay correct there.)
+  const approachHitGreen = approachShot ? isGreenHit(approachShot.result) : false;
+  const approachFinishFeet = approachShot
+    ? approachShot.result === 'hole'
+      ? 0 // holed the approach — best possible proximity (0 ft), not "no data"
+      : approachShot.distance_to_hole_after !== null
+        ? normalizeToFeet(approachShot.distance_to_hole_after, approachShot.distance_unit_after)
+        : null
+    : null;
+  const approachProximity = approachHitGreen ? approachFinishFeet : null;
+  const approachProximityMiss = approachShot && !approachHitGreen ? approachFinishFeet : null;
 
   // Approach miss direction - when NOT GIR, get the miss direction from the approach shot
   // Use the identified approach shot (the GIR attempt), not searching for any missed shot
@@ -1159,6 +1193,7 @@ export function calculateHoleStatsFromShots(
     approachLie,
     approachRawLie: rawLie,
     approachProximity,
+    approachProximityMiss,
     approachMissDirection,
     chipLie,
     chipDistance,
@@ -2200,22 +2235,24 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      // Approach proximity (ALL approach shots, split by hit/miss)
-      // This requires proximity data (distance_to_hole_after on the green shot)
+      // Approach proximity headline cards (partner definition — see the
+      // `approachProximity`/`approachProximityMiss` doc comment above): the
+      // union of EVERY logged approach finish (hit + miss) feeds the "total"
+      // card, and the mutually-exclusive hit/miss pools feed their own cards.
+      // `hole.approachProximity` and `hole.approachProximityMiss` are never
+      // both non-null for the same hole, so this cannot double-count.
       if (hole.approachProximity !== null) {
         approachProximities.push(hole.approachProximity);
+        greenHitProximities.push(hole.approachProximity);
+      } else if (hole.approachProximityMiss !== null) {
+        approachProximities.push(hole.approachProximityMiss);
+        greenMissProximities.push(hole.approachProximityMiss);
+      }
 
-        // Split proximity by green hit vs miss. NOTE: per-hole approachProximity is
-        // null on missed greens (on-green-only semantics), so this else-branch is
-        // structurally unreachable and approachProximityWhenMissedGreen is always
-        // null — honest ("no on-green proximity exists for a missed approach"), and
-        // no surface displays it. Kept as a guard if per-hole semantics ever change.
-        if (hole.greenInRegulation) {
-          greenHitProximities.push(hole.approachProximity);
-        } else {
-          greenMissProximities.push(hole.approachProximity);
-        }
-
+      // Finer-grained cuts (by par / lie / distance) stay GREEN-HIT ONLY —
+      // the conventional "how close did you leave it when you found the
+      // green" meaning, deliberately NOT the partner's total union above.
+      if (hole.approachProximity !== null) {
         if (hole.par === 3) approachProxPar3.push(hole.approachProximity);
         else if (hole.par === 4) approachProxPar4.push(hole.approachProximity);
         else if (hole.par === 5) approachProxPar5.push(hole.approachProximity);
@@ -2224,8 +2261,8 @@ function aggregateRoundStats(rounds: Array<{
         else if (hole.approachLie === 'rough') approachProxRough.push(hole.approachProximity);
         else if (hole.approachLie === 'sand') approachProxSand.push(hole.approachProximity);
 
-        // Only push proximity if BOTH distance and proximity are known (prevents NaN from null in array)
-        if (hole.approachDistance !== null && hole.approachProximity !== null) {
+        // Only push proximity if the approach distance is also known (prevents NaN from null in array)
+        if (hole.approachDistance !== null) {
           const bucket = getApproachDistanceBucket(hole.approachDistance);
           // Only track approach proximity for actual approach shots (beyond around-green threshold)
           if (bucket) {

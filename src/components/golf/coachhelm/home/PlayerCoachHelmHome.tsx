@@ -34,6 +34,7 @@ import { isThemesEnabled } from '@/lib/redesign/flag';
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
@@ -113,6 +114,11 @@ export interface PlayerCoachHelmHomeProps {
   genomeWatchouts: GameProfilePersonaEntry[];
   genomeCourseProfile: string | null;
   genomeRoundsBasis: number | null;
+  /** The player's OWN Game Fingerprint — same composition as the coach's
+   *  Game Fingerprint page, fed to `ProfileDrill`'s "Game Fingerprint" tab.
+   *  Null when the fetch failed or hasn't resolved a player-self access
+   *  branch — `ProfileDrill` degrades to its prior Genome-only content. */
+  fingerprint?: PlayerFingerprint | null;
 
   /** `standing` drill — copied from `my-standing/page.tsx`. */
   playerBaseline: number | null;
@@ -145,6 +151,7 @@ export function PlayerCoachHelmHome({
   genomeWatchouts,
   genomeCourseProfile,
   genomeRoundsBasis,
+  fingerprint = null,
   playerBaseline,
 }: PlayerCoachHelmHomeProps) {
   const router = useRouter();
@@ -361,6 +368,7 @@ export function PlayerCoachHelmHome({
           playerState={data.playerState}
           playerName={data.playerName}
           v3EmptyCodes={v3EmptyCodes}
+          fingerprint={fingerprint}
         />
       ),
     },

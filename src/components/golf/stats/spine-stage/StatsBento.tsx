@@ -182,7 +182,11 @@ export function StatsBento({
         rows={leakArea === 'driving' ? 2 : 1}
         onOpen={() => stage.open('driving')}
       >
-        <RailBars rows={drivingRows} labelWidth={44} />
+        {/* labelWidth 60, not 44: "Fairways" (8 chars) was clipping to
+            "Fairw…" — RailBars' label column IS truncate-safe, but 44px
+            never gave that specific label a real fit; the other rows here
+            ("Par 4"/"Par 5") had margin to spare either way. */}
+        <RailBars rows={drivingRows} labelWidth={60} />
       </BentoCell>
 
       <BentoCell
@@ -373,11 +377,17 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
 
 function CoreMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 px-2.5 py-2.5 sm:px-3">
+    // px-2 not px-2.5 on mobile: this 3-across grid gives each column
+    // ~1/3 of the cell width, and "Scrambling" (the longest of the three
+    // labels this renders) was clipping to "SCRAMBLI…" at 390px by a
+    // handful of px — the saved padding plus the label's own tighter
+    // tracking below closes that gap without touching the value's own
+    // sizing/emphasis.
+    <div className="min-w-0 px-2 py-2.5 sm:px-3">
       <p className="truncate font-fw-mono text-[1.15rem] font-semibold leading-none tracking-[-0.03em] text-text-primary tabular-nums sm:text-h3">
         {value}
       </p>
-      <p className="mt-1.5 truncate font-fw-sans text-[0.64rem] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+      <p className="mt-1.5 truncate font-fw-sans text-[0.64rem] font-semibold uppercase tracking-[0.04em] text-text-tertiary">
         {label}
       </p>
     </div>

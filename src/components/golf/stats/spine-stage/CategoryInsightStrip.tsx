@@ -95,16 +95,28 @@ export function CategoryInsightStrip({
       animate={{ opacity: 1, y: 0 }}
       transition={enterTransition}
       className={cn(
-        'rounded-card border border-border-subtle bg-surface p-4',
+        // overflow-clip: containment safety net for the header row below.
+        'overflow-clip rounded-card border border-border-subtle bg-surface p-4',
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-4">
+      {/* `flex-wrap` (+ `gap-y`) is the real fix: the eyebrow and the
+          sparkline+chip group are both `whitespace-nowrap`/`shrink-0`, so on
+          a narrow card (390px) with a long delta label they could outgrow
+          the row's width. Wrapping to a second line keeps every character
+          on screen and legible instead of clipping or scrolling. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
         <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
           What CoachHelm sees
         </span>
         {hasSeries ? (
-          <div className="flex shrink-0 items-center gap-2">
+          // `ml-auto`: on the common (single-line) width this is a no-op
+          // next to `justify-between`, but when the row wraps (verified at
+          // 390px — the eyebrow + sparkline + chip genuinely don't fit on
+          // one line), it keeps this group pinned to the right on its own
+          // line instead of falling back to flex-start, so the wrap reads
+          // as an intentional second row rather than a stray left dangle.
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <Sparkline
               data={finiteSeries}
               goodDirection={goodDirection}

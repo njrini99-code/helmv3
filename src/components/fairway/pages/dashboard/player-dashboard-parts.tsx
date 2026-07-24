@@ -46,23 +46,6 @@ import type {
   StrokesGainedSnapshot,
 } from '@/app/golf/actions/dashboard-data';
 
-/**
- * The Action center section's own visibility + item count (see
- * FairwayPlayerDashboard, which derives this from `hubData` — the same feed
- * PlayerActionCenter renders below). Defined here (not imported from
- * PlayerActionCenter.tsx) so TodayCard's contract doesn't reach across a file
- * boundary outside this packet's scope; the SHAPE must stay in lockstep with
- * PlayerActionCenter's own `hasAnything`/count gate.
- */
-export interface ActionCenterSummary {
-  /** Whether the Action center section renders anything at all — the exact
-   *  condition the `#action-center` anchor's existence depends on. */
-  visible: boolean;
-  /** Actionable item count (pending tasks + un-RSVP'd events + upcoming
-   *  trips). Excludes announcements — reference material, not a "to-do". */
-  count: number;
-}
-
 /* ─────────────────────────────────────────────────────────────────────────
  * Section heading — quiet General Sans h3 with an optional trailing link.
  * One consistent section-title voice across the page (no bespoke per-card
@@ -109,13 +92,17 @@ export function SectionTitle({
  * WAVE 3 (player-home premium pass): this card used to grow a SECOND "what
  * needs you" preview whenever a Hub feed (`hubSummary`) was present — a
  * hero-framed "N thing(s) need(s) you" row restating the same count the
- * Action center section already shows in full a few hundred pixels below.
+ * Action center section already showed in full a few hundred pixels below.
  * Nick flagged that duplicate framing directly. Fixed by making the body
  * ALWAYS show real "today" content — the player's actual next event + lead
- * task — regardless of whether a Hub feed is present, instead of a count
- * teaser of a DIFFERENT surface. `hubSummary` now only drives the footer's
- * "See details" link (gated on the exact same visibility the Action center
- * section itself uses), never a second summary of its own count.
+ * task.
+ *
+ * DaySchedule wave: the Action center section this card's footer used to
+ * jump to (`#action-center`) is gone — replaced by the DaySchedule card
+ * further down the page. The footer no longer references a count or an
+ * in-page anchor; it's a single, always-honest link straight to the full
+ * calendar, since that's the one place guaranteed to exist regardless of
+ * whether this player has a Hub feed.
  * ──────────────────────────────────────────────────────────────────────── */
 
 function formatEventTime(start: string, timezone?: string): string {
@@ -134,14 +121,10 @@ export function TodayCard({
   events,
   actionItems,
   timezone,
-  hubSummary = null,
 }: {
   events: TodayEvent[];
   actionItems: ActionItem[];
   timezone?: string;
-  /** The Action center's own visibility + count (present only when the
-   *  player has a Hub feed — see the consolidation note above). */
-  hubSummary?: ActionCenterSummary | null;
 }) {
   const nextEvent = events[0] ?? null;
   const overdue = useMemo(
@@ -155,23 +138,12 @@ export function TodayCard({
   const leadTask = overdue[0] ?? openTasks[0] ?? actionItems[0] ?? null;
 
   // The body always shows the player's REAL today content (next event + lead
-  // task) — never a restated count of the Action center's own feed below it.
+  // task) — never a restated count of a different section's feed.
   const nothingToday = !nextEvent && !leadTask;
 
-  // The footer CTA still gates on the Hub feed's own visibility (the exact
-  // condition that decides whether the Action center section — and its
-  // `#action-center` anchor — renders at all), independent of whether
-  // there's anything in TODAY's local schedule specifically.
-  const showActionCenterCta = hubSummary != null && hubSummary.visible;
-
-  const footerLabel =
-    hubSummary != null
-      ? hubSummary.count > 0
-        ? `${hubSummary.count} item${hubSummary.count === 1 ? '' : 's'} to action`
-        : 'Your action center'
-      : actionItems.length > 0
-        ? `${actionItems.length} item${actionItems.length === 1 ? '' : 's'} to action`
-        : 'Your action center';
+  const footerLabel = actionItems.length > 0
+    ? `${actionItems.length} update${actionItems.length === 1 ? '' : 's'} total`
+    : "You're caught up";
 
   return (
     <Surface padding="md" className="flex h-full flex-col">
@@ -237,9 +209,7 @@ export function TodayCard({
               Nothing scheduled
             </p>
             <p className="font-fw-sans text-caption text-text-tertiary">
-              {hubSummary != null
-                ? 'Tasks, events, and trips will show up here.'
-                : 'Check the Hub for trips and upcoming events.'}
+              Check the full calendar for trips and upcoming events.
             </p>
           </Inset>
         ) : null}
@@ -247,17 +217,9 @@ export function TodayCard({
 
       <Surface.Footer className="mt-3">
         <span className="font-fw-sans text-caption text-text-tertiary">{footerLabel}</span>
-        {/* WAVE W2: the standalone Hub route is gone (merged into this page —
-            see PlayerActionCenter below on this same Dashboard); jump to the
-            merged section instead of navigating to a redirect. Only rendered
-            when that section actually exists on the page (see
-            `showActionCenterCta` above) — otherwise `#action-center` would
-            link at nothing. */}
-        {showActionCenterCta ? (
-          <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
-            <Link href="#action-center">See details</Link>
-          </Button>
-        ) : null}
+        <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
+          <Link href="/golf/dashboard/calendar">Full calendar</Link>
+        </Button>
       </Surface.Footer>
     </Surface>
   );

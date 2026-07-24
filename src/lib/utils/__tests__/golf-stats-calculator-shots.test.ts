@@ -636,6 +636,15 @@ describe('calculateHoleStatsFromShots', () => {
     it('records drive miss direction', () => {
       expect(stats.driveMissDirection).toBe('right');
     });
+
+    it('does NOT record a green-hit approach proximity when the approach missed the green', () => {
+      expect(stats.approachProximity).toBeNull();
+    });
+
+    it('records the miss-twin approach proximity honestly converted to feet (30 yd off-green → 90 ft)', () => {
+      // Fixture's approach shot: result='rough', distance_to_hole_after=30, distance_unit_after='yards'.
+      expect(stats.approachProximityMiss).toBe(90);
+    });
   });
 
   describe('par 3 GIR', () => {
@@ -660,6 +669,46 @@ describe('calculateHoleStatsFromShots', () => {
 
     it('records approach proximity', () => {
       expect(stats.approachProximity).toBe(20);
+    });
+
+    it('leaves the miss-twin proximity null on a green-hit approach', () => {
+      expect(stats.approachProximityMiss).toBeNull();
+    });
+  });
+
+  describe('approach proximity — hit/miss split edge cases', () => {
+    it('a holed approach shot records approachProximity=0 (best possible), not approachProximityMiss', () => {
+      const holedApproachShots: RawShot[] = [
+        makeRawShot({
+          hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+          lie_before: 'tee', distance_to_hole_before: 150, distance_unit_before: 'yards',
+          result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+          shot_distance: 150,
+        }),
+      ];
+      const stats = calculateHoleStatsFromShots(holedApproachShots, 3);
+      expect(stats.approachProximity).toBe(0);
+      expect(stats.approachProximityMiss).toBeNull();
+    });
+
+    it('a missed approach with no recorded finish distance leaves BOTH proximity fields null (honest no-data)', () => {
+      const noDistanceMissShots: RawShot[] = [
+        makeRawShot({
+          hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'driver',
+          lie_before: 'tee', distance_to_hole_before: 400, distance_unit_before: 'yards',
+          result: 'fairway', distance_to_hole_after: 150, distance_unit_after: 'yards',
+          shot_distance: 250,
+        }),
+        makeRawShot({
+          hole_number: 1, shot_number: 2, shot_type: 'approach', club_type: 'non_driver',
+          lie_before: 'fairway', distance_to_hole_before: 150, distance_unit_before: 'yards',
+          result: 'rough', distance_to_hole_after: null, distance_unit_after: null,
+          shot_distance: 130,
+        }),
+      ];
+      const stats = calculateHoleStatsFromShots(noDistanceMissShots, 4);
+      expect(stats.approachProximity).toBeNull();
+      expect(stats.approachProximityMiss).toBeNull();
     });
   });
 
@@ -1599,8 +1648,13 @@ describe('legacy-band regression guard (approach proximity aggregate bands)', ()
   });
 
   // Regression: a MISSED approach (off-green finish, stored in yards) must NOT
-  // contribute to any proximity band. The old code ran the yards finish through
-  // normalizeToFeet (×3) and reported it as on-green "feet", inflating bands ~2×.
+  // contribute to the by-par/lie/distance BAND aggregates — those stay
+  // green-hit-only (conventional "how close did you leave it when you found
+  // the green" meaning). It DOES, however, legitimately feed the headline
+  // approachProximityWhenMissedGreen/approachProximityAvg cards — the
+  // partner-requested "total proximity" split — converted honestly via its
+  // own distance_unit_after tag ('yards' here, so ×3 to feet is correct, not
+  // an inflation bug).
   function missedApproachPar4(holeNumber: number, approachYards: number, missYards: number): RawShot[] {
     return [
       makeRawShot({
@@ -1629,7 +1683,7 @@ describe('legacy-band regression guard (approach proximity aggregate bands)', ()
     ];
   }
 
-  it('excludes a missed approach (off-green yards) from the proximity bands — no ×3 inflation', () => {
+  it('excludes a missed approach (off-green yards) from the by-distance BAND, but includes it — honestly converted — in the headline missed-GIR/total cards', () => {
     const mixed = calculateStatsFromShots(
       [...girPar3(1, 160, 30), ...missedApproachPar4(2, 160, 40)],
       [
@@ -1638,11 +1692,127 @@ describe('legacy-band regression guard (approach proximity aggregate bands)', ()
       ],
       [makeRoundInfo()],
     );
-    // Both approaches are ~160 yd → band 150_175. Only the GIR hole (30 ft) contributes;
-    // the missed approach (40 yd off-green) would have been ×3'd to 120 ft and dragged the
-    // band to 75. On-green-only keeps it at 30, and there is no fabricated "missed" proximity.
+    // Both approaches are ~160 yd → band 150_175. The by-distance BAND stays
+    // green-hit-only, so only the GIR hole (30 ft) contributes there.
     expect(mixed.approachProx150_175).toBe(30);
-    expect(mixed.approachProximityWhenMissedGreen).toBeNull();
+    // The headline cards are a different story: the 40-yard miss legitimately
+    // converts to 120 ft (40 × 3, honoring its own 'yards' unit tag) — not a
+    // fabricated value, not a ×3 inflation bug, just the honest distance.
+    expect(mixed.approachProximityWhenMissedGreen).toBe(120);
     expect(mixed.approachProximityWhenHitGreen).toBe(30);
+    // Total is the union of both approaches (30 ft hit + 120 ft miss), NOT an
+    // alias for the hit-only figure — this is the exact bug the partner
+    // reported (total === hit-GIR).
+    expect(mixed.approachProximityAvg).toBe(75);
+  });
+});
+
+describe('approach proximity headline cards — total/hit/miss across a mixed round', () => {
+  // Four holes covering every case the partner's definition needs to handle:
+  //   Hole 1 — green-hit approach, proximity 20 ft.
+  //   Hole 2 — missed-green approach, off-green finish 45 yd (→ 135 ft honest conversion).
+  //   Hole 3 — HOLED approach (ace-style), proximity 0 ft — counts as a hit, not a miss.
+  //   Hole 4 — missed-green approach with NO recorded finish distance — contributes
+  //            to NEITHER pool (honest no-data, not a fabricated 0 or average drag).
+  const shots: RawShot[] = [
+    // Hole 1: par 3, tee shot IS the approach, hits green at 20 ft, holed next putt.
+    makeRawShot({
+      hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+      lie_before: 'tee', distance_to_hole_before: 150, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet',
+      shot_distance: 150,
+    }),
+    makeRawShot({
+      hole_number: 1, shot_number: 2, shot_type: 'putting', club_type: 'putter',
+      lie_before: 'green', distance_to_hole_before: 20, distance_unit_before: 'feet',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+      shot_distance: 0, putt_distance_feet: 20, putt_made: true,
+    }),
+    // Hole 2: par 4, approach (shot 2) misses to rough, 45 yd off-green.
+    makeRawShot({
+      hole_number: 2, shot_number: 1, shot_type: 'tee', club_type: 'driver',
+      lie_before: 'tee', distance_to_hole_before: 400, distance_unit_before: 'yards',
+      result: 'fairway', distance_to_hole_after: 200, distance_unit_after: 'yards',
+      shot_distance: 200,
+    }),
+    makeRawShot({
+      hole_number: 2, shot_number: 2, shot_type: 'approach', club_type: 'non_driver',
+      lie_before: 'fairway', distance_to_hole_before: 200, distance_unit_before: 'yards',
+      result: 'rough', distance_to_hole_after: 45, distance_unit_after: 'yards',
+      shot_distance: 155, miss_direction: 'short',
+    }),
+    makeRawShot({
+      hole_number: 2, shot_number: 3, shot_type: 'around_green', club_type: 'non_driver',
+      lie_before: 'rough', distance_to_hole_before: 45, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: 8, distance_unit_after: 'feet', shot_distance: 45,
+    }),
+    makeRawShot({
+      hole_number: 2, shot_number: 4, shot_type: 'putting', club_type: 'putter',
+      lie_before: 'green', distance_to_hole_before: 8, distance_unit_before: 'feet',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+      shot_distance: 0, putt_distance_feet: 8, putt_made: true,
+    }),
+    // Hole 3: par 3, holed the approach (ace).
+    makeRawShot({
+      hole_number: 3, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+      lie_before: 'tee', distance_to_hole_before: 150, distance_unit_before: 'yards',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+      shot_distance: 150,
+    }),
+    // Hole 4: par 4, approach (shot 2) misses to rough — NO recorded finish distance.
+    makeRawShot({
+      hole_number: 4, shot_number: 1, shot_type: 'tee', club_type: 'driver',
+      lie_before: 'tee', distance_to_hole_before: 400, distance_unit_before: 'yards',
+      result: 'fairway', distance_to_hole_after: 190, distance_unit_after: 'yards',
+      shot_distance: 210,
+    }),
+    makeRawShot({
+      hole_number: 4, shot_number: 2, shot_type: 'approach', club_type: 'non_driver',
+      lie_before: 'fairway', distance_to_hole_before: 190, distance_unit_before: 'yards',
+      result: 'rough', distance_to_hole_after: null, distance_unit_after: null,
+      shot_distance: 170,
+    }),
+    makeRawShot({
+      hole_number: 4, shot_number: 3, shot_type: 'around_green', club_type: 'non_driver',
+      lie_before: 'rough', distance_to_hole_before: 20, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: 10, distance_unit_after: 'feet', shot_distance: 20,
+    }),
+    makeRawShot({
+      hole_number: 4, shot_number: 4, shot_type: 'putting', club_type: 'putter',
+      lie_before: 'green', distance_to_hole_before: 10, distance_unit_before: 'feet',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+      shot_distance: 0, putt_distance_feet: 10, putt_made: true,
+    }),
+  ];
+
+  const holes: HoleInfo[] = [
+    makeHoleInfo({ hole_number: 1, par: 3, yardage: 150 }),
+    makeHoleInfo({ hole_number: 2, par: 4, yardage: 400 }),
+    makeHoleInfo({ hole_number: 3, par: 3, yardage: 150 }),
+    makeHoleInfo({ hole_number: 4, par: 4, yardage: 400 }),
+  ];
+
+  const stats = calculateStatsFromShots(shots, holes, [makeRoundInfo({ holes_played: 4 })]);
+
+  it('approachProximityWhenHitGreen averages ONLY the hit approaches (20 ft + 0 ft holed = 10)', () => {
+    expect(stats.approachProximityWhenHitGreen).toBe(10);
+  });
+
+  it('approachProximityWhenMissedGreen averages ONLY the miss approach with a recorded distance (135 ft)', () => {
+    expect(stats.approachProximityWhenMissedGreen).toBe(135);
+  });
+
+  it('approachProximityAvg is the union of every logged approach (20 + 0 + 135 over 3 = 51.67), not an alias of the hit-only figure', () => {
+    expect(stats.approachProximityAvg).toBe(51.67);
+    expect(stats.approachProximityAvg).not.toBe(stats.approachProximityWhenHitGreen);
+  });
+
+  it('the no-distance-data miss hole contributes to NEITHER pool (honest exclusion, not a fabricated value)', () => {
+    // hole 4's shots never carry an approach proximity into any bucket — asserted
+    // indirectly: hit(10) + miss(135) fully explain avg(51.67) with n=3, meaning
+    // hole 4 added zero samples to any of the three headline cards.
+    const hitSum = (stats.approachProximityWhenHitGreen ?? 0) * 2;
+    const missSum = (stats.approachProximityWhenMissedGreen ?? 0) * 1;
+    expect(Math.round(((hitSum + missSum) / 3) * 100) / 100).toBe(stats.approachProximityAvg);
   });
 });

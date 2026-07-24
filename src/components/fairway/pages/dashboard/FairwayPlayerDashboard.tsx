@@ -58,6 +58,7 @@ import { HubInsightSignalCard } from '@/components/golf/player-hub/HubInsightSig
 import type {
   PlayerDashboardPayload,
   SparklineStatCard,
+  TodayEvent,
 } from '@/app/golf/actions/dashboard-data';
 import type { GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import type { PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
@@ -68,9 +69,8 @@ import {
   GenomeFingerprintTeaser,
   RecentRoundsList,
   StandingCard,
-  type ActionCenterSummary,
 } from './player-dashboard-parts';
-import { PlayerActionCenter } from './PlayerActionCenter';
+import { DaySchedule, type DayScheduleEvent } from './DaySchedule';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
 
 // Fairway TrendChart, lazy + ssr:false — preserves the legacy load contract
@@ -111,10 +111,12 @@ interface FairwayPlayerDashboardProps {
   enhancedData?: PlayerDashboardPayload | null;
   /**
    * WAVE W2 (2026-07-09): the former standalone Hub's triage data (tasks /
-   * RSVP events / announcements / trips + top CoachHelm signal), merged onto
-   * this page as the "Action center" section — see PlayerActionCenter. Absent
-   * (undefined) for a teamless player, exactly like the Hub was skipped for
-   * teamless players before.
+   * RSVP events / announcements / trips + top CoachHelm signal). Only
+   * `topInsight` still renders on this page (via HubInsightSignalCard,
+   * above the DaySchedule card) — the full tasks/RSVP/trips triage surface
+   * that used to render here moved out in favor of DaySchedule; it still
+   * lives at Team Hub and Calendar. Absent (undefined) for a teamless
+   * player, exactly like the Hub was skipped for teamless players before.
    */
   hubData?: PlayerHubSummaryData | null;
 }
@@ -223,20 +225,54 @@ function metricEmpty(card: SparklineStatCard | undefined, value: number | null):
   return false;
 }
 
-/** Honest first→last delta over a sparkline series (oldest → newest), or null
- *  when there are fewer than two finite points to compare. Mirrors
- *  FairwayCoachDashboard.tsx's own `seriesDelta` (not exported from that
- *  file — this is a same-shape local copy, kept in lockstep by convention)
- *  so the player KPI row's delta chips are sourced from the series the exact
- *  same way the coach row's are, and the same way Sparkline classifies its
- *  own color. */
-function seriesDelta(series: number[] | undefined): number | null {
+/** A sparkline delta with the ACTUAL window it was computed over, so the
+ *  chip's label never claims a window depth the data can't back. */
+interface SeriesDelta {
+  value: number;
+  points: number;
+}
+
+/**
+ * Honest windowed delta over a sparkline series (oldest → newest): the SAME
+ * split-half-average comparison `computeTrend()`/`computeTrendHigherIsBetter()`
+ * already use server-side (dashboard-data.ts) to classify the qualitative
+ * trend arrow — recent-half average vs. older-half average — not a raw
+ * first-vs-last endpoint diff.
+ *
+ * Two bugs this fixes together (both reported against the KPI row):
+ *   1. WINDOW MISMATCH — the chip was always labeled "last 5 rounds" even
+ *      when the underlying sparkline had fewer finite points (a round
+ *      missing GIR/putts data drops out before the 5-point slice is taken
+ *      upstream). The label now states the REAL point count used.
+ *   2. IMPLAUSIBLE SWINGS (e.g. a −50% GIR delta) — a raw endpoint diff
+ *      compares exactly TWO individual rounds, and a single noisy/short
+ *      round (a rain-shortened 9-hole round has a tiny GIR denominator) can
+ *      swing that by tens of points. Averaging each half smooths a single
+ *      outlier instead of handing it the whole delta, and — because it's the
+ *      identical split used for the `trend` field — the numeric delta and
+ *      the qualitative trend/color can never disagree.
+ *
+ * Requires ≥3 finite points (mirrors the "Need 3+ rounds" honesty gate used
+ * elsewhere on this page) — fewer than that suppresses the chip entirely
+ * rather than showing an unreliable 2-point comparison. Mirrors
+ * FairwayCoachDashboard.tsx's own `seriesDelta` (not exported from that
+ * file — this is a same-shape local copy, kept in lockstep by convention).
+ */
+function seriesDelta(series: number[] | undefined): SeriesDelta | null {
   if (!series) return null;
   const finite = series.filter((v) => Number.isFinite(v));
-  if (finite.length < 2) return null;
-  const first = finite[0] as number;
-  const last = finite[finite.length - 1] as number;
-  return last - first;
+  if (finite.length < 3) return null;
+  const mid = Math.floor(finite.length / 2);
+  const olderHalf = finite.slice(0, mid); // series is oldest → newest
+  const recentHalf = finite.slice(mid);
+  if (olderHalf.length === 0 || recentHalf.length === 0) return null;
+  const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
+  const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
+  return { value: recentAvg - olderAvg, points: finite.length };
+}
+
+function seriesDeltaLabel(points: number): string {
+  return `last ${points} round${points === 1 ? '' : 's'}`;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -293,35 +329,27 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
   const puttsDelta = seriesDelta(puttsSeries);
   const handicapDelta = seriesDelta(handicapSeries);
 
-  // CONSOLIDATION (review): TodayCard's "what's next" preview and the Action
-  // center section below it must read from ONE source, not two independent
-  // feeds. When this player has a Hub feed (hubData present), derive the
-  // Action center's own visibility + count from that SAME hubData and hand it
-  // to TodayCard — the preview and the full section can then never disagree,
-  // and TodayCard's "See details" CTA can gate on the exact condition that
-  // decides whether `#action-center` exists on the page. Teamless players
-  // have no hubData — TodayCard falls back to its original events/actionItems
-  // preview.
-  //
-  // NOTE: this mirrors PlayerActionCenter's own `hasAnything` gate
-  // (pending tasks + un-RSVP'd future events + upcoming trips + announcements
-  // / load-error) verbatim. PlayerActionCenter.tsx is out of this packet's
-  // file scope, so the predicate is kept here rather than imported; if that
-  // component's gate ever changes, this must be updated to match.
-  const actionCenterSummary = useMemo<ActionCenterSummary | null>(() => {
-    if (!hubData) return null;
-    const now = new Date();
-    const pendingTaskCount = hubData.tasks.filter((t) => t.status !== 'completed').length;
-    const pendingEventCount = hubData.events.filter(
-      (e) => (!e.rsvp_status || e.rsvp_status === 'pending') && new Date(e.start_time) >= now,
-    ).length;
-    const upcomingTripCount = hubData.trips.filter(
-      (t) => new Date(t.departure_date) >= now,
-    ).length;
-    const count = pendingTaskCount + pendingEventCount + upcomingTripCount;
-    const visible = count > 0 || hubData.announcements.length > 0 || hubData.announcementsLoadError;
-    return { visible, count };
-  }, [hubData]);
+  // DaySchedule feed (WAVE — action-items → schedule): merge today's events
+  // with the upcoming-beyond-today events (dashboard-data.ts additive field),
+  // deduped by id and sorted ascending. Both arrays already come from the
+  // SAME `golf_events` table via dashboard-data.ts — no new fetch here, just
+  // a client-side merge of two payload fields that were fetched together.
+  const scheduleEvents = useMemo<DayScheduleEvent[]>(() => {
+    const toScheduleEvent = (e: TodayEvent): DayScheduleEvent => ({
+      id: e.id,
+      title: e.title,
+      event_type: e.event_type,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      location: e.location,
+    });
+    const merged = new Map<string, DayScheduleEvent>();
+    for (const e of enhancedData?.todayEvents ?? []) merged.set(e.id, toScheduleEvent(e));
+    for (const e of enhancedData?.upcomingEvents ?? []) {
+      if (!merged.has(e.id)) merged.set(e.id, toScheduleEvent(e));
+    }
+    return Array.from(merged.values());
+  }, [enhancedData?.todayEvents, enhancedData?.upcomingEvents]);
 
   const newRoundCta = (
     <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
@@ -456,7 +484,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   emptyMessage="—"
                   delta={
                     scoringDelta != null
-                      ? { value: Number(scoringDelta.toFixed(1)), label: 'last 5 rounds' }
+                      ? { value: Number(scoringDelta.value.toFixed(1)), label: seriesDeltaLabel(scoringDelta.points) }
                       : undefined
                   }
                   sparkline={
@@ -476,7 +504,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   emptyMessage="—"
                   delta={
                     girDelta != null
-                      ? { value: Number(girDelta.toFixed(0)), suffix: '%', label: 'last 5 rounds' }
+                      ? { value: Number(girDelta.value.toFixed(0)), suffix: '%', label: seriesDeltaLabel(girDelta.points) }
                       : undefined
                   }
                   sparkline={
@@ -495,7 +523,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   emptyMessage="—"
                   delta={
                     puttsDelta != null
-                      ? { value: Number(puttsDelta.toFixed(1)), label: 'last 5 rounds' }
+                      ? { value: Number(puttsDelta.value.toFixed(1)), label: seriesDeltaLabel(puttsDelta.points) }
                       : undefined
                   }
                   sparkline={
@@ -520,7 +548,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   emptyMessage="—"
                   delta={
                     handicapDelta != null
-                      ? { value: Number(handicapDelta.toFixed(1)), label: 'last 5 rounds' }
+                      ? { value: Number(handicapDelta.value.toFixed(1)), label: seriesDeltaLabel(handicapDelta.points) }
                       : undefined
                   }
                   sparkline={
@@ -614,7 +642,6 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                 events={enhancedData?.todayEvents ?? []}
                 actionItems={enhancedData?.actionItems ?? []}
                 timezone={enhancedData?.timezone}
-                hubSummary={actionCenterSummary}
               />
             </section>
 
@@ -660,20 +687,23 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
           </div>
         )}
 
-        {/* ── Action center (WAVE W2: merged from the former standalone Hub) ──
-            Renders nothing when there's genuinely nothing to triage (honest-
-            empty — see PlayerActionCenter). The CoachHelm signal card sits
-            above it as a secondary matte signal, exactly as it did on the
-            Hub — never a second glass hero. */}
-        {hubData ? (
+        {/* ── Schedule (replaces the former Action center tasks/RSVP/trips
+            triage — that full read-write surface still lives at Team Hub and
+            Calendar). The CoachHelm signal card sits above it as a secondary
+            matte signal, exactly as it did before — never a second glass
+            hero. Gated on `team` (not `hubData`): the schedule is calendar
+            data, not Hub-specific, but still only meaningful for a player on
+            a team — a teamless player already sees the "Join your team"
+            notice above and doesn't need a second, always-empty card. */}
+        {team ? (
           <div className="mt-10 flex flex-col gap-6">
-            <HubInsightSignalCard insight={hubData.topInsight} />
-            <PlayerActionCenter
-              trips={hubData.trips}
-              tasks={hubData.tasks}
-              events={hubData.events}
-              announcements={hubData.announcements}
-              announcementsLoadError={hubData.announcementsLoadError}
+            {hubData ? <HubInsightSignalCard insight={hubData.topInsight} /> : null}
+            <DaySchedule
+              title="Your schedule"
+              subtitle="Today & upcoming"
+              events={scheduleEvents}
+              timezone={enhancedData?.timezone}
+              viewAllHref="/golf/dashboard/calendar"
             />
           </div>
         ) : null}

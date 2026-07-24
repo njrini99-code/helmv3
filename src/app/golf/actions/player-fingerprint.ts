@@ -122,6 +122,10 @@ export interface PlayerFingerprint {
     first_name: string | null;
     last_name: string | null;
     team_name: string | null;
+    /** `golf_players.avatar_url` — feeds the identity-header Avatar on both
+     *  the coach Game Fingerprint page and the player's own Game profile
+     *  tab. Null → the Avatar primitive falls back to initials. */
+    avatar_url: string | null;
   };
   composite: {
     rating: number | null;
@@ -143,6 +147,7 @@ interface PlayerRow {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  avatar_url: string | null;
 }
 
 interface TeamMembershipRow {
@@ -251,7 +256,7 @@ async function getPlayerFingerprintImpl(
   ] = await Promise.all([
     supabase
       .from('golf_players')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, avatar_url')
       .eq('id', playerId)
       .maybeSingle(),
     supabase
@@ -341,15 +346,33 @@ async function getPlayerFingerprintImpl(
   }
   const patterns = (patternsResult.data as { severity: string | null }[] | null) ?? [];
 
+  // Self-view only: a player can dismiss an insight from their OWN Game
+  // Fingerprint tab via `rateInsightAsPlayer` (writes `golf_insight_player_
+  // feedback`, NOT `golf_coach_insights.status`). `getInsightsForCoach` above
+  // has no knowledge of that table — it's the coach-shaped fetcher, reused
+  // here for both callers per the module doc — so without this filter a
+  // player-dismissed insight would silently reappear on next load even
+  // though the SAME insight correctly stays hidden in their Insights sub-tab
+  // (which reads through `getInsightsForPlayer`, which DOES apply this
+  // overlay). Coach callers (`access.reason === 'coach'`) are unaffected —
+  // a player's own dismissal must never hide an insight from their coach.
+  let visibleInsights = insights;
+  if (access.reason === 'self') {
+    const dismissedIds = await loadSelfDismissedInsightIds(supabase, playerId);
+    if (dismissedIds.size > 0) {
+      visibleInsights = insights.filter((i) => !dismissedIds.has(i.id));
+    }
+  }
+
   // --- Build sections -------------------------------------------------------
-  const sections = buildSections(stats, rounds, insights);
+  const sections = buildSections(stats, rounds, visibleInsights);
 
   // --- Composite + trend ----------------------------------------------------
   // Canonical formula (@/lib/coachhelm/composite-rating) — see module doc for
   // why this replaced the old cache-shortcut computeComposite() and why the
   // severe-pattern penalty concept was kept.
   const composite = computeCompositeRating(rounds, patterns);
-  const trend = buildTrend(rounds, insights);
+  const trend = buildTrend(rounds, visibleInsights);
 
   return {
     player: {
@@ -357,6 +380,7 @@ async function getPlayerFingerprintImpl(
       first_name: player.first_name,
       last_name: player.last_name,
       team_name: teamName,
+      avatar_url: player.avatar_url,
     },
     composite,
     sections,
@@ -375,6 +399,34 @@ export async function getPlayerFingerprint(
   supabaseOverride?: SupabaseClient,
 ): Promise<PlayerFingerprint | null> {
   return observedGetPlayerFingerprint(playerId, supabaseOverride);
+}
+
+/**
+ * Self-view only — the set of insight ids this player has dismissed via
+ * `rateInsightAsPlayer` (see the call site above for why this can't reuse
+ * `insight-delivery.ts`'s private overlay helpers). Best-effort: any read
+ * failure degrades to an empty set (never blocks the fingerprint render).
+ */
+async function loadSelfDismissedInsightIds(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<Set<string>> {
+  const feedbackTable = supabase.from('golf_insight_player_feedback') as unknown as {
+    select: (cols: string) => {
+      eq: (col: string, val: string) => {
+        eq: (
+          col2: string,
+          val2: string,
+        ) => Promise<{ data: Array<{ insight_id: string }> | null; error: { message: string } | null }>;
+      };
+    };
+  };
+  const { data, error } = await feedbackTable
+    .select('insight_id')
+    .eq('player_id', playerId)
+    .eq('rating', 'dismissed');
+  if (error || !data) return new Set();
+  return new Set(data.map((row) => row.insight_id));
 }
 
 // ---------------------------------------------------------------------------
