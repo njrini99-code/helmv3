@@ -29,16 +29,9 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
       >
         <div className="max-w-[600px]">
-          <div
-            className="landing-hero-up flex items-center gap-2.5 font-fw-mono text-[0.75rem] uppercase tracking-[0.16em] text-accent-700"
-            style={{ animationDelay: '0.1s' }}
-          >
-            <span className="inline-block h-px w-[22px] bg-accent-500" />
-            College Golf Intelligence
-          </div>
           <h1
-            className="landing-hero-up mt-[22px] text-[clamp(3rem,6.6vw,6rem)] leading-[0.98] tracking-[-0.028em] text-text-primary [text-wrap:balance]"
-            style={{ animationDelay: '0.18s', animationDuration: '0.62s', fontWeight: 640 }}
+            className="landing-hero-up text-[clamp(3rem,6.6vw,6rem)] leading-[0.98] tracking-[-0.028em] text-text-primary [text-wrap:balance]"
+            style={{ animationDelay: '0.1s', animationDuration: '0.62s', fontWeight: 640 }}
           >
             Command every angle of your program.
           </h1>
@@ -46,7 +39,7 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
             className="landing-hero-up mt-[30px] max-w-[32em] text-[clamp(1.06rem,1.5vw,1.32rem)] leading-normal text-text-secondary [text-wrap:pretty]"
             style={{ animationDelay: '0.3s' }}
           >
-            The operating system for college golf coaches who demand clarity, precision, and a competitive edge.
+            The operating system for college golf — where every round, shot, and stat resolves into your next coaching decision.
           </p>
           <div
             className="landing-hero-up mt-[34px] flex flex-wrap items-center gap-[22px]"
