@@ -1297,12 +1297,17 @@ async function createFocusAreaFromInsightImpl(
       area_type: areaType,
       title: data.title,
       description: finalDescription || null,
-      status: 'active',
+      // A coach prescription must enter the same consent lifecycle as every
+      // other coach-created focus area (createFocusArea, ...FromReview,
+      // ...FromInsightV2): it stays proposed until the player accepts it.
+      // This legacy path is coach-only (golf_coaches row required above), so
+      // it must never silently create active work on the player's behalf.
+      status: 'proposed',
       target_metric: data.target_metric || null,
       current_value: data.current_value ?? null,
       target_value: data.target_value ?? null,
       from_insight_id: data.insight_id,
-      started_at: new Date().toISOString(),
+      started_at: null,
     })
     .select('id')
     .single();
