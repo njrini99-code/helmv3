@@ -87,7 +87,15 @@ jobs:
       github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && inputs.full_e2e == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    # MUST stay comfortably above the `timeout <N>m` on "Run Playwright
+    # tests" below, plus the ~25min of setup that precedes it (npm ci,
+    # browser install, next build, two seed runs, the blocking smoke, and
+    # the route crawler). When the JOB timeout fires first, GitHub cancels
+    # the job outright and the `if: always()` artifact-upload steps never
+    # run — which is how #953 produced three consecutive `cancelled` runs
+    # with no report to diagnose from. Step timeout < job timeout is what
+    # keeps a slow suite an honest red instead of a silent cancel.
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -210,10 +218,17 @@ jobs:
       # cannot newly block a merge — it only makes this job's own status
       # honestly reflect whether the suite passed. The report/results-json
       # upload steps below still run regardless (`if: always()`).
+      # `--retries=1` overrides the global `retries: CI ? 2` from
+      # playwright.config.ts for THIS step only. Per #953, the documented
+      # spec-drift backlog means a chunk of this suite fails deterministically
+      # — and every one of those burned 3x its timeout re-running a failure
+      # that was never going to pass. One retry still absorbs a genuine flake;
+      # the second only ever bought us a slower red. The blocking smoke step
+      # above deliberately keeps the full 2 retries.
       - name: Run Playwright tests
         env:
           PLAYWRIGHT_BASEBALL_SEEDED: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && '1' || '' }}
-        run: timeout 45m npx playwright test --project=chromium
+        run: timeout 60m npx playwright test --project=chromium --retries=1
 
       - name: Upload Playwright report
         if: always()
