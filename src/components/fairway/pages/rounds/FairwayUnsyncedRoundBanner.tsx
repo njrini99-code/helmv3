@@ -92,7 +92,7 @@ export function FairwayUnsyncedRoundBanner({ hasServerInProgress }: FairwayUnsyn
         </h2>
       </div>
 
-      <Surface padding="none" className="overflow-hidden border-l-2 border-l-fw-warning">
+      <Surface padding="none" className="overflow-hidden">
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           {/* Left: status + readout */}
           <div className="flex min-w-0 items-center gap-4">
