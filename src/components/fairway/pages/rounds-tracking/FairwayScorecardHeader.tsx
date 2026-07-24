@@ -59,9 +59,9 @@ function scrollHoleIntoView(holeNumber: number) {
 function SavingDots() {
   return (
     <span className="flex items-center gap-0.5" aria-hidden="true">
-      <span className="h-1 w-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-      <span className="h-1 w-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-      <span className="h-1 w-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+      <span className="h-1 w-1 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
+      <span className="h-1 w-1 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
+      <span className="h-1 w-1 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
     </span>
   );
 }

@@ -141,126 +141,128 @@ export function ConvertToActionDialog({
       title="Convert to action"
       description="Create an assignable, reviewable action from this signal. It will appear in the action queue and on the player's timeline when player-visible."
     >
-      <Form spacing="cozy" onSubmit={handleSubmit} className="px-6 pb-6 pt-2">
-        {/* Signal context (evidence in view while converting) */}
-        <PaperCard className="p-3.5" grain={false}>
-          <Eyebrow ink="pursuit">Converting</Eyebrow>
-          <p className="mt-1 font-annual text-body-sm font-semibold leading-snug text-text-primary">
-            {signal.title}
-          </p>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-annual text-body-sm text-text-tertiary">
-            <span className="inline-flex items-baseline gap-1">
-              Confidence
-              <StatReadout
-                value={signal.confidence === null ? '—' : Math.round(signal.confidence * 100)}
-                suffix={signal.confidence === null ? undefined : '%'}
-                className="text-body-sm text-text-secondary"
-                ariaLabel="Confidence"
-              />
-            </span>
-            <span aria-hidden className="text-text-tertiary">
-              ·
-            </span>
-            <span>
-              {signal.sourceRefs.length} source{signal.sourceRefs.length === 1 ? '' : 's'}
-            </span>
-          </p>
-          {signal.sampleTooSmall && (
-            <InlineNotice tone="warning" className="mt-2.5">
-              Sample too small — convert as a watch item, not a firm directive.
-            </InlineNotice>
-          )}
-        </PaperCard>
+      <ModalShell.Body>
+        <Form id="convert-to-action-form" spacing="cozy" onSubmit={handleSubmit}>
+          {/* Signal context (evidence in view while converting) */}
+          <PaperCard className="p-3.5" grain={false}>
+            <Eyebrow ink="pursuit">Converting</Eyebrow>
+            <p className="mt-1 font-annual text-body-sm font-semibold leading-snug text-text-primary">
+              {signal.title}
+            </p>
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-annual text-body-sm text-text-tertiary">
+              <span className="inline-flex items-baseline gap-1">
+                Confidence
+                <StatReadout
+                  value={signal.confidence === null ? '—' : Math.round(signal.confidence * 100)}
+                  suffix={signal.confidence === null ? undefined : '%'}
+                  className="text-body-sm text-text-secondary"
+                  ariaLabel="Confidence"
+                />
+              </span>
+              <span aria-hidden className="text-text-tertiary">
+                ·
+              </span>
+              <span>
+                {signal.sourceRefs.length} source{signal.sourceRefs.length === 1 ? '' : 's'}
+              </span>
+            </p>
+            {signal.sampleTooSmall && (
+              <InlineNotice tone="warning" className="mt-2.5">
+                Sample too small — convert as a watch item, not a firm directive.
+              </InlineNotice>
+            )}
+          </PaperCard>
 
-        <FormField label="Action type">
-          <Select
-            value={actionType}
-            onValueChange={(v) => v && setActionType(v as BaseballActionType)}
-            options={CONVERTIBLE_ACTION_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-          />
-        </FormField>
+          <FormField label="Action type">
+            <Select
+              value={actionType}
+              onValueChange={(v) => v && setActionType(v as BaseballActionType)}
+              options={CONVERTIBLE_ACTION_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+            />
+          </FormField>
 
-        <FormField label="Title" required>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={getActionTypeLabel(actionType)}
-          />
-        </FormField>
+          <FormField label="Title" required>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={getActionTypeLabel(actionType)}
+            />
+          </FormField>
 
-        <FormField label="Detail" showOptional>
-          <TextArea value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} />
-        </FormField>
+          <FormField label="Detail" showOptional>
+            <TextArea value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} />
+          </FormField>
 
-        <div className={playerScoped ? 'grid grid-cols-1 gap-5 sm:grid-cols-2' : ''}>
-          {playerScoped && (
-            <FormField label="Assign to player" showOptional>
+          <div className={playerScoped ? 'grid grid-cols-1 gap-5 sm:grid-cols-2' : ''}>
+            {playerScoped && (
+              <FormField label="Assign to player" showOptional>
+                <Select
+                  value={assigneePlayerId || UNASSIGNED}
+                  onValueChange={(v) => setAssigneePlayerId(!v || v === UNASSIGNED ? '' : v)}
+                  placeholder="— None —"
+                  options={[
+                    { value: UNASSIGNED, label: '— None —' },
+                    ...roster.map((p) => ({ value: p.id, label: p.name })),
+                  ]}
+                />
+              </FormField>
+            )}
+            <FormField label="Owner (staff)" showOptional>
               <Select
-                value={assigneePlayerId || UNASSIGNED}
-                onValueChange={(v) => setAssigneePlayerId(!v || v === UNASSIGNED ? '' : v)}
-                placeholder="— None —"
+                value={assigneeCoachId || UNASSIGNED}
+                onValueChange={(v) => setAssigneeCoachId(!v || v === UNASSIGNED ? '' : v)}
+                placeholder="— Me —"
                 options={[
-                  { value: UNASSIGNED, label: '— None —' },
-                  ...roster.map((p) => ({ value: p.id, label: p.name })),
+                  { value: UNASSIGNED, label: '— Me —' },
+                  ...staff.map((s) => ({ value: s.id, label: s.name })),
                 ]}
               />
             </FormField>
-          )}
-          <FormField label="Owner (staff)" showOptional>
-            <Select
-              value={assigneeCoachId || UNASSIGNED}
-              onValueChange={(v) => setAssigneeCoachId(!v || v === UNASSIGNED ? '' : v)}
-              placeholder="— Me —"
-              options={[
-                { value: UNASSIGNED, label: '— Me —' },
-                ...staff.map((s) => ({ value: s.id, label: s.name })),
-              ]}
-            />
-          </FormField>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label="Due date" showOptional>
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          </FormField>
-          <FormField label="Visibility">
-            <Select
-              value={visibility}
-              onValueChange={(v) => v && setVisibility(v as BaseballSignalVisibility)}
-              options={VISIBILITY_OPTIONS}
-            />
-          </FormField>
-        </div>
-
-        {visibility !== 'staff_only' && (
-          <div className="flex items-center gap-2 rounded-fw-sm bg-[color:var(--grade-plus)]/[0.06] px-2.5 py-2">
-            <InkBadge label="Player-visible" tone="team" />
-            <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
-              This action will appear on the player&apos;s timeline.
-            </p>
           </div>
-        )}
 
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => onOpenChange(false)}
-            disabled={pending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            busy={pending}
-            disabled={!canSubmit}
-            leftIcon={<IconBolt size={14} />}
-          >
-            Create action
-          </Button>
-        </div>
-      </Form>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <FormField label="Due date" showOptional>
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </FormField>
+            <FormField label="Visibility">
+              <Select
+                value={visibility}
+                onValueChange={(v) => v && setVisibility(v as BaseballSignalVisibility)}
+                options={VISIBILITY_OPTIONS}
+              />
+            </FormField>
+          </div>
+
+          {visibility !== 'staff_only' && (
+            <div className="flex items-center gap-2 rounded-fw-sm bg-[color:var(--grade-plus)]/[0.06] px-2.5 py-2">
+              <InkBadge label="Player-visible" tone="team" />
+              <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
+                This action will appear on the player&apos;s timeline.
+              </p>
+            </div>
+          )}
+        </Form>
+      </ModalShell.Body>
+      <ModalShell.Footer>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+          disabled={pending}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          form="convert-to-action-form"
+          variant="primary"
+          busy={pending}
+          disabled={!canSubmit}
+          leftIcon={<IconBolt size={14} />}
+        >
+          Create action
+        </Button>
+      </ModalShell.Footer>
     </ModalShell>
   );
 }

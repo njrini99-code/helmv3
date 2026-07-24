@@ -31,6 +31,7 @@ import {
   revokeLiftingInvite,
   resendLiftingInvite,
 } from '@/app/lifting/actions/invites';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { getOrgTeamsForLifting, type OrgTeamOption } from './actions';
 import type {
   HelmLiftingCoachRow,
@@ -57,7 +58,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="glass-standard border border-white/20 rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
+    <div className="bg-surface border border-border-subtle rounded-card p-6 shadow-flat">
       <div className="flex items-center gap-2.5 mb-6">
         <div className="w-8 h-8 bg-primary-50 rounded-xl flex items-center justify-center">
           <Icon className="w-4 h-4 text-primary-600" />
@@ -157,7 +158,7 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-warm-200 glass-standard text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border-subtle bg-surface text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <Loader2 className="w-4 h-4 animate-spin text-warm-400 flex-shrink-0" />
@@ -196,7 +197,7 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-50 top-full mt-1.5 left-0 right-0 glass-standard border border-white/30 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden"
+            className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-surface border border-border-subtle rounded-xl shadow-flat overflow-hidden"
           >
             {/* Search input */}
             <div className="px-3 pt-2.5 pb-1.5 border-b border-warm-100">
@@ -298,7 +299,7 @@ function InviteCard({ invite, onRevoked, onResent }: InviteCardProps) {
   }
 
   return (
-    <div className="glass-standard border border-white/20 rounded-xl p-4 space-y-3">
+    <div className="bg-surface border border-border-subtle rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 space-y-0.5">
           <p className="text-sm font-semibold text-warm-900 truncate">{invite.email}</p>
@@ -431,19 +432,18 @@ function InviteSection({ orgId, initialInvites }: InviteSectionProps) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-4">
-            <Mail className="w-8 h-8 text-warm-200 mx-auto mb-2" />
-            <p className="text-sm text-warm-600 font-medium">No pending invite</p>
-            <p className="text-xs text-warm-400 mt-1">
-              Send an invitation to bring a strength &amp; conditioning coach into the Lab.
-            </p>
-          </div>
+          <EmptyState
+            variant="subtle"
+            icon={Mail}
+            title="No pending invite"
+            description="Send an invitation to bring a strength & conditioning coach into the Lab."
+          />
         )}
 
         {/* Send invite form */}
         <form
           onSubmit={handleSendInvite}
-          className="space-y-3 pt-2 border-t border-white/20"
+          className="space-y-3 pt-2 border-t border-border-subtle"
         >
           <p className="text-xs font-semibold text-warm-600 uppercase tracking-wide">
             {invites.length > 0 ? 'Replace invite' : 'Invite a lifting coach'}
@@ -814,22 +814,22 @@ export function LiftingSettingsClient({
 
           {/* Assignment list */}
           {assignments.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-10 h-10 text-warm-200 mx-auto mb-3" />
-              <p className="text-sm text-warm-600 font-medium">No teams assigned yet</p>
-              {!canEdit && (
-                <p className="text-xs text-warm-400 mt-1">
-                  Ask your head coach to link your lifting program to their team from their
-                  dashboard.
-                </p>
-              )}
-            </div>
+            <EmptyState
+              variant="subtle"
+              icon={Users}
+              title="No teams assigned yet"
+              description={
+                !canEdit
+                  ? 'Ask your head coach to link your lifting program to their team from their dashboard.'
+                  : undefined
+              }
+            />
           ) : (
             <div className="space-y-2">
               {assignments.map((a) => (
                 <div
                   key={a.id}
-                  className="flex items-center gap-3 px-4 py-3 glass-standard rounded-xl border border-white/20"
+                  className="flex items-center gap-3 px-4 py-3 bg-surface rounded-xl border border-border-subtle"
                 >
                   <span className="text-lg flex-shrink-0" aria-hidden="true">
                     {sportEmoji(a.sport)}
@@ -873,7 +873,7 @@ export function LiftingSettingsClient({
 
           {/* Add team form (canEdit only) — W8e: team picker combobox */}
           {canEdit && (
-            <form onSubmit={handleAddTeam} className="space-y-3 pt-2 border-t border-white/20">
+            <form onSubmit={handleAddTeam} className="space-y-3 pt-2 border-t border-border-subtle">
               <p className="text-xs font-semibold text-warm-600 uppercase tracking-wide">
                 Add team
               </p>

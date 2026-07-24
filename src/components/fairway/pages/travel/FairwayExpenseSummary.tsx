@@ -27,6 +27,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { IconTrendingUp, IconTrendingDown, IconEdit } from '@/components/icons';
 import { Button, IconButton, fairwayToast } from '@/components/fairway';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { Input } from '@/components/fairway/forms';
 import {
   type ExpenseSummary as ExpenseSummaryType,
@@ -237,9 +238,7 @@ export function FairwayExpenseSummary({
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex h-64 items-center justify-center font-fw-sans text-body-sm text-text-tertiary">
-              No expenses to display
-            </div>
+            <EmptyState variant="subtle" title="No expenses to display" className="h-64" />
           )}
         </div>
 

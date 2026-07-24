@@ -2,17 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
-import { loadFeatures } from '@/lib/motion/load-features';
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
-import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { isNativeApp } from '@/lib/utils/capacitor';
-import { Button } from '@/components/ui/button';
+import { IconCheck, IconMail } from '@/components/icons';
 import { Input } from '@/components/ui/input';
+import { GolfAuthShell, AuthPrimaryButton } from '@/components/auth/GolfAuthShell';
 
 export default function ForgotPasswordPage() {
-  const prefersReducedMotion = useReducedMotion();
   const isNative = isNativeApp();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -23,18 +19,15 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
-      // Route through the hardened server action: it enforces rate limiting and
-      // always returns a generic message to prevent email enumeration.
+      // Hardened server action: rate-limited, always returns a generic message
+      // to prevent email enumeration.
       const result = await requestPasswordResetAction(email);
-
       if (!result.success) {
         setError(result.error ?? 'An unexpected error occurred. Please try again.');
         setLoading(false);
         return;
       }
-
       setSuccess(true);
       setLoading(false);
     } catch {
@@ -43,264 +36,94 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  return (
-    <LazyMotion features={loadFeatures}>
-    <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
-      {/* Animated floating orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large primary orb - top right */}
-        <m.div
-          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
-          animate={{
-            x: [0, 30, 0],
-            y: [0, -20, 0],
-            scale: [1, 1.05, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
-        />
-        {/* Medium orb - bottom left */}
-        <m.div
-          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
-          animate={{
-            x: [0, -25, 0],
-            y: [0, 25, 0],
-            scale: [1, 0.95, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          })}
-        />
-        {/* Small accent orb - top left (hidden on very small screens) */}
-        <m.div
-          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-primary-300/25 to-primary-400/20 motion-reduce:animate-none"
-          animate={{
-            x: [0, 20, 0],
-            y: [0, -15, 0],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          })}
-        />
-        {/* Tiny floating dot */}
-        <m.div
-          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary-500/40 top-[30%] right-[15%] sm:right-[20%] motion-reduce:animate-none"
-          animate={{
-            y: [0, -10, 0],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
-        />
-      </div>
-
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(16, 185, 129, 0.5) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(16, 185, 129, 0.5) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }}
-      />
-
-      {/* Glass card */}
-      <div className="relative z-10 w-full max-w-[420px]">
-        <m.div
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
-          className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
-        >
-          {/* Logo with glow effect */}
-          <m.div
-            className="flex flex-col items-center mb-6 sm:mb-8"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
+  const footer = (
+    <>
+      {!success && (
+        <p className="text-center mt-5 text-warm-600 text-body-sm">
+          Remember your password?{' '}
+          <Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
+            Sign in
+          </Link>
+        </p>
+      )}
+      {!isNative && (
+        <p className="text-center mt-3 text-warm-500 text-body-sm">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-3 -my-3 min-h-[44px] transition-colors hover:text-warm-700 active:bg-warm-100/50"
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center mb-3 sm:mb-4">
-                <Image
-                  src="/helm-golf-logo-transparent.png"
-                  alt="GolfHelm Logo"
-                  width={56}
-                  height={56}
-                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
-                  priority
-                  unoptimized
-                />
+            ← Back to HelmLabs
+          </Link>
+        </p>
+      )}
+    </>
+  );
+
+  return (
+    <GolfAuthShell
+      idSuffix="golf-forgot"
+      heading={success ? 'Check your email' : 'Reset your password'}
+      subheading={
+        success
+          ? <>We&rsquo;ve sent a reset link to <span className="font-medium text-warm-700">{email}</span></>
+          : 'Enter your email and we’ll send you a reset link.'
+      }
+      footer={footer}
+    >
+      {success ? (
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+              <IconMail size={30} aria-hidden />
+            </span>
+          </div>
+          <div className="rounded-xl border border-primary-200 bg-primary-50 px-4 py-3">
+            <div className="flex items-start gap-2.5">
+              <IconCheck size={16} aria-hidden className="mt-0.5 shrink-0 text-primary-600" />
+              <div className="text-body-sm text-primary-700">
+                <p>Click the link in the email to reset your password.</p>
+                <p className="mt-1 text-primary-600">The link expires in 1 hour.</p>
               </div>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
-              GolfHelm
-            </h1>
-          </m.div>
-
-          {/* Header */}
-          <m.div
-            className="text-center mb-6 sm:mb-8"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
+          </div>
+          <p className="text-center text-caption text-warm-500">
+            Didn’t get it? Check your spam folder, or try again with a different email.
+          </p>
+          <Link
+            href="/golf/login"
+            className="block w-full rounded-xl border border-warm-200 bg-cream-50 py-2.5 text-center text-body-sm font-semibold text-warm-700 transition-all duration-200 hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98]"
           >
-            <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
-              {success ? 'Check your email' : 'Reset your password'}
-            </h2>
-            <p className="text-warm-500 text-sm sm:text-base">
-              {success
-                ? `We've sent a reset link to ${email}`
-                : 'Enter your email to receive a reset link'}
-            </p>
-          </m.div>
-
-          {/* Content */}
-          <m.div
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
-          >
-            {success ? (
-              <div className="space-y-4 sm:space-y-5">
-                {/* Success illustration */}
-                <div className="flex justify-center mb-2">
-                  <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center">
-                    <Mail className="w-8 h-8 text-primary-600" />
-                  </div>
-                </div>
-                <div className="bg-primary-50 border border-primary-200 rounded-xl px-4 py-3">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-primary-700">
-                      <p>Click the link in the email to reset your password.</p>
-                      <p className="mt-1 text-primary-600">The link will expire in 1 hour.</p>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-warm-500 text-center">
-                  Did not receive the email? Check your spam folder or try again with a different email address.
-                </p>
-                <Link
-                  href="/golf/login"
-                  className="
-                    block w-full py-2.5 sm:py-3
-                    bg-cream-50 text-warm-700
-                    font-semibold text-sm text-center
-                    rounded-xl
-                    border border-warm-200
-                    transition-all duration-200
-                    hover:bg-warm-50 hover:border-warm-300
-                    active:scale-[0.98]
-                  "
-                >
-                  Back to Sign In
-                </Link>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
-                {error && (
-                  <div
-                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
-                    role="alert"
-                  >
-                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <label htmlFor="golf-forgot-email" className="text-sm font-medium text-warm-700">Email</label>
-                  <Input
-                    id="golf-forgot-email"
-                    type="email"
-                    inputMode="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
-                    autoFocus
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    enterKeyHint="send"
-                  />
-                </div>
-
-                <Button variant="primary"
-                  type="submit"
-                  disabled={loading}
-                  className="
-                    w-full py-2.5 sm:py-3
-                    bg-primary-600 text-white
-                    font-semibold text-sm
-                    rounded-xl
-                    shadow-lg shadow-primary-600/25
-                    transition-all duration-200
-                    hover:bg-primary-700 hover:shadow-primary-600/30
-                    active:scale-[0.98]
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    flex items-center justify-center
-                  "
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-1" role="status" aria-label="Sending reset link">
-                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      <span className="sr-only">Sending reset link...</span>
-                    </div>
-                  ) : (
-                    'Send reset link'
-                  )}
-                </Button>
-              </form>
-            )}
-          </m.div>
-        </m.div>
-
-        {/* Footer links */}
-        <m.div
-          initial={prefersReducedMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
-        >
-          {!success && (
-            <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
-              Remember your password?{' '}
-              <Link href="/golf/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
-                Sign in
-              </Link>
-            </p>
+            Back to sign in
+          </Link>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {error && (
+            <div
+              className="flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-body-sm text-danger"
+              role="alert"
+            >
+              <span aria-hidden className="mt-px font-semibold">!</span>
+              <span>{error}</span>
+            </div>
           )}
-
-          {!isNative && (
-            <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
-              >
-                ← Back to HelmLabs
-              </Link>
-            </p>
-          )}
-        </m.div>
-      </div>
-    </div>
-    </LazyMotion>
+          <Input
+            id="golf-forgot-email"
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- primary input on a single-field auth page
+            autoFocus
+            enterKeyHint="send"
+          />
+          <AuthPrimaryButton type="submit" loading={loading} loadingLabel="Sending reset link">
+            Send reset link
+          </AuthPrimaryButton>
+        </form>
+      )}
+    </GolfAuthShell>
   );
 }

@@ -837,7 +837,8 @@ export function FairwayPlayerInsight({
 
             <div className="mt-3">
               {insightsLoading ? (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3" role="status" aria-busy="true" aria-live="polite">
+                  <span className="sr-only">Loading insights…</span>
                   <Skeleton className="h-28 rounded-card" />
                   <Skeleton className="h-24 rounded-card" />
                 </div>

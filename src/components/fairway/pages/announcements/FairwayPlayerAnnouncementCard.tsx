@@ -392,7 +392,13 @@ export function FairwayPlayerAnnouncementCard({
           className="border-t border-border-subtle px-5 pb-5 pt-4"
         >
           {loadingDetail ? (
-            <div className="flex flex-col gap-3">
+            <div
+              role="status"
+              aria-busy="true"
+              aria-live="polite"
+              className="flex flex-col gap-3"
+            >
+              <span className="sr-only">Loading announcement details…</span>
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-4/5" />
               <Skeleton className="h-4 w-2/3" />

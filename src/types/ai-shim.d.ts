@@ -35,6 +35,27 @@ declare module 'ai' {
   export function generateText(options: GenerateTextOptions): Promise<GenerateTextResult>;
 
   // -------------------------------------------------------------------------
+  // generateObject (used by lib/golf/schedule-vision.ts)
+  // The schema generic infers the output type from any zod-like schema via
+  // its parse() signature, so callers get a typed `object` back.
+  // -------------------------------------------------------------------------
+  export interface GenerateObjectResult<T> {
+    object: T;
+    usage?: { inputTokens?: number; outputTokens?: number };
+    [key: string]: unknown;
+  }
+  export function generateObject<T>(options: {
+    model: unknown;
+    schema: { parse(input: unknown): T };
+    prompt?: string;
+    messages?: unknown;
+    temperature?: number;
+    maxRetries?: number;
+    maxOutputTokens?: number;
+    [key: string]: unknown;
+  }): Promise<GenerateObjectResult<T>>;
+
+  // -------------------------------------------------------------------------
   // ModelMessage — used to type chat history fed into the agent
   // -------------------------------------------------------------------------
   export type ModelMessage = {

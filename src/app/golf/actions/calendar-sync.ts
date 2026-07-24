@@ -501,11 +501,13 @@ function getDayOfWeek(day: string): number {
     'W': 3,   // Wednesday
     'Th': 4,  // Thursday
     'F': 5,   // Friday
+    'Sa': 6,  // Saturday
+    'Su': 0,  // Sunday ('in' check below — 0 is falsy)
   };
 
   // Check short codes first
-  if (shortCodes[day]) {
-    return shortCodes[day];
+  if (day in shortCodes) {
+    return shortCodes[day] ?? 1;
   }
 
   // Fallback to full day names

@@ -135,41 +135,43 @@ function TeamFormModal({
       >
         {''}
       </Button>
-      <div className="relative bg-cream-50 rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="px-6 py-4 border-b border-warm-100">
+      <div className="relative bg-cream-50 rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden max-h-[calc(100dvh-4rem)] flex flex-col">
+        <div className="shrink-0 px-6 py-4 border-b border-warm-100">
           <h2 className="text-lg font-semibold tracking-tight text-warm-900">{title}</h2>
         </div>
-        <form onSubmit={onSubmit} className="p-6 space-y-4">
-          <Input
-            label="Team Name"
-            placeholder="e.g., Texas Elite 18U"
-            value={form.name}
-            onChange={(e) => onChange({ ...form, name: e.target.value })}
-            required
-          />
-          <Textarea
-            id="team-form-description"
-            label="Description"
-            placeholder="Brief description of your team..."
-            value={form.description}
-            onChange={(e) => onChange({ ...form, description: e.target.value })}
-            rows={3}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <ColorField
-              id="team-form-primary-color"
-              label="Primary Color"
-              value={form.primary_color}
-              onChange={(value) => onChange({ ...form, primary_color: value })}
+        <form onSubmit={onSubmit} className="flex flex-1 min-h-0 flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+            <Input
+              label="Team Name"
+              placeholder="e.g., Texas Elite 18U"
+              value={form.name}
+              onChange={(e) => onChange({ ...form, name: e.target.value })}
+              required
             />
-            <ColorField
-              id="team-form-secondary-color"
-              label="Secondary Color"
-              value={form.secondary_color}
-              onChange={(value) => onChange({ ...form, secondary_color: value })}
+            <Textarea
+              id="team-form-description"
+              label="Description"
+              placeholder="Brief description of your team..."
+              value={form.description}
+              onChange={(e) => onChange({ ...form, description: e.target.value })}
+              rows={3}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <ColorField
+                id="team-form-primary-color"
+                label="Primary Color"
+                value={form.primary_color}
+                onChange={(value) => onChange({ ...form, primary_color: value })}
+              />
+              <ColorField
+                id="team-form-secondary-color"
+                label="Secondary Color"
+                value={form.secondary_color}
+                onChange={(value) => onChange({ ...form, secondary_color: value })}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-3 pt-4">
+          <div className="shrink-0 flex items-center gap-3 px-6 py-4 border-t border-warm-100">
             <Button type="button" variant="secondary" className="flex-1" onClick={onCancel}>
               Cancel
             </Button>
@@ -225,16 +227,16 @@ function DeleteTeamDialog({
         role="dialog"
         aria-modal="true"
         aria-label={`Delete ${team.name}`}
-        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-cream-50 shadow-xl"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-cream-50 shadow-xl max-h-[calc(100dvh-4rem)] flex flex-col"
       >
-        <div className="flex items-center gap-3 border-b border-warm-100 px-6 py-4">
+        <div className="shrink-0 flex items-center gap-3 border-b border-warm-100 px-6 py-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <IconWarning size={20} aria-hidden />
           </div>
           <h2 className="text-lg font-semibold tracking-tight text-warm-900">Delete {team.name}?</h2>
         </div>
 
-        <div className="space-y-3 px-6 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-6 py-4">
           <p className="text-sm leading-relaxed text-warm-600">
             This permanently deletes <strong className="text-warm-900">{team.name}</strong> and
             everything attached to it — games, box scores, player and season stats, documents,
@@ -256,7 +258,7 @@ function DeleteTeamDialog({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-warm-100 px-6 py-4">
+        <div className="shrink-0 flex items-center justify-end gap-3 border-t border-warm-100 px-6 py-4">
           <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
             Cancel
           </Button>

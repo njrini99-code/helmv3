@@ -7,7 +7,13 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export default function AcademicsLoading() {
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <div
+      className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="sr-only">Loading academics…</span>
       <div className="flex flex-col gap-3">
         <Skeleton variant="text" width={180} height={11} />
         <Skeleton variant="text" width={140} height={36} />

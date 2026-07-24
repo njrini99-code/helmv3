@@ -933,8 +933,17 @@ export default function ContinueRoundClient({
         </div>
       )}
 
-      {/* Offline Indicator Banner */}
-      <div className="fixed top-0 left-0 right-0 z-50">
+      {/* Offline Indicator Banner — OfflineIndicator itself renders its OWN
+          `fixed top-0 left-0 right-0 z-50` div when variant="full" (its
+          wrapper here doesn't establish a containing block, so wrapping
+          styles alone can't move it). Override just that child's `top` via
+          the SAME --scorecard-height CSS var FairwayScorecardHeader already
+          publishes (ShotPills/ShotTracking consume it the identical way),
+          so the banner sits below the sticky hole-nav bar instead of on top
+          of it once scrolled. `!` wins over the component's own `top-0`
+          utility at equal specificity without editing OfflineIndicator.tsx
+          (a shared primitive outside this fix's ownership). */}
+      <div className="[&>div]:!top-[var(--scorecard-height,105px)]">
         <OfflineIndicator
           isOnline={offlineSyncState.isOnline}
           isSyncing={offlineSyncState.isSyncing}

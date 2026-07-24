@@ -43,6 +43,7 @@ import { Field } from '@base-ui-components/react/field';
 import { createClient } from '@/lib/supabase/client';
 import { logError } from '@/lib/error-logging';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
+import { regenerateJoinCode } from '@/app/golf/actions/teams';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
@@ -64,11 +65,6 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
 import {
-  BENCHMARK_METADATA,
-  BENCHMARK_LEVELS,
-  type BenchmarkLevel,
-} from '@/lib/golf/sg-benchmarks';
-import {
   IconUser,
   IconMail,
   IconShield,
@@ -79,7 +75,11 @@ import {
   IconCheck,
   IconRefresh,
   IconRuler,
+  IconSun,
+  IconMoon,
+  IconMonitor,
 } from '@/components/icons';
+import { useGolfTheme, type GolfTheme } from '@/lib/golf/theme';
 
 import {
   ViewHeader,
@@ -92,8 +92,23 @@ import {
   InlineNotice,
   fairwayToast,
 } from '@/components/fairway';
+// Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 const EM_DASH = '—';
+
+/**
+ * Recruiting-only notification categories that GolfHelm never emits. The shared
+ * DELIVERY_NOTIFICATION_GROUPS list carries `pipeline` (recruiting pipeline) and
+ * `profile_views` (recruit profile views) for the baseball recruiting product;
+ * surfacing them here gave golf users toggles that persist a preference nothing
+ * golf ever fires. Filtered out of the golf notifications panel (presentation
+ * only — the delivery-gate keys + defaults are untouched).
+ */
+const GOLF_HIDDEN_NOTIFICATION_IDS: ReadonlySet<string> = new Set(['pipeline', 'profile_views']);
+const GOLF_NOTIFICATION_GROUPS = DELIVERY_NOTIFICATION_GROUPS.filter(
+  (g) => !GOLF_HIDDEN_NOTIFICATION_IDS.has(g.id),
+);
 
 /* ── unsaved-changes plumbing (P379 dirty-tracking · P380 leave guard) ──────── */
 
@@ -577,11 +592,12 @@ export function FairwaySettingsGeneral() {
     return (
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
         <ViewHeader eyebrow="Settings" title="Settings" />
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 space-y-6" role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading settings…</span>
           {[1, 2, 3].map((i) => (
             <Surface key={i} elevation="border" padding="lg">
-              <div className="h-5 w-40 rounded bg-surface-sunken" />
-              <div className="mt-3 h-3 w-64 rounded bg-surface-sunken" />
+              <Skeleton className="h-5 w-40 rounded" />
+              <Skeleton className="mt-3 h-3 w-64 rounded" />
             </Surface>
           ))}
         </div>
@@ -693,8 +709,10 @@ export function FairwaySettingsGeneral() {
         {profile.role === 'coach' && profile.coachId ? (
           <SectionCard
             icon={<IconShield size={18} aria-hidden />}
-            title="AI Features"
-            description="Enable or disable CoachHelm for your own dashboards."
+            title="CoachHelm on your dashboards"
+            // Disambiguated from the team-wide master switch in Coaching
+            // Intelligence — this one only controls the current coach's own view.
+            description="Show or hide CoachHelm on your own dashboards. The team-wide master switch lives in Coaching Intelligence."
           >
             <CoachHelmToggle coachId={profile.coachId} />
           </SectionCard>
@@ -982,15 +1000,21 @@ function EmailPanel({ currentEmail }: { currentEmail: string }) {
 
 function PasswordPanel() {
   const [saving, setSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // P379: dirty once the user has typed into either field (no displayed value to
+  // P379: dirty once the user has typed into any field (no displayed value to
   // diff against — an empty form has nothing to save).
-  const isDirty = newPassword.length > 0 || confirmPassword.length > 0;
+  const isDirty =
+    currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
   useReportDirty('password', isDirty);
 
   const handleSave = async () => {
+    if (!currentPassword) {
+      fairwayToast.error('Enter your current password');
+      return;
+    }
     if (newPassword.length < 8) {
       fairwayToast.error('Password must be at least 8 characters');
       return;
@@ -1002,9 +1026,28 @@ function PasswordPanel() {
     setSaving(true);
     try {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email;
+      if (!email) throw new Error('Not authenticated');
+
+      // Re-authenticate with the CURRENT password before changing it, so a
+      // hijacked-but-signed-in session (or an unattended device) can't silently
+      // change the password and lock the owner out. signInWithPassword only
+      // refreshes this same user's session on success and leaves it untouched on
+      // failure (invalid credentials) — no sign-out either way.
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (verifyError) {
+        fairwayToast.error('Current password is incorrect');
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       fairwayToast.success('Password updated');
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
@@ -1022,9 +1065,19 @@ function PasswordPanel() {
   return (
     <SectionCard icon={<IconShield size={18} aria-hidden />} title="Password & security">
       <div className="space-y-3">
+        <LabeledField label="Current password">
+          <Input
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+        </LabeledField>
         <LabeledField label="New password">
           <Input
             type="password"
+            autoComplete="new-password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="••••••••"
@@ -1033,6 +1086,7 @@ function PasswordPanel() {
         <LabeledField label="Confirm password">
           <Input
             type="password"
+            autoComplete="new-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
@@ -1088,14 +1142,64 @@ function OptionTile({
   );
 }
 
+/**
+ * A premium theme tile — icon over label, active = accent border + wash. The
+ * whole appearance/theme system is token-driven, so the tile styling itself
+ * adapts to light/dark automatically (accent-50/accent-500 are themed).
+ */
+function ThemeTile({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'h-auto min-h-[76px] flex-col items-center justify-center gap-2 rounded-fw-sm border p-3 font-normal',
+        'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
+        active
+          ? 'border-accent-500 bg-accent-50 text-accent-700 hover:bg-accent-50'
+          : 'border-border-subtle text-text-secondary hover:border-border-strong',
+      )}
+    >
+      <span aria-hidden className={active ? 'text-accent-600' : 'text-text-tertiary'}>
+        {icon}
+      </span>
+      <span className="font-fw-sans text-body-sm font-medium text-text-primary">{label}</span>
+    </Button>
+  );
+}
+
+const THEME_TILES: Array<{ value: GolfTheme; label: string; icon: React.ReactNode }> = [
+  { value: 'light', label: 'Light', icon: <IconSun size={20} /> },
+  { value: 'dark', label: 'Dark', icon: <IconMoon size={20} /> },
+  { value: 'system', label: 'System', icon: <IconMonitor size={20} /> },
+];
+
 function AppearancePanel() {
   const { displayDensity, dateFormat, showAnimations, scoreDisplay, updatePreferences } =
     useAppearancePreferences();
+  const { theme, setTheme } = useGolfTheme();
   // P384: signal that this panel auto-saves (no Save button) and flash "Saved"
   // after each instant commit.
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const update: typeof updatePreferences = (patch) => {
     updatePreferences(patch);
+    setSavedAt(Date.now());
+  };
+  const chooseTheme = (next: GolfTheme) => {
+    void triggerHaptic('light');
+    setTheme(next);
     setSavedAt(Date.now());
   };
 
@@ -1110,6 +1214,28 @@ function AppearancePanel() {
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="space-y-5">
+        {/* Theme — the most prominent appearance choice. System follows the OS
+            light/dark setting live. */}
+        <div>
+          <FieldLabel>Theme</FieldLabel>
+          <div className="grid grid-cols-3 gap-2">
+            {THEME_TILES.map(({ value, label, icon }) => (
+              <ThemeTile
+                key={value}
+                active={theme === value}
+                onClick={() => chooseTheme(value)}
+                icon={icon}
+                label={label}
+              />
+            ))}
+          </div>
+          <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+            {theme === 'system'
+              ? 'Matches your device’s light or dark setting automatically.'
+              : `Always ${theme}, on this device.`}
+          </p>
+        </div>
+
         <div>
           <FieldLabel>Display density</FieldLabel>
           <div className="grid grid-cols-2 gap-2">
@@ -1325,9 +1451,10 @@ function NotificationsPanel() {
   if (!prefs) {
     return (
       <SectionCard icon={<IconBell size={18} aria-hidden />} title="Notifications">
-        <div className="space-y-3">
+        <div className="space-y-3" role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading notification preferences…</span>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-10 w-full rounded-fw-sm bg-surface-sunken" />
+            <Skeleton key={i} className="h-10 w-full" />
           ))}
         </div>
       </SectionCard>
@@ -1371,7 +1498,7 @@ function NotificationsPanel() {
 
         {/* Per-category rows */}
         <ul className="divide-y divide-border-subtle">
-          {DELIVERY_NOTIFICATION_GROUPS.map((group) => {
+          {GOLF_NOTIFICATION_GROUPS.map((group) => {
             const silenced = prefs.quiet_mode && !group.quietExempt;
             return (
               <li
@@ -1430,7 +1557,6 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   const [handicapSystem, setHandicapSystem] = useState('usga');
   const [defaultTees, setDefaultTees] = useState('blue');
   const [timezone, setTimezone] = useState('America/New_York');
-  const [sgBenchmark, setSgBenchmark] = useState<BenchmarkLevel>('scratch');
   // P379: snapshot of the loaded (or saved) values so a no-op save is skipped and
   // Save disables while pristine. Seeded with the first-time-setup defaults so an
   // untouched form (missing row) is correctly pristine.
@@ -1439,13 +1565,12 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     handicapSystem: 'usga',
     defaultTees: 'blue',
     timezone: 'America/New_York',
-    sgBenchmark: 'scratch' as BenchmarkLevel,
   });
 
   const load = useCallback(async () => {
     setLoadFailed(false);
     const { data, error } = await fromUntyped(supabase, 'golf_team_settings')
-      .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
+      .select('scoring_format, handicap_system, default_tees, timezone')
       .eq('team_id', teamId)
       .maybeSingle();
 
@@ -1468,13 +1593,11 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
         handicapSystem: data.handicap_system || 'usga',
         defaultTees: data.default_tees || 'blue',
         timezone: data.timezone || 'America/New_York',
-        sgBenchmark: (data.sg_benchmark_level as BenchmarkLevel) || 'scratch',
       };
       setScoringFormat(next.scoringFormat);
       setHandicapSystem(next.handicapSystem);
       setDefaultTees(next.defaultTees);
       setTimezone(next.timezone);
-      setSgBenchmark(next.sgBenchmark);
       snapshotRef.current = next;
     }
     setLoaded(true);
@@ -1489,8 +1612,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     scoringFormat !== snap.scoringFormat ||
     handicapSystem !== snap.handicapSystem ||
     defaultTees !== snap.defaultTees ||
-    timezone !== snap.timezone ||
-    sgBenchmark !== snap.sgBenchmark;
+    timezone !== snap.timezone;
   useReportDirty('golf-scoring', isDirty);
 
   const handleSave = async () => {
@@ -1504,7 +1626,6 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           handicap_system: handicapSystem,
           default_tees: defaultTees,
           timezone,
-          sg_benchmark_level: sgBenchmark,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'team_id' },
@@ -1516,7 +1637,6 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
         handicapSystem,
         defaultTees,
         timezone,
-        sgBenchmark,
       };
       fairwayToast.success('Golf settings updated');
     } catch (err) {
@@ -1534,7 +1654,10 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   if (!loaded) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Scoring & format">
-        <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+        <div role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading scoring and format settings…</span>
+          <Skeleton className="h-8 w-full" />
+        </div>
       </SectionCard>
     );
   }
@@ -1627,45 +1750,14 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           </Select>
         </LabeledField>
 
-        <div className="border-t border-border-subtle pt-4">
-          <FieldLabel>Strokes gained benchmark</FieldLabel>
-          <p className="mb-3 font-fw-sans text-caption text-text-tertiary">
-            Baseline skill level for SG calculations. Pick the level closest to your team.
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {BENCHMARK_LEVELS.map((level) => {
-              const meta = BENCHMARK_METADATA[level];
-              const active = sgBenchmark === level;
-              return (
-                <Button
-                  variant="ghost"
-                  key={level}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setSgBenchmark(level)}
-                  className={cn(
-                    'h-auto flex-col items-stretch justify-start rounded-fw-sm border p-2.5 text-left font-normal',
-                    'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
-                    active
-                      ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
-                      : 'border-border-subtle hover:border-border-strong',
-                  )}
-                >
-                  <span className="flex items-center justify-between">
-                    <span className="font-fw-sans text-body-sm font-medium text-text-primary">
-                      {meta.shortLabel}
-                    </span>
-                    <span className="font-fw-sans text-caption text-text-tertiary">
-                      ~{meta.approximateHandicap < 0 ? '+' : ''}
-                      {Math.abs(meta.approximateHandicap)} hcp
-                    </span>
-                  </span>
-                  <span className="font-fw-sans text-caption text-text-tertiary">{meta.description}</span>
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+        {/* The Strokes-Gained baseline is NOT chosen here — it's derived
+            automatically from the team's gender (PGA Tour for men's, LPGA for
+            women's) by the gender-aware DB functions. The old editable "SG
+            benchmark" picker wrote golf_team_settings.sg_benchmark_level, a
+            column nothing reads, so it silently controlled nothing and
+            contradicted the "set automatically" copy in Coaching Intelligence.
+            Removed. The baseline is surfaced (read-only) under Coaching
+            Intelligence → Strokes Gained baseline. */}
       </div>
       <SaveRow onSave={handleSave} busy={saving} disabled={!isDirty} />
     </SectionCard>
@@ -1969,7 +2061,10 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   if (!loaded) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Team settings">
-        <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+        <div role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading team settings…</span>
+          <Skeleton className="h-8 w-full" />
+        </div>
       </SectionCard>
     );
   }
@@ -2097,13 +2192,17 @@ export function InviteSettingsPanel() {
     if (!teamId) return;
     setLoading(true);
     try {
-      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const { error } = await supabase
-        .from('golf_teams')
-        .update({ join_code: newCode, updated_at: new Date().toISOString() })
-        .eq('id', teamId);
-      if (error) throw error;
-      setInviteCode(newCode);
+      // Server action (same one the Team Info page uses): auth + head-coach
+      // ownership check server-side, a crypto-random readable code, uniqueness
+      // backed by the golf_teams.join_code UNIQUE constraint, and path
+      // revalidation — replaces the old client-side Math.random() update, which
+      // was non-cryptographic, unchecked, and could silently collide.
+      const result = await regenerateJoinCode(teamId);
+      if (!result.success || !result.data) {
+        fairwayToast.error(result.error || 'Failed to generate code');
+        return;
+      }
+      setInviteCode(result.data.joinCode);
       fairwayToast.success('New invite code generated');
     } catch (err) {
       fairwayToast.error('Failed to generate code');
@@ -2137,7 +2236,10 @@ export function InviteSettingsPanel() {
   if (!loaded) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Invite settings">
-        <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+        <div role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading invite settings…</span>
+          <Skeleton className="h-8 w-full" />
+        </div>
       </SectionCard>
     );
   }

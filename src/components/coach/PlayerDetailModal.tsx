@@ -82,14 +82,14 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
 
         <div className="p-6 space-y-6">
           {/* Header Section */}
-          <div className="flex items-start gap-6">
+          <div className="flex flex-wrap items-start gap-6">
             <Avatar
               name={getFullName(player.first_name, player.last_name)}
               src={player.avatar_url || undefined}
               size="xl"
             />
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold text-warm-900 mb-2">
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-2xl font-bold text-warm-900 mb-2">
                 {getFullName(player.first_name, player.last_name)}
               </h3>
               <div className="flex items-center gap-3 mb-3">
@@ -114,7 +114,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex w-full gap-2 sm:w-auto">
               <Button
                 onClick={handleAddToWatchlist}
                 disabled={adding || added}

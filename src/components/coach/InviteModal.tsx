@@ -95,23 +95,30 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
       hideTitle
       description={`Generate an invite link players can use to join ${teamName}.`}
     >
-      {/* Custom header (icon + title + team name) — the Fairway header is
-          hidden above (hideTitle) in favor of this baseball-styled one, while
-          ModalShell still renders a visually-hidden Dialog.Title/Description
-          so screen readers get the same accessible name + description. */}
-      <div className="border-b border-warm-200 px-6 pt-6 pb-4 pr-14">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
-            <IconLink size={20} className="text-primary-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-warm-900">Invite Players</h2>
-            <p className="text-sm leading-relaxed text-warm-500">{teamName}</p>
+      {/* Wrapped in a min-h-0/flex-auto/overflow-y-auto scroll region so tall
+          content (the post-generate state below) scrolls inside ModalShell's
+          fixed max-h panel instead of being clipped by its overflow-hidden —
+          `flex-auto` (not `flex-1`) matches ModalShell.Body's own rationale:
+          the panel is `h-fit`, and `flex-1`'s 0% basis collapses to ~0px
+          height against `h-fit` on iOS Safari. */}
+      <div className="flex min-h-0 flex-auto flex-col overflow-y-auto">
+        {/* Custom header (icon + title + team name) — the Fairway header is
+            hidden above (hideTitle) in favor of this baseball-styled one, while
+            ModalShell still renders a visually-hidden Dialog.Title/Description
+            so screen readers get the same accessible name + description. */}
+        <div className="border-b border-warm-200 px-6 pt-6 pb-4 pr-14">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+              <IconLink size={20} className="text-primary-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-warm-900">Invite Players</h2>
+              <p className="text-sm leading-relaxed text-warm-500">{teamName}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="p-6">
+        <div className="p-6">
         {!inviteCode ? (
           <>
             <p className="text-sm leading-relaxed text-warm-600 mb-4">
@@ -216,6 +223,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
             </Button>
           </>
         )}
+        </div>
       </div>
     </ModalShell>
   );
