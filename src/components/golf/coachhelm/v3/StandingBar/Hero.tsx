@@ -15,6 +15,7 @@ import {
   pgaReferenceLabel,
   shouldShowTeamMarker,
   teamRelativeText,
+  resolveDisplayScale,
   toScalePct,
 } from './utils';
 
@@ -27,15 +28,22 @@ export function Hero(props: StandingBarProps) {
   if (state === 'empty')   return <HeroEmpty label={props.metric_label} />;
 
   const showTeam = shouldShowTeamMarker(props);
-  const youPct = toScalePct(props.player_value, props.scale);
-  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
+  // Same domain-widening as Card.tsx: props.scale is a typical range, not a
+  // hard bound — never clamp a real value to the edge or off the track.
+  const effectiveScale = resolveDisplayScale(
+    props.scale,
+    [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
+    { symmetric: /^sg_/.test(props.metric_id) },
+  );
+  const youPct = toScalePct(props.player_value, effectiveScale);
+  const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
   // P3: omit the reference marker entirely when the anchor is suppressed.
-  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
-  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
+  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, effectiveScale);
+  const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction, props.unit);
   // EC-2: suppress the team-relative caption when the team marker is hidden
   // (tiny roster) — same team_n>=5 floor the marker uses.
   const cohortText = showTeam
-    ? teamRelativeText(props.player_value, props.team_avg, props.direction)
+    ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
@@ -89,8 +97,8 @@ export function Hero(props: StandingBarProps) {
 
       {/* Scale endpoints */}
       <div className="flex items-baseline justify-between text-eyebrow text-warm-400 mt-1.5 tabular-nums">
-        <span>{formatValue(props.scale.min, props.unit)}</span>
-        <span>{formatValue(props.scale.max, props.unit)}</span>
+        <span>{formatValue(effectiveScale.min, props.unit)}</span>
+        <span>{formatValue(effectiveScale.max, props.unit)}</span>
       </div>
 
       {/* Cohort text */}
