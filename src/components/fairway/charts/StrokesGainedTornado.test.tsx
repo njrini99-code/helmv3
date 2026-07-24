@@ -18,7 +18,21 @@
  * ========================================================================== */
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { TornadoInner, estimateLabelWidth, type SGCategory } from './StrokesGainedTornado';
+import {
+  TornadoInner,
+  estimateLabelWidth,
+  truncateLabel,
+  scaledGutter,
+  GUTTER_FLOOR_WIDTH,
+  GUTTER_CEIL_WIDTH,
+  LABEL_GUTTER,
+  LABEL_GUTTER_MIN,
+  VALUE_GUTTER,
+  VALUE_GUTTER_MIN,
+  VALUE_INSET,
+  VALUE_INSET_MIN,
+  type SGCategory,
+} from './StrokesGainedTornado';
 
 describe('StrokesGainedTornado — duplicate-label collision guard', () => {
   it('two rows sharing the SAME label render on DISTINCT y positions (never collide)', () => {
@@ -207,5 +221,101 @@ describe('StrokesGainedTornado — #111 x-axis tick labels never overlap', () =>
     expect(ticks).toContain('+3');
     expect(ticks).toContain('−3');
     expect(new Set(ticks).size).toBe(ticks.length);
+  });
+});
+
+/**
+ * ============================================================================
+ * Mobile-squeeze fix — the diverging bar track no longer collapses to a
+ * sliver on a phone-width card.
+ * ----------------------------------------------------------------------------
+ * Bug: LABEL_GUTTER/VALUE_GUTTER/VALUE_INSET were fixed pixel constants
+ * (126/56/56) regardless of container width. On a ~310px card (an iPhone's
+ * page + card padding subtracted from 390px), those margins/insets alone
+ * consumed ~254px, leaving the actual plottable bar track only ~16-60px
+ * wide — bars rendered as unreadable slivers. `scaledGutter` now
+ * interpolates each of those three toward a much smaller floor as width
+ * shrinks below `GUTTER_CEIL_WIDTH`, while resolving to EXACTLY the
+ * original constants at/above it (desktop stays pixel-identical).
+ * ========================================================================== */
+describe('StrokesGainedTornado — mobile-squeeze fix: responsive gutters', () => {
+  it('scaledGutter resolves to the exact desktop constant at/above GUTTER_CEIL_WIDTH (pixel-identical desktop output)', () => {
+    expect(scaledGutter(GUTTER_CEIL_WIDTH, LABEL_GUTTER_MIN, LABEL_GUTTER)).toBe(LABEL_GUTTER);
+    expect(scaledGutter(900, LABEL_GUTTER_MIN, LABEL_GUTTER)).toBe(LABEL_GUTTER);
+    expect(scaledGutter(GUTTER_CEIL_WIDTH, VALUE_GUTTER_MIN, VALUE_GUTTER)).toBe(VALUE_GUTTER);
+    expect(scaledGutter(900, VALUE_GUTTER_MIN, VALUE_GUTTER)).toBe(VALUE_GUTTER);
+    expect(scaledGutter(GUTTER_CEIL_WIDTH, VALUE_INSET_MIN, VALUE_INSET)).toBe(VALUE_INSET);
+    expect(scaledGutter(900, VALUE_INSET_MIN, VALUE_INSET)).toBe(VALUE_INSET);
+  });
+
+  it('scaledGutter never drops below its floor, even far under GUTTER_FLOOR_WIDTH', () => {
+    expect(scaledGutter(0, LABEL_GUTTER_MIN, LABEL_GUTTER)).toBe(LABEL_GUTTER_MIN);
+    expect(scaledGutter(GUTTER_FLOOR_WIDTH, LABEL_GUTTER_MIN, LABEL_GUTTER)).toBe(LABEL_GUTTER_MIN);
+  });
+
+  it('truncateLabel leaves a label untouched when it already fits, and truncates with an ellipsis when it does not', () => {
+    expect(truncateLabel('Putting', 200, 12)).toBe('Putting');
+    const truncated = truncateLabel('Around the Green', 40, 12);
+    expect(truncated).not.toBe('Around the Green');
+    expect(truncated.endsWith('…')).toBe(true);
+    expect(estimateLabelWidth(truncated, 12)).toBeLessThanOrEqual(40);
+  });
+
+  it('a ~310px card (iPhone content width after page + card padding) keeps the bar track at a healthy majority of the container width', () => {
+    const width = 310;
+    const labelGutter = scaledGutter(width, LABEL_GUTTER_MIN, LABEL_GUTTER);
+    const valueGutter = scaledGutter(width, VALUE_GUTTER_MIN, VALUE_GUTTER);
+    const valueInset = scaledGutter(width, VALUE_INSET_MIN, VALUE_INSET);
+    const innerW = width - labelGutter - valueGutter;
+    const plotInset = Math.min(valueInset, innerW / 2);
+    const plotRange = innerW - 2 * plotInset;
+
+    // Pre-fix this ratio was ~5-20% (a 16-60px sliver on a 310px card) — the
+    // literal "bars are so short" complaint. Post-fix it must be a healthy
+    // majority of the card.
+    expect(plotRange / width).toBeGreaterThanOrEqual(0.55);
+  });
+
+  it('a long category label truncates with an ellipsis and carries the full text in a <title> once the responsive gutter is too narrow to fit it', () => {
+    const data: SGCategory[] = [
+      { label: 'Around the Green', value: -2.1 },
+      { label: 'Putting', value: -3.19 },
+    ];
+    const { container } = render(<TornadoInner width={310} height={220} data={data} />);
+    const rowLabels = Array.from(container.querySelectorAll('text[text-anchor="end"]')).filter(
+      (el) => !el.textContent?.match(/^[+−]/), // exclude the signed value annotations (also end-anchored when negative)
+    );
+    const longLabelText = rowLabels.find((el) => el.textContent?.startsWith('Around'));
+    expect(longLabelText).toBeDefined();
+    expect(longLabelText!.textContent).not.toBe('Around the Green');
+    expect(longLabelText!.textContent).toContain('…');
+
+    const title = longLabelText!.querySelector('title');
+    expect(title).toBeDefined();
+    expect(title!.textContent).toBe('Around the Green');
+  });
+
+  it('at a comfortable desktop width, the same long label renders whole (no truncation, no <title>) — matches pre-fix behavior', () => {
+    const data: SGCategory[] = [
+      { label: 'Around the Green', value: -2.1 },
+      { label: 'Putting', value: -3.19 },
+    ];
+    const { container } = render(<TornadoInner width={500} height={220} data={data} />);
+    const rowLabels = Array.from(container.querySelectorAll('text[text-anchor="end"]')).filter(
+      (el) => !el.textContent?.match(/^[+−]/),
+    );
+    const longLabelText = rowLabels.find((el) => el.textContent === 'Around the Green');
+    expect(longLabelText).toBeDefined();
+    expect(longLabelText!.querySelector('title')).toBeNull();
+  });
+
+  it('desktop geometry (>= GUTTER_CEIL_WIDTH) is pixel-identical to the original fixed margins: Group translates by exactly (LABEL_GUTTER, 8)', () => {
+    const data: SGCategory[] = [{ label: 'Off the tee', value: 1.2 }];
+    const { container } = render(
+      <TornadoInner width={GUTTER_CEIL_WIDTH} height={220} data={data} />,
+    );
+    const group = container.querySelector('svg > g');
+    expect(group).toBeDefined();
+    expect(group!.getAttribute('transform')).toBe(`translate(${LABEL_GUTTER}, 8)`);
   });
 });

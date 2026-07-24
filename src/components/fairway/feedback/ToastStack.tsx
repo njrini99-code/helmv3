@@ -8,8 +8,11 @@
  * `sonner` (the system keeps Sonner as the one toast contract, §6). Toasts are
  * transient floating chrome (§4.3 allow-list #5), so this is one of the few
  * places Liquid Glass is permitted: a cream-tinted `.glass`-style panel with a
- * status-colored LEFT BAR (the non-color meaning channel) and a slow cinematic
- * settle.
+ * distinct tone icon per type (the non-color meaning channel) and a slow
+ * cinematic settle. No colored side-rail: the founder-banned "card with a
+ * colored left border stripe" idiom was removed from the toast panel — the
+ * tone icon (a different glyph per type, not just a color) already carries
+ * the meaning.
  *
  * Style: warm cream glass via the `--fw-glass-*` tokens, `rounded-card`, the
  * `--fw-ease-glide` curve at `--fw-dur-slow`. Position is bottom-right on desktop
@@ -18,7 +21,7 @@
  *
  * `fairwayToast` is a thin, fully-typed facade over sonner's `toast` exposing
  * `.success / .warning / .danger / .info / .loading / .promise` with the warm
- * left-bar styling baked in. It returns sonner's id so callers can dismiss.
+ * tone-icon styling baked in. It returns sonner's id so callers can dismiss.
  *
  * A11y: sonner renders an `aria-live` region; we pin `polite` so new toasts are
  * announced without interrupting (danger uses `assertive` via the helper).
@@ -79,7 +82,7 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
       offset={isMobile ? 'calc(env(safe-area-inset-bottom) + 5rem)' : '1.5rem'}
       visibleToasts={4}
       closeButton
-      // We render our own tone icons + left bar, so disable sonner's rich colors.
+      // We render our own tone icons, so disable sonner's rich colors.
       richColors={false}
       icons={{
         success: <CheckCircle2 className="h-5 w-5 text-fw-success" aria-hidden="true" />,
@@ -93,20 +96,14 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
       toastOptions={{
         unstyled: false,
         classNames: {
-          // Warm cream Liquid Glass panel (§4.3) with a status-tone left bar.
-          // The left bar is painted per-tone via the data-type selectors below.
+          // Warm cream Liquid Glass panel (§4.3). Tone is carried by the icon
+          // glyph (wired via `icons` above), not a colored side-rail.
           toast: [
             'group relative isolate overflow-hidden font-fw-sans',
             'rounded-card border border-[var(--fw-glass-border)]',
             'bg-[var(--fw-glass-bg-strong)] backdrop-blur-[var(--fw-blur-glass)] backdrop-saturate-[160%]',
             'text-text-primary shadow-raise',
             '![transition-timing-function:var(--fw-ease-glide)] ![transition-duration:520ms]',
-            // status left bar (4px) — color set via tone classes on the toast root
-            'before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-[""]',
-            'before:bg-border-strong', // default (normal/info)
-            'data-[type=success]:before:bg-accent-500',
-            'data-[type=warning]:before:bg-fw-warning',
-            'data-[type=error]:before:bg-fw-danger',
             // reduced transparency → opaque panel (Apple accessibility lesson, §4.3)
             'motion-reduce:!duration-200',
           ].join(' '),

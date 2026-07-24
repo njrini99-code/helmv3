@@ -1421,13 +1421,16 @@
     outline: none;
   }
 
-  /* Accent variant with colored left border */
+  /* Accent variant — glass card chrome only. No colored side-rail: the
+     founder-banned "card with a colored left border stripe" idiom was
+     removed (this class currently has no call sites, but a resurrection
+     should not reintroduce it — tone should live in an icon/dot/chip inside
+     the card, not a card-edge stripe). */
   .glass-card-accent {
     background: rgba(255, 255, 255, 0.70);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.40);
-    border-left: 3px solid #16A34A;
     border-radius: 20px;
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.03),

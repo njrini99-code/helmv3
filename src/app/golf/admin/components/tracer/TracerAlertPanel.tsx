@@ -24,25 +24,21 @@ const severityConfig: Record<AlertSeverityLevel, {
   icon: typeof IconXCircle;
   iconColor: string;
   iconBg: string;
-  borderColor: string;
 }> = {
   critical: {
     icon: IconXCircle,
     iconColor: 'text-red-500',
     iconBg: 'bg-red-50',
-    borderColor: 'border-l-red-500',
   },
   warning: {
     icon: IconWarning,
     iconColor: 'text-amber-500',
     iconBg: 'bg-amber-50',
-    borderColor: 'border-l-amber-500',
   },
   info: {
     icon: IconInfo,
     iconColor: 'text-blue-500',
     iconBg: 'bg-blue-50',
-    borderColor: 'border-l-blue-500',
   },
 };
 
@@ -104,8 +100,6 @@ function AlertRow({
       disabled={!hasNavigation}
       className={cn(
         'w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors',
-        'border-l-[3px]',
-        config.borderColor,
         hasNavigation
           ? 'cursor-pointer hover:bg-cream-100'
           : 'cursor-default'

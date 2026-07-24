@@ -350,8 +350,7 @@ export default function CampDetailClient() {
         ink="pursuit"
         actions={
           <Link href="/baseball/dashboard/camps">
-            <Button variant="secondary" size="sm">
-              <IconArrowLeft size={16} className="mr-1.5" />
+            <Button variant="secondary" size="sm" leftIcon={<IconArrowLeft size={16} />}>
               Back
             </Button>
           </Link>

@@ -70,21 +70,46 @@ export function formatValue(value: number, unit: Unit): string {
 }
 
 /**
+ * Whether two values render IDENTICALLY once formatted for display (e.g.
+ * 64.6% and 65.3% both round to "65%" via `formatValue(_, 'percent')`).
+ *
+ * Bug: `deltaVsTeam`/`teamRelativeText` used a single hardcoded ABSOLUTE
+ * epsilon (0.01) to decide "equal". That's calibrated for 'strokes' metrics
+ * (SG values, typically -2..2, formatted to 2dp) but is wildly too tight
+ * for a 'percent' metric (0-100 scale, formatted to 0dp) — a player at
+ * 64.6% vs a team average of 65.3% differ by 0.7, which clears 0.01, so the
+ * old check called the player "Below team average" in red under two chips
+ * that both read "65%". The verdict must agree with what the user actually
+ * SEES: when the formatted (rounded) values match, the comparison is a
+ * wash regardless of the raw floating-point delta. Falls back to the old
+ * absolute-epsilon behavior when `unit` is omitted (existing callers that
+ * don't pass it keep their prior behavior unchanged).
+ */
+export function valuesDisplayEqual(a: number, b: number, unit?: Unit): boolean {
+  if (unit) return formatValue(a, unit) === formatValue(b, unit);
+  return Math.abs(a - b) < 0.01;
+}
+
+/**
  * Derive an arrow + semantic tone for "player vs team" comparison.
  * Used by the size-variant headers (↑ vs team / ↓ vs team).
  *
- * Returns 'neutral' when delta is below noise threshold or team is null.
+ * Returns 'neutral' when the values render identically (see
+ * `valuesDisplayEqual`) or team is null.
  */
 export function deltaVsTeam(
   player_value: number,
   team_avg: number | null,
   direction: Direction,
+  unit?: Unit,
 ): { arrow: '↑' | '↓' | '·'; tone: 'good' | 'bad' | 'neutral' } {
   if (team_avg === null || !Number.isFinite(team_avg)) {
     return { arrow: '·', tone: 'neutral' };
   }
+  if (valuesDisplayEqual(player_value, team_avg, unit)) {
+    return { arrow: '·', tone: 'neutral' };
+  }
   const diff = player_value - team_avg;
-  if (Math.abs(diff) < 0.01) return { arrow: '·', tone: 'neutral' };
   // Arrow describes WHERE the player sits relative to team (above/below).
   // Tone describes whether that's good or bad for this metric's direction.
   const arrow: '↑' | '↓' = diff > 0 ? '↑' : '↓';
@@ -147,10 +172,16 @@ export function teamRelativeText(
   player_value: number,
   team_avg: number | null,
   direction: Direction,
+  unit?: Unit,
 ): string {
   if (team_avg === null || !Number.isFinite(team_avg)) return '';
+  // See `valuesDisplayEqual` — a unit-aware equality check so two chips
+  // that display the SAME number (e.g. "65%" vs "65%") can never be
+  // narrated as one being above/below the other. "Matches team average"
+  // carries no possessive, so — like "Above/Below team average" — it
+  // passes through `neutralizeForCoach` unchanged.
+  if (valuesDisplayEqual(player_value, team_avg, unit)) return 'Matches team average';
   const diff = player_value - team_avg;
-  if (Math.abs(diff) < 0.01) return 'About your team average';
   const better = direction === 'higher_better' ? diff > 0 : diff < 0;
   return better ? 'Above team average' : 'Below team average';
 }
@@ -256,7 +287,117 @@ export function deriveAriaLabel(props: StandingBarProps): string {
   if (props.team_avg !== null && (props.team_n ?? 0) >= TEAM_MARKER_MIN_N) {
     parts.push(`Team average: ${formatValue(props.team_avg, props.unit)}.`);
   }
-  const cohort = teamRelativeText(props.player_value, props.team_avg, props.direction);
+  const cohort = teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit);
   if (cohort) parts.push(neutralizeForCoach(cohort, props.viewer_context) + '.');
   return parts.join(' ');
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Track geometry — dynamic domain + marker-collision layout.
+ *
+ * Both bugs below come from treating the caller-supplied `scale` as a hard
+ * bound instead of a typical/expected range: `metric-config.ts` ships a
+ * fixed `default_scale` per metric (e.g. sg_approach: -1.5..1.5), but a real
+ * outlier round can post a player/team/field value beyond it.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Expand the caller-supplied display scale so every value that will
+ * actually be plotted lands strictly inside `[min, max]` — never clamped to
+ * the literal edge. `toScalePct` clamps out-of-range values to 0/100; a
+ * marker pinned there sits centered on the rail's literal boundary, and
+ * `-translate-x-1/2` then pushes half its own width outside the rail,
+ * which the card's `overflow-clip` cuts off (a "half-clipped circle") —
+ * and visually, a value that's actually -2.43 renders in the exact same
+ * spot as one that's exactly -1.50, which is a silent misrepresentation
+ * even when nothing looks visually broken. The caller's scale is a FLOOR,
+ * not a ceiling: widen it to cover every finite value passed in, then pad
+ * the widened span so an included extreme still sits inboard of the literal
+ * 0%/100% edge. `opts.symmetric` re-centers the widened domain around zero
+ * — the existing convention for SG metrics (metric-config's SG ranges are
+ * already symmetric: -1.5..1.5, -1..1, -2..2 — because 0 is the definitional
+ * field-average anchor and must stay visually centered, not drift toward
+ * whichever side happened to blow past the original bound).
+ *
+ * No-ops (returns the original scale unchanged) when every value already
+ * fits — existing in-range cards render pixel-identical to before.
+ */
+export function resolveDisplayScale(
+  scale: { min: number; max: number },
+  values: ReadonlyArray<number | null | undefined>,
+  opts?: { symmetric?: boolean; paddingFrac?: number },
+): { min: number; max: number } {
+  let min = scale.min;
+  let max = scale.max;
+  let expanded = false;
+  for (const v of values) {
+    if (v === null || v === undefined || !Number.isFinite(v)) continue;
+    if (v < min) { min = v; expanded = true; }
+    if (v > max) { max = v; expanded = true; }
+  }
+  if (!expanded) return { min: scale.min, max: scale.max };
+  if (opts?.symmetric) {
+    const bound = Math.max(Math.abs(min), Math.abs(max));
+    min = -bound;
+    max = bound;
+  }
+  const span = max - min;
+  if (span <= 0) return { min, max };
+  const pad = span * (opts?.paddingFrac ?? 0.08);
+  return { min: min - pad, max: max + pad };
+}
+
+export interface MarkerLayoutInput {
+  key: string;
+  /** Raw (already scale-mapped, 0-100) marker position. */
+  pct: number;
+}
+
+/** Minimum gap (in track %) between two marker CENTERS before they're
+ *  considered "colliding" and nudged apart. The Bar/Track markers here are
+ *  small circular chips (8-16px) rather than the wider text labels
+ *  `layoutTrackLabels` (fairway/modules/StandingTrack.tsx) separates, so a
+ *  smaller gap than that component's 16% fully clears two overlapping
+ *  circles without over-spacing genuinely distinct values. */
+export const MARKER_MIN_GAP_PCT = 9;
+
+/**
+ * Nudge apart marker positions that land within `minGapPct` of one another,
+ * left→right, preserving relative order — same collision-resolution idiom
+ * `layoutTrackLabels` uses for its label row (forward min-gap pass, pull
+ * the whole chain back if it overflows the right edge, backward pass to
+ * settle a cluster wider than the safe zone, final hard clamp). Adapted
+ * here for the marker glyphs themselves: Card's `Marker` draws a letter
+ * ('T'/'●'/'P') INSIDE each circle, so two near-equal values (e.g. team
+ * 0.70 vs player 0.81 on a 3-unit scale is ~3.7% apart) render as stacked,
+ * unreadable overlapping circles, not just overlapping text.
+ *
+ * Pure data in/out — no DOM, fixture-testable.
+ */
+export function layoutMarkerPositions(
+  items: ReadonlyArray<MarkerLayoutInput>,
+  minGapPct: number = MARKER_MIN_GAP_PCT,
+): MarkerLayoutInput[] {
+  if (items.length <= 1) return items.map((i) => ({ key: i.key, pct: i.pct }));
+
+  const ordered = items.map((i) => ({ key: i.key, pct: i.pct })).sort((a, b) => a.pct - b.pct);
+
+  for (let i = 1; i < ordered.length; i++) {
+    const min = ordered[i - 1]!.pct + minGapPct;
+    if (ordered[i]!.pct < min) ordered[i]!.pct = min;
+  }
+
+  const rightOverflow = ordered[ordered.length - 1]!.pct - 100;
+  if (rightOverflow > 0) {
+    for (const item of ordered) item.pct -= rightOverflow;
+  }
+
+  for (let i = ordered.length - 2; i >= 0; i--) {
+    const max = ordered[i + 1]!.pct - minGapPct;
+    if (ordered[i]!.pct > max) ordered[i]!.pct = max;
+  }
+
+  for (const item of ordered) item.pct = Math.max(0, Math.min(100, item.pct));
+
+  return ordered;
 }

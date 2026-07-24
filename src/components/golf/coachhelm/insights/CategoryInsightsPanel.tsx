@@ -338,7 +338,12 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="group -mx-2 block h-auto min-h-0 w-full rounded-fw-md px-2 py-1.5 text-left font-normal outline-none focus-visible:ring-offset-surface"
+        // `Button`'s shared base class bakes in `whitespace-nowrap` (correct for
+        // its normal short single-line labels). This trigger's content is
+        // multi-line (title + a line-clamp-2 takeaway paragraph) — without an
+        // explicit reset, every descendant inherits nowrap and silently clips
+        // instead of wrapping (line-clamp-2 needs real wrapping to clamp).
+        className="group -mx-2 block h-auto min-h-0 w-full whitespace-normal rounded-fw-md px-2 py-1.5 text-left font-normal outline-none focus-visible:ring-offset-surface"
       >
         {/* Button's children contract wants ONE child — everything below is
             phrasing content (spans, not div/p) since it renders inside a
@@ -346,7 +351,7 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
         <span className="flex w-full items-start gap-3">
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
-              <span className="font-fw-sans text-body-sm font-medium text-text-primary">
+              <span className="min-w-0 font-fw-sans text-body-sm font-medium text-text-primary">
                 {cause.title}
               </span>
               {showStrokesBadge ? (
@@ -359,7 +364,14 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
                 </Badge>
               ) : null}
             </span>
-            <span className="mt-1 block max-w-prose font-fw-sans text-body-sm font-normal leading-relaxed text-text-secondary line-clamp-2">
+            {/* `block` is intentionally omitted: Tailwind's generated stylesheet
+                declares `.block` after `.line-clamp-2`, so a literal `block`
+                class wins the display-property tie and silences line-clamp's
+                own `display:-webkit-box` — the clamp never engages and the
+                (now-wrapping) takeaway grows unbounded instead of holding to
+                2 lines. `line-clamp-2` already establishes its own block-level
+                box, so no separate `block` is needed. */}
+            <span className="mt-1 max-w-prose font-fw-sans text-body-sm font-normal leading-relaxed text-text-secondary line-clamp-2">
               {takeaway}
             </span>
           </span>

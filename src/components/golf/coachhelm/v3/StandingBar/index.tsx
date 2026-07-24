@@ -53,6 +53,7 @@ export {
   deltaVsTeam,
   teamCohortText,
   teamRelativeText,
+  valuesDisplayEqual,
   deriveState,
   shouldShowTeamMarker,
   deriveAriaLabel,
@@ -60,4 +61,8 @@ export {
   neutralizeForCoach,
   initialsFromName,
   standingSubjectLabel,
+  resolveDisplayScale,
+  layoutMarkerPositions,
+  MARKER_MIN_GAP_PCT,
 } from './utils';
+export type { MarkerLayoutInput } from './utils';
