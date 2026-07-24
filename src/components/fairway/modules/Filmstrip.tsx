@@ -20,6 +20,13 @@
  * interactive semantics here so each column is exactly ONE button — never a
  * button nested inside a button.
  *
+ * Each cell also forwards its own hover/focus `isActive` state into
+ * `HoleShotPath` as the controlled `active` prop — a `false → true` edge
+ * there triggers that cell's own shot-by-shot draw-in replay at strip scale
+ * (segments only, no tooltip — too small to read one). Cheap by design:
+ * across all 18 simultaneous instances, only the ONE currently-active cell
+ * ever mounts an animated path; every other cell renders a plain static one.
+ *
  * Entrance: columns grow in on mount, staggered left→right. 18 siblings at
  * the canonical 70ms stagger step would blow the "<600ms total" motion
  * budget (17 × 70ms + duration alone is >1s), so this uses a compressed,
@@ -141,6 +148,7 @@ export function Filmstrip({ holes, activeHole, onScrub, shotsByHole }: Filmstrip
                     shots={shots}
                     size="strip"
                     ringClassName={RING_TONE[tone]}
+                    active={isActive}
                   />
                 </m.div>
                 <span className="font-fw-mono text-eyebrow font-normal text-text-tertiary tabular-nums">

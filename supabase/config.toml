@@ -227,13 +227,28 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
-# Branded GolfHelm password-reset email — rendered by Supabase Auth when
-# resetPasswordForEmail() runs. {{ .ConfirmationURL }} is the recovery link
-# (redirects to /golf/reset-password). Applied to the linked project on
-# `supabase config push`.
+# ── Branded GolfHelm auth emails ──────────────────────────────────────────
+# These override Supabase's default templates. {{ .ConfirmationURL }} is the
+# action link Supabase injects per type (recovery → /golf/reset-password,
+# confirmation → signup confirm, email_change → confirm new address).
+#
+# ⚠️  DO NOT apply these with `supabase config push`. That command pushes this
+# ENTIRE file — including the dev `site_url = "http://127.0.0.1:3000"` above —
+# and would overwrite production's site URL, breaking every auth email link and
+# redirect. Apply ONLY the templates, surgically, via the Management API:
+#     scripts/apply-auth-email-templates.sh
+# which patches just the mailer_* fields and touches nothing else.
 [auth.email.template.recovery]
 subject = "Reset your GolfHelm password"
 content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your GolfHelm account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new GolfHelm email"
+content_path = "./supabase/templates/email_change.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

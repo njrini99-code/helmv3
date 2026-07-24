@@ -6,6 +6,18 @@ export interface StandingTrackProps {
   pct: number;
   benchmarks: { label: string; pct: number; emphasis?: boolean }[];
   subjectLabel: string;          // "You" | "Team"
+  /**
+   * Override the label row's edge-clamp margin (see
+   * `STANDING_TRACK_EDGE_MARGIN_PCT`). The default is calibrated for short
+   * 3-5 char labels ("You"/"Team"/"Tour") — a caller whose benchmark labels
+   * run longer (e.g. "Field Avg") should pass a wider margin so the label
+   * text never clips against the track's own edge at narrow widths.
+   */
+  edgeMarginPct?: number;
+  /** Override the label row's minimum-gap collision margin (see
+   *  `STANDING_TRACK_MIN_GAP_PCT`). Widen alongside `edgeMarginPct` for
+   *  longer labels so two adjacent labels still can't visually collide. */
+  minGapPct?: number;
 }
 
 export interface PriorityItem { rank: number; title: string; value: string }

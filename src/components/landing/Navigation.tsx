@@ -7,9 +7,9 @@ import { MobileNav } from './MobileNav'
 import { LoginTransitionOverlay, requestLoginTransition } from './login-transition'
 
 const navLinks = [
-  { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
   { name: 'Products', href: '/products' },
+  { name: 'Pricing', href: '/pricing' },
 ]
 
 export function Navigation() {

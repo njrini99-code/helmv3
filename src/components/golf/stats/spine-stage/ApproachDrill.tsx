@@ -308,8 +308,11 @@ export function ApproachDrill({
 
           {[
             { label: 'GIR / round', value: finite(s?.girPerRound), digits: 1 },
-            { label: 'Approach proximity', value: finite(s?.approachProximityAvg), unit: 'ft', digits: 1 },
-            { label: 'Proximity · GIR', value: finite(s?.approachProximityWhenHitGreen), unit: 'ft', digits: 1 },
+            // Total = union of EVERY logged approach finish (hit + miss),
+            // same canonical unit (ft) as the two cards beside it — directly
+            // comparable, per the partner's "total proximity" definition.
+            { label: 'Proximity · total', value: finite(s?.approachProximityAvg), unit: 'ft', digits: 1 },
+            { label: 'Proximity · hit GIR', value: finite(s?.approachProximityWhenHitGreen), unit: 'ft', digits: 1 },
             { label: 'Proximity · missed GIR', value: finite(s?.approachProximityWhenMissedGreen), unit: 'ft', digits: 1 },
           ].map((item) => (
             <InstrumentPanel key={item.label} depth="base" padding="md" className="min-h-[112px]">

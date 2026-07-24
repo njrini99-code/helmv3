@@ -1,0 +1,149 @@
+/* ============================================================================
+ * Helm Landing — faithful port of Helm Landing.dc.html (Claude Design handoff).
+ * Light, sunlit "California linen" surface. Tokens carried verbatim from the
+ * design root; --accent is the locked Helm green #16A34A. Everything else
+ * styles inline against these vars; this module owns tokens, keyframes, the
+ * hover choreography, and the reduced-motion contract. The scroll engine lives
+ * in useHelmLandingEngine (JS), matching the design's componentDidMount.
+ * ========================================================================== */
+
+.root {
+  --canvas: oklch(0.953 0.022 83);
+  --surface: oklch(0.984 0.016 86);
+  --tint: oklch(0.968 0.026 84);
+  --sunken: oklch(0.963 0.021 84);
+  --elevated: oklch(0.993 0.016 88);
+  --ink: oklch(0.216 0.007 49);
+  --ink2: oklch(0.444 0.014 65);
+  --ink3: oklch(0.585 0.014 70);
+  --line: oklch(0.862 0.013 82 / 0.95);
+  /* Green references the GolfHelm dashboard's Fairway accent tokens directly
+   * (src/styles/design-tokens.css, loaded globally in layout.tsx) so the landing
+   * can never drift from the app. On the all-linen landing (no dark sidebar to
+   * anchor it) the light accent-500 fill reads washed out, so the primary green
+   * uses the deeper accent-600 (the dashboard's own emphasis/pressed green) with
+   * accent-700 for hover — richer, premium, unmistakably the same helm green. */
+  --accent: var(--fw-color-accent-600);
+  --accent700: var(--fw-color-accent-700);
+  --accent50: var(--fw-color-accent-50);
+  --dark: #0c0a09;
+  --onacc: oklch(0.994 0.006 95);
+  --soft: 0 1px 2px oklch(0.18 0.01 60 / 0.06), 0 10px 28px oklch(0.18 0.01 60 / 0.13);
+  --raise: 0 2px 4px oklch(0.18 0.01 60 / 0.07), 0 18px 44px oklch(0.18 0.01 60 / 0.15);
+  --mono: 'Fragment Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+
+  position: relative;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+.root a { color: var(--accent); text-decoration: none; }
+.root a:hover { color: var(--accent700); }
+.root ::selection { background: oklch(0.648 0.149 149.6 / 0.22); }
+
+/* --- keyframes (module-scoped; all references are in this file) ----------- */
+@keyframes helmHeroUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes helmHeroImg {
+  from { opacity: 0; transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes helmModalIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.heroUp { opacity: 0; animation: helmHeroUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.heroImg { opacity: 0; animation: helmHeroImg 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; }
+.modalIn { animation: helmModalIn 0.2s ease; }
+
+/* --- primary pill button (base colour in-class so :hover wins) ------------ */
+.btnPrimary {
+  background: var(--accent);
+  color: var(--onacc);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.btnPrimary:hover { background: var(--accent700); transform: translateY(-1px); }
+.btnPrimary:active { transform: translateY(0); }
+
+/* nav links — scoped under .root so they out-specify the base `.root a`
+ * green link colour (which is class+element specificity); a bare `.navLink`
+ * would lose the cascade and inherit the accent green. */
+.root .navLink { color: var(--ink2); transition: color 0.18s, background 0.18s; }
+.root .navLink:hover { color: var(--ink); background: oklch(1 0 0 / 0.5); }
+
+.root .linkInk { color: var(--ink2); transition: color 0.15s ease; }
+.root .linkInk:hover { color: var(--ink); }
+
+.root .footLink { color: oklch(0.82 0.008 85); transition: color 0.15s ease; }
+.root .footLink:hover { color: var(--onacc); }
+
+.root .exploreLink { color: var(--ink); }
+.root .exploreLink:hover { color: var(--ink); }
+.root .exploreLink:hover .exploreArrow { transform: translateX(3px); }
+.exploreArrow { display: inline-block; transition: transform 0.2s ease; }
+
+/* --- responsive header --------------------------------------------------- */
+/* Desktop shows the pill nav + inline CTAs; the hamburger is hidden. Under
+ * 900px the pill can't fit, so we swap to a hamburger + linen dropdown sheet. */
+.desktopNav { display: flex; }
+.hamburger { display: none; }
+
+@media (max-width: 900px) {
+  .desktopNav { display: none !important; }
+  .hamburger { display: inline-flex !important; }
+}
+
+.hamburger {
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  flex: none;
+  border-radius: 14px;
+  border: 1px solid oklch(1 0 0 / 0.5);
+  background:
+    linear-gradient(180deg, oklch(1 0 0 / 0.2), oklch(1 0 0 / 0.05)),
+    color-mix(in srgb, var(--surface) 52%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(112%);
+  backdrop-filter: blur(20px) saturate(112%);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.34), 0 1px 2px oklch(0.18 0.01 60 / 0.05), 0 10px 24px oklch(0.18 0.01 60 / 0.08);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+.hamburger:active { transform: scale(0.94); }
+
+/* mobile dropdown sheet — linen, drops from under the header bar */
+.mobileSheet {
+  animation: helmSheetIn 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
+}
+@keyframes helmSheetIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+.mobileLink {
+  color: var(--ink);
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobileLink:hover,
+.mobileLink:active { background: var(--tint); color: var(--ink); }
+
+/* --- reduced motion ------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .heroUp,
+  .heroImg { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .mobileSheet { animation: none !important; }
+}

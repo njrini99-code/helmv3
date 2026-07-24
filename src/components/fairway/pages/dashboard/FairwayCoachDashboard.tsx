@@ -70,9 +70,6 @@ import {
   IconArrowRight,
   IconClock,
   IconMapPin,
-  IconBell,
-  IconClipboardList,
-  IconAlertCircle,
 } from '@/components/icons';
 import { formatTimeInTz, getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
@@ -80,7 +77,6 @@ import {
   Users as LucideUsers,
   Flag as LucideFlag,
   Calendar as LucideCalendar,
-  CheckCircle2 as LucideCheckCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
@@ -90,11 +86,9 @@ import type {
   CoachDashboardPayload,
   DashboardDateRange,
   TodayEvent,
-  ActionItem,
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
-import { splitActionItems } from './attention-queue';
-import { parseDueDate } from '@/components/fairway/pages/tasks/FairwayTasks';
+import { DaySchedule, type DayScheduleEvent } from './DaySchedule';
 
 // Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
 // Scoring Trend chart). recharts' ResponsiveContainer has no real size to
@@ -179,18 +173,54 @@ function shortDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-/** Honest first→last delta over a sparkline series (oldest → newest), or null
- *  when there are fewer than two finite points to compare. This is the only
- *  numeric movement the dashboard payload supports — the payload's `trend` is a
- *  qualitative direction, not a magnitude — so the MetricCard delta chip is
- *  sourced from the series the same way the Sparkline classifies its color. */
-function seriesDelta(series: number[] | undefined): number | null {
+/** A sparkline delta with the ACTUAL window it was computed over, so the
+ *  chip's label never claims a window depth the data can't back. */
+interface SeriesDelta {
+  value: number;
+  points: number;
+}
+
+/**
+ * Honest windowed delta over a sparkline series (oldest → newest): the SAME
+ * split-half-average comparison `computeTrend()`/`computeTrendHigherIsBetter()`
+ * already use server-side (dashboard-data.ts) to classify the qualitative
+ * trend arrow — recent-half average vs. older-half average — not a raw
+ * first-vs-last endpoint diff.
+ *
+ * Two bugs this fixes together (both reported against the Team KPI row):
+ *   1. WINDOW MISMATCH — the chip was always labeled "last 5 rounds" even
+ *      when the underlying sparkline had fewer finite points (a round
+ *      missing GIR/putts data drops out before the 5-point slice is taken
+ *      upstream). The label now states the REAL point count used.
+ *   2. IMPLAUSIBLE SWINGS (e.g. a −50% GIR delta) — a raw endpoint diff
+ *      compares exactly TWO individual rounds, and a single noisy/short
+ *      round (a rain-shortened 9-hole round has a tiny GIR denominator) can
+ *      swing that by tens of points. Averaging each half smooths a single
+ *      outlier instead of handing it the whole delta, and — because it's the
+ *      identical split used for the `trend` field — the numeric delta and
+ *      the qualitative trend/color can never disagree.
+ *
+ * Requires ≥3 finite points (mirrors this page's own "Need 3+ rounds"
+ * honesty gate) — fewer than that suppresses the chip entirely rather than
+ * showing an unreliable 2-point comparison. This is the only numeric
+ * movement the dashboard payload supports client-side — the payload's
+ * `trend` field is a qualitative direction, not a magnitude.
+ */
+function seriesDelta(series: number[] | undefined): SeriesDelta | null {
   if (!series) return null;
   const finite = series.filter((v) => Number.isFinite(v));
-  if (finite.length < 2) return null;
-  const first = finite[0] as number;
-  const last = finite[finite.length - 1] as number;
-  return last - first;
+  if (finite.length < 3) return null;
+  const mid = Math.floor(finite.length / 2);
+  const olderHalf = finite.slice(0, mid); // series is oldest → newest
+  const recentHalf = finite.slice(mid);
+  if (olderHalf.length === 0 || recentHalf.length === 0) return null;
+  const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
+  const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
+  return { value: recentAvg - olderAvg, points: finite.length };
+}
+
+function seriesDeltaLabel(points: number): string {
+  return `last ${points} round${points === 1 ? '' : 's'}`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -288,6 +318,30 @@ export function FairwayCoachDashboard({
     () => (hasTrend ? teamScoringTrend!.map((p) => ({ x: p.label, y: p.value })) : []),
     [hasTrend, teamScoringTrend],
   );
+
+  // DaySchedule feed (replaces ActionItemsPanel below): merge the RPC-sourced
+  // `todayEvents` (full day, incl. RSVP tallies dropped here — this card is a
+  // read-only agenda, not an RSVP surface) with `calendarEvents` (future,
+  // start_time >= now) from the SAME `golf_events` table, deduped by id. Both
+  // are already fetched by dashboard-data.ts — no new fetch here. (Hook lives
+  // above the coach-without-team early return below — it must run on every
+  // render, team or not.)
+  const scheduleEvents: DayScheduleEvent[] = useMemo(() => {
+    const toScheduleEvent = (e: { id: string; title: string; event_type: string; start_time: string; end_time?: string | null; location: string | null }): DayScheduleEvent => ({
+      id: e.id,
+      title: e.title,
+      event_type: e.event_type,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      location: e.location,
+    });
+    const merged = new Map<string, DayScheduleEvent>();
+    for (const e of enhancedData?.todayEvents ?? []) merged.set(e.id, toScheduleEvent(e));
+    for (const e of enhancedData?.calendarEvents ?? []) {
+      if (!merged.has(e.id)) merged.set(e.id, toScheduleEvent(e));
+    }
+    return Array.from(merged.values());
+  }, [enhancedData?.todayEvents, enhancedData?.calendarEvents]);
 
   // ── COACH-WITHOUT-TEAM → onboarding funnel (not a zeroed dashboard) ──────
   if (!team) {
@@ -571,7 +625,7 @@ export function FairwayCoachDashboard({
               goodDirection="down"
               delta={
                 scoringDelta != null
-                  ? { value: Number(scoringDelta.toFixed(1)), label: 'last 5 rounds' }
+                  ? { value: Number(scoringDelta.value.toFixed(1)), label: seriesDeltaLabel(scoringDelta.points) }
                   : undefined
               }
               sparkline={
@@ -603,7 +657,7 @@ export function FairwayCoachDashboard({
               goodDirection="up"
               delta={
                 girDelta != null
-                  ? { value: Number(girDelta.toFixed(0)), suffix: '%', label: 'last 5 rounds' }
+                  ? { value: Number(girDelta.value.toFixed(0)), suffix: '%', label: seriesDeltaLabel(girDelta.points) }
                   : undefined
               }
               sparkline={
@@ -634,7 +688,7 @@ export function FairwayCoachDashboard({
               goodDirection="down"
               delta={
                 puttsDelta != null
-                  ? { value: Number(puttsDelta.toFixed(1)), label: 'last 5 rounds' }
+                  ? { value: Number(puttsDelta.value.toFixed(1)), label: seriesDeltaLabel(puttsDelta.points) }
                   : undefined
               }
               sparkline={
@@ -747,8 +801,19 @@ export function FairwayCoachDashboard({
         )}
       </section>
 
-      {/* ── 5.5 · ACTION ITEMS — tasks / updates / deadlines waiting ────────── */}
-      <ActionItemsPanel items={enhancedData?.actionItems ?? []} />
+      {/* ── 5.5 · SCHEDULE — scrollable today + upcoming agenda ─────────────────
+          Replaces the former Action Items card (tasks/deadlines/announcements
+          — that backlog still lives at Tasks/Announcements). "Today" above
+          already covers RSVP tallies for the current day; this is the
+          broader forward-looking agenda, grouped by day, capped-height and
+          scrollable once it outgrows a calm at-a-glance size. */}
+      <DaySchedule
+        title="Schedule"
+        subtitle="Today & upcoming"
+        events={scheduleEvents}
+        timezone={enhancedData?.timezone}
+        viewAllHref="/golf/dashboard/calendar"
+      />
 
       {/* ── 6 · TEAM region — Trend + Pulse + Top Performers (matte) ────────── */}
       <section aria-label="Team" className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -1072,225 +1137,3 @@ function TodayPanel({
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
- * Action Items — tasks / updates / deadlines waiting (F104). Ported from the
- * legacy ActionItemsCard in Fairway style. Reads ONLY the already-computed
- * `enhancedData.actionItems`; no refetch. Relative dates are deferred to the
- * client to avoid a hydration mismatch (server vs browser clock).
- * ────────────────────────────────────────────────────────────────────────── */
-
-function actionItemHref(item: ActionItem): string {
-  // P443: reference the SPECIFIC item, not just its containing list. The id is
-  // carried as `?highlight=<id>` so the destination list can scroll-to / open
-  // that item; the link never lands on the unfiltered list or a no-op self-link.
-  const id = encodeURIComponent(item.id);
-  if (item.type === 'task' || item.type === 'deadline') {
-    return `/golf/dashboard/tasks?highlight=${id}`;
-  }
-  if (item.type === 'announcement') {
-    return `/golf/dashboard/announcements?highlight=${id}`;
-  }
-  // Defensive fallback for any future item type — the tasks list is the most
-  // relevant landing, never the old `/dashboard` self-link no-op.
-  return '/golf/dashboard/tasks';
-}
-
-function formatRelativeDate(dateStr: string, now: Date): string {
-  if (!dateStr) return '';
-  // P295-DASH — same local-safe date-only parse the Tasks page uses
-  // (parseDueDate, imported from FairwayTasks). A bare "YYYY-MM-DD" task
-  // due_date read via a raw `new Date(dateStr)` parses as UTC midnight, which
-  // in any negative-UTC-offset zone (all of the US) resolves to the PREVIOUS
-  // local calendar day — so a task due "today" showed "Yesterday" here in
-  // Action Items while the Tasks list/detail (already fixed) correctly said
-  // "Today" for the identical stored due_date. Routing this call site through
-  // the same helper keeps every surface honest about the same value.
-  const date = parseDueDate(dateStr);
-  if (Number.isNaN(date.getTime())) return '';
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
-  if (diffDays < 0) {
-    const future = Math.abs(diffDays);
-    if (future === 1) return 'Tomorrow';
-    if (future < 7) return `In ${future}d`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-/** One action row — reused by the actionable-task list and the announcements
- *  strip below it. `now` is the client clock (null until mounted) so relative
- *  dates stay hydration-safe. */
-function ActionItemRow({ item, now }: { item: ActionItem; now: Date | null }) {
-  const isUrgent = item.priority === 'high' || item.priority === 'urgent';
-  return (
-    <li key={item.id} className="min-w-0">
-      <Link
-        href={actionItemHref(item)}
-        className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
-      >
-        {/* `overflow-hidden` is the hard backstop for the row's own rounded
-            edge — a long title can still bleed past it (#957); the title's
-            OWN clipping is now `line-clamp-2` (see below), not `truncate`. */}
-        <Inset
-          padding="sm"
-          className="flex min-w-0 items-start gap-3 overflow-hidden transition-colors hover:bg-surface-hover"
-        >
-          <span className="mt-0.5 shrink-0">
-            {item.overdue ? (
-              <IconAlertCircle size={16} className="text-fw-danger" />
-            ) : item.type === 'announcement' ? (
-              <IconBell size={16} className="text-text-tertiary" />
-            ) : isUrgent ? (
-              <IconAlertCircle size={16} className="text-fw-warning" />
-            ) : (
-              <IconClipboardList size={16} className="text-text-tertiary" />
-            )}
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-1">
-            {/* audit #47: a single-line `truncate` here clipped mid-word with
-                no ellipsis on narrow mobile widths — `truncate`'s ellipsis
-                depends on the element resolving to a block box, and this span
-                sits directly inside a row that also wraps the date/badge
-                beneath it, so the clip landed with no visible affordance.
-                `whitespace-normal break-words` lets a long title wrap onto a
-                second line at word boundaries (only breaking mid-word as a
-                last resort, never as the default), and `line-clamp-2` caps it
-                at two lines with a real ellipsis if it's still too long —
-                never a bare mid-word cut. */}
-            <span
-              className={cn(
-                'line-clamp-2 whitespace-normal break-words font-fw-sans text-body font-medium',
-                item.overdue ? 'text-fw-danger' : 'text-text-primary',
-              )}
-            >
-              {item.title}
-            </span>
-            <span className="flex flex-wrap items-center gap-2">
-              <span
-                className="font-fw-sans text-caption text-text-tertiary"
-                suppressHydrationWarning
-              >
-                {now ? formatRelativeDate(item.date, now) : ''}
-              </span>
-              {item.overdue ? (
-                <StatusPill tone="danger" dot={false} size="sm">
-                  Overdue
-                </StatusPill>
-              ) : isUrgent ? (
-                <StatusPill tone="warning" dot={false} size="sm">
-                  {item.priority === 'urgent' ? 'Urgent' : 'High'}
-                </StatusPill>
-              ) : null}
-            </span>
-          </span>
-        </Inset>
-      </Link>
-    </li>
-  );
-}
-
-/** Exported for a deterministic render test (W1 count-coherence audit) — the
- *  header count badge must always describe exactly what's rendered below it.
- *
- *  Attention model (audit "five surfaces, one story"): this panel is the
- *  ACTIONABLE backlog only — tasks and deadlines. Its header badge counts
- *  exactly those, matching the hero's "needs you" total (which adds pending
- *  approvals, surfaced in their own banner above). Announcements are NOT
- *  actionable — they have no accept/resolve step — so they render as a clearly
- *  separated, uncounted "Announcements" strip and never inflate the backlog. */
-export function ActionItemsPanel({ items }: { items: ActionItem[] }) {
-  // Defer relative-date computation to the client to avoid a hydration mismatch.
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-  }, []);
-
-  const { actionable, announcements } = splitActionItems(items);
-  const isEmpty = actionable.length === 0 && announcements.length === 0;
-
-  return (
-    <section aria-label="Action items" className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Action Items</h2>
-          {actionable.length > 0 ? (
-            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-              {actionable.length}
-            </span>
-          ) : null}
-        </div>
-        <Link
-          href="/golf/dashboard/tasks"
-          className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
-        >
-          Tasks
-          <IconArrowRight size={14} />
-        </Link>
-      </div>
-      {/* Section hairline — more-green ruling. */}
-      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-
-      {isEmpty ? (
-        <Surface elevation="border" padding="md">
-          <EmptyState
-            variant="subtle"
-            icon={LucideCheckCircle}
-            title="All caught up"
-            description="No tasks, updates or deadlines waiting right now."
-          />
-        </Surface>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {/* Actionable tasks / deadlines — the backlog the header badge counts.
-              Render the FULL list (W1 count-coherence fix: no slice(0, 6) that
-              disagreed with its own header). The upstream builder already caps
-              this list, so it stays a finite, calm digest. */}
-          {actionable.length > 0 ? (
-            <Surface elevation="border" padding="sm">
-              <ul className="flex flex-col gap-2">
-                {actionable.map((item) => (
-                  <ActionItemRow key={item.id} item={item} now={now} />
-                ))}
-              </ul>
-            </Surface>
-          ) : (
-            <Surface elevation="border" padding="md">
-              <EmptyState
-                variant="subtle"
-                icon={LucideCheckCircle}
-                title="No tasks or deadlines waiting"
-                description="You're clear on tasks. Team announcements are below."
-              />
-            </Surface>
-          )}
-
-          {/* Announcements — informational, NOT part of the "needs you" count.
-              Clearly labelled and separately counted so they never masquerade
-              as backlog the coach has to clear. */}
-          {announcements.length > 0 ? (
-            <section aria-label="Announcements" className="flex flex-col gap-2">
-              <div className="flex items-center gap-2.5">
-                <h3 className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
-                  Announcements
-                </h3>
-                <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                  {announcements.length}
-                </span>
-              </div>
-              <Surface elevation="border" padding="sm">
-                <ul className="flex flex-col gap-2">
-                  {announcements.map((item) => (
-                    <ActionItemRow key={item.id} item={item} now={now} />
-                  ))}
-                </ul>
-              </Surface>
-            </section>
-          ) : null}
-        </div>
-      )}
-    </section>
-  );
-}

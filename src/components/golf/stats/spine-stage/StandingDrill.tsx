@@ -77,7 +77,9 @@ function StrokesGainedInstrument({
   return (
     <div
       data-slot="sg-instrument"
-      className="rounded-fw-lg border border-accent-700 bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise"
+      // overflow-clip: containment safety net for the StandingTrack rows
+      // below — see the `edgeMarginPct` note on each row for the actual fix.
+      className="overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise"
     >
       <div className="grid grid-cols-[1fr_4.25rem] items-baseline gap-x-3 gap-y-1.5">
         {rows.map(({ id, row, cfg }) => {
@@ -108,7 +110,16 @@ function StrokesGainedInstrument({
                 {formatSgSigned(row.player_value)}
               </span>
               <div className={cn('col-span-2', isTotal ? 'pb-2.5' : 'pb-1')}>
-                <StandingTrack pct={youPct} subjectLabel="You" benchmarks={benchmarks} />
+                {/* Every row here anchors to `refLabel`, which for every
+                    sg_* metric is ALWAYS "Field Avg" (9 chars) —
+                    `StandingTrack`'s default edge margin (6%, calibrated for
+                    short "You"/"Team"/"Tour" labels) clips that label at
+                    narrow widths (390px card ≈ 310px track → 6% ≈ 18px of
+                    clearance, well under "Field Avg"'s ~29px half-width).
+                    Widen it here, at the one call site that actually needs
+                    it — Spine's own (short-label) use of StandingTrack on
+                    the home dashboard is untouched. */}
+                <StandingTrack pct={youPct} subjectLabel="You" benchmarks={benchmarks} edgeMarginPct={13} />
               </div>
               {isTotal ? (
                 <div aria-hidden="true" className="col-span-2 mb-1 border-t" style={{ borderTopColor: SG_INSTRUMENT_HAIRLINE }} />
