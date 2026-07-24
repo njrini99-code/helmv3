@@ -58,7 +58,7 @@ export interface DayScheduleProps {
   className?: string;
 }
 
-const EVENT_TONE: Record<string, FwStatusTone> = {
+export const EVENT_TONE: Record<string, FwStatusTone> = {
   practice: 'info',
   tournament: 'warning',
   qualifier: 'accent',
@@ -71,7 +71,7 @@ const EVENT_TONE: Record<string, FwStatusTone> = {
   other: 'neutral',
 };
 
-const EVENT_LABEL: Record<string, string> = {
+export const EVENT_LABEL: Record<string, string> = {
   practice: 'Practice',
   tournament: 'Tournament',
   qualifier: 'Qualifier',
@@ -90,7 +90,7 @@ const VISIBLE_ROW_THRESHOLD = 5;
 
 /** YYYY-MM-DD for the given instant, in `tz`. Used only to bucket events by
  *  calendar day — never rendered raw. */
-function dayKeyInTz(iso: string, tz: string): string {
+export function dayKeyInTz(iso: string, tz: string): string {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: tz,
@@ -110,7 +110,7 @@ function dayKeyInTz(iso: string, tz: string): string {
 /** "Today" / "Tomorrow" / a short dated label ("Wed, Jul 24") for a day-key
  *  relative to `todayKey`. Both are UTC-anchored date-only strings so the
  *  diff is pure calendar-day math, never local-clock drift. */
-function dayLabel(dateKey: string, todayKey: string): string {
+export function dayLabel(dateKey: string, todayKey: string): string {
   if (dateKey === todayKey) return 'Today';
   const d = new Date(`${dateKey}T00:00:00Z`).getTime();
   const t = new Date(`${todayKey}T00:00:00Z`).getTime();

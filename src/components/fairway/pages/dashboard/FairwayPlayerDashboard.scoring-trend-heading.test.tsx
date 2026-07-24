@@ -55,3 +55,13 @@ describe('FairwayPlayerDashboard — Scoring trend has exactly one heading', () 
     expect(headings[0]!.tagName).toBe('H2');
   });
 });
+
+describe('FairwayPlayerDashboard — top slot is the swipe calendar, not the game-trend hero', () => {
+  it('renders "Your schedule" and never the "gaining most" hero copy (founder call 2026-07-24)', () => {
+    render(<FairwayPlayerDashboard data={playerData()} />);
+
+    expect(screen.getByText('Your schedule')).toBeInTheDocument();
+    expect(screen.queryByText(/gaining most/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/See where you stack up/i)).not.toBeInTheDocument();
+  });
+});
