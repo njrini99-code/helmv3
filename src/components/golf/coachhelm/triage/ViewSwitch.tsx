@@ -58,7 +58,7 @@ export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
             }}
             aria-current={selected ? 'page' : undefined}
             className={cn(
-              'relative inline-flex min-h-9 flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md px-4',
+              'relative inline-flex min-h-9 flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md px-4 [@media(pointer:coarse)]:min-h-[44px]',
               'font-fw-sans text-body-sm font-medium outline-none transition-colors',
               'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
               selected

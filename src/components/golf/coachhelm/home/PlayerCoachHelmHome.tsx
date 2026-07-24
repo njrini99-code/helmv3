@@ -317,7 +317,7 @@ export function PlayerCoachHelmHome({
       node: (
         <PlayerHomeBento
           topInsight={topInsight}
-          activeFocusAreaCount={data.focusAreas.length}
+          activeFocusAreaCount={developmentActiveAreas.length}
           topFocusAreaLabel={priorities[0]?.title ?? null}
           genomeAxes={genomeAxes}
           standingByMetric={standingByMetric}
