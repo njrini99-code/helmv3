@@ -70,7 +70,8 @@ import {
   RecentRoundsList,
   StandingCard,
 } from './player-dashboard-parts';
-import { DaySchedule, type DayScheduleEvent } from './DaySchedule';
+import { type DayScheduleEvent } from './DaySchedule';
+import { DayScheduleSwipe } from './DayScheduleSwipe';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
 
 // Fairway TrendChart, lazy + ssr:false — preserves the legacy load contract
@@ -453,23 +454,15 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
              NORMAL STATE
             ════════════════════════════════════════════════════════════════ */
           <div className="flex flex-col gap-10">
-            {/* ── ONE glass hero: the game-trend signal strip ───────────────── */}
-            <InsightCard
-              variant="hero"
-              priority={hero.priority}
-              overline={hero.overline}
-              title={hero.title}
-              empty={hero.empty}
-              actions={
-                !hero.empty ? (
-                  <Button asChild variant="secondary" size="sm">
-                    <Link href="/golf/dashboard/my-standing">See where you stack up</Link>
-                  </Button>
-                ) : undefined
-              }
-            >
-              {hero.body}
-            </InsightCard>
+            {/* ── Top slot: swipeable day calendar (founder call 2026-07-24 —
+                replaced the "You're gaining most …" game-trend hero; the
+                standing story lives at My Standing). Same today+upcoming feed
+                the bottom schedule card used before it moved up here. */}
+            <DayScheduleSwipe
+              events={scheduleEvents}
+              timezone={enhancedData?.timezone}
+              viewAllHref="/golf/dashboard/calendar"
+            />
 
             {/* ── KPI row: matte MetricCards (honest insufficient-data) + standing */}
             <section>
@@ -687,24 +680,12 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
           </div>
         )}
 
-        {/* ── Schedule (replaces the former Action center tasks/RSVP/trips
-            triage — that full read-write surface still lives at Team Hub and
-            Calendar). The CoachHelm signal card sits above it as a secondary
-            matte signal, exactly as it did before — never a second glass
-            hero. Gated on `team` (not `hubData`): the schedule is calendar
-            data, not Hub-specific, but still only meaningful for a player on
-            a team — a teamless player already sees the "Join your team"
-            notice above and doesn't need a second, always-empty card. */}
-        {team ? (
+        {/* ── CoachHelm signal — secondary matte signal, never a second glass
+            hero. (The schedule card that used to sit below it moved to the
+            top slot as DayScheduleSwipe, 2026-07-24.) */}
+        {team && hubData ? (
           <div className="mt-10 flex flex-col gap-6">
-            {hubData ? <HubInsightSignalCard insight={hubData.topInsight} /> : null}
-            <DaySchedule
-              title="Your schedule"
-              subtitle="Today & upcoming"
-              events={scheduleEvents}
-              timezone={enhancedData?.timezone}
-              viewAllHref="/golf/dashboard/calendar"
-            />
+            <HubInsightSignalCard insight={hubData.topInsight} />
           </div>
         ) : null}
       </div>

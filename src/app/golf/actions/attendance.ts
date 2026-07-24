@@ -610,8 +610,7 @@ async function getAttendanceReportImpl(
             notes,
             player:player_id (
               first_name,
-              last_name,
-              jersey_number
+              last_name
             )
           `)
           .eq('event_id', eventId)
@@ -633,6 +632,27 @@ async function getAttendanceReportImpl(
       return { success: false, error: 'Failed to get attendance report. Please try again.' };
     }
 
+    // Jersey numbers live on golf_team_members (per-team), NOT golf_players —
+    // embedding jersey_number in the player join above made every report fail
+    // with "column golf_players_1.jersey_number does not exist" (Sentry
+    // JAVASCRIPT-NEXTJS-CQ). Hydrate them from the membership table instead.
+    const jerseyByPlayer = new Map<string, number | null>();
+    {
+      const playerIds = Array.from(
+        new Set((rows ?? []).map((r) => r.player_id).filter(Boolean)),
+      );
+      if (playerIds.length > 0) {
+        const { data: members } = await supabase
+          .from('golf_team_members')
+          .select('player_id, jersey_number')
+          .eq('team_id', event.team_id)
+          .in('player_id', playerIds);
+        for (const m of members ?? []) {
+          jerseyByPlayer.set(m.player_id as string, (m.jersey_number as number | null) ?? null);
+        }
+      }
+    }
+
     // Scope notes (coaches see all; a player sees only their own note —
     // finding #30) and normalize the mark server-side: attendance_status is
     // authoritative, with persistedMark() covering legacy pre-migration rows
@@ -641,6 +661,9 @@ async function getAttendanceReportImpl(
       ...row,
       attendance_status: persistedMark(row),
       notes: viewerIsCoach || row.player_id === viewerPlayerId ? row.notes : null,
+      player: row.player
+        ? { ...row.player, jersey_number: jerseyByPlayer.get(row.player_id) ?? null }
+        : row.player,
     }));
 
     // Stable display order by name (pagination above already ordered by id

@@ -1,23 +1,19 @@
-import type { Metadata } from 'next';
-import AboutClient from './AboutClient';
+import type { Metadata } from 'next'
+import { AboutView } from '@/components/landing/AboutView'
 
-// The About surface is interactive (demo modal, scroll effects), so the page
-// body lives in AboutClient ('use client'); metadata must stay in this server
-// wrapper — a client page cannot export it.
 export const metadata: Metadata = {
   title: 'About — Helm Sports Labs',
   description:
-    'Why we build coaching software for college golf: one coherent system for rounds, players, shots, and coaching intelligence, made by people who live the sport.',
+    'Helm Sports Labs was created by two former collegiate athletes who were tired of spreadsheets and group chats — and built one premium platform for running a college program.',
   openGraph: {
     title: 'About — Helm Sports Labs',
     description:
-      'Why we build coaching software for college golf: one coherent system for rounds, players, shots, and coaching intelligence.',
+      'Helm Sports Labs was created by two former collegiate athletes who were tired of spreadsheets and group chats — and built one premium platform for running a college program.',
     type: 'website',
     url: '/about',
-    images: [{ url: '/og/home.png', width: 1200, height: 630, alt: 'Helm Sports Labs' }],
   },
-};
+}
 
 export default function AboutPage() {
-  return <AboutClient />;
+  return <AboutView />
 }

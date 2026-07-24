@@ -334,9 +334,13 @@ export function FairwayTravel({
     ) : undefined;
 
   const createCta = isCoach ? (
-    <Button variant="primary" onClick={openCreate}>
-      <IconPlus size={16} />
-      <span>Add itinerary</span>
+    // `leftIcon` (not raw icon + <span> children) — Button's CHILDREN
+    // CONTRACT wraps `children` in a single bare <span>; passing the icon as
+    // a sibling child got silently split onto its own line by CSS anonymous
+    // box rules at mobile widths, stacking the "+" above the label (founder
+    // iPhone screenshot).
+    <Button variant="primary" leftIcon={<IconPlus size={16} />} onClick={openCreate}>
+      Add itinerary
     </Button>
   ) : undefined;
 
@@ -369,9 +373,8 @@ export function FairwayTravel({
               }
               action={
                 isCoach ? (
-                  <Button variant="primary" onClick={openCreate}>
-                    <IconPlus size={16} />
-                    <span>Create first itinerary</span>
+                  <Button variant="primary" leftIcon={<IconPlus size={16} />} onClick={openCreate}>
+                    Create first itinerary
                   </Button>
                 ) : undefined
               }

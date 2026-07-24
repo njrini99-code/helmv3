@@ -57,8 +57,11 @@ export function FairwayCalendarSkeleton() {
       </Surface>
 
       {/* ── View toggle row + "Add to phone" ──────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Skeleton className="h-11 min-w-0 flex-1 rounded-fw-md" />
+      {/* Shape-matches the real row's stack-then-row breakpoint (see
+          FairwayCalendar.tsx) so there's no CLS when the real controls
+          mount. */}
+      <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+        <Skeleton className="h-11 w-full min-w-0 rounded-fw-md sm:w-auto sm:flex-1" />
         <Skeleton className="h-9 w-32 rounded-fw-md" />
       </div>
 
