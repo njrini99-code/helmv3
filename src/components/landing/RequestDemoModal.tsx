@@ -171,7 +171,6 @@ export function RequestDemoModal({ open, onClose }: RequestDemoModalProps) {
               <div aria-hidden="true" className="absolute -left-[9999px] top-0 h-px w-px overflow-hidden">
                 <label>
                   Company
-                  {/* eslint-disable-next-line helm/no-raw-input -- honeypot bot-bait: must stay an unstyled, non-focusable raw input */}
                   <input name="company" type="text" tabIndex={-1} autoComplete="off" />
                 </label>
               </div>
