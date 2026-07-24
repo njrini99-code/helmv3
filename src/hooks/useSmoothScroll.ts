@@ -82,6 +82,15 @@ export function useSmoothScroll(active: boolean = true, options?: SmoothScrollOp
         if (typeof history !== 'undefined' && history.replaceState) {
           history.replaceState(null, '', raw)
         }
+        // preventDefault() above suppresses the browser's native fragment
+        // navigation, which would have moved focus to the target — without
+        // this, keyboard/AT users' focus stays on the link and Tab resumes
+        // from the top of the page instead of the section they navigated to.
+        if (!(el instanceof HTMLElement)) return
+        if (!el.hasAttribute('tabindex') && !el.matches('a, button, input, select, textarea, [contenteditable]')) {
+          el.setAttribute('tabindex', '-1')
+        }
+        el.focus({ preventScroll: true })
       }
       document.addEventListener('click', onAnchorClick)
     }

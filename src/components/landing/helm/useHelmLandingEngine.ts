@@ -84,7 +84,11 @@ export function useHelmLandingEngine(rootRef: RefObject<HTMLElement | null>): vo
       );
     };
 
-    if (!reduce) {
+    // Feature-gate ALL hide-then-reveal work on IntersectionObserver itself:
+    // if the observer can't exist, nothing may be hidden, or every [data-reveal]
+    // section below the fold stays invisible forever (same contract as
+    // useProductsEffects.ts and the ResizeObserver guard further down).
+    if (!reduce && typeof IntersectionObserver === 'function') {
       reveals.forEach((el) => {
         el.style.opacity = '0';
         if (el.hasAttribute('data-parallax')) {

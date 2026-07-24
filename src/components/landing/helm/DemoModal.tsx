@@ -1,21 +1,23 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { submitDemoRequest } from '@/app/actions/demo-request';
 import styles from './helm-landing.module.css';
 
 type Status = 'idle' | 'sending' | 'success';
-type Errs = { name?: string; email?: string; school?: string };
+type Errs = { name?: string; email?: string; school?: string; form?: string };
 
 /**
  * Request-a-demo modal — shared by every "Request Demo" CTA. Ports the design's
- * sc-if modal: client validation → fake send (1.1s) → success panel, with
- * Escape / overlay-click close, body-scroll lock, and first-field focus.
+ * sc-if modal shell (Escape / overlay-click close, body-scroll lock,
+ * first-field focus); submission goes through the real submitDemoRequest
+ * server action (demo_requests row + CRM lead + ops alert), never a fake
+ * client-side success.
  */
 export function HelmDemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [status, setStatus] = useState<Status>('idle');
   const [errs, setErrs] = useState<Errs>({});
   const firstFieldRef = useRef<HTMLInputElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -29,11 +31,9 @@ export function HelmDemoModal({ open, onClose }: { open: boolean; onClose: () =>
     };
   }, [open]);
 
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-
   if (!open) return null;
 
-  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const name = (fd.get('name') ?? '').toString().trim();
@@ -49,8 +49,18 @@ export function HelmDemoModal({ open, onClose }: { open: boolean; onClose: () =>
     }
     setErrs({});
     setStatus('sending');
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setStatus('success'), 1100);
+    try {
+      const result = await submitDemoRequest(email, { name, school });
+      if (result.success) {
+        setStatus('success');
+      } else {
+        setStatus('idle');
+        setErrs({ form: result.error ?? 'Something went wrong. Please try again.' });
+      }
+    } catch {
+      setStatus('idle');
+      setErrs({ form: 'Something went wrong. Please try again.' });
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -81,6 +91,24 @@ export function HelmDemoModal({ open, onClose }: { open: boolean; onClose: () =>
       }}
       onKeyDown={(e) => {
         if (e.key === 'Escape') onClose();
+        // aria-modal promises a modal — keep Tab cycling inside the dialog so
+        // keyboard/AT users can't wander into the inert page behind it.
+        if (e.key === 'Tab') {
+          const focusables = e.currentTarget.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+          );
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+          if (!first || !last) return;
+          const active = document.activeElement;
+          if (e.shiftKey && (active === first || !e.currentTarget.contains(active))) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && active === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }}
       style={{
         position: 'fixed',
@@ -160,6 +188,11 @@ export function HelmDemoModal({ open, onClose }: { open: boolean; onClose: () =>
                 <input id="dSchool" name="school" type="text" autoComplete="organization" aria-describedby="errSchool" style={inputStyle} />
                 {errs.school ? <div id="errSchool" style={errStyle}>{errs.school}</div> : null}
               </div>
+              {errs.form ? (
+                <div role="alert" style={errStyle}>
+                  {errs.form}
+                </div>
+              ) : null}
               <button
                 type="submit"
                 disabled={status === 'sending'}

@@ -28,11 +28,23 @@ export interface DemoRequestResult {
   error?: string;
 }
 
-export async function submitDemoRequest(email: string): Promise<DemoRequestResult> {
+/** Optional lead details from forms that collect more than an email
+ *  (the marketing DemoModal asks name + program). */
+export interface DemoRequestDetails {
+  name?: string;
+  school?: string;
+}
+
+export async function submitDemoRequest(
+  email: string,
+  details?: DemoRequestDetails,
+): Promise<DemoRequestResult> {
   if (!email || !email.includes('@')) {
     return { success: false, error: 'Please enter a valid email address' };
   }
 
+  const leadName = details?.name?.trim().slice(0, 200) || null;
+  const leadSchool = details?.school?.trim().slice(0, 200) || null;
   const requestContext = await captureRequestContext();
 
   try {
@@ -47,7 +59,13 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
       email,
       interest_type: 'other',
       status: 'pending',
-      notes: 'Submitted from landing page',
+      notes: [
+        'Submitted from landing page',
+        leadName ? `Name: ${leadName}` : null,
+        leadSchool ? `Program: ${leadSchool}` : null,
+      ]
+        .filter(Boolean)
+        .join(' — '),
     });
 
     if (error) {
@@ -87,9 +105,9 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
       } else if (!existing) {
         // nosemgrep: coderabbit.semgrep.helmv3-server-action-missing-auth-check -- see above; values are derived server-side from the validated email only
         const { error: coachError } = await admin.from('crm_coaches').insert({
-          name: email.split('@')[0] || 'Unknown',
+          name: leadName || email.split('@')[0] || 'Unknown',
           email,
-          school: email.split('@')[1]?.split('.')[0] || 'Unknown',
+          school: leadSchool || email.split('@')[1]?.split('.')[0] || 'Unknown',
           conference: 'Unknown',
           division: 'D3',
           program: 'both',
@@ -122,6 +140,9 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
           subject: `New demo request — ${email}`,
           text: [
             `${email} just requested a demo from the landing page.`,
+            leadName || leadSchool
+              ? `Lead: ${[leadName, leadSchool].filter(Boolean).join(' — ')}`
+              : null,
             requestContext.country
               ? `From: ${[requestContext.city, requestContext.country].filter(Boolean).join(', ')}`
               : null,

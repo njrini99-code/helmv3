@@ -268,7 +268,7 @@ export function CoachHelm() {
                 ].map((s) => (
                   <div key={s.label} style={{ padding: '16px 18px', borderRight: s.border ? '1px solid var(--line)' : undefined }}>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 'clamp(1.7rem,3vw,2.2rem)', fontWeight: 600, lineHeight: 1, color: s.color }}>
-                      <span data-fx="count" data-to={s.to}>0</span>
+                      <span data-fx="count" data-to={s.to}>{s.to}</span>
                     </div>
                     <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--ink3)' }}>{s.label}</div>
                   </div>
@@ -323,7 +323,7 @@ export function CoachHelm() {
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 12.5, fontWeight: 600, color: 'var(--accent700)' }}>68%</span>
                 </div>
                 <div style={{ marginTop: 9, height: 6, borderRadius: 9999, background: 'var(--tint)', overflow: 'hidden' }}>
-                  <div data-fx="bar" data-w="68%" style={{ height: '100%', width: 0, borderRadius: 9999, background: 'linear-gradient(90deg,var(--accent),var(--accent700))' }} />
+                  <div data-fx="bar" data-w="68%" style={{ height: '100%', width: '68%', borderRadius: 9999, background: 'linear-gradient(90deg,var(--accent),var(--accent700))' }} />
                 </div>
                 <div style={{ marginTop: 9, fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--ink3)' }}>+1.8 team SG since adopting focus areas</div>
               </div>

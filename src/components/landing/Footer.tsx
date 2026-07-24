@@ -5,8 +5,11 @@ import Image from 'next/image'
 
 const footerLinks = {
   products: [
-    { name: 'BaseballHelm', href: '/products#baseballhelm' },
-    { name: 'GolfHelm', href: '/products#golfhelm' },
+    // The redesigned /products page is GolfHelm-led; its GolfHelm masthead
+    // section is id="products". There is no baseball section/anchor anymore,
+    // so BaseballHelm links to the page top rather than a dead fragment.
+    { name: 'BaseballHelm', href: '/products' },
+    { name: 'GolfHelm', href: '/products#products' },
   ],
   login: [
     { name: 'Baseball Login', href: '/baseball/login' },

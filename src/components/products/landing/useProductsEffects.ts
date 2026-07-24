@@ -58,17 +58,23 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
     const fx = Array.from(root.querySelectorAll<HTMLElement>('[data-fx]'));
     const done = new WeakSet<HTMLElement>();
 
+    // Count-up frames must stop on unmount — an unguarded rAF chain keeps
+    // running (writing to detached nodes) after navigation away mid-animation.
+    let disposed = false;
+    const rafIds = new Set<number>();
+
     const countUp = (el: HTMLElement) => {
       const to = parseInt(el.getAttribute('data-to') ?? '0', 10) || 0;
       const dur = 1400;
       const start = performance.now();
       const ease = (t: number) => 1 - Math.pow(1 - t, 3);
       const step = (now: number) => {
+        if (disposed) return;
         const p = Math.min(1, (now - start) / dur);
         el.textContent = String(Math.round(ease(p) * to));
-        if (p < 1) requestAnimationFrame(step);
+        if (p < 1) rafIds.add(requestAnimationFrame(step));
       };
-      requestAnimationFrame(step);
+      rafIds.add(requestAnimationFrame(step));
     };
 
     fx.forEach((el) => {
@@ -104,6 +110,10 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
         });
       }
       if (kind === 'bar') el.style.width = '0';
+      // Markup ships the REAL final number (progressive enhancement — no-JS
+      // readers must see it); JS zeroes it here so the in-view count-up still
+      // starts from 0.
+      if (kind === 'count') el.textContent = '0';
     });
 
     let onScroll: (() => void) | undefined;
@@ -140,6 +150,8 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
     }
 
     return () => {
+      disposed = true;
+      rafIds.forEach((id) => cancelAnimationFrame(id));
       io?.disconnect();
       if (onScroll) window.removeEventListener('scroll', onScroll);
     };

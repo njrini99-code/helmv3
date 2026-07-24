@@ -47,7 +47,7 @@ export function StatsTicker() {
               color: 'transparent',
             }}
           >
-            0
+            85
           </span>
           <span style={{ fontFamily: 'var(--mono)', fontSize: 'clamp(2.4rem,6vw,4.2rem)', fontWeight: 600, color: 'var(--accent700)', lineHeight: 1 }}>+</span>
         </div>

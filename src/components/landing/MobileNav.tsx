@@ -31,6 +31,8 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const emailInputRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -65,6 +67,24 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
     }
   }, [isOpen])
 
+  // Keyboard/AT contract for the full-screen sheet: Escape closes it, focus
+  // moves into the panel on open, and returns to the hamburger on close —
+  // without these the overlay traps keyboard users behind invisible content.
+  useEffect(() => {
+    if (!isOpen) return
+    const trigger = triggerRef.current
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    const focusTimer = setTimeout(() => closeButtonRef.current?.focus(), 50)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      clearTimeout(focusTimer)
+      trigger?.focus()
+    }
+  }, [isOpen, close])
+
   // Auto-focus email input
   useEffect(() => {
     if (!showDemoForm) return
@@ -95,11 +115,14 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
     <LazyMotion features={loadFeatures}>
       {/* Hamburger */}
       <IconButton variant="default"
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`md:hidden relative z-toast w-10 h-10 flex items-center justify-center
                    rounded-xl transition-all duration-200 active:scale-90
                    ${isOpen ? 'bg-transparent' : isDarkBg ? 'glass-nav' : 'bg-warm-900/5'}`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isOpen}
+        aria-controls="mobile-nav-sheet"
       >
         <div className="w-[18px] h-3.5 relative flex flex-col justify-center items-center">
           <span
@@ -136,6 +159,10 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: smooth })}
+              id="mobile-nav-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Site navigation"
               className="fixed inset-0 z-tooltip md:hidden bg-[#F3EEE3]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
@@ -159,6 +186,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
 
               {/* Close button */}
               <IconButton variant="default"
+                ref={closeButtonRef}
                 onClick={close}
                 className="absolute top-4 right-5 z-10 w-10 h-10 flex items-center justify-center rounded-xl
                            active:scale-90 transition-transform duration-150"
