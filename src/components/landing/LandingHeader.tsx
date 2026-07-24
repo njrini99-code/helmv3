@@ -67,23 +67,28 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
 
   return (
     <header className="sticky top-0 z-[100] py-3.5">
+      {/* Equal flex-1 side clusters keep the nav lens on the true page
+          centerline — with flex-none sides the wider right cluster pushes
+          the mx-auto lens visibly left of center. */}
       <div className="mx-auto flex max-w-[1320px] items-center gap-5 px-[clamp(20px,4vw,64px)]">
-        <Link
-          href="/#top"
-          onClick={onHome ? (e) => scrollToHash(e, '#top') : undefined}
-          className="flex flex-none items-center gap-[11px]"
-          aria-label="Helm Sports Labs — home"
-        >
-          <Image src="/Helm-Logo-New-Main.png" alt="" width={34} height={34} className="block h-[34px] w-[34px]" />
-          <span className="text-text-primary" style={{ fontWeight: 680, fontSize: 19, letterSpacing: '-0.02em' }}>
-            Helm
-          </span>
-        </Link>
+        <div className="flex flex-1 items-center">
+          <Link
+            href="/#top"
+            onClick={onHome ? (e) => scrollToHash(e, '#top') : undefined}
+            className="flex items-center gap-[11px]"
+            aria-label="Helm Sports Labs — home"
+          >
+            <Image src="/Helm-Logo-New-Main.png" alt="" width={34} height={34} className="block h-[34px] w-[34px]" />
+            <span className="text-text-primary" style={{ fontWeight: 680, fontSize: 19, letterSpacing: '-0.02em' }}>
+              Helm
+            </span>
+          </Link>
+        </div>
 
         {/* Warm-glass nav lens */}
         <nav
           aria-label="Primary"
-          className="mx-auto hidden items-center gap-0.5 rounded-full border border-[oklch(1_0_0/0.5)] px-[7px] py-[5px] backdrop-blur-xl backdrop-saturate-[1.12] transition-[background,box-shadow] duration-200 md:flex"
+          className="hidden flex-none items-center gap-0.5 rounded-full border border-[oklch(1_0_0/0.5)] px-[7px] py-[5px] backdrop-blur-xl backdrop-saturate-[1.12] transition-[background,box-shadow] duration-200 md:flex"
           style={lens}
         >
           {NAV_ROUTES.map((route) => (
@@ -99,7 +104,7 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
           ))}
         </nav>
 
-        <div className="ml-auto flex flex-none items-center gap-4 md:ml-0">
+        <div className="flex flex-1 items-center justify-end gap-4">
           <Button
             variant="primary"
             size="sm"

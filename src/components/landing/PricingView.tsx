@@ -140,8 +140,11 @@ export function PricingView() {
             >
               Every program.
             </span>
+            {/* accent-600, not the raw helm green: accent-500 is 2.67:1 on the
+                champagne canvas (AA large-text needs 3:1); 600 passes at 3.7:1
+                while staying in the brand green, not forest. */}
             <span
-              className="block text-[clamp(2.6rem,6vw,5rem)] leading-[1.02] tracking-[-0.028em] text-accent-700"
+              className="block text-[clamp(2.6rem,6vw,5rem)] leading-[1.02] tracking-[-0.028em] text-accent-600"
               style={{ fontWeight: 640 }}
             >
               Every level.
