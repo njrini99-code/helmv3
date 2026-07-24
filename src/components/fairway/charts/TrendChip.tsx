@@ -111,6 +111,24 @@ export const TREND_ARROW: Record<TrendDirection, string> = {
   declining: '↓',
 };
 
+/**
+ * The HONEST arrow — points the way the RAW number actually moved, not the way
+ * the verdict "feels". For a lower-is-better metric (golf scoring/putts/handicap,
+ * `goodDirection: 'down'`) a *falling* number is `improving`, so the arrow must
+ * point DOWN, not up: "↓ Improving" (green) reads correctly as "your average
+ * came down — good", and a worsening round reads "↑ Declining" (amber) — the
+ * number went up. The old verdict-keyed arrow drew a ↓ next to a rising average
+ * (Nick, 07-24: "a declining score in golf is good lol"). For higher-is-better
+ * metrics (the default) this is identical to the verdict arrow, so existing
+ * call sites are unaffected.
+ */
+export function trendArrow(verdict: TrendDirection, goodDirection: GoodDirection): string {
+  if (verdict === 'flat') return TREND_ARROW.flat;
+  // improving+up OR declining+down ⇒ the raw number ROSE; otherwise it FELL.
+  const rose = (verdict === 'improving') === (goodDirection === 'up');
+  return rose ? '↑' : '↓';
+}
+
 /** Default human label for each verdict. */
 const TREND_LABEL: Record<TrendDirection, string> = {
   improving: 'Improving',
@@ -209,7 +227,7 @@ export const TrendChip = React.forwardRef<HTMLSpanElement, TrendChipProps>(funct
         className,
       )}
     >
-      <span aria-hidden="true">{TREND_ARROW[verdict]}</span>
+      <span aria-hidden="true">{trendArrow(verdict, goodDirection)}</span>
       {iconOnly ? (
         <span className="sr-only">{TREND_SR[verdict]}</span>
       ) : (
