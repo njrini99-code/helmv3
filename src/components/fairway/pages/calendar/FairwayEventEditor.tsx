@@ -606,7 +606,18 @@ export function FairwayEventEditor({
         </ModalShell.Body>
       ) : (
         <>
-          <ModalShell.Body className="flex flex-col gap-5">
+          {/*
+            ModalShell.Body's own `last:pb-6` never fires here — this Body is
+            followed by a Footer sibling, so it's never actually the DOM
+            last-child, and the fallback `py-2` (8px) left the last field
+            (Repeat) flush against the footer with no breathing room. Adding
+            an explicit pb here (twMerge lets it win over the base py-2/pb-6)
+            fixes it locally without touching the shared shell. Likewise
+            `[scrollbar-gutter:stable]` reserves a lane for a classic (non-
+            overlay) scrollbar so it can never paint over field content —
+            overlay scrollbars (macOS/iOS default) are unaffected.
+          */}
+          <ModalShell.Body className="flex flex-col gap-5 pb-8 pr-7 [scrollbar-gutter:stable]">
             {error ? (
               <div className="flex items-center gap-2 rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
@@ -696,79 +707,86 @@ export function FairwayEventEditor({
               })}
             </div>
 
-            {/* Date & time well */}
+            {/* Date & time well — the icon lives INSIDE the first column's
+                label (same convention as Location/Notes below) instead of as
+                a row-level flex sibling. A sibling icon pushed the grid's
+                left edge over by icon+gap, so Start/End date sat ~28px
+                further right than the RSVP/Recurrence two-column rows in the
+                same well and had a narrower column than its own End-date
+                partner — this keeps every two-column row in the modal on one
+                consistent grid. */}
             <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
-              <div className="flex items-center gap-3">
-                <CalendarIcon className="h-4 w-4 flex-shrink-0 text-accent-700" aria-hidden />
-                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="ev-start-date" className={labelCls}>Start date</label>
-                    <UiInput
-                      id="ev-start-date"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      disabled={locked}
-                      className={cn(fieldCls, 'bg-surface')}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="ev-end-date" className={labelCls}>End date</label>
-                    <UiInput
-                      id="ev-end-date"
-                      type="date"
-                      value={formData.endDate || ''}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
-                      disabled={locked}
-                      className={cn(fieldCls, 'bg-surface')}
-                    />
-                  </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="ev-start-date" className={labelCls}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarIcon className="h-3.5 w-3.5 text-accent-700" /> Start date
+                    </span>
+                  </label>
+                  <UiInput
+                    id="ev-start-date"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    disabled={locked}
+                    className={cn(fieldCls, 'bg-surface')}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="ev-end-date" className={labelCls}>End date</label>
+                  <UiInput
+                    id="ev-end-date"
+                    type="date"
+                    value={formData.endDate || ''}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
+                    disabled={locked}
+                    className={cn(fieldCls, 'bg-surface')}
+                  />
                 </div>
               </div>
 
               {!formData.allDay && (
-                <div className="flex items-center gap-3">
-                  <Clock className="h-4 w-4 flex-shrink-0 text-accent-700" aria-hidden />
-                  <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="ev-start-time" className={labelCls}>Start time</label>
-                      <UiInput
-                        id="ev-start-time"
-                        type="time"
-                        value={formData.startTime || ''}
-                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
-                        disabled={locked}
-                        className={cn(fieldCls, 'bg-surface')}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="ev-end-time" className={labelCls}>End time</label>
-                      <UiInput
-                        id="ev-end-time"
-                        type="time"
-                        value={formData.endTime || ''}
-                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
-                        disabled={locked}
-                        className={cn(fieldCls, 'bg-surface')}
-                      />
-                    </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="ev-start-time" className={labelCls}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-accent-700" /> Start time
+                      </span>
+                    </label>
+                    <UiInput
+                      id="ev-start-time"
+                      type="time"
+                      value={formData.startTime || ''}
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
+                      disabled={locked}
+                      className={cn(fieldCls, 'bg-surface')}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="ev-end-time" className={labelCls}>End time</label>
+                    <UiInput
+                      id="ev-end-time"
+                      type="time"
+                      value={formData.endTime || ''}
+                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
+                      disabled={locked}
+                      className={cn(fieldCls, 'bg-surface')}
+                    />
                   </div>
                 </div>
               )}
 
               {tzAbbrev && !formData.allDay ? (
-                <p className="pl-7 font-fw-sans text-caption text-text-tertiary">Times shown in {tzAbbrev}</p>
+                <p className="font-fw-sans text-caption text-text-tertiary">Times shown in {tzAbbrev}</p>
               ) : null}
 
-              <div className="pl-7">
-                <Switch
-                  label="All day"
-                  checked={formData.allDay}
-                  onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
-                  disabled={locked}
-                />
-              </div>
+              <Switch
+                label="All day"
+                checked={formData.allDay}
+                onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
+                disabled={locked}
+              />
             </div>
 
             {/* Location */}

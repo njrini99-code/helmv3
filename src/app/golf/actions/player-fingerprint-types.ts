@@ -73,6 +73,10 @@ export interface PlayerFingerprint {
     first_name: string | null;
     last_name: string | null;
     team_name: string | null;
+    /** `golf_players.avatar_url` — feeds the identity-header Avatar on both
+     *  the coach Game Fingerprint page and the player's own Game profile
+     *  tab. Null → the Avatar primitive falls back to initials. */
+    avatar_url: string | null;
   };
   composite: {
     rating: number | null;

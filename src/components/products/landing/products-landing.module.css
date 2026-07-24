@@ -1,0 +1,167 @@
+/* ============================================================================
+ * Products landing — Fairway-token marketing surface
+ * ----------------------------------------------------------------------------
+ * Recreation of the Claude Design "Helm Products" handoff. The design's OKLCH
+ * palette is carried verbatim as CSS custom properties on `.root` so the page
+ * is pixel-faithful to the mock; the rest of the page styles inline against
+ * these vars. This module owns only what inline styles can't express: the
+ * keyframes, the hover choreography (parent→child), the marquee, and the
+ * reduced-motion contract. Scroll reveals + count-up / sparkline / stagger /
+ * bar effects live in useProductsEffects (JS), matching the mock's runtime.
+ * ========================================================================== */
+
+.root {
+  --canvas: oklch(0.953 0.022 83);
+  --surface: oklch(0.984 0.016 86);
+  --tint: oklch(0.968 0.026 84);
+  --sunken: oklch(0.963 0.021 84);
+  --ink: oklch(0.216 0.007 49);
+  --ink2: oklch(0.444 0.014 65);
+  --ink3: oklch(0.585 0.014 70);
+  --line: oklch(0.862 0.013 82 / 0.95);
+  /* Match the GolfHelm dashboard / Helm landing green: deeper accent-600 on the
+   * all-linen surface (see helm-landing.module.css). Tokens ref design-tokens.css
+   * (loaded globally in layout.tsx) so all marketing surfaces share one green. */
+  --accent: var(--fw-color-accent-600);
+  --accent700: var(--fw-color-accent-700);
+  --accent50: var(--fw-color-accent-50);
+  --accent100: var(--fw-color-accent-100);
+  --accent-wash: var(--fw-color-accent-50);
+  --linen: #f6f2ea;
+  --linen-deep: #efeadf;
+  --amber: oklch(0.62 0.13 55);
+  --dark: #0c0a09;
+  --onacc: oklch(0.994 0.006 95);
+  --soft: 0 1px 2px oklch(0.18 0.01 60 / 0.06), 0 10px 28px oklch(0.18 0.01 60 / 0.13);
+  --raise: 0 2px 4px oklch(0.18 0.01 60 / 0.07), 0 18px 44px oklch(0.18 0.01 60 / 0.15);
+  --mono: 'Fragment Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+
+  position: relative;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+.root a { color: var(--accent); text-decoration: none; }
+.root a:hover { color: var(--accent700); }
+.root ::selection { background: oklch(0.648 0.149 149.6 / 0.22); }
+
+/* --- keyframes (module-scoped; every reference lives in THIS file so CSS
+   Modules rewrites the @keyframes name and its animation usage together. No
+   `:global` wrapper — Turbopack rejects `:global { @keyframes }`.) ---------- */
+@keyframes helmHeroUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes helmMqL {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes helmMqR {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+@keyframes helmScan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+@keyframes helmPulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* --- hero entrance ------------------------------------------------------- */
+.heroItem { opacity: 0; animation: helmHeroUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* --- hover tiles (base props live here so :hover can win over the class) -- */
+.card {
+  border: 1px solid var(--line);
+  box-shadow: var(--soft);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--raise);
+  border-color: var(--accent100);
+}
+
+/* --- product rows (parent → child choreography) -------------------------- */
+.pRow { transition: padding 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.pRow:hover { padding-left: 24px; }
+
+.wash { transform: scaleX(0); transform-origin: left; transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+.pRow:hover .wash { transform: scaleX(1); }
+
+.arrow { opacity: 0; transform: translateX(-8px); transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+.pRow:hover .arrow { opacity: 1; transform: none; }
+
+.glyphHover { transition: background 0.3s ease; }
+.pRow:hover .glyphHover { background: var(--accent) !important; }
+.pRow:hover .glyphHover svg { stroke: var(--onacc) !important; }
+
+/* --- buttons (base colour in-class so :hover can win over it) ------------ */
+/* `.root` prefix is REQUIRED on these link/button skins: the `.root a` base
+   rule above is (0,1,1) and silently beats a bare class's (0,1,0) — that
+   cascade loss once painted the primary CTA label accent-on-accent
+   (invisible "Request Demo", 2026-07-24). `.root .x` = (0,2,0) always wins. */
+.root .btnPrimary {
+  background: var(--accent);
+  color: var(--onacc);
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.root .btnPrimary:hover { background: var(--accent700); color: var(--onacc); transform: translateY(-1px); }
+
+.root .linkGhost { color: var(--ink); transition: color 0.15s ease; }
+.root .linkGhost:hover { color: var(--ink); }
+
+.root .linkGhostDim { color: oklch(0.86 0.008 85); transition: color 0.15s ease; }
+.root .linkGhostDim:hover { color: var(--onacc); }
+
+.root .footLink { color: oklch(0.82 0.008 85); transition: color 0.15s ease; }
+.root .footLink:hover { color: var(--onacc); }
+
+/* --- marquee + ambient loops -------------------------------------------- */
+.mq { display: flex; width: max-content; }
+.mqL { animation: helmMqL 46s linear infinite; }
+.mqR { animation: helmMqR 52s linear infinite; }
+.scan { animation: helmScan 3.6s ease-in-out infinite; }
+.pulse { animation: helmPulseDot 2s ease-in-out infinite; }
+
+/* --- team bento: 1-col on phones, the designed 12-col grid on ≥768px ----- */
+.teamGrid {
+  margin: clamp(30px, 4vw, 48px) 0 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(14px, 1.6vw, 20px);
+  align-items: stretch;
+}
+@media (min-width: 768px) {
+  .teamGrid { grid-template-columns: repeat(12, 1fr); }
+}
+/* On a single column every tile must forfeit BOTH inline placements: the
+   tiles carry `gridColumn: 'span N'` inline for the 12-col layout, and a
+   span on a 1-col grid spawns N-1 implicit columns — tiles rendered as
+   overlapping slivers with one-word-per-line text (2026-07-24 iPhone bug).
+   Only !important outranks an inline style. */
+@media (max-width: 767.98px) {
+  .teamGrid > * {
+    grid-row: auto !important;
+    grid-column: auto !important;
+  }
+}
+
+/* --- reduced motion ------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .heroItem { animation: none !important; opacity: 1 !important; }
+  .mqL, .mqR { animation: none !important; }
+  .scan { animation: none !important; }
+  .pulse { animation: none !important; }
+  .card { transition: none; }
+  .card:hover { transform: none; }
+}

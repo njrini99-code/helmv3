@@ -88,5 +88,26 @@ export default tseslint.config(
       "helm/no-arbitrary-radius": "warn",
       "helm/no-arbitrary-bg-white": "warn",
     },
+  },
+  {
+    // Public marketing surfaces (landing, products, pricing, about, legal) run
+    // on their OWN token system — the Helm linen module (helm-landing.module.css)
+    // with raw <button>/<input> and a bespoke editorial type scale. The W0
+    // design-system rules govern the Fairway DASHBOARD primitives, not these
+    // pages, so the raw-element / arbitrary-text-px checks are off here.
+    files: [
+      "src/app/page.tsx",
+      "src/app/about/**/*.{ts,tsx}",
+      "src/app/products/**/*.{ts,tsx}",
+      "src/app/pricing/**/*.{ts,tsx}",
+      "src/app/(legal)/**/*.{ts,tsx}",
+      "src/components/landing/**/*.{ts,tsx}",
+      "src/components/products/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "helm/no-raw-button": "off",
+      "helm/no-raw-input": "off",
+      "helm/no-arbitrary-text-px": "off",
+    },
   }
 );

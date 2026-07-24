@@ -299,9 +299,16 @@ export function FairwayTasks({
 
   const createCta =
     isCoach && teamId ? (
-      <Button variant="primary" onClick={() => setCreateOpen(true)}>
-        <IconPlus size={16} />
-        <span>Create task</span>
+      // P293-mobile — Button's non-asChild content wraps ALL children in one
+      // bare <span> (see the Button CHILDREN CONTRACT doc comment). Passing
+      // the icon and label as two sibling children put an `<svg>` (Tailwind
+      // preflight sets `svg { display: block }`) next to inline text inside
+      // that shared span — the block-level icon forced its own line, stacking
+      // the "+" above "Create task" on mobile. `leftIcon` is the documented
+      // fix: it renders the icon as its own flex item in the button's own
+      // `inline-flex items-center gap-2` row instead of inside the label span.
+      <Button variant="primary" onClick={() => setCreateOpen(true)} leftIcon={<IconPlus size={16} />}>
+        Create task
       </Button>
     ) : undefined;
 
@@ -349,9 +356,10 @@ export function FairwayTasks({
               }
               action={
                 isCoach && teamId ? (
-                  <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                    <IconPlus size={16} />
-                    <span>Create task</span>
+                  // Same fix as the masthead CTA above — `leftIcon`, not two
+                  // sibling children (see the comment there for why).
+                  <Button variant="primary" onClick={() => setCreateOpen(true)} leftIcon={<IconPlus size={16} />}>
+                    Create task
                   </Button>
                 ) : undefined
               }

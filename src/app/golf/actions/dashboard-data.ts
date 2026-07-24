@@ -131,6 +131,14 @@ export interface CoachDashboardPayload {
 
 export interface PlayerDashboardPayload {
     todayEvents: TodayEvent[];
+    /**
+     * Future events beyond today (start_time >= tomorrow's start), ascending.
+     * ADDITIVE (home-dashboard DaySchedule card): `todayEvents` alone can't
+     * feed a "today + what's coming up" agenda — this fills in the "coming
+     * up" half from the same `golf_events` table, one extra indexed query in
+     * the existing Promise.all batch (no new waterfall).
+     */
+    upcomingEvents: TodayEvent[];
     stats: {
         roundsPlayed: number;
         scoringAverage: number | null;
@@ -784,6 +792,7 @@ async function getPlayerDashboardDataImpl(
         playerDetailResult,
         statsCacheResult,
         todayEventsResult,
+        upcomingEventsResult,
         pendingTasksResult,
         announcementsResult,
     ] = await Promise.all([
@@ -814,6 +823,19 @@ async function getPlayerDashboardDataImpl(
                 .lt('start_time', todayEnd)
                 .order('start_time', { ascending: true })
                 .limit(10)
+            : Promise.resolve({ data: [] as Array<{ id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null }> }),
+        // Upcoming events BEYOND today (DaySchedule home-dashboard card, #TASK2
+        // additive) — same shape/table as the today query above, just the next
+        // slice of the calendar so the card can show "today + what's coming
+        // up" without a second round trip per section.
+        teamId
+            ? supabase
+                .from('golf_events')
+                .select('id, title, event_type, start_time, end_time, location')
+                .eq('team_id', teamId)
+                .gte('start_time', todayEnd)
+                .order('start_time', { ascending: true })
+                .limit(15)
             : Promise.resolve({ data: [] as Array<{ id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null }> }),
         // Pending task ASSIGNMENTS for this player. golf_tasks.assigned_to is
         // never written — assignment lives in the M:N golf_task_assignments join
@@ -862,6 +884,18 @@ async function getPlayerDashboardDataImpl(
     // Fetch player's own RSVP for today's events
     const todayEventsRaw = todayEventsResult.data || [];
     let todayEvents: TodayEvent[] = todayEventsRaw.map(e => ({
+        id: e.id,
+        title: e.title,
+        event_type: e.event_type,
+        start_time: e.start_time,
+        end_time: e.end_time,
+        location: e.location,
+    }));
+
+    // DaySchedule home-dashboard card — future events beyond today. No RSVP
+    // merge here (unlike todayEvents above): the card is a read-only agenda,
+    // not an RSVP surface (RSVP still lives at Calendar).
+    const upcomingEvents: TodayEvent[] = (upcomingEventsResult.data || []).map(e => ({
         id: e.id,
         title: e.title,
         event_type: e.event_type,
@@ -1019,6 +1053,7 @@ async function getPlayerDashboardDataImpl(
 
     return {
         todayEvents,
+        upcomingEvents,
         stats: {
             roundsPlayed,
             scoringAverage: scoringAverage !== null ? Number(scoringAverage.toFixed(1)) : null,

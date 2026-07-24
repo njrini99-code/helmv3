@@ -207,7 +207,9 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
           size="sm"
         />
         {showTrend ? (
-          <TrendChip direction={verdict} size="sm" className="mt-0.5" />
+          // Pass goodDirection so the chip's arrow points the way the raw number
+          // moved (a falling lower-is-better score reads "↓ Improving", not "↑").
+          <TrendChip direction={verdict} goodDirection={goodDirection} size="sm" className="mt-0.5" />
         ) : null}
       </div>
 

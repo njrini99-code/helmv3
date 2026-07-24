@@ -13,14 +13,6 @@ interface AdminCardProps {
   action?: ReactNode;
 }
 
-const accentBorderColors: Record<string, string> = {
-  green: 'border-l-primary-600',
-  amber: 'border-l-amber-500',
-  red: 'border-l-red-500',
-  blue: 'border-l-blue-500',
-  none: '',
-};
-
 const alertBgColors: Record<string, string> = {
   green: 'bg-primary-50/60 border-primary-100',
   amber: 'bg-amber-50/60 border-amber-100',
@@ -63,7 +55,6 @@ export function AdminCard({
     );
   }
 
-  const isStatVariant = variant === 'stat';
   const isSectionVariant = variant === 'section';
 
   return (
@@ -75,13 +66,9 @@ export function AdminCard({
         'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
         // Padding
         'p-4 sm:p-5 md:p-6',
-        // Stat variant: left accent border
-        isStatVariant && [
-          'border-l-[3px] border-t-white/30 border-r-white/30 border-b-white/30',
-          accentBorderColors[accent],
-        ],
-        // Default/section variant: uniform border
-        !isStatVariant && 'border-white/30',
+        // Uniform border — no colored side-rail (accent is carried by content,
+        // e.g. a tone dot or chip inside `children`, not a card-edge stripe).
+        'border-white/30',
         className
       )}
     >

@@ -1,0 +1,52 @@
+/**
+ * Landing-page-scoped keyframes + reduced-motion fallbacks.
+ *
+ * The hero entrance rides pure CSS (no JS) so the LCP block animates the
+ * moment styles land. Everything scroll-driven lives in motion.tsx; this
+ * file only owns what CSS does better.
+ */
+
+@keyframes landing-hero-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-hero-img {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.landing-hero-up {
+  opacity: 0;
+  animation: landing-hero-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.landing-hero-img {
+  opacity: 0;
+  animation: landing-hero-img 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+
+.landing-selection ::selection {
+  background: oklch(0.648 0.149 149.6 / 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-up,
+  .landing-hero-img {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -181,6 +181,35 @@ describe('ApproachDrill', () => {
     expect(document.querySelector('table')).toBeNull();
   });
 
+  it('renders all three proximity cards LIVE (total / hit GIR / missed GIR) — the founder-reported bug', () => {
+    // Regression: total used to equal the hit-GIR card and the missed-GIR
+    // card always read "No data" because per-hole approachProximity was
+    // hard-coded null on a missed green. All three must be independently
+    // live once approachProximityAvg/WhenHitGreen/WhenMissedGreen disagree.
+    renderApproach({ detailedStats: fixtureStats() });
+
+    const totalCard = screen.getByText('Proximity · total').closest('[data-slot="readout"]');
+    const hitCard = screen.getByText('Proximity · hit GIR').closest('[data-slot="readout"]');
+    const missedCard = screen.getByText('Proximity · missed GIR').closest('[data-slot="readout"]');
+
+    expect(totalCard).toHaveAttribute('data-state', 'live');
+    expect(hitCard).toHaveAttribute('data-state', 'live');
+    expect(missedCard).toHaveAttribute('data-state', 'live');
+
+    // The three fixture values (34.5 / 22.1 / 48.9) are all distinct —
+    // total is NOT just an alias for the hit-GIR figure.
+    expect(within(missedCard as HTMLElement).queryByText('No data')).not.toBeInTheDocument();
+  });
+
+  it('shows the missed-GIR proximity card as an honest awaiting state when there is no miss data', () => {
+    renderApproach({
+      detailedStats: fixtureStats({ approachProximityWhenMissedGreen: null }),
+    });
+    const missedCard = screen.getByText('Proximity · missed GIR').closest('[data-slot="readout"]');
+    expect(missedCard).toHaveAttribute('data-state', 'awaiting');
+    expect(within(missedCard as HTMLElement).getByText('No data')).toBeInTheDocument();
+  });
+
   it('mounts the GIR-by-round Ribbon trend as its own heading', () => {
     renderApproach({
       detailedStats: fixtureStats(),

@@ -127,13 +127,24 @@ export function layoutTrackLabels(
   return ordered;
 }
 
-export function StandingTrack({ pct, benchmarks, subjectLabel, className }: StandingTrackProps & { className?: string }) {
+export function StandingTrack({
+  pct,
+  benchmarks,
+  subjectLabel,
+  edgeMarginPct = STANDING_TRACK_EDGE_MARGIN_PCT,
+  minGapPct = STANDING_TRACK_MIN_GAP_PCT,
+  className,
+}: StandingTrackProps & { className?: string }) {
   const you = clampPct(pct);
 
-  const labelPositions = layoutTrackLabels([
-    { key: STANDING_TRACK_SUBJECT_KEY, pct: you },
-    ...benchmarks.map((b) => ({ key: b.label, pct: clampPct(b.pct) })),
-  ]);
+  const labelPositions = layoutTrackLabels(
+    [
+      { key: STANDING_TRACK_SUBJECT_KEY, pct: you },
+      ...benchmarks.map((b) => ({ key: b.label, pct: clampPct(b.pct) })),
+    ],
+    minGapPct,
+    edgeMarginPct,
+  );
 
   return (
     <div data-slot="standing-track" className={cn('w-full', className)}>
@@ -167,9 +178,17 @@ export function StandingTrack({ pct, benchmarks, subjectLabel, className }: Stan
           space as the pin/ticks above), collision-nudged apart from any
           neighbor landing within STANDING_TRACK_MIN_GAP_PCT — replaces the
           old `justify-between` row that ignored the real values entirely. */}
+      {/* overflow-clip: a structural containment guarantee — even if a
+          caller's edge margin (`edgeMarginPct`) isn't wide enough for an
+          unusually long label at an extreme narrow width, the label text
+          clips at THIS row's own bounds (same width as the rail above)
+          rather than escaping into whatever ancestor mounts StandingTrack
+          (Spine's dark aside, the SG instrument card — neither of which
+          this component controls). The edge-margin fix above is the real,
+          legible-content fix; this is the last-resort net. */}
       <div
         data-slot="standing-track-labels"
-        className="relative mt-[7px] h-[15px] font-fw-sans text-caption text-accent-200"
+        className="relative mt-[7px] h-[15px] overflow-clip font-fw-sans text-caption text-accent-200"
       >
         {labelPositions.map((pos) => {
           const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;

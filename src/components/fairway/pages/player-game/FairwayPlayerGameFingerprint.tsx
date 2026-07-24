@@ -51,6 +51,7 @@ import {
   SegmentBar,
   Sparkline,
   Button,
+  Avatar,
   fairwayToast,
   type InsightPriority,
   type SegmentTone,
@@ -63,12 +64,22 @@ import type {
   SectionData,
   FingerprintMetric,
 } from '@/app/golf/actions/player-fingerprint';
-import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint-types';
+import {
+  FINGERPRINT_SECTION_ORDER,
+  type FingerprintSectionKey,
+} from '@/app/golf/actions/player-fingerprint-types';
 // PRESERVED WRITE ACTIONS — imported UNCHANGED (the same actions the legacy
 // PlayerGameFingerprint client called). We re-skin the trigger UI only; the
 // server round-trip + payload are byte-for-byte the legacy behavior.
 import { acknowledgeInsight, dismissInsight } from '@/app/golf/actions/insights';
-import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
+import { createFocusAreaFromInsight, createPlayerFocusArea } from '@/app/golf/actions/development';
+// PLAYER-MODE write actions — the player-self equivalents of the coach
+// actions above. `rateInsightAsPlayer` is the SAME round-trip
+// `PlayerCoachHelmHome.handleRate` already uses for the Insights sub-tab;
+// `createPlayerFocusArea` is the player-self-create path (RLS has no player
+// INSERT policy on `golf_player_focus_areas`, so it runs through a
+// service-role client gated by an ownership check — see development.ts).
+import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 
@@ -76,8 +87,19 @@ import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
  * Props
  * ────────────────────────────────────────────────────────────────────────── */
 
+/** `coach` — the original `/dashboard/players/[playerId]/game` scouting
+ *  view (unchanged). `player` — the SAME composition mounted inside the
+ *  player's own "Game profile" tab (`ProfileDrill`), viewing their own
+ *  fingerprint. Only the header actions + insight-card write actions
+ *  branch on this — the rating hero, trend, six-card row, and per-category
+ *  sections are byte-for-byte identical between modes. */
+export type FingerprintMode = 'coach' | 'player';
+
 export interface FairwayPlayerGameFingerprintProps {
   fingerprint: PlayerFingerprint;
+  /** @default 'coach' — every existing call site (the coach route) is
+   *  unaffected by this prop's addition. */
+  mode?: FingerprintMode;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -86,6 +108,22 @@ export interface FairwayPlayerGameFingerprintProps {
 
 /** The 5-round floor the aggregator uses to mark a section sparse. */
 const SECTION_SAMPLE_FLOOR = 5;
+
+/**
+ * Player-mode "Make focus area" — maps a fingerprint section to the
+ * `golf_player_focus_areas.area_type` vocabulary `development.ts`'s catalog
+ * already uses (`area_type` is a plain string column, not a DB enum — see
+ * `mapInsightTypeToAreaType` in development.ts for the coach-side sibling
+ * mapping this mirrors for the six fingerprint sections specifically).
+ */
+const AREA_TYPE_BY_SECTION: Record<FingerprintSectionKey, string> = {
+  tee: 'driving',
+  approach: 'iron_play',
+  short_game: 'short_game',
+  putting: 'putting',
+  scoring: 'course_management',
+  pressure: 'mental_game',
+};
 
 /** Map an evidence-insight priority string → the Fairway InsightCard priority.
  *  The Fairway scale has no `urgent`; the riskiest tier maps to `critical`. */
@@ -142,10 +180,12 @@ export function formatGeneratedAt(iso: string): string {
 
 export function FairwayPlayerGameFingerprint({
   fingerprint,
+  mode = 'coach',
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
   const coachId = golfUser.coachId ?? null;
+  const isCoachMode = mode === 'coach';
   const [, startActionTransition] = useTransition();
 
   // Mirror insight lists per section into local state so actions (ack / dismiss
@@ -168,47 +208,88 @@ export function FairwayPlayerGameFingerprint({
                 status: 'acknowledged' as const,
               })),
             );
-            const res = await acknowledgeInsight(insightId);
-            if (!res.success) {
-              setSections(prev);
-              fairwayToast.error(res.error ?? 'Could not acknowledge this insight.');
+            if (isCoachMode) {
+              const res = await acknowledgeInsight(insightId);
+              if (!res.success) {
+                setSections(prev);
+                fairwayToast.error(res.error ?? 'Could not acknowledge this insight.');
+              } else {
+                fairwayToast.success('Insight acknowledged.');
+              }
             } else {
+              // Player-self path — writes `golf_insight_player_feedback`, the
+              // SAME round-trip the Insights sub-tab's `onRate` uses. Throws
+              // on failure (no `.success` flag), caught by the shared catch
+              // below, which already reverts + toasts identically.
+              await rateInsightAsPlayer({ insightId, rating: 'acknowledged' });
               fairwayToast.success('Insight acknowledged.');
             }
           } else if (action === 'dismissed') {
             setSections((current) => removeInsight(current, insightId));
-            const res = await dismissInsight(insightId);
-            if (!res.success) {
-              setSections(prev);
-              fairwayToast.error(res.error ?? 'Could not dismiss this insight.');
+            if (isCoachMode) {
+              const res = await dismissInsight(insightId);
+              if (!res.success) {
+                setSections(prev);
+                fairwayToast.error(res.error ?? 'Could not dismiss this insight.');
+              } else {
+                fairwayToast.success('Insight dismissed.');
+              }
             } else {
+              await rateInsightAsPlayer({ insightId, rating: 'dismissed' });
               fairwayToast.success('Insight dismissed.');
             }
           } else if (action === 'create_focus_area') {
-            if (!coachId) {
-              fairwayToast.error('A coach profile is required to create a focus area.');
-              return;
-            }
             const target = findInsight(sections, insightId);
             if (!target) {
               fairwayToast.error('That insight is no longer available.');
               return;
             }
-            const res = await createFocusAreaFromInsight({
-              insight_id: target.id,
-              player_id: target.player_id,
-              coach_id: coachId,
-              title: target.title,
-              description: target.content ?? '',
-              insight_type: (target.category as string | undefined) ?? 'general',
-            });
-            if (res.success) {
-              fairwayToast.success('Focus area created.');
-              router.push(
-                `/golf/dashboard/intelligence?view=players&player=${target.player_id}&playersTab=areas`,
-              );
+            if (isCoachMode) {
+              if (!coachId) {
+                fairwayToast.error('A coach profile is required to create a focus area.');
+                return;
+              }
+              const res = await createFocusAreaFromInsight({
+                insight_id: target.id,
+                player_id: target.player_id,
+                coach_id: coachId,
+                title: target.title,
+                description: target.content ?? '',
+                insight_type: (target.category as string | undefined) ?? 'general',
+              });
+              if (res.success) {
+                fairwayToast.success('Focus area created.');
+                router.push(
+                  `/golf/dashboard/intelligence?view=players&player=${target.player_id}&playersTab=areas`,
+                );
+              } else {
+                fairwayToast.error(res.error ?? 'Could not create the focus area.');
+              }
             } else {
-              fairwayToast.error(res.error ?? 'Could not create the focus area.');
+              // Player-self path — no coach attribution (`createPlayerFocusArea`
+              // resolves + verifies ownership from auth, ignoring any caller-
+              // supplied player_id that doesn't match). `area_type` has no
+              // per-insight derivation on the player-create path the way the
+              // coach's `createFocusAreaFromInsight` has (mapInsightTypeToAreaType
+              // + metadata refinement) — the fingerprint SECTION the insight
+              // lives under is itself an honest, always-available substitute.
+              const sectionKey = findInsightSection(sections, insightId);
+              const res = await createPlayerFocusArea({
+                player_id: target.player_id,
+                area_type: sectionKey ? AREA_TYPE_BY_SECTION[sectionKey] : 'other',
+                title: target.title,
+                description: target.content ?? null,
+                target_metric: target.evidence?.metric ?? null,
+                current_value: null,
+                target_value: null,
+                from_insight_id: target.id,
+              });
+              if (res.success) {
+                fairwayToast.success('Added to your development plan.');
+                router.push('/golf/dashboard/coachhelm?view=development');
+              } else {
+                fairwayToast.error(res.error ?? 'Could not create the focus area.');
+              }
             }
           }
         } catch {
@@ -223,7 +304,7 @@ export function FairwayPlayerGameFingerprint({
         }
       });
     },
-    [coachId, pendingIds, router, sections],
+    [coachId, isCoachMode, pendingIds, router, sections],
   );
 
   const orderedSections = useMemo(
@@ -254,27 +335,40 @@ export function FairwayPlayerGameFingerprint({
         {/* ════════════════ 1 · MASTHEAD (the ONE masthead) ═════════════════ */}
         <ViewHeader
           eyebrow="Game Fingerprint"
-          title={fullName}
+          title={
+            <span className="flex min-w-0 items-center gap-3">
+              <Avatar src={player.avatar_url} name={fullName} size="lg" className="shrink-0" />
+              <span className="min-w-0 truncate">{fullName}</span>
+            </span>
+          }
           description={player.team_name ?? 'No team'}
           primaryAction={
-            <Button asChild variant="secondary">
-              <Link href={`/golf/dashboard/players/${player.id}/game/print`}>
-                Print report
-              </Link>
-            </Button>
+            isCoachMode ? (
+              <Button asChild variant="secondary">
+                <Link href={`/golf/dashboard/players/${player.id}/game/print`}>
+                  Print report
+                </Link>
+              </Button>
+            ) : undefined
           }
           secondaryActions={
-            // The Scouting Report is already the adjacent in-page tab. Keep
-            // this action row to true sibling destinations so the header does
-            // not repeat the same control twice.
-            <>
-              <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
-                <Link href={`/golf/dashboard/players/${player.id}/genome`}>Genome</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href={`/golf/dashboard/roster/${player.id}`}>Player page</Link>
-              </Button>
-            </>
+            isCoachMode ? (
+              // The Scouting Report is already the adjacent in-page tab. Keep
+              // this action row to true sibling destinations so the header
+              // does not repeat the same control twice.
+              <>
+                <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
+                  <Link href={`/golf/dashboard/players/${player.id}/genome`}>Genome</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href={`/golf/dashboard/roster/${player.id}`}>Player page</Link>
+                </Button>
+              </>
+            ) : undefined
+            // Player mode: "Print report" is a coach-gated route (the print
+            // page redirects any non-coach session) and "Genome" is already
+            // ProfileDrill's sibling tab — neither applies here, so the
+            // action cluster is dropped rather than pointed at dead links.
           }
         />
 
@@ -783,6 +877,18 @@ function findInsight(
   for (const key of FINGERPRINT_SECTION_ORDER) {
     const match = sections[key].insights.find((i) => i.id === insightId);
     if (match) return match;
+  }
+  return null;
+}
+
+/** Player-mode only — which fingerprint section an insight lives under, used
+ *  to resolve `AREA_TYPE_BY_SECTION` for `createPlayerFocusArea`. */
+function findInsightSection(
+  sections: PlayerFingerprint['sections'],
+  insightId: string,
+): FingerprintSectionKey | null {
+  for (const key of FINGERPRINT_SECTION_ORDER) {
+    if (sections[key].insights.some((i) => i.id === insightId)) return key;
   }
   return null;
 }

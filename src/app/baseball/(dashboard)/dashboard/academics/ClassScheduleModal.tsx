@@ -288,8 +288,8 @@ export function ClassScheduleModal({
           ) : classes.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sm text-warm-500 mb-4">No classes on file yet.</p>
-              <Button onClick={startAdd}>
-                <IconPlus size={14} className="mr-1" /> Add First Class
+              <Button onClick={startAdd} leftIcon={<IconPlus size={14} />}>
+                Add First Class
               </Button>
             </div>
           ) : (
@@ -318,8 +318,8 @@ export function ClassScheduleModal({
                   </div>
                 </div>
               ))}
-              <Button variant="secondary" size="sm" onClick={startAdd} className="w-full">
-                <IconPlus size={14} className="mr-1" /> Add Class
+              <Button variant="secondary" size="sm" onClick={startAdd} className="w-full" leftIcon={<IconPlus size={14} />}>
+                Add Class
               </Button>
             </div>
           )}

@@ -15,10 +15,12 @@
  *     green/tee geometry, since there's no per-size wobble/density left
  *   - the yardage ruler is legible-gated (hidden at `strip`, present
  *     elsewhere) and driven purely by the `ticks` prop
- *   - the ruler is UNAMBIGUOUS: a one-time "YDS TO PIN" caption at the pin
- *     end, a "y" unit suffix on the 50/100/150 emphasis ticks, and the
- *     0-yard tick kept (labeled "PIN") rather than filtered out — the
- *     2026-07-23 fix for the "yardage is backwards" confusion
+ *   - the ruler is UNAMBIGUOUS: a one-time "YDS FROM TEE" caption at the pin
+ *     end, a "y" unit suffix on the 50/100/150 (yards-to-pin) emphasis
+ *     ticks, and the guaranteed pin-end tick kept (now labeled with the
+ *     hole's real total length) rather than filtered out — the 2026-07-23
+ *     fix for the "yardage is backwards" confusion, and the 2026-07-24
+ *     flip to yards-FROM-THE-TEE labels on top of that same geometry
  *   - `GreenInsetScenery` is a frame around arbitrary `children`, absent
  *     entirely at `strip`, and its nested viewport always uses the
  *     canonical GREEN_INSET_VB (0–100) coordinate space so a caller's
@@ -124,70 +126,100 @@ describe('Turf', () => {
     const plot = plotHole({ shots: [], par: 4, yardage: 400 });
 
     it('renders no tick labels at size="strip" even when ticks are provided (no room for legible marks)', () => {
-      const { container } = renderInSvg(<Turf size="strip" ticks={plot.ticks} />);
+      const { container } = renderInSvg(<Turf size="strip" ticks={plot.ticks} totalYardage={400} />);
       expect(container.querySelectorAll('text')).toHaveLength(0);
     });
 
-    it('renders the emphasis ticks (50/100/150) WITH a "y" unit suffix, plus the "PIN" anchor, at size="inline"', () => {
-      const { container, getByText, queryByText } = renderInSvg(<Turf size="inline" ticks={plot.ticks} />);
-      expect(getByText('50y')).toBeInTheDocument();
-      expect(getByText('100y')).toBeInTheDocument();
-      expect(getByText('150y')).toBeInTheDocument();
-      // The 0-yard tick is the pin — always kept, even under the
-      // emphasis-only filter, and labeled unambiguously (not "0").
-      expect(getByText('PIN')).toBeInTheDocument();
+    it('renders the emphasis ticks (350/300/250, "y" suffixed — still keyed to the real distance-to-green markers) plus the total-length anchor (400y) at size="inline"', () => {
+      const { container, getByText, queryByText } = renderInSvg(
+        <Turf size="inline" ticks={plot.ticks} totalYardage={400} />,
+      );
+      // geometry.ts's emphasis ticks are still the 50/100/150-yards-TO-PIN
+      // markers (unchanged) — under the flip their printed value is
+      // `400 - yards`, i.e. 350/300/250.
+      expect(getByText('350y')).toBeInTheDocument();
+      expect(getByText('300y')).toBeInTheDocument();
+      expect(getByText('250y')).toBeInTheDocument();
+      // The pin-end tick is the rail's guaranteed anchor (geometry.ts's
+      // loop always starts at yards=0) — always kept, even under the
+      // emphasis-only filter, and now shows the hole's real total length
+      // instead of the old "PIN" text.
+      expect(getByText('400y')).toBeInTheDocument();
+      expect(queryByText('PIN')).not.toBeInTheDocument();
       expect(queryByText('0')).not.toBeInTheDocument();
-      // 400y hole ticks at 0,50,...,400 — a non-emphasis tick like 200
+      // A non-emphasis tick (e.g. old yards=200, now "200" from tee)
       // should still be suppressed at this size, suffixed or not.
       expect(queryByText('200')).not.toBeInTheDocument();
       expect(queryByText('200y')).not.toBeInTheDocument();
       expect(container.querySelectorAll('text').length).toBeGreaterThan(0);
     });
 
-    it('renders every tick at size="review" (quiet, legible, same layout as hero), INCLUDING the 0-yard tick labeled "PIN"', () => {
-      const { container, getByText, queryByText } = renderInSvg(<Turf size="review" ticks={plot.ticks} />);
-      expect(getByText('PIN')).toBeInTheDocument();
-      expect(getByText('50y')).toBeInTheDocument();
+    it('renders every tick at size="review" (quiet, legible, same layout as hero), INCLUDING the total-length anchor and the tee anchor', () => {
+      const { container, getByText, queryByText } = renderInSvg(
+        <Turf size="review" ticks={plot.ticks} totalYardage={400} />,
+      );
+      expect(getByText('400y')).toBeInTheDocument(); // pin end = hole's real total length
+      expect(getByText('350y')).toBeInTheDocument();
+      expect(getByText('300y')).toBeInTheDocument();
+      expect(getByText('250y')).toBeInTheDocument();
       // Non-emphasis ticks stay unit-suffix-free (no clutter).
       expect(getByText('200')).toBeInTheDocument();
-      expect(getByText('400')).toBeInTheDocument();
+      expect(getByText('150')).toBeInTheDocument();
+      expect(getByText('100')).toBeInTheDocument();
+      expect(getByText('50')).toBeInTheDocument();
+      // 400 is an exact multiple of the 50y tick step, so the tee itself
+      // lands on a real tick (`fromTee === 0`) — labeled "TEE", the same
+      // "never a bare 0" idiom the old PIN case used.
+      expect(getByText('TEE')).toBeInTheDocument();
       expect(queryByText('0')).not.toBeInTheDocument();
+      expect(queryByText('PIN')).not.toBeInTheDocument();
       // RULER_LAYOUT.review mirrors hero's fontSize (3.6) exactly — the
-      // PIN tick's label is the first tick label (yards ascend from 0).
-      const pinLabel = getByText('PIN');
-      expect(pinLabel.getAttribute('font-size')).toBe('3.6');
+      // total-length anchor is the rail's first (topmost, pin-end) label.
+      const anchorLabel = getByText('400y');
+      expect(anchorLabel.getAttribute('font-size')).toBe('3.6');
       expect(container.querySelectorAll('text').length).toBeGreaterThan(0);
     });
 
-    it('renders every tick at size="hero", INCLUDING the 0-yard tick labeled "PIN", never a bare "0"', () => {
-      const { getByText, queryByText } = renderInSvg(<Turf size="hero" ticks={plot.ticks} />);
-      expect(getByText('PIN')).toBeInTheDocument();
-      expect(getByText('50y')).toBeInTheDocument();
-      expect(getByText('100y')).toBeInTheDocument();
-      expect(getByText('150y')).toBeInTheDocument();
+    it('renders every tick at size="hero", INCLUDING the total-length anchor and the tee anchor, never a bare "0"', () => {
+      const { getByText, queryByText } = renderInSvg(<Turf size="hero" ticks={plot.ticks} totalYardage={400} />);
+      expect(getByText('400y')).toBeInTheDocument();
+      expect(getByText('350y')).toBeInTheDocument();
+      expect(getByText('300y')).toBeInTheDocument();
+      expect(getByText('250y')).toBeInTheDocument();
       expect(getByText('200')).toBeInTheDocument();
-      expect(getByText('400')).toBeInTheDocument();
+      expect(getByText('TEE')).toBeInTheDocument();
+      expect(queryByText('0')).not.toBeInTheDocument();
+      expect(queryByText('PIN')).not.toBeInTheDocument();
+    });
+
+    it('with a non-round hole yardage (387), the pin-end anchor shows the real total (387y) and no tick is fabricated at the tee — geometry.ts never emits one there', () => {
+      const oddPlot = plotHole({ shots: [], par: 4, yardage: 387 });
+      const { getByText, queryByText } = renderInSvg(
+        <Turf size="hero" ticks={oddPlot.ticks} totalYardage={387} />,
+      );
+      expect(getByText('387y')).toBeInTheDocument();
+      expect(queryByText('TEE')).not.toBeInTheDocument();
       expect(queryByText('0')).not.toBeInTheDocument();
     });
 
-    it('renders a one-time "YDS TO PIN" caption near the pin end of the guide line, never repeated per tick', () => {
-      const { getAllByText, getByText } = renderInSvg(<Turf size="hero" ticks={plot.ticks} />);
-      const captions = getAllByText('YDS TO PIN');
+    it('renders a one-time "YDS FROM TEE" caption near the pin end of the guide line, never repeated per tick', () => {
+      const { getAllByText, getByText } = renderInSvg(<Turf size="hero" ticks={plot.ticks} totalYardage={400} />);
+      const captions = getAllByText('YDS FROM TEE');
       expect(captions).toHaveLength(1);
       // Sits above (smaller y than) the guide line's pin-end start, i.e.
       // closer to the green, not buried among the tick rows.
       const captionY = Number(captions[0]!.getAttribute('y'));
-      expect(captionY).toBeLessThan(Number(getByText('PIN').getAttribute('y')));
+      expect(captionY).toBeLessThan(Number(getByText('400y').getAttribute('y')));
     });
 
     it('renders no caption and no ruler at all when `ticks` is omitted', () => {
       const { container, queryByText } = renderInSvg(<Turf size="hero" />);
       expect(container.querySelectorAll('text')).toHaveLength(0);
-      expect(queryByText('YDS TO PIN')).not.toBeInTheDocument();
+      expect(queryByText('YDS FROM TEE')).not.toBeInTheDocument();
     });
 
-    it('draws a single vertical guide line spanning the full tick range', () => {
-      const { container } = renderInSvg(<Turf size="hero" ticks={plot.ticks} />);
+    it('draws a single vertical guide line spanning the full tick range (tick geometry is untouched by the label flip)', () => {
+      const { container } = renderInSvg(<Turf size="hero" ticks={plot.ticks} totalYardage={400} />);
       const guideLine = container.querySelector('line[stroke="rgba(244,236,216,0.16)"]');
       expect(guideLine).not.toBeNull();
       expect(guideLine?.getAttribute('y1')).toBe(String(plot.ticks[0]!.y));
