@@ -12,9 +12,9 @@ import { submitDemoRequest } from '@/app/actions/demo-request'
 import { requestLoginTransition } from './login-transition'
 
 const navLinks = [
-  { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
   { name: 'Products', href: '/products' },
+  { name: 'Pricing', href: '/pricing' },
   { name: 'Log in', href: '/golf/login' },
 ]
 
@@ -136,7 +136,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: smooth })}
-              className="fixed inset-0 z-tooltip md:hidden bg-[#ECE5D6]"
+              className="fixed inset-0 z-tooltip md:hidden bg-[#F3EEE3]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {/* Gradient enhancement layer */}
@@ -145,7 +145,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                 style={{
                   background: `
                     radial-gradient(ellipse 90% 50% at 50% 30%, rgba(21, 128, 61, 0.1), transparent),
-                    linear-gradient(180deg, #F7F5F2 0%, #ECE5D6 50%, #EDE8DD 100%)
+                    linear-gradient(180deg, #FAF8F3 0%, #F3EEE3 50%, #F1ECE1 100%)
                   `,
                 }}
               />

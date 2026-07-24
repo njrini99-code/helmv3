@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { SmoothScroll } from '@/components/landing/SmoothScroll';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Helm Sports Labs',
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="min-h-dvh bg-[#FAF6F1]">
+      <SmoothScroll />
       <div className="max-w-4xl mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-10">
           <div>

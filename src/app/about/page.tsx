@@ -1,362 +1,306 @@
 'use client';
 
-import Link from 'next/link';
+import { useCallback, useState } from 'react';
 import Image from 'next/image';
-import { m, LazyMotion, useReducedMotion } from 'framer-motion';
-import { loadFeatures } from '@/lib/motion/load-features';
-import { Navigation } from '@/components/landing/Navigation';
-import { Footer } from '@/components/landing/Footer';
-import { Button } from '@/components/ui/button';
+import { HelmHeader } from '@/components/landing/helm/sections/HelmHeader';
+import { HelmFinalCta } from '@/components/landing/helm/sections/HelmFinalCta';
+import { HelmDemoModal } from '@/components/landing/helm/DemoModal';
+import { SmoothScroll } from '@/components/landing/SmoothScroll';
+import { fwHaptic } from '@/lib/fairway/haptics';
+import styles from '@/components/landing/helm/helm-landing.module.css';
+
+/**
+ * About — rebuilt in the Helm linen / Fairway system so it reads as one product
+ * with the landing: the same token module (helm-landing.module.css), the same
+ * HelmHeader, the same dark final-CTA + footer, and the same demo modal. Green
+ * comes from the shared --accent (the dashboard's accent-600).
+ *
+ * Content is static-visible by design — the only motion is the hero's CSS
+ * mount-fade (styles.heroUp, which is reduced-motion-safe). No scroll-reveal
+ * that could leave a below-fold section stuck at opacity:0.
+ */
 
 const pillars = [
   {
-    title: 'Roster & Communication',
-    description: 'Centralize your roster, messaging, announcements, and documents in a single hub your whole team can access.',
+    title: 'Roster & communication',
+    body: 'Roster, messaging, announcements, and documents in one hub the whole team can reach — no more scattered group chats.',
   },
   {
-    title: 'Scheduling & Travel',
-    description: 'Manage practices, tournaments, travel itineraries, and attendance without juggling calendars and group chats.',
+    title: 'Scheduling & travel',
+    body: 'Practices, tournaments, travel itineraries, and attendance in a single calendar instead of five apps that never agree.',
   },
   {
-    title: 'Stats & Development',
-    description: 'Track every round, monitor performance trends, and build individualized development plans backed by real data.',
+    title: 'Stats & development',
+    body: 'Every round tracked, every trend visible, and individual development plans built on real data — not a coach’s memory.',
   },
   {
-    title: 'AI-Powered Coaching',
-    description: 'CoachHelm surfaces patterns, flags at-risk players, and delivers insights so nothing falls through the cracks.',
+    title: 'CoachHelm intelligence',
+    body: 'The AI layer surfaces patterns, flags at-risk players, and turns a season of rounds into the next clear decision.',
   },
 ];
 
 const values = [
   {
     title: 'Clarity over noise',
-    description: 'We cut through the clutter so coaches can focus on what actually moves the needle.',
+    body: 'We cut the clutter so a coach sees what actually moves a program — and nothing that doesn’t.',
   },
   {
     title: 'Built for the day-to-day',
-    description: 'Every feature exists because a coach or player needed it — not because it looked good on a feature list.',
+    body: 'Every feature exists because a coach or player needed it, not because it looked good on a feature list.',
   },
   {
     title: 'Premium by default',
-    description: 'College programs deserve software that matches their standards. No compromises on quality or experience.',
+    body: 'College programs deserve software that matches their standard. No compromise on craft or feel.',
   },
 ];
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
-  }
+const eyebrow: React.CSSProperties = {
+  fontFamily: 'var(--mono)',
+  fontSize: '12px',
+  letterSpacing: '0.16em',
+  textTransform: 'uppercase',
+  color: 'var(--accent700)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '10px',
 };
+const card: React.CSSProperties = {
+  height: '100%',
+  background: 'var(--surface)',
+  borderRadius: '20px',
+  boxShadow: 'var(--soft)',
+  padding: 'clamp(24px,3vw,30px)',
+};
+const container: React.CSSProperties = {
+  maxWidth: '1180px',
+  margin: '0 auto',
+  padding: '0 clamp(20px,4vw,64px)',
+};
+const sectionHead: React.CSSProperties = {
+  margin: '18px 0 0',
+  fontSize: 'clamp(1.9rem,3.6vw,2.9rem)',
+  lineHeight: 1.06,
+  letterSpacing: '-0.022em',
+  fontWeight: 600,
+  color: 'var(--ink)',
+  textWrap: 'balance',
+};
+const cardTitle: React.CSSProperties = { margin: '16px 0 0', fontSize: '17px', fontWeight: 600, color: 'var(--ink)' };
+const cardBody: React.CSSProperties = { margin: '9px 0 0', fontSize: '14.5px', lineHeight: 1.55, color: 'var(--ink2)' };
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
-  }
-};
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={eyebrow}>
+      <span style={{ width: '22px', height: '1px', background: 'var(--accent)', display: 'inline-block' }} />
+      {children}
+    </span>
+  );
+}
 
 export default function AboutPage() {
-  const prefersReducedMotion = useReducedMotion();
+  const [modalOpen, setModalOpen] = useState(false);
+  const openModal = useCallback(() => {
+    fwHaptic('light');
+    setModalOpen(true);
+  }, []);
+  const closeModal = useCallback(() => setModalOpen(false), []);
+
   return (
-    <LazyMotion features={loadFeatures}>
-    <main className="min-h-dvh bg-background overflow-x-hidden">
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
-        Skip to main content
-      </a>
-      {/* Navigation */}
-      <div className="relative z-10">
-        <Navigation />
-      </div>
+    <main className={styles.root} style={{ minHeight: '100dvh', overflowX: 'clip' }}>
+      <SmoothScroll anchors />
+      <HelmHeader onRequestDemo={openModal} />
 
       {/* Hero */}
-      <section
-        id="main-content"
-        className="relative pt-24 md:pt-32 pb-16 md:pb-24"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 60% at 50% 40%, rgba(21, 128, 61, 0.12), transparent),
-            linear-gradient(180deg, #F7F5F2 0%, #EDE8DD 100%)
-          `
-        }}
-      >
-        <m.div
-          className="relative max-w-3xl mx-auto px-5 sm:px-6 text-center"
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate="visible"
-          variants={staggerContainer}
+      <section id="top" style={{ position: 'relative', overflow: 'clip', scrollMarginTop: '90px' }}>
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: '-18%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '60vw',
+            height: '60vw',
+            maxWidth: '820px',
+            maxHeight: '820px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 50% 50%,oklch(0.9 0.07 150/0.22),transparent 62%)',
+            filter: 'blur(12px)',
+            pointerEvents: 'none',
+          }}
+        />
+        <div
+          style={{
+            ...container,
+            position: 'relative',
+            paddingTop: 'clamp(56px,8vw,120px)',
+            paddingBottom: 'clamp(40px,6vw,72px)',
+            textAlign: 'center',
+          }}
         >
-          <m.p
-            variants={fadeInUp}
-            className="text-sm font-medium text-primary-600 tracking-[0.2em] uppercase mb-5"
-          >
-            Our Story
-          </m.p>
-
-          <m.h1
-            variants={fadeInUp}
-            className="text-4xl sm:text-5xl md:text-[3.5rem] font-bold text-warm-900 tracking-tight leading-[1.1] mb-7"
-          >
-            There has to be a better way
-          </m.h1>
-
-          <m.p
-            variants={fadeInUp}
-            className="text-lg md:text-xl text-warm-600 leading-relaxed max-w-2xl mx-auto"
-          >
-            Helm Sports Labs was created by two former collegiate athletes who were tired of
-            spreadsheets and group chats and thought &ldquo;there has to be a better way.&rdquo;
-          </m.p>
-        </m.div>
-      </section>
-
-      {/* Origin Story */}
-      <section
-        className="relative py-16 md:py-24 px-5 sm:px-6"
-        style={{
-          background: `
-            radial-gradient(ellipse 60% 50% at 20% 50%, rgba(21, 128, 61, 0.06), transparent),
-            linear-gradient(180deg, #EDE8DD 0%, #F7F5F2 100%)
-          `
-        }}
-      >
-        <m.div
-          className="max-w-5xl mx-auto"
-          initial={prefersReducedMotion ? false : "hidden"}
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={staggerContainer}
-        >
-          <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-            <m.div variants={fadeInUp}>
-              <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
-                The Problem
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-warm-900 mb-6 tracking-tight">
-                Managing a college team shouldn&apos;t feel like a second job
-              </h2>
-              <p className="text-base md:text-lg text-warm-600 leading-relaxed mb-5">
-                Coaches juggle spreadsheets for stats, group chats for communication, separate
-                apps for scheduling, and notebooks for player development. Players never know
-                where to look for what they need. Important details get buried.
-              </p>
-              <p className="text-base md:text-lg text-warm-600 leading-relaxed">
-                We built Helm to unify everything into one premium platform — so coaches
-                can focus on coaching and players can focus on improving.
-              </p>
-            </m.div>
-
-            <m.div variants={fadeInUp}>
-              <div
-                className="rounded-2xl p-7 md:p-8 border border-white/60"
-                style={{
-                  background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.05), transparent), rgba(255,253,245,0.92)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.5)',
-                }}
-              >
-                <div className="flex items-center gap-4 mb-5">
-                  <Image
-                    src="/Helm-Logo-New-Main.png"
-                    alt="Helm Sports Labs"
-                    width={44}
-                    height={44}
-                    className="w-11 h-11 object-contain"
-                  />
-                  <div>
-                    <p className="text-xs font-medium text-warm-500 uppercase tracking-[0.15em]">Our Belief</p>
-                    <p className="text-lg font-semibold text-warm-900">Coaches deserve better tools</p>
-                  </div>
-                </div>
-                <p className="text-warm-600 leading-relaxed">
-                  Every decision a coach makes impacts their players&apos; growth. Those decisions
-                  shouldn&apos;t be slowed down by disconnected tools and lost information. Helm
-                  gives you the clarity to lead with confidence.
-                </p>
-              </div>
-            </m.div>
+          <div className={styles.heroUp} style={{ animationDelay: '0.05s' }}>
+            <Eyebrow>Our story</Eyebrow>
           </div>
-        </m.div>
-      </section>
-
-      {/* What Helm Unifies */}
-      <section
-        className="relative py-16 md:py-24 px-5 sm:px-6"
-        style={{
-          background: `
-            radial-gradient(ellipse 70% 50% at 80% 40%, rgba(21, 128, 61, 0.08), transparent),
-            linear-gradient(180deg, #F7F5F2 0%, #ECE5D6 100%)
-          `
-        }}
-      >
-        <m.div
-          className="max-w-5xl mx-auto"
-          initial={prefersReducedMotion ? false : "hidden"}
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={staggerContainer}
-        >
-          <m.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
-            <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
-              What We&apos;re Building
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-warm-900 mb-4 tracking-tight">
-              One platform, everything unified
-            </h2>
-            <p className="text-lg text-warm-600 max-w-xl mx-auto leading-relaxed">
-              Helm replaces the patchwork of tools that slow your program down.
-            </p>
-          </m.div>
-
-          <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
-            {pillars.map((item, index) => (
-              <m.div
-                key={item.title}
-                variants={fadeInUp}
-              >
-                <div
-                  className="h-full rounded-2xl p-6 md:p-7 border border-white/60 transition-all duration-200 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-                  style={{
-                    background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.04), transparent), rgba(255,253,245,0.92)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.03), 0 0 0 1px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.5)',
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary-50 text-primary-600
-                                flex items-center justify-center text-sm font-semibold mb-4">
-                    {index + 1}
-                  </div>
-                  <h3 className="font-semibold text-warm-900 text-lg mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-warm-600 text-sm leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-              </m.div>
-            ))}
-          </div>
-        </m.div>
-      </section>
-
-      {/* Values */}
-      <section
-        className="relative py-16 md:py-24 px-5 sm:px-6"
-        style={{
-          background: `
-            radial-gradient(ellipse 60% 50% at 50% 60%, rgba(21, 128, 61, 0.1), transparent),
-            linear-gradient(180deg, #ECE5D6 0%, #EDE8DD 100%)
-          `
-        }}
-      >
-        <m.div
-          className="max-w-5xl mx-auto"
-          initial={prefersReducedMotion ? false : "hidden"}
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={staggerContainer}
-        >
-          <m.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
-            <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
-              How We Work
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-warm-900 mb-4 tracking-tight">
-              Our principles
-            </h2>
-            <p className="text-lg text-warm-600 max-w-xl mx-auto leading-relaxed">
-              Values that shape every feature we ship.
-            </p>
-          </m.div>
-
-          <div className="grid md:grid-cols-3 gap-4 md:gap-5">
-            {values.map((item) => (
-              <m.div
-                key={item.title}
-                variants={fadeInUp}
-              >
-                <div
-                  className="h-full rounded-2xl p-6 md:p-7 border border-white/60 transition-all duration-200 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-                  style={{
-                    background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.03), transparent), rgba(255,253,245,0.92)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.03), 0 0 0 1px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.5)',
-                  }}
-                >
-                  <div className="w-1 h-8 bg-primary-500 rounded-full mb-4" />
-                  <h3 className="font-semibold text-warm-900 text-lg mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-warm-600 text-sm leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-              </m.div>
-            ))}
-          </div>
-        </m.div>
-      </section>
-
-      {/* CTA */}
-      <section
-        className="relative py-16 md:py-24 px-5 sm:px-6"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 60% at 50% 50%, rgba(21, 128, 61, 0.08), transparent),
-            linear-gradient(180deg, #EDE8DD 0%, #F7F5F2 100%)
-          `
-        }}
-      >
-        <m.div
-          className="max-w-3xl mx-auto"
-          initial={prefersReducedMotion ? false : "hidden"}
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={fadeInUp}
-        >
-          <div
-            className="rounded-2xl p-8 md:p-12 text-center"
+          <h1
+            className={styles.heroUp}
             style={{
-              background: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1)',
+              animationDelay: '0.14s',
+              margin: '22px auto 0',
+              maxWidth: '16em',
+              fontSize: 'clamp(2.6rem,6vw,4.8rem)',
+              lineHeight: 1.0,
+              letterSpacing: '-0.028em',
+              fontWeight: 640,
+              color: 'var(--ink)',
+              textWrap: 'balance',
             }}
           >
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">
-              Ready to streamline your program?
-            </h2>
-            <p className="text-warm-400 text-lg mb-8 max-w-lg mx-auto leading-relaxed">
-              Join coaches who are replacing spreadsheets and group chats with one unified platform.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/golf/signup">
-                <Button variant="ghost"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5
-                           bg-cream-50 text-warm-900 font-semibold rounded-xl
-                           hover:bg-warm-50 active:scale-[0.98] transition-all text-sm
-                           shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                >
-                  Create Free Account
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Button>
-              </Link>
-              <Link href="/products">
-                <Button variant="ghost"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5
-                           text-white font-medium rounded-xl border border-white/20
-                           hover:bg-cream-50/10 active:scale-[0.98] transition-all text-sm"
-                >
-                  View Products
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </m.div>
+            There had to be a better way.
+          </h1>
+          <p
+            className={styles.heroUp}
+            style={{
+              animationDelay: '0.26s',
+              margin: '26px auto 0',
+              maxWidth: '34em',
+              fontSize: 'clamp(1.06rem,1.5vw,1.3rem)',
+              lineHeight: 1.5,
+              color: 'var(--ink2)',
+              textWrap: 'pretty',
+            }}
+          >
+            Helm Sports Labs was built by two former college athletes who were done running programs out of
+            spreadsheets and group chats — and decided the tools should finally match the standard.
+          </p>
+        </div>
       </section>
 
-      <Footer />
+      {/* The problem */}
+      <section style={{ padding: 'clamp(48px,7vw,96px) 0' }}>
+        <div style={container}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))',
+              gap: 'clamp(32px,5vw,64px)',
+              alignItems: 'center',
+            }}
+          >
+            <div>
+              <Eyebrow>The problem</Eyebrow>
+              <h2 style={sectionHead}>Running a college team shouldn’t feel like a second job.</h2>
+              <p style={{ margin: '20px 0 0', fontSize: 'clamp(1rem,1.35vw,1.14rem)', lineHeight: 1.6, color: 'var(--ink2)' }}>
+                Coaches juggle spreadsheets for stats, group chats for communication, one app for scheduling, and a
+                notebook for development. Players never know where to look. The important detail is always the one
+                that got buried.
+              </p>
+              <p style={{ margin: '16px 0 0', fontSize: 'clamp(1rem,1.35vw,1.14rem)', lineHeight: 1.6, color: 'var(--ink2)' }}>
+                Helm unifies all of it into one operating view — so coaches can coach and players can improve.
+              </p>
+            </div>
+
+            <div style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <Image
+                  src="/Helm-Logo-New-Main.png"
+                  alt=""
+                  width={44}
+                  height={44}
+                  style={{ width: '44px', height: '44px', objectFit: 'contain' }}
+                />
+                <div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: '10.5px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink3)' }}>
+                    Our belief
+                  </div>
+                  <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', marginTop: '3px' }}>
+                    Coaches deserve better tools
+                  </div>
+                </div>
+              </div>
+              <p style={{ margin: '18px 0 0', fontSize: '15px', lineHeight: 1.6, color: 'var(--ink2)' }}>
+                Every decision a coach makes shapes a player’s growth. Those decisions shouldn’t be slowed by
+                disconnected tools and lost information. Helm gives you the clarity to lead with confidence.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* What Helm unifies */}
+      <section style={{ padding: 'clamp(48px,7vw,96px) 0', background: 'linear-gradient(180deg,var(--canvas),var(--tint))' }}>
+        <div style={container}>
+          <div style={{ textAlign: 'center', maxWidth: '38em', margin: '0 auto' }}>
+            <Eyebrow>What we’re building</Eyebrow>
+            <h2 style={sectionHead}>One platform, everything unified.</h2>
+            <p style={{ margin: '16px 0 0', fontSize: 'clamp(1rem,1.35vw,1.14rem)', lineHeight: 1.55, color: 'var(--ink2)' }}>
+              Helm replaces the patchwork of tools that slow a program down.
+            </p>
+          </div>
+
+          <div
+            style={{
+              marginTop: 'clamp(36px,5vw,56px)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))',
+              gap: 'clamp(16px,2vw,22px)',
+            }}
+          >
+            {pillars.map((item, i) => (
+              <div key={item.title} style={card}>
+                <div
+                  style={{
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '50%',
+                    background: 'var(--accent50)',
+                    color: 'var(--accent700)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'var(--mono)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {i + 1}
+                </div>
+                <h3 style={cardTitle}>{item.title}</h3>
+                <p style={cardBody}>{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Principles */}
+      <section style={{ padding: 'clamp(48px,7vw,96px) 0' }}>
+        <div style={container}>
+          <div style={{ textAlign: 'center', maxWidth: '38em', margin: '0 auto' }}>
+            <Eyebrow>How we work</Eyebrow>
+            <h2 style={sectionHead}>The principles behind every release.</h2>
+          </div>
+
+          <div
+            style={{
+              marginTop: 'clamp(36px,5vw,56px)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))',
+              gap: 'clamp(16px,2vw,22px)',
+            }}
+          >
+            {values.map((item) => (
+              <div key={item.title} style={card}>
+                <div style={{ width: '4px', height: '30px', borderRadius: '9999px', background: 'var(--accent)' }} />
+                <h3 style={cardTitle}>{item.title}</h3>
+                <p style={cardBody}>{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <HelmFinalCta onRequestDemo={openModal} />
+      <HelmDemoModal open={modalOpen} onClose={closeModal} />
     </main>
-    </LazyMotion>
   );
 }

@@ -22,8 +22,8 @@ export function Footer() {
   return (
     <footer className="relative overflow-hidden text-warm-900" style={{
       background: `
-        radial-gradient(ellipse 80% 60% at 50% 60%, rgba(21, 128, 61, 0.12), transparent),
-        linear-gradient(180deg, #F0EBE1 0%, #E8E1D4 100%)
+        radial-gradient(ellipse 80% 60% at 50% 60%, rgba(21, 128, 61, 0.10), transparent),
+        linear-gradient(180deg, #F7F3EC 0%, #F1ECE1 100%)
       `
     }}>
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent" />
