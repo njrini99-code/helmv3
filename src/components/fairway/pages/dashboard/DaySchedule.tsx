@@ -25,13 +25,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { CalendarClock, ChevronRight, MapPin } from 'lucide-react';
-import {
-  Surface,
-  StatusPill,
-  Skeleton,
-  InlineNotice,
-  type FwStatusTone,
-} from '@/components/fairway';
+import { Surface } from '@/components/fairway/surfaces/surface';
+import { StatusPill } from '@/components/fairway/controls/status-pill';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import type { FwStatusTone } from '@/components/fairway/controls/_internal';
 import { cn } from '@/lib/utils';
 import { formatTimeInTz } from '@/lib/utils/timezone';
 

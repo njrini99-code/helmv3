@@ -32,13 +32,9 @@ import {
   Compass,
 } from 'lucide-react';
 
-import {
-  Surface,
-  Inset,
-  Button,
-  GenomeRadar,
-  type GenomeAxis,
-} from '@/components/fairway';
+import { Surface, Inset } from '@/components/fairway/surfaces/surface';
+import { Button } from '@/components/fairway/controls/button';
+import { GenomeRadar, type GenomeAxis } from '@/components/fairway/charts/GenomeRadar';
 import { cn } from '@/lib/utils';
 import type {
   TodayEvent,

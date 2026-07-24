@@ -31,9 +31,6 @@
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/GenomeDetailView.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/PlayersGridView.tsx",
     "components/fairway/index.ts > components/fairway/pages/dashboard/index.ts > components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx",
-    "components/fairway/index.ts > components/fairway/pages/dashboard/index.ts > components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx > components/fairway/pages/dashboard/PlayerActionCenter.tsx",
-    "components/fairway/index.ts > components/fairway/pages/dashboard/index.ts > components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx > components/fairway/pages/dashboard/PlayerActionCenter.tsx > components/fairway/pages/dashboard/player-dashboard-parts.tsx",
-    "components/fairway/index.ts > components/fairway/pages/dashboard/index.ts > components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx > components/fairway/pages/dashboard/PlayerActionCenter.tsx > components/fairway/pages/hub/hub-parts.tsx",
     "components/golf/coachhelm/insights/DiagnosisPanel.tsx > components/golf/coachhelm/insights/EvidencePanel.tsx",
     "lib/admin/data/incident-feed.ts > lib/admin/data/triage.ts"
   ]
