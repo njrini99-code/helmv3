@@ -15,15 +15,16 @@ import { RequestDemoProvider } from './request-demo-context';
  */
 
 /**
- * Fixed linen-grain texture over the whole page (multiply). Opacity tuned so
- * the deep champagne canvas reads as woven linen and cream cards clearly
- * lift off it — the "deep linen contrast" pass.
+ * Fixed linen-grain texture over the whole page (multiply). Kept subtle —
+ * the "deep linen" contrast comes from the champagne canvas vs cream cards
+ * and their shadows, not from noise (heavier grain reads as a fuzzy screen
+ * over open canvas).
  */
 function LinenGrain() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[2] opacity-55 mix-blend-multiply"
+      className="pointer-events-none fixed inset-0 z-[2] opacity-30 mix-blend-multiply"
       style={{
         backgroundImage:
           'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 240 240\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'2\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',

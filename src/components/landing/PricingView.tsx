@@ -116,7 +116,7 @@ export function PricingView() {
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-[18%] left-1/2 h-[54vw] max-h-[820px] w-[54vw] max-w-[820px] -translate-x-1/2 rounded-full blur-[10px]"
-          style={{ background: 'radial-gradient(circle at 50% 50%, oklch(0.9 0.07 120 / 0.3), transparent 62%)' }}
+          style={{ background: 'radial-gradient(circle at 50% 50%, oklch(0.9 0.07 120 / 0.2), transparent 62%)' }}
         />
         <div
           aria-hidden="true"
@@ -128,20 +128,36 @@ export function PricingView() {
         />
 
         <div className="relative mx-auto flex min-h-[calc(100dvh-160px)] max-w-[880px] flex-col items-center justify-center px-[clamp(20px,4vw,64px)] py-[clamp(80px,12vw,150px)] text-center">
-          <Reveal className="font-fw-mono text-[0.75rem] uppercase tracking-[0.2em] text-accent-700">Pricing</Reveal>
-          <Reveal
-            as="p"
-            delay={60}
-            className="mt-6 text-[clamp(1.9rem,4.2vw,3.3rem)] leading-[1.1] tracking-[-0.022em] text-text-primary [text-wrap:balance]"
-            style={{ fontWeight: 600 }}
-          >
-            We built Helm Sports Labs for all levels and all budgets, because managing your team efficiently
-            shouldn&apos;t take your whole budget.
+          <Reveal className="flex items-center justify-center gap-2.5 font-fw-mono text-[0.75rem] uppercase tracking-[0.2em] text-accent-700">
+            <span className="inline-block h-px w-[22px] bg-accent-500" />
+            Pricing
+            <span className="inline-block h-px w-[22px] bg-accent-500" />
+          </Reveal>
+          <Reveal as="p" delay={60} className="mt-7 [text-wrap:balance]">
+            <span
+              className="block text-[clamp(2.6rem,6vw,5rem)] leading-[1.02] tracking-[-0.028em] text-text-primary"
+              style={{ fontWeight: 640 }}
+            >
+              Every program.
+            </span>
+            <span
+              className="block text-[clamp(2.6rem,6vw,5rem)] leading-[1.02] tracking-[-0.028em] text-accent-700"
+              style={{ fontWeight: 640 }}
+            >
+              Every level.
+            </span>
           </Reveal>
           <Reveal
             as="p"
             delay={120}
-            className="mx-auto mt-6 max-w-[34em] text-[clamp(1.05rem,1.5vw,1.3rem)] leading-relaxed text-text-secondary [text-wrap:pretty]"
+            className="mx-auto mt-7 max-w-[30em] text-[clamp(1.1rem,1.7vw,1.45rem)] leading-normal text-text-secondary [text-wrap:pretty]"
+          >
+            We built Helm Sports Labs so managing your team efficiently doesn&apos;t take your whole budget.
+          </Reveal>
+          <Reveal
+            as="p"
+            delay={160}
+            className="mx-auto mt-4 max-w-[32em] text-[clamp(0.95rem,1.25vw,1.1rem)] leading-relaxed text-text-tertiary [text-wrap:pretty]"
           >
             Set up a quick call to see how Helm can fit in with your program.
           </Reveal>
