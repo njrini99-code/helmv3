@@ -226,7 +226,12 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', () 
       // Every drill's DrillPanel exposes a "Home"/"All areas" back chip wired
       // to `useStage().home()` — round-trip through it so `home` is re-mounted
       // as an UPDATE too (not just the initial mount at the top of this test).
-      const backChip = screen.getByRole('button', { name: /home|all areas/i });
+      // `expectStageShows` can resolve while the home Bento grid is still
+      // mounted (the area label lives on its own cell too), so it is NOT a
+      // reliable "navigation finished" signal. Await the back chip itself —
+      // it only exists inside a drill's DrillPanel — otherwise a synchronous
+      // lookup here races the click's re-render under CI load.
+      const backChip = await screen.findByRole('button', { name: /home|all areas/i });
       fireEvent.click(backChip);
       await expectStageShows('Core ball striking');
 
@@ -235,7 +240,7 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', () 
       const cellAgain = screen.getAllByRole('button').find((btn) => btn.textContent?.includes(AREA_HEADING[area]));
       fireEvent.click(cellAgain!);
       await expectStageShows(AREA_HEADING[area]);
-      fireEvent.click(screen.getByRole('button', { name: /home|all areas/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /home|all areas/i }));
       await expectStageShows('Core ball striking');
     }
   });
