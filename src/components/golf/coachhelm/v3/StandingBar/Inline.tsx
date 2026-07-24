@@ -92,7 +92,18 @@ export function Inline(props: StandingBarProps) {
       </div>
 
       {/* Bar */}
-      <Bar youPct={youPct} teamPct={teamPct} pgaPct={pgaPct} size="inline" />
+      <Bar
+        youPct={youPct}
+        teamPct={teamPct}
+        pgaPct={pgaPct}
+        size="inline"
+        zeroPct={
+          /^sg_/.test(props.metric_id) && effectiveScale.min < 0 && effectiveScale.max > 0
+            ? toScalePct(0, effectiveScale)
+            : null
+        }
+        fill={teamPct !== null ? { fromPct: teamPct, toPct: youPct, tone: delta.tone } : null}
+      />
 
       {/* Cohort text — single line, compact */}
       {props.show_cohort_text !== false && cohortText && (

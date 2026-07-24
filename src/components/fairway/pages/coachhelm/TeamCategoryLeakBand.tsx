@@ -70,7 +70,10 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
       transition={{ ...enterTransition, delay: stagger(index) }}
     >
       <Surface padding="md" className="flex h-full flex-col gap-3">
-        <div className="flex items-start justify-between gap-2">
+        {/* flex-wrap: on tight phone widths (long label + long trend word,
+            e.g. APPROACH + Declining) the glyph must wrap under the label —
+            with shrink-0 alone it escapes past the card edge (iOS 2026-07-24). */}
+        <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
           <p className="font-fw-display text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
             {category.label}
           </p>
