@@ -57,7 +57,7 @@ function PricingCapture() {
           </svg>
         </div>
         <p ref={successRef} tabIndex={-1} className="mt-4 text-body-lg font-semibold text-text-primary outline-none">
-          You&apos;re on the list.
+          Request received.
         </p>
         <p className="mx-auto mt-2 max-w-[26em] text-body-sm leading-relaxed text-text-secondary">
           A member of the Helm team will reach out to set up your call.
@@ -104,9 +104,6 @@ function PricingCapture() {
           {error}
         </p>
       ) : null}
-      <p className="mt-4 text-center text-caption font-normal text-text-tertiary">
-        No forms beyond this one. We&apos;ll reach out, you pick the time.
-      </p>
     </form>
   );
 }
