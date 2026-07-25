@@ -28,6 +28,8 @@ export type {
   FwIconButtonSize,
 } from './button';
 
+export { Slider, tickValues } from './slider';
+export type { SliderProps } from './slider';
 export { Segmented } from './segmented';
 export type { SegmentedProps, SegmentedOption } from './segmented';
 

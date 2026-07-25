@@ -40,7 +40,7 @@ import type {
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
-import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
+import { PHILOSOPHY_DEFAULTS, effectiveConfidenceThreshold } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
@@ -219,6 +219,14 @@ interface PhilosophyDbRow {
   show_strokes_gained?: boolean | null;
   show_advanced_stats?: boolean | null;
   insight_verbosity?: string | null;
+  // Migration 20260725090000 — optional so this parses against a database
+  // where the migration has not been applied yet.
+  min_insight_confidence?: string | number | null;
+  min_rounds_for_signal?: number | null;
+  alert_digest?: string | null;
+  min_hole_plays_for_ranking?: number | null;
+  pattern_lookback_days?: number | null;
+  stats_benchmark_window_days?: number | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -270,6 +278,15 @@ async function getCoachPhilosophy(
     showStrokesGained: true,
     showAdvancedStats: true,
     insightVerbosity: 'detailed',
+    // Signal controls (migration 20260725090000). These defaults ARE the
+    // engine's prior hard-coded constants, so a coach with no row — or a
+    // database where the migration has not landed — behaves exactly as before.
+    minInsightConfidence: 0.3,
+    minRoundsForSignal: 3,
+    alertDigest: 'immediate',
+    minHolePlaysForRanking: 3,
+    patternLookbackDays: 90,
+    statsBenchmarkWindowDays: 30,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -317,6 +334,16 @@ async function getCoachPhilosophy(
     showStrokesGained: row.show_strokes_gained ?? defaults.showStrokesGained,
     showAdvancedStats: row.show_advanced_stats ?? defaults.showAdvancedStats,
     insightVerbosity: row.insight_verbosity === 'detailed' ? 'detailed' : 'brief',
+    minInsightConfidence: parseNum(row.min_insight_confidence, defaults.minInsightConfidence),
+    minRoundsForSignal: row.min_rounds_for_signal ?? defaults.minRoundsForSignal,
+    alertDigest:
+      row.alert_digest === 'daily' || row.alert_digest === 'weekly'
+        ? row.alert_digest
+        : defaults.alertDigest,
+    minHolePlaysForRanking: row.min_hole_plays_for_ranking ?? defaults.minHolePlaysForRanking,
+    patternLookbackDays: row.pattern_lookback_days ?? defaults.patternLookbackDays,
+    statsBenchmarkWindowDays:
+      row.stats_benchmark_window_days ?? defaults.statsBenchmarkWindowDays,
     createdAt: row.created_at ?? defaults.createdAt,
     updatedAt: row.updated_at ?? defaults.updatedAt,
   };
@@ -345,20 +372,8 @@ function shouldIncludeInsight(insightType: InsightType, philosophy: CoachPhiloso
   return philosophy[alertKey] as boolean;
 }
 
-/**
- * Gets the minimum confidence threshold based on alert sensitivity
- */
-function getConfidenceThreshold(sensitivity: CoachPhilosophy['alertSensitivity']): number {
-  switch (sensitivity) {
-    case 'aggressive':
-      return 0.4; // Show more insights
-    case 'conservative':
-      return 0.7; // Only high confidence insights
-    case 'balanced':
-    default:
-      return 0.55;
-  }
-}
+
+
 
 // ============================================================================
 // PHILOSOPHY-WEIGHTED INSIGHT PRIORITIZATION
@@ -820,7 +835,7 @@ async function generateTeamInsightsImpl() {
 
     // 2.5. Fetch coach philosophy settings
     const philosophy = await getCoachPhilosophy(coach.id);
-    const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+    const confidenceThreshold = effectiveConfidenceThreshold(philosophy);
 
     // 3. Get team players via golf_team_members
     const { data: teamMembers, error: membersError } = await supabase
@@ -3846,7 +3861,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
 
     // Get coach philosophy
     const philosophy = await getCoachPhilosophy(coach.id, admin);
-    let confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+    let confidenceThreshold = effectiveConfidenceThreshold(philosophy);
 
     // W27 — alert_posture multiplier. The coach's per-player intent row
     // modulates the philosophy-level threshold so aggressive players get
@@ -3874,6 +3889,45 @@ async function triggerPlayerInsightsAfterRoundImpl(
       );
     }
 
+    // Coach's "minimum rounds before CoachHelm speaks" floor. Prior to this
+    // the engine's only round gate was ABSOLUTE_MIN_ROUNDS=4 buried in the
+    // pattern miner — a coach could not raise it, so a player with 4 rounds
+    // got the same confident prose as one with 40. Resolved here, where the
+    // philosophy is already loaded, so a starved player is skipped BEFORE any
+    // generator runs rather than having its output filtered afterwards.
+    //
+    // A FLAG, NOT AN EARLY RETURN. The aging sweep further down is
+    // housekeeping — it retires stale insights that are already on the board —
+    // and returning here would leave a below-floor player's old insights
+    // active forever. The floor suppresses NEW claims; it does not suspend
+    // maintenance of old ones.
+    const { count: completedRoundCount } = await admin
+      .from('golf_rounds')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', playerId)
+      .eq('status', 'completed');
+
+    // `count` is null when the client can't report one (and in test doubles
+    // that don't implement head/count) — treat an UNKNOWN count as "no
+    // opinion" and let analysis proceed, rather than silently muting a coach.
+    const belowRoundFloor =
+      typeof completedRoundCount === 'number' &&
+      completedRoundCount < philosophy.minRoundsForSignal;
+
+    if (belowRoundFloor) {
+      await logServerEvent(
+        `[insights.triggerPlayerInsightsAfterRound] player has ${completedRoundCount} completed rounds, coach floor is ${philosophy.minRoundsForSignal} — skipping generation`,
+        {
+          action: 'insights.triggerPlayerInsightsAfterRound.belowRoundFloor',
+          featureArea: 'coachhelm',
+          playerId,
+          // A coach setting doing its job, not a fault.
+          skipSentry: true,
+        },
+        'info',
+      );
+    }
+
     // 2026-05-24 Wave 7B — philosophy gate (replaces the post-filter sweep
     // that used to live below this block). Built once here so every Tier-1
     // generator inside analyzePlayer skips writes the coach's philosophy
@@ -3892,17 +3946,26 @@ async function triggerPlayerInsightsAfterRoundImpl(
     // This is non-critical: the round saved successfully, only post-round insights are skipped.
     let analysis;
     try {
-      analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
-        includePatterns: true,
-        includeCausal: true,
-        includePredictions: true,
-        includeShotPatterns: true,
-        depth: 'standard',
-        // F061 — flow the coach's saved Insight Detail Level into the NLG so
-        // composed insight bodies honor 'brief' / 'detailed'.
-        verbosity: philosophy.insightVerbosity,
-        philosophyGate,
-      });
+      // Below the coach's round floor: skip generation entirely, but fall
+      // through so the aging sweep below still runs.
+      analysis = belowRoundFloor
+        ? null
+        : await coachHelmIntelligence.analyzePlayer(playerId, {
+            includePatterns: true,
+            includeCausal: true,
+            includePredictions: true,
+            includeShotPatterns: true,
+            depth: 'standard',
+            // F061 — flow the coach's saved Insight Detail Level into the NLG so
+            // composed insight bodies honor 'brief' / 'detailed'.
+            verbosity: philosophy.insightVerbosity,
+            philosophyGate,
+            // Window controls (migration 20260725140000). The philosophy is
+            // already loaded here, so hand the miner its window rather than
+            // making it re-resolve player → coach on its own.
+            patternLookbackDays: philosophy.patternLookbackDays,
+            minRoundsForSignal: philosophy.minRoundsForSignal,
+          });
     } catch {
       // Expected in fire-and-forget/cron contexts (roster-sweep, post-round
       // trigger) — analyzePlayer()'s user-scoped client has no session to

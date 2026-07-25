@@ -947,7 +947,7 @@ export function FairwayCalendar({
       ) : null}
       {rangeError && !isLoadingRange ? (
         <div className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-2.5">
-          <span className="font-fw-sans text-caption text-fw-danger">{rangeError}</span>
+          <span className="font-fw-sans text-caption text-fw-danger-ink">{rangeError}</span>
           <FwButton
             variant="secondary"
             size="sm"
@@ -1244,7 +1244,7 @@ function FairwaySubscribeSheet({ open, onOpenChange, canManageTeamFeed }: Fairwa
           automatically when events change.
         </p>
         {feedsError ? (
-          <p className="font-fw-sans text-caption text-fw-danger">{feedsError}</p>
+          <p className="font-fw-sans text-caption text-fw-danger-ink">{feedsError}</p>
         ) : null}
         {/* Genuinely-empty (loaded, no error, zero feeds): a Fairway-framed hint
             so the empty Subscribe sheet doesn't lean only on the legacy child's

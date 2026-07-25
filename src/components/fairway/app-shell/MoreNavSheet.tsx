@@ -181,7 +181,7 @@ export const MoreNavSheet = memo(function MoreNavSheet({
               'transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none hover:bg-surface-sunken',
             )}
           >
-            <Avatar
+            <Avatar decorative
               name={user.name}
               src={user.avatarUrl ?? undefined}
               size="md"

@@ -174,7 +174,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
 
           {/* Header */}
           <div className="flex items-start gap-4">
-            <Avatar
+            <Avatar decorative
               name={getFullName(player.first_name, player.last_name)}
               src={player.avatar_url}
               size="xl"

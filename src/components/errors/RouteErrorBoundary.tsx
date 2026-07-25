@@ -276,7 +276,7 @@ export function RouteErrorBoundary({
         {/* Error Icon */}
         <div className="w-16 h-16 mx-auto rounded-card bg-fw-danger-bg flex items-center justify-center mb-4">
           <svg
-            className="h-8 w-8 text-fw-danger"
+            className="h-8 w-8 text-fw-danger-ink"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -307,7 +307,7 @@ export function RouteErrorBoundary({
             <summary className="text-body-sm font-medium text-text-tertiary cursor-pointer hover:text-text-secondary mb-2">
               Error Details
             </summary>
-            <pre className="text-body-sm bg-surface-sunken border border-border-subtle rounded-fw-md p-3 overflow-auto max-h-32 text-fw-danger">
+            <pre className="text-body-sm bg-surface-sunken border border-border-subtle rounded-fw-md p-3 overflow-auto max-h-32 text-fw-danger-ink">
               {error.message}
               {error.stack && `\n\n${error.stack}`}
               {error.digest && `\n\nDigest: ${error.digest}`}
@@ -389,7 +389,7 @@ export function CompactRouteErrorBoundary({
       {/* Error Icon */}
       <div className="w-12 h-12 rounded-card bg-fw-danger-bg flex items-center justify-center mb-4">
         <svg
-          className="h-6 w-6 text-fw-danger"
+          className="h-6 w-6 text-fw-danger-ink"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -416,7 +416,7 @@ export function CompactRouteErrorBoundary({
 
       {/* Error Details (Development Only) */}
       {process.env.NODE_ENV === 'development' && (
-        <p className="text-body-sm text-fw-danger mb-4 font-fw-mono max-w-md break-words">
+        <p className="text-body-sm text-fw-danger-ink mb-4 font-fw-mono max-w-md break-words">
           {error.message}
         </p>
       )}

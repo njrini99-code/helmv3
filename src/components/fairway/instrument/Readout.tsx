@@ -147,14 +147,15 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
         <span
           className={cn(
             'font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary',
-            // `text-text-tertiary/80` compiled to NOTHING — Tailwind can't
-            // apply a slash-opacity modifier to a custom color whose value is
-            // a bare `var(--fw-color-*)` reference, so the class silently
-            // dropped and this label fell through to whatever ancestor color
-            // was inherited. `opacity-*` is a plain (non-color) utility, so it
-            // always compiles and reliably dims the already-muted tertiary
-            // tone a touch further for the calibrating state.
-            isAwaiting && 'opacity-80',
+            // NOTE: `text-text-tertiary/80` here would compile to NOTHING before
+            // the tokenColor() fix in tailwind.config.ts — a slash-opacity
+            // modifier on a bare `var(--fw-color-*)` value emits no rule at
+            // all. That is why this used the plain `opacity-80` utility.
+            // It now uses NEITHER: `text-text-tertiary` is already the
+            // calibrated quiet ink (P422 tuned it to clear 4.5:1 on every warm
+            // surface), and dimming it a further 20% put the calibrating label
+            // back under the bar (audit P-26). The awaiting state is carried by
+            // the em-dash and the "Calibrating" copy, not by opacity.
           )}
         >
           {label}
@@ -177,9 +178,11 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
               // `hero` size) fell through to InstrumentPanel's inherited
               // `text-text-primary` — painting the "awaiting" placeholder as a
               // jarring solid near-black bar instead of a dim, honest gauge.
-              // `text-text-tertiary` + the plain (non-color) `opacity-70`
-              // utility always compiles.
-              'text-text-tertiary opacity-70',
+              // `text-text-tertiary` alone — no `opacity-70` on top. That token
+              // is already the calibrated quiet ink (P422 darkened it to clear
+              // 4.5:1 on every warm surface); multiplying it by 0.7 undid that
+              // and put the placeholder near 3:1 (audit P-26).
+              'text-text-tertiary',
               SIZE_VALUE[size],
             )}
           >
@@ -286,8 +289,8 @@ function DeltaLine({
       <span
         className={cn(
           'inline-flex items-center gap-0.5',
-          dir === 'up' && 'text-fw-success',
-          dir === 'down' && 'text-fw-warning',
+          dir === 'up' && 'text-fw-success-ink',
+          dir === 'down' && 'text-fw-warning-ink',
           dir === 'flat' && 'text-text-tertiary',
         )}
       >

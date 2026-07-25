@@ -6,7 +6,8 @@
  * ----------------------------------------------------------------------------
  * THE single-metric tile (§6 "MetricCard"): a big tabular numeric in Fragment
  * Mono that rolls on change via Number Flow (@number-flow/react), an overline
- * label, an optional up/down delta chip (accent green up / danger down), and an
+ * label, an optional up/down delta chip (accent green improving / amber
+ * declining — NEVER danger red, see AUDIT-0724 finding #7 below), and an
  * optional quiet sparkline slot. Calm, low-chrome, matte by default.
  *
  * Surface policy (§4.1/§4.2): matte opaque `bg-surface`, `rounded-card` (20px),
@@ -15,9 +16,23 @@
  * on hover, settles on active. All motion honors `prefers-reduced-motion` and
  * Number Flow snaps to final value when reduced.
  *
- * ADDITIVE ONLY — this file is self-contained inside the cards-insight folder
- * and imports nothing from the live app except the shared `cn()` helper. It is
- * styled to render correctly inside a `.fairway-ds` scope on a `bg-canvas` page.
+ * DELTA CHIP TONE (AUDIT-0724/stats-visual-accuracy.md findings #2/#6/#7):
+ * the chip's tone is classified via the charts cluster's ONE shared
+ * `classifyTrend()` (the same function Sparkline/TrendChip use) instead of a
+ * locally-duplicated sign check — previously this was the one place in the
+ * cluster painting a "declining" verdict in real danger-red while every
+ * sibling (Sparkline, TrendChip, Numeric's DeltaChip) used warm amber for
+ * the identical verdict, AND a caller could hand this chip a `delta.value`
+ * computed by a different algorithm than the Sparkline plotted next to it
+ * (see `computeSeriesTrend()` in `charts/seriesTrend.ts` — the fix is for
+ * both to derive from ONE call on the SAME series). The arrow glyph still
+ * reflects the raw sign of `delta.value` (a "what actually moved" fact,
+ * independent of whether that move was good) — only the background/ink tone
+ * is goodDirection-aware.
+ *
+ * Imports the shared classifier from `../charts/TrendChip` — no longer
+ * fully self-contained inside cards-insight (it already imported Skeleton
+ * from `../feedback`), but this is the deliberate fix for the finding above.
  * ============================================================================
  */
 
@@ -37,6 +52,10 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/fairway/feedback';
+// The ONE shared trend classifier (AUDIT-0724 #2/#6/#7) — see the file header
+// above. Direct-file import (not the `charts` barrel) mirrors how Sparkline
+// itself imports these from the same module.
+import { classifyTrend, TREND_TONE_CLASS } from '@/components/fairway/charts/TrendChip';
 
 /** Visual weight of the tile. `default` is the everyday KPI; `hero` gets a
  *  touch more air + a slightly larger numeric for the one lead metric. */
@@ -69,6 +88,18 @@ export interface MetricDelta {
   suffix?: string;
   /** Tiny trailing label, e.g. "vs last week". */
   label?: string;
+  /**
+   * Magnitude deadzone (in the delta's own units) at or below which the tone
+   * reads `flat` (gray "Flat") regardless of sign — routed through the
+   * shared `classifyTrend()`. Defaults to `0`, matching prior behavior
+   * (only an exact `value === 0` read as flat) for every existing caller.
+   * AUDIT-0724 finding #2: "a series this noisy shouldn't claim a direction
+   * with more confidence than the data supports" — callers computing
+   * `value` via `computeSeriesTrend()` should pass its own threshold here
+   * too so the chip and the sparkline agree on WHERE the flat band starts,
+   * not just on which side of zero they landed.
+   */
+  flatThreshold?: number;
 }
 
 export interface MetricCardProps
@@ -128,6 +159,13 @@ export interface MetricCardProps
 
 /* -- delta helpers ---------------------------------------------------------- */
 
+/**
+ * The RAW movement direction (arrow glyph only) — a "what actually moved"
+ * fact, independent of whether that move was good or bad. Respects an
+ * explicit `direction` override (no current caller sets one against the
+ * sign of `value`; kept for API compatibility), else derives from sign.
+ * Tone is a SEPARATE concern below — see `classifyTrend` at the call site.
+ */
 function resolveDirection(d: MetricDelta): Exclude<MetricDeltaDirection, 'auto'> {
   if (d.direction && d.direction !== 'auto') return d.direction;
   if (d.value > 0) return 'up';
@@ -135,22 +173,16 @@ function resolveDirection(d: MetricDelta): Exclude<MetricDeltaDirection, 'auto'>
   return 'neutral';
 }
 
-/** Map a movement direction + what-counts-as-good into a tone. */
-function deltaTone(
-  direction: Exclude<MetricDeltaDirection, 'auto'>,
-  good: MetricGoodDirection,
-): 'positive' | 'negative' | 'neutral' {
-  if (direction === 'neutral') return 'neutral';
-  const isGood = direction === good;
-  return isGood ? 'positive' : 'negative';
-}
-
-const TONE_CLASS: Record<'positive' | 'negative' | 'neutral', string> = {
-  // Green up = the plant in the room; danger red for a bad move; warm neutral otherwise.
-  positive: 'text-fw-success bg-fw-success-bg',
-  negative: 'text-fw-danger bg-fw-danger-bg',
-  neutral: 'text-text-tertiary bg-surface-sunken',
-};
+/*
+ * NOTE (AUDIT-0724 findings #2/#6/#7): tone used to be derived here by a
+ * locally-duplicated `deltaTone()` + `TONE_CLASS` map — including a real
+ * danger-red `negative` entry, the one place in the trend cluster not using
+ * warm amber for a "declining" verdict. Both are gone. Tone is now computed
+ * at the `DeltaChip` call site via the shared `classifyTrend()` +
+ * `TREND_TONE_CLASS` imported from `charts/TrendChip` — the SAME classifier
+ * Sparkline uses, so a card's chip and its sparkline can never again render
+ * the same series through two different rules.
+ */
 
 /* -- sparkline slot: measure-then-fill ---------------------------------------
  * Sparkline draws to EXACTLY the pixel `width`/`height` it's handed (its own
@@ -328,7 +360,9 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
         {empty ? (
           // Null metric: recede it so it reads as "no data yet", not as a value
           // competing with live figures next to it (premium-polish pass).
-          <p className="font-fw-sans text-h3 font-normal text-text-tertiary opacity-50">
+          // text-text-tertiary alone is already the calibrated "quiet" ink;
+          // the extra opacity-50 dropped this to ~2.0:1 (audit P-26).
+          <p className="font-fw-sans text-h3 font-normal text-text-tertiary">
             {emptyMessage}
           </p>
         ) : (
@@ -419,9 +453,23 @@ function DeltaChip({
   goodDirection: MetricGoodDirection;
   prefersReduced: boolean;
 }) {
+  // Arrow glyph: the RAW movement (what the number actually did), never
+  // masked by whether that move was good.
   const direction = resolveDirection(delta);
-  const tone = deltaTone(direction, goodDirection);
-  const isFlat = direction === 'neutral';
+  // Tone: routed through the shared `classifyTrend()` (AUDIT-0724 #2/#6/#7)
+  // instead of a locally-duplicated good/bad check, so this chip and a
+  // Sparkline fed the SAME delta can never disagree on what counts as
+  // improving/flat/declining — and `TREND_TONE_CLASS.declining` is warm
+  // amber, never the danger-red this chip used to reach for.
+  const verdict = classifyTrend(delta.value, {
+    goodDirection,
+    flatThreshold: delta.flatThreshold ?? 0,
+  });
+  // Flat if EITHER the raw movement is neutral (delta.value === 0, or an
+  // explicit `direction: 'neutral'` override) OR the shared classifier's
+  // magnitude deadzone says this delta is too small to claim a direction —
+  // whichever check fires, don't render a confident-looking colored pill.
+  const isFlat = direction === 'neutral' || verdict === 'flat';
   const Icon = direction === 'up' ? ArrowUpRight : direction === 'down' ? ArrowDownRight : Minus;
 
   return (
@@ -433,7 +481,7 @@ function DeltaChip({
         className={cn(
           'inline-flex items-center gap-1 rounded-full px-2 py-0.5',
           'font-fw-mono text-caption font-medium tabular-nums',
-          TONE_CLASS[tone],
+          isFlat ? TREND_TONE_CLASS.flat : TREND_TONE_CLASS[verdict],
         )}
         style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
       >

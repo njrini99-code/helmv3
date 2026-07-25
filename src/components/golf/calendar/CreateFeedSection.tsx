@@ -64,7 +64,7 @@ const TONE_SELECTED_CLASSES: Record<FwStatusTone, string> = {
   accent: 'border-accent-500 bg-accent-50 text-accent-700',
   success: 'border-accent-500 bg-fw-success-bg text-accent-700',
   warning: 'border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink',
-  danger: 'border-fw-danger/40 bg-fw-danger-bg text-fw-danger',
+  danger: 'border-fw-danger/40 bg-fw-danger-bg text-fw-danger-ink',
   info: 'border-border-strong bg-surface-sunken text-text-primary',
 };
 

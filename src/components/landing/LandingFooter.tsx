@@ -23,12 +23,16 @@ export function LandingFooter({ onRequestDemo }: LandingFooterProps) {
     <footer className="border-t border-[oklch(1_0_0/0.08)] bg-stone-950 text-text-on-accent">
       <div
         className="mx-auto grid max-w-[1320px] gap-9 px-[clamp(20px,4vw,64px)] py-11"
-        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))' }}
       >
         <div>
           <div className="flex items-center gap-2.5">
+            {/* The square mark, not the horizontal lockup. The lockup already
+                contains the words "Helm Sports Labs", so squeezing it into
+                28x28 beside the same words rendered the wordmark twice — once
+                illegibly (audit 2026-07-24, L-07). */}
             <Image
-              src="/helm-main-logo-transparent-white-trim.png"
+              src="/Helm-Logo-New-Main.png"
               alt=""
               width={28}
               height={28}
@@ -41,27 +45,27 @@ export function LandingFooter({ onRequestDemo }: LandingFooterProps) {
           </p>
         </div>
         <div>
-          <div className="font-fw-mono text-[0.656rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Products</div>
+          <div className="font-fw-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Products</div>
           <div className="mt-3.5 flex flex-col gap-2.5 text-body-sm">
             <Link
               href="/#golfhelm"
               onClick={onHome ? (e) => scrollToHash(e, '#golfhelm') : undefined}
-              className="text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent"
+              className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent"
             >
               GolfHelm
             </Link>
-            <Link href="/baseball" className="text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
+            <Link href="/baseball" className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
               BaseballHelm
             </Link>
           </div>
         </div>
         <div>
-          <div className="font-fw-mono text-[0.656rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Company</div>
+          <div className="font-fw-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Company</div>
           <div className="mt-3.5 flex flex-col items-start gap-2.5 text-body-sm">
-            <Link href="/about" className="text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
+            <Link href="/about" className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
               About
             </Link>
-            <Link href="/pricing" className="text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
+            <Link href="/pricing" className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
               Pricing
             </Link>
             <Button
@@ -74,12 +78,12 @@ export function LandingFooter({ onRequestDemo }: LandingFooterProps) {
           </div>
         </div>
         <div>
-          <div className="font-fw-mono text-[0.656rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Legal</div>
+          <div className="font-fw-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Legal</div>
           <div className="mt-3.5 flex flex-col gap-2.5 text-body-sm">
-            <Link href="/support" className="text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
+            <Link href="/support" className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
               Support
             </Link>
-            <Link href="/golf/login" className="text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
+            <Link href="/golf/login" className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
               Log in
             </Link>
           </div>

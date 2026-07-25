@@ -351,7 +351,7 @@ function VideoModal({ open, video, onClose, onShare }: VideoModalProps) {
         )}
         {video.player && (
           <div className="flex items-center gap-3 rounded-xl bg-[var(--paper-canvas)] px-3 py-2.5">
-            <Avatar
+            <Avatar decorative
               name={getFullName(video.player.first_name, video.player.last_name)}
               src={video.player.avatar_url ?? undefined}
               size="sm"
@@ -709,7 +709,7 @@ function PlayerView({ data }: { data: PlayerReadModel }) {
                   onClick={() => toggle(group.player.id)}
                   aria-expanded={isOpen}
                 >
-                  <Avatar
+                  <Avatar decorative
                     name={getFullName(group.player.first_name, group.player.last_name)}
                     src={group.player.avatar_url ?? undefined}
                     size="sm"

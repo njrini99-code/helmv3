@@ -15,7 +15,7 @@ import { Reveal, useParallax, useSequence } from './motion';
  *     player-detail card (visuals alternate sides across chapters).
  */
 
-const AUTO_GRID = { gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' } as const;
+const AUTO_GRID = { gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))' } as const;
 
 export function CoachHelmSection() {
   const sectionRef = useRef<HTMLElement | null>(null);

@@ -927,7 +927,7 @@ export default function ContinueRoundClient({
       {/* Error Display — Fairway danger tokens. */}
       {error && (
         <div className={fairwayScope('max-w-[720px] mx-auto px-4 py-4')}>
-          <div role="alert" className="bg-fw-danger-bg border border-fw-danger/30 text-fw-danger px-4 py-3 rounded-fw-md font-fw-sans text-body-sm">
+          <div role="alert" className="bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-fw-md font-fw-sans text-body-sm">
             {error}
           </div>
         </div>
@@ -967,7 +967,7 @@ export default function ContinueRoundClient({
           <Button
             variant="primary"
             onClick={() => setShowFinishConfirm(true)}
-            className="flex-shrink-0 rounded-fw-md bg-accent-500 px-4 py-2 font-fw-sans text-body-sm font-medium text-text-on-accent transition-colors hover:bg-accent-600 active:bg-accent-600"
+            className="flex-shrink-0 rounded-fw-md bg-accent-700 px-4 py-2 font-fw-sans text-body-sm font-medium text-text-on-accent transition-colors hover:bg-accent-800 active:bg-accent-600"
           >
             Submit Round
           </Button>

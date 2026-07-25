@@ -34,7 +34,7 @@ describe('InsightCard — iconTone valence override', () => {
       <InsightCard priority="critical" title="Critical signal" />,
     );
     const cls = iconWrapClassName(container);
-    expect(cls).toContain('text-fw-danger');
+    expect(cls).toContain('text-fw-danger-ink');
     expect(cls).toContain('bg-fw-danger-bg');
   });
 
@@ -45,7 +45,7 @@ describe('InsightCard — iconTone valence override', () => {
       <InsightCard priority="critical" iconTone="positive" title="Plays better under fatigue" />,
     );
     const cls = iconWrapClassName(container);
-    expect(cls).toContain('text-fw-success');
+    expect(cls).toContain('text-fw-success-ink');
     expect(cls).toContain('bg-fw-success-bg');
     expect(cls).not.toContain('bg-fw-danger-bg');
   });

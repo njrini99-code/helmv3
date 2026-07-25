@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useCallback, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { prefersReducedMotion, useScrollFrame } from './motion';
 
@@ -52,6 +52,35 @@ interface LandingHeaderProps {
 export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Escape, outside-click and scroll lock — the open sheet had none of the
+  // three (audit 2026-07-24, L-10). It could only be closed by hitting the
+  // hamburger again, and the page kept scrolling underneath it.
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    const onPointer = (e: PointerEvent) => {
+      const t = e.target as Node | null;
+      if (!t) return;
+      // The toggle owns its own open/close; ignore clicks on it so this
+      // handler doesn't immediately undo the button's toggle.
+      if (menuRef.current?.contains(t)) return;
+      if ((t as Element).closest?.('[aria-controls="landing-mobile-menu"]')) return;
+      setMenuOpen(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointer);
+    };
+  }, [menuOpen]);
   const pathname = usePathname();
   // Off the landing page the section anchors navigate home; on it they
   // smooth-scroll in place.
@@ -85,8 +114,14 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
       {/* Equal flex-1 side clusters keep the nav lens on the true page
           centerline — with flex-none sides the wider right cluster pushes
           the mx-auto lens visibly left of center. */}
-      <div className="relative mx-auto flex max-w-[1320px] items-center gap-5 px-[clamp(20px,4vw,64px)]">
-        <div className="flex flex-1 items-center">
+      {/* min-w-0 on the brand cluster + a narrower gap below sm.
+          At 320 the intrinsic widths (brand 91 + CTA 138 + burger 44 + gaps +
+          padding = 353) exceeded the viewport, and because the CTA carries
+          `whitespace-nowrap` the flex items OVERLAPPED instead of shrinking —
+          the pill sat on top of the wordmark and captured its clicks
+          (elementFromPoint over the "m" returned the button, audit L-03). */}
+      <div className="relative mx-auto flex max-w-[1320px] items-center gap-2 px-[clamp(20px,4vw,64px)] sm:gap-5">
+        <div className="flex min-w-0 flex-1 items-center overflow-hidden">
           <Link
             href="/#top"
             onClick={onHome ? (e) => scrollToHash(e, '#top') : undefined}
@@ -124,9 +159,12 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
             variant="primary"
             size="sm"
             onClick={onRequestDemo}
-            className="rounded-full bg-primary-700 px-5 text-[0.8125rem] font-semibold hover:bg-primary-800 shadow-[0_1px_1px_oklch(0.35_0.08_150/0.4),0_2px_6px_oklch(0.35_0.08_150/0.25)]"
+            className="shrink-0 rounded-full bg-primary-700 px-3.5 text-[0.8125rem] font-semibold hover:bg-primary-800 sm:px-5 shadow-[0_1px_1px_oklch(0.35_0.08_150/0.4),0_2px_6px_oklch(0.35_0.08_150/0.25)]"
           >
-            Request Demo
+            {/* "Demo" under sm — the full label is what pushed the row past the
+                viewport at 320 (audit L-03). */}
+            <span className="sm:hidden">Demo</span>
+            <span className="hidden sm:inline">Request Demo</span>
           </Button>
           <Link
             href="/golf/login"
@@ -154,6 +192,7 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
           references a real element */}
       <div
         id="landing-mobile-menu"
+        ref={menuRef}
         hidden={!menuOpen}
         className="absolute inset-x-4 top-full mt-2 rounded-3xl border border-[oklch(1_0_0/0.5)] p-2 backdrop-blur-xl md:hidden"
         style={LENS_SCROLLED}
@@ -169,9 +208,13 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
                 {route.label}
               </Link>
             ))}
+            {/* text-primary, matching the rows above: at text-secondary this
+                read as a disabled item rather than the sign-in route
+                (audit 2026-07-24, L-11). */}
             <Link
               href="/golf/login"
-              className="rounded-2xl px-4 py-3 text-body font-medium text-text-secondary transition-colors hover:bg-[oklch(1_0_0/0.5)]"
+              onClick={() => setMenuOpen(false)}
+              className="rounded-2xl px-4 py-3 text-body font-medium text-text-primary transition-colors hover:bg-[oklch(1_0_0/0.5)]"
             >
               Log in
             </Link>

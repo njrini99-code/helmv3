@@ -121,7 +121,9 @@ export function GenomeRadar({
           />
           <PolarRadiusAxis
             domain={[0, max]}
-            tick={{ fill: VIZ_COLOR.textTertiary, fontSize: 10, fontFamily: VIZ_FONT.numeric }}
+            /* tickSize (11), not a hardcoded 10 — the radial axis was the one
+               chart tick left under the 11px legibility floor (audit P-30). */
+            tick={{ fill: VIZ_COLOR.textTertiary, fontSize: VIZ_FONT.tickSize, fontFamily: VIZ_FONT.numeric }}
             axisLine={false}
             tickCount={4}
           />

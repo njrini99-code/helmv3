@@ -287,7 +287,7 @@ function ShellFooter() {
         disabled={isSigningOut}
         aria-label={collapsed ? (isSigningOut ? 'Signing out…' : 'Sign out') : undefined}
         title={collapsed ? 'Sign out' : undefined}
-        className={cn(rowBase, 'text-nav-text-dim hover:bg-fw-danger/10 hover:text-fw-danger disabled:opacity-50')}
+        className={cn(rowBase, 'text-nav-text-dim hover:bg-fw-danger/10 hover:text-fw-danger-ink disabled:opacity-50')}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0 text-nav-text-dim" />
         {!collapsed && (
@@ -571,7 +571,7 @@ function FairwayDashboardContent({
   const skipLink = (
     <a
       href="#main-content"
-      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-500 text-text-on-accent px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
+      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-700 text-text-on-accent px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
     >
       Skip to main content
     </a>

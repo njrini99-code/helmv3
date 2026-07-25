@@ -149,6 +149,8 @@ export {
   type ToolbarFilterMenuProps,
   type ToolbarFilterOption,
   type FwStatusTone,
+  Slider,
+  type SliderProps,
 } from './controls';
 
 // ── forms ─────────────────────────────────────────────────────────────────--

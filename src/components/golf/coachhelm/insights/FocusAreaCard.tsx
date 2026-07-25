@@ -26,7 +26,6 @@ import type { ComponentType } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import type { FwStatusTone } from '@/components/fairway/controls/_internal';
@@ -135,24 +134,34 @@ export function FocusAreaCard({ focusArea, onClick, index = 0 }: FocusAreaCardPr
             : undefined
         }
       >
-        <div className="flex items-start gap-3">
-          <Badge
-            tone={PRIORITY_TONE[focusArea.priority] ?? 'neutral'}
-            numeric
-            className="h-8 w-8 shrink-0 justify-center rounded-fw-md p-0 text-body-sm"
-          >
-            {focusArea.priority}
-          </Badge>
+        {/*
+          Below `sm` the badge + icon move to a HEADER ROW above the text
+          instead of a left gutter beside it. As a gutter they cost ~76px of a
+          390px card, and with the chevron on the right the body text was
+          measured clamped into a 123px column with up to 465px of the actual
+          coaching hidden (audit P-25). The card carries the coaching; the
+          decoration should not outrank it.
+        */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+          <div className="flex items-center gap-2 sm:contents">
+            <Badge
+              tone={PRIORITY_TONE[focusArea.priority] ?? 'neutral'}
+              numeric
+              className="h-8 w-8 shrink-0 justify-center rounded-fw-md p-0 text-body-sm"
+            >
+              {focusArea.priority}
+            </Badge>
 
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
-            <AreaIcon size={17} />
-          </span>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
+              <AreaIcon size={17} />
+            </span>
+          </div>
 
           <div className="min-w-0 flex-1">
             <h4 className="font-fw-sans text-body font-medium leading-snug text-text-primary">
               {focusArea.title}
             </h4>
-            <p className="mt-1 line-clamp-2 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
+            <p className="mt-1 line-clamp-3 font-fw-sans text-body-sm leading-relaxed text-text-secondary sm:line-clamp-2">
               {focusArea.description}
             </p>
 
@@ -165,22 +174,21 @@ export function FocusAreaCard({ focusArea, onClick, index = 0 }: FocusAreaCardPr
               // area with no target as a dead placeholder-less gap (no visible
               // affordance at all), so a player just saw a description with
               // nothing to do next. Give it a real, tappable CTA wired to the
-              // SAME handler the whole card already uses (My Development is
-              // where a target actually gets set), gated on `onClick` being
-              // wired so it's never a dead button. `stopPropagation` avoids
-              // double-firing the parent card's own onClick.
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<IconTarget size={11} />}
-                className="mt-2.5 border border-dashed border-border-subtle px-3 py-1 text-caption"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClick();
-                }}
+              // A non-interactive CHIP, not a nested <Button>.
+              //
+              // The card root is already role="button" with this exact handler,
+              // so a real button inside it was a nested interactive control
+              // (axe nested-interactive, serious, 3 nodes) that did nothing the
+              // card didn't already do — the stopPropagation existed only to
+              // stop it firing twice (audit 2026-07-24, P-10). Keeping the
+              // visual affordance without the duplicate control resolves both.
+              <span
+                aria-hidden
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-fw-md border border-dashed border-border-subtle px-3 py-1 font-fw-sans text-caption text-text-secondary"
               >
+                <IconTarget size={11} />
                 Set a target
-              </Button>
+              </span>
             ) : null}
 
             {/* Progress sparkline — only when the coach/player has logged ≥2

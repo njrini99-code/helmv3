@@ -667,7 +667,7 @@ export function PerformanceDashboardClient({
                       return (
                         <Reveal key={r.player_id} staggerIndex={Math.min(i, 10)}>
                           <div className="flex flex-wrap items-center gap-3 py-3.5">
-                            <Avatar
+                            <Avatar decorative
                               name={getFullName(r.first_name, r.last_name)}
                               src={r.avatar_url || undefined}
                               size="sm"

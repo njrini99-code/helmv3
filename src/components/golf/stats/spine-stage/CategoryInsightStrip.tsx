@@ -154,7 +154,7 @@ export function CategoryInsightStrip({
                   <span
                     className={cn(
                       'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-eyebrow font-semibold tabular-nums',
-                      isLeak ? 'bg-fw-warning-bg text-fw-warning' : 'bg-fw-success-bg text-fw-success',
+                      isLeak ? 'bg-fw-warning-bg text-fw-warning-ink' : 'bg-fw-success-bg text-fw-success-ink',
                     )}
                   >
                     {isLeak ? (

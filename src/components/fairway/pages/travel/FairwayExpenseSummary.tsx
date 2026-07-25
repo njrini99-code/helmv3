@@ -155,15 +155,15 @@ export function FairwayExpenseSummary({
               <div className="mt-2 flex items-center gap-2">
                 {summary.total <= totalBudget ? (
                   <>
-                    <IconTrendingDown size={16} className="text-fw-success" />
-                    <span className="font-fw-sans text-body-sm text-fw-success">
+                    <IconTrendingDown size={16} className="text-fw-success-ink" />
+                    <span className="font-fw-sans text-body-sm text-fw-success-ink">
                       {formatCurrency(totalBudget - summary.total)} under budget
                     </span>
                   </>
                 ) : (
                   <>
-                    <IconTrendingUp size={16} className="text-fw-danger" />
-                    <span className="font-fw-sans text-body-sm text-fw-danger">
+                    <IconTrendingUp size={16} className="text-fw-danger-ink" />
+                    <span className="font-fw-sans text-body-sm text-fw-danger-ink">
                       {formatCurrency(summary.total - totalBudget)} over budget
                     </span>
                   </>

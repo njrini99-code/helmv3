@@ -173,7 +173,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             variant="secondary"
             onClick={handleDeleteClick}
             disabled={deleting}
-            className="text-fw-danger hover:bg-fw-danger-bg transition-colors"
+            className="text-fw-danger-ink hover:bg-fw-danger-bg transition-colors"
           >
             Delete
           </Button>

@@ -260,7 +260,10 @@ export function PlayerHomeBento({
         }
         sentence={
           bestCfg && worstCfg
-            ? `Strongest in ${bestCfg.display_label.toLowerCase()}; leaking most in ${worstCfg.display_label.toLowerCase()}.`
+            ? // display_label verbatim — it is already display copy ("SG: Putting").
+              // .toLowerCase() turned it into "sg: putting", which reads as a raw
+              // database key leaking into player-facing prose (audit P-27).
+              `Strongest in ${bestCfg.display_label}; leaking most in ${worstCfg.display_label}.`
             : 'Every metric vs PGA Tour and the team.'
         }
         onOpen={() => stage.open('standing')}
@@ -270,7 +273,11 @@ export function PlayerHomeBento({
 
       <BentoCell
         label="Trend"
-        sentence={trendSummary ?? 'Your performance trend fills in with more rounds.'}
+        // The chip's own prose, never the raw `trendSummary`: that string is
+        // the humanized enum ("Strong declining"), which read as a leaked
+        // database value sitting under a chip that already said "Declining"
+        // (audit P-27).
+        sentence={trendChip?.sentence ?? 'Your performance trend fills in with more rounds.'}
         onOpen={() => stage.open('profile')}
       >
         {trendChip ? <SignalChip tone={trendChip.tone}>{trendChip.label}</SignalChip> : null}
@@ -328,7 +335,13 @@ function SnapshotMetric({ label, value }: { label: string; value: string }) {
       <p className="truncate font-fw-mono text-[0.92rem] font-semibold leading-none tracking-[-0.03em] text-text-primary tabular-nums sm:text-h3">
         {value}
       </p>
-      <p className="mt-1.5 truncate font-fw-sans text-[0.55rem] font-semibold uppercase tracking-[0.06em] text-text-tertiary sm:text-[0.62rem]">
+      {/* Floored at 11px (0.6875rem) and allowed to wrap. These five labels
+          ("Score", "Fairways", "GIR", "Scramble", "Putts") name the player's
+          headline numbers and were rendering at 8.8px — below the 11px house
+          floor and the smallest type anywhere on the surface (audit
+          2026-07-24, P-12). Shrinking type is the wrong lever for a tight row;
+          wrapping is. */}
+      <p className="mt-1.5 font-fw-sans text-[0.6875rem] font-semibold uppercase leading-tight tracking-[0.06em] text-text-tertiary sm:text-[0.72rem]">
         {label}
       </p>
     </div>

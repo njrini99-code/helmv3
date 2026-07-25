@@ -376,7 +376,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor={`${uid}-course-code`} className="block text-sm font-medium text-text-secondary mb-1.5">
-                Course ID <span className="text-fw-danger">*</span>
+                Course ID <span className="text-fw-danger-ink">*</span>
               </label>
               <Input
                 id={`${uid}-course-code`}
@@ -389,7 +389,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             </div>
             <div className="col-span-2">
               <label htmlFor={`${uid}-course-name`} className="block text-sm font-medium text-text-secondary mb-1.5">
-                Course Name <span className="text-fw-danger">*</span>
+                Course Name <span className="text-fw-danger-ink">*</span>
               </label>
               <Input
                 id={`${uid}-course-name`}
@@ -416,7 +416,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-accent-500 text-text-on-accent'
+                      ? 'bg-accent-700 text-text-on-accent'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >

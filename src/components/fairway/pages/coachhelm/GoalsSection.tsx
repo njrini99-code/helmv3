@@ -104,6 +104,16 @@ export interface GoalsSectionProps {
   playerNameById?: Record<string, string>;
   /** Recently achieved goals (player view) — the validated-win surface. */
   achievedGoals?: FairwayGoalCardData[];
+  /**
+   * How many focus areas are rendered BELOW this section.
+   *
+   * Goals and focus areas are independent populations, but the page shows them
+   * stacked — so a bare "No active goals yet" sat directly above "Active focus
+   * areas — 3 areas" and read as a flat contradiction (audit 2026-07-24, P-04).
+   * When areas exist, the empty state names the distinction instead of denying
+   * what the reader can see immediately below it.
+   */
+  focusAreaCount?: number;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -296,6 +306,7 @@ export function GoalsSection({
   canCreate = false,
   playerNameById,
   achievedGoals = [],
+  focusAreaCount = 0,
 }: GoalsSectionProps) {
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -369,11 +380,21 @@ export function GoalsSection({
         <Surface padding="lg">
           <EmptyState
             icon={Target}
-            title={role === 'coach' ? 'No goals assigned yet' : 'No active goals yet'}
+            title={
+              role === 'coach'
+                ? 'No goals assigned yet'
+                : focusAreaCount > 0
+                  ? 'No goals set yet'
+                  : 'No active goals yet'
+            }
             description={
               role === 'coach'
                 ? 'Assign focus areas to set goals for this player. Shared and assigned goals show up here.'
-                : 'Set a goal to track a stat you want to improve — or accept one CoachHelm suggests below.'
+                : focusAreaCount > 0
+                  ? `A goal tracks one stat you want to move. You have ${focusAreaCount} focus ${
+                      focusAreaCount === 1 ? 'area' : 'areas'
+                    } below — set a goal to put a number on one of them.`
+                  : 'Set a goal to track a stat you want to improve — or accept one CoachHelm suggests below.'
             }
             action={canCreate ? setGoalButton : undefined}
           />
@@ -385,7 +406,7 @@ export function GoalsSection({
       {role === 'player' && achievedGoals.length > 0 ? (
         <Surface padding="md">
           <div className="mb-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-fw-success" aria-hidden />
+            <Trophy className="h-4 w-4 text-fw-success-ink" aria-hidden />
             <h3 className="font-fw-display text-body-lg font-medium text-text-primary">
               Recent wins
             </h3>

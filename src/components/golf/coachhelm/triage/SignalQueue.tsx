@@ -205,6 +205,7 @@ export function SignalQueue({
                         tabbable={selectedSignalId ? signal.id === selectedSignalId : signal.id === firstVisibleRowId}
                         href={signalHref(signal.id)}
                         onSelect={() => onSelectSignal(signal.id)}
+                        subjectName={group.playerName}
                       />
                     ))}
                   </div>

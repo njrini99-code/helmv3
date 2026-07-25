@@ -11,6 +11,13 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   status?: 'online' | 'offline' | 'away' | 'busy';
   showStatusRing?: boolean; // New: show status as ring instead of dot
   ring?: boolean; // Alias for showStatusRing
+  /**
+   * Set when the avatar sits beside a visible name label. Suppresses the
+   * image alt text and the `title` tooltip so the name is announced once
+   * rather than twice — rows read "DB Dylan Brooks Dylan Brooks" otherwise
+   * (audit M4). Mirrors the same prop on the Fairway Avatar.
+   */
+  decorative?: boolean;
 }
 
 const sizes = {
@@ -65,6 +72,7 @@ export function Avatar({
   status,
   showStatusRing = false,
   ring = false,
+  decorative = false,
   ...props
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
@@ -92,13 +100,13 @@ export function Avatar({
               sizeConfig.text,
               className
             )}
-            title={name}
+            title={decorative ? undefined : name}
             {...props}
           >
             {!showInitials ? (
               <Image
                 src={src!}
-                alt={name}
+                alt={decorative ? '' : name}
                 width={sizeConfig.px}
                 height={sizeConfig.px}
                 className="h-full w-full object-cover"
@@ -133,13 +141,13 @@ export function Avatar({
           sizeConfig.text,
           className
         )}
-        title={name}
+        title={decorative ? undefined : name}
         {...props}
       >
         {!showInitials ? (
           <Image
             src={src!}
-            alt={name}
+            alt={decorative ? '' : name}
             width={sizeConfig.px}
             height={sizeConfig.px}
             className="h-full w-full object-cover"

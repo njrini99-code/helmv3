@@ -149,7 +149,7 @@ export function EffectivenessScoreboard({
             <p
               className={cn(
                 'font-fw-sans text-body-sm',
-                calibration.tone === 'positive' && 'text-fw-success',
+                calibration.tone === 'positive' && 'text-fw-success-ink',
                 calibration.tone === 'warning' && 'text-fw-warning-ink',
                 calibration.tone === 'neutral' && 'text-text-tertiary',
               )}

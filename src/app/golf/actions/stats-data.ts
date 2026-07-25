@@ -15,6 +15,10 @@ import {
   type StatisticalStrengthWeakness,
 } from '@/lib/golf/strokes-gained';
 import { rankHoleAnalyses } from '@/lib/golf/worst-hole-ranking';
+import {
+  getPlayerSignalSettings,
+  SIGNAL_SETTINGS_FALLBACK,
+} from '@/lib/golf/player-signal-settings';
 import type {
   StatsFilter,
   StatsSummary,
@@ -1526,6 +1530,7 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
     trends: { score: [], gir: [], fairway: [], putts: [] },
     rollingAverages: { score5: [], score10: [], score20: [] },
     periodComparison: {
+      windowDays: SIGNAL_SETTINGS_FALLBACK.statsBenchmarkWindowDays,
       last30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
       previous30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
     },
@@ -1540,6 +1545,7 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
       trends: { score: [], gir: [], fairway: [], putts: [] },
       rollingAverages: { score5: [], score10: [], score20: [] },
       periodComparison: {
+        windowDays: SIGNAL_SETTINGS_FALLBACK.statsBenchmarkWindowDays,
         last30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
         previous30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
       },
@@ -1547,27 +1553,35 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
     };
   }
 
-  // Fetch all completed rounds with stats
-  const { data: roundsData, error } = await supabase
-    .from('golf_rounds')
-    .select(`
-      id,
-      round_date,
-      course_name,
-      round_type,
-      total_score,
-      score_to_par,
-      total_fairways_hit,
-      total_fairways,
-      total_gir,
-      total_gir_possible,
-      total_putts,
-      holes_played
-    `)
-    .eq('player_id', playerId)
-    .eq('status', 'completed')
-    .not('total_score', 'is', null)
-    .order('round_date', { ascending: true }); // Oldest first for trend charts
+  // Coach-configured benchmark width. Resolved alongside the rounds query
+  // rather than before it — it's a small config read and there's no reason to
+  // make the page wait on it serially. Falls back to 30 on any miss.
+  const [{ data: roundsData, error }, signalSettings] = await Promise.all([
+    // Fetch all completed rounds with stats
+    supabase
+      .from('golf_rounds')
+      .select(`
+        id,
+        round_date,
+        course_name,
+        round_type,
+        total_score,
+        score_to_par,
+        total_fairways_hit,
+        total_fairways,
+        total_gir,
+        total_gir_possible,
+        total_putts,
+        holes_played
+      `)
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .not('total_score', 'is', null)
+      .order('round_date', { ascending: true }), // Oldest first for trend charts
+    getPlayerSignalSettings(playerId),
+  ]);
+
+  const benchmarkWindowDays = signalSettings.statsBenchmarkWindowDays;
 
   if (error || !roundsData || roundsData.length === 0) {
     return {
@@ -1575,6 +1589,7 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
       trends: { score: [], gir: [], fairway: [], putts: [] },
       rollingAverages: { score5: [], score10: [], score20: [] },
       periodComparison: {
+        windowDays: SIGNAL_SETTINGS_FALLBACK.statsBenchmarkWindowDays,
         last30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
         previous30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
       },
@@ -1644,20 +1659,26 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
 
   const rollingAverages = { score5, score10, score20 };
 
-  // Period comparison (last 30 days vs previous 30 days)
+  // Period comparison — last N days vs the N before, where N is the coach's
+  // `stats_benchmark_window_days` (default 30, which is what this was fixed at
+  // before the setting existed). A shorter window makes the benchmark react
+  // faster and noisier; a longer one makes it steadier and slower to move.
   const now = new Date();
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const sixtyDaysAgo = new Date(now);
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const windowStart = new Date(now);
+  windowStart.setDate(windowStart.getDate() - benchmarkWindowDays);
+  const priorStart = new Date(now);
+  priorStart.setDate(priorStart.getDate() - benchmarkWindowDays * 2);
 
-  const last30Raw = roundsData.filter(r => new Date(r.round_date) >= thirtyDaysAgo);
+  const last30Raw = roundsData.filter(r => new Date(r.round_date) >= windowStart);
   const prev30Raw = roundsData.filter(r => {
     const date = new Date(r.round_date);
-    return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+    return date >= priorStart && date < windowStart;
   });
 
+  // The keys stay `last30Days`/`previous30Days` (payload shape contract across
+  // ~12 call sites); `windowDays` is what any label must read.
   const periodComparison = {
+    windowDays: benchmarkWindowDays,
     last30Days: calculatePeriodStats(last30Raw),
     previous30Days: calculatePeriodStats(prev30Raw),
   };
@@ -2426,7 +2447,11 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
 
   // Rank worst/best with a per-hole sample floor — a hole played once/twice
   // can't be crowned "toughest" or "easiest" off one blow-up or one birdie.
-  const { worstHoles, bestHoles } = rankHoleAnalyses(holes);
+  // The floor is the coach's `min_hole_plays_for_ranking` (default 3, which is
+  // the constant this replaced): raise it and the lists get shorter but each
+  // entry is better evidenced.
+  const { minHolePlaysForRanking } = await getPlayerSignalSettings(playerId);
+  const { worstHoles, bestHoles } = rankHoleAnalyses(holes, minHolePlaysForRanking);
 
   // Par-specific + closing averages: mean of per-play (score - par) bucketed by
   // each play's ACTUAL par (NOT an average of per-hole-number averages, which the

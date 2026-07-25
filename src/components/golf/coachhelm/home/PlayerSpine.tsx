@@ -51,7 +51,14 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
           </Link>
         </div>
         {(priorities.length > 0 || ledger.length > 0) ? (
-          <div className="mt-3 flex min-w-0 gap-2 overflow-x-auto border-t border-white/15 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          /* Wraps below lg instead of scrolling.
+             As a hidden-scrollbar horizontal scroller this row hid 48% of
+             itself on a phone (clientWidth 324 vs scrollWidth 622 — 'Fairways',
+             'Greens' and 'Putts / rd' were all past the edge) with no fade, no
+             scrollbar and no tabindex, so the content was neither visible nor
+             keyboard-reachable (audit 2026-07-24, P-07). These are five short
+             chips; wrapping costs one line and shows all of them. */
+          <div className="mt-3 flex min-w-0 flex-wrap gap-2 border-t border-white/15 pt-3 lg:flex-nowrap lg:overflow-x-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
             {priorities.map((item) => (
               <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-700 px-3 py-1.5 font-fw-sans text-caption text-accent-100">
                 {item.title} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>

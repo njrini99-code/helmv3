@@ -130,8 +130,8 @@ export function DeltaChip({ value, direction, format, percent, className }: Delt
       className={cn(
         'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5',
         'font-fw-sans text-eyebrow font-semibold leading-none tracking-normal normal-case',
-        dir === 'up' && 'bg-fw-success-bg text-fw-success',
-        dir === 'down' && 'bg-fw-warning-bg text-fw-warning',
+        dir === 'up' && 'bg-fw-success-bg text-fw-success-ink',
+        dir === 'down' && 'bg-fw-warning-bg text-fw-warning-ink',
         dir === 'flat' && 'bg-inset text-text-tertiary',
         className,
       )}

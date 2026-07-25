@@ -451,7 +451,7 @@ export function MessageThreadPane({
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
+          <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
           {headerSubtitle ? (
             <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
           ) : null}
@@ -547,7 +547,7 @@ export function MessageThreadPane({
                   {!isOwn && (
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
                       {isFirstInGroup ? (
-                        <Avatar
+                        <Avatar decorative
                           name={senderName}
                           src={senderAvatar}
                           size="sm"
@@ -600,7 +600,7 @@ export function MessageThreadPane({
                     {/* Delete confirmation */}
                     {deleteConfirmId === msg.id && (
                       <Inset padding="none" className="mr-2 flex items-center gap-1 bg-fw-danger-bg px-2.5 py-1.5">
-                        <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger">Delete?</span>
+                        <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger-ink">Delete?</span>
                         <IconButton variant="danger" size="sm" aria-label="Confirm delete" onClick={onConfirmDelete}>
                           <Check size={18} aria-hidden="true" />
                         </IconButton>
@@ -655,7 +655,7 @@ export function MessageThreadPane({
                         className={cn(
                           'px-4 py-2.5',
                           isOwn
-                            ? 'bg-accent-500 text-text-on-accent'
+                            ? 'bg-accent-700 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',
                           isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
                           isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',

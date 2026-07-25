@@ -640,6 +640,21 @@ export interface AnalysisOptions {
    * `@/lib/coachhelm/v2/insights/gate-context`.
    */
   philosophyGate?: import('./insights/gate-context').PhilosophyGate;
+  /**
+   * Coach's `golf_coach_philosophy.pattern_lookback_days` — the rolling window
+   * (days) the v2 pattern miner loads rounds from. Omitted ⇒ the miner's own
+   * `WINDOW_DAYS` default (90), i.e. the pre-setting behaviour.
+   *
+   * Scoped to the pattern miner. The other mining windows in this engine are
+   * calibrated per insight type and are not driven by this.
+   */
+  patternLookbackDays?: number;
+  /**
+   * Coach's `golf_coach_philosophy.min_rounds_for_signal` — completed rounds
+   * required before the engine will make a claim. Raises the miner's own
+   * technical floor (`ABSOLUTE_MIN_ROUNDS`); it can never lower it.
+   */
+  minRoundsForSignal?: number;
 }
 
 /** Full player analysis result */

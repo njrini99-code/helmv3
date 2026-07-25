@@ -187,7 +187,7 @@ export function NewMessageModal({
                     selectedId === result.userId && 'bg-primary-50 hover:bg-primary-50'
                   )}
                 >
-                  <Avatar name={result.name} src={result.avatar} size="md" />
+                  <Avatar decorative name={result.name} src={result.avatar} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-warm-900 truncate">{result.name}</p>
                     {result.subtitle && (

@@ -94,6 +94,18 @@ export interface TrendAnalysisResponse {
     score20: (number | null)[];
   };
   periodComparison: {
+    /**
+     * Width of each comparison period, in days — the coach's
+     * `stats_benchmark_window_days` setting (default 30).
+     *
+     * REQUIRED, deliberately. The field names below stay `last30Days` /
+     * `previous30Days` because they are the payload's shape contract across a
+     * dozen call sites, but they no longer imply 30. Every label that says
+     * "last N days" must read THIS number — making it optional would let a
+     * producer forget it and have the UI confidently print "30" while
+     * comparing 90-day windows.
+     */
+    windowDays: number;
     last30Days: {
       roundCount: number;
       scoringAvg: number | null;

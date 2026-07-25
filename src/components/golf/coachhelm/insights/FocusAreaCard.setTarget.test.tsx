@@ -42,32 +42,45 @@ function area(overrides: Partial<PlayerFocusArea> = {}): PlayerFocusArea {
 }
 
 describe('FocusAreaCard (golf/insights) — "Set a target" CTA (#58/#75)', () => {
-  // NOTE: the whole card is ALSO a `role="button"` (it's clickable), whose
-  // computed accessible name is every descendant's text concatenated — which
-  // includes the CTA's own "Set a target" text as a substring. An exact-match
-  // `name` (the RTL default for a plain string) disambiguates the leaf CTA
-  // button from that outer card; a loose regex would match both.
+  // CONTRACT CHANGE (audit 2026-07-24, P-10): "Set a target" is a
+  // NON-INTERACTIVE chip, not a nested <button>.
+  //
+  // The card root is already `role="button"` carrying this exact handler, so a
+  // real button inside it was a nested interactive control (axe
+  // nested-interactive, serious) that did nothing the card didn't already do —
+  // its `stopPropagation` existed only to stop the handler firing twice. The
+  // affordance stays; the duplicate control is gone. What matters now is that
+  // the chip is VISIBLE and that clicking it still reaches the card's handler
+  // exactly once (it bubbles, rather than firing its own copy).
 
-  it('with a wired onClick and no target_improvement: shows a "Set a target" CTA', () => {
+  it('with a wired onClick and no target_improvement: shows a "Set a target" affordance', () => {
     render(<FocusAreaCard focusArea={area()} onClick={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: 'Set a target' })).toBeInTheDocument();
+    expect(screen.getByText('Set a target')).toBeInTheDocument();
   });
 
-  it('clicking "Set a target" invokes the same onClick as the rest of the card, exactly once', async () => {
+  it('the affordance is NOT its own button — the card is the only interactive control', () => {
+    render(<FocusAreaCard focusArea={area()} onClick={vi.fn()} />);
+
+    // Exact-match name: the outer card's accessible name concatenates all
+    // descendant text, so a loose regex would match the card itself.
+    expect(
+      screen.queryByRole('button', { name: 'Set a target' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('clicking "Set a target" invokes the card onClick exactly once', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
     render(<FocusAreaCard focusArea={area()} onClick={onClick} />);
 
-    await user.click(screen.getByRole('button', { name: 'Set a target' }));
+    await user.click(screen.getByText('Set a target'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('with no onClick wired: renders no CTA at all (never a dead button)', () => {
+  it('with no onClick wired: renders no CTA at all (never a dead affordance)', () => {
     render(<FocusAreaCard focusArea={area()} />);
-    expect(
-      screen.queryByRole('button', { name: 'Set a target' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Set a target')).not.toBeInTheDocument();
   });
 
   it('with a real target_improvement: shows the target pill, not the CTA', () => {

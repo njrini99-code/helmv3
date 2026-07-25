@@ -113,6 +113,14 @@
   --fw-color-warning-ring: var(--fw-color-warm-300);
   --fw-color-danger:     oklch(0.586 0.222 27);  /* #DC2626 */
   --fw-color-danger-bg:  oklch(0.955 0.03 25);
+  /* Ink counterparts for the danger/success washes, mirroring warning-ink.
+     The 2026-07-24 audit measured EVERY status fill against its own wash and
+     all three failed as text: warning 2.08:1, danger 4.01:1, success 2.83:1.
+     A fill colour is tuned to read as a solid swatch, not as ink on its own
+     tint — so pair `bg-fw-*-bg` with `text-fw-*-ink`, never `text-fw-*`.
+     Measured on the light wash: danger-ink 7.27:1, success-ink 7.59:1. */
+  --fw-color-danger-ink:   oklch(0.44 0.16 25);
+  --fw-color-success-ink:  var(--fw-color-accent-800);
 
   /* ---- Dark chrome (sidebar) semantic aliases — warm, recessive ---- */
   --fw-color-nav-bg:       var(--fw-color-warm-950);
@@ -354,6 +362,10 @@
   --fw-color-warning-ring: oklch(0.46 0.055 72);
   --fw-color-danger:     oklch(0.685 0.185 26);    /* lifted red — reads on espresso */
   --fw-color-danger-bg:  oklch(0.300 0.075 25);
+  /* Dark counterparts: the wash is deep here, so the ink lifts light (same
+     move warning-ink makes above). Success keeps its green identity. */
+  --fw-color-danger-ink:   oklch(0.885 0.075 27);
+  --fw-color-success-ink:  var(--fw-color-accent-700);
 
   /* ---- Dark chrome (sidebar) — make it the DARKEST layer so it still reads as
           distinct chrome against the (now dark) canvas, not one flat black. ---- */

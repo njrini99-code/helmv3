@@ -163,8 +163,8 @@ function describeTrend(trend: ThemeTrend): { label: string; cls: string; arrow: 
   // SG SIGN CONVENTION: higher SG is better → improving = good = success/green.
   // Declining maps to the DANGER token, never amber/warning.
   return trend.direction === 'improving'
-    ? { label: 'Improving', cls: 'text-fw-success', arrow: '↗' }
-    : { label: 'Declining', cls: 'text-fw-danger', arrow: '↘' };
+    ? { label: 'Improving', cls: 'text-fw-success-ink', arrow: '↗' }
+    : { label: 'Declining', cls: 'text-fw-danger-ink', arrow: '↘' };
 }
 
 function CategorySection({ theme, onMakePlan, makePlanPendingId }: CategorySectionProps) {

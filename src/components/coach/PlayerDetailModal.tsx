@@ -83,7 +83,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
         <div className="p-6 space-y-6">
           {/* Header Section */}
           <div className="flex flex-wrap items-start gap-6">
-            <Avatar
+            <Avatar decorative
               name={getFullName(player.first_name, player.last_name)}
               src={player.avatar_url || undefined}
               size="xl"

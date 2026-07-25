@@ -365,12 +365,12 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         {(!cls.start_time || cls.days.length === 0) && (
                           <div className="flex items-center gap-2 mt-1.5">
                             {!cls.start_time && (
-                              <span className="text-micro font-medium text-fw-warning bg-fw-warning-bg px-1.5 py-0.5 rounded">
+                              <span className="text-micro font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
                                 Missing time
                               </span>
                             )}
                             {cls.days.length === 0 && (
-                              <span className="text-micro font-medium text-fw-warning bg-fw-warning-bg px-1.5 py-0.5 rounded">
+                              <span className="text-micro font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
                                 Missing days
                               </span>
                             )}
@@ -389,7 +389,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         </IconButton>
                         <IconButton variant="default" aria-label="Delete"
                           onClick={() => handleDelete(index)}
-                          className="p-2 text-text-tertiary hover:text-fw-danger hover:bg-fw-danger-bg rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                          className="p-2 text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                           title="Remove class"
                         >
                           <IconTrash size={16} />

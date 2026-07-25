@@ -240,7 +240,7 @@ export function BenLeahForm() {
         <div
           className={cn(
             'flex items-start gap-2 rounded-fw-md border px-3 py-2 text-sm',
-            state.ok ? 'border-accent-500/35 bg-accent-50 text-accent-700' : 'border-fw-danger/35 bg-fw-danger-bg text-fw-danger',
+            state.ok ? 'border-accent-500/35 bg-accent-50 text-accent-700' : 'border-fw-danger/35 bg-fw-danger-bg text-fw-danger-ink',
           )}
           role="status"
         >

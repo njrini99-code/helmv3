@@ -104,7 +104,7 @@ export function PendingMemberActions({
         disabled={pending !== null}
         onClick={() => handle('reject')}
         aria-label={`Decline ${playerName}'s join request`}
-        className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+        className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
       >
         <IconX size={18} />
       </IconButton>
@@ -216,9 +216,9 @@ export function RosterRowMenu({
             setMenuOpen(false);
             setRemoveOpen(true);
           }}
-          className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+          className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
         >
-          <IconTrash size={16} className="text-fw-danger" />
+          <IconTrash size={16} className="text-fw-danger-ink" />
           Remove from team
         </PopoverPanel.Item>
       </PopoverPanel>
@@ -263,7 +263,7 @@ export function RosterRowMenu({
                 options={POSITION_SELECT_OPTIONS}
               />
             </div>
-            {error ? <p className="font-fw-sans text-caption text-fw-danger">{error}</p> : null}
+            {error ? <p className="font-fw-sans text-caption text-fw-danger-ink">{error}</p> : null}
           </div>
         </ModalShell.Body>
         <ModalShell.Footer>
@@ -414,7 +414,7 @@ export function AssignPlayerModal({
               aria-label="Search players"
             />
             {searchError ? (
-              <p className="font-fw-sans text-body-sm text-fw-danger">{searchError}</p>
+              <p className="font-fw-sans text-body-sm text-fw-danger-ink">{searchError}</p>
             ) : !searching && query.trim().length >= 2 && results.length === 0 ? (
               <p className="font-fw-sans text-body-sm text-text-tertiary">No matching players found.</p>
             ) : query.trim().length > 0 && query.trim().length < 2 ? (
@@ -493,7 +493,7 @@ export function AssignPlayerModal({
                 options={POSITION_SELECT_OPTIONS}
               />
             </div>
-            {saveError ? <p className="font-fw-sans text-caption text-fw-danger">{saveError}</p> : null}
+            {saveError ? <p className="font-fw-sans text-caption text-fw-danger-ink">{saveError}</p> : null}
           </div>
         )}
       </ModalShell.Body>

@@ -302,7 +302,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
           <div className="mt-2 flex h-5 items-center justify-between gap-3">
             <p className="min-w-0 flex-1 truncate font-fw-sans text-eyebrow text-text-tertiary">
               {achievedAt ? (
-                <span className="inline-flex items-center gap-1 font-medium text-fw-success">
+                <span className="inline-flex items-center gap-1 font-medium text-fw-success-ink">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Hit {achievedAt} · validated on rounds
                 </span>

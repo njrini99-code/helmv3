@@ -239,14 +239,18 @@ export const CalendarSurface = React.forwardRef<
             ),
             outside: cn(
               defaults.outside,
-              '[&>button]:text-text-tertiary [&>button]:opacity-60',
+              // No opacity stack. text-text-tertiary was deliberately darkened
+              // (P422) to clear 4.5:1 on every warm surface; multiplying it by
+              // 0.6 threw that away and put out-of-month days — which are still
+              // clickable — at ~2.3:1 (audit P-26 / M9).
+              '[&>button]:text-text-tertiary',
             ),
             disabled: cn(defaults.disabled, '[&>button]:opacity-40'),
             hidden: cn(defaults.hidden, 'invisible'),
             // ---- selection states ----
             selected: cn(
               defaults.selected,
-              '[&>button]:bg-accent-500 [&>button]:text-text-on-accent [&>button]:shadow-soft',
+              '[&>button]:bg-accent-700 [&>button]:text-text-on-accent [&>button]:shadow-soft',
               '[&>button]:hover:bg-accent-600 [&>button]:hover:text-text-on-accent',
             ),
             range_start: cn(defaults.range_start, styles.rangeStart),

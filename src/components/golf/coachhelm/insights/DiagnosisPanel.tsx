@@ -67,7 +67,7 @@ function CausalityChip({ level }: { level: Diagnosis['causality_level'] }) {
     <span
       className={cn(
         'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-medium',
-        measured ? 'bg-fw-success-bg text-fw-success' : 'bg-fw-warning-bg text-fw-warning',
+        measured ? 'bg-fw-success-bg text-fw-success-ink' : 'bg-fw-warning-bg text-fw-warning-ink',
       )}
       title={
         measured
@@ -102,7 +102,7 @@ function DriverRow({ driver }: { driver: DiagnosisDriver }) {
         {display}
         <span className="ml-2 text-caption text-text-tertiary">
           {thin ? (
-            <span className="mr-1 text-fw-warning" title={`Thin sample (n=${driver.sample_n})`}>
+            <span className="mr-1 text-fw-warning-ink" title={`Thin sample (n=${driver.sample_n})`}>
               •
             </span>
           ) : null}
@@ -114,11 +114,11 @@ function DriverRow({ driver }: { driver: DiagnosisDriver }) {
 }
 
 const TRUST_BADGE: Record<DiagnosisTrust, { label: string; cls: string }> = {
-  proven: { label: 'Proven', cls: 'bg-fw-success-bg text-fw-success' },
+  proven: { label: 'Proven', cls: 'bg-fw-success-bg text-fw-success-ink' },
   promising: { label: 'Promising', cls: 'bg-accent-100 text-accent-700' },
   needs_validation: { label: 'Needs validation', cls: 'bg-surface-sunken text-text-tertiary' },
   new_hypothesis: { label: 'New hypothesis', cls: 'bg-surface-sunken text-text-tertiary' },
-  underperforming: { label: 'Underperforming', cls: 'bg-fw-danger-bg text-fw-danger' },
+  underperforming: { label: 'Underperforming', cls: 'bg-fw-danger-bg text-fw-danger-ink' },
 };
 
 export interface DiagnosisPanelProps {

@@ -256,8 +256,8 @@ function formatToParShort(diff: number | null): string {
 
 function ratingNumberTone(r: number): string {
   if (r >= 70) return 'text-accent-700';
-  if (r >= 50) return 'text-fw-warning';
-  return 'text-fw-danger';
+  if (r >= 50) return 'text-fw-warning-ink';
+  return 'text-fw-danger-ink';
 }
 function ratingRingTone(r: number): string {
   if (r >= 70) return 'stroke-accent-500';

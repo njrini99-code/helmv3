@@ -2,9 +2,16 @@
  * Event-reminders cron route tests (calendar audit 2026-06-10, findings
  * #3 / #13 / #27).
  *
+ * Extended 2026-07-25 for per-team lead times (migration 20260725150000).
+ *
  * Verifies the hourly-window contract the route was designed around:
- *   - 25h / 75min lookahead windows produce the expected reminder rows
- *     (24h + 1h cadences as separate notification types)
+ *   - the default leads (24h / 60min) produce the expected reminder rows
+ *     (early + late as separate notification types)
+ *   - a team's OWN configured leads drive its events, independently of other
+ *     teams in the same run, and a team with reminders disabled gets nothing
+ *   - user-facing copy is generated from the real lead, so a 3-day reminder is
+ *     never announced as "Tomorrow" just because the slot is still named
+ *     event_reminder_24h
  *   - fan-out is AWAITED before marking: a failed push/email send is NOT
  *     marked sent (no golf_calendar_notifications row → retried next tick)
  *   - declined attendees and already-reminded (event,user) pairs are skipped
@@ -28,6 +35,15 @@ interface EventRow {
   location: string | null;
   cancelled_at: string | null;
   status: string | null;
+  team_id: string;
+}
+
+/** Per-team reminder lead times (migration 20260725150000). */
+interface TeamSettingsRow {
+  team_id: string;
+  event_reminders_enabled?: boolean | null;
+  event_reminder_early_hours?: number | null;
+  event_reminder_late_minutes?: number | null;
 }
 
 interface AttendanceRow {
@@ -38,6 +54,7 @@ interface AttendanceRow {
 
 interface MockConfig {
   events?: EventRow[];
+  teamSettings?: TeamSettingsRow[];
   attendance?: AttendanceRow[];
   players?: Array<{ id: string; user_id: string | null }>;
   existingNotifications?: Array<{ event_id: string; user_id: string; notification_type: string }>;
@@ -93,6 +110,12 @@ function makeClient(cfg: MockConfig) {
         const ids = (getFilterArg(calls, 'in')?.[1] ?? []) as string[];
         return (cfg.existingNotifications ?? []).filter(
           (n) => n.notification_type === kind && ids.includes(n.event_id),
+        ) as unknown as Array<Record<string, unknown>>;
+      }
+      case 'golf_team_settings': {
+        const ids = (getFilterArg(calls, 'in')?.[1] ?? []) as string[];
+        return (cfg.teamSettings ?? []).filter((t) =>
+          ids.includes(t.team_id),
         ) as unknown as Array<Record<string, unknown>>;
       }
       case 'users': {
@@ -170,6 +193,7 @@ function eventAt(id: string, offsetMs: number, overrides: Partial<EventRow> = {}
     location: 'Range',
     cancelled_at: null,
     status: 'confirmed',
+    team_id: 'T1',
     ...overrides,
   };
 }
@@ -216,7 +240,7 @@ describe('event-reminders cron route', () => {
     expect(res.status).toBe(401);
   });
 
-  it('hourly windows: 25h lookahead drives the 24h cadence, 75min drives the 1h cadence', async () => {
+  it('hourly windows: the default leads drive the early and late slots', async () => {
     // E1 at +2h  → inside 25h window only
     // E2 at +30m → inside BOTH windows (gets a 24h row AND a 1h row)
     // E3 at +30h → outside both windows
@@ -251,6 +275,104 @@ describe('event-reminders cron route', () => {
         ignoreDuplicates: true,
       });
     }
+  });
+
+  it('honours per-team lead times: two teams, two different schedules', async () => {
+    // T1 keeps the defaults (24h / 60min). T2 is set to 3 days / 6 hours.
+    // E1 at +30h is OUTSIDE T1's early window but INSIDE T2's.
+    // E2 at +5h is INSIDE T2's late window (6h) but not T1's (60min).
+    currentClient = makeClient({
+      events: [
+        eventAt('E1', 30 * HOUR, { team_id: 'T1' }),
+        eventAt('E2', 30 * HOUR, { team_id: 'T2' }),
+        eventAt('E3', 5 * HOUR, { team_id: 'T2' }),
+      ],
+      teamSettings: [
+        { team_id: 'T1' },
+        { team_id: 'T2', event_reminder_early_hours: 72, event_reminder_late_minutes: 360 },
+      ],
+      attendance: [
+        { event_id: 'E1', player_id: 'P1', status: 'accepted' },
+        { event_id: 'E2', player_id: 'P1', status: 'accepted' },
+        { event_id: 'E3', player_id: 'P1', status: 'accepted' },
+      ],
+      players: [{ id: 'P1', user_id: 'U1' }],
+      users: [{ id: 'U1', email: 'u1@x.test' }],
+    });
+
+    const res = await GET(authed());
+    expect(res.status).toBe(200);
+
+    // E1 (T1, 30h out) must NOT be reminded — T1's early lead is 24h.
+    // E2 (T2, 30h out) and E3 (T2, 5h out) both fall inside T2's 72h early lead.
+    const rows24 = upsertsForKind('event_reminder_24h');
+    expect(rows24.map((r) => r.event_id).sort()).toEqual(['E2', 'E3']);
+
+    // Only E3 is inside a late window: T2's 6h lead. E2 is 30h out.
+    const rows1 = upsertsForKind('event_reminder_1h');
+    expect(rows1.map((r) => r.event_id)).toEqual(['E3']);
+  });
+
+  it('a team with reminders disabled gets nothing, without affecting other teams', async () => {
+    currentClient = makeClient({
+      events: [
+        eventAt('E1', 2 * HOUR, { team_id: 'T1' }),
+        eventAt('E2', 2 * HOUR, { team_id: 'T2' }),
+      ],
+      teamSettings: [
+        { team_id: 'T1', event_reminders_enabled: false },
+        { team_id: 'T2', event_reminders_enabled: true },
+      ],
+      attendance: [
+        { event_id: 'E1', player_id: 'P1', status: 'accepted' },
+        { event_id: 'E2', player_id: 'P2', status: 'accepted' },
+      ],
+      players: [
+        { id: 'P1', user_id: 'U1' },
+        { id: 'P2', user_id: 'U2' },
+      ],
+      users: [
+        { id: 'U1', email: 'u1@x.test' },
+        { id: 'U2', email: 'u2@x.test' },
+      ],
+    });
+
+    const res = await GET(authed());
+    expect(res.status).toBe(200);
+
+    const all = upserts.flatMap((u) => u.rows);
+    expect(all.map((r) => r.event_id)).toEqual(['E2']);
+    // Nothing was even attempted for the muted team.
+    expect(sendPushMock).toHaveBeenCalledTimes(1);
+    expect(sendPushMock).toHaveBeenCalledWith('event_rsvp_reminder', 'U2', expect.anything());
+  });
+
+  it('reminder copy describes the team\u2019s real lead, not the slot name', async () => {
+    currentClient = makeClient({
+      events: [eventAt('E1', 60 * HOUR, { team_id: 'T2' })],
+      teamSettings: [
+        { team_id: 'T2', event_reminder_early_hours: 72, event_reminder_late_minutes: 360 },
+      ],
+      attendance: [{ event_id: 'E1', player_id: 'P1', status: 'accepted' }],
+      players: [{ id: 'P1', user_id: 'U1' }],
+      users: [{ id: 'U1', email: 'u1@x.test' }],
+    });
+
+    await GET(authed());
+
+    // A 3-day lead must not be announced as "Tomorrow" just because the slot
+    // is still called event_reminder_24h in the database.
+    const row = upsertsForKind('event_reminder_24h')[0];
+    expect(row?.title).toBe('In 3 days: Event E1');
+    expect(row?.title).not.toContain('Tomorrow');
+
+    // The email/push payload carries the same wording.
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      'event_rsvp_reminder',
+      'U1',
+      'u1@x.test',
+      expect.objectContaining({ reminderWindow: '3 days' }),
+    );
   });
 
   it('a failed push send is NOT marked sent (retryable next tick); successes still are', async () => {

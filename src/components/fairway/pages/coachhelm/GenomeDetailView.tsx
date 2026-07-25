@@ -645,7 +645,7 @@ function PersonaInstrument({
       {/* Watchouts → each links to assign a focus area (close the loop). */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <IconWarning size={15} className="text-fw-warning" />
+          <IconWarning size={15} className="text-fw-warning-ink" />
           <h3 className="font-fw-sans text-body-sm font-semibold uppercase tracking-wide text-text-secondary">
             Watchouts
           </h3>

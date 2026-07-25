@@ -19,6 +19,14 @@ export type FairwayIcon = ComponentType<{ size?: number; className?: string } & 
 export interface NavItem {
   /** Visible label + accessible name. */
   readonly label: string;
+  /**
+   * Compact label for the mobile bottom bar only. The bar splits the viewport
+   * into equal columns, so at 320px a 9-character label truncates mid-word
+   * ("CoachHelm" → "CoachH…", audit P-31). Rails and pop-outs always show the
+   * full `label`, and `label` remains the accessible name everywhere — this
+   * only shortens the glyph strip under the icon.
+   */
+  readonly shortLabel?: string;
   /** Destination href (rendered via the shell's `linkComponent`). */
   readonly href: string;
   /** Leading glyph. */

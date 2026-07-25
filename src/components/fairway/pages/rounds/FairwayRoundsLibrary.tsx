@@ -426,7 +426,14 @@ export function FairwayRoundsLibrary({
           with a defined edge + resting shadow (NOT the old sunken-in-sunken
           well), and the two scoring tiles carry their real chronological series
           so a green/amber sparkline + delta reads at a glance. ─────────────--*/}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      {/* items-start below md (audit 2026-07-24, P-16): grid items stretch to the
+          tallest cell by default, so the value-only tiles ("Rounds", "Best
+          round") were height-matched to their sparkline-bearing neighbours and
+          rendered ~270px tall holding one number and one label — roughly 55%
+          blank, and with a 300px ViewHeader above it that ate half the first
+          mobile screen. At md+ all five sit in ONE row, where equal heights are
+          correct, so stretch comes back. */}
+      <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-5 md:items-stretch">
         <StatTile
           label="Rounds"
           value={starved ? undefined : stats!.totalRounds}

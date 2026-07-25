@@ -167,14 +167,14 @@ describe('RoundSGSummary — live state', () => {
     const { container: gainContainer } = render(
       <RoundSGSummary {...liveProps} strokesGainedTotal={2.1} />,
     );
-    expect(gainContainer.querySelector('span.text-fw-success')).not.toBeNull();
-    expect(gainContainer.querySelector('span.text-fw-warning')).toBeNull();
+    expect(gainContainer.querySelector('span.text-fw-success-ink')).not.toBeNull();
+    expect(gainContainer.querySelector('span.text-fw-warning-ink')).toBeNull();
 
     const { container: lossContainer } = render(
       <RoundSGSummary {...liveProps} strokesGainedTotal={-2.1} />,
     );
-    expect(lossContainer.querySelector('span.text-fw-warning')).not.toBeNull();
-    expect(lossContainer.querySelector('span.text-fw-success')).toBeNull();
+    expect(lossContainer.querySelector('span.text-fw-warning-ink')).not.toBeNull();
+    expect(lossContainer.querySelector('span.text-fw-success-ink')).toBeNull();
   });
 
   it('exposes the category breakdown via the tornado chart\'s accessible table fallback', () => {

@@ -132,7 +132,7 @@ function CronJobCard({ row }: { row: CronBoardRow }) {
         <RecentRunsStrip runs={row.recentRuns} />
       </div>
       {row.status === 'failed' && row.lastError ? (
-        <p className="mt-2 break-words border-t border-warm-200/60 pt-2 text-xs text-fw-danger">
+        <p className="mt-2 break-words border-t border-warm-200/60 pt-2 text-xs text-fw-danger-ink">
           {row.lastError}
         </p>
       ) : null}
@@ -217,7 +217,7 @@ function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
                   {row.status === 'failed' && row.lastError ? (
                     <p
                       title={row.lastError}
-                      className="mt-1 max-w-[260px] truncate text-xs text-fw-danger"
+                      className="mt-1 max-w-[260px] truncate text-xs text-fw-danger-ink"
                     >
                       {row.lastError}
                     </p>

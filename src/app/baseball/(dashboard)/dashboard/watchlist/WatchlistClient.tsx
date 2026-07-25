@@ -254,7 +254,7 @@ function WatchlistMobileCard({
             pressableClass({ ink: 'pursuit' }),
           )}
         >
-          <Avatar src={item.player?.avatar_url} name={name} size="md" />
+          <Avatar decorative src={item.player?.avatar_url} name={name} size="md" />
           <div className="min-w-0 flex-1">
             <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
             <Eyebrow
@@ -925,7 +925,7 @@ export function WatchlistClient() {
                                   onKeyDown={(e) => activateOnKey(e, () => setPeekPlayerId(item.player?.id || null))}
                                   className={cn('flex w-full items-center gap-3 rounded-fw-sm px-1 py-1 text-left outline-none', pressableClass({ ink: 'pursuit' }))}
                                 >
-                                  <Avatar src={item.player?.avatar_url} name={name} size="md" />
+                                  <Avatar decorative src={item.player?.avatar_url} name={name} size="md" />
                                   <div className="min-w-0">
                                     <p className="truncate font-annual text-body-sm text-text-primary">{name}</p>
                                     <p className="truncate text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</p>
@@ -1072,7 +1072,7 @@ export function WatchlistClient() {
                       addingPlayer ? 'cursor-not-allowed opacity-50' : pressableClass({ ink: 'pursuit' }),
                     )}
                   >
-                    <Avatar name={getFullName(player.first_name, player.last_name)} src={player.avatar_url} size="sm" />
+                    <Avatar decorative name={getFullName(player.first_name, player.last_name)} src={player.avatar_url} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-annual text-body-sm text-text-primary">
                         {getFullName(player.first_name, player.last_name)}

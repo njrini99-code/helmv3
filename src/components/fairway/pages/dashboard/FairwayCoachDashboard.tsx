@@ -57,6 +57,12 @@ import {
   type ColumnDef,
   type TrendPoint,
 } from '@/components/fairway';
+// The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
+// BOTH a KPI card's delta chip AND its Sparkline's `direction` prop from a
+// single call, so the two can never classify the same series two different
+// ways again. Direct-file import (not the barrel) mirrors how MetricCard
+// itself imports its trend classifier.
+import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import {
   IconUsers,
   IconCalendar,
@@ -173,32 +179,23 @@ function shortDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-/** A sparkline delta with the ACTUAL window it was computed over, so the
- *  chip's label never claims a window depth the data can't back. */
-interface SeriesDelta {
-  value: number;
-  points: number;
-}
-
 /**
- * Honest windowed delta over a sparkline series (oldest → newest): the SAME
- * split-half-average comparison `computeTrend()`/`computeTrendHigherIsBetter()`
- * already use server-side (dashboard-data.ts) to classify the qualitative
- * trend arrow — recent-half average vs. older-half average — not a raw
+ * Honest windowed delta + verdict over a sparkline series (oldest → newest).
+ * `computeSeriesTrend()` (charts/seriesTrend.ts) is the SAME split-half-
+ * average comparison `computeTrend()`/`computeTrendHigherIsBetter()` already
+ * use server-side (dashboard-data.ts) to classify the qualitative trend
+ * arrow — recent-half average vs. older-half average — not a raw
  * first-vs-last endpoint diff.
  *
- * Two bugs this fixes together (both reported against the Team KPI row):
- *   1. WINDOW MISMATCH — the chip was always labeled "last 5 rounds" even
- *      when the underlying sparkline had fewer finite points (a round
- *      missing GIR/putts data drops out before the 5-point slice is taken
- *      upstream). The label now states the REAL point count used.
- *   2. IMPLAUSIBLE SWINGS (e.g. a −50% GIR delta) — a raw endpoint diff
- *      compares exactly TWO individual rounds, and a single noisy/short
- *      round (a rain-shortened 9-hole round has a tiny GIR denominator) can
- *      swing that by tens of points. Averaging each half smooths a single
- *      outlier instead of handing it the whole delta, and — because it's the
- *      identical split used for the `trend` field — the numeric delta and
- *      the qualitative trend/color can never disagree.
+ * AUDIT-0724 finding #2: this dashboard used to compute this locally (via a
+ * duplicated `seriesDelta()`) and hand ONLY the numeric `.value` to the
+ * MetricCard delta chip, while `<Sparkline>` classified the SAME raw series
+ * on its own via endpoint diff — the GIR% card [61,78,72,50,61] rendered a
+ * "flat" sparkline next to a red "declining" chip because the two widgets
+ * were never told about each other's math. Now the ONE `computeSeriesTrend()`
+ * call below feeds both: `.value` → the delta chip, `.direction` → the
+ * Sparkline's `direction` prop (overriding its own internal classification),
+ * so they can only ever agree.
  *
  * Requires ≥3 finite points (mirrors this page's own "Need 3+ rounds"
  * honesty gate) — fewer than that suppresses the chip entirely rather than
@@ -206,19 +203,6 @@ interface SeriesDelta {
  * movement the dashboard payload supports client-side — the payload's
  * `trend` field is a qualitative direction, not a magnitude.
  */
-function seriesDelta(series: number[] | undefined): SeriesDelta | null {
-  if (!series) return null;
-  const finite = series.filter((v) => Number.isFinite(v));
-  if (finite.length < 3) return null;
-  const mid = Math.floor(finite.length / 2);
-  const olderHalf = finite.slice(0, mid); // series is oldest → newest
-  const recentHalf = finite.slice(mid);
-  if (olderHalf.length === 0 || recentHalf.length === 0) return null;
-  const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
-  const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
-  return { value: recentAvg - olderAvg, points: finite.length };
-}
-
 function seriesDeltaLabel(points: number): string {
   return `last ${points} round${points === 1 ? '' : 's'}`;
 }
@@ -399,9 +383,13 @@ export function FairwayCoachDashboard({
   const scoringSeries = enhancedData?.sparklines.scoringAvg.sparkline ?? [];
   const girSeries = enhancedData?.sparklines.girPct.sparkline ?? [];
   const puttsSeries = enhancedData?.sparklines.puttsPerRound.sparkline ?? [];
-  const scoringDelta = seriesDelta(scoringSeries);
-  const girDelta = seriesDelta(girSeries);
-  const puttsDelta = seriesDelta(puttsSeries);
+  // goodDirection matches each metric's own <Sparkline goodDirection=...> a
+  // few lines down (down for scoring/putts, up for GIR%) — same input, same
+  // options, ONE function, so the chip and the sparkline it sits next to
+  // can never disagree (AUDIT-0724 #2).
+  const scoringDelta = computeSeriesTrend(scoringSeries, { goodDirection: 'down' });
+  const girDelta = computeSeriesTrend(girSeries, { goodDirection: 'up' });
+  const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
 
   const trendFirst = trendPoints[0];
   const trendLast = trendPoints[trendPoints.length - 1];
@@ -433,7 +421,7 @@ export function FairwayCoachDashboard({
         const row = ctx.row.original;
         return (
           <span className="flex min-w-0 items-center gap-2.5">
-            <Avatar
+            <Avatar decorative
               name={row.player_name}
               src={row.player_avatar_url}
               size="sm"
@@ -491,9 +479,9 @@ export function FairwayCoachDashboard({
     const tone = r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral';
     return (
       <div className="flex items-center gap-3 px-4 py-3">
-        <Avatar name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
+        <Avatar decorative name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+          <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
             {r.player_name}
           </p>
           <p className="mt-0.5 truncate font-fw-sans text-caption text-text-tertiary">
@@ -618,6 +606,7 @@ export function FairwayCoachDashboard({
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {scoringAvg != null ? (
             <MetricCard
+              labelLines={2}
               label="Scoring Avg"
               value={Number(scoringAvg.toFixed(1))}
               decimals={1}
@@ -630,7 +619,18 @@ export function FairwayCoachDashboard({
               }
               sparkline={
                 scoringSeries.length >= 2 ? (
-                  <Sparkline data={scoringSeries} goodDirection="down" label="Scoring average" />
+                  <Sparkline
+                    data={scoringSeries}
+                    goodDirection="down"
+                    label="Scoring average"
+                    // AUDIT-0724 #2/#6: force the SAME verdict the delta chip
+                    // above renders (computeSeriesTrend's split-half average)
+                    // instead of letting Sparkline classify its own endpoint
+                    // diff — undefined (n<3, no computed trend) falls back to
+                    // Sparkline's own internal classification, which is fine
+                    // since no delta chip renders alongside it to disagree.
+                    direction={scoringDelta?.direction}
+                  />
                 ) : undefined
               }
               footnote={`${roundsLogged} ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
@@ -639,6 +639,7 @@ export function FairwayCoachDashboard({
             // Keep ONE tile silhouette across the KPI row (P010): the null metric
             // recedes inside a MetricCard `empty` shell, not a different Surface shape.
             <MetricCard
+              labelLines={2}
               label="Scoring Avg"
               value={0}
               icon={<IconChartBar size={18} />}
@@ -650,6 +651,7 @@ export function FairwayCoachDashboard({
 
           {girValue != null ? (
             <MetricCard
+              labelLines={2}
               label="GIR %"
               value={Number(girValue.toFixed(0))}
               suffix="%"
@@ -662,7 +664,17 @@ export function FairwayCoachDashboard({
               }
               sparkline={
                 girSeries.length >= 2 ? (
-                  <Sparkline data={girSeries} goodDirection="up" label="Greens in regulation" />
+                  <Sparkline
+                    data={girSeries}
+                    goodDirection="up"
+                    label="Greens in regulation"
+                    // AUDIT-0724 #2 — the exact reported case: series
+                    // [61,78,72,50,61] used to draw "flat" here (endpoint
+                    // diff 61-61=0) beside a red "declining" chip. Forcing
+                    // the chip's own computeSeriesTrend() verdict here makes
+                    // them agree.
+                    direction={girDelta?.direction}
+                  />
                 ) : undefined
               }
             />
@@ -670,6 +682,7 @@ export function FairwayCoachDashboard({
             // Same MetricCard `empty` silhouette as the other null KPIs (P010) —
             // one tile vocabulary across the row, never a different Surface shape.
             <MetricCard
+              labelLines={2}
               label="GIR %"
               value={0}
               icon={<IconTarget size={18} />}
@@ -681,6 +694,7 @@ export function FairwayCoachDashboard({
 
           {puttsValue != null ? (
             <MetricCard
+              labelLines={2}
               label="Putts / Rd"
               value={Number(puttsValue.toFixed(1))}
               decimals={1}
@@ -693,13 +707,19 @@ export function FairwayCoachDashboard({
               }
               sparkline={
                 puttsSeries.length >= 2 ? (
-                  <Sparkline data={puttsSeries} goodDirection="down" label="Putts per round" />
+                  <Sparkline
+                    data={puttsSeries}
+                    goodDirection="down"
+                    label="Putts per round"
+                    direction={puttsDelta?.direction}
+                  />
                 ) : undefined
               }
             />
           ) : (
             // Same MetricCard `empty` silhouette as the other null KPIs (P010).
             <MetricCard
+              labelLines={2}
               label="Putts / Rd"
               value={0}
               icon={<IconGolf size={18} />}
@@ -711,6 +731,7 @@ export function FairwayCoachDashboard({
 
           {/* Roster is a real count (not a derived aggregate) — always honest. */}
           <MetricCard
+            labelLines={2}
             label="Roster"
             value={stats.rosterSize}
             icon={<IconUsers size={18} />}
@@ -753,7 +774,7 @@ export function FairwayCoachDashboard({
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
           <Link
             href="/golf/dashboard/rounds"
-            className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
           >
             View all
             <IconArrowRight size={14} />
@@ -809,16 +830,24 @@ export function FairwayCoachDashboard({
           scrollable once it outgrows a calm at-a-glance size. */}
       <DaySchedule
         title="Schedule"
-        subtitle="Today & upcoming"
+        // "Upcoming", not "Today & upcoming": TodayPanel directly above owns
+        // the current day (with its RSVP tallies). This card used to render a
+        // second "Today" group from the same events (audit M3).
+        subtitle="Upcoming"
+        skipToday
         events={scheduleEvents}
         timezone={enhancedData?.timezone}
         viewAllHref="/golf/dashboard/calendar"
       />
 
       {/* ── 6 · TEAM region — Trend + Pulse + Top Performers (matte) ────────── */}
-      <section aria-label="Team" className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+      {/* items-stretch (the grid default) + h-full on both columns: at 1440 the
+          3-wide Trend column ended ~313px above the 2-wide stack beside it,
+          leaving a dead quadrant at the bottom-left of the page (audit M5).
+          Stretching makes both columns end together. */}
+      <section aria-label="Team" className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-5">
         {/* Performance trend (reskin-preserve-logic: same teamScoringTrend) */}
-        <div className="lg:col-span-3">
+        <div className="flex flex-col lg:col-span-3 [&>*]:h-full">
           {hasTrend ? (
             <TrendChart
               title="Performance Trend"
@@ -832,17 +861,34 @@ export function FairwayCoachDashboard({
               <h3 className="font-fw-sans text-h3 font-semibold text-text-primary">
                 Performance Trend
               </h3>
+              {/* Mirror the Recent Rounds pattern above: a narrow window is not
+                  an empty roster. Telling a coach with 7 players and 90 rounds
+                  to "invite players" because they filtered to 7 days reads as
+                  the product not knowing its own state (audit 2026-07-24, H5). */}
               <InsufficientData
-                title="Trend appears as rounds build"
-                description="Trends need rounds across multiple months. Invite players and keep logging."
+                title={range !== 'all' ? 'Not enough rounds in this window' : 'Trend appears as rounds build'}
+                description={
+                  range !== 'all'
+                    ? 'A trend needs rounds spread across a longer period. Try a wider window.'
+                    : 'Trends need rounds across multiple months. Invite players and keep logging.'
+                }
               />
+              {/* handleRangeChange, not setRange — the range is also a URL
+                  contract (force-dynamic ?range re-fetch); setting state alone
+                  would leave the page showing stale data. */}
               <div>
-                <Button variant="secondary" size="sm" asChild>
-                  <Link href="/golf/dashboard/roster">
-                    <IconPlus size={16} />
-                    <span>Invite Players</span>
-                  </Link>
-                </Button>
+                {range !== 'all' ? (
+                  <Button variant="secondary" size="sm" onClick={() => handleRangeChange('all')}>
+                    <span>Widen the window</span>
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" asChild>
+                    <Link href="/golf/dashboard/roster">
+                      <IconPlus size={16} />
+                      <span>Invite Players</span>
+                    </Link>
+                  </Button>
+                )}
               </div>
             </Surface>
           )}
@@ -859,7 +905,7 @@ export function FairwayCoachDashboard({
               </h3>
               <Link
                 href="/golf/dashboard/stats/team"
-                className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+                className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
               >
                 Rankings
                 <IconArrowRight size={14} />
@@ -883,7 +929,7 @@ export function FairwayCoachDashboard({
                             className={cn(
                               'grid h-6 w-6 shrink-0 place-items-center rounded-full font-fw-mono text-caption font-medium tabular-nums',
                               i === 0
-                                ? 'bg-accent-500 text-text-on-accent'
+                                ? 'bg-accent-700 text-text-on-accent'
                                 : 'bg-surface text-text-tertiary',
                             )}
                           >
@@ -936,7 +982,11 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
     <Surface elevation="border" padding="md" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-fw-sans text-h3 font-semibold text-text-primary">Team Pulse</h3>
-        {roundsThisWeek > 0 ? (
+        {/* Suppressed when there is nothing to classify: the pill sat directly
+            above "No movement to read yet" and the card contradicted itself
+            (audit 2026-07-24, H6). The count still shows in the empty-state
+            copy below, where it reads as context rather than a claim. */}
+        {roundsThisWeek > 0 && tracked > 0 ? (
           <StatusPill tone="accent" dot>
             {roundsThisWeek} this week
           </StatusPill>
@@ -947,12 +997,16 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
         <InsufficientData
           compact
           title="No movement to read yet"
-          description="Pulse compares recent rounds. It fills in as players log activity."
+          description={
+            roundsThisWeek > 0
+              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
+              : 'Pulse compares recent rounds. It fills in as players log activity.'
+          }
         />
       ) : (
         <div className="grid grid-cols-3 gap-3">
           <Inset padding="sm" className="flex flex-col gap-1">
-            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-success">
+            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-success-ink">
               {improving}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">Improving</span>
@@ -964,7 +1018,7 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
             <span className="font-fw-sans text-caption text-text-tertiary">Stable</span>
           </Inset>
           <Inset padding="sm" className="flex flex-col gap-1">
-            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-warning">
+            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-warning-ink">
               {declining}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">Declining</span>
@@ -982,7 +1036,7 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
               'font-fw-mono text-body-sm font-medium tabular-nums',
               // delta is a POSITIVE improvement magnitude (olderAvg - recentAvg),
               // so a positive delta means the player improved → success green.
-              pulse.topMover.delta > 0 ? 'text-fw-success' : 'text-fw-warning',
+              pulse.topMover.delta > 0 ? 'text-fw-success-ink' : 'text-fw-warning-ink',
             )}
           >
             {pulse.topMover.delta > 0 ? '−' : '+'}
@@ -1057,7 +1111,7 @@ function TodayPanel({
         </div>
         <Link
           href="/golf/dashboard/calendar"
-          className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+          className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
         >
           Calendar
           <IconArrowRight size={14} />

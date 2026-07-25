@@ -33,12 +33,13 @@ import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
 import { useCoachPhilosophy } from '@/hooks/coachhelm/useCoachPhilosophy';
+import { PriorityRanker, SensitivitySlider } from '@/components/golf/coachhelm/settings';
 import {
-  PriorityRanker,
-  SensitivitySlider,
-  ThresholdSlider,
-} from '@/components/golf/coachhelm/settings';
-import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
+  THRESHOLD_RANGES,
+  SIGNAL_CONTROL_RANGES,
+  STATS_BENCHMARK_WINDOWS,
+  confidenceFloorForSensitivity,
+} from '@/lib/coachhelm/constants';
 import { ALERT_GROUPS, type CoachPhilosophy } from '@/lib/coachhelm/types';
 import {
   getOrCreateTeamCoachHelmSettings,
@@ -48,7 +49,21 @@ import {
 } from '@/app/golf/actions/insights';
 import { useGolfUser } from '@/contexts/golf-user-context';
 
-import { ViewHeader, Surface, Switch, InlineNotice, EmptyState, Button } from '@/components/fairway';
+import {
+  ViewHeader,
+  Surface,
+  Switch,
+  InlineNotice,
+  EmptyState,
+  Button,
+  Slider,
+  Segmented,
+} from '@/components/fairway';
+import {
+  SettingsStack,
+  SettingsGroup,
+  SettingsRow,
+} from '@/components/fairway/settings/settings-list';
 import { IconArrowLeft, IconCheck, IconRefresh, IconWarning } from '@/components/icons';
 
 type PriorityValues = Pick<
@@ -68,6 +83,13 @@ type PriorityValues = Pick<
 // persisted (CRUD allowlist), so restoring the slider loses no data; it just
 // stops hiding a control the page's own copy ("Fine-tune Thresholds") promises.
 type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold' | 'bubbleZoneRange';
+/** Signal controls (migration 20260725090000) — each replaces an engine
+ *  constant and defaults to it, so shipping them changed nobody's alert
+ *  volume until they move one. */
+type SignalControlKey = 'minInsightConfidence' | 'minRoundsForSignal';
+/** Window controls (migration 20260725140000) — same contract as the signal
+ *  controls above: each replaces a hard-coded window and defaults to it. */
+type WindowControlKey = 'minHolePlaysForRanking' | 'patternLookbackDays';
 type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
@@ -267,6 +289,42 @@ function CoachingIntelligenceBody({
     debouncedSave(`threshold:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
   };
 
+  const handleSignalControlChange = (key: SignalControlKey, value: number) => {
+    debouncedSave(`signal:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
+  };
+
+  const handleWindowControlChange = (key: WindowControlKey, value: number) => {
+    debouncedSave(`window:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
+  };
+
+  const handleBenchmarkWindowChange = (value: number) => {
+    debouncedSave('window:statsBenchmarkWindowDays', { statsBenchmarkWindowDays: value });
+  };
+
+  const handleDigestChange = (value: CoachPhilosophy['alertDigest']) => {
+    debouncedSave('signal:alertDigest', { alertDigest: value });
+  };
+
+  // The sensitivity preset already imposes a floor (0.40 / 0.55 / 0.70). The
+  // Minimum confidence slider is a SECOND floor layered on top via max(), so
+  // below the preset it does nothing — say so plainly rather than letting a
+  // coach drag a control that cannot change anything.
+  const presetConfidenceFloor = philosophy
+    ? confidenceFloorForSensitivity(philosophy.alertSensitivity)
+    : 0.55;
+  const confidenceFloorIsPresetBound = philosophy
+    ? philosophy.minInsightConfidence <= presetConfidenceFloor
+    : true;
+
+  // "7/10 on" beside the Active alerts header — with ten switches spread over
+  // three sub-groups there was no way to see how much of CoachHelm was muted
+  // without scrolling the whole list and counting.
+  const allAlertKeys = ALERT_GROUPS.flatMap((g) => g.alerts.map((a) => a.key));
+  const totalAlertCount = allAlertKeys.length;
+  const activeAlertCount = philosophy
+    ? allAlertKeys.filter((k) => !!philosophy[k]).length
+    : 0;
+
   const handleAlertToggle = (key: keyof CoachPhilosophy, checked: boolean) => {
     void flushSave({ [key]: checked } as Partial<CoachPhilosophy>);
   };
@@ -335,19 +393,19 @@ function CoachingIntelligenceBody({
           // the control just silently snapped back to the last-good value with
           // no explanation (P421-style honesty gap). Mirrors the "Saved" chip's
           // placement so it's visible right where the coach is already looking.
-          <span className="inline-flex items-center gap-1.5 text-fw-danger">
+          <span className="inline-flex items-center gap-1.5 text-fw-danger-ink">
             <IconWarning size={13} aria-hidden />
             Couldn’t save
           </span>
         ) : hasEverSaved ? (
-          <span className="inline-flex items-center gap-1.5 text-fw-success">
+          <span className="inline-flex items-center gap-1.5 text-fw-success-ink">
             <IconCheck size={13} aria-hidden />
             Saved
           </span>
         ) : null
       }
     >
-      <div className="mt-8 space-y-6">
+      <SettingsStack className="mt-8">
         {/* A save failed — the field it belonged to has already reverted to the
             last-good server value (it's a controlled input bound to `philosophy`,
             which the hook only ever updates on success). Same InlineNotice
@@ -361,14 +419,11 @@ function CoachingIntelligenceBody({
         ) : null}
 
         {/* Metric Priorities */}
-        <Surface elevation="border" padding="lg">
-          <div className="mb-5 flex flex-col gap-1">
-            <h2 className="font-fw-display text-h2 text-text-primary">Metric Priorities</h2>
-            <p className="font-fw-sans text-body-sm text-text-secondary">
-              Drag to reorder. Top metrics have the most influence on player ratings and
-              &ldquo;Needs Attention&rdquo; flags.
-            </p>
-          </div>
+        <SettingsGroup
+          title="Metric priorities"
+          description="Drag to reorder. Top metrics have the most influence on player ratings and &ldquo;Needs Attention&rdquo; flags."
+        >
+          <div className="p-4">
           {/* B179: PriorityRanker's row hard-truncates each metric's
               description (`.truncate` on a `min-w-0 flex-1` cell squeezed
               between a 44px drag handle, rank badge, icon and priority bar) —
@@ -390,111 +445,102 @@ function CoachingIntelligenceBody({
               onChange={handlePriorityChange}
             />
           </div>
-        </Surface>
+          </div>
+        </SettingsGroup>
 
         {/* Alert Sensitivity */}
-        <Surface elevation="border" padding="lg">
-          <div className="mb-5 flex flex-col gap-1">
-            <h2 className="font-fw-display text-h2 text-text-primary">Alert Sensitivity</h2>
-            <p className="font-fw-sans text-body-sm text-text-secondary">
-              Global control for how aggressively CoachHelm flags issues.
-            </p>
+        <SettingsGroup
+          title="Alert sensitivity"
+          description="Global control for how aggressively CoachHelm flags issues."
+        >
+          <div className="p-4">
+            <SensitivitySlider
+              value={philosophy.alertSensitivity}
+              onChange={handleSensitivityChange}
+            />
           </div>
-          <SensitivitySlider
-            value={philosophy.alertSensitivity}
-            onChange={handleSensitivityChange}
-          />
-        </Surface>
+        </SettingsGroup>
 
         {/* Thresholds */}
-        <Surface elevation="border" padding="lg">
-          <div className="mb-5 flex flex-col gap-1">
-            <h2 className="font-fw-display text-h2 text-text-primary">Fine-tune Thresholds</h2>
-            <p className="font-fw-sans text-body-sm text-text-secondary">
-              Specific triggers for different types of alerts.
-            </p>
-          </div>
-          <div className="space-y-8">
-            <ThresholdSlider
-              label="Decline Threshold"
-              description="Strokes gained lost over 5 rounds to trigger a decline alert."
+        <SettingsGroup
+          title="Fine-tune thresholds"
+          description="The specific numbers that trip each kind of alert."
+        >
+          {/* Slider owns its own label/value/rail/ticks layout, so these rows
+              are plain padded cells rather than SettingsRow — nesting the two
+              would print the label twice. */}
+          <div className="px-4 py-4">
+            <Slider
+              label="Decline threshold"
+              description="Strokes gained lost over 5 rounds before CoachHelm flags a decline."
               value={philosophy.declineThreshold}
-              onChange={(v) => handleThresholdChange('declineThreshold', v)}
+              onValueChange={(v) => handleThresholdChange('declineThreshold', v)}
               {...THRESHOLD_RANGES.declineThreshold}
               unit="sg"
+              ticks
             />
-            <div className="h-px bg-border-subtle" />
-            <ThresholdSlider
-              label="Pressure Gap"
-              description="Difference between practice and tournament scoring that triggers a mental game alert."
+          </div>
+          <div className="px-4 py-4">
+            <Slider
+              label="Pressure gap"
+              description="Gap between practice and tournament scoring that trips a mental-game alert."
               value={philosophy.pressureGapThreshold}
-              onChange={(v) => handleThresholdChange('pressureGapThreshold', v)}
+              onValueChange={(v) => handleThresholdChange('pressureGapThreshold', v)}
               {...THRESHOLD_RANGES.pressureGapThreshold}
               unit="strokes"
+              ticks
             />
-            <div className="h-px bg-border-subtle" />
-            {/* B17: restored — this is 1 of the 3 sliders the section's own
-                copy ("Fine-tune Thresholds... specific triggers for different
-                types of alerts") documents. Still persists
-                golf_coach_philosophy.bubble_zone_range via the same CRUD
-                allowlist/debounced save as the other two; see ThresholdKey. */}
-            <ThresholdSlider
-              label="Bubble Zone"
-              description="Strokes-gained range around the qualifying cutoff that flags a player as a bubble movement."
+          </div>
+          <div className="px-4 py-4">
+            <Slider
+              label="Bubble zone"
+              description="Strokes-gained range around the qualifying cutoff that marks a player as on the bubble."
               value={philosophy.bubbleZoneRange}
-              onChange={(v) => handleThresholdChange('bubbleZoneRange', v)}
+              onValueChange={(v) => handleThresholdChange('bubbleZoneRange', v)}
               {...THRESHOLD_RANGES.bubbleZoneRange}
               unit="sg"
+              ticks
             />
           </div>
-        </Surface>
-
-        {/* Comparison Weighting — P079: the entire section is HIDDEN. Its only
-            child (WeightDistributor) is a "coming soon" stub with zero engine
-            consumers, so a polished header + descriptive copy framed a
-            non-functional placeholder (misleading a power user that it's a real
-            feature). Restore the section AND the interactive distributor together
-            once the roster-comparison engine consumes
-            golf_coachhelm_coach_weights. */}
+        </SettingsGroup>
 
         {/* Active Alerts */}
-        <Surface elevation="border" padding="lg">
-          <div className="mb-5 flex flex-col gap-1">
-            <h2 className="font-fw-display text-h2 text-text-primary">Active Alerts</h2>
-            <p className="font-fw-sans text-body-sm text-text-secondary">
-              Select which types of automated insights you want to receive.
-            </p>
-          </div>
-          {/* B16: rendered directly with the Fairway `Switch` primitive (a real
-              switch role/aria-checked via Base UI) instead of delegating to
-              the shared AlertTypeToggles editor, whose cards are plain
-              `Checkbox`-role controls — axe flags a checked on/off toggle
-              styled as a card without an accessible switch role. */}
-          <div className="space-y-6">
-            {ALERT_GROUPS.map((group) => (
-              <div key={group.title}>
-                <h3 className="mb-3 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary opacity-80">
-                  {group.title}
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {group.alerts.map((alert) => (
-                    <div
-                      key={alert.key}
-                      className="flex items-center justify-between gap-3 rounded-fw-sm border border-border-subtle bg-surface p-3 transition-colors hover:border-border-strong"
-                    >
-                      <span className="font-fw-sans text-body-sm text-text-primary">{alert.label}</span>
+        <SettingsGroup
+          title="Active alerts"
+          description="Which automated insights CoachHelm is allowed to raise."
+          action={
+            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+              {activeAlertCount}/{totalAlertCount} on
+            </span>
+          }
+        >
+          {/* One switch per row, grouped by subject. The old grid of bordered
+              mini-cards put a box around every toggle — a second card layer
+              inside a card, which is what made the page read as a form rather
+              than as settings. */}
+          {ALERT_GROUPS.map((group) => (
+            <div key={group.title}>
+              <p className="bg-surface-sunken px-4 py-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+                {group.title}
+              </p>
+              <div className="divide-y divide-border-subtle">
+                {group.alerts.map((alert) => (
+                  <SettingsRow
+                    key={alert.key}
+                    label={alert.label}
+                    control={
                       <Switch
                         checked={!!philosophy[alert.key]}
                         onCheckedChange={(checked) => handleAlertToggle(alert.key, checked)}
                         aria-label={alert.label}
                       />
-                    </div>
-                  ))}
-                </div>
+                    }
+                  />
+                ))}
               </div>
-            ))}
-          </div>
-        </Surface>
+            </div>
+          ))}
+        </SettingsGroup>
 
         {/* Team CoachHelm master switch */}
         {teamId ? (
@@ -557,6 +603,109 @@ function CoachingIntelligenceBody({
           </Surface>
         ) : null}
 
+        {/* Signal controls — new 2026-07-25. Every one of these replaced a
+            constant the engine had hard-coded, and each DEFAULTS to that
+            constant, so a coach who never opens this section is unaffected. */}
+        <SettingsGroup
+          title="Signal controls"
+          description="How much evidence CoachHelm needs before it says anything."
+          footnote={
+            confidenceFloorIsPresetBound
+              ? `Your ${philosophy.alertSensitivity} preset already requires ${Math.round(presetConfidenceFloor * 100)}% — this only matters above that.`
+              : `Above your ${philosophy.alertSensitivity} preset's ${Math.round(presetConfidenceFloor * 100)}% floor, so this is the number in effect.`
+          }
+        >
+          <div className="px-4 py-4">
+            <Slider
+              label="Minimum confidence"
+              description="How sure CoachHelm must be before an insight reaches you."
+              value={philosophy.minInsightConfidence}
+              onValueChange={(v) => handleSignalControlChange('minInsightConfidence', v)}
+              {...SIGNAL_CONTROL_RANGES.minInsightConfidence}
+              decimals={0}
+              // Shown as a percentage — "0.55 confidence" is engine vocabulary,
+              // "55%" is what a coach reads.
+              displayTransform={(n) => Math.round(n * 100)}
+              unit="%"
+            />
+          </div>
+          <div className="px-4 py-4">
+            <Slider
+              label="Minimum rounds"
+              description="Rounds a player needs logged before CoachHelm draws conclusions about them."
+              value={philosophy.minRoundsForSignal}
+              onValueChange={(v) => handleSignalControlChange('minRoundsForSignal', v)}
+              {...SIGNAL_CONTROL_RANGES.minRoundsForSignal}
+              unit="rounds"
+              ticks
+            />
+          </div>
+          <SettingsRow
+            stacked
+            label="Alert delivery"
+            description="Surface alerts the moment they are generated, or batch them."
+            control={
+              <Segmented
+                value={philosophy.alertDigest}
+                onValueChange={(v) => handleDigestChange(v as CoachPhilosophy['alertDigest'])}
+                options={[
+                  { value: 'immediate', label: 'Immediate' },
+                  { value: 'daily', label: 'Daily' },
+                  { value: 'weekly', label: 'Weekly' },
+                ]}
+                aria-label="Alert delivery cadence"
+              />
+            }
+          />
+        </SettingsGroup>
+
+        {/* Analysis windows — new 2026-07-25 (migration 20260725140000). Same
+            contract as Signal controls: each replaced a hard-coded constant and
+            defaults to it. These say how much HISTORY the engine looks at,
+            where Signal controls say how much CERTAINTY it needs. */}
+        <SettingsGroup
+          title="Analysis windows"
+          description="How far back CoachHelm looks, and how much repetition it needs before calling something a pattern."
+        >
+          <div className="px-4 py-4">
+            <Slider
+              label="Hole ranking threshold"
+              description="Plays a hole needs before it can be listed as your toughest or easiest. Higher means shorter lists, better evidence."
+              value={philosophy.minHolePlaysForRanking}
+              onValueChange={(v) => handleWindowControlChange('minHolePlaysForRanking', v)}
+              {...SIGNAL_CONTROL_RANGES.minHolePlaysForRanking}
+              unit="plays"
+              ticks
+            />
+          </div>
+          <div className="px-4 py-4">
+            <Slider
+              label="Pattern lookback"
+              description="How far back pattern mining reads. A shorter window follows current form; a longer one finds habits."
+              value={philosophy.patternLookbackDays}
+              onValueChange={(v) => handleWindowControlChange('patternLookbackDays', v)}
+              {...SIGNAL_CONTROL_RANGES.patternLookbackDays}
+              unit="days"
+            />
+          </div>
+          <SettingsRow
+            stacked
+            label="Stats benchmark window"
+            description={`The Stats page compares the last ${philosophy.statsBenchmarkWindowDays} days against the ${philosophy.statsBenchmarkWindowDays} before them.`}
+            control={
+              <Segmented
+                value={String(philosophy.statsBenchmarkWindowDays)}
+                onValueChange={(v) => handleBenchmarkWindowChange(Number(v))}
+                options={STATS_BENCHMARK_WINDOWS.map((days) => ({
+                  value: String(days),
+                  label: `${days}d`,
+                }))}
+                aria-label="Stats benchmark window"
+              />
+            }
+          />
+        </SettingsGroup>
+
         {/* Display Preferences */}
         <Surface elevation="border" padding="lg">
           <div className="mb-5 flex flex-col gap-1">
@@ -599,7 +748,7 @@ function CoachingIntelligenceBody({
                         'transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
                         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                         active
-                          ? 'bg-accent-500 text-text-on-accent'
+                          ? 'bg-accent-700 text-text-on-accent'
                           : 'bg-surface-sunken text-text-secondary hover:bg-inset',
                       ].join(' ')}
                     >
@@ -611,7 +760,7 @@ function CoachingIntelligenceBody({
             </div>
           </div>
         </Surface>
-      </div>
+      </SettingsStack>
     </CoachingIntelligenceFrame>
   );
 }

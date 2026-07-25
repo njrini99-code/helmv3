@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/fairway';
 import type { GroupedSignal, SignalSeverity } from '@/lib/coachhelm/signal-grouping';
 import { formatAgeDays, formatCategoryLabel, severityLabel } from './buildTriageViewModel';
+import { toCoachVoice } from '@/lib/golf/claim-voice';
 
 const SEVERITY_DOT: Record<SignalSeverity, string> = {
   urgent: 'bg-fw-danger',
@@ -45,10 +46,18 @@ export interface SignalRowProps {
   tabbable: boolean;
   href: string;
   onSelect: () => void;
+  /**
+   * Whose signal this is. The NLG layer writes every claim in the second
+   * person for the player's own surfaces ("Across YOUR last 13 rounds…"), but
+   * the reader here is a coach, not the subject (audit M12). Supplying the
+   * name retells the claim in the third person; omitting it leaves the copy
+   * exactly as generated, so the player-facing surfaces are unaffected.
+   */
+  subjectName?: string | null;
 }
 
 export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function SignalRow(
-  { signal, selected, tabbable, href, onSelect },
+  { signal, selected, tabbable, href, onSelect, subjectName },
   ref,
 ) {
   return (
@@ -96,8 +105,11 @@ export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function 
             </span>
           ) : null}
         </span>
-        <span className="mt-0.5 block truncate font-fw-sans text-body-sm text-text-primary">
-          {signal.claim || signal.title}
+        {/* line-clamp-2, not truncate: single-line truncation hid ~95% of every
+            claim — measured 2,300-2,500px of hidden text per row, and still
+            ~2,500px at 1440px wide (audit 2026-07-24, H4). */}
+        <span className="mt-0.5 block font-fw-sans text-body-sm text-text-primary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+          {toCoachVoice(signal.claim || signal.title, subjectName)}
         </span>
       </span>
       <span className="flex-shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary">

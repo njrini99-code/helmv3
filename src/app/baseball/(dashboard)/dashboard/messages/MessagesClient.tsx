@@ -129,7 +129,7 @@ function ConversationRow({ conversation, currentUserId, isSelected, onSelect }: 
       )}
     >
       <div className="flex items-start gap-3">
-        <Avatar name={name} src={participant?.avatar} size="md" />
+        <Avatar decorative name={name} src={participant?.avatar} size="md" />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
@@ -330,7 +330,7 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
         >
           <IconArrowLeft size={20} aria-hidden="true" />
         </IconButton>
-        <Avatar name={headerName} src={participant?.avatar} size="md" />
+        <Avatar decorative name={headerName} src={participant?.avatar} size="md" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
           {participant?.subtitle ? (
@@ -371,7 +371,7 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
                       className={cn(
                         'max-w-[75%] rounded-fw-lg px-3.5 py-2',
                         isOwn
-                          ? 'rounded-br-sm bg-accent-500 text-text-on-accent'
+                          ? 'rounded-br-sm bg-accent-700 text-text-on-accent'
                           : 'rounded-bl-sm bg-surface-sunken text-text-primary',
                       )}
                     >

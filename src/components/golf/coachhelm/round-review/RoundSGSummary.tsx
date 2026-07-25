@@ -141,8 +141,8 @@ function heroSignTone(value: number): { sign: '' | '+' | '−'; tone: 'gain' | '
 }
 
 const TONE_CLASS: Record<'gain' | 'loss' | 'even', string> = {
-  gain: 'text-fw-success',
-  loss: 'text-fw-warning',
+  gain: 'text-fw-success-ink',
+  loss: 'text-fw-warning-ink',
   even: 'text-text-primary',
 };
 

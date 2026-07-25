@@ -22,7 +22,7 @@
  * text wait one client render for a stable "today" reference.
  * ========================================================================== */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CalendarClock, ChevronRight, MapPin } from 'lucide-react';
 import { Surface } from '@/components/fairway/surfaces/surface';
@@ -55,6 +55,18 @@ export interface DayScheduleProps {
   /** True when the upstream schedule fetch failed — a distinct "couldn't
    *  load" notice, never mistaken for a genuinely clear schedule. */
   loadError?: boolean;
+  /**
+   * Drop today's group and open at "Tomorrow".
+   *
+   * The coach dashboard renders a dedicated `TodayPanel` immediately above
+   * this card, but fed it the same `todayEvents` — so every event on the
+   * current day was printed twice on one screen, once under TodayPanel and
+   * again under this card's literal "Today" heading (audit M3). The filter
+   * lives here because "which day is today" is only known after the
+   * timezone resolves on the client; doing it in the caller would have to
+   * duplicate that hydration-safe dance.
+   */
+  skipToday?: boolean;
   className?: string;
 }
 
@@ -83,10 +95,6 @@ export const EVENT_LABEL: Record<string, string> = {
   class: 'Class',
   other: 'Event',
 };
-
-/** More rows than this and the list caps its height + fades at the bottom —
- *  a subtle "there's more, scroll" affordance rather than an unbounded card. */
-const VISIBLE_ROW_THRESHOLD = 5;
 
 /** YYYY-MM-DD for the given instant, in `tz`. Used only to bucket events by
  *  calendar day — never rendered raw. */
@@ -151,6 +159,7 @@ export function DaySchedule({
   subtitle = 'Today & upcoming',
   viewAllHref,
   loadError = false,
+  skipToday = false,
   className,
 }: DayScheduleProps) {
   // Resolve the display timezone + "today" on the client after mount — same
@@ -164,10 +173,11 @@ export function DaySchedule({
     setTodayKey(dayKeyInTz(new Date().toISOString(), resolved));
   }, [timezone]);
 
-  const sorted = useMemo(
-    () => [...events].sort((a, b) => a.start_time.localeCompare(b.start_time)),
-    [events],
-  );
+  const sorted = useMemo(() => {
+    const ordered = [...events].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    if (!skipToday || tz == null || todayKey == null) return ordered;
+    return ordered.filter((e) => dayKeyInTz(e.start_time, tz) !== todayKey);
+  }, [events, skipToday, tz, todayKey]);
 
   const isReady = tz != null && todayKey != null;
   const groups = useMemo(
@@ -176,12 +186,31 @@ export function DaySchedule({
   );
 
   const isEmpty = isReady && sorted.length === 0;
-  const showFade = sorted.length > VISIBLE_ROW_THRESHOLD;
+
+  // Derive the fade from MEASURED overflow, not a row count.
+  //
+  // The old `sorted.length > 5` test was strict, so exactly 5 events
+  // showed no fade — while the 360px box actually clipped the 5th (measured
+  // clientHeight 360 vs scrollHeight 454, 94px hidden) under a masthead that
+  // promised "5 upcoming events" (audit 2026-07-24, H9). Row height varies
+  // with title wrapping, so only measurement can answer this.
+  const scrollerRef = useRef<HTMLUListElement | null>(null);
+  const [overflowing, setOverflowing] = useState(false);
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const measure = () => setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [groups]);
+  const showFade = overflowing;
 
   const headerAction = viewAllHref ? (
     <Link
       href={viewAllHref}
-      className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
     >
       Calendar
       <ChevronRight aria-hidden className="h-3.5 w-3.5" />
@@ -214,12 +243,15 @@ export function DaySchedule({
       ) : (
         <div className="relative min-w-0">
           {/* Capped height + its own scroll region once the agenda outgrows a
-              calm at-a-glance size (VISIBLE_ROW_THRESHOLD) — CONTAIN, not an
+              calm at-a-glance size (360px) — CONTAIN, not an
               ever-growing card. `overscroll-contain` keeps a mouse-wheel
               scroll here from bleeding into the page behind it. */}
           <ul
             aria-label={`${title} — day groups`}
-            className="flex max-h-[360px] flex-col gap-4 overflow-y-auto overscroll-contain pr-1"
+            ref={scrollerRef}
+            // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- axe scrollable-region-focusable (serious) REQUIRES a keyboard-reachable scroll container; a labelled region with tabIndex is the WCAG-recommended shape
+            tabIndex={0}
+            className="flex max-h-[360px] flex-col gap-4 overflow-y-auto overscroll-contain pr-1 rounded-fw-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fw-color-border-focus)]"
           >
             {groups.map((group) => (
               <li key={group.key} className="flex min-w-0 flex-col gap-1.5">

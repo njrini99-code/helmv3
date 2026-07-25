@@ -335,7 +335,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     <div className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-fw-sm transition-colors',
                       i.severity === 'urgent' || i.severity === 'high'
-                        ? 'bg-fw-danger-bg text-fw-danger'
+                        ? 'bg-fw-danger-bg text-fw-danger-ink'
                         : 'bg-inset text-text-secondary',
                     )}>
                       {severityIcon(i.severity)}

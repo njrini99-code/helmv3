@@ -134,7 +134,7 @@ export function TriageQueue({
               </p>
             ) : null}
             {errors.has(item.key) ? (
-              <p className="text-xs text-fw-danger">
+              <p className="text-xs text-fw-danger-ink">
                 Resolve failed — {errors.get(item.key)}
               </p>
             ) : null}

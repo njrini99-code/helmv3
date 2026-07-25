@@ -202,7 +202,7 @@ function VideoThumb({ src, thumbnail, title, duration, onClick }: ThumbProps) {
 function PlayerStrip({ player }: { player: NonNullable<LibraryVideo['player']> }) {
   return (
     <div className="mb-2.5 flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2.5">
-      <Avatar
+      <Avatar decorative
         name={getFullName(player.first_name, player.last_name)}
         src={player.avatar_url ?? undefined}
         size="xs"

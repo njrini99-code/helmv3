@@ -236,10 +236,12 @@ export function FairwaySettingsNotifications({
       <section className="mt-10">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="flex flex-col gap-1">
-            <h2 className="font-fw-display text-h2 text-text-primary">
+            {/* Eyebrow, not a display h2 — matches the settings vocabulary the
+                rest of the surfaces moved to (2026-07-25). */}
+            <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
               Per-update preferences
             </h2>
-            <p className="font-fw-sans text-body-sm text-text-secondary">
+            <p className="font-fw-sans text-caption text-text-secondary">
               Pick the channels for each update type. Some updates ignore quiet mode.
             </p>
           </div>

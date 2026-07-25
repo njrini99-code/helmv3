@@ -51,6 +51,12 @@ import {
   Skeleton,
   Sparkline,
 } from '@/components/fairway';
+// The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
+// BOTH a KPI card's delta chip AND its Sparkline's `direction` prop from a
+// single call, so the two can never classify the same series two different
+// ways again. Direct-file import (not the barrel) mirrors how MetricCard
+// itself imports its trend classifier.
+import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { getGreeting, getTimeOfDay } from '@/lib/utils/time-of-day';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
@@ -226,52 +232,30 @@ function metricEmpty(card: SparklineStatCard | undefined, value: number | null):
   return false;
 }
 
-/** A sparkline delta with the ACTUAL window it was computed over, so the
- *  chip's label never claims a window depth the data can't back. */
-interface SeriesDelta {
-  value: number;
-  points: number;
-}
-
 /**
- * Honest windowed delta over a sparkline series (oldest → newest): the SAME
- * split-half-average comparison `computeTrend()`/`computeTrendHigherIsBetter()`
- * already use server-side (dashboard-data.ts) to classify the qualitative
- * trend arrow — recent-half average vs. older-half average — not a raw
+ * Honest windowed delta + verdict over a sparkline series (oldest → newest).
+ * `computeSeriesTrend()` (charts/seriesTrend.ts) is the SAME split-half-
+ * average comparison `computeTrend()`/`computeTrendHigherIsBetter()` already
+ * use server-side (dashboard-data.ts) to classify the qualitative trend
+ * arrow — recent-half average vs. older-half average — not a raw
  * first-vs-last endpoint diff.
  *
- * Two bugs this fixes together (both reported against the KPI row):
- *   1. WINDOW MISMATCH — the chip was always labeled "last 5 rounds" even
- *      when the underlying sparkline had fewer finite points (a round
- *      missing GIR/putts data drops out before the 5-point slice is taken
- *      upstream). The label now states the REAL point count used.
- *   2. IMPLAUSIBLE SWINGS (e.g. a −50% GIR delta) — a raw endpoint diff
- *      compares exactly TWO individual rounds, and a single noisy/short
- *      round (a rain-shortened 9-hole round has a tiny GIR denominator) can
- *      swing that by tens of points. Averaging each half smooths a single
- *      outlier instead of handing it the whole delta, and — because it's the
- *      identical split used for the `trend` field — the numeric delta and
- *      the qualitative trend/color can never disagree.
+ * AUDIT-0724 finding #6: this dashboard used to compute this locally (via a
+ * duplicated `seriesDelta()`, a same-shape copy of FairwayCoachDashboard.tsx's
+ * own local copy — "kept in lockstep by convention" per the old comment here)
+ * and hand ONLY the numeric `.value` to the MetricCard delta chip, while
+ * `<Sparkline>` classified the SAME raw series on its own via endpoint diff —
+ * the Putts/Rd card [32,38,32,33,35] rendered an amber "declining" sparkline
+ * next to a green "improving" chip because the two widgets' math wasn't just
+ * different, it flipped sign. Now the ONE `computeSeriesTrend()` call below
+ * feeds both: `.value` → the delta chip, `.direction` → the Sparkline's
+ * `direction` prop (overriding its own internal classification), so they
+ * can only ever agree.
  *
  * Requires ≥3 finite points (mirrors the "Need 3+ rounds" honesty gate used
  * elsewhere on this page) — fewer than that suppresses the chip entirely
- * rather than showing an unreliable 2-point comparison. Mirrors
- * FairwayCoachDashboard.tsx's own `seriesDelta` (not exported from that
- * file — this is a same-shape local copy, kept in lockstep by convention).
+ * rather than showing an unreliable 2-point comparison.
  */
-function seriesDelta(series: number[] | undefined): SeriesDelta | null {
-  if (!series) return null;
-  const finite = series.filter((v) => Number.isFinite(v));
-  if (finite.length < 3) return null;
-  const mid = Math.floor(finite.length / 2);
-  const olderHalf = finite.slice(0, mid); // series is oldest → newest
-  const recentHalf = finite.slice(mid);
-  if (olderHalf.length === 0 || recentHalf.length === 0) return null;
-  const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
-  const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
-  return { value: recentAvg - olderAvg, points: finite.length };
-}
-
 function seriesDeltaLabel(points: number): string {
   return `last ${points} round${points === 1 ? '' : 's'}`;
 }
@@ -325,10 +309,14 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
   const girSeries = sparklines?.girPct.sparkline ?? [];
   const puttsSeries = sparklines?.puttsPerRound.sparkline ?? [];
   const handicapSeries = sparklines?.handicap.sparkline ?? [];
-  const scoringDelta = seriesDelta(scoringSeries);
-  const girDelta = seriesDelta(girSeries);
-  const puttsDelta = seriesDelta(puttsSeries);
-  const handicapDelta = seriesDelta(handicapSeries);
+  // goodDirection matches each metric's own <Sparkline goodDirection=...>
+  // below (down for scoring/putts/handicap, up for GIR%) — same input, same
+  // options, ONE function, so the chip and the sparkline it sits next to
+  // can never disagree (AUDIT-0724 #6).
+  const scoringDelta = computeSeriesTrend(scoringSeries, { goodDirection: 'down' });
+  const girDelta = computeSeriesTrend(girSeries, { goodDirection: 'up' });
+  const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
+  const handicapDelta = computeSeriesTrend(handicapSeries, { goodDirection: 'down' });
 
   // DaySchedule feed (WAVE — action-items → schedule): merge today's events
   // with the upcoming-beyond-today events (dashboard-data.ts additive field),
@@ -468,6 +456,10 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
             <section>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="Scoring avg"
                   value={Number(sparklines?.scoringAvg.value ?? stats.scoringAverage ?? 0)}
                   decimals={1}
@@ -482,11 +474,23 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   }
                   sparkline={
                     scoringSeries.length >= 2 ? (
-                      <Sparkline data={scoringSeries} goodDirection="down" label="Scoring average" />
+                      <Sparkline
+                        data={scoringSeries}
+                        goodDirection="down"
+                        label="Scoring average"
+                        // AUDIT-0724 #6: force the SAME verdict the delta chip
+                        // above renders (computeSeriesTrend's split-half
+                        // average) instead of Sparkline's own endpoint diff.
+                        direction={scoringDelta?.direction}
+                      />
                     ) : undefined
                   }
                 />
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="GIR"
                   value={Number(sparklines?.girPct.value ?? 0)}
                   decimals={0}
@@ -502,11 +506,20 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   }
                   sparkline={
                     girSeries.length >= 2 ? (
-                      <Sparkline data={girSeries} goodDirection="up" label="Greens in regulation" />
+                      <Sparkline
+                        data={girSeries}
+                        goodDirection="up"
+                        label="Greens in regulation"
+                        direction={girDelta?.direction}
+                      />
                     ) : undefined
                   }
                 />
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="Putts / round"
                   value={Number(sparklines?.puttsPerRound.value ?? 0)}
                   decimals={1}
@@ -521,11 +534,26 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   }
                   sparkline={
                     puttsSeries.length >= 2 ? (
-                      <Sparkline data={puttsSeries} goodDirection="down" label="Putts per round" />
+                      <Sparkline
+                        data={puttsSeries}
+                        goodDirection="down"
+                        label="Putts per round"
+                        // AUDIT-0724 #6 — the exact reported case: series
+                        // [32,38,32,33,35] used to draw amber "declining"
+                        // here (endpoint diff 35-32=+3) beside a green
+                        // "improving" chip fed by the split-half average.
+                        // Forcing the chip's own computeSeriesTrend()
+                        // verdict here makes them agree.
+                        direction={puttsDelta?.direction}
+                      />
                     ) : undefined
                   }
                 />
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="Handicap"
                   value={Number(
                     sparklines?.handicap.value ??
@@ -546,7 +574,12 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   }
                   sparkline={
                     handicapSeries.length >= 2 ? (
-                      <Sparkline data={handicapSeries} goodDirection="down" label="Handicap" />
+                      <Sparkline
+                        data={handicapSeries}
+                        goodDirection="down"
+                        label="Handicap"
+                        direction={handicapDelta?.direction}
+                      />
                     ) : undefined
                   }
                 />
@@ -556,6 +589,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
               {secondary ? (
                 <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
                   <MetricCard
+                    labelLines={2}
                     label="FIR"
                     value={Number(secondary.firPct ?? 0)}
                     suffix="%"
@@ -563,6 +597,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                     emptyMessage="—"
                   />
                   <MetricCard
+                    labelLines={2}
                     label="Scrambling"
                     value={Number(secondary.scramblingPct ?? 0)}
                     suffix="%"
@@ -570,6 +605,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                     emptyMessage="—"
                   />
                   <MetricCard
+                    labelLines={2}
                     label="Birdies / round"
                     value={Number(secondary.birdiesPerRound ?? 0)}
                     decimals={1}
@@ -577,6 +613,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                     emptyMessage="—"
                   />
                   <MetricCard
+                    labelLines={2}
                     label="Best round"
                     value={Number(secondary.bestRound ?? stats.bestRound ?? 0)}
                     empty={(secondary.bestRound ?? stats.bestRound) == null}

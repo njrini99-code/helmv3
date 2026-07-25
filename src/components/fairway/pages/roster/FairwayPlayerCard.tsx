@@ -60,8 +60,8 @@ function formatSgTotal(value: number): string {
 }
 
 function sgTone(value: number): string {
-  if (value > SG_TONE_DEADZONE) return 'text-fw-success';
-  if (value < -SG_TONE_DEADZONE) return 'text-fw-warning';
+  if (value > SG_TONE_DEADZONE) return 'text-fw-success-ink';
+  if (value < -SG_TONE_DEADZONE) return 'text-fw-warning-ink';
   return 'text-text-primary';
 }
 

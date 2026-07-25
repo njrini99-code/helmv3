@@ -449,7 +449,7 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
                         onClick={() => setConfirmDeleteId(doc.id)}
                         disabled={rowBusy}
                         aria-label={`Delete ${doc.title}`}
-                        className="text-fw-danger hover:bg-fw-danger-bg"
+                        className="text-fw-danger-ink hover:bg-fw-danger-bg"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

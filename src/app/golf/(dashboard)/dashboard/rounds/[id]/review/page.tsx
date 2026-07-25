@@ -583,7 +583,7 @@ export default function RoundReviewPage() {
   }
 
   // ── Fairway error surface (P205) ─────────────────────────────────────────
-  // A designed Fairway error state: InlineNotice (danger tone, text-fw-danger
+  // A designed Fairway error state: InlineNotice (danger tone, text-fw-danger-ink
   // via the tone bar) with a clear retry Button, inside the .fairway-ds scope.
   // Raw `text-red-500` + `bg-primary-600` are gone.
   if (error) {

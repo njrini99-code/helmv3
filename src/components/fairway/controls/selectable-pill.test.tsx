@@ -35,9 +35,13 @@ describe('SelectablePill (P404)', () => {
     expect(btn).toHaveAttribute('aria-pressed', 'true');
   });
 
+  // Active fill is accent-700, not accent-500 (audit 2026-07-24, H10 sweep).
+  // The pill puts `text-text-on-accent` ON the fill, and white on accent-500
+  // measures 3.00:1 — normal text needs 4.5:1. accent-700 gives 5.82:1.
+  // accent-500 remains the brand green for decorative fills, strokes and dots.
   it('applies the active accent fill and completed tint classes', () => {
     const { rerender } = render(<SelectablePill active>3</SelectablePill>);
-    expect(screen.getByRole('button').className).toContain('bg-accent-500');
+    expect(screen.getByRole('button').className).toContain('bg-accent-700');
 
     rerender(<SelectablePill completed>3</SelectablePill>);
     expect(screen.getByRole('button').className).toContain('bg-accent-50');
@@ -53,7 +57,7 @@ describe('SelectablePill (P404)', () => {
       </SelectablePill>,
     );
     const cls = screen.getByRole('button').className;
-    expect(cls).toContain('bg-accent-500'); // still active
+    expect(cls).toContain('bg-accent-700'); // still active
     expect(cls).toContain('ring-2'); // plus the selected overlay ring
   });
 

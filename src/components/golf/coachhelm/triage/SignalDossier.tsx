@@ -33,6 +33,7 @@ import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping
 import { formatAgeDays, formatCategoryLabel } from './buildTriageViewModel';
 import { SeverityChip } from './SignalRow';
 import { PromoteToFocusAreaButton } from './PromoteToFocusAreaButton';
+import { toCoachVoice } from '@/lib/golf/claim-voice';
 
 export interface SignalDossierEntry {
   signal: GroupedSignal;
@@ -140,7 +141,11 @@ export function SignalDossier({
 
       <div className="flex flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-4">
         <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-text-tertiary">Evidence</p>
-        <p className="font-fw-sans text-body-sm text-text-secondary">{signal.claim || 'No further detail recorded.'}</p>
+        <p className="font-fw-sans text-body-sm text-text-secondary">
+          {/* Retold in the third person — the coach is the reader, the
+              player is the subject (audit M12). */}
+          {signal.claim ? toCoachVoice(signal.claim, group.playerName) : 'No further detail recorded.'}
+        </p>
         <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 font-fw-mono text-caption tabular-nums text-text-tertiary">
           <span>
             Status <span className="text-text-secondary">{signal.status}</span>

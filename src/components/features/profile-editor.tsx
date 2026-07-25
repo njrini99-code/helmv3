@@ -419,7 +419,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
                       aria-live="polite"
                       className={cn(
                         'flex items-center gap-1.5 font-annual text-body-sm font-medium',
-                        saveMessage.includes('successfully') ? 'text-grade-plus' : 'text-fw-danger',
+                        saveMessage.includes('successfully') ? 'text-grade-plus' : 'text-fw-danger-ink',
                       )}
                     >
                       {saveMessage.includes('successfully') ? (

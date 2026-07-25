@@ -84,7 +84,7 @@ export function FairwayCompletedHole({
                   className={cn(
                     'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-fw-sm font-fw-sans text-body-sm font-medium tabular-nums',
                     shot.isPenalty
-                      ? 'bg-fw-danger/15 text-fw-danger'
+                      ? 'bg-fw-danger/15 text-fw-danger-ink'
                       : shot.result === 'hole'
                         ? 'bg-accent-50 text-accent-700'
                         : 'bg-surface-sunken text-text-secondary',

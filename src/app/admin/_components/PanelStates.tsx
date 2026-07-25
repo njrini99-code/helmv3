@@ -7,7 +7,7 @@ import { LocalTime } from './LocalTime';
 export function PanelAllClear({ label, checkedAt }: { label: string; checkedAt: string }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl bg-fw-success-bg px-6 py-8 text-center">
-      <CheckCircle2 size={20} className="text-fw-success" aria-hidden />
+      <CheckCircle2 size={20} className="text-fw-success-ink" aria-hidden />
       <p className="text-sm font-medium text-accent-700">{label}</p>
       <p className="font-fw-mono text-xs tabular-nums text-warm-500">
         {/* LocalTime, not toLocaleTimeString(): rendered from Server
@@ -45,7 +45,7 @@ export function PanelStale({
   // 2026-07-03 Mission Control sweep while every panel was down with 42501.
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl bg-fw-warning-bg px-6 py-8 text-center">
-      <CloudOff size={20} className="text-fw-warning" aria-hidden />
+      <CloudOff size={20} className="text-fw-warning-ink" aria-hidden />
       <p className="text-sm font-medium text-warm-800">{label} — temporarily unavailable</p>
       {error ? <p className="font-fw-mono text-xs text-warm-600">{error}</p> : null}
       {action}

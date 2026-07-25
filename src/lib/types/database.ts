@@ -11008,6 +11008,7 @@ export type Database = {
         Row: {
           alert_bubble_player: boolean
           alert_closing_holes: boolean
+          alert_digest: string
           alert_par_3_issues: boolean
           alert_plateau: boolean
           alert_recurring_weakness: boolean
@@ -11026,6 +11027,8 @@ export type Database = {
           expectations: string | null
           id: string
           insight_verbosity: string
+          min_insight_confidence: number
+          min_rounds_for_signal: number
           pressure_gap_threshold: number | null
           priority_ball_striking: number | null
           priority_course_management: number | null
@@ -11044,6 +11047,7 @@ export type Database = {
         Insert: {
           alert_bubble_player?: boolean
           alert_closing_holes?: boolean
+          alert_digest?: string
           alert_par_3_issues?: boolean
           alert_plateau?: boolean
           alert_recurring_weakness?: boolean
@@ -11062,6 +11066,8 @@ export type Database = {
           expectations?: string | null
           id?: string
           insight_verbosity?: string
+          min_insight_confidence?: number
+          min_rounds_for_signal?: number
           pressure_gap_threshold?: number | null
           priority_ball_striking?: number | null
           priority_course_management?: number | null
@@ -11080,6 +11086,7 @@ export type Database = {
         Update: {
           alert_bubble_player?: boolean
           alert_closing_holes?: boolean
+          alert_digest?: string
           alert_par_3_issues?: boolean
           alert_plateau?: boolean
           alert_recurring_weakness?: boolean
@@ -11098,6 +11105,8 @@ export type Database = {
           expectations?: string | null
           id?: string
           insight_verbosity?: string
+          min_insight_confidence?: number
+          min_rounds_for_signal?: number
           pressure_gap_threshold?: number | null
           priority_ball_striking?: number | null
           priority_course_management?: number | null

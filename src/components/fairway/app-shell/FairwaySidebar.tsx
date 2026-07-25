@@ -233,11 +233,17 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
   const Link = linkComponent ?? DefaultLink;
   const isCollapsed = isMobile ? false : collapsed;
 
+  // Take the first LETTER of each word, ignoring punctuation-only tokens.
+  //
+  // The old `split(' ').map(n => n[0])` took whatever character led each token,
+  // so the demo coach "Coach (Demo)" rendered as "C(" in the rail while the
+  // More sheet showed "CD" for the same user (audit 2026-07-24, M1). Any name
+  // with a parenthetical, hyphen or middle initial hit this.
   const initials = useCallback((name: string) => {
     return (
       name
-        .split(' ')
-        .map((n) => n[0])
+        .split(/\s+/)
+        .map((word) => word.match(/\p{L}/u)?.[0] ?? '')
         .filter(Boolean)
         .join('')
         .slice(0, 2)
@@ -305,8 +311,14 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
             <div
               className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-fw-md bg-gradient-to-br from-accent-400 to-accent-700 bg-cover bg-center"
               style={user.avatarUrl ? { backgroundImage: `url("${user.avatarUrl}")` } : undefined}
-              role="img"
-              aria-label={user.avatarUrl ? `${user.name} avatar` : undefined}
+              /*
+                Decorative, not role="img": the user's name renders visibly on
+                the very next line, so a label here only doubles it. The old
+                `aria-label={avatarUrl ? … : undefined}` also left a NAMELESS
+                role="img" on every account without an avatar — the axe
+                role-img-alt hit on `.bg-gradient-to-br` (audit L5 / P-33).
+              */
+              aria-hidden="true"
             >
               {!user.avatarUrl && (
                 <span className="font-fw-sans text-body-sm font-medium text-text-on-accent">

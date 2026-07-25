@@ -69,7 +69,7 @@ export function BenLeahIssueWorkflowSelect({ issue }: { issue: BenLeahTrackedIss
           </option>
         ))}
       </NativeSelect>
-      {error ? <p className="max-w-[12rem] break-words text-caption text-fw-danger">{error}</p> : null}
+      {error ? <p className="max-w-[12rem] break-words text-caption text-fw-danger-ink">{error}</p> : null}
     </div>
   );
 }

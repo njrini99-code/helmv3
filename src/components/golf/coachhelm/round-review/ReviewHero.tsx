@@ -354,9 +354,9 @@ export function ReviewHero({
   // metric as the summary total above it.
   const holeNarrativeColorClass =
     holeNarrative?.tone === 'gain'
-      ? 'text-fw-success'
+      ? 'text-fw-success-ink'
       : holeNarrative?.tone === 'loss'
-        ? 'text-fw-warning'
+        ? 'text-fw-warning-ink'
         : 'text-text-secondary';
 
   return (

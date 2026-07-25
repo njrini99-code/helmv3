@@ -35,7 +35,7 @@ function StateShell({
           className={cn(
             'mb-4 flex size-12 items-center justify-center rounded-full',
             tone === 'danger'
-              ? 'bg-fw-danger-bg text-fw-danger'
+              ? 'bg-fw-danger-bg text-fw-danger-ink'
               : 'bg-surface-sunken text-text-tertiary',
           )}
         >

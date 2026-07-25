@@ -81,7 +81,7 @@ function LeaderTick({ spelled }: { spelled: boolean }) {
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 font-fw-display font-semibold uppercase tracking-[0.1em] text-fw-success',
+        'inline-flex shrink-0 items-center gap-1 font-fw-display font-semibold uppercase tracking-[0.1em] text-fw-success-ink',
         spelled ? 'text-eyebrow' : '',
       )}
     >
@@ -141,7 +141,7 @@ export function RuledLeaderStat({
           className={cn(
             'font-fw-mono tabular-nums',
             VALUE_SIZE[size],
-            isLeader ? 'text-fw-success' : isDash ? 'text-text-tertiary' : 'text-text-primary',
+            isLeader ? 'text-fw-success-ink' : isDash ? 'text-text-tertiary' : 'text-text-primary',
           )}
         >
           {value}

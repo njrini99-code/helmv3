@@ -149,7 +149,7 @@ function formatToPar(toPar: number | null): string {
 function toParToneClass(toPar: number | null): string {
   if (toPar === null) return 'text-text-tertiary';
   if (toPar < 0) return 'text-accent-700';
-  if (toPar > 0) return 'text-fw-warning';
+  if (toPar > 0) return 'text-fw-warning-ink';
   return 'text-text-secondary';
 }
 
@@ -679,7 +679,7 @@ function RoundCoursesSection({
                     Round {roundNumber}
                   </p>
                   {assigned?.courseName ? (
-                    <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                    <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
                       {assigned.courseName}
                     </p>
                   ) : (

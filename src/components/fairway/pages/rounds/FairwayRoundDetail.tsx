@@ -68,6 +68,7 @@ import { InstrumentTable } from '@/components/fairway/charts/InstrumentTable';
 import { classifyTrend, TREND_COLOR } from '@/components/fairway/charts/TrendChip';
 import { cn } from '@/lib/utils';
 import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
+import { deriveRoundTotalsFromHoles } from '@/lib/golf/round-total';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — fully-resolved, serializable data from the server page.
@@ -206,9 +207,20 @@ export function FairwayRoundDetail({
   const holesPlayed = round.holes_played ?? 18;
   const contextLine = `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · ${playerName}`;
 
-  // ── Hero readouts (all off golf_rounds — honest) ────────────────────────────
-  const totalScore = finite(round.total_score);
-  const scoreToPar = finite(round.score_to_par);
+  // ── Hero readouts ────────────────────────────────────────────────────────
+  // Finding #1 (AUDIT-0724 stats-visual-accuracy.md): `golf_rounds.total_score`
+  // can drift ±1 stroke from Σgolf_holes.score for a small slice of rounds (the
+  // trigger that recomputes putts/GIR/fairways from golf_holes never touches
+  // total_score/front_nine/back_nine — see src/lib/golf/round-total.ts for the
+  // full root-cause). This page already has the round's `holes` array in hand,
+  // so derive the hero total, the Front9/Back9 readouts, AND the scorecard
+  // total from the SAME Σgolf_holes.score computation below — one derivation,
+  // so this page can never show two different totals for one round again.
+  const derivedTotals = deriveRoundTotalsFromHoles(holes, round);
+  const totalScore = finite(derivedTotals.total);
+  const scoreToPar = finite(derivedTotals.scoreToPar);
+  const frontNineTotal = finite(derivedTotals.frontNine);
+  const backNineTotal = finite(derivedTotals.backNine);
 
   const gir = finite(round.total_gir);
   const girPoss = finite(round.total_gir_possible);
@@ -396,17 +408,17 @@ export function FairwayRoundDetail({
               <div className="grid grid-cols-2 gap-3">
                 <Readout
                   size="md"
-                  display={finite(round.front_nine) != null ? String(round.front_nine) : undefined}
-                  value={finite(round.front_nine) ?? undefined}
-                  state={finite(round.front_nine) != null ? 'live' : 'awaiting'}
+                  display={frontNineTotal != null ? String(frontNineTotal) : undefined}
+                  value={frontNineTotal ?? undefined}
+                  state={frontNineTotal != null ? 'live' : 'awaiting'}
                   awaitingLabel="—"
                   label="Front 9"
                 />
                 <Readout
                   size="md"
-                  display={finite(round.back_nine) != null ? String(round.back_nine) : undefined}
-                  value={finite(round.back_nine) ?? undefined}
-                  state={finite(round.back_nine) != null ? 'live' : 'awaiting'}
+                  display={backNineTotal != null ? String(backNineTotal) : undefined}
+                  value={backNineTotal ?? undefined}
+                  state={backNineTotal != null ? 'live' : 'awaiting'}
                   awaitingLabel="—"
                   label="Back 9"
                 />
@@ -464,8 +476,8 @@ export function FairwayRoundDetail({
               <Scorecard
                 front={front}
                 back={back}
-                frontTotal={finite(round.front_nine)}
-                backTotal={finite(round.back_nine)}
+                frontTotal={frontNineTotal}
+                backTotal={backNineTotal}
                 grandTotal={totalScore}
               />
             </Surface>
@@ -1019,9 +1031,9 @@ function ScorecardNine({
                 const tone =
                   s != null && p != null
                     ? s < p
-                      ? 'text-fw-success'
+                      ? 'text-fw-success-ink'
                       : s > p
-                        ? 'text-fw-warning'
+                        ? 'text-fw-warning-ink'
                         : 'text-text-primary'
                     : 'text-text-tertiary';
                 return (
@@ -1084,18 +1096,18 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
     toPar == null
       ? 'text-text-tertiary'
       : toPar < 0
-        ? 'text-fw-success'
+        ? 'text-fw-success-ink'
         : toPar > 0
-          ? 'text-fw-warning'
+          ? 'text-fw-warning-ink'
           : 'text-text-primary';
 
   const pillTone =
     toPar == null
       ? 'bg-surface-sunken text-text-tertiary'
       : toPar < 0
-        ? 'bg-fw-success-bg text-fw-success'
+        ? 'bg-fw-success-bg text-fw-success-ink'
         : toPar > 0
-          ? 'bg-fw-warning-bg text-fw-warning'
+          ? 'bg-fw-warning-bg text-fw-warning-ink'
           : 'bg-surface-sunken text-text-secondary';
 
   return (
