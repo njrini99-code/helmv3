@@ -17,13 +17,51 @@ import { logServerError } from '@/lib/server-error-logger';
 
 type Sb = SupabaseClient<Database>;
 
+/**
+ * Where the day's budget came from.
+ *
+ * These are kept apart because they lead an operator to different actions, and
+ * collapsing them is what shipped a $0 to eight of thirteen production teams
+ * with no signal anywhere. `disabled` is a decision someone made; `default` is
+ * a decision nobody has made yet; `unresolved` means we could not find out.
+ * Only the first is a reason to leave CoachHelm switched off.
+ */
+export type BudgetSource =
+  /** A settings row for this team carries a budget. Includes a deliberate 0. */
+  | 'team_configured'
+  /** No settings row, or every row's budget is null — nobody has configured it. */
+  | 'platform_default'
+  /** A team configured 0 on purpose. Distinct from "nobody configured it". */
+  | 'disabled'
+  /** Coach has no team, or the settings read failed. Fails closed, loudly. */
+  | 'unresolved';
+
+/**
+ * The platform's daily per-coach budget when a team has not set one.
+ *
+ * Measured: a CoachHelm chat turn on Sonnet 5 with tool calls costs ~$0.045,
+ * so this is roughly 65 questions a day before a coach is asked to wait. It is
+ * deliberately a real number rather than 0 — an unconfigured team should get a
+ * working product with a ceiling, not a broken one.
+ */
+export const PLATFORM_DEFAULT_DAILY_BUDGET_USD = Number(
+  process.env.COACHHELM_DEFAULT_DAILY_BUDGET_USD ?? 3,
+);
+
 export interface BudgetCheckResult {
   allowed: boolean;
   remaining_usd: number;
   budget_usd: number;
   spent_usd: number;
+  /** Where `budget_usd` came from — see {@link BudgetSource}. */
+  source: BudgetSource;
   /** When falling back, this is the human-readable reason. */
   fallback_reason?: string;
+}
+
+interface ResolvedBudget {
+  budget_usd: number;
+  source: BudgetSource;
 }
 
 function todayUtcDate(): string {
@@ -53,11 +91,17 @@ export async function checkBudget(
 
   let budget_usd: number;
   let spent_usd: number;
+  let source: BudgetSource;
   if (existing) {
     budget_usd = Number(existing.budget_usd);
     spent_usd = Number(existing.spent_usd);
+    // The day's row already fixed a number; where it originally came from is
+    // recorded on the row that seeded it, not re-derived here.
+    source = 'team_configured';
   } else {
-    budget_usd = await resolveDefaultBudgetForCoach(supabase, coach_id);
+    const resolved = await resolveDefaultBudgetForCoach(supabase, coach_id);
+    budget_usd = resolved.budget_usd;
+    source = resolved.source;
     spent_usd = 0;
   }
 
@@ -69,11 +113,16 @@ export async function checkBudget(
     remaining_usd: remaining,
     budget_usd,
     spent_usd,
+    source,
+    // Three different sentences, because they need three different responses:
+    // top up tomorrow, ask an admin to switch it on, or fix the account.
     fallback_reason: allowed
       ? undefined
-      : budget_usd === 0
-        ? 'budget_zero'
-        : 'budget_exhausted',
+      : source === 'unresolved'
+        ? 'budget_unresolved'
+        : budget_usd === 0
+          ? 'budget_disabled'
+          : 'budget_exhausted',
   };
 }
 
@@ -92,7 +141,7 @@ export async function recordSpend(
   },
 ): Promise<void> {
   const date = todayUtcDate();
-  const budget_usd = await resolveDefaultBudgetForCoach(supabase, args.coach_id);
+  const { budget_usd } = await resolveDefaultBudgetForCoach(supabase, args.coach_id);
 
   // Fetch current to compute new task_class_usage breakdown.
   const { data: cur } = await supabase
@@ -137,11 +186,23 @@ export async function recordSpend(
 }
 
 /**
- * Resolve the coach's team's default daily LLM budget. Returns 0 if
- * no settings row exists for the team or the column is null — meaning
- * the gate denies all calls (safer default than letting calls through).
+ * Resolve the coach's team's daily LLM budget, and say where it came from.
+ *
+ * The old version returned a bare 0 for four different situations — no team,
+ * failed read, no settings row, and a deliberate zero — which meant an
+ * unconfigured team was indistinguishable from a switched-off one. In
+ * production that was eight of thirteen teams: every coach on them would open
+ * CoachHelm, ask a question, and be told analysis was unavailable, with
+ * nothing anywhere saying the cause was a missing config row.
+ *
+ * So an unconfigured team now gets {@link PLATFORM_DEFAULT_DAILY_BUDGET_USD}
+ * and a log line, and only the two states we genuinely cannot serve — a
+ * deliberate zero and a failed lookup — return 0.
  */
-async function resolveDefaultBudgetForCoach(supabase: Sb, coach_id: string): Promise<number> {
+async function resolveDefaultBudgetForCoach(
+  supabase: Sb,
+  coach_id: string,
+): Promise<ResolvedBudget> {
   // coach -> team via golf_team_coach_staff (per coachhelm-v3 schema notes)
   const { data: staff } = await supabase
     .from('golf_team_coach_staff')
@@ -149,15 +210,70 @@ async function resolveDefaultBudgetForCoach(supabase: Sb, coach_id: string): Pro
     .eq('coach_id', coach_id)
     .limit(1)
     .maybeSingle();
-  if (!staff) return 0;
+  if (!staff) {
+    // A coach on no team is an account-shaped problem, not a billing one.
+    // Guessing a budget here would spend money on an unattributable request.
+    await logServerError(
+      `budget: coach_id=${coach_id} has no team staff row; cannot resolve a budget`,
+      { action: 'v3.llm.budget.no_team' },
+      'warning',
+    );
+    return { budget_usd: 0, source: 'unresolved' };
+  }
 
-  const { data: settings } = await supabase
+  // `.maybeSingle()` was wrong here: `golf_coachhelm_settings` has no unique
+  // constraint on team_id, and production carries two rows for at least one
+  // team (one configured, one with a null budget). maybeSingle ERRORS on a
+  // multi-row result, `settings` comes back undefined, and the coach silently
+  // gets a $0 budget — i.e. CoachHelm is switched off for that team with no
+  // signal anywhere. Read the rows and resolve deterministically instead.
+  const { data: settingsRows, error: settingsError } = await supabase
     .from('golf_coachhelm_settings')
     .select('llm_budget_usd_per_day')
-    .eq('team_id', staff.team_id)
-    .maybeSingle();
+    .eq('team_id', staff.team_id);
 
-  const raw = settings?.llm_budget_usd_per_day;
-  if (raw === null || raw === undefined) return 0;
-  return Number(raw);
+  if (settingsError) {
+    // A failed read is NOT "this team has no budget". Fail closed on spend —
+    // that part is correct — but say so, rather than letting it look like a
+    // deliberate zero.
+    await logServerError(
+      `budget: settings lookup failed for team_id=${staff.team_id} — ${settingsError.message}`,
+      { action: 'v3.llm.budget.settings' },
+      'warning',
+    );
+    return { budget_usd: 0, source: 'unresolved' };
+  }
+
+  const configured = (settingsRows ?? [])
+    .map((r) => r.llm_budget_usd_per_day)
+    .filter((v): v is NonNullable<typeof v> => v !== null && v !== undefined)
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
+
+  if ((settingsRows?.length ?? 0) > 1) {
+    await logServerError(
+      `budget: ${settingsRows!.length} settings rows for team_id=${staff.team_id}; using the highest configured budget`,
+      { action: 'v3.llm.budget.duplicate_settings' },
+      'warning',
+    );
+  }
+
+  if (configured.length === 0) {
+    // Nobody has set a budget for this team. That is not a decision to switch
+    // CoachHelm off — it is the absence of a decision, and the product should
+    // work with a ceiling until someone makes one.
+    await logServerError(
+      `budget: team_id=${staff.team_id} has no configured daily budget; using the platform default of $${PLATFORM_DEFAULT_DAILY_BUDGET_USD}`,
+      { action: 'v3.llm.budget.platform_default' },
+      'warning',
+    );
+    return { budget_usd: PLATFORM_DEFAULT_DAILY_BUDGET_USD, source: 'platform_default' };
+  }
+
+  // Highest wins: with duplicate rows, honouring a configured budget over a
+  // null one is the reading that matches what an admin actually set.
+  const budget_usd = Math.max(...configured);
+  // An explicit 0 IS a decision — honour it, and label it as one so nobody
+  // later mistakes it for a team that was never set up.
+  return { budget_usd, source: budget_usd === 0 ? 'disabled' : 'team_configured' };
 }

@@ -497,20 +497,10 @@ export {
   type AreaTypeConfig,
   type AreaAutoFillStats,
   type AreaAutoFill,
-  useCoachChatSend,
-  type UseCoachChatSendOptions,
-  type UseCoachChatSendResult,
-  type ChatSendResponse,
-  type ChatMessage,
-  // ── Ask surface (coach "Ask" tab over /coachhelm/chat) ─────────────────────
-  AskWorkspace,
-  type AskWorkspaceProps,
-  AskConversationRail,
-  type AskConversationRailProps,
-  type AskConversationOrigin,
-  type AskOriginKind,
-  AskThreadPane,
-  type AskThreadPaneProps,
+  // ── Ask surface ────────────────────────────────────────────────────────────
+  // Removed with the streaming rebuild. The one chat system now lives at
+  // `@/components/golf/coachhelm/chat` and is mounted by both the Ask page and
+  // the global drawer — there is no Fairway-barrel surface for it.
   // ── Effectiveness surface (coach "Effectiveness" tab over analytics/coachhelm) ─
   FairwayEffectiveness,
   type FairwayEffectivenessProps,

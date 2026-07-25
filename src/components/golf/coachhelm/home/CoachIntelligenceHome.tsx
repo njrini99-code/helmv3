@@ -15,6 +15,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { ProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
+import { CommandOpening } from './CommandOpening';
 import { RotateCw } from 'lucide-react';
 import { Surface, EmptyState, Button, InlineNotice } from '@/components/fairway';
 import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
@@ -42,6 +44,18 @@ export interface CoachIntelligenceHomeProps {
 
   /** `effectiveness` view — copied from analytics/coachhelm/page.tsx, mounted UNCHANGED. */
   effectivenessDrillProps: FairwayEffectivenessProps;
+
+  /**
+   * The AI-first opening. Null when the chat context could not be resolved —
+   * the Triage Desk below still renders, because Signals/Players/Effectiveness
+   * are not allowed to depend on CoachHelm being reachable.
+   */
+  command: {
+    teamName: string;
+    coachFirstName: string | null;
+    players: { id: string; name: string }[];
+    pulse: ProgramPulse;
+  } | null;
 }
 
 export function CoachIntelligenceHome({
@@ -53,6 +67,7 @@ export function CoachIntelligenceHome({
   groupsError,
   playersDrillProps,
   effectivenessDrillProps,
+  command,
 }: CoachIntelligenceHomeProps) {
   const router = useRouter();
 
@@ -86,7 +101,22 @@ export function CoachIntelligenceHome({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
+      {/* ── The AI-first opening. Everything below it is the existing Triage
+            Desk, unchanged — the intelligence system is recomposed here, not
+            replaced by a decorative empty chat. ── */}
+      {command && (
+        <CommandOpening
+          teamName={command.teamName}
+          coachFirstName={command.coachFirstName}
+          players={command.players}
+          pulse={command.pulse}
+          onAsk={(text) =>
+            router.push(`/golf/dashboard/coachhelm/chat?q=${encodeURIComponent(text)}`)
+          }
+        />
+      )}
+
       {overviewFailed && (
         <Surface padding="md">
           <InlineNotice

@@ -29,6 +29,7 @@ import { Readout } from '@/components/fairway/instrument/Readout';
 import { SegmentBar, type SegmentBarPart } from '@/components/fairway/charts/SegmentBar';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { Button } from '@/components/fairway/controls/button';
+import { formatScoringAverage } from '@/lib/golf/format-scoring-average';
 import type { PlayersGridPlayer, PlayersGridFocusArea, PlayersGridStats, RosterRow } from './PlayersGridView';
 
 /** "Who needs your attention" shows only the top N by priority — the big
@@ -224,7 +225,7 @@ export function RosterHealthHeader({
                     <div className="flex items-center gap-1.5">
                       {row.stats?.avg_score != null ? (
                         <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
-                          {row.stats.avg_score} avg
+                          {formatScoringAverage(row.stats.avg_score)} avg
                         </span>
                       ) : null}
                       <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>

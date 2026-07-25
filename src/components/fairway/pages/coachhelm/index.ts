@@ -80,29 +80,11 @@ export type {
   AreaAutoFill,
 } from './areaTypes';
 
-// ── useCoachChatSend (the shared optimistic send hook) ───────────────────────
-export { useCoachChatSend } from './useCoachChatSend';
-export type {
-  UseCoachChatSendOptions,
-  UseCoachChatSendResult,
-  ChatSendResponse,
-  ChatMessage,
-} from './useCoachChatSend';
-
-// ── Ask surface (ask slice; coach-gated "Ask" tab over /coachhelm/chat) ──────
-//   • AskWorkspace        — the two-pane inbox body (renders CoachHelmShell)
-//   • AskConversationRail — left rail (snippet/date/origin render only if data)
-//   • AskThreadPane       — right pane (embeds ChatComposer + ChatMessageList)
-export { AskWorkspace } from './AskWorkspace';
-export type { AskWorkspaceProps } from './AskWorkspace';
-export { AskConversationRail } from './AskConversationRail';
-export type {
-  AskConversationRailProps,
-  AskConversationOrigin,
-  AskOriginKind,
-} from './AskConversationRail';
-export { AskThreadPane } from './AskThreadPane';
-export type { AskThreadPaneProps } from './AskThreadPane';
+// ── Ask surface ─────────────────────────────────────────────────────────────
+// The Ask workspace, its conversation rail, thread pane and the optimistic-send
+// hook were REMOVED with the streaming rebuild. There is now ONE chat system at
+// `src/components/golf/coachhelm/chat/`, used by both the full Ask page and the
+// global drawer, so there is nothing left to re-export from here.
 
 // ── TeamCategoryLeakBand (Wave 2 · coach Brief "where the team is bleeding
 //    strokes" band) — team-wide category rollup over getTeamCategoryInsights'

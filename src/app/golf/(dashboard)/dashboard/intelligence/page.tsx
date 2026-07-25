@@ -15,6 +15,8 @@ import { FeatureUnavailable, type PlayersGridPlayer, type PlayersGridFocusArea, 
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { surfaceName } from '@/lib/golf/surface-registry';
 import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
+import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
+import { getProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { getTeamCausalRelationships, type CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
@@ -295,10 +297,30 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     }
   }
 
+  // ── The AI-first opening's inputs. Individually degraded: if the chat
+  // context or the pulse cannot be read, the Brief still renders its existing
+  // intelligence surfaces and simply omits the composer. ────────────────────
+  let command: React.ComponentProps<typeof CoachIntelligenceHome>['command'] = null;
+  try {
+    const chatCtx = await resolveCoachChatContext(supabase);
+    const pulse = await getProgramPulse(supabase, chatCtx);
+    command = {
+      teamName: chatCtx.team_name,
+      // `golf_coaches` stores one `full_name`; the greeting wants the first
+      // word of it, and nothing at all rather than a guess when it is unset.
+      coachFirstName: coach.full_name?.trim().split(/\s+/)[0] ?? null,
+      players: chatCtx.roster.map((p) => ({ id: p.id, name: p.name })),
+      pulse,
+    };
+  } catch {
+    command = null;
+  }
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
         <CoachIntelligenceHome
+          command={command}
           overview={overviewResult}
           categoryInsights={categoryInsightsResult}
           coachId={coach.id}

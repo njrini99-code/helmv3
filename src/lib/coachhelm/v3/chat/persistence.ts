@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/types/database';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import type {
   ChatConversation,
   ChatMessage,
@@ -21,7 +22,7 @@ type Sb = SupabaseClient<Database>;
 
 /** Columns selected for every message read (single source of truth). */
 const MESSAGE_COLUMNS =
-  'id, conversation_id, role, content, tool_calls, tool_results, cost_usd, created_at, client_turn_id, status';
+  'id, conversation_id, role, content, tool_calls, tool_results, cost_usd, created_at, client_turn_id, status, ui_parts';
 
 function rowToMessage(row: {
   id: string;
@@ -34,6 +35,7 @@ function rowToMessage(row: {
   created_at: string;
   client_turn_id?: string | null;
   status?: string | null;
+  ui_parts?: Json | null;
 }): ChatMessage {
   return {
     id: row.id,
@@ -47,6 +49,8 @@ function rowToMessage(row: {
     client_turn_id: row.client_turn_id ?? null,
     // Legacy rows (status NULL) read as a completed answer.
     status: (row.status as ChatMessageStatus | null) ?? null,
+    // Legacy rows have no parts and render from `content` alone.
+    ui_parts: Array.isArray(row.ui_parts) ? (row.ui_parts as unknown[]) : null,
   };
 }
 
@@ -72,8 +76,7 @@ export async function getConversation(
 }
 
 export async function listMessages(sb: Sb, conversation_id: string): Promise<ChatMessage[]> {
-  const { data } = await sb
-    .from('golf_coachhelm_chat_messages')
+  const { data } = await fromUntyped(sb, 'golf_coachhelm_chat_messages')
     .select(MESSAGE_COLUMNS)
     .eq('conversation_id', conversation_id)
     .order('created_at', { ascending: true });
@@ -91,8 +94,7 @@ export async function findAssistantTurn(
   conversation_id: string,
   client_turn_id: string,
 ): Promise<ChatMessage | null> {
-  const { data } = await sb
-    .from('golf_coachhelm_chat_messages')
+  const { data } = await fromUntyped(sb, 'golf_coachhelm_chat_messages')
     .select(MESSAGE_COLUMNS)
     .eq('conversation_id', conversation_id)
     .eq('client_turn_id', client_turn_id)
@@ -132,10 +134,11 @@ export async function appendMessage(
     cost_usd?: number | null;
     client_turn_id?: string | null;
     status?: ChatMessageStatus | null;
+    /** Durable UI parts — see {@link ChatMessage.ui_parts}. */
+    ui_parts?: unknown;
   },
 ): Promise<ChatMessage> {
-  const { data, error } = await sb
-    .from('golf_coachhelm_chat_messages')
+  const { data, error } = await fromUntyped(sb, 'golf_coachhelm_chat_messages')
     .insert({
       conversation_id: args.conversation_id,
       role: args.role,
@@ -145,6 +148,7 @@ export async function appendMessage(
       cost_usd: args.cost_usd ?? null,
       client_turn_id: args.client_turn_id ?? null,
       status: args.status ?? null,
+      ui_parts: (args.ui_parts as Json | undefined) ?? null,
     })
     .select(MESSAGE_COLUMNS)
     .single();
@@ -169,8 +173,7 @@ export async function upsertUserTurn(
       content: args.content,
     });
   }
-  const { data, error } = await sb
-    .from('golf_coachhelm_chat_messages')
+  const { data, error } = await fromUntyped(sb, 'golf_coachhelm_chat_messages')
     .upsert(
       {
         conversation_id: args.conversation_id,

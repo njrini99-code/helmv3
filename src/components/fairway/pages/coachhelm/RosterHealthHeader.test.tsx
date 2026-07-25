@@ -196,6 +196,29 @@ describe('RosterHealthHeader — render', () => {
     expect(onAdd).toHaveBeenCalledWith('p1');
   });
 
+  it('prints a scoring average to a tenth, never the raw float', () => {
+    // A coach saw "75.58333333333334 avg" on this row: `avg_score` is a raw
+    // mean off the stats cache and carries full float precision.
+    const players = [player({ id: 'p1', first_name: 'Alex', last_name: 'Kim' })];
+    const playerStats: Record<string, PlayersGridStats> = {
+      p1: stats({ recent_trend: 'declining', avg_score: 75.58333333333334 }),
+    };
+    const rows: RosterRow[] = [
+      { player: players[0]!, stats: playerStats.p1, activeCount: 0, completedCount: 0 },
+    ];
+
+    render(
+      <RosterHealthHeader
+        health={computeRosterHealth(players, [], playerStats)}
+        needs={computeNeedsAttention(rows)}
+        onAdd={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('75.6 avg')).toBeInTheDocument();
+    expect(screen.queryByText(/75\.58333/)).not.toBeInTheDocument();
+  });
+
   it('caps the visible needs list at NEEDS_ATTENTION_LIST_CAP and says so honestly', () => {
     const flagged = Array.from({ length: NEEDS_ATTENTION_LIST_CAP + 2 }, (_, i) =>
       player({ id: `p${i}`, first_name: `Player`, last_name: `${i}` }),

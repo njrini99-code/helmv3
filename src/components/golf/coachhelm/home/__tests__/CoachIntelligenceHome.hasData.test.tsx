@@ -79,6 +79,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
   it('shows onboarding when the overview loaded fine and the roster is genuinely empty', () => {
     render(
       <CoachIntelligenceHome
+        command={null}
         overview={overview(0)}
         categoryInsights={emptyCategoryInsights}
         coachId="coach-1"
@@ -97,6 +98,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
   it('renders the Triage Desk (not onboarding) when the overview succeeds with players', () => {
     render(
       <CoachIntelligenceHome
+        command={null}
         overview={overview(5)}
         categoryInsights={emptyCategoryInsights}
         coachId="coach-1"
@@ -115,6 +117,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
   it('renders the retry notice (not onboarding) when the overview fails, even with an empty roster fallback', () => {
     render(
       <CoachIntelligenceHome
+        command={null}
         overview={failedOverview('Query timed out')}
         categoryInsights={emptyCategoryInsights}
         coachId="coach-1"
@@ -135,6 +138,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
   it('renders the retry notice + the Triage Desk when the overview fails but the roster fallback has players', () => {
     render(
       <CoachIntelligenceHome
+        command={null}
         overview={failedOverview()}
         categoryInsights={emptyCategoryInsights}
         coachId="coach-1"

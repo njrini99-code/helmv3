@@ -75,7 +75,17 @@ function renderColumn(coaches: Coach[]) {
   );
 }
 
-describe('PipelineColumn render cap', () => {
+/**
+ * Timeout raised from the 5s default because these tests are legitimately
+ * heavy, not because anything here is slow by mistake: each one mounts 60+
+ * rows that each carry a dnd `useDraggable`, and the expand case mounts them
+ * twice. Unloaded that case takes ~870ms — comfortably inside 5s — but a full
+ * `vitest run` executes this file in four projects at once against 800+ other
+ * files, and under that contention it intermittently crossed the line and
+ * failed the whole suite. The tests assert render behaviour, never speed, so
+ * a wall-clock budget is the wrong thing for them to fail on.
+ */
+describe('PipelineColumn render cap', { timeout: 30_000 }, () => {
   it('renders only the first 60 coaches (by incoming order) when the column has more', () => {
     const coaches = makeCoaches(65);
     renderColumn(coaches);

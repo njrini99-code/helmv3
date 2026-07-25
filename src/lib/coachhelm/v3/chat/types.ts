@@ -33,6 +33,18 @@ export interface ChatMessage {
   client_turn_id: string | null;
   /** Assistant-turn lifecycle (see {@link ChatMessageStatus}). Null = complete. */
   status: ChatMessageStatus | null;
+  /**
+   * AI SDK UIMessage parts for this message — text, tool calls, typed data
+   * parts (charts, approvals, receipts), entity mentions.
+   *
+   * `content` alone is only enough to replay the conversation to the MODEL. It
+   * is not enough to redraw it for the coach: a reload used to resurrect the
+   * prose and silently drop every chart and receipt with it. Persisting the
+   * parts is what makes a refreshed thread look like the live one.
+   *
+   * Null on legacy rows, which render from `content` as before.
+   */
+  ui_parts: unknown[] | null;
 }
 
 /**
