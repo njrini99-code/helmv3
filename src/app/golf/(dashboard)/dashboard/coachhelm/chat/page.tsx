@@ -1,57 +1,61 @@
 /**
- * W32-pt3 — coach chat full-history page.
+ * Ask CoachHelm — the full-page conversation.
  *
- * Coach-only. Lists every conversation in the left rail; clicking one
- * loads its messages into the main pane. New chat starts via the
- * drawer launcher elsewhere on the dashboard.
+ * Coach-only. Server-resolves the roster (which becomes the composer's mention
+ * source), the deterministic program pulse (which becomes the opening
+ * suggestions), and any durable history for the requested thread.
+ *
+ * The suggestions are derived from the pulse rather than hardcoded on purpose:
+ * offering "Compare two players on lag putting" to a program with four recorded
+ * rounds advertises something the data cannot answer, and the first reply is a
+ * disappointment.
  */
 
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persistence';
-import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
+import { CoachContextError, resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
+import { getProgramPulse, suggestionsFromPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { AskWorkspace, InlineNotice, Button } from '@/components/fairway';
+import { InlineNotice, Button } from '@/components/fairway';
 import { surfaceName } from '@/lib/golf/surface-registry';
-import Link from 'next/link';
+import { AskSurface } from '@/components/golf/coachhelm/chat/AskSurface';
 
-// #948 (4) — this route inherited the `dashboard/layout.tsx` default title
-// ("Dashboard | GolfHelm") because it never set its own `metadata`, unlike
-// its coachhelm-tab siblings (Brief/Signals/Effectiveness — see
-// `intelligence/page.tsx` / `analytics/coachhelm/page.tsx`). Sourced from
-// surface-registry.ts, matching #936/#917's fix for the Players tab.
 export const metadata: Metadata = {
   title: `${surfaceName('ask')} | CoachHelm`,
-  description: 'Ask CoachHelm anything about your team in natural language — full conversation history.',
+  description: 'Ask CoachHelm about your program — grounded in your recorded rounds and schedule.',
 };
 
+// The answers depend on data players change; never serve a cached shell.
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
-  searchParams: Promise<{ c?: string }>;
+  searchParams: Promise<{ c?: string; q?: string }>;
 }
 
-export default async function ChatHistoryPage({ searchParams }: PageProps) {
+export default async function AskCoachHelmPage({ searchParams }: PageProps) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
+
   if (!session.coach) {
-    // Un-gated role gate (hit regardless of the redesign fork): a minimal
-    // Fairway-styled equivalent of the legacy `FeatureUnavailable` — same
-    // copy, same behavior.
     return (
       <div className={fairwayScope('flex min-h-full items-center justify-center bg-canvas px-4 py-16 md:px-6')}>
         <div className="w-full max-w-md">
           <InlineNotice
             tone="info"
-            title="Chat History"
+            title="Ask CoachHelm"
             action={
               <Button asChild variant="primary" size="sm">
-                <Link href="/golf/dashboard/messages">Open Messages</Link>
+                <Link href="/golf/dashboard/coachhelm">Open CoachHelm</Link>
               </Button>
             }
           >
-            Coach chat history is part of the coach toolkit. Players can chat directly with
-            their coach from the Messages tab.
+            Ask CoachHelm is part of the coach toolkit. Your own CoachHelm surface has your
+            insights and development plan.
           </InlineNotice>
         </div>
       </div>
@@ -59,25 +63,37 @@ export default async function ChatHistoryPage({ searchParams }: PageProps) {
   }
 
   const sb = await createClient();
-  const conversations = await listConversations(sb);
-  const { c: selectedId } = await searchParams;
 
-  const initialId = selectedId ?? conversations[0]?.id ?? null;
-  const initialMessages = initialId ? await listMessages(sb, initialId) : [];
+  let ctx;
+  try {
+    ctx = await resolveCoachChatContext(sb);
+  } catch (err) {
+    if (err instanceof CoachContextError) redirect('/golf/dashboard');
+    throw err;
+  }
 
-  // The warm "Ask" two-pane inbox (CoachHelmShell active='ask'). The SSR
-  // conversations + resolved ?c= thread + its messages are passed UNCHANGED;
-  // sending goes through the shared useCoachChatSend → POST /chat/send (same
-  // endpoint, same optimistic stub). Coach gate above stays.
-  const countsRes = await getAlertCounts(session.coach.id);
-  const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+  const { c: requestedId, q: pendingQuestion } = await searchParams;
+
+  const [conversations, pulse] = await Promise.all([
+    listConversations(sb),
+    // A pulse failure must not take the conversation surface down with it —
+    // the coach can still ask questions without the suggestions.
+    getProgramPulse(sb, ctx).catch(() => null),
+  ]);
+
+  const conversationId = requestedId ?? null;
+  const history = conversationId ? await listMessages(sb, conversationId) : [];
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <AskWorkspace
+      <AskSurface
+        teamName={ctx.team_name}
+        players={ctx.roster.map((p) => ({ id: p.id, name: p.name }))}
+        suggestions={pulse ? suggestionsFromPulse(pulse, ctx.team_name) : []}
         conversations={conversations}
-        initialConversationId={initialId}
-        initialMessages={initialMessages}
-        signalCount={signalCount}
+        conversationId={conversationId}
+        initialMessages={restoreUIMessages(history)}
+        pendingQuestion={pendingQuestion ?? null}
       />
     </div>
   );
