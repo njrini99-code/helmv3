@@ -1,11 +1,10 @@
 // =============================================================================
 // src/components/fairway/app-shell/FairwayLargeTitle.test.tsx
 //
-// M1 (condensing-header, 2026-07-10) — pins the in-content large-title
-// primitive's rendering rules (eyebrow/meta breakpoint gating) and its
-// registration contract with the shell's condensed top bar: registers on
-// mount/update, clears on unmount so a route that hasn't adopted this
-// primitive never inherits a stale title.
+// Pins the in-content large-title primitive's rendering rules (eyebrow/meta
+// breakpoint gating) and its registration contract with the shell's standing
+// top-bar title: registers on mount/update, clears on unmount so a route that
+// hasn't adopted this primitive never inherits a stale title.
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
@@ -50,10 +49,10 @@ describe('FairwayLargeTitle — rendering', () => {
   });
 });
 
-describe('FairwayLargeTitle — condensed-bar registration', () => {
+describe('FairwayLargeTitle — standing-bar-title registration', () => {
   it('registers its title with the shell on mount', () => {
     render(
-      <FairwayLargeTitleProvider enabled={false}>
+      <FairwayLargeTitleProvider>
         <FairwayLargeTitle title="Roster" />
         <TitleReader />
       </FairwayLargeTitleProvider>,
@@ -64,7 +63,7 @@ describe('FairwayLargeTitle — condensed-bar registration', () => {
   it('updates the registered title when the title prop changes', () => {
     function Wrapper({ title }: { title: string }) {
       return (
-        <FairwayLargeTitleProvider enabled={false}>
+        <FairwayLargeTitleProvider>
           <FairwayLargeTitle title={title} />
           <TitleReader />
         </FairwayLargeTitleProvider>
@@ -80,7 +79,7 @@ describe('FairwayLargeTitle — condensed-bar registration', () => {
   it('clears the registered title when it unmounts, so the shell never inherits a stale title', () => {
     function Wrapper({ show }: { show: boolean }) {
       return (
-        <FairwayLargeTitleProvider enabled={false}>
+        <FairwayLargeTitleProvider>
           {show && <FairwayLargeTitle title="Roster" />}
           <TitleReader />
         </FairwayLargeTitleProvider>

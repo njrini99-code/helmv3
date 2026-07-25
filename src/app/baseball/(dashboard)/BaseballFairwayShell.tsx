@@ -761,14 +761,15 @@ function BaseballFairwayContent({
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}
         searchPlaceholder="Search players, teams, pages…"
-        // M1 (condensing-header): the hub sub-nav strip now renders as part
-        // of AppShell's ONE sticky chrome unit; `pageTitle` is the
-        // condensed-bar fallback for routes without a `<FairwayLargeTitle>`
-        // (SectionMasthead stays a server component — see condensing-header
-        // §6's RSC edge case — so this breadcrumb fallback is what feeds the
-        // bar on every baseball route today).
+        // The hub sub-nav strip renders as part of AppShell's ONE sticky
+        // chrome unit; `pageTitle` is the name the bar shows on phone. Inside
+        // a multi-tab hub that is the HUB label, not the crumb leaf — the
+        // strip directly below already names the leaf on its active tab, so
+        // the leaf would just be printed twice, one line apart. Baseball
+        // mastheads (SectionMasthead) are server components and never register
+        // a title, so this is what feeds the bar on every baseball route.
         subNav={subNav}
-        pageTitle={breadcrumbs.at(-1)?.label}
+        pageTitle={activeHub?.label ?? breadcrumbs.at(-1)?.label}
         // M1: the More sheet's identity row links here; its footer is the
         // light-themed Settings + Sign out row (moreSheetFooter, below).
         settingsHref={BASEBALL_SETTINGS_HREF}

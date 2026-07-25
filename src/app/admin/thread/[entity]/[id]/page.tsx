@@ -102,7 +102,7 @@ async function Body({ kind, id }: { kind: ThreadEntityKind; id: string }) {
     <div className="space-y-6">
       <Surface padding="sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0" data-fw-title-anchor>
+          <div className="min-w-0">
             <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="min-w-0 truncate text-xl font-semibold text-warm-900">{header.name}</h1>

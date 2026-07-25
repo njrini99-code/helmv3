@@ -113,10 +113,13 @@ export function ApproachMissSelector({
               </span>
             </motion.p>
           ) : (
-            <div className="flex items-center justify-center gap-1 text-text-tertiary">
-              <span className="text-xs">You</span>
-              <span className="text-sm">⛳</span>
-            </div>
+            // No pin glyph here. The target is already stated — the centre cell
+            // of the grid IS the green, labelled GREEN. The flag emoji that used
+            // to sit beside "You" marked the player's position with a picture of
+            // the thing they are aiming AT: redundant and backwards. Typography
+            // now matches the selected-state sibling above (text-caption, the
+            // Fairway token) instead of a raw text-xs.
+            <p className="font-fw-sans text-caption font-medium text-text-tertiary">You</p>
           )}
         </div>
       </div>

@@ -63,6 +63,12 @@ const RESOLVE_HUB_ID: Readonly<Record<BaseballNavHub, string>> = {
 export interface ResolvedHub {
   /** Stable hub id (telemetry / test anchor). */
   id: string;
+  /**
+   * The hub's human name — what the mobile top bar calls the SECTION you are
+   * in, with the sub-nav strip below naming which tab within it (so the bar
+   * never repeats the strip's own active tab label directly above it).
+   */
+  label: string;
   /** Accessible label for the sub-nav landmark. */
   ariaLabel: string;
   /** The hub's ordered sub-tabs. */
@@ -84,6 +90,7 @@ function coachHubs(opts: { showRecruiting: boolean }): HubDef[] {
     const def = COACH_HUB_DEFS[hub];
     return {
       id: RESOLVE_HUB_ID[hub],
+      label: def.label,
       ariaLabel: `${def.label} sections`,
       tabs: def.tabs,
       ownedPrefixes: def.tabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
@@ -95,24 +102,28 @@ function playerHubs(): HubDef[] {
   return [
     {
       id: 'stats',
+      label: 'Stats',
       ariaLabel: 'Stats sections',
       tabs: PLAYER_STATS_TABS,
       ownedPrefixes: PLAYER_STATS_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
     },
     {
       id: 'development',
+      label: 'Development',
       ariaLabel: 'Development sections',
       tabs: PLAYER_DEVELOPMENT_TABS,
       ownedPrefixes: PLAYER_DEVELOPMENT_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
     },
     {
       id: 'team',
+      label: 'Team',
       ariaLabel: 'Team sections',
       tabs: PLAYER_TEAM_TABS,
       ownedPrefixes: PLAYER_TEAM_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
     },
     {
       id: 'recruiting',
+      label: 'Recruiting',
       ariaLabel: 'Recruiting sections',
       tabs: PLAYER_RECRUITING_TABS,
       ownedPrefixes: PLAYER_RECRUITING_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
@@ -196,7 +207,7 @@ export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null
   }
 
   if (!best) return null;
-  const { id, ariaLabel, tabs } = best.hub;
+  const { id, label, ariaLabel, tabs } = best.hub;
   let visibleTabs =
     role === 'coach'
       ? filterHubTabsByCapabilities(tabs, role, args.capabilities ?? {})
@@ -207,8 +218,8 @@ export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null
   // A hub whose visible-tab list resolves to 0 OR exactly 1 tab renders no
   // sub-nav strip — a single, permanently-active, un-navigable tab exists
   // purely for its own sake (e.g. the player Stats hub / coach Academics hub,
-  // both single-surface today). Falls back to the plain condensed top-bar
-  // title, same as a flat top-level route with no hub at all.
+  // both single-surface today). Falls back to the shell's own breadcrumb-leaf
+  // top-bar title, same as a flat top-level route with no hub at all.
   if (visibleTabs.length < 2) return null;
-  return { id, ariaLabel, tabs: visibleTabs };
+  return { id, label, ariaLabel, tabs: visibleTabs };
 }

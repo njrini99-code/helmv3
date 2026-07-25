@@ -23,12 +23,12 @@
  * styling only). Restrained, reduced-motion-safe entrance.
  * ========================================================================== */
 
-import { type Dispatch, type SetStateAction, useState } from 'react';
+import { type Dispatch, type SetStateAction } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { formatCourseName } from '@/components/golf/courses/CourseImage';
+import { CourseImage, formatCourseName } from '@/components/golf/courses/CourseImage';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Button as UIButton } from '@/components/ui/button';
@@ -86,6 +86,10 @@ export interface FairwayNewRoundEntryProps {
    *  from its selected tee_id/course_id. */
   cloudPickActive: boolean;
   onClearSelectedCourse: () => void;
+  /** Imagery for the picked course, carried out of the picker with the tee.
+   *  Absent on manual/saved paths — CourseImage then derives a photo from the
+   *  name, so the confirm screen always has one. */
+  pickedCourseImage?: { imageUrl: string | null; normalizedName: string | null } | null;
 
   setupData: FairwaySetupForm;
   setSetupData: Dispatch<SetStateAction<FairwaySetupForm>>;
@@ -297,17 +301,6 @@ function CockpitBand({
 export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const { step } = props;
   const prefersReducedMotion = useReducedMotion();
-  // Internal "review holes" stage for a CLOUD / SAVED course pick. The parent's
-  // submit handler would otherwise skip the editor and jump straight to tracking
-  // for a usable preloaded config — but the cloud course is a BASELINE the player
-  // must be able to tune for today's round. When a baseline pick is active we keep
-  // the player on the setup screen, and the primary CTA opens this in-place editor
-  // (seeded from the picked tee) instead of submitting. Saving pipes the edited
-  // holes to onHolesSave, which the parent already routes into round creation
-  // (it never mutates the shared catalog for a cloud-tee pick). Manual entry is
-  // unaffected: with no preloaded config the CTA still submits via onSubmit and
-  // the parent advances to its own 'holes' step.
-  const [reviewingHoles, setReviewingHoles] = useState(false);
   const enter = (i: number) =>
     prefersReducedMotion
       ? {}
@@ -358,32 +351,6 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
     );
   }
 
-  // ── In-place "review holes" stage for a cloud / saved baseline pick ─────────
-  // Reached from the setup screen's primary CTA when a preloaded config exists,
-  // so the editable scorecard appears BEFORE the parent's submit can skip it.
-  if (reviewingHoles && seededHoles) {
-    return (
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
-        <m.div {...enter(0)}>
-          <CockpitBand
-            step="holes"
-            eyebrow={`New round${formattedCourseName ? ` · ${formattedCourseName}` : ''}`}
-            title="Review the scorecard."
-            description="These pars and yardages come from the course you picked — tweak any hole, then start tracking."
-          />
-        </m.div>
-        <FairwayHoleConfig
-          courseName={formattedCourseName}
-          initialHoles={seededHoles}
-          baselineLabel={baselineLabel}
-          onSave={props.onHolesSave}
-          onBack={() => setReviewingHoles(false)}
-          holesPerRound={props.holesPerRound}
-        />
-      </div>
-    );
-  }
-
   // ── Setup step ──────────────────────────────────────────────────────────
   const {
     setupData,
@@ -410,14 +377,30 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const showSelector = !loadingSavedCourses && savedCourses.length > 0;
   let i = 0;
 
-  // A qualifier round still needs its qualifier + round number chosen before we
-  // can advance. The parent's onSubmit validates this and surfaces the error, so
-  // for an incomplete qualifier we route through the form (type=submit) rather
-  // than jumping into the in-place holes editor. For non-qualifier rounds (and
-  // fully-selected qualifiers) a baseline pick goes straight to the editor.
-  const qualifierIncomplete =
-    setupData.roundType === 'qualifier' && (!selectedQualifierId || !selectedRoundNumber);
-  const canReviewHoles = !!seededHoles && !qualifierIncomplete;
+  // NOTE: the qualifier check that used to live here (`qualifierIncomplete` /
+  // `canReviewHoles`) is GONE from this component on purpose. It existed to
+  // route an incomplete qualifier through the form's submit button, because
+  // that was the only path that validated. Validation now lives in the
+  // parent's `validateBeforeStart`, which BOTH entry points call — so the rule
+  // is enforced wherever the round starts from, instead of being smuggled in
+  // via which button happened to render.
+
+  /**
+   * A course is already chosen — either from the Cloud Library tee picker or
+   * from the saved-course list.
+   *
+   * WHY THIS EXISTS. The picker is the FIRST thing a new round shows: it opens
+   * automatically, and the player picks a course and then a tee. They then
+   * landed here on a screen whose top half is "Browse course library", a
+   * "pick up where you left off" row, and a Saved/New list of courses — i.e.
+   * asked to choose a course they had just chosen. The pick was acknowledged
+   * only by a small "Course ready" line buried below all of it.
+   *
+   * When a course IS chosen, none of that machinery should render. The screen
+   * becomes what it should always have been: the course you picked, the holes
+   * it came with (editable), and Start.
+   */
+  const courseConfirmed = courseMode === 'saved' && (props.cloudPickActive || !!selectedCourse);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-10">
@@ -426,26 +409,38 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           <CockpitBand
             step="setup"
             eyebrow="New round · Setup"
-            title="Track every shot of this round."
-            description="Pick a course, set up your scorecard, then start tracking."
+            title={
+              courseConfirmed && formattedCourseName
+                ? `Your round at ${formattedCourseName}`
+                : 'Track every shot of this round.'
+            }
+            description={
+              courseConfirmed
+                ? 'These pars and yardages came with the tee you picked — tweak any hole, then start.'
+                : 'Pick a course, set up your scorecard, then start tracking.'
+            }
             onBack={props.onExitToDashboard}
             backLabel="Dashboard"
           />
         </m.div>
 
-        {/* PRIMARY course source: the shared Cloud Course Library (course + tee). */}
-        <m.div {...enter(i++)}>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={props.onBrowseCourseLibrary}
-            className="w-full justify-center"
-          >
-            <MapPin size={16} aria-hidden /> Browse course library
-          </Button>
-        </m.div>
+        {/* PRIMARY course source: the shared Cloud Course Library (course + tee).
+            Hidden once a course is confirmed — re-picking lives on the course
+            card's own "Change" button from that point on. */}
+        {!courseConfirmed && (
+          <m.div {...enter(i++)}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={props.onBrowseCourseLibrary}
+              className="w-full justify-center"
+            >
+              <MapPin size={16} aria-hidden /> Browse course library
+            </Button>
+          </m.div>
+        )}
 
-        {props.recentCourses.length > 0 && (
+        {!courseConfirmed && props.recentCourses.length > 0 && (
           <m.div {...enter(i++)}>
             <FairwayRecentCourses courses={props.recentCourses} onConfirmCourse={props.onQuickPickConfirm} />
           </m.div>
@@ -464,7 +459,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   <Spine />
                   Course
                 </h3>
-                {showSelector && (
+                {showSelector && !courseConfirmed && (
                   <Segmented<'saved' | 'new'>
                     size="sm"
                     aria-label="Course source"
@@ -479,7 +474,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               </div>
 
               {/* Saved-course picker (sunken well of lifted rows) */}
-              {showSelector && courseMode === 'saved' && (
+              {showSelector && courseMode === 'saved' && !courseConfirmed && (
                 <div className="flex flex-col gap-3">
                   {savedCourses.length >= 4 && (
                     <Input
@@ -567,33 +562,53 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
 
               {/* Selected-course summary OR new-course form */}
               {courseMode === 'saved' && !selectedCourse && props.cloudPickActive ? (
-                /* Cloud Library pick — read-only confirmation (driven by setupData).
-                   No editable fields, so the round can't be desynced from its
-                   selected tee_id/course_id. "Change" reopens the picker. */
-                <Inset padding="md">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="flex items-center gap-2 font-fw-sans text-body-sm font-medium text-text-primary">
-                      <Check className="h-4 w-4 text-accent-700" />
-                      Course ready
-                    </h4>
-                    <Button variant="ghost" size="sm" type="button" onClick={props.onBrowseCourseLibrary}>
-                      Change
-                    </Button>
+                /* Cloud Library pick — the course you chose, shown as a course.
+                   Read-only by design: no editable fields, so the round can't be
+                   desynced from its selected tee_id/course_id. "Change tees"
+                   reopens the picker on this course's tee list. */
+                <div className="overflow-hidden rounded-fw-md">
+                  {/* The photo IS the confirmation. A player who just picked a
+                      course should SEE it, not read a one-line receipt. Real
+                      imagery when the picker carried it; otherwise CourseImage
+                      derives a course photo from the name, so this is never a
+                      grey placeholder. */}
+                  <div className="relative h-32 w-full sm:h-40">
+                    <CourseImage
+                      name={setupData.courseName}
+                      imageUrl={props.pickedCourseImage?.imageUrl}
+                      normalizedName={props.pickedCourseImage?.normalizedName}
+                      scrim
+                      sizes="(max-width: 640px) 100vw, 640px"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-4">
+                      <p className="font-fw-display text-h3 font-semibold leading-tight text-white [text-wrap:balance]">
+                        {formatCourseName(setupData.courseName)}
+                      </p>
+                      {setupData.courseCity && (
+                        <p className="mt-0.5 flex items-center gap-1 font-fw-sans text-caption text-white/85">
+                          <MapPin className="h-3 w-3" />
+                          {setupData.courseCity}
+                          {setupData.courseState ? `, ${setupData.courseState}` : ''}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <p className="font-fw-display text-body font-medium text-text-primary">{formatCourseName(setupData.courseName)}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-caption text-text-tertiary">
-                    {setupData.courseCity && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {setupData.courseCity}
-                        {setupData.courseState ? `, ${setupData.courseState}` : ''}
-                      </span>
-                    )}
-                    {setupData.teesPlayed && <span>{setupData.teesPlayed} tees</span>}
-                    {setupData.courseRating && <span>Rating {setupData.courseRating}</span>}
-                    {setupData.courseSlope && <span>Slope {setupData.courseSlope}</span>}
-                  </div>
-                </Inset>
+                  <Inset padding="md" className="rounded-t-none">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-caption text-text-tertiary">
+                        {setupData.teesPlayed && (
+                          <span className="font-medium text-text-secondary">{setupData.teesPlayed} tees</span>
+                        )}
+                        {setupData.courseRating && <span>Rating {setupData.courseRating}</span>}
+                        {setupData.courseSlope && <span>Slope {setupData.courseSlope}</span>}
+                      </div>
+                      <Button variant="ghost" size="sm" type="button" onClick={props.onBrowseCourseLibrary}>
+                        Change tees
+                      </Button>
+                    </div>
+                  </Inset>
+                </div>
               ) : courseMode === 'saved' && selectedCourse ? (
                 <Inset padding="md">
                   <div className="mb-3 flex items-center justify-between">
@@ -939,28 +954,42 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             </InlineNotice>
           )}
 
+          {/* ── Scorecard, in place ──
+              The holes the picked tee came with, already loaded and editable, on
+              the SAME screen as the course. This used to sit behind a "Next:
+              review holes" button — one more tap between picking a course and
+              playing, for a screen the player had to visit anyway. The editor
+              owns its own Back / "Start round" dock, which is why the generic
+              dock below is suppressed here.
+
+              `onSave` is the parent's VALIDATED wrapper, not the bare hole save:
+              starting from here never passes through the form's submit handler,
+              so the round-level rules (qualifier picked, rating/slope in range)
+              have to be enforced on this path explicitly. */}
+          {courseConfirmed && seededHoles && (
+            <m.div {...enter(i++)}>
+              <FairwayHoleConfig
+                courseName={formattedCourseName}
+                initialHoles={seededHoles}
+                baselineLabel={baselineLabel}
+                onSave={props.onHolesSave}
+                onBack={props.onClearSelectedCourse}
+                holesPerRound={props.holesPerRound}
+              />
+            </m.div>
+          )}
+
           {/* ── Action dock ──
-              When a course/tee is picked we have an editable baseline scorecard
-              (`seededHoles`): the primary CTA opens the in-place review editor
-              (type=button) so the player always confirms/tunes the holes for THIS
-              round before tracking — the cloud course is a baseline, not a skip.
-              With no baseline (manual entry) the CTA submits and the parent sends
-              the player to its own hole-configuration step. */}
-          <m.div {...enter(i++)} className="flex gap-3 pt-1">
-            <Button variant="secondary" type="button" onClick={props.onCancel} disabled={props.isStartingRound} className="flex-1">
-              Cancel
-            </Button>
-            {canReviewHoles ? (
-              <Button
-                variant="primary"
-                type="button"
-                onClick={() => setReviewingHoles(true)}
-                disabled={props.isStartingRound}
-                className="flex-[2]"
-              >
-                Next: review holes →
+              Suppressed once the course is confirmed AND we have a baseline
+              scorecard: FairwayHoleConfig above renders its own Back / "Start
+              round" pair, and two competing primary CTAs on one screen is worse
+              than either. A confirmed course with NO usable holes still needs
+              this dock to reach the parent's hole-configuration step. */}
+          {!(courseConfirmed && seededHoles) && (
+            <m.div {...enter(i++)} className="flex gap-3 pt-1">
+              <Button variant="secondary" type="button" onClick={props.onCancel} disabled={props.isStartingRound} className="flex-1">
+                Cancel
               </Button>
-            ) : (
               <Button variant="primary" type="submit" disabled={props.isStartingRound} className="flex-[2]">
                 {props.isStartingRound
                   ? 'Starting…'
@@ -968,8 +997,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                     ? 'Start round →'
                     : 'Next: configure holes →'}
               </Button>
-            )}
-          </m.div>
+            </m.div>
+          )}
         </form>
       </div>
     </div>
