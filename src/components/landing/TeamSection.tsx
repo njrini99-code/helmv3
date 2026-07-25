@@ -111,7 +111,17 @@ export function TeamSection() {
       el.dataset.dx = (Math.cos(a) * dist).toFixed(0);
       el.dataset.dy = (Math.sin(a) * dist).toFixed(0);
       el.dataset.rot = ((rand(i + 3) - 0.5) * 50).toFixed(1);
-      el.dataset.st = (i * 0.055).toFixed(3);
+      // ARRIVAL ORDER IS AUTHORED, NOT POSITIONAL. `i` is DOM order, which is a
+      // layout accident — it had the roster, the qualifier and the week landing
+      // in whatever sequence the grid happened to declare them. The board now
+      // assembles the way a program is actually built: roster first, then the
+      // week that roster is committed to, then the qualifier that decides who
+      // travels, then travel, then the development plans that come out of it,
+      // and announcements LAST — a broadcast is the consequence of every
+      // decision above it, never the start of one. `data-assembly-order` on the
+      // mock is the source of truth; DOM order is the fallback.
+      const order = Number(el.dataset.assemblyOrder ?? i);
+      el.dataset.st = ((Number.isFinite(order) ? order : i) * 0.055).toFixed(3);
     });
     piecesRef.current = cards;
     return () => {

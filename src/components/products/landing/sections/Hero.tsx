@@ -1,15 +1,23 @@
 'use client';
 
 import Image from 'next/image';
+import { useRef } from 'react';
 import { useRequestDemo } from '@/components/landing/request-demo-context';
 import styles from '../products-landing.module.css';
+import { useScene } from '@/lib/motion/gsap/useScene';
+import { openingScene } from '../scenes/openingScene';
 
 /** Hero — centered logo, thesis headline, and the two primary CTAs.
  *  (No `id="top"` here — MarketingShell's <main id="top"> owns that anchor.) */
 export function Hero() {
   const openDemo = useRequestDemo();
+  const rootRef = useRef<HTMLElement>(null);
+  // P1 · masked SplitText arrival, run on load rather than on scroll. Replaces
+  // four `.heroItem` keyframes on staggered `animation-delay`s.
+  useScene(rootRef, openingScene);
+
   return (
-    <section style={{ position: 'relative', overflow: 'clip', background: 'var(--canvas)' }}>
+    <section ref={rootRef} style={{ position: 'relative', overflow: 'clip', background: 'var(--canvas)' }}>
       <div
         aria-hidden
         style={{
@@ -40,7 +48,7 @@ export function Hero() {
           width={512}
           height={512}
           priority
-          className={styles.heroItem}
+          data-open="mark"
           style={{
             display: 'block',
             margin: '0 auto',
@@ -48,11 +56,10 @@ export function Hero() {
             height: 'auto',
             aspectRatio: '1 / 1',
             objectFit: 'contain',
-            animationDelay: '0.05s',
           }}
         />
         <h1
-          className={styles.heroItem}
+          data-open="headline"
           style={{
             margin: 'clamp(20px,2.4vw,30px) auto 0',
             maxWidth: '16em',
@@ -62,13 +69,12 @@ export function Hero() {
             fontWeight: 640,
             color: 'var(--ink)',
             textWrap: 'balance',
-            animationDelay: '0.18s',
           }}
         >
           Everything a program needs, in one system.
         </h1>
         <p
-          className={styles.heroItem}
+          data-open="body"
           style={{
             margin: '26px auto 0',
             maxWidth: '34em',
@@ -76,21 +82,19 @@ export function Hero() {
             lineHeight: 1.55,
             color: 'var(--ink2)',
             textWrap: 'pretty',
-            animationDelay: '0.3s',
           }}
         >
-          Track every shot, turn one round into 87 measured stats, and let CoachHelm find the root — all
+          Track every shot, turn one round into 85 measured stats, and let CoachHelm find the root — all
           from a single operating view built for college coaches.
         </p>
         <div
-          className={styles.heroItem}
+          data-open="actions"
           style={{
             margin: '32px 0 0',
             display: 'flex',
             flexWrap: 'wrap',
             gap: 18,
             justifyContent: 'center',
-            animationDelay: '0.4s',
           }}
         >
           <button

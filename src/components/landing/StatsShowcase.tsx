@@ -5,6 +5,8 @@ import { GLASS_BEZEL } from './glass';
 import { FitEmbed } from './MockViewport';
 import { StatsMock } from './mockups/StatsMock';
 import { Reveal, ScaledEmbed, useIsDesktop, useParallax } from './motion';
+import { useScene } from '@/lib/motion/gsap/useScene';
+import { statsScene } from './scenes/statsScene';
 
 /**
  * Player-detail stats showcase — the spine + bento stats page embedded as a
@@ -18,6 +20,9 @@ export function StatsShowcase() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const isDesktop = useIsDesktop();
   useParallax(sectionRef);
+  // L5 · verdict first, then the product's own ranking, then the cells in that
+  // ranking's order — the leak arrives before the healthy numbers do.
+  useScene(sectionRef, statsScene);
 
   return (
     <section

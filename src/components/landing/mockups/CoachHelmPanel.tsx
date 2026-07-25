@@ -50,6 +50,7 @@ export function CoachHelmPanel() {
         {SG_ROWS.map((row) => (
           <div
             key={row.label}
+            data-sg-row={row.leak ? 'leak' : 'normal'}
             style={{
               display: 'grid',
               gridTemplateColumns: '96px 1fr 44px',
@@ -63,8 +64,7 @@ export function CoachHelmPanel() {
             <span style={{ fontSize: 12.5, color: row.leak ? M.onAccent : 'oklch(0.86 0.008 85)', fontWeight: row.leak ? 600 : 400 }}>{row.label}</span>
             <span style={{ height: 8, borderRadius: 9999, background: 'oklch(1 0 0 / 0.08)', position: 'relative', display: 'block' }}>
               <span
-                data-bar=""
-                data-w={row.width}
+                data-sg-bar={row.side}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -85,14 +85,14 @@ export function CoachHelmPanel() {
       </div>
 
       <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid oklch(1 0 0 / 0.08)' }}>
-        <p data-anim="" style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: M.onAccent }}>
+        <p data-ch="insight" style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: M.onAccent }}>
           Putting is the leak — the team is losing <span style={{ fontFamily: M.mono, color: 'oklch(0.82 0.12 60)' }}>~0.6</span> strokes a round on the greens, concentrated inside 10 ft.
         </p>
-        <div data-anim="" style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: M.mono, fontSize: 10, letterSpacing: '0.04em' }}>
+        <div data-ch="receipts" style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: M.mono, fontSize: 10, letterSpacing: '0.04em' }}>
           <span style={{ color: 'oklch(0.72 0.008 85)', background: 'oklch(1 0 0 / 0.06)', padding: '4px 9px', borderRadius: 9999 }}>SOURCE · LAST 10 ROUNDS</span>
           <span style={{ color: 'oklch(0.75 0.13 150)', background: 'oklch(0.648 0.149 149.6 / 0.16)', padding: '4px 9px', borderRadius: 9999 }}>CONFIDENCE · HIGH</span>
         </div>
-        <div data-anim="" style={{ marginTop: 14, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div data-ch="recommendation" style={{ marginTop: 14, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <span style={{ flex: 'none', marginTop: 1, display: 'inline-flex', width: 22, height: 22, borderRadius: 7, background: M.accent, alignItems: 'center', justifyContent: 'center' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.4" aria-hidden="true">
               <path d="M20 6L9 17l-5-5" />
