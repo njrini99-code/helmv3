@@ -36,6 +36,7 @@ function makeInsight(over: {
   /** On-green proximity (feet) for approach_miss — lands in evidence.detail,
    *  NOT your_value (the green-hit percent). */
   proximity_feet?: number | null;
+  sample_n?: number;
 }): EvidenceInsight {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const evidence: any = {
@@ -47,7 +48,7 @@ function makeInsight(over: {
     comparison_value: 0,
     comparison_label: '',
     comparison_source: 'pga_baseline',
-    sample_n: 10,
+    sample_n: over.sample_n ?? 10,
     window_days: 90,
     window_start: '',
     window_end: '',
@@ -179,6 +180,18 @@ describe('short_approach_proximity_gap', () => {
       makeInsight({ type: 'scrambling', signature: 'v3:scrambling:sand', your_value: 30, team_pct: 25 }),
     ];
     expect(shortApproachGap.detect(insights)).toBeNull();
+  });
+
+  it('derives sample_n as the MIN of its two sources, not a hardcoded literal', () => {
+    const insights = [
+      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 55, proximity_feet: 28, sample_n: 42 }),
+      makeInsight({ type: 'scrambling', signature: 'v3:scrambling:sand', your_value: 30, team_pct: 25, sample_n: 17 }),
+    ];
+    const m = shortApproachGap.detect(insights);
+    expect(m).not.toBeNull();
+    expect(Number(m!.signals.sample_n)).toBe(17);
+    const c = shortApproachGap.compose(m!);
+    expect(c.evidence.sample_n).toBe(17); // the thinner source, never the old literal 10
   });
 });
 

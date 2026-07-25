@@ -78,6 +78,12 @@ const rule: CompositeRule = {
         sand_save_pct: Number(sandWeak.evidence.your_value ?? 0),
         bias_direction: biasDir,
         same_hole_share: 0,
+        // Honest floor: a composite is only as well-evidenced as its
+        // thinnest source. Mirrors lag-distance-3putt.ts:78-81.
+        sample_n: Math.min(
+          Number(sandWeak.evidence.sample_n ?? 0),
+          Number(puttBias.evidence.sample_n ?? 0),
+        ),
       },
     };
   },
@@ -114,7 +120,7 @@ const rule: CompositeRule = {
         comparison_value: 50,
         comparison_label: 'PGA Tour sand save',
         comparison_source: 'pga_baseline',
-        sample_n: 5,
+        sample_n: Number(match.signals.sample_n ?? 0),
         window_days: 30,
         window_start: '',
         window_end: '',
