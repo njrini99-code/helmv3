@@ -5,7 +5,7 @@ import type { DigestEmail } from './build-digest';
  * DEDICATED ops-notification transport (owner decision #10).
  * Own client instance + OWN SECRET (OPS_DIGEST_RESEND_API_KEY) — follows
  * the codebase's isolated-client-per-surface convention (see
- * email/resend-client.ts's own refusal to share clients) with a stricter
+ * the notification layer's own refusal to share clients) with a stricter
  * secret boundary. Touches ZERO customer-outreach tables and imports ZERO
  * CRM code. Fail-soft: unconfigured → skipped, never a cron failure.
  */

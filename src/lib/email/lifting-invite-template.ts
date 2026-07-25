@@ -5,13 +5,13 @@
  * No I/O, no Resend imports — callers pipe the output into the Resend SDK.
  *
  * Design:
- *   - Branded helm-green + cream palette (matches coach-digest-template.ts).
+ *   - Branded helm-green + cream palette.
  *   - Transactional voice: one clear CTA, no promotional blocks.
  *   - Table-based layout for broad email-client compatibility; inline styles only.
  *   - Plain-text fallback is content-complete.
  */
 
-// ─── Brand tokens (kept in sync with src/lib/email/coach-digest-template.ts) ─
+// ─── Brand tokens ───────────────────────────────────────────────────────────
 
 const BRAND = {
   green: '#16A34A',
