@@ -451,6 +451,32 @@ Task 2: COMPLETE (commits 2a36a79f8, 656c858fa, fix 5c1f5820b; review
   Review test spies on the bootstrap and would not be called at all before
   the fix.
 
+Task 6: COMPLETE (3e7be9462). Verified BY ME in full rather than via a
+  separate reviewer — it is a config change I could check exhaustively, and
+  I state that plainly rather than implying an independent gate.
+  vercel.json order now: roster-sweep 02:00 -> standing-refresh 02:20 ->
+  genome-nightly 02:40 -> causality-attribute 03:00 -> goal-suggestions-write
+  03:20 -> calibration 03:40 -> insight-lifecycle 04:00 ->
+  goal-suggestions-evaluate 04:20. Matches scripts/coachhelm-refresh-all.sh
+  exactly. The 3 independent crons (validation 15 * * * *, safety-net */30,
+  weekly-coach-email 0 23 * * 0) are byte-identical. JSON validated.
+  Implementer also fixed 3 further stale schedule comments beyond the one
+  named (calibration, insight-lifecycle, goal-suggestions write/evaluate) —
+  invited by the brief.
+  EXTRA CHECK the brief did not ask for: do the jobs FIT in 20-minute gaps?
+  Observed over 30 days, the longest CoachHelm job is roster-sweep at 41.5s
+  max; every other one finishes under 5s. Enormous headroom, no overlap risk.
+
+  TASK 10's PREMISE NOW CONFIRMED BY EVIDENCE, before dispatch:
+  golf_player_genome = 52 rows, last computed 2026-07-07 — 18 DAYS STALE —
+  while v3-genome-nightly ran 23 times in 30 days with ZERO failures at 1.2s
+  avg / 1.7s max. It runs, succeeds, and writes nothing. Task 10 is now a
+  targeted hunt for the early-return, not an open diagnosis.
+  I did NOT over-generalize from the fast durations: calibration (0.3s)
+  updated golf_confidence_calibration TODAY, and goal-suggestions-write
+  (0.3s) wrote golf_goal_suggestions 3 days ago (347 rows). Those two are
+  working. Only genome-nightly is provably idle.
+
 Task 3: COMPLETE (ae40d4b17, e0ec16dfc; review APPROVED, verdict in
   .superpowers/sdd/task-3-review.md — no Critical, no Important).
   248/248 tests, typecheck + lint 0. The three literals now derive via
