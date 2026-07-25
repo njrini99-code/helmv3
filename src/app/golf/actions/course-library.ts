@@ -564,6 +564,16 @@ export interface TeeRoundDefaults {
   courseRating: number | null;
   slopeRating: number | null;
   holes: { holeNumber: number; par: number; yardage: number | null; handicapIndex: number | null }[];
+  /**
+   * Course imagery, carried so the round-setup screen can show the course the
+   * player just picked without a second round-trip. The picker already holds
+   * the full golf_courses row client-side when the tee is chosen, so these are
+   * populated there rather than re-queried — see FairwayCoursePicker.pickTee.
+   * Both optional: a tee picked through any other path simply falls back to
+   * CourseImage's name-derived photo.
+   */
+  courseImageUrl?: string | null;
+  courseNormalizedName?: string | null;
 }
 
 /** Load a tee set shaped as new-round defaults (Phase 4 tee picker calls this). */

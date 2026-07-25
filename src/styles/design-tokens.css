@@ -46,6 +46,22 @@
      pill, and carries cream (text-on-accent) copy at AA. */
   --fw-color-team-womens: oklch(0.575 0.125 16);
   --fw-color-accent-600: oklch(0.567 0.142 149.6); /* hover / pressed */
+  /* THE SOLID-BUTTON FILL (2026-07-25). #248342.
+   *
+   * Owner call: accent-700 buttons read as "dark forest" and the brand green had
+   * drained out of the product. This is the brightest green that still carries
+   * CREAM (text-on-accent) copy at AA for normal text — measured 4.69:1 against
+   * text-on-accent, 4.77:1 against pure white, versus the 4.5 requirement.
+   * accent-600 (4.17:1) and accent-500 (3.24:1) both FAIL with a 15px label, so
+   * they stay decorative-only; this is the brightest compliant step.
+   *
+   * DELIBERATELY NOT FLIPPED IN THE DARK BLOCK — same reasoning as accent-800/900
+   * directly below. accent-700 IS flipped there (to a light green, for text on a
+   * deep-green wash), which meant every `bg-accent-700` button rendered a LIGHT
+   * green fill under cream copy in dark mode. Keeping 650 fixed makes the button
+   * one solid mid-green in both themes, at the same 4.69:1 either way. If you
+   * ever add a dark override for this token, you reintroduce that bug. */
+  --fw-color-accent-650: oklch(0.540 0.132 149.7);
   --fw-color-accent-700: oklch(0.488 0.124 150);
   --fw-color-accent-800: oklch(0.415 0.103 150);
   --fw-color-accent-900: oklch(0.357 0.083 150);

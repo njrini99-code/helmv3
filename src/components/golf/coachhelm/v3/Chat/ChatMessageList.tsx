@@ -151,7 +151,7 @@ function ThinkingDot({ delay, prefersReducedMotion }: { delay: number; prefersRe
 function Bubble({ message, prefersReducedMotion }: { message: ChatMessage; prefersReducedMotion: boolean }) {
   if (message.role === 'user') {
     return (
-      <div className="max-w-[80%] rounded-2xl bg-primary-600 text-white px-4 py-2 text-sm shadow-[0_8px_18px_-12px_rgba(22,163,74,0.55)]">
+      <div className="max-w-[80%] rounded-2xl bg-accent-650 text-text-on-accent px-4 py-2 text-sm shadow-[0_8px_18px_-12px_rgba(22,163,74,0.55)]">
         {message.content}
       </div>
     );

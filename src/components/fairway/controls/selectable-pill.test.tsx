@@ -41,7 +41,10 @@ describe('SelectablePill (P404)', () => {
   // accent-500 remains the brand green for decorative fills, strokes and dots.
   it('applies the active accent fill and completed tint classes', () => {
     const { rerender } = render(<SelectablePill active>3</SelectablePill>);
-    expect(screen.getByRole('button').className).toContain('bg-accent-700');
+    // accent-650 since 2026-07-25: the brightest green that still carries cream
+    // copy at AA (4.69:1). Tracks Button primary — see the token note in
+    // design-tokens.css.
+    expect(screen.getByRole('button').className).toContain('bg-accent-650');
 
     rerender(<SelectablePill completed>3</SelectablePill>);
     expect(screen.getByRole('button').className).toContain('bg-accent-50');
@@ -57,7 +60,7 @@ describe('SelectablePill (P404)', () => {
       </SelectablePill>,
     );
     const cls = screen.getByRole('button').className;
-    expect(cls).toContain('bg-accent-700'); // still active
+    expect(cls).toContain('bg-accent-650'); // still active
     expect(cls).toContain('ring-2'); // plus the selected overlay ring
   });
 

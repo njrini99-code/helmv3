@@ -165,7 +165,7 @@ export function InsightsFeed({
           <Button variant="primary"
             onClick={handleGenerate}
             disabled={generating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-accent-650 text-text-on-accent font-medium rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-colors"
           >
             <IconSparkles size={18} />
             {generating ? 'Analyzing Team...' : 'Generate Insights'}

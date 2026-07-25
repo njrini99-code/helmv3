@@ -184,14 +184,22 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
     try {
       const defaults = await getTeeRoundDefaults(tee.id);
       if (!defaults) { showToastRef.current('Could not load that tee', 'error'); return; }
-      onPick(defaults);
+      // Carry the course's imagery out with the tee. `selected` is the full
+      // golf_courses row this picker already loaded to build the tee list, so
+      // this costs nothing — and it lets the setup screen show the actual
+      // course photo instead of a name-derived stock scene.
+      onPick({
+        ...defaults,
+        courseImageUrl: selected?.image_url ?? null,
+        courseNormalizedName: selected?.normalized_name ?? null,
+      });
       onOpenChange(false);
     } catch {
       showToastRef.current('Could not load that tee', 'error');
     } finally {
       setPicking(false);
     }
-  }, [onPick, onOpenChange]);
+  }, [onPick, onOpenChange, selected]);
 
   // A freshly created course has no tees — drop the user straight into its tee
   // stage so adding the tee they're about to play is the obvious next step.

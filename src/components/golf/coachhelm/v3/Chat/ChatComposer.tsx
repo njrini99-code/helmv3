@@ -71,7 +71,7 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
         aria-label="Send message"
         {...hoverProps}
         {...tapProps}
-        className={`inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-shadow [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${sendShadow}`}
+        className={`inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-accent-650 text-text-on-accent text-sm font-medium hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-shadow [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${sendShadow}`}
       >
         Send
         <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden>

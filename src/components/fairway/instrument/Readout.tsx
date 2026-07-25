@@ -145,6 +145,7 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
     >
       {label ? (
         <span
+          data-slot="readout-label"
           className={cn(
             'font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary',
             // NOTE: `text-text-tertiary/80` here would compile to NOTHING before
@@ -204,6 +205,13 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
       ) : (
         /* ── Live value: huge mono Number-Flow + unit ─────────────────────── */
         <div
+          // Stable hook for containers that retune figure density (e.g.
+          // InstrumentCluster's phone tier). On the wrapper, not the figure:
+          // the figure is either a plain span or a third-party NumberFlow,
+          // and forwarding a data-* attribute is not part of NumberFlow's
+          // contract. The first child is always the figure; the optional
+          // second is the unit.
+          data-slot="readout-value"
           className={cn(
             'flex items-baseline gap-2',
             align === 'end' && 'flex-row-reverse',
