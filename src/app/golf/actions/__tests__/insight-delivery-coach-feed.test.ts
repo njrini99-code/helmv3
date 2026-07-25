@@ -339,6 +339,45 @@ describe('getInsightsForCoach — Phase A cross-surface ordering guard', () => {
 });
 
 // ===========================================================================
+// Fix 2 (P1-12) — outcome_status/outcome_measured_at passthrough
+// ===========================================================================
+
+describe('getInsightsForCoach — outcome fields passthrough (Fix 2)', () => {
+  it('carries row.outcome_status/outcome_measured_at into the mapped EvidenceInsight', async () => {
+    // INSIGHT_SELECT already fetches both columns and EvidenceInsight already
+    // types them (InsightCard's OutcomeBadge already reads them) — the only
+    // gap was mapRowToEvidenceInsight silently dropping them.
+    const row = {
+      ...makeRow({ id: 'measured-1', metric: 'strokes_gained_tee' }),
+      outcome_status: 'improved',
+      outcome_measured_at: '2026-01-10T00:00:00.000Z',
+    };
+
+    const orderCalls: OrderCall[] = [];
+    activeClient = makeSupabaseMock([row], orderCalls) as unknown as SupabaseClient;
+
+    const out = await getInsightsForCoach('coach-1');
+
+    expect(out).toHaveLength(1);
+    expect(out[0]?.outcome_status).toBe('improved');
+    expect(out[0]?.outcome_measured_at).toBe('2026-01-10T00:00:00.000Z');
+  });
+
+  it('defaults outcome_status/outcome_measured_at to null when the row has not been measured yet', async () => {
+    const row = makeRow({ id: 'unmeasured-1', metric: 'strokes_gained_tee' });
+
+    const orderCalls: OrderCall[] = [];
+    activeClient = makeSupabaseMock([row], orderCalls) as unknown as SupabaseClient;
+
+    const out = await getInsightsForCoach('coach-1');
+
+    expect(out).toHaveLength(1);
+    expect(out[0]?.outcome_status ?? null).toBeNull();
+    expect(out[0]?.outcome_measured_at ?? null).toBeNull();
+  });
+});
+
+// ===========================================================================
 // A8 — team-wide sweep window-starvation fix (paginate-then-rank)
 // ===========================================================================
 

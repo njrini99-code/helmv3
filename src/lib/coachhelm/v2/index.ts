@@ -56,10 +56,6 @@ export {
   scoreInsight,
   calculateThresholdAdjustments,
   shouldShowInsight,
-  derivePreferences,
-  prioritizeForCoach,
-  recordAction,
-  queryActions,
 } from './feedback';
 export type {
   CalibrationRecord,
@@ -68,8 +64,6 @@ export type {
   InsightFeedback,
   InsightScore,
   ThresholdAdjustments,
-  CoachAction,
-  CoachPreferences,
 } from './feedback';
 
 // Orchestrator

@@ -1241,7 +1241,7 @@ async function acknowledgeInsightImpl(insightId: string) {
     // be acted" holds. player_id comes from the updated row.
     const ackPlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
     if (ackPlayerId) {
-      void recordInsightAction({
+      await recordInsightAction({
         insight_id: insightId,
         player_id: ackPlayerId,
         actor_id: user.id,
@@ -1325,7 +1325,7 @@ async function dismissInsightImpl(insightId: string) {
     // P1-12: record the DISMISS as a real insight action (failure-silent).
     const dismissPlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
     if (dismissPlayerId) {
-      void recordInsightAction({
+      await recordInsightAction({
         insight_id: insightId,
         player_id: dismissPlayerId,
         actor_id: user.id,
@@ -1497,7 +1497,7 @@ async function resolveInsightImpl(insightId: string) {
     // P1-12: record the RESOLVE as a real insight action (failure-silent).
     const resolvePlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
     if (resolvePlayerId) {
-      void recordInsightAction({
+      await recordInsightAction({
         insight_id: insightId,
         player_id: resolvePlayerId,
         actor_id: user.id,

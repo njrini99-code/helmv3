@@ -1091,7 +1091,7 @@ async function createFocusAreaFromInsightV2Impl(
 
   // P1-12: creating a focus area FROM an insight is a real coach action on that
   // insight — record it (failure-silent) so the effectiveness rollup counts it.
-  void recordInsightAction({
+  await recordInsightAction({
     insight_id: args.insightId,
     player_id: args.playerId,
     actor_id: user.id,
@@ -1332,7 +1332,7 @@ async function createFocusAreaFromInsightImpl(
   // P1-12: record the focus-area creation as a real action on the source
   // insight (failure-silent). Only a confirmed insert of an authorized row
   // reaches here, so a non-action can never be counted as one.
-  void recordInsightAction({
+  await recordInsightAction({
     insight_id: data.insight_id,
     player_id: data.player_id,
     actor_id: user.id,

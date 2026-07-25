@@ -43,6 +43,7 @@ import {
   deleteFocusArea,
   reactivateFocusArea,
 } from '@/app/golf/actions/development';
+import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 describe('createFocusAreaFromInsight', () => {
   beforeEach(() => {
@@ -328,6 +329,61 @@ describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
     expect(result.error).toBe('Forbidden');
     expect(scopedInsert).not.toHaveBeenCalled();
     expect(adminInsert).not.toHaveBeenCalled();
+  });
+
+  /**
+   * P1-12 / Fix 2 — `void recordInsightAction(...)` -> `await
+   * recordInsightAction(...)`. In a serverless runtime an un-awaited call can
+   * be dropped when the function's response is already flushed (measured:
+   * 4 confirmed real from_insight_id focus-area creates, only 3 landed in
+   * golf_insight_action — a ~25% loss on this exact call site). This is an
+   * ordering proof, not a call-count proof: it holds the ledger write's
+   * promise open with a controllable deferred and asserts the action's own
+   * returned promise cannot resolve before the ledger write resolves. If the
+   * call site regresses to `void recordInsightAction(...)`, the action
+   * resolves immediately (fire-and-forget) and the first assertion below
+   * fails.
+   */
+  it('awaits recordInsightAction before returning (regression guard against reverting to `void`)', async () => {
+    harness('coach');
+
+    const order: string[] = [];
+    let resolveRecord: (() => void) | undefined;
+    vi.mocked(recordInsightAction).mockImplementation(() => {
+      order.push('record-called');
+      return new Promise<void>((resolve) => {
+        resolveRecord = () => {
+          order.push('record-resolved');
+          resolve();
+        };
+      });
+    });
+
+    const resultPromise = createFocusAreaFromInsightV2({
+      playerId: 'player-1',
+      insightId: 'insight-1',
+      title: 'Work on putts',
+      description: 'desc',
+      areaType: 'putting',
+    }).then((r) => {
+      order.push('action-resolved');
+      return r;
+    });
+
+    // Flush to a macrotask boundary WITHOUT resolving the ledger write. Node
+    // always drains the microtask queue before running a scheduled macrotask,
+    // so by the time this resolves, every microtask-based hop up to (and
+    // including) the recordInsightAction call has already run — but the
+    // action itself can only still be pending if it's truly blocked on our
+    // unresolved deferred.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(order).toEqual(['record-called']);
+
+    resolveRecord?.();
+    const result = await resultPromise;
+
+    expect(order).toEqual(['record-called', 'record-resolved', 'action-resolved']);
+    expect(result.success).toBe(true);
   });
 });
 

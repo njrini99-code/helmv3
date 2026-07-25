@@ -344,7 +344,7 @@ function metricToRoundField(
   if (m === 'strokes_gained_approach' || m === 'sg_approach') {
     return { field: 'strokes_gained_approach', direction: 'higher' };
   }
-  if (m === 'strokes_gained_tee' || m === 'sg_tee') {
+  if (m === 'strokes_gained_tee' || m === 'sg_tee' || m === 'sg_ott') {
     return { field: 'strokes_gained_tee', direction: 'higher' };
   }
   if (m === 'strokes_gained_around_green' || m === 'sg_around_green') {
