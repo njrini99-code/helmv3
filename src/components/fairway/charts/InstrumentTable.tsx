@@ -40,6 +40,8 @@ export function InstrumentTableToggle({ show, onToggle }: InstrumentTableToggleP
       data-slot="instrument-view-toggle"
       className={cn(
         'inline-flex h-7 min-w-[24px] items-center gap-1.5 rounded-fw-sm px-2.5',
+        // 28px visual chip, 44px tap target via invisible hit-slop (audit M10).
+        "relative before:absolute before:-inset-2 before:content-['']",
         'font-fw-sans text-caption font-medium text-text-secondary',
         'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'hover:bg-surface hover:text-text-primary',

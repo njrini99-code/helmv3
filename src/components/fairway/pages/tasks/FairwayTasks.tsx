@@ -574,7 +574,7 @@ export function FairwayTasks({
                         {/* P288 — on-system text tokens (no legacy warm-* class). The
                             warning surface is carried by bg-fw-warning-bg; the numerals
                             stay readable on it (text-primary ≈ 13:1, text-secondary ≈ 4.9:1,
-                            both clear WCAG AA — text-fw-warning would only be ~2:1 here). */}
+                            both clear WCAG AA — text-fw-warning-ink would only be ~2:1 here). */}
                         <p className="font-fw-display text-h3 font-medium tabular-nums text-text-primary">
                           {stats.overdue_tasks}
                         </p>
@@ -948,9 +948,9 @@ function FairwayTaskCard({
               <PopoverPanel.Separator />
               <PopoverPanel.Item
                 onClick={() => setPendingDelete(true)}
-                className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
+                className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
               >
-                <IconTrash size={18} className="text-fw-danger" />
+                <IconTrash size={18} className="text-fw-danger-ink" />
                 Delete task
               </PopoverPanel.Item>
             </PopoverPanel>
@@ -1001,7 +1001,7 @@ function FairwayTaskCard({
             <span
               className={cn(
                 'inline-flex items-center gap-1.5 tabular-nums',
-                isOverdue ? 'text-fw-danger' : 'text-text-secondary',
+                isOverdue ? 'text-fw-danger-ink' : 'text-text-secondary',
               )}
               suppressHydrationWarning
             >

@@ -219,7 +219,7 @@ function UnfinishedRow({
       </div>
 
       {error && (
-        <p className="px-4 pb-3 font-fw-sans text-caption text-fw-danger" role="alert">
+        <p className="px-4 pb-3 font-fw-sans text-caption text-fw-danger-ink" role="alert">
           {error}
         </p>
       )}

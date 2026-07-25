@@ -221,7 +221,7 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
                     className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar name={name} src={entry.player?.avatar_url} size="sm" />
+                      <Avatar decorative name={name} src={entry.player?.avatar_url} size="sm" />
                       <div>
                         <p className="text-sm font-semibold text-warm-900">{name}</p>
                         <p className="text-xs text-warm-500">

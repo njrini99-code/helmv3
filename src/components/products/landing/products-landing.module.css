@@ -17,7 +17,12 @@
   --sunken: oklch(0.963 0.021 84);
   --ink: oklch(0.216 0.007 49);
   --ink2: oklch(0.444 0.014 65);
-  --ink3: oklch(0.585 0.014 70);
+  /* 0.585 measured 3.66:1 on --canvas (and 2.72:1 where the marquee pills sit)
+   * — below the 4.5:1 body-text bar at every size this token is actually used
+   * at, which is what axe reported 27-28 times per viewport on /products
+   * (audit L-16). 0.52 clears 4.5:1 against canvas, surface AND tint while
+   * staying visibly the quietest of the three inks. */
+  --ink3: oklch(0.52 0.014 70);
   --line: oklch(0.862 0.013 82 / 0.95);
   /* Match the GolfHelm dashboard / Helm landing green: deeper accent-600 on the
    * all-linen surface (see helm-landing.module.css). Tokens ref design-tokens.css

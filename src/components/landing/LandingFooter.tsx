@@ -45,7 +45,7 @@ export function LandingFooter({ onRequestDemo }: LandingFooterProps) {
           </p>
         </div>
         <div>
-          <div className="font-fw-mono text-[0.656rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Products</div>
+          <div className="font-fw-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Products</div>
           <div className="mt-3.5 flex flex-col gap-2.5 text-body-sm">
             <Link
               href="/#golfhelm"
@@ -60,7 +60,7 @@ export function LandingFooter({ onRequestDemo }: LandingFooterProps) {
           </div>
         </div>
         <div>
-          <div className="font-fw-mono text-[0.656rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Company</div>
+          <div className="font-fw-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Company</div>
           <div className="mt-3.5 flex flex-col items-start gap-2.5 text-body-sm">
             <Link href="/about" className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
               About
@@ -78,7 +78,7 @@ export function LandingFooter({ onRequestDemo }: LandingFooterProps) {
           </div>
         </div>
         <div>
-          <div className="font-fw-mono text-[0.656rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Legal</div>
+          <div className="font-fw-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[oklch(0.62_0.008_85)]">Legal</div>
           <div className="mt-3.5 flex flex-col gap-2.5 text-body-sm">
             <Link href="/support" className="-my-2 inline-flex min-h-11 items-center py-2 text-[oklch(0.82_0.008_85)] transition-colors hover:text-text-on-accent">
               Support

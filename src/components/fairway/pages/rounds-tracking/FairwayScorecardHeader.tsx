@@ -213,10 +213,10 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     const scoreColor = (() => {
       if (isCurrent) return 'text-accent-700';
       if (!hasScore) return 'text-text-tertiary/50';
-      if (scoreToPar <= -1) return 'text-fw-success';
+      if (scoreToPar <= -1) return 'text-fw-success-ink';
       if (scoreToPar === 0) return 'text-text-primary';
-      if (scoreToPar === 1) return 'text-fw-warning';
-      return 'text-fw-danger';
+      if (scoreToPar === 1) return 'text-fw-warning-ink';
+      return 'text-fw-danger-ink';
     })();
 
     return (
@@ -254,7 +254,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           {hasScore ? hole.score : '–'}
         </div>
         {hasScore && !isCurrent && (
-          <div className="mt-0.5 text-eyebrow text-fw-success">
+          <div className="mt-0.5 text-eyebrow text-fw-success-ink">
             <svg className="mx-auto h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>

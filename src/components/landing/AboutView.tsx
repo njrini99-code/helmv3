@@ -115,7 +115,7 @@ export function AboutView() {
               <div className="flex items-center gap-4">
                 <Image src="/Helm-Logo-New-Main.png" alt="" width={44} height={44} className="h-11 w-11 object-contain" />
                 <div>
-                  <div className="font-fw-mono text-[0.656rem] uppercase tracking-[0.15em] text-text-tertiary">Our Belief</div>
+                  <div className="font-fw-mono text-[0.6875rem] uppercase tracking-[0.15em] text-text-tertiary">Our Belief</div>
                   <div className="text-body-lg font-semibold text-text-primary">Coaches deserve better tools</div>
                 </div>
               </div>
@@ -187,7 +187,14 @@ export function AboutView() {
             {VALUES.map((value, i) => (
               <Reveal key={value.title} delay={i * 60}>
                 <div className={`h-full rounded-2xl bg-surface p-6 md:p-7 ${CARD_SHADOW}`}>
-                  <div className="h-8 w-1 rounded-full bg-accent-500" />
+                  {/* The same round accent chip the Pillars grid uses two
+                      sections up — this card carried a 4×32 vertical accent
+                      RAIL instead, putting two accent vocabularies on one page
+                      and breaking the house rule that colour lives in a dot or
+                      a label, never a rail on a card edge (audit L-14). */}
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-50 font-fw-mono text-body-sm font-semibold text-accent-700">
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
                   <h3 className="mt-4 text-h3 text-text-primary">{value.title}</h3>
                   <p className="mt-2 text-body-sm leading-relaxed text-text-secondary">{value.description}</p>
                 </div>

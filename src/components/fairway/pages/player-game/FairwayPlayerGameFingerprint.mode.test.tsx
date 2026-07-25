@@ -169,10 +169,12 @@ describe('FairwayPlayerGameFingerprint — mode branching', () => {
     expect(screen.queryByRole('link', { name: /^genome$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /player page/i })).not.toBeInTheDocument();
     expect(screen.getByText('JD')).toBeInTheDocument();
-    // Avatar renders an sr-only duplicate of the name alongside the visible
-    // title text — both are legitimately "Jake Doe", so assert count, not
-    // singular presence.
-    expect(screen.getAllByText('Jake Doe').length).toBeGreaterThanOrEqual(2);
+    // Exactly ONCE. The Avatar used to emit an sr-only copy of the name beside
+    // the visible title, so the h1 announced "J D Jake Doe Jake Doe" (audit
+    // M4/P-21). `decorative` suppresses that copy wherever a visible name label
+    // sits next to the avatar — this asserts the duplicate is gone, and would
+    // fail again the moment someone drops the prop.
+    expect(screen.getAllByText('Jake Doe')).toHaveLength(1);
   });
 
   it('coach mode "Make focus area" calls createFocusAreaFromInsight, not the player path', async () => {

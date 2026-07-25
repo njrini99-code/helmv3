@@ -216,7 +216,7 @@ export function RosterHealthHeader({
                   avatarUrl={row.player.avatar_url}
                   size="sm"
                   meta={
-                    <span className="font-fw-sans text-caption font-medium text-fw-warning">
+                    <span className="font-fw-sans text-caption font-medium text-fw-warning-ink">
                       {reason}
                     </span>
                   }

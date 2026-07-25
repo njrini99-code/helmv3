@@ -593,7 +593,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                               unoptimized
                             />
                           ) : (
-                            <Avatar
+                            <Avatar decorative
                               name={member.name}
                               size="lg"
                               className="flex-shrink-0"

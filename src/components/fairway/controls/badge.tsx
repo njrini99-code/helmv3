@@ -35,7 +35,7 @@ const toneOutline: Record<FwStatusTone, string> = {
   accent: 'border-accent-200 text-accent-700',
   success: 'border-accent-200 text-accent-700',
   warning: 'border-fw-warning-ring text-fw-warning-ink',
-  danger: 'border-fw-danger/30 text-fw-danger',
+  danger: 'border-fw-danger/30 text-fw-danger-ink',
   info: 'border-border-subtle text-text-secondary',
 };
 

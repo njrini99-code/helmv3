@@ -360,7 +360,9 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
         {empty ? (
           // Null metric: recede it so it reads as "no data yet", not as a value
           // competing with live figures next to it (premium-polish pass).
-          <p className="font-fw-sans text-h3 font-normal text-text-tertiary opacity-50">
+          // text-text-tertiary alone is already the calibrated "quiet" ink;
+          // the extra opacity-50 dropped this to ~2.0:1 (audit P-26).
+          <p className="font-fw-sans text-h3 font-normal text-text-tertiary">
             {emptyMessage}
           </p>
         ) : (

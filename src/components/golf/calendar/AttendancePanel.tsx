@@ -394,7 +394,7 @@ function PlayerSelfView({ rows, viewerPlayerId, presentCount }: PlayerSelfViewPr
     own.mark === 'present' || own.mark === 'late'
       ? { label: own.mark === 'late' ? 'Checked in (late)' : 'Checked in', className: 'text-accent-700' }
       : own.mark === 'no_show'
-        ? { label: 'Marked absent', className: 'text-fw-danger' }
+        ? { label: 'Marked absent', className: 'text-fw-danger-ink' }
         : { label: '— Not recorded yet', className: 'text-text-tertiary' };
 
   return (

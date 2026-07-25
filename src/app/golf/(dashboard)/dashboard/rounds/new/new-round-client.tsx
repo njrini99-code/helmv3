@@ -1847,7 +1847,7 @@ export default function NewRoundClient() {
         >
           <div className="px-6 pb-6 pt-6">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-fw-md bg-fw-warning-bg">
-              <IconWarning size={24} className="text-fw-warning" />
+              <IconWarning size={24} className="text-fw-warning-ink" />
             </div>
             <h2 className="mb-2 text-center font-fw-display text-body-lg font-medium tracking-[-0.012em] text-text-primary">
               Recover Unsaved Progress?
@@ -1891,7 +1891,7 @@ export default function NewRoundClient() {
         <div className="px-6 pb-6 pt-6">
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md bg-fw-warning-bg">
-              <IconWarning size={20} className="text-fw-warning" />
+              <IconWarning size={20} className="text-fw-warning-ink" />
             </div>
             <div>
               <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">

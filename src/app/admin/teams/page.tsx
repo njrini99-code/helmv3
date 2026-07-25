@@ -51,7 +51,7 @@ function TeamRow({ team }: { team: PulseTeamRow }) {
             'no activity in 30d'
           )}
           {team.errors30d > 0 ? (
-            <span className={cn('ml-2 font-semibold', team.criticalErrors30d > 0 ? 'text-fw-danger' : 'text-warm-700')}>
+            <span className={cn('ml-2 font-semibold', team.criticalErrors30d > 0 ? 'text-fw-danger-ink' : 'text-warm-700')}>
               {team.errors30d} errors
             </span>
           ) : null}
@@ -86,7 +86,7 @@ async function Body({ sort }: { sort: PulseSort }) {
           </div>
           <div>
             <p className="text-eyebrow uppercase text-warm-500">critical errors</p>
-            <p className={cn('font-fw-mono text-h2 tabular-nums', criticalCount > 0 ? 'text-fw-danger' : 'text-warm-900')}>
+            <p className={cn('font-fw-mono text-h2 tabular-nums', criticalCount > 0 ? 'text-fw-danger-ink' : 'text-warm-900')}>
               {criticalCount}
             </p>
           </div>

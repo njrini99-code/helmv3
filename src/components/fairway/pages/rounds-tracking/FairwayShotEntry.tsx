@@ -300,13 +300,13 @@ export function FairwayShotEntry({
                     >
                       {formatLieLabel(r)}
                       {r === 'green' && !isTeeShot && !isPutting && (
-                        <span className={cn('block text-[0.65rem] font-normal leading-tight', isSelected ? 'text-white/80' : 'text-text-tertiary')}>(not fringe)</span>
+                        <span className={cn('block text-[0.6875rem] font-normal leading-tight', isSelected ? 'text-white/80' : 'text-text-tertiary')}>(not fringe)</span>
                       )}
                       {r === 'hole' && (isTeeShot || isFirstShotPar3) && (
-                        <span className={cn('block text-[0.65rem] font-normal leading-tight', isSelected ? 'text-white/80' : 'text-text-tertiary')}>(ace!)</span>
+                        <span className={cn('block text-[0.6875rem] font-normal leading-tight', isSelected ? 'text-white/80' : 'text-text-tertiary')}>(ace!)</span>
                       )}
                       {isRarePuttResult && (
-                        <span className={cn('block text-[0.65rem] font-normal leading-tight', isSelected ? 'text-white/80' : 'text-text-tertiary')}>(rolled off)</span>
+                        <span className={cn('block text-[0.6875rem] font-normal leading-tight', isSelected ? 'text-white/80' : 'text-text-tertiary')}>(rolled off)</span>
                       )}
                     </Button>
                   );
@@ -383,7 +383,7 @@ export function FairwayShotEntry({
                       : 'border-accent-300 focus:border-accent-500 focus:ring-accent-500/15',
                   )}
                 />
-                {distanceInvalid && <p className="font-fw-sans text-sm text-fw-danger">Please enter a valid distance</p>}
+                {distanceInvalid && <p className="font-fw-sans text-sm text-fw-danger-ink">Please enter a valid distance</p>}
 
                 {isPutting && (
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">

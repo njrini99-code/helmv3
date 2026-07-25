@@ -300,7 +300,7 @@ function CompareContent() {
                       disabled={addingPlayerId !== null}
                       className="flex w-full items-center gap-3 rounded-none p-3 text-left hover:bg-[color:var(--paper-canvas)]"
                     >
-                      <Avatar name={name} src={player.avatar_url} size="sm" />
+                      <Avatar decorative name={name} src={player.avatar_url} size="sm" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-annual text-sm font-medium text-text-primary">{name}</p>
                         <p className="truncate font-annual text-body-sm text-text-tertiary">
@@ -332,7 +332,7 @@ function CompareContent() {
                   key={player.id}
                   className="flex items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-1.5"
                 >
-                  <Avatar name={name} src={player.avatar_url} size="xs" />
+                  <Avatar decorative name={name} src={player.avatar_url} size="xs" />
                   <span className="font-annual text-sm font-medium text-text-primary">{name}</span>
                   <IconButton variant="ghost"
                     onClick={() => removePlayer(player.id)}

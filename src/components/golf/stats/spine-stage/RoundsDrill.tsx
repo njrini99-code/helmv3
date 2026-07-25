@@ -263,7 +263,7 @@ export function RoundsDrill({
             <div className="flex flex-col gap-2">
               {recent.map((round) => {
                 const toPar = round.toPar ?? 0;
-                const toneClass = toPar < 0 ? 'text-accent-600' : toPar > 0 ? 'text-fw-warning' : 'text-text-secondary';
+                const toneClass = toPar < 0 ? 'text-accent-600' : toPar > 0 ? 'text-fw-warning-ink' : 'text-text-secondary';
                 const formattedDate = fmtShortDate(round.date);
                 return (
                   <Link

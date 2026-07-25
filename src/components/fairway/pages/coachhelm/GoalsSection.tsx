@@ -406,7 +406,7 @@ export function GoalsSection({
       {role === 'player' && achievedGoals.length > 0 ? (
         <Surface padding="md">
           <div className="mb-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-fw-success" aria-hidden />
+            <Trophy className="h-4 w-4 text-fw-success-ink" aria-hidden />
             <h3 className="font-fw-display text-body-lg font-medium text-text-primary">
               Recent wins
             </h3>

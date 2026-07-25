@@ -129,7 +129,7 @@ function ConversationRow({ conversation, currentUserId, isSelected, onSelect }: 
       )}
     >
       <div className="flex items-start gap-3">
-        <Avatar name={name} src={participant?.avatar} size="md" />
+        <Avatar decorative name={name} src={participant?.avatar} size="md" />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
@@ -330,7 +330,7 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
         >
           <IconArrowLeft size={20} aria-hidden="true" />
         </IconButton>
-        <Avatar name={headerName} src={participant?.avatar} size="md" />
+        <Avatar decorative name={headerName} src={participant?.avatar} size="md" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
           {participant?.subtitle ? (

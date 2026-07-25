@@ -84,8 +84,8 @@ const DIR: Record<TrendWindow['direction'], { glyph: string; tone: Tone; label: 
 };
 
 const TONE_TEXT: Record<Tone, string> = {
-  good: 'text-fw-success',
-  bad: 'text-fw-danger',
+  good: 'text-fw-success-ink',
+  bad: 'text-fw-danger-ink',
   neutral: 'text-text-tertiary',
 };
 

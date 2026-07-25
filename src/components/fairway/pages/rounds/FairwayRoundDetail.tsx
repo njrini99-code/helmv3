@@ -1031,9 +1031,9 @@ function ScorecardNine({
                 const tone =
                   s != null && p != null
                     ? s < p
-                      ? 'text-fw-success'
+                      ? 'text-fw-success-ink'
                       : s > p
-                        ? 'text-fw-warning'
+                        ? 'text-fw-warning-ink'
                         : 'text-text-primary'
                     : 'text-text-tertiary';
                 return (
@@ -1096,9 +1096,9 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
     toPar == null
       ? 'text-text-tertiary'
       : toPar < 0
-        ? 'text-fw-success'
+        ? 'text-fw-success-ink'
         : toPar > 0
-          ? 'text-fw-warning'
+          ? 'text-fw-warning-ink'
           : 'text-text-primary';
 
   const pillTone =

@@ -488,7 +488,7 @@ export default function AcademicsPage() {
                 >
                 <PaperCard className="p-4 shadow-sm">
                   <div className="flex items-start gap-3 mb-3">
-                    <Avatar
+                    <Avatar decorative
                       name={getFullName(student.first_name, student.last_name)}
                       src={student.avatar_url || undefined}
                       size="md"
@@ -640,7 +640,7 @@ export default function AcademicsPage() {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <Avatar
+                          <Avatar decorative
                             name={getFullName(student.first_name, student.last_name)}
                             src={student.avatar_url || undefined}
                             size="sm"

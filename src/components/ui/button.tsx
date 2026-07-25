@@ -1,6 +1,6 @@
 'use client';
 
-import { ButtonHTMLAttributes, forwardRef, useRef, useCallback } from 'react';
+import { ButtonHTMLAttributes, forwardRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -17,8 +17,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading = false, disabled, leftIcon, rightIcon, haptic, children, onClick, ...props }, ref) => {
-    const rippleRef = useRef<HTMLSpanElement>(null);
-
     const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
       // Native haptic feedback — light impact by default, or variant-based default.
       const hapticStyle = haptic ?? (
@@ -94,7 +92,14 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         onClick={handleClick}
         {...props}
       >
-        <span ref={rippleRef} />
+        {/*
+          No ripple-host span here. handleClick appends the ripple element to
+          the BUTTON itself, so the empty <span ref={rippleRef} /> that used to
+          sit here was never written to — but it WAS a flex item, so the
+          button's `gap-2` inserted 8px between it and the label and pushed
+          every label 4px right of centre. Visible in the footer, where
+          "Request Demo" stopped lining up with the links above it (audit L-12).
+        */}
         {isLoading ? (
           <svg
             className="animate-spin h-4 w-4 flex-shrink-0 -ml-0.5"

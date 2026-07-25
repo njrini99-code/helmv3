@@ -122,6 +122,32 @@ vi.mock('@/components/fairway', () => ({
     </header>
   ),
   Surface: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
+  // Test double for the Fairway Slider primitive, which replaced the
+  // hand-rolled ThresholdSlider (2026-07-25). Renders the label so the
+  // "all 3 thresholds are present" assertion below still has something to
+  // query, and a real range input so a value change can be driven.
+  Slider: ({
+    label,
+    value,
+    onValueChange,
+    unit,
+  }: {
+    label?: React.ReactNode;
+    value: number;
+    onValueChange: (v: number) => void;
+    unit?: string;
+  }) => (
+    <div>
+      <label htmlFor={`slider-${String(label)}`}>{label}</label>
+      <input
+        id={`slider-${String(label)}`}
+        type="range"
+        value={value}
+        onChange={(e) => onValueChange(parseFloat(e.currentTarget.value))}
+      />
+      {unit}
+    </div>
+  ),
   // Minimal Button test double — renders children so `asChild` back-link /
   // EmptyState CTA content is queryable (the real primitive merges onto a slot).
   Button: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -181,7 +207,6 @@ vi.mock('@/components/golf/coachhelm/settings', () => ({
     </button>
   ),
   SensitivitySlider: () => <div />,
-  ThresholdSlider: ({ label }: { label?: string }) => <div>{label}</div>,
   WeightDistributor: weightDistributorMock,
 }));
 
@@ -267,18 +292,18 @@ describe('FairwaySettingsCoachingIntelligence', () => {
   it('renders all 3 documented Fine-tune Thresholds sliders, including Bubble Zone', async () => {
     await renderPage();
 
-    await screen.findByText('Decline Threshold');
-    expect(screen.getByText('Decline Threshold')).toBeInTheDocument();
-    expect(screen.getByText('Pressure Gap')).toBeInTheDocument();
-    expect(screen.getByText('Bubble Zone')).toBeInTheDocument();
+    await screen.findByText('Decline threshold');
+    expect(screen.getByText('Decline threshold')).toBeInTheDocument();
+    expect(screen.getByText('Pressure gap')).toBeInTheDocument();
+    expect(screen.getByText('Bubble zone')).toBeInTheDocument();
   });
 
   // ── P079 — the Comparison Weighting section + stub distributor must be gone ─
   it('does not render the Comparison Weighting section or its stub distributor (P079)', async () => {
     await renderPage();
 
-    await screen.findByText('Decline Threshold');
-    expect(screen.queryByText('Comparison Weighting')).not.toBeInTheDocument();
+    await screen.findByText('Decline threshold');
+    expect(screen.queryByText(/comparison weighting/i)).not.toBeInTheDocument();
     expect(weightDistributorMock).not.toHaveBeenCalled();
   });
 
@@ -291,7 +316,7 @@ describe('FairwaySettingsCoachingIntelligence', () => {
     // Let the coachId resolution (which remounts CoachingIntelligenceBody via
     // its `key`) settle FIRST — clicking a control before that remount fires
     // clicks a node React is about to detach, and the click is lost.
-    await screen.findByText('Decline Threshold');
+    await screen.findByText('Decline threshold');
 
     // One of each group's alerts, by its documented label (@/lib/coachhelm/types).
     const scoringDecline = screen.getByRole('button', { name: 'Scoring decline' });
@@ -344,7 +369,7 @@ describe('FairwaySettingsCoachingIntelligence', () => {
 
     await renderPage();
 
-    await screen.findByText('Decline Threshold');
+    await screen.findByText('Decline threshold');
     // The meta chip (next to where "Saving…"/"Saved" render) reflects failure.
     expect(screen.getByText('Couldn’t save')).toBeInTheDocument();
     // The InlineNotice banner carries the actual server error for context.

@@ -149,7 +149,7 @@ function formatToPar(toPar: number | null): string {
 function toParToneClass(toPar: number | null): string {
   if (toPar === null) return 'text-text-tertiary';
   if (toPar < 0) return 'text-accent-700';
-  if (toPar > 0) return 'text-fw-warning';
+  if (toPar > 0) return 'text-fw-warning-ink';
   return 'text-text-secondary';
 }
 

@@ -335,7 +335,7 @@ export default async function ErrorsPage({
             All open Sentry issues — not windowed. Active groups above only count Sentry issues with activity in the selected window.
           </p>
           {tab.sentry.status === 'ok' && tab.sentry.truncated ? (
-            <p className="mt-1 text-caption text-fw-warning">
+            <p className="mt-1 text-caption text-fw-warning-ink">
               Showing first {tab.sentry.data?.length ?? 0} unresolved issues — more exist beyond this page ceiling.
             </p>
           ) : null}

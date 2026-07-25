@@ -421,7 +421,7 @@ export function FairwayCoachDashboard({
         const row = ctx.row.original;
         return (
           <span className="flex min-w-0 items-center gap-2.5">
-            <Avatar
+            <Avatar decorative
               name={row.player_name}
               src={row.player_avatar_url}
               size="sm"
@@ -479,7 +479,7 @@ export function FairwayCoachDashboard({
     const tone = r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral';
     return (
       <div className="flex items-center gap-3 px-4 py-3">
-        <Avatar name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
+        <Avatar decorative name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
             {r.player_name}
@@ -774,7 +774,7 @@ export function FairwayCoachDashboard({
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
           <Link
             href="/golf/dashboard/rounds"
-            className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
           >
             View all
             <IconArrowRight size={14} />
@@ -830,7 +830,11 @@ export function FairwayCoachDashboard({
           scrollable once it outgrows a calm at-a-glance size. */}
       <DaySchedule
         title="Schedule"
-        subtitle="Today & upcoming"
+        // "Upcoming", not "Today & upcoming": TodayPanel directly above owns
+        // the current day (with its RSVP tallies). This card used to render a
+        // second "Today" group from the same events (audit M3).
+        subtitle="Upcoming"
+        skipToday
         events={scheduleEvents}
         timezone={enhancedData?.timezone}
         viewAllHref="/golf/dashboard/calendar"
@@ -897,7 +901,7 @@ export function FairwayCoachDashboard({
               </h3>
               <Link
                 href="/golf/dashboard/stats/team"
-                className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+                className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
               >
                 Rankings
                 <IconArrowRight size={14} />
@@ -998,7 +1002,7 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
       ) : (
         <div className="grid grid-cols-3 gap-3">
           <Inset padding="sm" className="flex flex-col gap-1">
-            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-success">
+            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-success-ink">
               {improving}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">Improving</span>
@@ -1010,7 +1014,7 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
             <span className="font-fw-sans text-caption text-text-tertiary">Stable</span>
           </Inset>
           <Inset padding="sm" className="flex flex-col gap-1">
-            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-warning">
+            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-warning-ink">
               {declining}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">Declining</span>
@@ -1028,7 +1032,7 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
               'font-fw-mono text-body-sm font-medium tabular-nums',
               // delta is a POSITIVE improvement magnitude (olderAvg - recentAvg),
               // so a positive delta means the player improved → success green.
-              pulse.topMover.delta > 0 ? 'text-fw-success' : 'text-fw-warning',
+              pulse.topMover.delta > 0 ? 'text-fw-success-ink' : 'text-fw-warning-ink',
             )}
           >
             {pulse.topMover.delta > 0 ? '−' : '+'}
@@ -1103,7 +1107,7 @@ function TodayPanel({
         </div>
         <Link
           href="/golf/dashboard/calendar"
-          className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+          className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
         >
           Calendar
           <IconArrowRight size={14} />

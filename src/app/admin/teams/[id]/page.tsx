@@ -57,7 +57,7 @@ function GraphiteStat({
       <span
         className={cn(
           'font-fw-mono text-2xl font-bold tabular-nums',
-          tone === 'danger' ? 'text-fw-danger' : 'text-warm-900',
+          tone === 'danger' ? 'text-fw-danger-ink' : 'text-warm-900',
         )}
       >
         {value}
@@ -227,7 +227,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
                   >
                     {e.title}
                   </Link>
-                  <span className="font-fw-mono text-xs font-semibold tabular-nums text-fw-danger">
+                  <span className="font-fw-mono text-xs font-semibold tabular-nums text-fw-danger-ink">
                     {e.occurrences}×
                   </span>
                   <span className="font-fw-mono text-xs tabular-nums text-warm-500">

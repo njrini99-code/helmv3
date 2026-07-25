@@ -148,7 +148,7 @@ function PlayerRoundsList({ playerId, rounds }: { playerId: string; rounds: Trac
                   {round.status}
                 </StatusPill>
                 {round.errors.length > 0 ? (
-                  <span className="font-fw-mono text-xs tabular-nums text-fw-danger">
+                  <span className="font-fw-mono text-xs tabular-nums text-fw-danger-ink">
                     {round.errors.length} issue{round.errors.length === 1 ? '' : 's'}
                   </span>
                 ) : null}

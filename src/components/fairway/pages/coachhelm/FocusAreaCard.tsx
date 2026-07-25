@@ -400,8 +400,11 @@ function ProgressMeter({
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between font-fw-sans text-body-sm">
-        <span className="font-medium text-text-secondary">
+      {/* wrap, don't squeeze: the labelled Now→Target cluster is wider than the
+          bare numerals it replaced, and at 390 it has to be allowed to drop to
+          its own line rather than crush the metric name. */}
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 font-fw-sans text-body-sm">
+        <span className="min-w-0 font-medium text-text-secondary">
           {metricLabel}
           {lowerBetter ? (
             <span className="ml-1.5 font-fw-sans text-eyebrow font-normal text-text-tertiary">
@@ -409,13 +412,27 @@ function ProgressMeter({
             </span>
           ) : null}
         </span>
-        <span className="font-fw-mono font-medium tabular-nums text-text-primary">
+        {/*
+          Each number says what it IS. The row used to read "46.5 / 68.5 68%"
+          on a card already titled "3-5 ft putting: 47%" — four bare numerals
+          for one metric, with nothing to distinguish current from target from
+          progress-share from the headline make-rate (audit P-34).
+        */}
+        <span className="flex shrink-0 items-baseline gap-1.5 font-fw-mono font-medium tabular-nums text-text-primary">
+          <span className="font-fw-sans text-eyebrow font-normal uppercase tracking-[0.08em] text-text-tertiary">
+            Now
+          </span>
           {current ?? 0}
-          <span className="mx-1 font-normal text-text-tertiary">/</span>
+          <span className="font-normal text-text-tertiary" aria-hidden="true">
+            →
+          </span>
+          <span className="font-fw-sans text-eyebrow font-normal uppercase tracking-[0.08em] text-text-tertiary">
+            Target
+          </span>
           {target}
           {pct > 0 ? (
-            <Badge tone={met ? 'success' : 'neutral'} size="sm" numeric className="ml-2 align-middle">
-              {pct}%
+            <Badge tone={met ? 'success' : 'neutral'} size="sm" numeric className="ml-1 align-middle">
+              {pct}% there
             </Badge>
           ) : null}
         </span>
@@ -568,6 +585,10 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
 
     const area = getAreaType(focusArea.area_type);
     const AreaIcon = area.icon;
+    // "Other" is the resolver's FALLBACK bucket, not a category a coach ever
+    // picked. Printing it under the title presented "no category recorded" as
+    // if it were a real classification (audit P-27) — show nothing instead.
+    const areaLabel = area.value === 'other' ? null : area.label;
     const status = statusMeta(focusArea.status);
     const isCompleted = focusArea.status === 'completed';
 
@@ -624,7 +645,9 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               <p className="truncate font-fw-sans font-medium text-text-secondary">
                 {focusArea.title || 'Untitled'}
               </p>
-              <p className="font-fw-sans text-eyebrow text-text-tertiary">{area.label}</p>
+              {areaLabel ? (
+                <p className="font-fw-sans text-eyebrow text-text-tertiary">{areaLabel}</p>
+              ) : null}
             </div>
             {recordedOutcome ? (
               <StatusPill tone={recordedOutcome.tone} size="sm">
@@ -706,9 +729,11 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   <h3 className="line-clamp-2 font-fw-sans text-body-lg font-semibold text-text-primary">
                     {focusArea.title || 'Untitled'}
                   </h3>
-                  <p className="mt-0.5 font-fw-sans text-body-sm font-medium text-accent-700">
-                    {area.label}
-                  </p>
+                  {areaLabel ? (
+                    <p className="mt-0.5 font-fw-sans text-body-sm font-medium text-accent-700">
+                      {areaLabel}
+                    </p>
+                  ) : null}
                 </div>
                 <StatusPill tone={status.tone} size="sm" className="flex-shrink-0">
                   {status.label}
@@ -915,7 +940,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                       variant="ghost"
                       size="sm"
                       leftIcon={<IconTrash size={15} />}
-                      className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
+                      className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
                       onClick={() => onDelete!(focusArea)}
                     >
                       Delete

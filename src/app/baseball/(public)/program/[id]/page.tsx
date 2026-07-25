@@ -314,7 +314,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                                     unoptimized
                                   />
                                 ) : (
-                                  <Avatar
+                                  <Avatar decorative
                                     name={member.name}
                                     size="lg"
                                     className="flex-shrink-0"

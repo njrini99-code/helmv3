@@ -287,7 +287,7 @@ function ShellFooter() {
         disabled={isSigningOut}
         aria-label={collapsed ? (isSigningOut ? 'Signing out…' : 'Sign out') : undefined}
         title={collapsed ? 'Sign out' : undefined}
-        className={cn(rowBase, 'text-nav-text-dim hover:bg-fw-danger/10 hover:text-fw-danger disabled:opacity-50')}
+        className={cn(rowBase, 'text-nav-text-dim hover:bg-fw-danger/10 hover:text-fw-danger-ink disabled:opacity-50')}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0 text-nav-text-dim" />
         {!collapsed && (

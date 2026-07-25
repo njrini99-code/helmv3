@@ -139,7 +139,15 @@ export function FairwayCalendarMemberRail({
         ) : null}
         <div
           ref={scrollerRef}
-          className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5"
+          className={cn(
+            'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
+            // Reserve the chevron's own 28px gutter, and only while that
+            // chevron is actually shown — otherwise the overlay paints on top
+            // of the last avatar chip (audit L2). scroll-p* keeps
+            // scroll-snapping/`scrollIntoView` clear of the gutter too.
+            canScrollLeft && 'pl-7 scroll-pl-7',
+            canScrollRight && 'pr-7 scroll-pr-7',
+          )}
         >
         {/* ALL */}
         <Button

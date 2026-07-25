@@ -71,8 +71,8 @@ function describeTrend(trend: ThemeTrend): TrendChipDisplay {
   const magnitude = Math.abs(trend.delta).toFixed(1);
   // Higher SG is better → improving is the GOOD direction (success/green, up arrow).
   return trend.direction === 'improving'
-    ? { label: 'Improving', cls: 'text-fw-success', arrow: '↗', magnitude }
-    : { label: 'Declining', cls: 'text-fw-warning', arrow: '↘', magnitude };
+    ? { label: 'Improving', cls: 'text-fw-success-ink', arrow: '↗', magnitude }
+    : { label: 'Declining', cls: 'text-fw-warning-ink', arrow: '↘', magnitude };
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

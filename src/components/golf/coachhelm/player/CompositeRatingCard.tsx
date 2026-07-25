@@ -81,9 +81,9 @@ function categoryBarColor(value: number): string {
 }
 
 function categoryValueColor(value: number): string {
-  if (value >= 60) return 'text-fw-success';
-  if (value >= 40) return 'text-fw-warning';
-  return 'text-fw-danger';
+  if (value >= 60) return 'text-fw-success-ink';
+  if (value >= 40) return 'text-fw-warning-ink';
+  return 'text-fw-danger-ink';
 }
 
 // The old card's 3-way 'stable' → maps onto the shared TrendChip vocabulary's

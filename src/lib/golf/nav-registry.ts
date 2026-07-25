@@ -296,10 +296,13 @@ function hubToNavItem(opts: {
    *  `aria-current="page"` nodes, which is invalid (audit 2026-07-24, P-03).
    *  On `/team-hub` and `/calendar` Home was the ONLY lit tab. */
   exact?: boolean;
+  /** Compact label for the mobile bottom bar only (audit P-31). */
+  shortLabel?: string;
 }): NavItem {
-  const { label, href, icon, tabs, badge, activeMatch, exact } = opts;
+  const { label, href, icon, tabs, badge, activeMatch, exact, shortLabel } = opts;
   return {
     label,
+    shortLabel,
     href,
     icon: icon as unknown as NavItem['icon'],
     badge,
@@ -446,6 +449,9 @@ export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] 
     hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome, exact: true }),
     hubToNavItem({
       label: 'CoachHelm',
+      // 'CoachHelm' truncates to 'CoachH…' in the 5-column bar at 320px
+      // (audit P-31). `label` stays the accessible name.
+      shortLabel: 'Helm',
       href: '/golf/dashboard/intelligence',
       icon: IconSparkles,
       badge: navBadge(badges.coachhelm),
@@ -467,6 +473,7 @@ export function buildPlayerBottomNavItems(): NavItem[] {
     hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome, exact: true }),
     hubToNavItem({
       label: 'CoachHelm',
+      shortLabel: 'Helm',
       href: '/golf/dashboard/coachhelm',
       icon: IconSparkles,
       activeMatch: isCoachHelmPlayerCluster,

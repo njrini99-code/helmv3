@@ -68,6 +68,18 @@ function PricingCapture() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="mx-auto mt-[42px] w-full max-w-[520px]">
+      {/*
+        A real visible label, not just the placeholder. The placeholder
+        vanishes the moment you type, leaving the field unlabelled for anyone
+        who looks away mid-entry — WCAG 3.3.2, and axe passed it only because
+        the aria-label supplied a name AT is happy with (audit L-15).
+      */}
+      <label
+        htmlFor="pricing-work-email"
+        className="mb-2 block pl-1 text-left font-fw-sans text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-text-tertiary"
+      >
+        Work email
+      </label>
       {/* Stadium radius only works while the form is a single row — stacked
           on mobile, `rounded-full` curves the card away behind the full-width
           button so it reads as hanging outside the box (2026-07-24 iPhone). */}
@@ -75,11 +87,11 @@ function PricingCapture() {
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
           <div className="flex-1 [&_input]:rounded-full [&_input]:border-transparent [&_input]:bg-[oklch(1_0_0/0.55)]">
             <Input
+              id="pricing-work-email"
               name="email"
               type="email"
               label=""
-              aria-label="Work email"
-              placeholder="Work email"
+              placeholder="you@school.edu"
               error={undefined}
             />
           </div>

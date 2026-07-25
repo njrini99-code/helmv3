@@ -415,11 +415,13 @@ export function TaskRow({
     }
   }, [isCompleted, completing, onComplete]);
 
+  // No `opacity-60` on the completed row. The title is ALREADY
+  // `text-text-tertiary line-through`, and 60% opacity composited that down to
+  // 2.27:1 against the card — 14 axe nodes, and unreadable in daylight (audit
+  // P-26). The strike-through plus the tertiary ink carry "done" on their own;
+  // the opacity was doing the same job a third time, illegibly.
   return (
-    <Inset
-      padding="sm"
-      className={cn('flex items-start gap-3', isCompleted && 'opacity-60')}
-    >
+    <Inset padding="sm" className="flex items-start gap-3">
       <Button
         type="button"
         variant="ghost"

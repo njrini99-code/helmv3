@@ -108,7 +108,7 @@ export function NotificationBell() {
         {unreadTotal > 0 ? (
           <span
             aria-hidden
-            className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent-500 px-1 font-fw-mono text-caption font-semibold leading-none text-text-on-accent"
+            className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent-700 px-1 font-fw-mono text-caption font-semibold leading-none text-text-on-accent"
           >
             {unreadTotal > 99 ? '99+' : unreadTotal}
           </span>

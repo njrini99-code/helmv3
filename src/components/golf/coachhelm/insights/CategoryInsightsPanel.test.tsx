@@ -83,7 +83,7 @@ describe('CategoryInsightsPanel — magnitude tokens (danger/success, never ambe
     const badge = screen.getByText('1.8').closest('span[data-slot="fw-badge"]');
     expect(badge).not.toBeNull();
     expect(badge!.className).toContain('bg-fw-danger-bg');
-    expect(badge!.className).toContain('text-fw-danger');
+    expect(badge!.className).toContain('text-fw-danger-ink');
     expect(badge!.className).not.toMatch(/fw-warning|amber-|red-/);
   });
 
@@ -115,7 +115,7 @@ describe('CategoryInsightsPanel — magnitude tokens (danger/success, never ambe
     render(<CategoryInsightsPanel themes={[theme]} />);
 
     const trendChip = screen.getByText('Declining');
-    expect(trendChip.className).toContain('text-fw-danger');
+    expect(trendChip.className).toContain('text-fw-danger-ink');
     expect(trendChip.className).not.toMatch(/fw-warning|amber-/);
   });
 
@@ -129,7 +129,7 @@ describe('CategoryInsightsPanel — magnitude tokens (danger/success, never ambe
       trend: { direction: 'improving', recentAvg: 0.2, priorAvg: -0.1, delta: 0.3, recentN: 6, priorN: 6 },
     });
     render(<CategoryInsightsPanel themes={[theme]} />);
-    expect(screen.getByText('Improving').className).toContain('text-fw-success');
+    expect(screen.getByText('Improving').className).toContain('text-fw-success-ink');
   });
 });
 

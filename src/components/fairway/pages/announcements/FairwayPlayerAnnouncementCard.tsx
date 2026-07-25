@@ -167,7 +167,7 @@ function FairwayTaskItem({
           <span
             className={cn(
               'mt-1 inline-flex items-center gap-1 font-fw-sans text-caption font-medium',
-              isOverdue ? 'text-fw-danger' : completed ? 'text-accent-600' : 'text-text-tertiary',
+              isOverdue ? 'text-fw-danger-ink' : completed ? 'text-accent-600' : 'text-text-tertiary',
             )}
             suppressHydrationWarning
           >

@@ -120,7 +120,7 @@ export function StandingStrip(props: StandingStripProps) {
   // read used elsewhere on the same stats surfaces.
   const deltaToneClass =
     delta.tone === 'good' ? 'text-accent-600' :
-    delta.tone === 'bad'  ? 'text-fw-warning' :
+    delta.tone === 'bad'  ? 'text-fw-warning-ink' :
                             'text-text-tertiary';
 
   return (
@@ -296,7 +296,7 @@ function StripTrack({
           are — this is a structural guarantee, not a distance threshold. */}
       <div className="relative h-7" data-slot="you-badge-tier">
         <div
-          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-500 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
+          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-700 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
           style={{ left: `${you}%` }}
         >
           {youValue}

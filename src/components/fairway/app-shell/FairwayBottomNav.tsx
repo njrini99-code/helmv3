@@ -215,7 +215,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
                     active ? 'font-semibold' : 'font-normal',
                   )}
                 >
-                  {item.label}
+                  {item.shortLabel ?? item.label}
                 </span>
               </Link>
             </li>

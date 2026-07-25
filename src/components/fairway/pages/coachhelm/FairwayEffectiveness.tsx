@@ -279,7 +279,7 @@ function TrustTrendGlyph({ trend }: { trend: TrustSignal['recentTrend'] }) {
   }
   if (trend === 'down') {
     return (
-      <span className="inline-flex items-center gap-1 text-fw-danger" title="Recent outcomes trending down">
+      <span className="inline-flex items-center gap-1 text-fw-danger-ink" title="Recent outcomes trending down">
         <TrendingDown className="h-3.5 w-3.5" aria-hidden />
         <span className="sr-only">Trending down</span>
       </span>

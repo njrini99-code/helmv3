@@ -335,7 +335,7 @@ function DrillRow({
       </div>
 
       {state.kind === 'error' && (
-        <p className="font-fw-sans text-eyebrow text-fw-danger">{state.message}</p>
+        <p className="font-fw-sans text-eyebrow text-fw-danger-ink">{state.message}</p>
       )}
     </Inset>
   );

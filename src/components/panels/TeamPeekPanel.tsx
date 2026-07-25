@@ -381,7 +381,7 @@ function DetailsTab({ team, staff }: { team: TeamWithDetails; staff: CoachStaff[
                 key={coach.id}
                 className="flex items-center gap-3 p-3 rounded-xl bg-warm-50 border border-warm-100"
               >
-                <Avatar name={coach.name} src={coach.avatarUrl} size="sm" />
+                <Avatar decorative name={coach.name} src={coach.avatarUrl} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
                   <p className="text-xs text-warm-500">{coach.title}</p>

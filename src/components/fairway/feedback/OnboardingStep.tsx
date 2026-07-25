@@ -88,7 +88,7 @@ export const OnboardingStep = forwardRef<HTMLDivElement, OnboardingStepProps>(
             'grid h-9 w-9 shrink-0 place-items-center rounded-full font-fw-mono text-body-sm font-medium tabular-nums transition-colors [transition-duration:180ms]',
             isComplete && 'bg-accent-700 text-text-on-accent',
             isActive &&
-              'bg-accent-50 text-fw-success ring-2 ring-accent-500 ring-offset-2 ring-offset-surface',
+              'bg-accent-50 text-fw-success-ink ring-2 ring-accent-500 ring-offset-2 ring-offset-surface',
             status === 'upcoming' && 'bg-surface-sunken text-text-tertiary ring-1 ring-border-subtle',
           )}
         >

@@ -143,12 +143,12 @@ export const TREND_ARROW: Record<TrendVerdict, string> = {
 };
 
 /** Canonical text-color Tailwind class for each verdict. Amber
- *  (`text-fw-warning`) for declining — NEVER the destructive red, which is
+ *  (`text-fw-warning-ink`) for declining — NEVER the destructive red, which is
  *  reserved for true errors (DESIGN-SYSTEM honesty rule). */
 export const TREND_TEXT_TONE: Record<TrendVerdict, string> = {
-  improving: 'text-fw-success',
+  improving: 'text-fw-success-ink',
   stable: 'text-text-tertiary',
-  declining: 'text-fw-warning',
+  declining: 'text-fw-warning-ink',
 };
 
 /** Canonical plain-English label for each verdict. */

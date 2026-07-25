@@ -260,7 +260,10 @@ export function PlayerHomeBento({
         }
         sentence={
           bestCfg && worstCfg
-            ? `Strongest in ${bestCfg.display_label.toLowerCase()}; leaking most in ${worstCfg.display_label.toLowerCase()}.`
+            ? // display_label verbatim — it is already display copy ("SG: Putting").
+              // .toLowerCase() turned it into "sg: putting", which reads as a raw
+              // database key leaking into player-facing prose (audit P-27).
+              `Strongest in ${bestCfg.display_label}; leaking most in ${worstCfg.display_label}.`
             : 'Every metric vs PGA Tour and the team.'
         }
         onOpen={() => stage.open('standing')}
@@ -270,7 +273,11 @@ export function PlayerHomeBento({
 
       <BentoCell
         label="Trend"
-        sentence={trendSummary ?? 'Your performance trend fills in with more rounds.'}
+        // The chip's own prose, never the raw `trendSummary`: that string is
+        // the humanized enum ("Strong declining"), which read as a leaked
+        // database value sitting under a chip that already said "Declining"
+        // (audit P-27).
+        sentence={trendChip?.sentence ?? 'Your performance trend fills in with more rounds.'}
         onOpen={() => stage.open('profile')}
       >
         {trendChip ? <SignalChip tone={trendChip.tone}>{trendChip.label}</SignalChip> : null}

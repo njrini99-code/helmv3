@@ -102,7 +102,7 @@ function DriverRow({ driver }: { driver: DiagnosisDriver }) {
         {display}
         <span className="ml-2 text-caption text-text-tertiary">
           {thin ? (
-            <span className="mr-1 text-fw-warning" title={`Thin sample (n=${driver.sample_n})`}>
+            <span className="mr-1 text-fw-warning-ink" title={`Thin sample (n=${driver.sample_n})`}>
               •
             </span>
           ) : null}

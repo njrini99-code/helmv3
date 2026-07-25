@@ -229,7 +229,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                         : 'hover:bg-warm-50 active:bg-warm-100 border-2 border-transparent'
                     }`}
                   >
-                    <Avatar
+                    <Avatar decorative
                       name={getFullName(player.first_name, player.last_name)}
                       src={player.avatar_url || undefined}
                       size="sm"

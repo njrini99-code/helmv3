@@ -69,7 +69,7 @@ export function ConfirmDialog({
       icon: 'bg-surface-sunken text-text-secondary',
       // Brand light green (#16A34A = accent-500), matching the Fairway primary
       // button. Intentional brand decision — do NOT re-darken to accent-700.
-      button: 'bg-accent-500 hover:bg-accent-600 text-text-on-accent',
+      button: 'bg-accent-700 hover:bg-accent-800 text-text-on-accent',
       cancelVariant: 'secondary' as const,
     },
   };
@@ -124,7 +124,7 @@ export function ConfirmDialog({
               type="button"
               onClick={handleConfirm}
               disabled={isLoading}
-              className="w-full px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-fw-danger transition-colors active:bg-surface-sunken disabled:opacity-50"
+              className="w-full px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-fw-danger-ink transition-colors active:bg-surface-sunken disabled:opacity-50"
             >
               {isLoading ? 'Please wait…' : confirmLabel}
             </button>

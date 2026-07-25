@@ -76,7 +76,7 @@ export function CollegeCard({
     <Link href={`/baseball/program/${college.id}`} className="block h-full">
       <PaperCard className="h-full p-5 transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_10px_rgba(0,0,0,0.04)]">
         <div className="flex items-start gap-4">
-          <Avatar name={college.name} size="lg" src={college.logo_url} />
+          <Avatar decorative name={college.name} size="lg" src={college.logo_url} />
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <h3 className="truncate font-annual text-body-lg font-semibold text-text-primary">{college.name}</h3>

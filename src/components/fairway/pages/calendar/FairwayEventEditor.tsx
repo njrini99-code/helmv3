@@ -598,7 +598,7 @@ export function FairwayEventEditor({
               Cancel
             </Button>
             {pendingScopeAction === 'delete' ? (
-              <p className="font-fw-sans text-caption text-fw-danger/80">
+              <p className="font-fw-sans text-caption text-fw-danger-ink/80">
                 Removing future or all occurrences is permanent — it can&apos;t be undone.
               </p>
             ) : null}
@@ -653,7 +653,7 @@ export function FairwayEventEditor({
                         onClick={() => setPendingHardDeleteConfirm(true)}
                         disabled={isSaving}
                         leftIcon={<Trash2 className="h-4 w-4" />}
-                        className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
+                        className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
                       >
                         Delete permanently
                       </Button>
@@ -964,7 +964,7 @@ export function FairwayEventEditor({
                 {conflicts?.hasConflict ? (
                   <div className="mt-3 rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
                     <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-fw-warning-ink">
-                      <AlertTriangle className="h-3.5 w-3.5 text-fw-warning" />
+                      <AlertTriangle className="h-3.5 w-3.5 text-fw-warning-ink" />
                       Schedule conflict
                     </p>
                     <ul className="mt-1.5 flex flex-col gap-0.5">

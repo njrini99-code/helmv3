@@ -243,7 +243,7 @@ const iconVariantStyles: Record<FwIconButtonVariant, string> = {
     'hover:bg-surface-sunken hover:text-text-primary',
   ),
   danger: cn(
-    'border-transparent bg-transparent text-fw-danger',
+    'border-transparent bg-transparent text-fw-danger-ink',
     'hover:bg-fw-danger-bg',
   ),
 };

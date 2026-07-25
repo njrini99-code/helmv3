@@ -342,7 +342,7 @@ export function PlayerComparison({
                     <th key={player.id} className="px-4 py-3 text-center min-w-[200px]">
                       <div className="flex flex-col items-center gap-2">
                         <div className="relative">
-                          <Avatar
+                          <Avatar decorative
                             name={name}
                             src={player.avatar_url}
                             size="lg"

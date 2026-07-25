@@ -407,7 +407,7 @@ export function FairwayEventDetailDrawer({
                   </p>
                 ) : null}
                 {error ? (
-                  <p className="mt-2.5 font-fw-sans text-caption text-fw-danger" role="alert">
+                  <p className="mt-2.5 font-fw-sans text-caption text-fw-danger-ink" role="alert">
                     {error}
                   </p>
                 ) : null}

@@ -27,7 +27,7 @@
  *       bg-canvas / bg-surface / bg-surface-tint / bg-inset / bg-elevated
  *       text-text-primary / text-text-secondary / text-text-tertiary
  *       border-border-subtle / border-border-strong / ring-border-focus
- *       bg-accent-500 / text-fw-success / bg-fw-warning-bg / text-fw-danger
+ *       bg-accent-500 / text-fw-success-ink / bg-fw-warning-bg / text-fw-danger-ink
  *       rounded-card / shadow-soft / shadow-raise / shadow-fw-modal
  *       font-fw-display (Fraunces) / font-fw-sans (General Sans) / font-fw-mono (Fragment Mono)
  *

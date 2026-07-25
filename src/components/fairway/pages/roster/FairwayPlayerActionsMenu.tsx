@@ -279,9 +279,9 @@ export function FairwayPlayerActionsMenu({
         {/* Destructive — tinted danger affordance; opens an explicit confirm. */}
         <PopoverPanel.Item
           onClick={openRemoveModal}
-          className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
+          className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
         >
-          <IconUsers size={18} className="text-fw-danger" />
+          <IconUsers size={18} className="text-fw-danger-ink" />
           Remove from Team
         </PopoverPanel.Item>
       </PopoverPanel>

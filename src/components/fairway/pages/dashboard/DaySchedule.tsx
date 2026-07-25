@@ -55,6 +55,18 @@ export interface DayScheduleProps {
   /** True when the upstream schedule fetch failed — a distinct "couldn't
    *  load" notice, never mistaken for a genuinely clear schedule. */
   loadError?: boolean;
+  /**
+   * Drop today's group and open at "Tomorrow".
+   *
+   * The coach dashboard renders a dedicated `TodayPanel` immediately above
+   * this card, but fed it the same `todayEvents` — so every event on the
+   * current day was printed twice on one screen, once under TodayPanel and
+   * again under this card's literal "Today" heading (audit M3). The filter
+   * lives here because "which day is today" is only known after the
+   * timezone resolves on the client; doing it in the caller would have to
+   * duplicate that hydration-safe dance.
+   */
+  skipToday?: boolean;
   className?: string;
 }
 
@@ -147,6 +159,7 @@ export function DaySchedule({
   subtitle = 'Today & upcoming',
   viewAllHref,
   loadError = false,
+  skipToday = false,
   className,
 }: DayScheduleProps) {
   // Resolve the display timezone + "today" on the client after mount — same
@@ -160,10 +173,11 @@ export function DaySchedule({
     setTodayKey(dayKeyInTz(new Date().toISOString(), resolved));
   }, [timezone]);
 
-  const sorted = useMemo(
-    () => [...events].sort((a, b) => a.start_time.localeCompare(b.start_time)),
-    [events],
-  );
+  const sorted = useMemo(() => {
+    const ordered = [...events].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    if (!skipToday || tz == null || todayKey == null) return ordered;
+    return ordered.filter((e) => dayKeyInTz(e.start_time, tz) !== todayKey);
+  }, [events, skipToday, tz, todayKey]);
 
   const isReady = tz != null && todayKey != null;
   const groups = useMemo(
@@ -196,7 +210,7 @@ export function DaySchedule({
   const headerAction = viewAllHref ? (
     <Link
       href={viewAllHref}
-      className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
     >
       Calendar
       <ChevronRight aria-hidden className="h-3.5 w-3.5" />

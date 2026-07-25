@@ -352,7 +352,7 @@ export function ScoringDrill({
                   <span className="min-w-0 truncate font-fw-sans text-body-sm font-semibold text-text-primary">
                     {item.title}
                   </span>
-                  <span className="font-fw-mono text-caption tabular-nums text-fw-warning">
+                  <span className="font-fw-mono text-caption tabular-nums text-fw-warning-ink">
                     {item.value}
                   </span>
                 </li>

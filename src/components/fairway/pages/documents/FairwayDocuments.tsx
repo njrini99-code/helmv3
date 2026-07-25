@@ -1202,7 +1202,7 @@ export function FairwayDocuments({
                       {pf.file.name} · <span className="tabular-nums">{formatFileSize(pf.file.size)}</span>
                     </p>
                     {pf.status === 'failed' && pf.error && (
-                      <p className="mt-0.5 truncate font-fw-sans text-caption text-fw-danger">{pf.error}</p>
+                      <p className="mt-0.5 truncate font-fw-sans text-caption text-fw-danger-ink">{pf.error}</p>
                     )}
                   </div>
                   {/* Per-file outcome */}
@@ -1702,7 +1702,7 @@ function DocumentCard({
                       void triggerHaptic('light');
                       onDelete();
                     }}
-                    className="gap-3 text-fw-danger data-[highlighted]:bg-fw-danger-bg data-[highlighted]:text-fw-danger"
+                    className="gap-3 text-fw-danger-ink data-[highlighted]:bg-fw-danger-bg data-[highlighted]:text-fw-danger-ink"
                   >
                     <IconTrash size={18} /> Delete
                   </DropdownMenuItem>

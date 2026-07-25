@@ -163,7 +163,7 @@ function FeatureGroup({
         <p className="font-fw-mono text-xs tabular-nums text-warm-500">
           {needsEyes > 0 ? (
             <>
-              {counts.red > 0 ? <span className="font-semibold text-fw-danger">{counts.red} red</span> : null}
+              {counts.red > 0 ? <span className="font-semibold text-fw-danger-ink">{counts.red} red</span> : null}
               {counts.red > 0 && counts.amber > 0 ? ' · ' : null}
               {counts.amber > 0 ? <span className="font-semibold text-fw-warning-ink">{counts.amber} amber</span> : null}
             </>

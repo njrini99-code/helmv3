@@ -239,7 +239,7 @@ export function UploadNewVersionModal({
           <Button variant="primary"
             onClick={handleSubmit}
             disabled={!selectedFile || uploading}
-            className="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-text-on-accent font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-accent-700 hover:bg-accent-800 text-text-on-accent font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {uploading ? (
               <>

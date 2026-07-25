@@ -337,7 +337,7 @@ export function FairwayPlayerGameFingerprint({
           eyebrow="Game Fingerprint"
           title={
             <span className="flex min-w-0 items-center gap-3">
-              <Avatar src={player.avatar_url} name={fullName} size="lg" className="shrink-0" />
+              <Avatar decorative src={player.avatar_url} name={fullName} size="lg" className="shrink-0" />
               <span className="min-w-0 truncate">{fullName}</span>
             </span>
           }

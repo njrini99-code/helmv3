@@ -92,7 +92,7 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
             <span className="text-eyebrow uppercase tracking-widest text-warm-500">active</span>
           </span>
           <span className="rounded-fw-md bg-surface-sunken px-3 py-2">
-            <span className="block font-fw-mono text-sm font-bold tabular-nums text-fw-danger">
+            <span className="block font-fw-mono text-sm font-bold tabular-nums text-fw-danger-ink">
               {team.attentionPlayers}
             </span>
             <span className="text-eyebrow uppercase tracking-widest text-warm-500">watch</span>
@@ -148,7 +148,7 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
                         <ActivityBar value={player.activity30d} max={maxActivity} />
                       </div>
                       {player.errors7d > 0 ? (
-                        <span className="font-fw-mono text-xs font-semibold tabular-nums text-fw-danger">
+                        <span className="font-fw-mono text-xs font-semibold tabular-nums text-fw-danger-ink">
                           {player.errors7d} errors
                         </span>
                       ) : null}
@@ -225,7 +225,7 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
                           {player.profileQuality}
                         </StatusPill>
                       </td>
-                      <td className="px-3 font-fw-mono font-semibold tabular-nums text-fw-danger">{player.errors7d}</td>
+                      <td className="px-3 font-fw-mono font-semibold tabular-nums text-fw-danger-ink">{player.errors7d}</td>
                       <td className="px-3 text-xs text-warm-600">{player.detail}</td>
                     </tr>
                   ))}
