@@ -218,10 +218,15 @@ export async function bootstrapFromDb(
   const forType = rows.filter((r) => r.prediction_type === predictionType);
   const record = createEmptyRecord();
 
-  // Map persisted buckets onto the 5 [0,0.2)…[0.8,1.0] ranges.
+  // The stored `bucket` column IS the range start — see computeBucketRows
+  // below, which derives it from BUCKET_STARTS. So match it by identity, not
+  // by containment. The previous predicate (`row.bucket < b.rangeEnd + 1e-9`)
+  // applied its epsilon to EVERY bucket's rangeEnd, so each stored start also
+  // satisfied the range below it and findIndex returned that earlier, wrong
+  // one: 0.2/0.4/0.6/0.8 all misfiled one band low, and only 0 was correct.
   for (const row of forType) {
     const rangeIdx = record.buckets.findIndex(
-      (b) => row.bucket >= b.rangeStart && row.bucket < b.rangeEnd + 1e-9,
+      (b) => Math.abs(row.bucket - b.rangeStart) < 1e-9,
     );
     if (rangeIdx === -1) continue;
     const bucket = record.buckets[rangeIdx]!;
