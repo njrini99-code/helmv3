@@ -15,6 +15,24 @@
  *   - Calls postRoundTrigger (same wrapper the round submit uses) so the
  *     state columns get set consistently from both call sites.
  *
+ * 2026-07-25 rewrite (Fix 1 of the CoachHelm remediation plan): the
+ * eligibility query used to also require `created_at >= now() - 30d` on
+ * top of the terminal-state gate above. That rolling window is what let
+ * 112 (then 200) completed rounds go permanently unanalyzed while this
+ * cron reported success on all 332 of its runs in that period — the
+ * moment a stranded round aged past the window, it silently dropped out
+ * of the query for good, with nothing anywhere recording that it had
+ * happened. Widening the window from 24h to 30d on 2026-05-23 to drain
+ * an earlier backlog didn't fix this; it only delayed the same failure
+ * mode until the backlog regrew. The date filter is gone: eligibility is
+ * now purely `status='completed' AND coachhelm_analyzed_at IS NULL AND
+ * coachhelm_failed_at IS NULL` — deterministic and age-independent, and
+ * still cheap thanks to the partial index from migration 20260517010000.
+ * STALE_THRESHOLD_MS below is reporting-only now: it drives a
+ * `logServerError` warning when the eligible backlog itself contains rows
+ * older than the threshold, so a silent backlog can never again hide
+ * behind a query window that simply stopped looking.
+ *
  * Schedule: every 30 min (see vercel.json).
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
@@ -29,13 +47,16 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-// Widened from 24h → 30d on 2026-05-23 to drain the 112 pre-existing
-// completed rounds stranded with NULL state columns. The partial index
-// added in migration 20260517010000 makes the wider scan cheap, and the
-// state-column filter (.is(analyzed_at, null).is(failed_at, null))
-// guarantees each round is only processed once, so the wider window
-// doesn't cause repeated work — just initial backfill drain.
-const LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_STALE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Reporting-only staleness threshold — see the header comment. Not a query
+// filter; only decides when the stale-backlog alarm fires. Optionally
+// overridable via env for tuning alert sensitivity without a code change.
+const STALE_THRESHOLD_MS = (() => {
+  const raw = process.env.COACHHELM_SAFETY_NET_STALE_THRESHOLD_MS;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STALE_THRESHOLD_MS;
+})();
 const BATCH_LIMIT = 200;
 const CONCURRENCY = 5;
 
@@ -48,11 +69,12 @@ export async function GET(req: NextRequest) {
 
 async function handleSafetyNet(): Promise<NextResponse> {
   const supabase = createAdminClient();
-  const sinceIso = new Date(Date.now() - LOOKBACK_MS).toISOString();
 
   // Deterministic eligibility: completed rounds where postRoundTrigger
-  // never wrote a terminal state. The partial index added in migration
-  // 20260517010000 keeps this query cheap.
+  // never wrote a terminal state, regardless of age. The partial index
+  // added in migration 20260517010000 (WHERE coachhelm_analyzed_at IS NULL
+  // AND coachhelm_failed_at IS NULL AND status='completed') keeps this
+  // query cheap without needing a date filter to narrow the scan.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rounds, error } = await (supabase as any)
     .from('golf_rounds')
@@ -60,7 +82,6 @@ async function handleSafetyNet(): Promise<NextResponse> {
     .eq('status', 'completed')
     .is('coachhelm_analyzed_at', null)
     .is('coachhelm_failed_at', null)
-    .gte('created_at', sinceIso)
     .order('created_at', { ascending: true })
     .limit(BATCH_LIMIT);
 
@@ -80,7 +101,34 @@ async function handleSafetyNet(): Promise<NextResponse> {
     );
   }
 
-  const pending: Array<{ id: string; player_id: string }> = (rounds ?? []) as Array<{ id: string; player_id: string }>;
+  const pending: Array<{ id: string; player_id: string; created_at: string }> = (rounds ?? []) as Array<{ id: string; player_id: string; created_at: string }>;
+
+  // Honest self-reporting: the eligibility query above no longer has a date
+  // window to hide behind, so if a genuinely stale backlog exists it shows
+  // up right here in `pending` — flag it instead of letting a clean
+  // `pending: 0`-eventually run past it in silence like the old window did.
+  // Numeric comparison, not string: `r.created_at` is a Postgres timestamptz
+  // string over PostgREST, which isn't guaranteed to compare the same way
+  // as `Date#toISOString()`'s suffix/precision under a raw `<`.
+  const staleCutoff = Date.now() - STALE_THRESHOLD_MS;
+  const staleBacklog = pending.filter((r) => new Date(r.created_at).getTime() < staleCutoff);
+  if (staleBacklog.length > 0) {
+    const oldest = staleBacklog[0]!;
+    await logServerError(
+      `cron.safetyNet.staleBacklog: ${staleBacklog.length} completed round(s) have sat unanalyzed longer than the ${Math.round(STALE_THRESHOLD_MS / (24 * 60 * 60 * 1000))}-day staleness threshold`,
+      {
+        action: 'cron.coachhelm.safetyNet.staleBacklog',
+        featureArea: 'coachhelm',
+        extra: {
+          staleCount: staleBacklog.length,
+          totalPending: pending.length,
+          oldestRoundId: oldest.id,
+          oldestCreatedAt: oldest.created_at,
+        },
+      },
+      'warning',
+    );
+  }
 
   let recovered = 0;
   let failed = 0;
