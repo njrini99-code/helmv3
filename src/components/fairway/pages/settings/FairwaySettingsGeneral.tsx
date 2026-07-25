@@ -88,10 +88,18 @@ import {
   Input,
   Select,
   Switch,
+  Slider,
   Avatar,
   InlineNotice,
   fairwayToast,
 } from '@/components/fairway';
+import { SettingsToggleRow } from '@/components/fairway/settings/settings-list';
+import {
+  EVENT_REMINDER_DEFAULTS,
+  EVENT_REMINDER_RANGES,
+  resolveEventReminderSettings,
+  formatLead,
+} from '@/lib/golf/event-reminder-settings';
 // Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
@@ -298,7 +306,7 @@ interface SettingsProfile {
 
 /* ── shared section card ──────────────────────────────────────────────────── */
 
-function SectionCard({
+export function SectionCard({
   icon,
   title,
   description,
@@ -351,7 +359,7 @@ function SectionCard({
  * resting on a quiet "Auto-saves" label otherwise. Tokens only; honest (only
  * announces "Saved" when a change actually committed).
  */
-function AutoSaveBadge({ savedAt }: { savedAt: number | null }) {
+export function AutoSaveBadge({ savedAt }: { savedAt: number | null }) {
   const [showSaved, setShowSaved] = useState(false);
   useEffect(() => {
     if (savedAt === null) return;
@@ -708,7 +716,10 @@ export function FairwaySettingsGeneral() {
 
         {/* Golf settings */}
         {profile.role === 'coach' && profile.teamId ? (
-          <GolfScoringPanel teamId={profile.teamId} />
+          <>
+            <GolfScoringPanel teamId={profile.teamId} />
+            <EventRemindersPanel teamId={profile.teamId} />
+          </>
         ) : null}
         {profile.role === 'player' && profile.playerId ? (
           <PlayerGolfDetailsPanel
@@ -819,7 +830,7 @@ export function FairwaySettingsGeneral() {
 
 /* ── Personal info ────────────────────────────────────────────────────────── */
 
-function PersonalInfoPanel({
+export function PersonalInfoPanel({
   profile,
   onUpdate,
 }: {
@@ -930,7 +941,7 @@ function PersonalInfoPanel({
 
 /* ── Email ────────────────────────────────────────────────────────────────── */
 
-function EmailPanel({ currentEmail }: { currentEmail: string }) {
+export function EmailPanel({ currentEmail }: { currentEmail: string }) {
   const [saving, setSaving] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   // P383: the address the user has a confirmation pending for (Supabase confirm-
@@ -1011,7 +1022,7 @@ function EmailPanel({ currentEmail }: { currentEmail: string }) {
 
 /* ── Password ─────────────────────────────────────────────────────────────── */
 
-function PasswordPanel() {
+export function PasswordPanel() {
   const [saving, setSaving] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -1199,7 +1210,7 @@ const THEME_TILES: Array<{ value: GolfTheme; label: string; icon: React.ReactNod
   { value: 'system', label: 'System', icon: <IconMonitor size={20} /> },
 ];
 
-function AppearancePanel() {
+export function AppearancePanel() {
   const { displayDensity, dateFormat, showAnimations, scoreDisplay, updatePreferences } =
     useAppearancePreferences();
   const { theme, setTheme } = useGolfTheme();
@@ -1388,7 +1399,7 @@ export function DistanceUnitsPanel() {
  * quiet mode silences everything except the quiet-exempt rows. Available to
  * BOTH coaches and players (the live shell previously gave coaches no UI here).
  */
-function NotificationsPanel() {
+export function NotificationsPanel() {
   const [prefs, setPrefs] = useState<DeliveryNotificationPreferences | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1557,9 +1568,202 @@ function NotificationsPanel() {
   );
 }
 
+/* ── Event reminders (coach, team-wide) ───────────────────────────────────── */
+
+/**
+ * The team's automated event-reminder schedule.
+ *
+ * Separate from `GolfScoringPanel` even though both write `golf_team_settings`:
+ * scoring/format describes how golf is recorded, this describes when the app
+ * emails and pushes people. Different mental model, and a coach looking for
+ * "why is my team getting texted at 6am" should not have to open a card called
+ * "Scoring & format" to find it.
+ *
+ * Everything here was a module constant in `/api/cron/event-reminders` until
+ * 2026-07-25 — every team on the platform got 24h + 1h, and the only way to
+ * stop reminders was for each player to opt out individually.
+ */
+export function EventRemindersPanel({ teamId }: { teamId: string }) {
+  const supabase = createClient();
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Explicit `boolean`: EVENT_REMINDER_DEFAULTS is `as const`, so inference
+  // would narrow this to the literal `true` and reject setEnabled(false).
+  const [enabled, setEnabled] = useState<boolean>(EVENT_REMINDER_DEFAULTS.enabled);
+  const [earlyHours, setEarlyHours] = useState<number>(EVENT_REMINDER_DEFAULTS.earlyHours);
+  const [lateMinutes, setLateMinutes] = useState<number>(EVENT_REMINDER_DEFAULTS.lateMinutes);
+  const snapshotRef = useRef<{ enabled: boolean; earlyHours: number; lateMinutes: number }>({
+    enabled: EVENT_REMINDER_DEFAULTS.enabled,
+    earlyHours: EVENT_REMINDER_DEFAULTS.earlyHours,
+    lateMinutes: EVENT_REMINDER_DEFAULTS.lateMinutes,
+  });
+
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    const { data, error } = await fromUntyped(supabase, 'golf_team_settings')
+      .select('event_reminders_enabled, event_reminder_early_hours, event_reminder_late_minutes')
+      .eq('team_id', teamId)
+      .maybeSingle();
+
+    if (error) {
+      setLoadFailed(true);
+      setLoaded(true);
+      logError(
+        new Error(error.message),
+        { component: 'EventRemindersPanel', action: 'load-event-reminders', sport: 'golf', teamId },
+        'medium',
+      );
+      return;
+    }
+
+    // A missing row is legitimate — the defaults ARE the behaviour a team gets
+    // before anyone touches this, so they are not a lie in the way a faked
+    // value would be.
+    const next = resolveEventReminderSettings(data ?? null);
+    setEnabled(next.enabled);
+    setEarlyHours(next.earlyHours);
+    setLateMinutes(next.lateMinutes);
+    snapshotRef.current = next;
+    setLoaded(true);
+  }, [teamId, supabase]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const snap = snapshotRef.current;
+  const isDirty =
+    enabled !== snap.enabled ||
+    earlyHours !== snap.earlyHours ||
+    lateMinutes !== snap.lateMinutes;
+  useReportDirty('event-reminders', isDirty);
+
+  // The DB enforces early > late (CHECK golf_team_settings_event_reminder_ordering).
+  // Catch it here so the coach gets a sentence instead of a Postgres error, and
+  // so Save is unavailable rather than failing.
+  const ordering = earlyHours * 60 > lateMinutes;
+
+  const handleSave = async () => {
+    if (!isDirty || !ordering) return;
+    setSaving(true);
+    try {
+      const { error } = await fromUntyped(supabase, 'golf_team_settings').upsert(
+        {
+          team_id: teamId,
+          event_reminders_enabled: enabled,
+          event_reminder_early_hours: earlyHours,
+          event_reminder_late_minutes: lateMinutes,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'team_id' },
+      );
+      if (error) throw error;
+      snapshotRef.current = { enabled, earlyHours, lateMinutes };
+      fairwayToast.success('Reminder schedule updated');
+    } catch (err) {
+      fairwayToast.error(err instanceof Error ? err.message : 'Failed to save');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'EventRemindersPanel', action: 'save-event-reminders', sport: 'golf', teamId },
+        'high',
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!loaded) {
+    return (
+      <SectionCard icon={<IconBell size={18} aria-hidden />} title="Event reminders">
+        <div role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading event reminder settings…</span>
+          {/* Shape-matched to the loaded panel: one toggle row, two sliders. */}
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-11 w-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SectionCard icon={<IconBell size={18} aria-hidden />} title="Event reminders">
+        <InlineNotice
+          tone="danger"
+          action={
+            <Button variant="ghost" size="sm" onClick={() => void load()}>
+              Retry
+            </Button>
+          }
+        >
+          Couldn’t load your reminder schedule.
+        </InlineNotice>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <SectionCard
+      icon={<IconBell size={18} aria-hidden />}
+      title="Event reminders"
+      description="Automatic reminders for everyone invited to a team event."
+    >
+      <div className="flex flex-col gap-1">
+        <SettingsToggleRow
+          label="Send event reminders"
+          description="Applies to every player on the roster. Individual players can still mute their own channels."
+          checked={enabled}
+          onCheckedChange={setEnabled}
+        />
+
+        {enabled ? (
+          <>
+            <div className="border-t border-border-subtle px-1 pt-4">
+              <Slider
+                label="First reminder"
+                description="How far ahead of an event the first reminder goes out."
+                value={earlyHours}
+                onValueChange={setEarlyHours}
+                {...EVENT_REMINDER_RANGES.earlyHours}
+                displayTransform={(n) => n}
+                unit="hours"
+              />
+            </div>
+            <div className="px-1 pt-4">
+              <Slider
+                label="Final reminder"
+                description="A last nudge shortly before the event starts."
+                value={lateMinutes}
+                onValueChange={setLateMinutes}
+                {...EVENT_REMINDER_RANGES.lateMinutes}
+                unit="min"
+              />
+            </div>
+            <p className="px-1 pt-3 font-fw-sans text-caption text-text-tertiary">
+              {ordering
+                ? `Players are reminded ${formatLead(earlyHours * 60)} before an event, then again ${formatLead(lateMinutes)} before it starts. Reminders are checked hourly, so one can arrive up to 15 minutes early — never late.`
+                : 'The first reminder has to come before the final one.'}
+            </p>
+          </>
+        ) : (
+          <p className="px-1 pt-3 font-fw-sans text-caption text-text-tertiary">
+            No automatic reminders are sent. Players still see events on the calendar.
+          </p>
+        )}
+      </div>
+
+      <SaveRow onSave={handleSave} busy={saving} disabled={!isDirty || !ordering} />
+    </SectionCard>
+  );
+}
+
 /* ── Golf scoring (coach) ─────────────────────────────────────────────────── */
 
-function GolfScoringPanel({ teamId }: { teamId: string }) {
+export function GolfScoringPanel({ teamId }: { teamId: string }) {
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -1779,7 +1983,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
 
 /* ── Player golf details ──────────────────────────────────────────────────── */
 
-function PlayerGolfDetailsPanel({
+export function PlayerGolfDetailsPanel({
   playerId,
   playerData,
   onUpdate,
