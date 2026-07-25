@@ -1098,7 +1098,15 @@ Record the finding — the specific predicate and why it now excludes everything
 
 V3 generators use a flat `minSampleN = 5` (15 for tee-strategy) regardless of a player's total round volume. V2's pattern-miner already scales its floor, after a documented incident of "18 starvation events across 5 players in 24h" (the incident comment is at `pattern-miner.ts:143-145`). A player with 5 rounds currently gets the same statistical treatment as one with 40.
 
-> **OPEN DECISION — do not dispatch this task until the owner resolves it.**
+> **RESOLVED 2026-07-25 by the owner: relax the floor for low-volume players
+> AND label thin evidence in the UI.** The "tighten for high volume" variant
+> below is REJECTED — do not build it. This task now depends on Task 3 (real
+> `sample_n`, so the label is not built on a literal) and should follow Task 5
+> (which edits the same insight surface). The full rewritten task lives in
+> `.superpowers/sdd/task-11-brief-REPAIRED.md`; the text below is retained
+> only to record what was decided against and the bug found in the original.
+>
+> **Superseded original — do not dispatch as written:**
 > This task as originally written conflated two OPPOSITE goals, and they
 > produce different products. V2's real function (`pattern-miner.ts:155-158`,
 > not :143-145 — that citation is the incident comment) is:
