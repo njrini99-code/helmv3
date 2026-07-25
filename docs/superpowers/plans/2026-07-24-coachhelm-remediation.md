@@ -430,14 +430,35 @@ git commit -m "fix(coachhelm): bootstrap ConfidenceCalibrator so calibrated conf
 >
 > Both live prod rows for this rule carry the weak copy.
 >
-> Fix: call `coOccurrenceShare` with the two rules' hole sets in `detect()`
-> and put the real value on `same_hole_share`, replacing the literal `0`.
-> Add a test that a hole set with genuine overlap produces `proven === true`
-> and the compounding copy — it must fail before the change. Do NOT delete
-> the weak branch; it is correct when overlap is genuinely low.
+> **CORRECTED 2026-07-25 — my original instruction here said "call
+> `coOccurrenceShare` in `detect()`". That was wrong. DO NOT DO IT.**
+> The implementer checked before writing code and found the data does not
+> exist: `putt-bias.ts`'s aggregate queries `golf_shots` for
+> putt_break/putt_made/putt_slope/distance and never selects `hole_number`
+> (`PuttRow` has no hole field); `scrambling.ts`'s `loadSandShots()` rows do
+> carry `hole_number` at the shot layer but `ScramblingAggregate` discards it
+> before evidence; and `detect()` does not receive `ctx` at all. Wiring it as
+> I wrote would have required fabricating a hole array to make a test pass —
+> the exact defect class this plan exists to eliminate — or a multi-file
+> expansion far outside this task.
 >
-> This is the same defect class as the hardcoded `sample_n` below: a real
-> computation written, then bypassed by a literal.
+> It also contradicted **Step 6 below, which is correct**: add the
+> NOT-YET-WIRED docblock and relabel DORMANT→LIVE. Follow Step 6.
+>
+> **Also correcting the framing:** the copy this rule ships — "we can't yet
+> confirm they overlap on the same scoring holes" — is HONEST, because the
+> data really does not reach the rule. `coOccurrenceShare` is dead code
+> written in anticipation of a hole-level pipeline that was never built. The
+> defect is an unreachable branch plus an uncalled helper, NOT misleading
+> copy. Do not describe it as a lie to coaches; it is not one.
+>
+> **Real follow-up, to be scoped as its own task (a feature, not a bug fix):**
+> the compounding-pattern insight is genuine coaching value and needs
+> `hole_number` persisted through `PuttRow`/the putt-bias aggregate and
+> through `ScramblingAggregate`'s evidence detail, a `CompositeContext` field
+> to carry both, and `detect()` gaining a `ctx` parameter.
+>
+> The `sample_n` work below is unaffected and stands as written.
 
 `short-approach-proximity-gap.ts:77` ships `sample_n: 10`, `bunker-miss-side-amplifier.ts:117` ships `sample_n: 5`, `long-approach-3putt-cascade.ts:85` ships `sample_n: 5` — all literals. In prod, every live `short_approach_proximity_gap` row carries an identical `sample_n = 10`, and both `bunker_miss_side_amplifier` rows carry `sample_n = 5`. These are the insights combining the *richest* evidence, and they are the ones bypassing the confidence-honesty guarantee.
 
