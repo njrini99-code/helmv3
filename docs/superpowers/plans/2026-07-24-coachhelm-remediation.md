@@ -33,7 +33,7 @@
 
 | File | Responsibility | Tasks |
 |---|---|---|
-| `supabase/migrations/<ts>_purge_stale_calibration_buckets.sql` | Delete the two dead prediction types | 1 |
+| `src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts` | Guard the bootstrap type filter | 1 |
 | `src/lib/coachhelm/v2/orchestrator.ts` | Bootstrap calibration; stop discarding behavior prefs | 2, 9 |
 | `src/lib/coachhelm/v2/reasoning/confidence-calibrator.ts` | Already correct — read only | 2 |
 | `src/lib/coachhelm/v3/composite/rules/short-approach-proximity-gap.ts` | Real `sample_n` from sources | 3 |
@@ -50,64 +50,103 @@
 
 ---
 
-### Task 1: Purge the dead calibration buckets
+### Task 1: Pin the calibration bootstrap's type filter with a test
 
-Task 2 wires the calibration read path back on. Doing that first would immediately load two prediction types that claim 70–80% confidence while being **wrong 100% of the time**, frozen since 2026-03-14. Purge before wiring.
+**REVISED 2026-07-25 — the original Task 1 was wrong and has been withdrawn.**
+
+It specified a production `DELETE FROM golf_confidence_calibration` to remove the
+two prediction types frozen at 0% accuracy since 2026-03-14, on the stated
+grounds that Task 2 would otherwise load them as live calibration data. That
+premise is false: `bootstrapFromDb()` (`confidence-calibrator.ts:218`) already
+does `rows.filter((r) => r.prediction_type === predictionType)`, and Task 2
+passes `'score_to_par'`. The stale rows are unreachable by construction — no
+delete is needed, and a destructive write against shared prod to fix a
+non-problem is not acceptable.
+
+What IS worth doing: that safety is currently incidental. Nothing stops a future
+change from bootstrapping without a type filter, or passing a type that happens
+to match a dead bucket. Make the invariant explicit and enforced.
 
 **Files:**
-- Create: `supabase/migrations/20260725000000_purge_stale_calibration_buckets.sql`
+- Test: `src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts`
 
 **Interfaces:**
-- Consumes: nothing
-- Produces: a `golf_confidence_calibration` table containing only `score_to_par` rows — the precondition Task 2 relies on
+- Consumes: `bootstrapFromDb(supabase, predictionType)` — existing, unchanged
+- Produces: no exports — a regression guard only
 
-- [ ] **Step 1: Confirm the current state before changing it**
+- [ ] **Step 1: Write the test**
 
-Run:
+Create `src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts`:
+
+```typescript
+import { describe, expect, it, vi } from 'vitest';
+import { bootstrapFromDb, invalidateCalibrationCache } from '../reasoning/confidence-calibrator';
+
+/**
+ * Prod contains buckets for prediction types no code produces any more
+ * (`general` and `round_score`, frozen 2026-03-14 at 0/61 correct). They are
+ * harmless ONLY because bootstrap filters by prediction_type. This test makes
+ * that load-bearing filter explicit: without it, a 0%-accuracy bucket would
+ * become live calibration and crush every high-confidence prediction.
+ */
+function supabaseReturning(rows: unknown[]) {
+  return {
+    from: () => ({ select: () => Promise.resolve({ data: rows, error: null }) }),
+  } as never;
+}
+
+const STALE_AND_LIVE = [
+  { bucket: 0.8, prediction_type: 'general', predictions_count: 30, correct_count: 0, actual_accuracy: 0, calibration_error: 0.8 },
+  { bucket: 0.8, prediction_type: 'round_score', predictions_count: 30, correct_count: 0, actual_accuracy: 0, calibration_error: 0.8 },
+  { bucket: 0.8, prediction_type: 'score_to_par', predictions_count: 11, correct_count: 11, actual_accuracy: 1, calibration_error: 0.2 },
+];
+
+describe('calibration bootstrap type filter', () => {
+  it('loads only the requested prediction type, never a dead one', async () => {
+    invalidateCalibrationCache();
+    const record = await bootstrapFromDb(supabaseReturning(STALE_AND_LIVE), 'score_to_par');
+    // 11 from score_to_par only — NOT 71 (which would mean the two
+    // 0%-accuracy types leaked in).
+    expect(record.totalPredictions).toBe(11);
+    const top = record.buckets.find((b) => b.rangeStart >= 0.8 - 1e-9)!;
+    expect(top.actualCorrect).toBe(11);
+  });
+
+  it('returns an empty record for a type with no rows rather than falling back', async () => {
+    invalidateCalibrationCache();
+    const record = await bootstrapFromDb(supabaseReturning(STALE_AND_LIVE), 'nonexistent_type');
+    expect(record.totalPredictions).toBe(0);
+  });
+});
+```
+
+- [ ] **Step 2: Run it**
+
+Run: `npx vitest run src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts`
+
+Expected: 2 passed. These pass against today's code — the filter already
+exists. This test exists to keep it there. If either fails, the filter has
+regressed and Task 2 must not ship until it is restored.
+
+If the mock shape does not satisfy `loadBuckets`, read that function and adapt
+the mock to whatever it actually calls — do not weaken the assertions.
+
+- [ ] **Step 3: Commit**
+
 ```bash
-npx supabase db query "SELECT prediction_type, bucket, predictions_count, correct_count, actual_accuracy, updated_at::date FROM golf_confidence_calibration ORDER BY prediction_type, bucket;"
+git add src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts
+git commit -m "test(coachhelm): pin the calibration bootstrap type filter"
 ```
 
-Expected: 7 rows. `general` and `round_score` each have buckets 0.7 and 0.8 with `correct_count = 0` and `updated_at = 2026-03-14`. `score_to_par` has 3 buckets with recent dates. **If `general`/`round_score` show a recent `updated_at`, STOP** — something has started revalidating them and this task's premise no longer holds.
-
-- [ ] **Step 2: Write the migration**
-
-```sql
--- Purge calibration buckets for prediction types that no longer exist.
---
--- `general` and `round_score` were last written 2026-03-14 and record
--- 0 correct out of 61 predictions (0% accuracy) across their 0.7 and 0.8
--- buckets. No code path has produced either prediction_type since;
--- golf_predictions.metric is 100% 'score_to_par' today.
---
--- These rows are deleted rather than left in place because the very next
--- change (bootstrapping ConfidenceCalibrator from this table) would load
--- them as live calibration data and suppress every high-confidence
--- prediction to near zero. Scoped DELETE of two dead enum values — not a
--- delete-then-reinsert of live data.
-DELETE FROM golf_confidence_calibration
-WHERE prediction_type IN ('general', 'round_score');
-```
-
-- [ ] **Step 3: Apply and verify**
-
-Run:
-```bash
-npx supabase db query "SELECT prediction_type, count(*) FROM golf_confidence_calibration GROUP BY 1;"
-```
-
-Expected: exactly one row — `score_to_par | 3`.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add supabase/migrations/20260725000000_purge_stale_calibration_buckets.sql
-git commit -m "fix(coachhelm): purge 0%-accuracy calibration buckets for dead prediction types"
-```
-
----
+**Note for whoever cleans up later:** the `general`/`round_score` rows can be
+removed as ordinary housekeeping whenever convenient, but that is unrelated to
+this remediation and must not be bundled with it.
 
 ### Task 2: Bootstrap confidence calibration (P0)
+
+**Precondition:** Task 1's type-filter test passes. Task 2 relies on
+`bootstrapFromDb` filtering by `prediction_type` — that is what makes the dead
+0%-accuracy buckets in prod unreachable.
 
 `ConfidenceCalibrator` is constructed empty and never populated. `.calibrate()` has 7 call sites; `.update()` has zero. Every call hits the `predictedCount < 5` guard in `calibrateConfidence()` (`confidence-calibrator.ts:60`) and returns the raw value unchanged. The number rendered to coaches and players as "calibrated confidence" (`PlayerCoachHelmHome.tsx:290`, `FairwayPlayerCoachHelm.tsx:1203`, `PerformancePrediction.tsx:51`) is raw model confidence wearing a label.
 
