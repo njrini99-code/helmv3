@@ -152,7 +152,7 @@ export function StandingStrip(props: StandingStripProps) {
             className={cn(
               'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-caption font-bold tabular-nums',
               delta.tone === 'good'
-                ? 'bg-accent-700 text-text-on-accent'
+                ? 'bg-accent-650 text-text-on-accent'
                 : delta.tone === 'bad'
                   ? 'bg-fw-warning-bg text-fw-warning-ink'
                   : 'bg-inset text-text-secondary',
@@ -307,7 +307,7 @@ function StripTrack({
           are — this is a structural guarantee, not a distance threshold. */}
       <div className="relative h-7" data-slot="you-badge-tier">
         <div
-          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-700 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
+          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-650 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
           style={{ left: `${you}%` }}
         >
           {youValue}

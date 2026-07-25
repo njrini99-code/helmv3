@@ -76,7 +76,7 @@ export const SelectablePill = forwardRef<HTMLButtonElement, SelectablePillProps>
           fwDisabled,
           // Resting (no state) — neutral matte cell.
           !active && !completed && !future && 'bg-surface text-text-secondary ring-1 ring-border-subtle',
-          active && 'bg-accent-700 text-text-on-accent shadow-flat',
+          active && 'bg-accent-650 text-text-on-accent shadow-flat',
           completed && 'bg-accent-50 text-accent-700 ring-1 ring-accent-200',
           future && 'bg-surface-sunken text-text-tertiary ring-1 ring-border-subtle',
           // selected layers a stronger accent ring on top of whatever state.
