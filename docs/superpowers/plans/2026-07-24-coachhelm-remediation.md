@@ -150,15 +150,138 @@ this remediation and must not be bundled with it.
 
 `ConfidenceCalibrator` is constructed empty and never populated. `.calibrate()` has 7 call sites; `.update()` has zero. Every call hits the `predictedCount < 5` guard in `calibrateConfidence()` (`confidence-calibrator.ts:60`) and returns the raw value unchanged. The number rendered to coaches and players as "calibrated confidence" (`PlayerCoachHelmHome.tsx:290`, `FairwayPlayerCoachHelm.tsx:1203`, `PerformancePrediction.tsx:51`) is raw model confidence wearing a label.
 
-`bootstrapFromDb()` and `setRecord()` already exist and are already correct. Nothing calls them outside their own file.
+`bootstrapFromDb()` and `setRecord()` already exist and nothing calls them
+outside their own file. `setRecord()` is correct. **`bootstrapFromDb()` is
+not** — Task 1 surfaced a bucket-mapping bug in it, verified in source on
+2026-07-24, and it must be fixed FIRST (Step 0 below) or this task makes
+things worse rather than better.
+
+The bug: `computeBucketRows` (same file, ~line 247) documents that "the
+stored `bucket` column is the range start", so `bucket` is always one of
+0, 0.2, 0.4, 0.6, 0.8. But `bootstrapFromDb` maps it with
+`row.bucket >= b.rangeStart && row.bucket < b.rangeEnd + 1e-9` — the
+epsilon is applied to EVERY bucket's `rangeEnd`, not just the last, so each
+stored start also satisfies the range *below* it and `findIndex` returns
+that earlier, wrong one. Four of the five buckets misfile one band low;
+only `0` maps correctly.
+
+Against prod's live rows (`0.4=1/1`, `0.6=5/4`, `0.8=11/11`) that means
+wiring calibration on without the fix loads the 11/11 bucket into the
+0.6–0.8 band, so a raw confidence of 0.65 renders as **100%** instead of
+80% — a confidently wrong number shown to coaches and players. Today's
+un-bootstrapped behaviour at least degrades to an honest raw value.
 
 **Files:**
+- Modify: `src/lib/coachhelm/v2/reasoning/confidence-calibrator.ts` (the range predicate in `bootstrapFromDb`)
 - Modify: `src/lib/coachhelm/v2/orchestrator.ts:238-242` (constructor), plus a new private method
+- Modify: `src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts` (restore its fixture to a prod-legal value)
+- Test: `src/lib/coachhelm/v2/__tests__/calibration-bucket-mapping.test.ts`
 - Test: `src/lib/coachhelm/v2/__tests__/calibration-bootstrap.test.ts`
 
 **Interfaces:**
 - Consumes: `bootstrapFromDb(supabase: AdminSupabase, predictionType: string): Promise<CalibrationRecord>` and `ConfidenceCalibrator.setRecord(record: CalibrationRecord): this`, both from `./reasoning` — existing, unchanged
 - Produces: `CoachHelmOrchestrator.ensureCalibrationBootstrapped(): Promise<void>` — idempotent, safe to call on every analysis entry point
+
+#### Step 0 — PREREQUISITE: fix the bucket mapping (added 2026-07-24, after Task 1)
+
+Do this before Step 1. Steps 0.1–0.5 are one commit; the rest of the task is a second commit.
+
+- [ ] **Step 0.1: Write the failing test**
+
+Create `src/lib/coachhelm/v2/__tests__/calibration-bucket-mapping.test.ts`:
+
+```typescript
+import { describe, expect, it } from 'vitest';
+import {
+  bootstrapFromDb,
+  calibrateConfidence,
+  invalidateCalibrationCache,
+} from '../reasoning/confidence-calibrator';
+
+function supabaseReturning(rows: unknown[]) {
+  return {
+    from: () => ({ select: () => Promise.resolve({ data: rows, error: null }) }),
+  } as never;
+}
+
+/** Prod's live score_to_par rows, verbatim: 0.4=1/1, 0.6=5/4, 0.8=11/11. */
+const PROD_ROWS = [
+  { bucket: 0.4, prediction_type: 'score_to_par', predictions_count: 1, correct_count: 1, actual_accuracy: 1, calibration_error: 0.5 },
+  { bucket: 0.6, prediction_type: 'score_to_par', predictions_count: 5, correct_count: 4, actual_accuracy: 0.8, calibration_error: 0.1 },
+  { bucket: 0.8, prediction_type: 'score_to_par', predictions_count: 11, correct_count: 11, actual_accuracy: 1, calibration_error: 0.1 },
+];
+
+const at = (record: { buckets: Array<{ rangeStart: number }> }, start: number) =>
+  record.buckets.find((b) => Math.abs(b.rangeStart - start) < 1e-9)!;
+
+describe('bootstrapFromDb bucket mapping', () => {
+  it('files each stored range-start into its OWN range, not the band below', async () => {
+    invalidateCalibrationCache();
+    const record = await bootstrapFromDb(supabaseReturning(PROD_ROWS), 'score_to_par');
+    expect(at(record, 0.4).predictedCount).toBe(1);
+    expect(at(record, 0.6).predictedCount).toBe(5);
+    expect(at(record, 0.8).predictedCount).toBe(11);
+    // Bands with no stored row stay empty.
+    expect(at(record, 0).predictedCount).toBe(0);
+    expect(at(record, 0.2).predictedCount).toBe(0);
+    expect(record.totalPredictions).toBe(17);
+  });
+
+  it('calibrates 0.65 from the 0.6 band (4/5), not the 0.8 band (11/11)', async () => {
+    invalidateCalibrationCache();
+    const record = await bootstrapFromDb(supabaseReturning(PROD_ROWS), 'score_to_par');
+    // The 0.6 band is 4/5 = 0.80 and clears the 5-sample floor exactly.
+    // Pre-fix this returned 1.0 — the 11/11 bucket misfiled one band low.
+    expect(calibrateConfidence(0.65, record)).toBeCloseTo(0.8, 5);
+  });
+});
+```
+
+- [ ] **Step 0.2: Run it to confirm both tests fail**
+
+Run: `npx vitest run src/lib/coachhelm/v2/__tests__/calibration-bucket-mapping.test.ts`
+
+Expected: both FAIL. Test 1 reports `0.6` band count 1 and `0.8` band count 5 (everything shifted one band low, and 11 landed outside any asserted band). Test 2 reports `expected 1 to be close to 0.8`. Those two failures ARE the bug.
+
+- [ ] **Step 0.3: Fix the predicate**
+
+In `src/lib/coachhelm/v2/reasoning/confidence-calibrator.ts`, inside `bootstrapFromDb`, replace the range-mapping comment and `findIndex` (currently `// Map persisted buckets onto the 5 [0,0.2)…[0.8,1.0] ranges.` through the `findIndex` call) with:
+
+```typescript
+  // The stored `bucket` column IS the range start — see computeBucketRows
+  // below, which derives it from BUCKET_STARTS. So match it by identity, not
+  // by containment. The previous predicate (`row.bucket < b.rangeEnd + 1e-9`)
+  // applied its epsilon to EVERY bucket's rangeEnd, so each stored start also
+  // satisfied the range below it and findIndex returned that earlier, wrong
+  // one: 0.2/0.4/0.6/0.8 all misfiled one band low, and only 0 was correct.
+  for (const row of forType) {
+    const rangeIdx = record.buckets.findIndex(
+      (b) => Math.abs(row.bucket - b.rangeStart) < 1e-9,
+    );
+```
+
+Leave the `if (rangeIdx === -1) continue;` line and everything after it as-is — it now correctly skips a stored value that is not one of the five canonical starts.
+
+Do NOT touch `calibrateConfidence` (line ~58) or `updateCalibrationRecord` (line ~70). Both take a raw confidence and correctly use half-open containment; only `bootstrapFromDb` consumes a stored bucket key.
+
+- [ ] **Step 0.4: Restore Task 1's fixture to a prod-legal value**
+
+Task 1's test worked around this bug with a fixture value prod can never store. In `src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts`: change the `score_to_par` row's `bucket` from `0.85` to `0.8`, and delete the `// NOTE: score_to_par uses bucket 0.85 …` comment block above `STALE_AND_LIVE` (it documents the bug you just fixed). Leave every assertion unchanged.
+
+- [ ] **Step 0.5: Verify both files pass, then commit**
+
+Run: `npx vitest run src/lib/coachhelm/v2/__tests__/calibration-bucket-mapping.test.ts src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts`
+
+Expected: 4 passed. Then `npm run typecheck` and `npm run lint`, both exit 0.
+
+```bash
+git add src/lib/coachhelm/v2/reasoning/confidence-calibrator.ts \
+        src/lib/coachhelm/v2/__tests__/calibration-bucket-mapping.test.ts \
+        src/lib/coachhelm/v2/__tests__/calibration-type-filter.test.ts
+git commit -m "fix(coachhelm): map persisted calibration buckets by range start, not containment"
+```
+
+#### The original task continues here
 
 - [ ] **Step 1: Write the failing test**
 
