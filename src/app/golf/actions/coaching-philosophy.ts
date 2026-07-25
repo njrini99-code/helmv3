@@ -52,6 +52,13 @@ const ALLOWED_DB_COLUMNS = new Set<string>([
   'min_hole_plays_for_ranking',
   'pattern_lookback_days',
   'stats_benchmark_window_days',
+  // Email digest opt-out (2026-07-25). This column was already the gate that
+  // BOTH recurring coach emails honour — `coach-morning-digest/route.ts` sends
+  // only when `email_digest_enabled !== false`, and `v3/weekly-coach-email`
+  // skips the coach outright when it is false — but it had no UI anywhere, so
+  // coaches received both with no way to opt out. Surfaced in Settings →
+  // Notifications; allowed here so that toggle can persist.
+  'email_digest_enabled',
 ]);
 
 /**
