@@ -197,6 +197,34 @@ BRIEF REPAIRS LANDED (4,5,7,8,9 written; 11 running). Notable beyond the
     task-9-brief-REPAIRED.md. 24 existing golf_learned_behavior rows have no
     usable type; learning starts from zero. No backfill, no deletes.
 
+Task 11 repair landed (task-11-brief-REPAIRED.md). Rule:
+  effectiveMinSampleN(baseMin, roundCount) = min(baseMin, max(2,
+  round(roundCount*0.15))) — relaxation-only, never exceeds baseMin, which
+  fixes the Math.min(12,...) bug that would have clamped tee-strategy's 15
+  to 12. Reuses the live InsufficientData primitive
+  (fairway/feedback/InsufficientData) rather than inventing a visual. Label
+  fires when evidence.sample_n < evidence.min_sample_n_target and only where
+  EvidencePanel already renders expanded. Anchors were verified
+  programmatically against source (caught 2 indentation bugs).
+
+  TWO THINGS TO RAISE WITH THE OWNER BEFORE DISPATCHING TASK 11:
+  1. MAGNITUDE ON TEE-STRATEGY. baseMin=15 was deliberately conservative.
+     Under this rule a player with ~10 rounds (the current prod average:
+     290 rounds / 30 players) gets an effective floor of
+     min(15, max(2, 2)) = 2. That is a 7.5x loosening on the most
+     conservative generator — tee-strategy advice off 2 samples. The label
+     discloses it but does not prevent bad advice. Consider a per-generator
+     relaxation floor (never below baseMin/3, i.e. 5 for tee-strategy)
+     instead of a flat 2. The owner chose "relax but label"; this specific
+     magnitude is probably not what he pictured.
+  2. NEW EVIDENCE FIELD. min_sample_n_target is stamped by
+     BaseGenerator.run() going forward, so NONE of the 252 existing rows
+     carry it and the label cannot render for any current insight. Combined
+     with the generation stall above, that means the feature is invisible
+     until new insights are produced. Not a defect — but do not expect to
+     see it after shipping. Composites bypass it entirely
+     (synthesis.ts:140), so they correctly never show the label.
+
 === THE ACTUAL ROOT CAUSE, PROVEN (2026-07-25) ===
   Insights are stale because 69% of rounds were NEVER ANALYSED, and the
   mechanism meant to catch that has permanently aged past them.
