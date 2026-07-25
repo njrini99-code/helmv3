@@ -22,7 +22,7 @@ import {
   deriveState,
   formatValue,
   layoutMarkerPositions,
-  MARKER_MIN_GAP_PCT,
+  BAR_MARKER_MIN_GAP_PCT,
   pgaReferenceLabel,
   resolveDisplayScale,
   shouldShowTeamMarker,
@@ -279,13 +279,14 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
   // near-equal (e.g. team 0.70 vs player 0.81 on a 3-unit scale is only
   // ~3.7% apart) their circles land on top of each other and render as a
   // single unreadable blob. Nudge apart any markers within MARKER_MIN_GAP_PCT
-  // of one another before rendering; the underlying values/positions used
+  // of one another before rendering (BAR_MARKER_MIN_GAP_PCT — the small-chip
+  // gap, NOT StandingStrip's wider text-pill gap); the underlying values/positions used
   // everywhere ELSE (readouts, aria label) are untouched — only the glyph's
   // drawn position moves.
   const rawPositions: Array<{ key: 'pga' | 'team' | 'you'; pct: number }> = [{ key: 'you', pct: youPct }];
   if (pgaPct !== null) rawPositions.push({ key: 'pga', pct: pgaPct });
   if (teamPct !== null) rawPositions.push({ key: 'team', pct: teamPct });
-  const laidOut = layoutMarkerPositions(rawPositions, MARKER_MIN_GAP_PCT);
+  const laidOut = layoutMarkerPositions(rawPositions, BAR_MARKER_MIN_GAP_PCT);
   const drawnPct = new Map(laidOut.map((p) => [p.key, p.pct]));
 
   // The rail itself renders IMMEDIATELY (a plain div, no entrance animation).
@@ -341,13 +342,23 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
           delay={0.14}
         />
       )}
-      {/* You marker — the hero, drawn last so it sits on top */}
+      {/* You marker — the hero, drawn last so it sits on top.
+       *
+       * The label is EMPTY on purpose: the filled circle IS the mark. It used
+       * to pass '●', which rendered an 11px (`text-eyebrow`) white bullet glyph
+       * inside a 12px (`w-3 h-3`) `bg-primary-600` circle — the glyph covered
+       * the middle and the "you" marker read as a hollow white donut with a
+       * thin green rim (Nick's 07-24 round-review screenshot). That inverted
+       * the hierarchy: the two REFERENCE chips ('T'/'P') were legible while the
+       * hero mark looked like an empty placeholder. A solid brand-green dot
+       * against lettered references is the intended read, and it stays
+       * unambiguous at every size variant. */}
       <Marker
         kind="hero"
         leftPct={drawnPct.get('you')!}
         markerSize={markerSize}
-        label="●"
-        toneClass="bg-primary-600 text-white ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
+        label=""
+        toneClass="bg-primary-600 ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
         delay={0.22}
       />
     </div>

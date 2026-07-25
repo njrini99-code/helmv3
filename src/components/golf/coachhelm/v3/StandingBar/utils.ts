@@ -354,12 +354,30 @@ export interface MarkerLayoutInput {
 }
 
 /** Minimum gap (in track %) between two marker CENTERS before they're
- *  considered "colliding" and nudged apart. The Bar/Track markers here are
- *  small circular chips (8-16px) rather than the wider text labels
- *  `layoutTrackLabels` (fairway/modules/StandingTrack.tsx) separates, so a
- *  smaller gap than that component's 16% fully clears two overlapping
- *  circles without over-spacing genuinely distinct values. */
+ *  considered "colliding" and nudged apart.
+ *
+ *  This is the WIDE-ELEMENT gap, used by `fairway/charts/StandingStrip`,
+ *  whose colliding elements are not small chips: its "you" mark is a 16px
+ *  dot inside a `ring-[3px]` (22px effective) and it carries a
+ *  `whitespace-nowrap px-2.5` numeric pill plus a TEAM text label. Those
+ *  need real clearance, so do NOT lower this — see BAR_MARKER_MIN_GAP_PCT
+ *  below for the small-chip case. */
 export const MARKER_MIN_GAP_PCT = 9;
+
+/** Minimum gap for `StandingBar`'s `Bar`, whose markers are plain circular
+ *  chips (`w-2`..`w-3.5`, i.e. 8-14px) with no attached label.
+ *
+ *  Sized from the actual geometry rather than picked by feel: the widest
+ *  chip is `hero` at 14px and the narrowest rail it renders on is a card at
+ *  a 390px viewport (~300px of track inside the card's padding) — 14/300 =
+ *  4.7%, so 4.5% has two neighbouring circles just kissing and never
+ *  overlapping.
+ *
+ *  Every excess point of gap beyond that is a point of positional LIE: it
+ *  is spent displacing a marker away from the value it reports. Sharing the
+ *  9% wide-element gap above cost the bar 7.2x exaggeration on Nick's 07-24
+ *  round-review screenshot (a 2.5-point real spread drawn as 18 points). */
+export const BAR_MARKER_MIN_GAP_PCT = 4.5;
 
 /**
  * Nudge apart marker positions that land within `minGapPct` of one another,
@@ -382,14 +400,38 @@ export function layoutMarkerPositions(
 
   const ordered = items.map((i) => ({ key: i.key, pct: i.pct })).sort((a, b) => a.pct - b.pct);
 
+  // Midpoint of the TRUE cluster, captured before any nudging.
+  const rawMid = (ordered[0]!.pct + ordered[ordered.length - 1]!.pct) / 2;
+
   for (let i = 1; i < ordered.length; i++) {
     const min = ordered[i - 1]!.pct + minGapPct;
     if (ordered[i]!.pct < min) ordered[i]!.pct = min;
   }
 
+  // Re-centre the spread chain on where the data actually sits.
+  //
+  // The forward pass above pins the LEFTMOST marker and pushes everyone else
+  // right, so a tight cluster grew rightward off its true location: three
+  // values 2.5% apart (You 65% / ref 66% / team 64%, the 07-24 screenshot)
+  // came out spanning 80->98%, drifting the reference marker 15.5 points from
+  // the value it reports and jamming it against the rail end. Order and the
+  // min-gap are what stop circles overlapping; WHERE the resulting chain sits
+  // is still free, so put its midpoint back on the real one. Same case now
+  // drifts at most 3.3 points, and the group still reads at the right spot on
+  // the rail. Markers that never collided are untouched by construction.
+  const spreadMid = (ordered[0]!.pct + ordered[ordered.length - 1]!.pct) / 2;
+  if (spreadMid !== rawMid) {
+    for (const item of ordered) item.pct += rawMid - spreadMid;
+  }
+
   const rightOverflow = ordered[ordered.length - 1]!.pct - 100;
   if (rightOverflow > 0) {
     for (const item of ordered) item.pct -= rightOverflow;
+  }
+
+  const leftOverflow = 0 - ordered[0]!.pct;
+  if (leftOverflow > 0) {
+    for (const item of ordered) item.pct += leftOverflow;
   }
 
   for (let i = ordered.length - 2; i >= 0; i--) {

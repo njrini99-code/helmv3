@@ -38,6 +38,7 @@ import {
   teamRelativeText,
   valuesDisplayEqual,
   MARKER_MIN_GAP_PCT,
+  BAR_MARKER_MIN_GAP_PCT,
 } from './utils';
 
 // ---------------------------------------------------------------------------
@@ -122,6 +123,52 @@ describe('layoutMarkerPositions (pure)', () => {
     expect(byKey.pga! - byKey.you!).toBeGreaterThanOrEqual(MARKER_MIN_GAP_PCT - 0.01);
   });
 
+  // The collision tests above only ever asserted that markers end up FAR
+  // ENOUGH APART. Nothing asserted they end up in the RIGHT PLACE — which is
+  // how the bar came to exaggerate a 2.5-point spread into an 18-point one and
+  // still pass its suite (Nick's 07-24 round-review screenshot: the reference
+  // marker reported 66% while drawn at 98% of the rail).
+  it('keeps a nudged cluster centred on its true midpoint', () => {
+    const raw = [
+      { key: 'team', pct: 80 },
+      { key: 'you', pct: 81.25 },
+      { key: 'pga', pct: 82.5 },
+    ];
+    const result = layoutMarkerPositions(raw, BAR_MARKER_MIN_GAP_PCT);
+    const rawMid = (80 + 82.5) / 2;
+    const drawn = result.map((r) => r.pct);
+    const drawnMid = (Math.min(...drawn) + Math.max(...drawn)) / 2;
+    expect(drawnMid).toBeCloseTo(rawMid, 5);
+  });
+
+  it('never drifts a marker more than one min-gap from the value it reports', () => {
+    // You 65% / ref 66% / team 64% on a 0..80 domain — the screenshot case.
+    const raw = [
+      { key: 'team', pct: 80 },
+      { key: 'you', pct: 81.25 },
+      { key: 'pga', pct: 82.5 },
+    ];
+    const byKey = Object.fromEntries(
+      layoutMarkerPositions(raw, BAR_MARKER_MIN_GAP_PCT).map((r) => [r.key, r.pct]),
+    );
+    for (const { key, pct } of raw) {
+      expect(Math.abs(byKey[key]! - pct)).toBeLessThanOrEqual(BAR_MARKER_MIN_GAP_PCT);
+    }
+  });
+
+  it('does not inflate a tight cluster beyond what the min-gap strictly requires', () => {
+    const raw = [
+      { key: 'team', pct: 50 },
+      { key: 'you', pct: 50 },
+      { key: 'pga', pct: 50 },
+    ];
+    const drawn = layoutMarkerPositions(raw, BAR_MARKER_MIN_GAP_PCT).map((r) => r.pct);
+    // 3 markers => exactly 2 gaps. Anything wider is spacing invented from
+    // nothing and read by a coach as a real performance difference.
+    const span = Math.max(...drawn) - Math.min(...drawn);
+    expect(span).toBeCloseTo(BAR_MARKER_MIN_GAP_PCT * 2, 5);
+  });
+
   it('never pushes a marker outside [0, 100] even for a cluster pinned at the edge', () => {
     const result = layoutMarkerPositions([
       { key: 'a', pct: 99 },
@@ -192,9 +239,13 @@ describe('Card — dynamic domain render (founder screenshot repro)', () => {
   });
 
   it('still renders the Team ("T") marker glyph — never silently dropped for being out of the typical range', () => {
-    render(<Card {...SG_APPROACH_BASE} />);
+    const { container } = render(<Card {...SG_APPROACH_BASE} />);
     expect(screen.getByText('T')).toBeTruthy();
-    expect(screen.getByText('●')).toBeTruthy();
+    // The "you" marker is a SOLID dot, not a '●' glyph — an 11px white bullet
+    // inside a 12px green circle rendered as a hollow donut (07-24 screenshot).
+    // Assert the marker element exists via its brand fill instead of by text.
+    expect(screen.queryByText('●')).toBeNull();
+    expect(container.querySelector('.bg-primary-600')).toBeTruthy();
   });
 
   it('still shows the real Team value in the comparison cell (not a suppressed "—")', () => {
