@@ -1,7 +1,10 @@
 'use client';
 
+import { useRef } from 'react';
 import { useRequestDemo } from '@/components/landing/request-demo-context';
 import styles from '../products-landing.module.css';
+import { useScene } from '@/lib/motion/gsap/useScene';
+import { closingScene } from '../scenes/openingScene';
 
 /**
  * Closing call-to-action band. The mock folded a dark footer into this section;
@@ -10,8 +13,13 @@ import styles from '../products-landing.module.css';
  */
 export function FinalCta() {
   const openDemo = useRequestDemo();
+  const rootRef = useRef<HTMLElement>(null);
+  // P7 · the same masked arrival as the hero, scrubbed because the reader
+  // scrolls into this one. Bookending the page with one gesture is the point.
+  useScene(rootRef, closingScene);
+
   return (
-    <section id="getdemo" style={{ scrollMarginTop: 90, background: 'var(--dark)', color: 'var(--onacc)' }}>
+    <section ref={rootRef} id="getdemo" style={{ scrollMarginTop: 90, background: 'var(--dark)', color: 'var(--onacc)' }}>
       <div style={{ maxWidth: 1320, margin: '0 auto', padding: 'clamp(80px,11vw,150px) clamp(20px,4vw,64px)', textAlign: 'center', position: 'relative', overflow: 'clip' }}>
         <div
           aria-hidden
@@ -28,14 +36,14 @@ export function FinalCta() {
         />
         <div style={{ position: 'relative' }} data-reveal>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'oklch(0.724 0.132 150)' }}>Get started</div>
-          <h2 style={{ margin: '18px auto 0', fontSize: 'clamp(2rem,4.4vw,3.4rem)', lineHeight: 1.04, letterSpacing: '-0.022em', fontWeight: 600, color: 'var(--onacc)', maxWidth: '15em', textWrap: 'balance' }}>
+          <h2 data-open="headline" style={{ margin: '18px auto 0', fontSize: 'clamp(2rem,4.4vw,3.4rem)', lineHeight: 1.04, letterSpacing: '-0.022em', fontWeight: 600, color: 'var(--onacc)', maxWidth: '15em', textWrap: 'balance' }}>
             See the platform with your program in mind.
           </h2>
-          <p style={{ margin: '18px auto 0', fontSize: 'clamp(1rem,1.4vw,1.18rem)', lineHeight: 1.55, color: 'oklch(0.82 0.008 85)', maxWidth: '34em', textWrap: 'pretty' }}>
-            Bring your roster and a season of rounds — we&apos;ll show you the 87 stats, the root-cause
+          <p data-open="body" style={{ margin: '18px auto 0', fontSize: 'clamp(1rem,1.4vw,1.18rem)', lineHeight: 1.55, color: 'oklch(0.82 0.008 85)', maxWidth: '34em', textWrap: 'pretty' }}>
+            Bring your roster and a season of rounds — we&apos;ll show you the 85 stats, the root-cause
             insights, and the development plans built for college programs.
           </p>
-          <div style={{ margin: '32px 0 0', display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center' }}>
+          <div data-open="actions" style={{ margin: '32px 0 0', display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center' }}>
             <button
               type="button"
               onClick={openDemo}

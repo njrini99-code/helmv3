@@ -98,15 +98,17 @@ const WEEK = [
   { day: '08', dow: 'Fri', title: 'Team travel', meta: 'Depart 7:00 AM', edge: M.lineSolid },
 ];
 
-function ProgramCard({ icon, title, headline, lines, tag }: {
+function ProgramCard({ icon, title, headline, lines, tag, order }: {
   icon: ReactNode;
   title: string;
   headline: string;
   lines: [string, string];
   tag: { label: string; color: string; bg: string };
+  /** Position in the board's assembly sequence — see TeamSection. */
+  order: number;
 }) {
   return (
-    <div data-assembly-piece="" style={{ ...card, padding: '15px 16px' }}>
+    <div data-assembly-piece="" data-assembly-order={order} style={{ ...card, padding: '15px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={ico}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={M.accent700} strokeWidth="2" aria-hidden="true">{icon}</svg>
@@ -140,7 +142,7 @@ export function TeamMock() {
         </div>
 
         {/* Roster table */}
-        <div data-assembly-piece="" style={{ ...card, marginTop: 18, padding: '4px 14px 12px' }}>
+        <div data-assembly-piece="" data-assembly-order="0" style={{ ...card, marginTop: 18, padding: '4px 14px 12px' }}>
           <div style={{ ...rowGrid, borderTop: 'none', paddingBottom: 6 }}>
             <span style={lab()}>Player</span>
             <span style={lab()}>Status</span>
@@ -176,6 +178,7 @@ export function TeamMock() {
         <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
           <ProgramCard
             icon={<path d="M2 16l20-6-9 12-2-5-9-1z" />}
+            order={3}
             title="Travel itinerary"
             headline="Sea Island Invitational"
             lines={['Depart Fri 7:00 AM · 2 nights', '6 players · van + lodging booked']}
@@ -183,6 +186,7 @@ export function TeamMock() {
           />
           <ProgramCard
             icon={<><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" /><path d="M20 18v3H6.5A2.5 2.5 0 0 1 4 18.5" /></>}
+            order={5}
             title="Class schedules"
             headline="2 conflicts this week"
             lines={['R. Diaz · AM lab vs practice', 'C. Boyd · Thu exam — excused']}
@@ -190,6 +194,7 @@ export function TeamMock() {
           />
           <ProgramCard
             icon={<path d="M3 11l14-6v14L3 13zM17 8a3 3 0 0 1 0 8" />}
+            order={6}
             title="Announcements"
             headline="Qualifier pairings posted"
             lines={['2h ago · 8 acknowledged', '“Study hall moved to Thursday”']}
@@ -201,7 +206,7 @@ export function TeamMock() {
       {/* Rail */}
       <div style={{ flex: 'none', width: 322, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Live qualifier */}
-        <div data-assembly-piece="" style={{ ...card, padding: '16px 18px' }}>
+        <div data-assembly-piece="" data-assembly-order="2" style={{ ...card, padding: '16px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: M.accent }} />
@@ -230,8 +235,13 @@ export function TeamMock() {
             <span style={lab(M.accent700)}>Cut line</span>
             <span style={{ flex: 1, height: 1, background: `repeating-linear-gradient(90deg, ${M.accent} 0 5px, transparent 5px 10px)`, opacity: 0.55 }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '20px 1fr auto auto', gap: 9, alignItems: 'center', padding: '7px 0', fontSize: 12, opacity: 0.6 }}>
-            <span style={num}>6</span>
+          {/* Below the cut. De-emphasised by POSITION — under the cut line, no
+              accent — never by `opacity`. A blanket 0.6 multiplied this row's
+              inks down to 2.7:1 against the cream, which axe flags and a reader
+              with low vision simply cannot read. Being outside the travel squad
+              is information; making it illegible is not. */}
+          <div style={{ display: 'grid', gridTemplateColumns: '20px 1fr auto auto', gap: 9, alignItems: 'center', padding: '7px 0', fontSize: 12, color: M.ink2 }}>
+            <span style={{ ...num, color: M.ink2 }}>6</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ ...av(M.sunkenDeep, M.ink2), width: 24, height: 24, fontSize: 9 }}>DK</span>
               D. Kim ▼
@@ -242,7 +252,7 @@ export function TeamMock() {
         </div>
 
         {/* Development plans */}
-        <div data-assembly-piece="" style={{ ...card, padding: '16px 18px' }}>
+        <div data-assembly-piece="" data-assembly-order="4" style={{ ...card, padding: '16px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 13.5, fontWeight: 640 }}>Development plans</span>
             <span style={{ fontSize: 11, color: M.accent700, fontWeight: 560 }}>All →</span>
@@ -266,7 +276,7 @@ export function TeamMock() {
         </div>
 
         {/* This week */}
-        <div data-assembly-piece="" style={{ ...card, padding: '16px 18px' }}>
+        <div data-assembly-piece="" data-assembly-order="1" style={{ ...card, padding: '16px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={lab()}>This week</span>
             <span style={{ fontSize: 11, color: M.accent700, fontWeight: 560 }}>Calendar →</span>
