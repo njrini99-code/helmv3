@@ -65,7 +65,7 @@ async function LiftingBody() {
 
   return (
     <div className="space-y-6">
-      <Surface padding="sm" data-fw-title-anchor>
+      <Surface padding="sm">
         <KeyPanelRule />
         <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Lift Lab command center</p>
         <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">

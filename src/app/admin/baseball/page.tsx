@@ -193,13 +193,7 @@ async function BaseballBody() {
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
         <Surface padding="sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            {/* data-fw-title-anchor: registers this masthead as the mobile
-                condense-observer's target (FairwayContentAnchor) — without a
-                marker here this page's real first rendered element is a full
-                page-body wrapper (too tall to qualify as "title-sized"), so
-                the observer fell back to the static header sentinel and the
-                condensed bar title never had honest content to show at rest. */}
-            <div data-fw-title-anchor>
+            <div>
               <KeyPanelRule />
               <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Baseball command center</p>
               {/* Mobile Doctrine rule 2: eyebrow + long title + paragraph is a

@@ -23,13 +23,31 @@
  * Holds: breadcrumb trail, a persistent search / ⌘K command entry, and a
  * right-aligned action cluster. Content scrolls UNDER it (sticky, z-sticky).
  *
- * M1 (2026-07-10, condensing-header): at `<md` the crumb trail and ⌘K pill
- * are desktop-only chrome (docs/MOBILE_DOCTRINE.md rule 7) — the leading
- * slot is EMPTY at rest; the bar's center instead cross-fades in the page's
- * CONDENSED title once the in-content large title scrolls under it (the iOS
- * large-title idiom). `condensed`/the registered title are read from
- * `LargeTitleContext` internally (never a prop) so a scroll toggle re-renders
- * only this component, never `AppShell`/`FairwaySidebar`.
+ * At `<md` the crumb trail and ⌘K pill are desktop-only chrome
+ * (docs/MOBILE_DOCTRINE.md rule 7). The leading slot instead carries the
+ * STANDING DESTINATION TITLE — the name of the view you are on, rendered at
+ * full opacity from first paint.
+ *
+ * 2026-07-25 — why it is standing and not scroll-gated. This slot used to be
+ * empty at rest: the title lived in the bar's CENTER and cross-faded in only
+ * once the page's in-content large title had scrolled under the bar, on the
+ * theory that the in-content title answers "where am I" in the meantime. It
+ * doesn't. Apple's own idiom (HIG, Navigation Bars) is ONE string at two
+ * sizes — the compact bar title is the permanently-resident floor and only
+ * the LARGE title comes and goes — whereas here the two were different
+ * strings entirely: the dashboard's `h1` is a greeting ("Good afternoon,
+ * Cole") and the bar faded in "Dashboard". At scroll 0 nothing named the
+ * destination, and on `/dashboard/tasks` and `/dashboard/intelligence` (which
+ * render no `h1` at all) nothing named it at any scroll position until you
+ * moved. Now the bar always does.
+ *
+ * Leading-aligned, not optically centred: centring inside the remaining flex
+ * space would need a magic reserve matching the action cluster's width (one
+ * bell today; two items on baseball/admin) and silently drifts off-centre the
+ * moment a shell adds an action — it was already 28px off-centre at 390px.
+ * `min-w-0 flex-1 truncate` against the `flex-shrink-0` cluster cannot
+ * collide at any width, and the label lands on the same left edge as the
+ * page's own masthead below it.
  * ========================================================================== */
 
 import { forwardRef, memo } from 'react';
@@ -95,16 +113,16 @@ export interface FairwayTopBarProps {
    */
   accentColor?: string;
   /**
-   * M1 (condensing-header): the FALLBACK condensed title shown at `<md` once
-   * scrolled — `pageTitle ?? breadcrumbs.at(-1)?.label`, computed by
+   * The FALLBACK name for the current destination, shown at `<md` in the
+   * leading slot — `pageTitle ?? breadcrumbs.at(-1)?.label`, computed by
    * `AppShell` from props that only change on navigation (stable across
    * scroll, so `React.memo` stays effective). Overridden internally by
    * `LargeTitleContext`'s `registeredTitle` when the current page has
    * adopted `<FairwayLargeTitle>` (zero page edits required either way).
    */
-  condensedTitle?: string;
+  pageTitle?: string;
   /**
-   * M1: when a hub sub-nav strip renders immediately below the bar, drop the
+   * When a hub sub-nav strip renders immediately below the bar, drop the
    * bar's OWN bottom hairline at `<md` so the two read as one continuous
    * surface with a single hairline (the sub-nav's own bottom border).
    */
@@ -182,7 +200,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
     searchSlot,
     actions,
     accentColor,
-    condensedTitle,
+    pageTitle,
     flush,
     linkComponent,
     className,
@@ -190,17 +208,25 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
   ref,
 ) {
   const Link = linkComponent ?? DefaultLink;
-  // M1: read internally (not a prop) so a scroll-driven `condensed` toggle
-  // re-renders only THIS component — `registeredTitle` (set by a mounted
-  // `<FairwayLargeTitle>`) wins over the shell's stable `condensedTitle`
-  // fallback prop, giving the "zero page edits, upgrades automatically"
-  // contract without AppShell ever touching context itself.
-  const { condensed, registeredTitle } = useLargeTitle();
-  const displayTitle = registeredTitle ?? condensedTitle;
+  // Read internally (not a prop) so a page registering its own title never has
+  // to round-trip through `AppShell` — `registeredTitle` (set by a mounted
+  // `<FairwayLargeTitle>`) wins over the shell's stable `pageTitle` fallback
+  // prop, giving the "zero page edits, upgrades automatically" contract
+  // without AppShell ever touching context itself.
+  const { registeredTitle } = useLargeTitle();
+  const displayTitle = registeredTitle ?? pageTitle;
 
   return (
     <header
       ref={ref}
+      // a11y: names the banner landmark with the current destination. On
+      // routes whose in-content `h1` is a greeting (both dashboards) or absent
+      // entirely (Tasks, Brief) this is the ONLY place the location string is
+      // exposed to assistive tech — the visible span below is `aria-hidden`
+      // because promoting it to a heading would put a second `h1`-level node
+      // on every page (ARIA12; also strict-mode-fails the unscoped
+      // `getByRole('heading', { level: 1 })` in e2e/golf-dashboard.spec.ts).
+      aria-label={displayTitle || undefined}
       // `pt-[env(safe-area-inset-top)]` keeps the bar's contents clear of the
       // iOS status bar / notch (Capacitor `contentInset: 'never'` → the web owns
       // the safe area). The glass tints UP into the notch; 0 on non-notched/desktop.
@@ -217,73 +243,65 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
       )}
     >
       <div className="flex h-16 items-center gap-3 px-6 lg:px-8">
-        {/* Location indicator — desktop only (>=md). At `<md` the leading
-            slot is EMPTY at rest (condensing-header §3/Decision 4): the
-            in-content large title answers "where am I" instead, and once it
-            scrolls away the condensed title below takes over. */}
+        {/* Leading slot — PHONE: the standing destination title. Present from
+            first paint, never gated on scroll, never animated. `min-w-0
+            flex-1` + `truncate` against the `flex-shrink-0` action cluster
+            means it cannot collide or overflow at any width; it shares the
+            row's `px-6` left edge with the page masthead below it.
+            `aria-hidden` — the accessible name lives on the `<header>`
+            landmark above, so this never becomes a second announced heading. */}
+        <div
+          className="flex min-w-0 flex-1 items-center md:hidden"
+          aria-hidden
+          data-slot="fw-topbar-title"
+        >
+          <span className="pointer-events-none truncate font-fw-sans text-body-sm font-medium text-text-primary">
+            {displayTitle}
+          </span>
+        </div>
+
+        {/* Leading slot — DESKTOP: the breadcrumb trail (rule 7: phones never
+            get a crumb trail). */}
         {breadcrumbs && breadcrumbs.length > 0 && (
           <div className="hidden min-w-0 flex-shrink md:block">
             <BreadcrumbTrail breadcrumbs={breadcrumbs} Link={Link} />
           </div>
         )}
 
-        {/* Center slot — mobile: the condensed page title, cross-fading in
-            once the in-content large title scrolls under the bar (pure CSS
-            transition on an IntersectionObserver-driven class toggle — no
-            scroll listener, no layout animation). Desktop: the persistent
-            search / ⌘K command entry, unchanged. Same flex-1/ml-auto shell as
-            before so the desktop layout is byte-for-byte identical; only the
-            CONTENTS differ per breakpoint via two mutually-exclusive
-            `md:hidden` / `hidden md:flex` children (rule 7: no desktop chrome
-            on phones). */}
-        <div className="ml-auto flex min-w-0 flex-1 items-center gap-3 md:flex-none md:basis-[340px]">
-          <div
-            className="flex min-w-0 flex-1 items-center justify-center md:hidden"
-            aria-hidden
-            data-slot="fw-topbar-condensed-title"
-          >
-            <span
-              className={cn(
-                'pointer-events-none truncate font-fw-sans text-body-sm font-medium text-text-primary',
-                'transition-[opacity,transform] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
-                'motion-reduce:transition-none motion-reduce:translate-y-0',
-                condensed ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
-              )}
-            >
-              {displayTitle}
-            </span>
-          </div>
-
-          <div className="hidden min-w-0 flex-1 items-center justify-end gap-3 md:flex">
-            {searchSlot ??
-              (onSearchOpen && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onSearchOpen}
-                  aria-label="Open command menu"
-                  aria-keyshortcuts="Meta+K Control+K"
-                  className={cn(
-                    'group flex h-10 min-h-0 w-full max-w-[340px] items-center justify-start gap-2.5 rounded-fw-sm px-3',
-                    'bg-surface-sunken/80 text-text-tertiary',
-                    'border border-border-subtle',
-                    'transition-[color,background-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
-                    'hover:bg-surface-sunken hover:text-text-secondary hover:shadow-soft active:translate-y-[0.5px]',
-                  )}
+        {/* Trailing slot — the persistent search / ⌘K command entry, desktop
+            only. Now that the title owns the phone leading slot, this whole
+            group is `hidden md:flex`; at `md+` its computed layout
+            (`ml-auto`, `flex-none`, `basis-[340px]`, `gap-3`) is identical to
+            before, so desktop is unchanged. */}
+        <div className="ml-auto hidden min-w-0 flex-1 items-center justify-end gap-3 md:flex md:flex-none md:basis-[340px]">
+          {searchSlot ??
+            (onSearchOpen && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onSearchOpen}
+                aria-label="Open command menu"
+                aria-keyshortcuts="Meta+K Control+K"
+                className={cn(
+                  'group flex h-10 min-h-0 w-full max-w-[340px] items-center justify-start gap-2.5 rounded-fw-sm px-3',
+                  'bg-surface-sunken/80 text-text-tertiary',
+                  'border border-border-subtle',
+                  'transition-[color,background-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
+                  'hover:bg-surface-sunken hover:text-text-secondary hover:shadow-soft active:translate-y-[0.5px]',
+                )}
+              >
+                <IconSearch size={16} aria-hidden className="flex-shrink-0" />
+                <span className="min-w-0 flex-1 truncate text-left font-fw-sans text-body-sm">
+                  {searchPlaceholder}
+                </span>
+                <kbd
+                  aria-hidden
+                  className="hidden flex-shrink-0 items-center gap-0.5 rounded-fw-sm border border-border-subtle bg-surface px-1.5 py-0.5 font-fw-mono text-caption leading-none text-text-tertiary sm:inline-flex"
                 >
-                  <IconSearch size={16} aria-hidden className="flex-shrink-0" />
-                  <span className="min-w-0 flex-1 truncate text-left font-fw-sans text-body-sm">
-                    {searchPlaceholder}
-                  </span>
-                  <kbd
-                    aria-hidden
-                    className="hidden flex-shrink-0 items-center gap-0.5 rounded-fw-sm border border-border-subtle bg-surface px-1.5 py-0.5 font-fw-mono text-caption leading-none text-text-tertiary sm:inline-flex"
-                  >
-                    ⌘K
-                  </kbd>
-                </Button>
-              ))}
-          </div>
+                  ⌘K
+                </kbd>
+              </Button>
+            ))}
         </div>
 
         {/* Action cluster — every breakpoint. */}
