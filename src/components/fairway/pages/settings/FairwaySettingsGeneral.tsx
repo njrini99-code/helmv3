@@ -1600,13 +1600,17 @@ export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
           })}
         </ul>
 
-        {/* Coach email digests — the ONLY opt-out for the two recurring coach
-            emails. `/api/cron/coach-morning-digest` sends when
-            `email_digest_enabled !== false`, and `/api/cron/v3/weekly-coach-email`
-            skips the coach when it is false. Both have honoured this column all
-            along; until 2026-07-25 nothing rendered it, so coaches got both
-            emails with no way to stop them. Rendered only for coaches, because
+        {/* Coach email digests — the ONLY opt-out for the recurring coach
+            email. `/api/cron/v3/weekly-coach-email` skips the coach entirely
+            when `email_digest_enabled === false`. It has honoured this column
+            all along; until 2026-07-25 nothing rendered it, so coaches received
+            the email with no way to stop it. Rendered only for coaches, because
             the column lives on golf_coach_philosophy.
+
+            Scope note: this originally covered TWO emails. The daily
+            `coach-morning-digest` was deleted in #1052 (merged 2026-07-25), so
+            the weekly send is the only remaining consumer — the copy above says
+            "weekly team email", not "digests", so it stays honest.
 
             KNOWN SIDE EFFECT: saveCoachingPhilosophy upserts, so a coach who
             has never had a philosophy row gets one created by toggling this.
@@ -1625,7 +1629,7 @@ export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
                 Coach email digests
               </p>
               <p className="font-fw-sans text-caption text-text-tertiary">
-                Your morning roundup and the weekly team email.
+                The weekly team email.
               </p>
             </div>
             <Switch
