@@ -507,7 +507,37 @@ FIX 1 — drain + honest self-reporting. COMPLETE (c73c05f23). RED->GREEN, 4
   each round's terminal state is written independently. OWNER ASKED whether
   to scope it to his team — awaiting his answer; one-line filter if so.
 
-FIX 3 — Inngest migration. DISPATCHED. Must NOT use a static event id or
+FIX 3 — Inngest migration. COMPLETE (47f45aab4). 3 routing tests
+  (configured / not-configured / resubmit-not-deduped) + 2 MIN_AGE_MS cron
+  tests; typecheck + lint 0. Verified by me:
+    NO idempotency config anywhere — the only mentions are comments
+      documenting WHY it is absent, so a legitimate resubmission is never
+      swallowed;
+    concurrency guard is [{scope:'fn', key:'event.data.roundId', limit:1},
+      {scope:'fn', limit:3}] — "never analyse the same round concurrently"
+      without deduping distinct submissions;
+    isInngestConfigured imported alongside postRoundTrigger in golf.ts, so a
+      deploy with the keys absent degrades to today's direct path.
+  RESOLVED the §5 open item properly instead of accepting the placeholder:
+  MIN_AGE_MS is 10 minutes, not 5 — Inngest's default backoff for retries:3
+  caps worst-case delay-to-last-retry at ~195s, so 10m gives ~3x headroom and
+  costs nothing because the cron only ticks every 30m. Both other §5 items
+  (baseball functions.ts collision, installed-package type drift) resolved to
+  "no actual conflict", flagged as independently verifiable.
+
+  FINAL LAYERED QUERY — the two fixes compose correctly rather than
+  cancelling: .lte('created_at', minAgeCutoff) is a RECENCY FLOOR (skip
+  rounds under 10 min old so the cron does not race an in-flight Inngest
+  retry) and there is NO .gte age ceiling (the thing that stranded 200
+  rounds). Floor, no ceiling: nothing ages out again, and all 200 stranded
+  rounds are far older than 10 minutes so the drain is unaffected.
+
+ALL THREE OWNER-APPROVED FIXES COMPLETE. Nothing deployed; prod untouched.
+Awaiting owner on: the single deploy (which executes the drain), whether to
+scope the drain to his team's 76 rounds vs all 200, Guilford data-reuse
+consent, and Inngest keys before deploy if Fix 3 should be live on this one.
+
+FIX 3 — original dispatch note: Must NOT use a static event id or
   function-level idempotency: submitGolfRoundComprehensive is a real wired
   resubmission path (new-round-client.tsx:1526, continue-round-client.tsx:808,
   FairwayRecoverRound.tsx:386) and deduping it would silently swallow a
