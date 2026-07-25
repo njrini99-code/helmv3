@@ -45,7 +45,7 @@ import { runWithGate } from './insights/gate-context';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, CrossLearner } from './learning';
-import { ReasoningEngine, ConfidenceCalibrator } from './reasoning';
+import { ReasoningEngine, ConfidenceCalibrator, bootstrapFromDb } from './reasoning';
 import { InsightComposer } from './nlg';
 import { buildPlayerBaseline } from './stats/baselines';
 import { analyzeMultiWindowTrends } from './trends/multi-window';
@@ -224,6 +224,7 @@ export function applyPhilosophyThresholds(
 class CoachHelmIntelligence {
   private reasoningEngine: ReasoningEngine;
   private confidenceCalibrator: ConfidenceCalibrator;
+  private calibrationBootstrapped = false;
   private insightComposer: InsightComposer;
   /**
    * Per-call cache for `fetchPlayerStats`. `analyzePlayer` and
@@ -242,6 +243,44 @@ class CoachHelmIntelligence {
   }
 
   /**
+   * Load persisted calibration buckets into the in-memory calibrator.
+   *
+   * Without this, `confidenceCalibrator` is constructed empty and every
+   * `.calibrate()` call trips the `predictedCount < 5` floor and returns the
+   * raw confidence unchanged — so `calibratedConfidence` was raw confidence
+   * under a different name. `.update()` is never called anywhere, so the
+   * in-memory record can only ever be populated from the DB.
+   *
+   * Idempotent and failure-silent: a calibration outage must degrade to
+   * today's behaviour (raw passthrough), never break analysis.
+   *
+   * Public and idempotent by design — safe to call from any analysis entry
+   * point as a pre-warm, not just `analyzePlayer`.
+   */
+  async ensureCalibrationBootstrapped(): Promise<void> {
+    if (this.calibrationBootstrapped) return;
+    this.calibrationBootstrapped = true;
+    try {
+      const supabase = createAdminClient();
+      const record = await bootstrapFromDb(supabase, 'score_to_par');
+      this.confidenceCalibrator.setRecord(record);
+    } catch {
+      // Leave the empty record in place — raw passthrough, same as before.
+    }
+  }
+
+  /**
+   * Read-only passthrough to the (otherwise private) calibrator, so callers
+   * — and tests — can observe calibration behaviour without reaching into
+   * `confidenceCalibrator` directly. No mutation surface: `setRecord` /
+   * `update` / `getRecord` stay private, only accessible via
+   * `ensureCalibrationBootstrapped`.
+   */
+  getCalibratedConfidence(rawConfidence: number): number {
+    return this.confidenceCalibrator.calibrate(rawConfidence);
+  }
+
+  /**
    * Performs full player analysis
    *
    * @param playerId - The player's UUID
@@ -251,6 +290,8 @@ class CoachHelmIntelligence {
     playerId: string,
     options: AnalysisOptions = {}
   ): Promise<PlayerAnalysis | null> {
+    await this.ensureCalibrationBootstrapped();
+
     const {
       includePatterns = true,
       includeCausal = true,
