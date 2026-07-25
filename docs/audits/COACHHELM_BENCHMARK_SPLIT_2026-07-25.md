@@ -131,18 +131,30 @@ For everything outside the ~9-metric overlap, S&W's flat benchmark is the only n
 
 ## 6. Cost of unifying
 
-**No stored grade exists anywhere — this is a pure code change, not a migration.** Verified directly via `information_schema.columns`:
+**No stored grade exists anywhere — this is a pure code change, not a migration.** Verified two ways: `information_schema.columns` against the live DB, and the actual schema migration (`supabase/migrations/20260527000000_prod_public_baseline.sql`):
 
-- `golf_player_stats_cache` (89 columns) — all raw numeric facts (`gir_percentage`, `putt_make_pct_5_10ft`, `strokes_gained_putting`, etc.) or counts/dates. No grade, bucket, or label column.
-- `golf_player_standing` (12 columns: `player_id, metric_id, player_value, team_avg, team_n, team_pct, level_avg, level_n, level_pct, pga_value, pga_delta, computed_at`) — numeric only, re-diffed live on every read via `applyGenderAnchor()`. Repo-wide grep for `*_grade`/`*_letter`/`strength_weakness`/`sw_grade`/`benchmark_grade` found nothing.
-- S&W's `strengths`/`weaknesses` arrays are computed fresh on every page load (`getPlayerStrengthsWeaknessesImpl`, `stats-data.ts:2473`) — never written to a DB table.
+- `golf_player_stats_cache` (`prod_public_baseline.sql:10214-10309`) — all raw numeric facts (`gir_percentage`, `putt_make_pct_5_10ft`, `strokes_gained_putting`, `trend_direction`, etc. — `trend_direction` is a score-trend enum, not a benchmark grade). No grade, bucket, or label column.
+- `golf_player_standing` (`prod_public_baseline.sql:10178-10192`: `player_id, metric_id, player_value, team_avg, team_n, team_pct, level_avg, level_n, level_pct, pga_value, pga_delta, computed_at`) — numeric only, re-diffed live on every read via `applyGenderAnchor()`. Repo-wide grep for `*_grade`/`*_letter`/`strength_weakness`/`sw_grade`/`benchmark_grade` found nothing.
+- `StatisticalStrengthWeakness[]` (S&W's output type) has **zero `.insert`/`.upsert` call sites anywhere in the repo** — computed fresh on every page load (`getPlayerStrengthsWeaknessesImpl`, `stats-data.ts:2473`), never written to a DB table.
 
 Changing either benchmark table takes effect on the next read for every player; there is nothing to backfill.
 
-**Known call sites that would be touched or need to stay consistent** (repo-wide grep, not exhaustive beyond what's cited — a fuller sweep is still running as a background check and can be appended):
+**Call sites** (verified: every line below was grepped and read directly, not inferred):
 
-- `generateStatisticalStrengthsWeaknesses` — single call site, `stats-data.ts:2493`, feeding `StatsSpineStage.tsx` → `StatsBento.tsx` (home tab, the "Standing" card collision described in the TL;DR) and `PuttingDrill` (putting drill-down, same `weaknesses` + `standingByMetric` props pattern, `StatsSpineStage.tsx:280-290`).
-- `StandingBar`/`StandingStrip`/`StandingTrack` components (the Standing pipeline's render layer) have a much wider footprint than the Stats page alone — repo grep shows them imported by `InsightsDrill.tsx`, `DiagnosisPanel.tsx`, `PlayerCoachHelmHome.tsx`, `EvidencePanel.tsx`, `PlayerSpine.tsx`, `FilmstripReview.tsx`, `GoalCreationModal/index.tsx`, `GoalCard/index.tsx` — i.e., the **CoachHelm AI insight-narrative engine** (`loadPlayerStandingMap`'s own docblock: "Used by: W14+ generator base class (`evidence.standing` injection)") also runs on the gender-aware tiered numbers. Unifying S&W into this system means the AI-generated insight prose and the Stats page would finally agree; leaving S&W as-is means the AI narrative and the Stats S&W widget can already disagree with each other today, independent of this ticket.
+| Function | Call site | Feeds |
+|---|---|---|
+| `generateStatisticalStrengthsWeaknesses` | `stats-data.ts:2493` | `StatsSpineStage.tsx` → `StatsBento.tsx` (home tab, the "Standing" card collision) + `PuttingDrill` (`StatsSpineStage.tsx:280-290`) |
+| `getPlayerStrengthsWeaknesses` (wraps the above) | `stats-dashboard.ts:45` | `getPlayerStatsDashboardBundle` — same `Promise.all` as `getPlayerStandingRows` (line 42), see TL;DR |
+| `loadStandingForMetric` | `goals.ts:275` | Goal creation/tracking |
+| `loadStandingForMetric` | `standing-injection.ts:70` | CoachHelm v2 insight NLG |
+| `loadStandingForMetric` | `generators/course-mgmt.ts:167`, `engine/generator-base.ts:483` | CoachHelm v3 generators (insight prose + counterfactual) |
+| `loadPlayerStandingMap` | `round-review-system.ts:1282` | Round Review standing panel |
+| `loadPlayerStandingMap` | `dashboard/coachhelm/page.tsx:279` | Player CoachHelm hub |
+| `loadPlayerStandingMap` | `progress-drivers.ts:230` | Goal-progress engine |
+| `loadPlayersStandingMap` | `roster/page.tsx:363`, `intelligence/page.tsx:199`, `stats/team/page.tsx:421` (verified) | Roster, Intelligence, coach Team Stats (paired with `getTeamLeakMaps` in the same `Promise.all`, `stats/team/page.tsx:421`) |
+| `getPuttMakeLeakMap` / `getApproachProximityLeakMap` | none in production — only `stats-leak-maps.test.ts` (verified) | Dead-ish exports, superseded by `getPlayerLeakMaps` (fetches both in one pass) |
+
+`StandingBar`/`StandingStrip`/`StandingTrack` (the render layer on top of the loaders above) have a wider footprint still — imported by `InsightsDrill.tsx`, `DiagnosisPanel.tsx`, `PlayerCoachHelmHome.tsx`, `EvidencePanel.tsx`, `PlayerSpine.tsx`, `FilmstripReview.tsx`, `GoalCreationModal/index.tsx`, `GoalCard/index.tsx`. Net picture: the gender-aware Standing pipeline already powers goal-setting, the CoachHelm AI insight narrative (`EvidencePanel.tsx:28-33` prefers it over a third, older "legacy BenchmarkScale" system when available — see footnote), Round Review, and the coach Team Stats page — S&W is comparatively narrow, with exactly one real call site. Unifying S&W onto the Standing numbers doesn't just fix the Stats page; it's the one place in the product that is *not yet* on the system everything else already uses.
 
 ---
 
