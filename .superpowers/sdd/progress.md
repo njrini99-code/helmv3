@@ -678,3 +678,36 @@ Task 1: WITHDRAWN AND REPLACED. Original specified a prod DELETE of the
   rows are unreachable. Destructive migration reverted (bac83fd85 ->
   revert). Task 1 is now a regression test pinning that type filter.
   Flagged by the harness security check; premise verified false in source.
+
+=== TAB SWITCHER: depth + green (owner request) COMPLETE (e0be76209) ===
+  Owner: "I really like that tab switcher... little buckle... a lot of depth
+  ... give that more depth and put it in other places too? Add some green to
+  it too like a lil toggle."
+  KEY FINDING: he was looking at ViewSwitch (triage), which is the SIMPLER of
+  the two switchers. Segmented (fairway/controls, 34 call sites) was ALREADY
+  richer — carved inset track, pill with lit-from-above highlight, spring
+  glide, haptics. So "more depth" = ViewSwitch adopting Segmented's recipe,
+  NOT making Segmented heavier (34 surfaces depend on it staying calm).
+  Green: 5px accent-600 dot on the active segment with ring-1 ring-surface.
+  Used the repo's StatusPill dot idiom, never a side-rail (standing rule),
+  and avoided the verified trap that `/NN` alpha on a var-backed colour
+  compiles to nothing. accent-500 fails AA as text (2.67:1) so green is
+  decorative only, contrast-checked against canvas/surface/sunken/elevated
+  in both themes.
+  LINK PROBLEM: I suggested giving Segmented an asChild/anchor mode. The
+  implementer REJECTED it with a better reason — Radix Toggle has no
+  modifier-key-aware activation hook and asChild would swap role to radio,
+  breaking semantics. It took the fallback I had named as acceptable:
+  extracted the shared visual recipe (TRACK_SUNKEN_SHADOW,
+  segmentedTrackClassName, segmentedItemClassName, SegmentedPill) so both
+  components share ONE source and ViewSwitch keeps plain next/link anchors.
+  Verified by me: recipe imported not duplicated; ViewSwitch retains
+  next/link + aria-current + hrefFor (the ?view= redirect contract every
+  legacy bookmark depends on); 47/47 tests; typecheck + lint 0.
+  CAUGHT AND STOPPED: it had created src/app/_tmp-viewswitch-390-check/ for
+  the 390px check. A directory under src/app IS a Next route — committed,
+  that would have shipped a scratch URL to production. Deleted before commit;
+  working tree clean.
+  Minor taste notes in its report: no haptics added to ViewSwitch, ViewSwitch
+  gained useScrollFade it did not have before, focus-ring colour improved as
+  a side effect.
