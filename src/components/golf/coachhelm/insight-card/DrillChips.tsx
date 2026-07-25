@@ -15,7 +15,8 @@
  * because of:" breadcrumb without a second data fetch.
  */
 import { useState, useTransition } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { IconPlay, IconTarget } from '@/components/icons';
 import {
@@ -130,7 +131,7 @@ interface DrillChipButtonProps {
 }
 
 function DrillChipButton({ drill, onClick }: DrillChipButtonProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   return (
     <m.button
       type="button"

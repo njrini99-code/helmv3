@@ -8,8 +8,11 @@
  * dashboards always reflect fresh analysis (trends, weaknesses, focus areas)
  * for the whole team, not just the players who happened to play yesterday.
  *
- * Schedule: nightly at 03:45 (see vercel.json). Sits between lifecycle (02:00)
- * and calibration (03:30) so insights lifecycle transitions have already run.
+ * Runs FIRST in the nightly chain (02:00). Everything downstream —
+ * standing-refresh, genome, causality, goal-suggestions, calibration,
+ * lifecycle — depends on the insight state this sweep produces, so it must
+ * complete before any of them. See scripts/coachhelm-refresh-all.sh for the
+ * canonical order.
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse, type NextRequest } from 'next/server';

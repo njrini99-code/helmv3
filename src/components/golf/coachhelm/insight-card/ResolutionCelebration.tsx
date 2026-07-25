@@ -22,7 +22,7 @@
  * `lifecycle_state === 'resolved'` AND `audience === 'player'`.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles } from '@/components/icons';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -93,7 +93,7 @@ export function ResolutionCelebration({
     return typeof shown === 'string' && shown.length > 0;
   }, [insight.metadata]);
 
-  const reduce = useReducedMotion() ?? false;
+  const reduce = useReducedMotionGuard() ?? false;
 
   // Initialize to `false` so the first SSR render and the first client render
   // produce identical markup (no confetti). We then enable confetti in an

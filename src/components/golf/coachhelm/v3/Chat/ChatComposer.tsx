@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, type KeyboardEvent } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { liftHover, tapPress } from '@/lib/coachhelm/v3/motion';
 import { Textarea } from '@/components/ui/input';
 
@@ -19,12 +20,12 @@ interface Props {
  *   - Send button is "magnetic": liftHover + colored helm-green
  *     shadow that deepens on hover, so the click target feels
  *     physically responsive (not flat).
- *   - Respects `useReducedMotion()` — drops framer hover/tap so
+ *   - Respects `useReducedMotionGuard()` — drops framer hover/tap so
  *     keyboard users on reduced-motion get a static affordance.
  */
 export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
   const [value, setValue] = useState('');
-  const prefersReducedMotion = useReducedMotion() ?? false;
+  const prefersReducedMotion = useReducedMotionGuard() ?? false;
   const canSend = !disabled && value.trim().length > 0;
 
   async function submit() {

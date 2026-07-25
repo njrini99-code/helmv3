@@ -6,6 +6,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess as sharedVerifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 // ============================================================================
 // TYPES
@@ -532,11 +533,28 @@ async function dismissInsightImpl(
     if (teamId) {
       updateQuery = updateQuery.eq('team_id', teamId);
     }
-    const { error } = await updateQuery;
+    // P1-12 / Fix 2: fetch the acting user + the updated row's player_id off
+    // the same UPDATE ... RETURNING so we can record a real ledger action.
+    // Neither verifyInsightAccess helper (this file's local one or the
+    // shared one in verify-player-access.ts) fetches player_id, and
+    // recordInsightAction silently no-ops without it — extending the
+    // trailing .select() costs nothing extra.
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await updateQuery.select('id, player_id');
 
     if (error) {
       await logServerError(`Failed to dismiss insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
       return { success: false, error: 'Failed to dismiss insight' };
+    }
+
+    if (data?.[0]?.player_id && user) {
+      await recordInsightAction({
+        insight_id: insightId,
+        player_id: data[0].player_id,
+        actor_id: user.id,
+        actor_role: 'coach',
+        action_type: 'dismissed',
+      });
     }
 
     // Stale-data fix: also revalidate insights + intelligence + alerts pages
@@ -605,7 +623,7 @@ async function acknowledgeInsightImpl(
       })
       .eq('id', insightId)
       .eq('team_id', teamGate.teamId!)
-      .select('id');
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`Failed to acknowledge insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
@@ -614,6 +632,21 @@ async function acknowledgeInsightImpl(
 
     if (!data || data.length === 0) {
       return { success: false, error: 'Insight not found' };
+    }
+
+    // P1-12 / Fix 2: this is the Triage Desk path — previously the ONLY
+    // acknowledge/dismiss mutation path that recorded nothing at all in
+    // golf_insight_action (not a dropped `void` call like the sibling
+    // insights.ts sites — a total absence). player_id comes off the same
+    // UPDATE ... RETURNING above.
+    if (data[0]?.player_id) {
+      await recordInsightAction({
+        insight_id: insightId,
+        player_id: data[0].player_id,
+        actor_id: gateUser!.id,
+        actor_role: 'coach',
+        action_type: 'acknowledged',
+      });
     }
 
     // Was missing entirely (2026-07-19 triage diagnosis): every sibling

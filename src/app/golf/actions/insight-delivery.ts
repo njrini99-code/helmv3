@@ -1535,6 +1535,8 @@ function mapRowToEvidenceInsight(row: RawInsightRowWithDrills): EvidenceInsight 
     priority: (row.priority as EvidenceInsight['priority']) ?? 'medium',
     acknowledged_at: row.acknowledged_at ?? null,
     resolved_at: row.resolved_at ?? null,
+    outcome_status: (row.outcome_status as EvidenceInsight['outcome_status']) ?? null,
+    outcome_measured_at: row.outcome_measured_at ?? null,
     created_at: row.created_at ?? new Date().toISOString(),
     updated_at: row.updated_at ?? new Date().toISOString(),
     drills,

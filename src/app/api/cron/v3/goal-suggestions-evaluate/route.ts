@@ -2,12 +2,12 @@
  * v3 goal-suggestion evaluator cron — GET/POST /api/cron/v3/goal-suggestions-evaluate
  *
  * Flips any pending/snoozed `golf_goal_suggestions` row whose `expires_at`
- * is in the past to `state='expired'`. Runs daily 15 minutes after the
+ * is in the past to `state='expired'`. Runs daily an hour after the
  * writer so freshly inserted rows aren't immediately considered for
  * expiry (their default TTL is 14 days).
  *
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
- * Schedule: daily 03:45 UTC (configured in vercel.json).
+ * Schedule: daily 04:20 UTC (configured in vercel.json).
  *
  * Spec: docs/v3-master-plan.md Part VI.5 ("Engine suggestions" — 14-day TTL).
  * Follow-up row: docs/v3-wave-sequence.md W19.

@@ -8,10 +8,20 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
-// Mock the shared verifyTeamAccess helper so tests focus on SQL shape.
+// Mock the shared verifyTeamAccess/verifyInsightAccess helpers so tests focus
+// on SQL shape. verifyInsightAccess backs the dynamic-import teamGate inside
+// acknowledgeInsightImpl (Fix 2 / P1-12 Triage Desk ledger fix).
+const verifyInsightAccessMock = vi.fn();
 vi.mock('@/lib/auth/verify-player-access', () => ({
   verifyTeamAccess: vi.fn().mockResolvedValue({ allowed: true, reason: 'coach' }),
   verifyPlayerAccess: vi.fn().mockResolvedValue({ allowed: true, reason: 'coach' }),
+  verifyInsightAccess: (...args: unknown[]) => verifyInsightAccessMock(...args),
+}));
+
+// P1-12 / Fix 2 — the effectiveness event ledger. Mocked so the Triage Desk
+// mutation tests can assert it was actually called (previously it never was).
+vi.mock('@/lib/coachhelm/v3/effectiveness/event-ledger', () => ({
+  recordInsightAction: vi.fn().mockResolvedValue(undefined),
 }));
 
 const createClientMock = vi.fn();
@@ -22,7 +32,10 @@ vi.mock('@/lib/supabase/server', () => ({
 import {
   generateTeamCorrelations,
   getTeamInsightsSummary,
+  dismissInsight,
+  acknowledgeInsight,
 } from '@/app/golf/actions/intelligence-dashboard';
+import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 /**
  * Build a supabase stub whose `.from(table)` branches on table and returns
@@ -234,5 +247,130 @@ describe('intelligence-dashboard actions', () => {
     expect(selectColumns).not.toContain('pattern_name');
     expect(selectColumns).toContain('metadata');
     expect(selectColumns).toContain('player_id');
+  });
+});
+
+/**
+ * P1-12 / Fix 2 — Triage Desk effectiveness ledger durability.
+ *
+ * `dismissInsight`/`acknowledgeInsight` in THIS file are the mutation
+ * functions reached live from the Triage Desk (the primary Intelligence Hub
+ * surface): CoachIntelligenceHome.tsx -> TriageDesk.tsx -> signal-groups.ts
+ * (reviewSignalImpl/dismissSignalImpl) -> intelligence-dashboard.ts. Before
+ * this fix, both functions did a real `.update()` on `golf_coach_insights`
+ * and recorded NOTHING in `golf_insight_action` — a total absence, not a
+ * dropped `void` call like the sibling insights.ts/development.ts sites.
+ * These tests pin the corrected behavior: a confirmed update must produce a
+ * real ledger row via `recordInsightAction`.
+ */
+describe('intelligence-dashboard Triage Desk mutations — effectiveness ledger (Fix 2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Shared team-gate stub for acknowledgeInsightImpl's dynamic-import path.
+    verifyInsightAccessMock.mockResolvedValue({
+      allowed: true,
+      reason: 'coach',
+      teamId: 'team-1',
+      coachId: 'coach-1',
+    });
+  });
+
+  /**
+   * Builds a supabase double covering every query both dismissInsightImpl and
+   * acknowledgeInsightImpl issue:
+   *  - the LOCAL verifyInsightAccess() helper's own `golf_coach_insights`
+   *    lookup (.select('id, coach_id, team_id').eq('id',...).single()) and
+   *    its `golf_coaches` ownership lookup (.select('id, organization_id')
+   *    .eq('user_id',...).single())
+   *  - the mutation's `.update(...).eq(...)[.eq(...)].select('id, player_id')`
+   *    chain, parameterized so tests can assert the recorded action and probe
+   *    the player_id-missing guard.
+   */
+  function buildTriageSupabase(updateResult: { data: unknown; error: unknown }) {
+    const updateChain = () => {
+      const node: { eq: () => typeof node; select: (cols: string) => Promise<typeof updateResult> } = {
+        eq: () => node,
+        select: async () => updateResult,
+      };
+      return node;
+    };
+
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }),
+      },
+      from: (table: string) => {
+        if (table === 'golf_coach_insights') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({
+                  data: { id: 'insight-1', coach_id: 'coach-1', team_id: 'team-1' },
+                  error: null,
+                }),
+              }),
+            }),
+            update: () => updateChain(),
+          };
+        }
+        if (table === 'golf_coaches') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({ data: { id: 'coach-1', organization_id: 'org-1' }, error: null }),
+              }),
+            }),
+          };
+        }
+        return { select: () => ({}) };
+      },
+    };
+  }
+
+  it('dismissInsight (Triage Desk path) records a "dismissed" action via recordInsightAction', async () => {
+    createClientMock.mockResolvedValue(
+      buildTriageSupabase({ data: [{ id: 'insight-1', player_id: 'player-9' }], error: null }),
+    );
+
+    const result = await dismissInsight('insight-1');
+
+    expect(result.success).toBe(true);
+    expect(recordInsightAction).toHaveBeenCalledTimes(1);
+    expect(recordInsightAction).toHaveBeenCalledWith({
+      insight_id: 'insight-1',
+      player_id: 'player-9',
+      actor_id: 'user-1',
+      actor_role: 'coach',
+      action_type: 'dismissed',
+    });
+  });
+
+  it('acknowledgeInsight (Triage Desk path) records an "acknowledged" action via recordInsightAction', async () => {
+    createClientMock.mockResolvedValue(
+      buildTriageSupabase({ data: [{ id: 'insight-1', player_id: 'player-9' }], error: null }),
+    );
+
+    const result = await acknowledgeInsight('insight-1');
+
+    expect(result.success).toBe(true);
+    expect(recordInsightAction).toHaveBeenCalledTimes(1);
+    expect(recordInsightAction).toHaveBeenCalledWith({
+      insight_id: 'insight-1',
+      player_id: 'player-9',
+      actor_id: 'user-1',
+      actor_role: 'coach',
+      action_type: 'acknowledged',
+    });
+  });
+
+  it('dismissInsight does not call recordInsightAction when the update returns no player_id', async () => {
+    createClientMock.mockResolvedValue(
+      buildTriageSupabase({ data: [{ id: 'insight-1', player_id: null }], error: null }),
+    );
+
+    const result = await dismissInsight('insight-1');
+
+    expect(result.success).toBe(true);
+    expect(recordInsightAction).not.toHaveBeenCalled();
   });
 });

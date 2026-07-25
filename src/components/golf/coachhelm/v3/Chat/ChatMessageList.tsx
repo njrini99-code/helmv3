@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import type { ChatMessage, GoalProposal } from '@/lib/coachhelm/v3/chat/types';
 import { isGoalProposal } from '@/lib/coachhelm/v3/chat/types';
 import { createGoal } from '@/app/golf/actions/v3/goals';
@@ -36,13 +37,13 @@ interface Props {
  *   - Per-bubble entrance stagger via `stagger(i)` so a fresh
  *     conversation loads like a wave, not a block. Audit feature #8
  *     called this out as the remaining "attention is sacred" gap.
- *   - Respects `useReducedMotion()` — collapses delays + travel to 0
+ *   - Respects `useReducedMotionGuard()` — collapses delays + travel to 0
  *     so accessibility users see the same content without the wave.
  *   - Uses canonical enterVariants / enterTransition (no inline
  *     cubic-bezier or hand-rolled durations).
  */
 export function ChatMessageList({ messages, pending, onRetryMissingReply }: Props) {
-  const prefersReducedMotion = useReducedMotion() ?? false;
+  const prefersReducedMotion = useReducedMotionGuard() ?? false;
 
   // Stagger the last N bubbles only. When a coach scrolls back through
   // a long thread, we don't want a 50-message thread to take 3 seconds

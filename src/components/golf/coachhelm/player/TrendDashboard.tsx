@@ -1,6 +1,7 @@
 'use client';
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -98,7 +99,7 @@ function getSignalBadgeStyle(signal: string): string {
 }
 
 export function TrendDashboard({ trends, streaks, volatility, trendData, playerState: _playerState }: TrendDashboardProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Resolve props: prefer typed props, fall back to parsing from trendData
   const resolvedTrends = trends ?? (trendData?.trends as typeof trends | undefined) ?? { metric: '', windows: [], signal: '', description: '' };
   const resolvedStreaks = streaks ?? (trendData?.streaks as typeof streaks | undefined) ?? [];

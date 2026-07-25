@@ -6,3 +6,4 @@
 
 export { ReasoningEngine } from './reasoning-engine';
 export { ConfidenceCalibrator } from './confidence-calibrator';
+export { bootstrapFromDb } from './confidence-calibrator';

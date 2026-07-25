@@ -7,7 +7,7 @@
  * cold-starts read these rows via `bootstrapFromDb` so the calibrator is
  * warm from the first analyzePlayer call.
  *
- * Schedule: `30 3 * * *` (see vercel.json).
+ * Schedule: `40 3 * * *` (see vercel.json).
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse, type NextRequest } from 'next/server';

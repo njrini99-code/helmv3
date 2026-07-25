@@ -46,7 +46,7 @@ import { getPlayerSignalSettings } from '@/lib/golf/player-signal-settings';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, CrossLearner } from './learning';
-import { ReasoningEngine, ConfidenceCalibrator } from './reasoning';
+import { ReasoningEngine, ConfidenceCalibrator, bootstrapFromDb } from './reasoning';
 import { InsightComposer } from './nlg';
 import { buildPlayerBaseline } from './stats/baselines';
 import { analyzeMultiWindowTrends } from './trends/multi-window';
@@ -225,6 +225,7 @@ export function applyPhilosophyThresholds(
 class CoachHelmIntelligence {
   private reasoningEngine: ReasoningEngine;
   private confidenceCalibrator: ConfidenceCalibrator;
+  private calibrationBootstrapped = false;
   private insightComposer: InsightComposer;
   /**
    * Per-call cache for `fetchPlayerStats`. `analyzePlayer` and
@@ -243,6 +244,55 @@ class CoachHelmIntelligence {
   }
 
   /**
+   * Load persisted calibration buckets into the in-memory calibrator.
+   *
+   * Without this, `confidenceCalibrator` is constructed empty and every
+   * `.calibrate()` call trips the `predictedCount < 5` floor and returns the
+   * raw confidence unchanged — so `calibratedConfidence` was raw confidence
+   * under a different name. `.update()` is never called anywhere, so the
+   * in-memory record can only ever be populated from the DB.
+   *
+   * Idempotent and failure-silent: a calibration outage must degrade to
+   * today's behaviour (raw passthrough), never break analysis.
+   *
+   * Public because it's wired into the two production entry points that
+   * reach `.calibrate()` — `analyzePlayer` and `generateRoundReview`. Any
+   * new entry point that calls `.calibrate()` (directly or via
+   * `generateInsights`) must call this first too, the same way those two do.
+   */
+  async ensureCalibrationBootstrapped(): Promise<void> {
+    if (this.calibrationBootstrapped) return;
+    this.calibrationBootstrapped = true;
+    try {
+      const supabase = createAdminClient();
+      const record = await bootstrapFromDb(supabase, 'score_to_par');
+      this.confidenceCalibrator.setRecord(record);
+    } catch (error) {
+      // Leave the empty record in place — raw passthrough, same as before.
+      // Reset the flag so a later call retries instead of staying stuck on
+      // raw passthrough for the rest of the process's lifetime after a
+      // single transient failure (e.g. a cold-start network blip).
+      this.calibrationBootstrapped = false;
+      await logServerError(
+        `ensureCalibrationBootstrapped failed: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'orchestrator.ensureCalibrationBootstrapped', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
+  }
+
+  /**
+   * Read-only passthrough to the (otherwise private) calibrator, so callers
+   * — and tests — can observe calibration behaviour without reaching into
+   * `confidenceCalibrator` directly. No mutation surface: `setRecord` /
+   * `update` / `getRecord` stay private, only accessible via
+   * `ensureCalibrationBootstrapped`.
+   */
+  getCalibratedConfidence(rawConfidence: number): number {
+    return this.confidenceCalibrator.calibrate(rawConfidence);
+  }
+
+  /**
    * Performs full player analysis
    *
    * @param playerId - The player's UUID
@@ -252,6 +302,8 @@ class CoachHelmIntelligence {
     playerId: string,
     options: AnalysisOptions = {}
   ): Promise<PlayerAnalysis | null> {
+    await this.ensureCalibrationBootstrapped();
+
     const {
       includePatterns = true,
       includeCausal = true,
@@ -607,6 +659,8 @@ class CoachHelmIntelligence {
     roundId: string,
     playerId: string
   ): Promise<IntelligentRoundReview | null> {
+    await this.ensureCalibrationBootstrapped();
+
     // Get features
     const features = await extractAllFeatures(playerId);
     if (!features) {

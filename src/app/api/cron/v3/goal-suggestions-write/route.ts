@@ -6,7 +6,7 @@
  * and no pre-existing active goal / pending suggestion for the same metric.
  *
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
- * Schedule: daily 03:30 UTC (configured in vercel.json) — runs before the
+ * Schedule: daily 03:20 UTC (configured in vercel.json) — runs before the
  * morning evaluator flips stale suggestions to 'expired'.
  *
  * Spec: docs/v3-master-plan.md Part VI.5 ("Engine suggestions").

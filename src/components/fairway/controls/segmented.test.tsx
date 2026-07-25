@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -112,5 +113,90 @@ describe('Segmented', () => {
     expect(screen.getByRole('radiogroup', { name: 'Calendar view' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Week' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('radio', { name: 'Day' })).toHaveAttribute('aria-checked', 'false');
+  });
+
+  // Owner request (2026-07-25): "add some green to it too like a lil
+  // toggle" — a small decorative dot on the active segment's pill only.
+  describe('the green active-segment indicator', () => {
+    it('renders the dot inside the active segment only, never on inactive segments', () => {
+      render(
+        <Segmented
+          options={[
+            { value: 'day', label: 'Day' },
+            { value: 'week', label: 'Week' },
+            { value: 'month', label: 'Month' },
+          ]}
+          value="week"
+          onValueChange={() => {}}
+          aria-label="Calendar view"
+        />,
+      );
+      const items = screen.getAllByRole('radio');
+      const dotsPerItem = items.map(
+        (item) => item.querySelectorAll('.bg-accent-600').length,
+      );
+      // Exactly one segment (the selected one) carries the dot.
+      expect(dotsPerItem).toEqual([0, 1, 0]);
+      // Sanity: the dot that does exist is inside the "Week" radio.
+      const weekItem = screen.getByRole('radio', { name: 'Week' });
+      const dot = weekItem.querySelector('.bg-accent-600');
+      expect(dot).toBeInTheDocument();
+      // And it's decorative, not exposed to the accessibility tree.
+      expect(dot).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('never uses a side-rail/bar shape for the indicator (small square-ish dot, not a wide bar)', () => {
+      render(
+        <Segmented
+          options={[
+            { value: 'day', label: 'Day' },
+            { value: 'week', label: 'Week' },
+          ]}
+          value="day"
+          onValueChange={() => {}}
+          aria-label="Calendar view"
+        />,
+      );
+      const dot = screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-accent-600');
+      expect(dot).not.toBeNull();
+      // A dot is h-[Npx] w-[Npx] and rounded-full; a rail/bar would stretch
+      // full-width/height instead of using a fixed small square footprint.
+      expect(dot?.className).toMatch(/rounded-full/);
+      expect(dot?.className).toMatch(/h-\[5px\]/);
+      expect(dot?.className).toMatch(/w-\[5px\]/);
+    });
+
+    it('moves selection instead of leaving a stray dot on the previously-active segment', async () => {
+      const Controlled = () => {
+        const [value, setValue] = useState('day');
+        return (
+          <Segmented
+            options={[
+              { value: 'day', label: 'Day' },
+              { value: 'week', label: 'Week' },
+            ]}
+            value={value}
+            onValueChange={setValue}
+            aria-label="Calendar view"
+          />
+        );
+      };
+      render(<Controlled />);
+      expect(
+        screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-accent-600'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('radio', { name: 'Week' }).querySelector('.bg-accent-600'),
+      ).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('radio', { name: 'Week' }));
+
+      expect(
+        screen.getByRole('radio', { name: 'Week' }).querySelector('.bg-accent-600'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-accent-600'),
+      ).not.toBeInTheDocument();
+    });
   });
 });

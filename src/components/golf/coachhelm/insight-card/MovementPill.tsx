@@ -9,7 +9,8 @@
  * metadata is present — parent components don't need to guard the slot.
  */
 import { useMemo } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import type { InsightMovement } from '@/lib/coachhelm/v2/insights/types';
@@ -38,7 +39,7 @@ export function formatMovementMagnitude(fraction: number): string | null {
 }
 
 export function MovementPill({ insight, className }: MovementPillProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const movement = (insight.metadata?.movement ?? null) as InsightMovement | null;
 
   // Memoize the derived label so we don't re-build the string on every

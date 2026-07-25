@@ -31,7 +31,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import { ChatMessageList } from './ChatMessageList';
@@ -67,7 +68,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion() ?? false;
+  const prefersReducedMotion = useReducedMotionGuard() ?? false;
 
   // #948 follow-up — a light polish on top of the shell-level bottom-padding
   // fix (FairwayDashboardShell reserves real clearance so nothing ever sits

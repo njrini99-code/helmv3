@@ -37,7 +37,7 @@
  *      NB: `age` here is `created_at`-based on purpose (data recency), NOT
  *      the liveness anchor used by Rules 2 & 3.
  *
- * Schedule: `0 2 * * *` (see vercel.json).
+ * Schedule: `0 4 * * *` (see vercel.json).
  * Auth:     Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse, type NextRequest } from 'next/server';

@@ -173,13 +173,23 @@ export interface StatisticalStrengthWeakness {
 }
 
 // Benchmarks for college-level competitive golf
+//
+// NOTE ON STROKES GAINED (2026-07-25): there are deliberately no `sgTee` /
+// `sgApproach` / `sgAroundGreen` / `sgPutting` constants here any more. They
+// used to be `0`, i.e. PGA-Tour scratch, which made every SG category a
+// "weakness" for essentially every college player: measured across the 30
+// players in `golf_player_stats_cache`, SG Approach was negative for 30/30 and
+// SG Putting for 29/30. The list told almost everyone the same three things and
+// buried each player's genuine weak link.
+//
+// SG categories are now graded **self-relatively** in `addSGCandidates` —
+// each category against the player's own average category SG. That is the
+// actual question a strengths/weaknesses list should answer ("which part of MY
+// game is the weak link"), and it is automatically division- and
+// gender-neutral, because a lower overall level shifts all four categories
+// together. The percentage benchmarks below stay absolute; those are calibrated
+// to this population (see the scrambling note).
 const COLLEGE_BENCHMARKS = {
-  // Strokes Gained per round (vs scratch/par)
-  sgTee: 0,
-  sgApproach: 0,
-  sgAroundGreen: 0,
-  sgPutting: 0,
-
   // Putting make percentages
   puttMake0_3: 98,
   puttMake3_5: 75,
@@ -211,9 +221,19 @@ const COLLEGE_BENCHMARKS = {
   fairwayPct: 60,
 
   // Scrambling
-  scramblingPct: 55,
-  scramblingFromRough: 50,
-  scramblingFromSand: 45,
+  //
+  // RECALIBRATED 2026-07-25. `scramblingPct` was 55, which **no player in the
+  // population could reach** — measured across `golf_player_stats_cache`:
+  // mean 32.6%, median 33.7%, max 50.0%. A bar above the population maximum
+  // makes scrambling an unconditional weakness for 30/30 players, which is
+  // noise, not a finding. `scramblingPct` is now the measured population median
+  // (34). `scramblingFromRough` / `scramblingFromSand` are NOT independently
+  // measured — the stats cache has no rough/sand scrambling split — so they are
+  // rescaled to preserve the original relative ordering (rough ≈ 0.91×,
+  // sand ≈ 0.82× of overall). Treat those two as provisional.
+  scramblingPct: 34,
+  scramblingFromRough: 31,
+  scramblingFromSand: 28,
 
   // Putting efficiency (strokes to hole out)
   puttEff5_10: 1.5,
@@ -246,6 +266,13 @@ interface StrengthWeaknessCandidate {
   /** How much data backs this up (0-1) */
   confidence: number;
   recommendation?: string;
+  /**
+   * What `benchmark` represents, when it is not an absolute standard. SG
+   * categories are graded against the player's own category average, so calling
+   * that a "benchmark" in user-facing copy would be misleading.
+   * Defaults to "benchmark" when omitted.
+   */
+  benchmarkLabel?: string;
 }
 
 /**
@@ -313,15 +340,17 @@ function toStatisticalSW(c: StrengthWeaknessCandidate): StatisticalStrengthWeakn
   const sign = c.strokeImpact >= 0 ? '+' : '';
   const impactStr = `${sign}${c.strokeImpact.toFixed(1)} strokes/round`;
 
+  const benchLabel = c.benchmarkLabel ?? 'benchmark';
+
   let detail: string;
   if (c.unit === '%') {
-    detail = `${c.playerValue.toFixed(0)}% (benchmark: ${c.benchmark.toFixed(0)}%) — ${impactStr}`;
+    detail = `${c.playerValue.toFixed(0)}% (${benchLabel}: ${c.benchmark.toFixed(0)}%) — ${impactStr}`;
   } else if (c.unit === 'strokes/round') {
-    detail = `${c.playerValue >= 0 ? '+' : ''}${c.playerValue.toFixed(2)} (benchmark: ${c.benchmark >= 0 ? '+' : ''}${c.benchmark.toFixed(2)}) — ${impactStr}`;
+    detail = `${c.playerValue >= 0 ? '+' : ''}${c.playerValue.toFixed(2)} (${benchLabel}: ${c.benchmark >= 0 ? '+' : ''}${c.benchmark.toFixed(2)}) — ${impactStr}`;
   } else if (c.unit === 'per round') {
-    detail = `${c.playerValue.toFixed(1)} per round (benchmark: ${c.benchmark.toFixed(1)}) — ${impactStr}`;
+    detail = `${c.playerValue.toFixed(1)} per round (${benchLabel}: ${c.benchmark.toFixed(1)}) — ${impactStr}`;
   } else {
-    detail = `${c.playerValue.toFixed(1)} ${c.unit} (benchmark: ${c.benchmark.toFixed(1)}) — ${impactStr}`;
+    detail = `${c.playerValue.toFixed(1)} ${c.unit} (${benchLabel}: ${c.benchmark.toFixed(1)}) — ${impactStr}`;
   }
 
   return {
@@ -345,26 +374,39 @@ function addSGCandidates(stats: GolfStats, candidates: StrengthWeaknessCandidate
     key: string;
     label: string;
     value: number | null;
-    benchmark: number;
     rec: string;
   }> = [
-    { key: 'tee', label: 'SG: Off the Tee', value: stats.sgTeePerRound, benchmark: COLLEGE_BENCHMARKS.sgTee, rec: 'Focus on tee shot accuracy: fairway hitting drills and club selection.' },
-    { key: 'approach', label: 'SG: Approach', value: stats.sgApproachPerRound, benchmark: COLLEGE_BENCHMARKS.sgApproach, rec: 'Work on iron play from various distances and lies.' },
-    { key: 'around', label: 'SG: Around the Green', value: stats.sgAroundGreenPerRound, benchmark: COLLEGE_BENCHMARKS.sgAroundGreen, rec: 'Dedicate practice to chipping and pitching within 30 yards.' },
-    { key: 'putting', label: 'SG: Putting', value: stats.sgPuttingPerRound, benchmark: COLLEGE_BENCHMARKS.sgPutting, rec: 'Invest in putting practice, especially distance control.' },
+    { key: 'tee', label: 'SG: Off the Tee', value: stats.sgTeePerRound, rec: 'Focus on tee shot accuracy: fairway hitting drills and club selection.' },
+    { key: 'approach', label: 'SG: Approach', value: stats.sgApproachPerRound, rec: 'Work on iron play from various distances and lies.' },
+    { key: 'around', label: 'SG: Around the Green', value: stats.sgAroundGreenPerRound, rec: 'Dedicate practice to chipping and pitching within 30 yards.' },
+    { key: 'putting', label: 'SG: Putting', value: stats.sgPuttingPerRound, rec: 'Invest in putting practice, especially distance control.' },
   ];
 
-  for (const entry of sgEntries) {
-    if (entry.value === null) continue;
-    // SG is already in strokes/round - value IS the impact
+  // Self-relative baseline (see the SG note on COLLEGE_BENCHMARKS): each
+  // category is graded against the player's OWN average category SG rather than
+  // PGA scratch. A category below the player's own mean is a genuine weak link;
+  // one above it is a genuine strength. Because a lower overall standard shifts
+  // all four categories together, this needs no division or gender adjustment.
+  const present = sgEntries.filter(
+    (e): e is typeof e & { value: number } => e.value !== null,
+  );
+
+  // With fewer than two categories there is nothing to be relative TO — one
+  // category would trivially equal its own mean and score zero impact.
+  if (present.length < 2) return;
+
+  const ownMean = present.reduce((sum, e) => sum + e.value, 0) / present.length;
+
+  for (const entry of present) {
     candidates.push({
       category: entry.label,
       subcategory: entry.key === 'tee' ? 'driving' : entry.key === 'around' ? 'scrambling' : entry.key,
       label: entry.label,
       playerValue: entry.value,
-      benchmark: entry.benchmark,
+      benchmark: ownMean,
+      benchmarkLabel: 'your category average',
       unit: 'strokes/round',
-      strokeImpact: entry.value - entry.benchmark, // positive = gaining
+      strokeImpact: entry.value - ownMean, // positive = ahead of own average
       confidence: Math.min(1, stats.roundsPlayed / 10),
       recommendation: entry.rec,
     });

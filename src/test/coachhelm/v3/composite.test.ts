@@ -79,8 +79,9 @@ function makeInsight(over: Partial<EvidenceInsight> & {
    *  NOT your_value (which is the green-hit PERCENT post the reach/dial-in
    *  redesign). */
   proximity_feet?: number | null;
+  sample_n?: number;
 }): EvidenceInsight {
-  const { type, signature, your_value, team_pct, proximity_feet, ...rest } = over;
+  const { type, signature, your_value, team_pct, proximity_feet, sample_n, ...rest } = over;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const evidence: any = {
     metric: type,
@@ -91,7 +92,7 @@ function makeInsight(over: Partial<EvidenceInsight> & {
     comparison_value: 0,
     comparison_label: '',
     comparison_source: 'pga_baseline',
-    sample_n: 10,
+    sample_n: sample_n ?? 10,
     window_days: 90,
     window_start: '',
     window_end: '',
@@ -205,6 +206,18 @@ describe('bunker_miss_side_amplifier', () => {
     ];
     expect(bunkerMissSide.detect(insights)).toBeNull();
   });
+
+  it('derives sample_n as the MIN of its two sources, not a hardcoded literal', () => {
+    const insights: EvidenceInsight[] = [
+      makeInsight({ type: 'scrambling', signature: 'v3:scrambling:sand', your_value: 35, team_pct: 25, sample_n: 23 }),
+      makeInsight({ type: 'putt_bias', signature: 'v3:putt_bias:left', your_value: 25, sample_n: 9 }),
+    ];
+    const match = bunkerMissSide.detect(insights);
+    expect(match).not.toBeNull();
+    expect(Number(match!.signals.sample_n)).toBe(9);
+    const composed = bunkerMissSide.compose(match!);
+    expect(composed.evidence.sample_n).toBe(9); // the thinner source, never the old literal 5
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -271,6 +284,30 @@ describe('long_approach_3putt_cascade', () => {
       makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 40, team_pct: 70 }),
     ];
     expect(longApproach3Putt.detect(insights)).toBeNull();
+  });
+
+  it('derives sample_n as the MIN of its two sources, not a hardcoded literal', () => {
+    const insights: EvidenceInsight[] = [
+      makeInsight({
+        type: 'approach_miss',
+        signature: 'v3:approach_miss:175_plus_ft',
+        your_value: 45,
+        proximity_feet: 60,
+        sample_n: 14,
+      }),
+      makeInsight({
+        type: 'putt_distance',
+        signature: 'v3:putt_distance:10_15ft',
+        your_value: 22,
+        team_pct: 30,
+        sample_n: 33,
+      }),
+    ];
+    const match = longApproach3Putt.detect(insights);
+    expect(match).not.toBeNull();
+    expect(Number(match!.signals.sample_n)).toBe(14);
+    const composed = longApproach3Putt.compose(match!);
+    expect(composed.evidence.sample_n).toBe(14); // the thinner source, never the old literal 5
   });
 });
 

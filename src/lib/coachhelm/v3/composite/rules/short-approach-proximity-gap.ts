@@ -49,6 +49,12 @@ const rule: CompositeRule = {
       signals: {
         approach_proximity_ft: approachProximityFeet(approach),
         scramble_pct: Number(scramble.evidence.your_value ?? 0),
+        // Honest floor: a composite is only as well-evidenced as its
+        // thinnest source. Mirrors lag-distance-3putt.ts:78-81.
+        sample_n: Math.min(
+          Number(approach.evidence.sample_n ?? 0),
+          Number(scramble.evidence.sample_n ?? 0),
+        ),
       },
     };
   },
@@ -74,7 +80,7 @@ const rule: CompositeRule = {
         comparison_value: 18,
         comparison_label: 'Tour ~18 ft',
         comparison_source: 'pga_baseline',
-        sample_n: 10,
+        sample_n: Number(match.signals.sample_n ?? 0),
         window_days: 90,
         window_start: '',
         window_end: '',
