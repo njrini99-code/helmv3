@@ -286,7 +286,7 @@ export function GoalCreationModal({
                 type="button"
                 onClick={submit}
                 disabled={pending}
-                className="text-sm bg-primary-600 text-white px-4 py-2 rounded-xl hover:bg-primary-700 disabled:opacity-60 transition-colors"
+                className="text-sm bg-accent-650 text-text-on-accent px-4 py-2 rounded-xl hover:bg-primary-700 disabled:opacity-60 transition-colors"
               >
                 {pending ? 'Saving…' : 'Start goal'}
               </Button>

@@ -568,6 +568,13 @@ export default function NewRoundClient() {
   // instead of an editable form — editing the form would otherwise persist the
   // edited name against the original (now-mismatched) tee_id/course_id.
   const [cloudPickActive, setCloudPickActive] = useState(false);
+  // Course imagery for the confirm screen, carried out of the picker with the
+  // tee (FairwayCoursePicker already had the golf_courses row in hand). Null on
+  // every non-cloud path, where CourseImage falls back to its name-derived photo.
+  const [pickedCourseImage, setPickedCourseImage] = useState<{
+    imageUrl: string | null;
+    normalizedName: string | null;
+  } | null>(null);
   const [teePickerOpen, setTeePickerOpen] = useState(false);
   const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
@@ -728,6 +735,7 @@ export default function NewRoundClient() {
     resolvedCourseIdRef.current = course.courseId ?? null;
     selectedTeeIdRef.current = null; // a recent saved course is not a cloud tee
     setCloudPickActive(false);
+    setPickedCourseImage(null);
     setSetupData(prev => ({
       ...prev,
       courseName: course.courseName,
@@ -777,6 +785,10 @@ export default function NewRoundClient() {
     resolvedCourseIdRef.current = d.courseId;
     selectedTeeIdRef.current = d.teeId;
     setCloudPickActive(true);
+    setPickedCourseImage({
+      imageUrl: d.courseImageUrl ?? null,
+      normalizedName: d.courseNormalizedName ?? null,
+    });
     setSetupData(prev => ({
       ...prev,
       courseName: d.courseName,
@@ -849,6 +861,7 @@ export default function NewRoundClient() {
       resolvedCourseIdRef.current = null;
       selectedTeeIdRef.current = null;
       setCloudPickActive(false);
+    setPickedCourseImage(null);
       return;
     }
 
@@ -858,6 +871,7 @@ export default function NewRoundClient() {
       resolvedCourseIdRef.current = course.courseId ?? null;
       selectedTeeIdRef.current = null; // saved course, not a cloud tee
       setCloudPickActive(false);
+    setPickedCourseImage(null);
       // Populate form with saved course data
       setSetupData(prev => ({
         ...prev,
@@ -916,48 +930,53 @@ export default function NewRoundClient() {
   }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, inProgressShotsByHole, holesPerRound]);
 
 
-  const handleSetupSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Prevent double-clicks / duplicate submissions
-    if (isStartingRound) return;
-    setIsStartingRound(true);
-    
-    if (!setupData.courseName) {
-      setError('Please enter a course name');
-      setIsStartingRound(false);
-      return;
-    }
-    // Validate qualifier selection if round type is qualifier
+  /**
+   * Everything that must be true before a round can start, independent of
+   * WHICH control starts it. Returns the user-facing error, or null to proceed.
+   *
+   * EXTRACTED 2026-07-25 and this is load-bearing, not tidying. These checks
+   * used to live only inside `handleSetupSubmit`, and the confirm screen
+   * reached them because a course pick with usable holes routed through the
+   * form's submit button. The confirm screen now starts the round from the
+   * hole editor's own "Start round" button instead — which never touches
+   * `onSubmit`. Without this shared gate, a player who switched Round type to
+   * "Qualifier" on the confirm screen and left the qualifier unpicked could
+   * start a round that no qualifier owns.
+   */
+  const validateBeforeStart = useCallback((): string | null => {
+    if (!setupData.courseName) return 'Please enter a course name';
     if (setupData.roundType === 'qualifier') {
-      if (!selectedQualifierId) {
-        setError('Please select a qualifier');
-        setIsStartingRound(false);
-        return;
-      }
-      if (!selectedRoundNumber) {
-        setError('Please select which round of the qualifier this is');
-        setIsStartingRound(false);
-        return;
-      }
+      if (!selectedQualifierId) return 'Please select a qualifier';
+      if (!selectedRoundNumber) return 'Please select which round of the qualifier this is';
     }
-
-    // Validate courseRating and courseSlope ranges (must match server Zod schema in golf.ts)
+    // Ranges mirror the server Zod schema in golf.ts — keep them in step.
     if (setupData.courseRating) {
       const rating = parseFloat(setupData.courseRating);
       if (isNaN(rating) || rating < 50 || rating > 85) {
-        setError('Course rating must be between 50.0 and 85.0');
-        setIsStartingRound(false);
-        return;
+        return 'Course rating must be between 50.0 and 85.0';
       }
     }
     if (setupData.courseSlope) {
       const slope = parseInt(setupData.courseSlope);
       if (isNaN(slope) || slope < 55 || slope > 155) {
-        setError('Course slope must be between 55 and 155');
-        setIsStartingRound(false);
-        return;
+        return 'Course slope must be between 55 and 155';
       }
+    }
+    return null;
+  }, [setupData, selectedQualifierId, selectedRoundNumber]);
+
+  const handleSetupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Prevent double-clicks / duplicate submissions
+    if (isStartingRound) return;
+    setIsStartingRound(true);
+
+    const validationError = validateBeforeStart();
+    if (validationError) {
+      setError(validationError);
+      setIsStartingRound(false);
+      return;
     }
 
     // Skip the hole-configuration step when the preloaded config is usable.
@@ -1017,6 +1036,25 @@ export default function NewRoundClient() {
       setIsStartingRound(false);
       setStep('holes');
     }
+  };
+
+  /**
+   * "Start round" from the confirm screen's inline hole editor.
+   *
+   * The editor validates its own pars/yardages, but it knows nothing about the
+   * round-level rules (qualifier picked, rating/slope in range) that the form's
+   * submit path enforces. Run those first so both entry points into tracking
+   * are gated identically; on failure surface the same error banner the setup
+   * form uses and stay put.
+   */
+  const handleConfirmedHolesSave = async (configuredHoles: HoleConfig[]) => {
+    const validationError = validateBeforeStart();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError('');
+    await handleHolesSave(configuredHoles);
   };
 
   const handleHolesSave = async (configuredHoles: HoleConfig[]) => {
@@ -1654,6 +1692,7 @@ export default function NewRoundClient() {
               resolvedCourseIdRef.current = null;
               selectedTeeIdRef.current = null;
               setCloudPickActive(false);
+    setPickedCourseImage(null);
               setPreloadedHoleConfigs(null);
               setCourseSearchQuery('');
               setSetupData((prev) => ({
@@ -1673,6 +1712,7 @@ export default function NewRoundClient() {
           onSavedCourseSelect={handleSavedCourseSelect}
           selectedCourse={selectedCourse}
           cloudPickActive={cloudPickActive}
+          pickedCourseImage={pickedCourseImage}
           onClearSelectedCourse={() => {
             setSelectedCourseId(null);
             setPreloadedHoleConfigs(null);
@@ -1681,6 +1721,7 @@ export default function NewRoundClient() {
             resolvedCourseIdRef.current = null;
             selectedTeeIdRef.current = null;
             setCloudPickActive(false);
+    setPickedCourseImage(null);
             setSetupData((prev) => ({
               ...prev,
               courseName: '',
@@ -1720,7 +1761,7 @@ export default function NewRoundClient() {
           onSubmit={handleSetupSubmit}
           onCancel={() => router.back()}
           onExitToDashboard={() => router.push('/golf/dashboard')}
-          onHolesSave={handleHolesSave}
+          onHolesSave={handleConfirmedHolesSave}
           onHolesBack={() => setStep('setup')}
         />
         <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
