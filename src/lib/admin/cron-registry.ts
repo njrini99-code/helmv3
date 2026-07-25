@@ -15,7 +15,6 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'coachhelm-safety-net', path: '/api/cron/coachhelm-safety-net', cadenceMinutes: 30 },
   { jobType: 'coachhelm-insight-lifecycle', path: '/api/cron/coachhelm-insight-lifecycle', cadenceMinutes: DAILY },
   { jobType: 'coachhelm-roster-sweep', path: '/api/cron/coachhelm-roster-sweep', cadenceMinutes: DAILY },
-  { jobType: 'coach-morning-digest', path: '/api/cron/coach-morning-digest', cadenceMinutes: DAILY },
   { jobType: 'event-reminders', path: '/api/cron/event-reminders', cadenceMinutes: 60 },
   { jobType: 'task-reminders', path: '/api/cron/task-reminders', cadenceMinutes: 60 },
   { jobType: 'v3-standing-refresh', path: '/api/cron/v3/standing-refresh', cadenceMinutes: DAILY },

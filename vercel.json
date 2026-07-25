@@ -58,10 +58,6 @@
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron/coach-morning-digest",
-      "schedule": "30 6 * * *"
-    },
-    {
       "path": "/api/cron/event-reminders",
       "schedule": "0 * * * *"
     },
