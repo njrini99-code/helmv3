@@ -49,7 +49,7 @@ import { CourseCard } from '@/components/golf/courses/CourseCard';
 import { formatCourseName } from '@/components/golf/courses/CourseImage';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
 import { TeeFormDrawer } from '@/components/golf/courses/TeeFormDrawer';
-import { TeePickRow, SkeletonRows } from '@/components/golf/courses/TeePickerDrawer';
+import { FairwayTeeCard } from './FairwayTeeCard';
 import {
   listCourses, getRecentlyPlayedCourses, getTeamSavedCourses,
   getCourseDetail, getTeeRoundDefaults, type TeeRoundDefaults,
@@ -648,7 +648,23 @@ function EmptyCourses({ onCreate }: { onCreate: () => void }) {
   );
 }
 
-// ── Stage B: choose a tee (rows reused from TeePickerDrawer) ─────────────────
+/**
+ * Loading state for the tee grid. Shape-matched to FairwayTeeCard (two up from
+ * `sm`, ~132px tall) rather than reusing TeePickerDrawer's SkeletonRows, which
+ * is calibrated to that drawer's 64px list row and is still right there — a
+ * skeleton that doesn't match its own first paint is a layout jump.
+ */
+function TeeCardSkeletons() {
+  return (
+    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-hidden>
+      {[0, 1, 2, 3].map((i) => (
+        <li key={i} className="h-[132px] animate-pulse rounded-card bg-surface-sunken" />
+      ))}
+    </ul>
+  );
+}
+
+// ── Stage B: choose a tee ────────────────────────────────────────────────────
 
 function TeesStage({
   loading, tees, picking, onPick, onAddTee,
@@ -659,10 +675,17 @@ function TeesStage({
   onPick: (tee: GolfCourseTee) => void;
   onAddTee: () => void;
 }) {
+  // Scale the length bars against the longest tee AT THIS COURSE. Comparing to
+  // anything else (a fixed 7,000, the longest in the library) would make the
+  // bar a decoration instead of a fact.
+  const longestYards = tees.reduce<number | null>(
+    (max, t) => (typeof t.total_yards === 'number' && (max === null || t.total_yards > max) ? t.total_yards : max),
+    null,
+  );
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
       {loading ? (
-        <SkeletonRows />
+        <TeeCardSkeletons />
       ) : tees.length === 0 ? (
         <EmptyState
           variant="subtle"
@@ -677,10 +700,19 @@ function TeesStage({
         />
       ) : (
         <>
-          <ul className="space-y-2">
+          {/* One per row on a phone, two up from `sm`. A course carries 3-6 tee
+              sets, so this never needs a rail — and pairing them on desktop
+              keeps the whole decision in one glance instead of a long column. */}
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {tees.map((tee) => (
-              <li key={tee.id}>
-                <TeePickRow tee={tee} disabled={picking} onClick={() => onPick(tee)} />
+              <li key={tee.id} className="min-w-0">
+                <FairwayTeeCard
+                  tee={tee}
+                  longestYards={longestYards}
+                  disabled={picking}
+                  onClick={() => onPick(tee)}
+                  className="h-full"
+                />
               </li>
             ))}
           </ul>
