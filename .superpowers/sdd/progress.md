@@ -197,6 +197,72 @@ BRIEF REPAIRS LANDED (4,5,7,8,9 written; 11 running). Notable beyond the
     task-9-brief-REPAIRED.md. 24 existing golf_learned_behavior rows have no
     usable type; learning starts from zero. No backfill, no deletes.
 
+=== DEAD-SURFACE SWEEP: corrections + real findings (2026-07-25) ===
+
+  MY INSTRUCTION WAS WRONG. I told the sweep agents "a barrel/index re-export
+  is NOT a consumer." Applied mechanically that yields FALSE DEAD verdicts,
+  because importing THROUGH a barrel is exactly how live pages reach
+  components. Correct rule: a barrel does not make a component live on its
+  own — you must check whether anything live imports FROM the barrel.
+
+  FALSE DEAD VERDICTS, corrected by reading imports directly. All of these
+  are LIVE via one chain: FairwayPlayerInsight.tsx:61 imports InsightCard
+  from '@/components/golf/coachhelm/insight-card' (barrel) and renders it at
+  :866 (density hero) and :871 (default), audience="coach".
+    InsightCard.tsx (932 lines)      LIVE — not dead
+    EvidencePanel  (InsightCard:36)  LIVE
+    MovementPill   (InsightCard:42)  LIVE
+    WhyPopover     (InsightCard:43)  LIVE
+    DrillChips     (InsightCard:44)  LIVE
+    DrillSheet     (DrillChips:28)   LIVE
+    DiagnosisPanel (EvidencePanel:25, rendered :451) LIVE
+  DiagnosisPanel's header comment ("Production had 322 V3 rows with this
+  structure and ZERO components rendering it") describes the FORMER state.
+  It was built as the fix AND wired. That is a success, not a gap.
+
+  GENUINELY DEAD, found with the better method (grep '<Component' for real
+  JSX usage, zero hits). Two DIFFERENT categories — do not conflate them:
+
+  (A) SUPERSEDED DUPLICATES — replaced by newer live implementations, so no
+      user is missing anything. This is dead weight and confusion, not lost
+      value. Deleting is hygiene.
+        FairwayPlayerCoachHelm.tsx  1378 lines -> PlayerCoachHelmHome
+        FairwayEffectiveness.tsx    1809 lines -> EffectivenessScoreboard
+        FairwayMyDevelopment.tsx     885 lines -> DevelopmentDrill
+        FairwayMyGameProfile.tsx     284 lines -> ProfileDrill
+        v3/TrendDashboard                      -> FairwayTrendBrain
+        v3/IntentPill                          -> FairwayIntentControl
+        coach/LeakBoard                        -> TeamCategoryLeakBand
+        insights/FocusAreaCard (golf variant)  -> fairway FocusAreaCard
+      ~4,400+ lines. FairwayEffectiveness is the notable one: its own header
+      calls it "the flagship effectiveness surface... answers 'is CoachHelm
+      actually helping'", mounted over /dashboard/analytics/coachhelm — now a
+      redirect shim to a smaller EffectivenessScoreboard.
+
+  (B) FINISHED CAPABILITY, NEVER WIRED, NO LIVE EQUIVALENT — this is real
+      lost value and the cheapest work available:
+        charts/PuttingHeatmap    278 lines, finished canvas (distance x
+                                 direction); live surfaces show tables
+        charts/ShotDispersion    272 lines, finished canvas (scatter +
+                                 1sigma/2sigma ellipse); Round Detail
+                                 explicitly ships none
+        v3/GoalCard              finished single-goal card; GoalsSection
+                                 rolls its own markup instead
+        signals/SignalsToolbar   215 lines — filter chrome for the signals
+                                 queue that 548 rows badly need
+        signals/ScanTeamControl  135 lines — team-wide scan trigger
+        InsightTrustChips        (already known)
+        insights/DrillAttachment, insights/PlayerFocusAreas,
+        insights/InsightCallout, v3/HeroNarrativeCard,
+        insight-card/HeroInsightCard, player/FocusAreasGrid (413),
+        player/PerformancePrediction (235)
+
+  CORRECTION TO MY OWN AUDIT/PLAN: Task 2's brief named three user-facing
+  render sites for "calibrated confidence" — PlayerCoachHelmHome.tsx:290,
+  FairwayPlayerCoachHelm.tsx:1203, PerformancePrediction.tsx:51. The latter
+  TWO ARE DEAD COMPONENTS. The calibration bug reached ONE surface, not
+  three. The fix is still correct; my stated user impact was inflated 3x.
+
 === ROOT CAUSE FOUND 2026-07-25: "accurate insights don't reach the UI" ===
   It is NOT a filter bug and NOT bad data. The pipeline works; the UI
   truncates it. Quantified against prod (read-only):
