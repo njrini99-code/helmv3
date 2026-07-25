@@ -197,6 +197,67 @@ BRIEF REPAIRS LANDED (4,5,7,8,9 written; 11 running). Notable beyond the
     task-9-brief-REPAIRED.md. 24 existing golf_learned_behavior rows have no
     usable type; learning starts from zero. No backfill, no deletes.
 
+=== THE ACTUAL ROOT CAUSE, PROVEN (2026-07-25) ===
+  Insights are stale because 69% of rounds were NEVER ANALYSED, and the
+  mechanism meant to catch that has permanently aged past them.
+
+  Chain, every step verified:
+  1. golf_rounds: 290 total, last round played 2026-07-23 (2.2 days ago),
+     50 rounds in the last 30 days. Players are ACTIVE — the off-season
+     explanation is FALSE (I tested and rejected it).
+  2. coachhelm_analyzed_at set on only 82/290. coachhelm_failed_at on 2.
+     206 rounds (71%) have BOTH columns NULL = never attempted.
+  3. postRoundTrigger is invoked via `after()` on round submit
+     (post-round-trigger.ts). `after()` is fire-and-forget and NOT durable:
+     if the instance terminates first, it silently never runs and neither
+     state column is written. No error, no failure flag.
+  4. coachhelm-safety-net exists to catch exactly that. Its predicate is
+     status='completed' AND both columns NULL AND created_at >= now()-30d,
+     LIMIT 200, every 30 min (LOOKBACK_MS=30d, BATCH_LIMIT=200,
+     CONCURRENCY=5). Loop is correct — no player dedupe, calls
+     postRoundTrigger per round.
+  5. Ran its EXACT predicate against prod:
+       eligible the safety net can see NOW ... 0
+       completed + both NULL + created_at older than 30d ... 200  <-- STRANDED
+       not completed (legitimately skipped) ... 6
+     200 + 6 = 206 = the never-attempted count exactly. Fully accounted.
+  6. So the cron runs 332 times in 30 days with ZERO failures and ZERO
+     effect: it correctly finds nothing, because the backlog aged out of its
+     own window. Green cron, no alarm, no work.
+  7. The route's line-32 comment: "Widened from 24h -> 30d on 2026-05-23 to
+     drain the 112 pre-existing." They hit this before, widened the window to
+     drain 112, and the backlog regrew to 200 — the widening drained the
+     symptom, the cause (non-durable after()) was never fixed.
+
+  CONSEQUENCE for the owner's complaint: only ~82 rounds ever produced
+  insights, which is why 242 of 252 UI-visible insights (96%) are 31-60 days
+  old and only 2 are under a week. Then the display caps (6 player / 2 coach)
+  cut that stale remainder further. Staleness is the primary cause;
+  truncation is the secondary one.
+
+  TWO HYPOTHESES I FALSIFIED rather than reported (both looked right):
+   - "The terminal-state write is failing / RLS-blocked." writeTerminalState
+     swallows both an error and a 0-row update (post-round-trigger.ts:117-137)
+     and only logs. Looked like a silent infinite retry. FALSE: error_logs has
+     ZERO '[postRoundTrigger] terminal-state write' entries. The only 2
+     matching rows are engine failures ("No active team membership for
+     player", 2026-07-12 and 07-23) which correctly stamped
+     coachhelm_failed_at — matching the 2 failed rounds exactly. The write
+     path works.
+   - "It is the off-season, so no new rounds is correct." FALSE: 50 rounds in
+     30 days, newest 2.2 days old.
+
+  ENHANCEMENT (not a bug fix): the durable seam already exists. CLAUDE.md
+  documents Inngest wired at src/lib/inngest/ for exactly this class of work.
+  Moving post-round analysis from `after()` to an Inngest function gives
+  retries and durability, which removes the need for a lookback-window
+  safety net at all. Prereq: INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY in prod.
+
+  NEEDS OWNER APPROVAL (prod write, deferred): backfilling the 200 stranded
+  rounds. Options are a one-off widened-window run or a scoped script. Do NOT
+  run without sign-off. Also note 6 non-completed rounds are correctly
+  excluded and need nothing.
+
 === DEAD-SURFACE SWEEP: corrections + real findings (2026-07-25) ===
 
   MY INSTRUCTION WAS WRONG. I told the sweep agents "a barrel/index re-export
