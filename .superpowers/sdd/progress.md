@@ -711,3 +711,61 @@ Task 1: WITHDRAWN AND REPLACED. Original specified a prod DELETE of the
   Minor taste notes in its report: no haptics added to ViewSwitch, ViewSwitch
   gained useScrollFade it did not have before, focus-ring colour improved as
   a side effect.
+
+=== BENCHMARK SPLIT — decision-ready, NOT implemented (2026-07-25) ===
+  Doc: docs/audits/COACHHELM_BENCHMARK_SPLIT_2026-07-25.md
+  Investigated read-only after the owner asked to dig into strengths and
+  weakness outputs. THREE OF MY OWN CHARACTERISATIONS WERE WRONG:
+    I said "two screens disagree" -> it is ONE CARD. StatsBento.tsx:250-263
+      renders a single card titled "Standing" whose HEADLINE text comes from
+      S&W (flat benchmark) and whose BODY CHART comes from Season Standing
+      (gender-corrected). The words and the picture contradict each other in
+      one component.
+    I said "two different grades" -> the Standing pipeline never grades at
+      all. No letter grades, buckets, or strength/weakness labels anywhere;
+      it renders raw values against team avg and a PGA anchor. So it is a
+      labelled system beside an unlabelled one, not two graders.
+    I recommended "point S&W at the division-tiered source" -> THERE IS NO
+      DIVISION TIERING IN THE LIVE PATH. cohortBaselineValue (pga-standards
+      .ts) reads div1/div2/div3 and has ZERO call sites — dead code.
+      golf_player_standing.level_avg is an app-wide average scoped ONLY by
+      golf_teams.gender (migration 20260609230000), so a D3 women's player is
+      pooled with D1/D2/D3/HS women alike. AND golf_teams HAS NO DIVISION
+      COLUMN AT ALL — division-awareness is not merely unused, it is
+      impossible without schema work. golf_pga_standards holds real
+      D1/D2/D3/HS data for ~10 metrics that nothing reads.
+
+  QUANTIFIED against real prod data: 8 of 88 player-metric pairs flip sign
+  (9%); 6 of 22 covered players (27%) get an opposite grade on at least one
+  metric. Two clear S&W's own display threshold — Larsen Gallimore and Grace
+  Saunders, both putts_made_3_5ft_pct, headline says STRENGTH while the chart
+  shows below the gender-corrected anchor. Saunders is the exact case that
+  motivated the check: a women's player graded against a men's-weighted flat
+  benchmark.
+
+  OVERLAP IS SMALL: only 4 metrics genuinely overlap (putts_made_3_5 / 5_10 /
+  10_15ft_pct, scrambling_pct_sand), +2 too sparse to quantify. S&W's other
+  ~15 metrics (SG components, GIR by distance and lie, driving accuracy, putt
+  efficiency, scoring patterns) have NO tiered equivalent — so unifying
+  wholesale would lose two-thirds of what S&W grades. That is why "just point
+  it at the other source" is a trade, not a fix.
+
+  RECOMMENDATION (not implemented, awaiting owner): correct the ~4-9
+  overlapping metrics to Standing's gender-corrected values, and label the
+  remainder "college average, not gender-adjusted" rather than unifying
+  blind. Pure code change — verified NOTHING persists a grade
+  (golf_player_stats_cache and golf_player_standing are raw-numeric only,
+  repo-wide grep for grade/letter/bucket columns returns zero), so there is
+  no backfill and no migration.
+
+  INCIDENTAL BUGS FOUND, not fixed:
+    COHORT_ANCHORS approach_proximity mens values (80/65/50) do not match
+      golf_pga_standards for the same metric_ids (50-125ft = 18 feet) and the
+      comment mislabels them as green-hit %. Latent — the live path uses
+      pga_value via loadStandardsForGender, not cohortAnchor() — but it would
+      render nonsense if anyone wired it.
+    scrambling_pct_rough and scrambling_pct_fairway sit in
+      STANDING_REFRESH_DEFERRED_METRIC_IDS and are never populated, despite
+      both golf_pga_standards and COHORT_ANCHORS having data for them.
+    getPuttMakeLeakMap / getApproachProximityLeakMap have no production call
+      sites (superseded by getPlayerLeakMaps); referenced only by their tests.
