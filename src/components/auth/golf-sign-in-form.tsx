@@ -206,8 +206,8 @@ export function GolfSignInForm() {
         aria-busy={isLoading}
         className="
           w-full min-h-[50px] py-3
-          bg-primary-600 text-white
-          font-semibold text-body tracking-[-0.01em]
+          bg-primary-600
+          font-semibold text-body text-white tracking-[-0.01em]
           rounded-xl
           shadow-lg shadow-primary-600/25
           transition-all duration-200 ease-ios

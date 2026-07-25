@@ -26,7 +26,6 @@ import type { ComponentType } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import type { FwStatusTone } from '@/components/fairway/controls/_internal';
@@ -165,22 +164,21 @@ export function FocusAreaCard({ focusArea, onClick, index = 0 }: FocusAreaCardPr
               // area with no target as a dead placeholder-less gap (no visible
               // affordance at all), so a player just saw a description with
               // nothing to do next. Give it a real, tappable CTA wired to the
-              // SAME handler the whole card already uses (My Development is
-              // where a target actually gets set), gated on `onClick` being
-              // wired so it's never a dead button. `stopPropagation` avoids
-              // double-firing the parent card's own onClick.
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<IconTarget size={11} />}
-                className="mt-2.5 border border-dashed border-border-subtle px-3 py-1 text-caption"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClick();
-                }}
+              // A non-interactive CHIP, not a nested <Button>.
+              //
+              // The card root is already role="button" with this exact handler,
+              // so a real button inside it was a nested interactive control
+              // (axe nested-interactive, serious, 3 nodes) that did nothing the
+              // card didn't already do — the stopPropagation existed only to
+              // stop it firing twice (audit 2026-07-24, P-10). Keeping the
+              // visual affordance without the duplicate control resolves both.
+              <span
+                aria-hidden
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-fw-md border border-dashed border-border-subtle px-3 py-1 font-fw-sans text-caption text-text-secondary"
               >
+                <IconTarget size={11} />
                 Set a target
-              </Button>
+              </span>
             ) : null}
 
             {/* Progress sparkline — only when the coach/player has logged ≥2

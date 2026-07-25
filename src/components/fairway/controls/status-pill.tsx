@@ -33,7 +33,7 @@ const toneStyles: Record<FwStatusTone, { pill: string; dot: string }> = {
   accent: { pill: 'bg-accent-50 text-accent-700 border-accent-200', dot: 'bg-accent-500' },
   success: { pill: 'bg-fw-success-bg text-accent-700 border-accent-200', dot: 'bg-fw-success' },
   warning: { pill: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring', dot: 'bg-fw-warning' },
-  danger: { pill: 'bg-fw-danger-bg text-fw-danger border-fw-danger/25', dot: 'bg-fw-danger' },
+  danger: { pill: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25', dot: 'bg-fw-danger' },
   info: { pill: 'bg-surface-sunken text-text-primary border-border-strong', dot: 'bg-text-primary' },
 };
 

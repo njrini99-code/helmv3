@@ -447,7 +447,7 @@ export function FairwayTeamInfo({
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                        <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
                           {name}
                         </p>
                       </div>

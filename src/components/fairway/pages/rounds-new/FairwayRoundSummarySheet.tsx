@@ -67,8 +67,8 @@ export function FairwayRoundSummarySheet({
       diff <= -2 ? 'text-accent-700 bg-accent-100 font-medium'
         : diff === -1 ? 'text-accent-600 bg-accent-50 font-medium'
           : diff === 0 ? 'text-text-secondary bg-surface font-medium'
-            : diff === 1 ? 'text-fw-warning bg-fw-warning-bg font-medium'
-              : 'text-fw-danger bg-fw-danger-bg font-medium';
+            : diff === 1 ? 'text-fw-warning-ink bg-fw-warning-bg font-medium'
+              : 'text-fw-danger-ink bg-fw-danger-bg font-medium';
     return (
       <div className={cn('py-1.5 text-center', cls)}>
         <span className="font-fw-mono text-xs tabular-nums">{h?.score}</span>

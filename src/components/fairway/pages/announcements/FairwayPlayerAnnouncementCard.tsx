@@ -145,7 +145,7 @@ function FairwayTaskItem({
       <span
         className={cn(
           'mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-fw-sm border-2 transition-colors',
-          completed ? 'border-accent-500 bg-accent-500 text-text-on-accent' : 'border-border-strong',
+          completed ? 'border-accent-500 bg-accent-700 text-text-on-accent' : 'border-border-strong',
         )}
         aria-hidden
       >

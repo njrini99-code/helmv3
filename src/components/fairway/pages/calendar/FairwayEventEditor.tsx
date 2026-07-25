@@ -619,7 +619,7 @@ export function FairwayEventEditor({
           */}
           <ModalShell.Body className="flex flex-col gap-5 pb-8 pr-7 [scrollbar-gutter:stable]">
             {error ? (
-              <div className="flex items-center gap-2 rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger">
+              <div className="flex items-center gap-2 rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger-ink">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
                 {error}
               </div>
@@ -653,7 +653,7 @@ export function FairwayEventEditor({
                         onClick={() => setPendingHardDeleteConfirm(true)}
                         disabled={isSaving}
                         leftIcon={<Trash2 className="h-4 w-4" />}
-                        className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+                        className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
                       >
                         Delete permanently
                       </Button>
@@ -696,7 +696,7 @@ export function FairwayEventEditor({
                       'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
                       'focus-visible:ring-accent-500/40',
                       active
-                        ? 'bg-accent-500 text-text-on-accent shadow-flat'
+                        ? 'bg-accent-700 text-text-on-accent shadow-flat'
                         : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
                     )}
                   >
@@ -1048,7 +1048,7 @@ export function FairwayEventEditor({
                               'grid h-8 w-8 place-items-center rounded-full font-fw-sans text-caption font-medium transition-colors disabled:opacity-50',
                               'focus-visible:ring-accent-500/40',
                               selected
-                                ? 'bg-accent-500 text-text-on-accent shadow-flat'
+                                ? 'bg-accent-700 text-text-on-accent shadow-flat'
                                 : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                             )}
                           >

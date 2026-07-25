@@ -104,7 +104,7 @@ export function PendingMemberActions({
         disabled={pending !== null}
         onClick={() => handle('reject')}
         aria-label={`Decline ${playerName}'s join request`}
-        className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+        className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
       >
         <IconX size={18} />
       </IconButton>
@@ -216,7 +216,7 @@ export function RosterRowMenu({
             setMenuOpen(false);
             setRemoveOpen(true);
           }}
-          className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+          className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
         >
           <IconTrash size={16} className="text-fw-danger" />
           Remove from team

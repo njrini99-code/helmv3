@@ -145,8 +145,8 @@ export function perRoundStreakMagnitude(magnitude: number, length: number): numb
 }
 
 const TRUST_CHIP: Record<Tone, string> = {
-  good: 'bg-fw-success-bg text-fw-success',
-  bad: 'bg-fw-danger-bg text-fw-danger',
+  good: 'bg-fw-success-bg text-fw-success-ink',
+  bad: 'bg-fw-danger-bg text-fw-danger-ink',
   neutral: 'bg-surface-sunken text-text-tertiary',
 };
 

@@ -436,7 +436,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               onClick={() => setPasteMode(false)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 !pasteMode
-                  ? 'bg-accent-500 text-text-on-accent'
+                  ? 'bg-accent-700 text-text-on-accent'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
@@ -446,7 +446,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               onClick={() => setPasteMode(true)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 pasteMode
-                  ? 'bg-accent-500 text-text-on-accent'
+                  ? 'bg-accent-700 text-text-on-accent'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
@@ -549,7 +549,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           )}
 
           {error && (
-            <div className="mt-4 bg-fw-danger-bg border border-fw-danger/30 text-fw-danger px-4 py-3 rounded-lg text-sm" role="alert">
+            <div className="mt-4 bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-lg text-sm" role="alert">
               {error}
             </div>
           )}

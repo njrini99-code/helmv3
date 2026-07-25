@@ -927,7 +927,7 @@ export default function ContinueRoundClient({
       {/* Error Display — Fairway danger tokens. */}
       {error && (
         <div className={fairwayScope('max-w-[720px] mx-auto px-4 py-4')}>
-          <div role="alert" className="bg-fw-danger-bg border border-fw-danger/30 text-fw-danger px-4 py-3 rounded-fw-md font-fw-sans text-body-sm">
+          <div role="alert" className="bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-fw-md font-fw-sans text-body-sm">
             {error}
           </div>
         </div>

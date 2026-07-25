@@ -948,7 +948,7 @@ function FairwayTaskCard({
               <PopoverPanel.Separator />
               <PopoverPanel.Item
                 onClick={() => setPendingDelete(true)}
-                className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+                className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
               >
                 <IconTrash size={18} className="text-fw-danger" />
                 Delete task
@@ -978,6 +978,13 @@ function FairwayTaskCard({
             aria-valuenow={Math.round(completionRate)}
             aria-valuemin={0}
             aria-valuemax={100}
+            // A progressbar needs an accessible NAME, not just a value — /tasks
+            // shipped 8 of these and a screen reader announced eight identical
+            // unnamed "42%" bars with no way to tell which task each belonged
+            // to (audit 2026-07-24, M8). aria-valuetext also replaces the bare
+            // number with the count the sighted label already shows.
+            aria-label={`${task.title} — subtask progress`}
+            aria-valuetext={`${completedCount} of ${totalCount} subtasks completed`}
           >
             <div
               className="h-full rounded-full bg-accent-500 transition-[width] duration-300 motion-reduce:transition-none"

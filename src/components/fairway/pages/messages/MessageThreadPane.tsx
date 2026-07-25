@@ -451,7 +451,7 @@ export function MessageThreadPane({
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
+          <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
           {headerSubtitle ? (
             <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
           ) : null}
@@ -655,7 +655,7 @@ export function MessageThreadPane({
                         className={cn(
                           'px-4 py-2.5',
                           isOwn
-                            ? 'bg-accent-500 text-text-on-accent'
+                            ? 'bg-accent-700 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',
                           isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
                           isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',

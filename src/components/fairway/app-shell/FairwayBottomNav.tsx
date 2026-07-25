@@ -202,7 +202,10 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
                         'bg-accent-600 font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent',
                       )}
                     >
-                      {item.badge > 9 ? '9+' : item.badge}
+                      {/* Same cap as the rail (FairwaySidebar). They disagreed —
+                          10 unread read as "10" in the rail and "9+" here, for
+                          the same count (audit 2026-07-24, M2). */}
+                      {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   ) : null}
                 </span>

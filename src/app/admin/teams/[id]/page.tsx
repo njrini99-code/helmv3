@@ -24,7 +24,7 @@ const GRADE_TONE: Record<TeamGrade, string> = {
   A: 'border-accent-500 bg-accent-50 text-accent-700',
   B: 'border-accent-300 bg-accent-50 text-accent-700',
   C: 'border-fw-warning bg-fw-warning-bg text-warm-800',
-  D: 'border-fw-danger bg-fw-danger-bg text-fw-danger',
+  D: 'border-fw-danger bg-fw-danger-bg text-fw-danger-ink',
 };
 
 const ERROR_SEVERITY_TONE: Record<string, FwStatusTone> = {

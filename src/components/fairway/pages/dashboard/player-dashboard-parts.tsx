@@ -174,7 +174,7 @@ export function TodayCard({
               className={cn(
                 'grid h-9 w-9 shrink-0 place-items-center rounded-fw-md',
                 leadTask.overdue
-                  ? 'bg-fw-warning-bg text-fw-warning'
+                  ? 'bg-fw-warning-bg text-fw-warning-ink'
                   : 'bg-surface text-text-tertiary',
               )}
             >

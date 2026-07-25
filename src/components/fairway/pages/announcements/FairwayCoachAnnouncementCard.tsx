@@ -165,7 +165,7 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
             {isRecent && (
               <span className="h-2 w-2 flex-shrink-0 rounded-full bg-accent-500" aria-hidden />
             )}
-            <h3 className="truncate font-fw-sans text-body font-medium text-text-primary">
+            <h3 className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
               {ann.title}
             </h3>
           </div>

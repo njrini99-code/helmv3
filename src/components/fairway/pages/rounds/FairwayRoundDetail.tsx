@@ -1093,9 +1093,9 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
     toPar == null
       ? 'bg-surface-sunken text-text-tertiary'
       : toPar < 0
-        ? 'bg-fw-success-bg text-fw-success'
+        ? 'bg-fw-success-bg text-fw-success-ink'
         : toPar > 0
-          ? 'bg-fw-warning-bg text-fw-warning'
+          ? 'bg-fw-warning-bg text-fw-warning-ink'
           : 'bg-surface-sunken text-text-secondary';
 
   return (

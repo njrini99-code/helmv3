@@ -180,9 +180,9 @@ const SIZE: Record<'sm' | 'md', string> = {
 };
 
 const TONE: Record<TrendDirection, string> = {
-  improving: 'bg-fw-success-bg text-fw-success',
+  improving: 'bg-fw-success-bg text-fw-success-ink',
   flat: 'bg-inset text-text-tertiary',
-  declining: 'bg-fw-warning-bg text-fw-warning',
+  declining: 'bg-fw-warning-bg text-fw-warning-ink',
 };
 
 /**

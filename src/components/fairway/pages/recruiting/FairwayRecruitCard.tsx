@@ -45,7 +45,7 @@ export function FairwayRecruitCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="truncate font-fw-display text-body-lg font-semibold tracking-[-0.01em] text-text-primary">
+                <h3 className="line-clamp-2 font-fw-display text-body-lg font-semibold tracking-[-0.01em] text-text-primary">
                   {fullName || 'Unnamed prospect'}
                 </h3>
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-fw-sans text-caption text-text-tertiary">

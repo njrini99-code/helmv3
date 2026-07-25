@@ -571,7 +571,7 @@ function FairwayDashboardContent({
   const skipLink = (
     <a
       href="#main-content"
-      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-500 text-text-on-accent px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
+      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-700 text-text-on-accent px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
     >
       Skip to main content
     </a>

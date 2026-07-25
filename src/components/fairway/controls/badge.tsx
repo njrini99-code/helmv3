@@ -26,7 +26,7 @@ const toneSoft: Record<FwStatusTone, string> = {
   accent: 'bg-accent-50 text-accent-700',
   success: 'bg-fw-success-bg text-accent-700',
   warning: 'bg-fw-warning-bg text-fw-warning-ink',
-  danger: 'bg-fw-danger-bg text-fw-danger',
+  danger: 'bg-fw-danger-bg text-fw-danger-ink',
   info: 'bg-surface-sunken text-text-secondary',
 };
 

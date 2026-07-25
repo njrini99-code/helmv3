@@ -65,16 +65,22 @@ const base = cn(
 
 const variantStyles: Record<FwButtonVariant, string> = {
   // Green CTA — the plant in the room. Cream text on green, no border.
-  // Fill is the LIGHT brand green accent-500 (#16A34A), per CLAUDE.md's locked
-  // brand palette — an INTENTIONAL brand decision that takes precedence over a
-  // strict 4.5:1 normal-text reading on the CTA. The CTA label is a bold,
-  // >=14px control label, so it's judged against WCAG's 3:1 large-text /
-  // UI-component contrast bar (1.4.11 / large-text 1.4.3), which it clears.
-  // Do NOT re-darken this to accent-700 for WCAG — keep the brand green.
+  //
+  // Fill is accent-700. This REPLACES an earlier "keep accent-500, do not
+  // re-darken for WCAG" decision, reversed by the owner on 2026-07-24 once the
+  // numbers were re-checked — the old rationale was wrong on the facts:
+  //   • text-on-accent on accent-500 measures 3.06:1; normal text needs 4.5:1.
+  //   • WCAG large text is >=24px, or >=18.66px BOLD. A 14-15px bold control
+  //     label is NOT large text, so 1.4.3's 3:1 allowance never applied.
+  //   • 1.4.11 (3:1 non-text) governs the button's BOUNDARY, not the label
+  //     sitting on top of it.
+  //   • accent-600 does not rescue it either (4.23:1).
+  // accent-700 gives 5.93:1 and clears AA. accent-500 stays the brand green for
+  // decorative fills, strokes and dots.
   primary: cn(
-    'border-transparent bg-accent-500 text-text-on-accent shadow-flat',
-    'hover:bg-accent-600 hover:shadow-soft hover:-translate-y-px',
-    'active:bg-accent-600 active:shadow-flat active:-translate-y-0',
+    'border-transparent bg-accent-700 text-text-on-accent shadow-flat',
+    'hover:bg-accent-800 hover:shadow-soft hover:-translate-y-px',
+    'active:bg-accent-800 active:shadow-flat active:-translate-y-0',
   ),
   // Matte surface with a warm hairline (border OR shadow at rest — border here).
   secondary: cn(
@@ -90,7 +96,7 @@ const variantStyles: Record<FwButtonVariant, string> = {
   ),
   // Destructive — canonical danger, tinted-soft at rest, fills on hover.
   danger: cn(
-    'border-transparent bg-fw-danger-bg text-fw-danger',
+    'border-transparent bg-fw-danger-bg text-fw-danger-ink',
     'hover:bg-fw-danger hover:text-text-on-accent hover:shadow-soft',
     'active:shadow-flat',
   ),
@@ -217,14 +223,16 @@ const iconBase = cn(
 );
 
 const iconVariantStyles: Record<FwIconButtonVariant, string> = {
-  // Matches Button primary: the LIGHT brand green accent-500 (#16A34A) fill,
-  // an INTENTIONAL brand decision (CLAUDE.md locked palette) over a strict
-  // 4.5:1 reading. The icon glyph is a bold >=24px UI element judged against
-  // WCAG's 3:1 UI-component bar (1.4.11), which it clears. Do NOT re-darken to
-  // accent-700 for WCAG — keep the brand green.
+  // Matches Button primary — accent-700.
+  //
+  // The icon-only case genuinely DID clear its bar (a glyph is a UI component
+  // judged at 3:1 by 1.4.11, and 3.06:1 passes). It moves anyway: a primary
+  // IconButton sitting beside a primary Button in a different green reads as a
+  // rendering bug, and "matches Button primary" is the contract this variant
+  // exists to hold. See the Button primary note above for the full reasoning.
   primary: cn(
-    'border-transparent bg-accent-500 text-text-on-accent',
-    'hover:bg-accent-600 hover:shadow-soft',
+    'border-transparent bg-accent-700 text-text-on-accent',
+    'hover:bg-accent-800 hover:shadow-soft',
   ),
   secondary: cn(
     'border-border-subtle bg-surface text-text-primary',

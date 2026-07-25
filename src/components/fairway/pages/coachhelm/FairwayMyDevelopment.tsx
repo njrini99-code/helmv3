@@ -580,6 +580,9 @@ export function FairwayMyDevelopment({
                 activeGoals={goals ?? []}
                 suggestions={suggestions ?? []}
                 achievedGoals={achievedGoals ?? []}
+                // ACTIVE areas only — `total` folds in completed ones, and the
+                // copy must name a number the reader can actually see below.
+                focusAreaCount={activeAreas.length}
               />
 
               {/* ── Why your scores move — the causal-engine layer, surfaced from

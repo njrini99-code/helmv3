@@ -158,7 +158,7 @@ function toneChip(tone: CommandItem['tone']) {
     case 'accent':
       return 'bg-accent-100 text-accent-700 group-data-[selected=true]:bg-accent-200';
     case 'danger':
-      return 'bg-fw-danger-bg text-fw-danger';
+      return 'bg-fw-danger-bg text-fw-danger-ink';
     default:
       return 'bg-inset text-text-secondary group-data-[selected=true]:bg-accent-100 group-data-[selected=true]:text-accent-700';
   }

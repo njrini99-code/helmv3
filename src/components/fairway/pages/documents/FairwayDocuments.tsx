@@ -1714,7 +1714,7 @@ function DocumentCard({
 
         {/* Title */}
         <div className="min-w-0">
-          <h3 className="truncate font-fw-sans text-body-lg font-medium leading-tight text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+          <h3 className="line-clamp-2 font-fw-sans text-body-lg font-medium leading-tight text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
             {doc.title}
           </h3>
           {doc.description && (

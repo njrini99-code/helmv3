@@ -468,6 +468,10 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
             <section>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="Scoring avg"
                   value={Number(sparklines?.scoringAvg.value ?? stats.scoringAverage ?? 0)}
                   decimals={1}
@@ -487,6 +491,10 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   }
                 />
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="GIR"
                   value={Number(sparklines?.girPct.value ?? 0)}
                   decimals={0}
@@ -507,6 +515,10 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   }
                 />
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="Putts / round"
                   value={Number(sparklines?.puttsPerRound.value ?? 0)}
                   decimals={1}
@@ -526,6 +538,10 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                   }
                 />
                 <MetricCard
+                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
+                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
+                  // MetricCard reserves min-h-8 so the row stays aligned.
+                  labelLines={2}
                   label="Handicap"
                   value={Number(
                     sparklines?.handicap.value ??
@@ -556,6 +572,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
               {secondary ? (
                 <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
                   <MetricCard
+                    labelLines={2}
                     label="FIR"
                     value={Number(secondary.firPct ?? 0)}
                     suffix="%"
@@ -563,6 +580,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                     emptyMessage="—"
                   />
                   <MetricCard
+                    labelLines={2}
                     label="Scrambling"
                     value={Number(secondary.scramblingPct ?? 0)}
                     suffix="%"
@@ -570,6 +588,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                     emptyMessage="—"
                   />
                   <MetricCard
+                    labelLines={2}
                     label="Birdies / round"
                     value={Number(secondary.birdiesPerRound ?? 0)}
                     decimals={1}
@@ -577,6 +596,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                     emptyMessage="—"
                   />
                   <MetricCard
+                    labelLines={2}
                     label="Best round"
                     value={Number(secondary.bestRound ?? stats.bestRound ?? 0)}
                     empty={(secondary.bestRound ?? stats.bestRound) == null}

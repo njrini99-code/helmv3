@@ -238,7 +238,7 @@ export function FairwayHoleConfig({
                         className={cn(
                           'h-9 w-9 rounded-fw-md font-fw-mono text-body-sm font-semibold tabular-nums transition-colors',
                           selected
-                            ? 'bg-accent-500 text-text-on-accent shadow-flat'
+                            ? 'bg-accent-700 text-text-on-accent shadow-flat'
                             : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                         )}
                       >

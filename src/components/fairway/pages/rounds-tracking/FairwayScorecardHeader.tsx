@@ -84,9 +84,9 @@ function AutoSaveChip({
       }
       className={cn(
         'flex items-center gap-1.5 rounded-fw-sm px-2 py-1 font-fw-sans text-caption font-medium transition-colors',
-        status === 'saving' && 'bg-fw-warning-bg text-fw-warning',
+        status === 'saving' && 'bg-fw-warning-bg text-fw-warning-ink',
         status === 'saved' && 'bg-accent-50 text-accent-700',
-        status === 'error' && 'bg-fw-danger-bg text-fw-danger',
+        status === 'error' && 'bg-fw-danger-bg text-fw-danger-ink',
       )}
     >
       {status === 'saving' && (

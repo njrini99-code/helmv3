@@ -107,15 +107,17 @@
    rule above is (0,1,1) and silently beats a bare class's (0,1,0) — that
    cascade loss once painted the primary CTA label accent-on-accent
    (invisible "Request Demo", 2026-07-24). `.root .x` = (0,2,0) always wins. */
+/* accent700, not accent: white on accent-600 measures 4.23:1 and fails AA for
+   a normal-size label; accent-700 is 5.93:1 (audit 2026-07-24, L-08). */
 .root .btnPrimary {
-  background: var(--accent);
+  background: var(--accent700);
   color: var(--onacc);
   border: 0;
   cursor: pointer;
   font-family: inherit;
   transition: transform 0.15s ease, background 0.15s ease;
 }
-.root .btnPrimary:hover { background: var(--accent700); color: var(--onacc); transform: translateY(-1px); }
+.root .btnPrimary:hover { background: var(--fw-color-accent-800); color: var(--onacc); transform: translateY(-1px); }
 
 .root .linkGhost { color: var(--ink); transition: color 0.15s ease; }
 .root .linkGhost:hover { color: var(--ink); }

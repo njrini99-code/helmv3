@@ -96,7 +96,10 @@ export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function 
             </span>
           ) : null}
         </span>
-        <span className="mt-0.5 block truncate font-fw-sans text-body-sm text-text-primary">
+        {/* line-clamp-2, not truncate: single-line truncation hid ~95% of every
+            claim — measured 2,300-2,500px of hidden text per row, and still
+            ~2,500px at 1440px wide (audit 2026-07-24, H4). */}
+        <span className="mt-0.5 block font-fw-sans text-body-sm text-text-primary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
           {signal.claim || signal.title}
         </span>
       </span>

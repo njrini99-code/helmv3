@@ -68,7 +68,7 @@ const segBtn = (active: boolean) =>
   cn(
     'min-h-[48px] flex-1 rounded-fw-sm px-2 font-fw-sans text-sm font-medium transition-colors',
     'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
-    active ? 'bg-accent-500 text-text-on-accent shadow-flat' : 'text-text-secondary hover:text-text-primary',
+    active ? 'bg-accent-700 text-text-on-accent shadow-flat' : 'text-text-secondary hover:text-text-primary',
   );
 
 function Section({
@@ -292,7 +292,7 @@ export function FairwayShotEntry({
                         'min-h-[52px] rounded-fw-md px-3 font-fw-sans text-sm font-medium transition-colors',
                         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                         isSelected
-                          ? 'bg-accent-500 text-text-on-accent shadow-flat ring-1 ring-accent-600'
+                          ? 'bg-accent-700 text-text-on-accent shadow-flat ring-1 ring-accent-600'
                           : isSubtle
                             ? 'bg-surface-sunken text-text-tertiary ring-1 ring-border-subtle hover:bg-surface-tint hover:text-text-secondary hover:ring-border-strong'
                             : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:bg-surface-tint hover:ring-border-strong',
@@ -402,7 +402,7 @@ export function FairwayShotEntry({
                           'min-h-[44px] rounded-fw-md transition-colors',
                           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                           distanceAfterShot === String(val) && distanceAfterUnit === 'feet'
-                            ? 'bg-accent-500 text-text-on-accent shadow-flat'
+                            ? 'bg-accent-700 text-text-on-accent shadow-flat'
                             : 'border border-accent-200 bg-surface text-accent-700 hover:bg-accent-50',
                         )}
                       >

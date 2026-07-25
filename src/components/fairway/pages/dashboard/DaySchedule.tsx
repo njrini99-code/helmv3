@@ -22,7 +22,7 @@
  * text wait one client render for a stable "today" reference.
  * ========================================================================== */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CalendarClock, ChevronRight, MapPin } from 'lucide-react';
 import { Surface } from '@/components/fairway/surfaces/surface';
@@ -83,10 +83,6 @@ export const EVENT_LABEL: Record<string, string> = {
   class: 'Class',
   other: 'Event',
 };
-
-/** More rows than this and the list caps its height + fades at the bottom —
- *  a subtle "there's more, scroll" affordance rather than an unbounded card. */
-const VISIBLE_ROW_THRESHOLD = 5;
 
 /** YYYY-MM-DD for the given instant, in `tz`. Used only to bucket events by
  *  calendar day — never rendered raw. */
@@ -176,7 +172,26 @@ export function DaySchedule({
   );
 
   const isEmpty = isReady && sorted.length === 0;
-  const showFade = sorted.length > VISIBLE_ROW_THRESHOLD;
+
+  // Derive the fade from MEASURED overflow, not a row count.
+  //
+  // The old `sorted.length > 5` test was strict, so exactly 5 events
+  // showed no fade — while the 360px box actually clipped the 5th (measured
+  // clientHeight 360 vs scrollHeight 454, 94px hidden) under a masthead that
+  // promised "5 upcoming events" (audit 2026-07-24, H9). Row height varies
+  // with title wrapping, so only measurement can answer this.
+  const scrollerRef = useRef<HTMLUListElement | null>(null);
+  const [overflowing, setOverflowing] = useState(false);
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const measure = () => setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [groups]);
+  const showFade = overflowing;
 
   const headerAction = viewAllHref ? (
     <Link
@@ -214,12 +229,15 @@ export function DaySchedule({
       ) : (
         <div className="relative min-w-0">
           {/* Capped height + its own scroll region once the agenda outgrows a
-              calm at-a-glance size (VISIBLE_ROW_THRESHOLD) — CONTAIN, not an
+              calm at-a-glance size (360px) — CONTAIN, not an
               ever-growing card. `overscroll-contain` keeps a mouse-wheel
               scroll here from bleeding into the page behind it. */}
           <ul
             aria-label={`${title} — day groups`}
-            className="flex max-h-[360px] flex-col gap-4 overflow-y-auto overscroll-contain pr-1"
+            ref={scrollerRef}
+            // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- axe scrollable-region-focusable (serious) REQUIRES a keyboard-reachable scroll container; a labelled region with tabIndex is the WCAG-recommended shape
+            tabIndex={0}
+            className="flex max-h-[360px] flex-col gap-4 overflow-y-auto overscroll-contain pr-1 rounded-fw-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fw-color-border-focus)]"
           >
             {groups.map((group) => (
               <li key={group.key} className="flex min-w-0 flex-col gap-1.5">

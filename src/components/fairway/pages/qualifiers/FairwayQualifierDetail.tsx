@@ -679,7 +679,7 @@ function RoundCoursesSection({
                     Round {roundNumber}
                   </p>
                   {assigned?.courseName ? (
-                    <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                    <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
                       {assigned.courseName}
                     </p>
                   ) : (

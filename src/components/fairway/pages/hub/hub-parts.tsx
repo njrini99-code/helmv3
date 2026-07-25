@@ -440,7 +440,7 @@ export function TaskRow({
             'grid h-7 w-7 place-items-center rounded-fw-md border',
             'transition-[background-color,border-color] duration-base',
             isCompleted
-              ? 'border-transparent bg-accent-500 text-text-on-accent'
+              ? 'border-transparent bg-accent-700 text-text-on-accent'
               : 'border-border-strong bg-surface text-transparent group-hover:border-accent-500 group-hover:bg-accent-50',
             completing && 'animate-pulse',
           )}

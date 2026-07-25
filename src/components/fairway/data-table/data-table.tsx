@@ -166,7 +166,7 @@ function RowActions<TData>({
               'inline-flex size-7 min-h-0 p-0 items-center justify-center rounded-fw-sm',
               'text-text-tertiary transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'hover:bg-surface-sunken hover:text-text-secondary',
-              action.tone === 'danger' && 'hover:bg-fw-danger-bg hover:text-fw-danger',
+              action.tone === 'danger' && 'hover:bg-fw-danger-bg hover:text-fw-danger-ink',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
               'active:translate-y-[0.5px]',
               'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent',
@@ -429,12 +429,20 @@ export function DataTable<TData>({
       ) : null}
 
       {/* tabIndex on the scroll region is intentional — allows keyboard users to scroll the table.
-          Hidden below `sm` ONLY when a `mobileCard` render path is supplied — every existing
-          consumer that doesn't pass one keeps the exact table-at-every-width behavior. */}
+          Hidden below `lg` ONLY when a `mobileCard` render path is supplied — every existing
+          consumer that doesn't pass one keeps the exact table-at-every-width behavior.
+
+          The threshold is `lg`, not `sm`, because the breakpoint is a VIEWPORT
+          measure while the table's real constraint is its own box: the coach
+          shell's 260px fixed rail eats the difference. Measured at 768px the
+          table got 508px of main, and 249px of a 691px table was silently
+          clipped — Score, To Par and Date simply vanished with no scroll
+          affordance (audit 2026-07-24, C1). `lg` (1024px) is the first width
+          where main is wide enough for the full table. */}
       <div
         className={cn(
           'w-full overflow-x-auto overflow-y-auto',
-          mobileCard && 'hidden sm:block',
+          mobileCard && 'hidden lg:block',
           containerClassName,
         )}
         // Roving focus for keyboard users scrolling a long grid.
@@ -684,7 +692,7 @@ export function DataTable<TData>({
           ONE native card per row instead — same data, same loading/error/
           empty states, same onRowClick navigation. */}
       {mobileCard && (
-        <div className="sm:hidden" aria-busy={loading || undefined}>
+        <div className="lg:hidden" aria-busy={loading || undefined}>
           {loading ? (
             <DataTableSkeletonCards rows={loadingRows} />
           ) : error ? (

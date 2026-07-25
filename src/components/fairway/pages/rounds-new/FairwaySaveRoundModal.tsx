@@ -116,7 +116,7 @@ export function FairwaySaveRoundModal({
             disabled={saving}
             className="h-auto min-h-0 w-full items-center justify-start gap-4 rounded-fw-md border border-accent-200 bg-accent-50 p-4 text-left transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-accent-500 text-text-on-accent">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-accent-700 text-text-on-accent">
               <Clock className="h-5 w-5" aria-hidden />
             </span>
             <span className="flex-1">

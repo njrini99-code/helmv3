@@ -328,7 +328,13 @@ function SnapshotMetric({ label, value }: { label: string; value: string }) {
       <p className="truncate font-fw-mono text-[0.92rem] font-semibold leading-none tracking-[-0.03em] text-text-primary tabular-nums sm:text-h3">
         {value}
       </p>
-      <p className="mt-1.5 truncate font-fw-sans text-[0.55rem] font-semibold uppercase tracking-[0.06em] text-text-tertiary sm:text-[0.62rem]">
+      {/* Floored at 11px (0.6875rem) and allowed to wrap. These five labels
+          ("Score", "Fairways", "GIR", "Scramble", "Putts") name the player's
+          headline numbers and were rendering at 8.8px — below the 11px house
+          floor and the smallest type anywhere on the surface (audit
+          2026-07-24, P-12). Shrinking type is the wrong lever for a tight row;
+          wrapping is. */}
+      <p className="mt-1.5 font-fw-sans text-[0.6875rem] font-semibold uppercase leading-tight tracking-[0.06em] text-text-tertiary sm:text-[0.72rem]">
         {label}
       </p>
     </div>

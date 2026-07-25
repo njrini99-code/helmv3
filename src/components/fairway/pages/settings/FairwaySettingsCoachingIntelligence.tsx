@@ -599,7 +599,7 @@ function CoachingIntelligenceBody({
                         'transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
                         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                         active
-                          ? 'bg-accent-500 text-text-on-accent'
+                          ? 'bg-accent-700 text-text-on-accent'
                           : 'bg-surface-sunken text-text-secondary hover:bg-inset',
                       ].join(' ')}
                     >

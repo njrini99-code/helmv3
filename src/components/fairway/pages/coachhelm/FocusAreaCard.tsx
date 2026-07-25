@@ -915,7 +915,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                       variant="ghost"
                       size="sm"
                       leftIcon={<IconTrash size={15} />}
-                      className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+                      className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger-ink"
                       onClick={() => onDelete!(focusArea)}
                     >
                       Delete

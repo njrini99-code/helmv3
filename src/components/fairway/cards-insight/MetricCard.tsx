@@ -147,8 +147,8 @@ function deltaTone(
 
 const TONE_CLASS: Record<'positive' | 'negative' | 'neutral', string> = {
   // Green up = the plant in the room; danger red for a bad move; warm neutral otherwise.
-  positive: 'text-fw-success bg-fw-success-bg',
-  negative: 'text-fw-danger bg-fw-danger-bg',
+  positive: 'text-fw-success-ink bg-fw-success-bg',
+  negative: 'text-fw-danger-ink bg-fw-danger-bg',
   neutral: 'text-text-tertiary bg-surface-sunken',
 };
 

@@ -50,7 +50,7 @@ export function ConfirmDialog({
   // every consumer (live Fairway + retiring legacy fork) with no warm/primary.
   const variantStyles = {
     danger: {
-      icon: 'bg-fw-danger-bg text-fw-danger',
+      icon: 'bg-fw-danger-bg text-fw-danger-ink',
       button: 'bg-fw-danger hover:bg-fw-danger/90 text-text-on-accent',
       // Destructive confirm: Cancel must read QUIET so the eye doesn't land on
       // the safe action first — a bordered/shadowed `secondary` Cancel next to
@@ -61,7 +61,7 @@ export function ConfirmDialog({
     warning: {
       // Canonical Fairway amber tokens (fw-warning) — tinted tile + solid fill,
       // mirroring the danger recipe. No raw warning hex.
-      icon: 'bg-fw-warning-bg text-fw-warning',
+      icon: 'bg-fw-warning-bg text-fw-warning-ink',
       button: 'bg-fw-warning hover:bg-fw-warning/90 text-text-on-accent',
       cancelVariant: 'secondary' as const,
     },

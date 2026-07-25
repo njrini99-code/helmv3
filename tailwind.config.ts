@@ -17,6 +17,26 @@ import * as tailwindcssAnimateNS from "tailwindcss-animate";
 const tailwindcssAnimate =
   (tailwindcssAnimateNS as { default?: unknown }).default ?? tailwindcssAnimateNS;
 
+/**
+ * Alpha-composable value for a token held in a CSS custom property.
+ *
+ * The Fairway + Living-Annual tokens are full OKLCH colours living in CSS vars,
+ * so they cannot be written as `rgb(var(--x) / <alpha-value>)` channel triplets
+ * the way the `primary-*` / `warm-*` scales below are. Given a bare
+ * `'var(--x)'`, Tailwind v3 cannot compose an opacity modifier onto the value
+ * and — instead of erroring — emits NO rule at all: `bg-surface-sunken/80`
+ * was simply absent from the compiled CSS, so the element rendered with no
+ * background. The 2026-07-24 UI audit measured 286 such sites across 122 files
+ * (161 `bg-*` rendering fully transparent; `border-*` / `text-*` silently
+ * falling back to a default grey / inherited near-black).
+ *
+ * `color-mix()` composes in any colour space, and `<alpha-value>` resolves to
+ * `1` when no modifier is present — so the un-modified utilities render exactly
+ * as they did before, and the modified ones now render at all.
+ */
+const tokenColor = (cssVar: string) =>
+  `color-mix(in oklab, var(${cssVar}) calc(<alpha-value> * 100%), transparent)`;
+
 const config: Config = {
   darkMode: ["class"],
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
@@ -35,52 +55,56 @@ const config: Config = {
         // Resolve to the --fw-color-* CSS variables, so they only render where a
         // Fairway component opts in. The current app's appearance is unchanged.
         // ═══════════════════════════════════════════════════════════════
-        canvas:       'var(--fw-color-canvas)',
-        surface:      'var(--fw-color-surface)',
-        'surface-tint':   'var(--fw-color-surface-tint)',   // = spec "surface-warm"
-        'surface-sunken': 'var(--fw-color-surface-sunken)',
-        inset:        'var(--fw-color-surface-sunken)',      // alias — nested wells
-        elevated:     'var(--fw-color-elevated)',
+        canvas:       tokenColor('--fw-color-canvas'),
+        surface:      tokenColor('--fw-color-surface'),
+        'surface-tint':   tokenColor('--fw-color-surface-tint'),   // = spec "surface-warm"
+        'surface-sunken': tokenColor('--fw-color-surface-sunken'),
+        inset:        tokenColor('--fw-color-surface-sunken'),      // alias — nested wells
+        elevated:     tokenColor('--fw-color-elevated'),
         accent: {
-          50:  'var(--fw-color-accent-50)',
-          100: 'var(--fw-color-accent-100)',
-          200: 'var(--fw-color-accent-200)',
-          300: 'var(--fw-color-accent-300)',
-          400: 'var(--fw-color-accent-400)',
-          500: 'var(--fw-color-accent-500)',
-          600: 'var(--fw-color-accent-600)',
-          700: 'var(--fw-color-accent-700)',
-          800: 'var(--fw-color-accent-800)',
-          900: 'var(--fw-color-accent-900)',
-          DEFAULT: 'var(--fw-color-accent-500)',
+          50:  tokenColor('--fw-color-accent-50'),
+          100: tokenColor('--fw-color-accent-100'),
+          200: tokenColor('--fw-color-accent-200'),
+          300: tokenColor('--fw-color-accent-300'),
+          400: tokenColor('--fw-color-accent-400'),
+          500: tokenColor('--fw-color-accent-500'),
+          600: tokenColor('--fw-color-accent-600'),
+          700: tokenColor('--fw-color-accent-700'),
+          800: tokenColor('--fw-color-accent-800'),
+          900: tokenColor('--fw-color-accent-900'),
+          DEFAULT: tokenColor('--fw-color-accent-500'),
         },
-        'text-primary':   'var(--fw-color-text-primary)',
-        'text-secondary': 'var(--fw-color-text-secondary)',
-        'text-tertiary':  'var(--fw-color-text-tertiary)',
-        'text-on-accent': 'var(--fw-color-text-on-accent)',
-        'text-on-dark':   'var(--fw-color-text-on-dark)',
-        'border-subtle':  'var(--fw-color-border-subtle)',
-        'border-strong':  'var(--fw-color-border-strong)',
-        'border-focus':   'var(--fw-color-border-focus)',
+        'text-primary':   tokenColor('--fw-color-text-primary'),
+        'text-secondary': tokenColor('--fw-color-text-secondary'),
+        'text-tertiary':  tokenColor('--fw-color-text-tertiary'),
+        'text-on-accent': tokenColor('--fw-color-text-on-accent'),
+        'text-on-dark':   tokenColor('--fw-color-text-on-dark'),
+        'border-subtle':  tokenColor('--fw-color-border-subtle'),
+        'border-strong':  tokenColor('--fw-color-border-strong'),
+        'border-focus':   tokenColor('--fw-color-border-focus'),
         // Status — namespaced `fw-*` (existing success/warning/danger kept as-is)
-        'fw-success':     'var(--fw-color-success)',
-        'fw-success-bg':  'var(--fw-color-success-bg)',
-        'fw-warning':     'var(--fw-color-warning)',
-        'fw-warning-bg':  'var(--fw-color-warning-bg)',
+        'fw-success':     tokenColor('--fw-color-success'),
+        'fw-success-bg':  tokenColor('--fw-color-success-bg'),
+        // Ink counterparts for the status washes — see design-tokens.css.
+        // `text-fw-success` on `bg-fw-success-bg` measures 2.83:1; use these.
+        'fw-success-ink': tokenColor('--fw-color-success-ink'),
+        'fw-danger-ink':  tokenColor('--fw-color-danger-ink'),
+        'fw-warning':     tokenColor('--fw-color-warning'),
+        'fw-warning-bg':  tokenColor('--fw-color-warning-bg'),
         // Additive — names the on-warning-bg ink/ring 7+ files already used
         // ad hoc via warm-800/warm-300. Same values, a real semantic token.
-        'fw-warning-ink':  'var(--fw-color-warning-ink)',
-        'fw-warning-ring': 'var(--fw-color-warning-ring)',
-        'fw-danger':      'var(--fw-color-danger)',
-        'fw-danger-bg':   'var(--fw-color-danger-bg)',
+        'fw-warning-ink':  tokenColor('--fw-color-warning-ink'),
+        'fw-warning-ring': tokenColor('--fw-color-warning-ring'),
+        'fw-danger':      tokenColor('--fw-color-danger'),
+        'fw-danger-bg':   tokenColor('--fw-color-danger-bg'),
         // Helm Bridge sport inks (W4) — baseball clay, beside the fw-* trio.
-        'team-baseball':  'var(--fw-color-team-baseball)',
+        'team-baseball':  tokenColor('--fw-color-team-baseball'),
         // Dark chrome (sidebar) aliases
-        'nav-bg':       'var(--fw-color-nav-bg)',
-        'nav-surface':  'var(--fw-color-nav-surface)',
-        'nav-text':     'var(--fw-color-nav-text)',
-        'nav-text-dim': 'var(--fw-color-nav-text-dim)',
-        'nav-accent':   'var(--fw-color-nav-accent)',
+        'nav-bg':       tokenColor('--fw-color-nav-bg'),
+        'nav-surface':  tokenColor('--fw-color-nav-surface'),
+        'nav-text':     tokenColor('--fw-color-nav-text'),
+        'nav-text-dim': tokenColor('--fw-color-nav-text-dim'),
+        'nav-accent':   tokenColor('--fw-color-nav-accent'),
 
         // ═══════════════════════════════════════════════════════════════
         // BASEBALLHELM "LIVING ANNUAL" — baseball-native inks (ADDITIVE)
@@ -91,15 +115,15 @@ const config: Config = {
         // `pursuit` = recruiting; `pursuit-deep` (oxblood) = seals only;
         // `clay` is the reserved dark viz surface — never a page/card bg.
         // ═══════════════════════════════════════════════════════════════
-        clay:           'var(--clay)',
-        chalk:          'var(--chalk)',
-        pursuit:        'var(--pursuit-ink)',
-        'pursuit-deep': 'var(--pursuit-deep)',
-        sodium:         'var(--sodium)',
+        clay:           tokenColor('--clay'),
+        chalk:          tokenColor('--chalk'),
+        pursuit:        tokenColor('--pursuit-ink'),
+        'pursuit-deep': tokenColor('--pursuit-deep'),
+        sodium:         tokenColor('--sodium'),
         grade: {
-          low:  'var(--grade-low)',
-          avg:  'var(--grade-avg)',
-          plus: 'var(--grade-plus)',
+          low:  tokenColor('--grade-low'),
+          avg:  tokenColor('--grade-avg'),
+          plus: tokenColor('--grade-plus'),
         },
 
         // W0 token unification (2026-05-28): `helm-green-*` and

@@ -287,8 +287,17 @@ function hubToNavItem(opts: {
    *  membership is the pre-existing isCoachHelm*Cluster predicate rather than
    *  a GolfSubTab[] (see module header). */
   activeMatch?: (pathname: string) => boolean;
+  /** Match `href` EXACTLY instead of by route prefix.
+   *
+   *  Required for the Dashboard/Home item: its href (`/golf/dashboard`) is a
+   *  prefix of every other destination in the product, so the default
+   *  `startsWith` test lit Home on literally every route — the rail and the
+   *  mobile bottom bar both showed two active tabs at once, and emitted two
+   *  `aria-current="page"` nodes, which is invalid (audit 2026-07-24, P-03).
+   *  On `/team-hub` and `/calendar` Home was the ONLY lit tab. */
+  exact?: boolean;
 }): NavItem {
-  const { label, href, icon, tabs, badge, activeMatch } = opts;
+  const { label, href, icon, tabs, badge, activeMatch, exact } = opts;
   return {
     label,
     href,
@@ -297,7 +306,7 @@ function hubToNavItem(opts: {
     activeMatch:
       activeMatch ??
       ((pathname: string) =>
-        matchesRoutePrefix(pathname, href) ||
+        (exact ? pathname === href : matchesRoutePrefix(pathname, href)) ||
         Boolean(
           tabs?.some(
             (tab) =>
@@ -323,7 +332,7 @@ export function buildCoachRailSections(badges: GolfNavBadgeCounts): NavSection[]
   const operations = GOLF_COACH_HUBS.find((h) => h.id === 'operations')!;
 
   const items: NavItem[] = [
-    hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome, exact: true }),
     hubToNavItem({
       label: surfaceName('rail-coachhelm-ai-coach'),
       href: '/golf/dashboard/intelligence',
@@ -383,7 +392,7 @@ export function buildPlayerRailSections(badges: GolfNavBadgeCounts): NavSection[
   const team = GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!;
 
   const items: NavItem[] = [
-    hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome, exact: true }),
     hubToNavItem({
       label: surfaceName('rail-coachhelm-ai-player'),
       href: '/golf/dashboard/coachhelm',
@@ -434,7 +443,7 @@ export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] 
   const calendar = GOLF_COACH_HUBS.find((h) => h.id === 'calendar')!;
 
   return [
-    hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome, exact: true }),
     hubToNavItem({
       label: 'CoachHelm',
       href: '/golf/dashboard/intelligence',
@@ -455,7 +464,7 @@ export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] 
 
 export function buildPlayerBottomNavItems(): NavItem[] {
   return [
-    hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome, exact: true }),
     hubToNavItem({
       label: 'CoachHelm',
       href: '/golf/dashboard/coachhelm',

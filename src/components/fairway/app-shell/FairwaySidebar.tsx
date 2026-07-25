@@ -233,11 +233,17 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
   const Link = linkComponent ?? DefaultLink;
   const isCollapsed = isMobile ? false : collapsed;
 
+  // Take the first LETTER of each word, ignoring punctuation-only tokens.
+  //
+  // The old `split(' ').map(n => n[0])` took whatever character led each token,
+  // so the demo coach "Coach (Demo)" rendered as "C(" in the rail while the
+  // More sheet showed "CD" for the same user (audit 2026-07-24, M1). Any name
+  // with a parenthetical, hyphen or middle initial hit this.
   const initials = useCallback((name: string) => {
     return (
       name
-        .split(' ')
-        .map((n) => n[0])
+        .split(/\s+/)
+        .map((word) => word.match(/\p{L}/u)?.[0] ?? '')
         .filter(Boolean)
         .join('')
         .slice(0, 2)

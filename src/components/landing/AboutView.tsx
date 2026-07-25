@@ -91,7 +91,7 @@ export function AboutView() {
 
       {/* The problem + belief card */}
       <section className="mx-auto max-w-[1320px] px-[clamp(20px,4vw,64px)] py-[clamp(56px,8vw,110px)]">
-        <div className="grid items-center gap-[clamp(32px,5vw,72px)]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+        <div className="grid items-center gap-[clamp(32px,5vw,72px)]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))' }}>
           <Reveal className="max-w-[520px]">
             <div className="font-fw-mono text-[0.719rem] uppercase tracking-[0.18em] text-text-tertiary">The Problem</div>
             <h2

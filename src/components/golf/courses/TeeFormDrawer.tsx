@@ -326,7 +326,7 @@ export function TeeFormDrawer({
           {error && (
             <div
               role="alert"
-              className="mb-4 rounded-fw-sm border border-fw-danger/30 bg-fw-danger-bg px-3 py-2.5 text-body-sm text-fw-danger"
+              className="mb-4 rounded-fw-sm border border-fw-danger/30 bg-fw-danger-bg px-3 py-2.5 text-body-sm text-fw-danger-ink"
             >
               {error}
             </div>

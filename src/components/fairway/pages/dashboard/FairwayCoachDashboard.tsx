@@ -493,7 +493,7 @@ export function FairwayCoachDashboard({
       <div className="flex items-center gap-3 px-4 py-3">
         <Avatar name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+          <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
             {r.player_name}
           </p>
           <p className="mt-0.5 truncate font-fw-sans text-caption text-text-tertiary">
@@ -618,6 +618,7 @@ export function FairwayCoachDashboard({
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {scoringAvg != null ? (
             <MetricCard
+              labelLines={2}
               label="Scoring Avg"
               value={Number(scoringAvg.toFixed(1))}
               decimals={1}
@@ -639,6 +640,7 @@ export function FairwayCoachDashboard({
             // Keep ONE tile silhouette across the KPI row (P010): the null metric
             // recedes inside a MetricCard `empty` shell, not a different Surface shape.
             <MetricCard
+              labelLines={2}
               label="Scoring Avg"
               value={0}
               icon={<IconChartBar size={18} />}
@@ -650,6 +652,7 @@ export function FairwayCoachDashboard({
 
           {girValue != null ? (
             <MetricCard
+              labelLines={2}
               label="GIR %"
               value={Number(girValue.toFixed(0))}
               suffix="%"
@@ -670,6 +673,7 @@ export function FairwayCoachDashboard({
             // Same MetricCard `empty` silhouette as the other null KPIs (P010) —
             // one tile vocabulary across the row, never a different Surface shape.
             <MetricCard
+              labelLines={2}
               label="GIR %"
               value={0}
               icon={<IconTarget size={18} />}
@@ -681,6 +685,7 @@ export function FairwayCoachDashboard({
 
           {puttsValue != null ? (
             <MetricCard
+              labelLines={2}
               label="Putts / Rd"
               value={Number(puttsValue.toFixed(1))}
               decimals={1}
@@ -700,6 +705,7 @@ export function FairwayCoachDashboard({
           ) : (
             // Same MetricCard `empty` silhouette as the other null KPIs (P010).
             <MetricCard
+              labelLines={2}
               label="Putts / Rd"
               value={0}
               icon={<IconGolf size={18} />}
@@ -711,6 +717,7 @@ export function FairwayCoachDashboard({
 
           {/* Roster is a real count (not a derived aggregate) — always honest. */}
           <MetricCard
+            labelLines={2}
             label="Roster"
             value={stats.rosterSize}
             icon={<IconUsers size={18} />}
@@ -832,17 +839,34 @@ export function FairwayCoachDashboard({
               <h3 className="font-fw-sans text-h3 font-semibold text-text-primary">
                 Performance Trend
               </h3>
+              {/* Mirror the Recent Rounds pattern above: a narrow window is not
+                  an empty roster. Telling a coach with 7 players and 90 rounds
+                  to "invite players" because they filtered to 7 days reads as
+                  the product not knowing its own state (audit 2026-07-24, H5). */}
               <InsufficientData
-                title="Trend appears as rounds build"
-                description="Trends need rounds across multiple months. Invite players and keep logging."
+                title={range !== 'all' ? 'Not enough rounds in this window' : 'Trend appears as rounds build'}
+                description={
+                  range !== 'all'
+                    ? 'A trend needs rounds spread across a longer period. Try a wider window.'
+                    : 'Trends need rounds across multiple months. Invite players and keep logging.'
+                }
               />
+              {/* handleRangeChange, not setRange — the range is also a URL
+                  contract (force-dynamic ?range re-fetch); setting state alone
+                  would leave the page showing stale data. */}
               <div>
-                <Button variant="secondary" size="sm" asChild>
-                  <Link href="/golf/dashboard/roster">
-                    <IconPlus size={16} />
-                    <span>Invite Players</span>
-                  </Link>
-                </Button>
+                {range !== 'all' ? (
+                  <Button variant="secondary" size="sm" onClick={() => handleRangeChange('all')}>
+                    <span>Widen the window</span>
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" asChild>
+                    <Link href="/golf/dashboard/roster">
+                      <IconPlus size={16} />
+                      <span>Invite Players</span>
+                    </Link>
+                  </Button>
+                )}
               </div>
             </Surface>
           )}
@@ -883,7 +907,7 @@ export function FairwayCoachDashboard({
                             className={cn(
                               'grid h-6 w-6 shrink-0 place-items-center rounded-full font-fw-mono text-caption font-medium tabular-nums',
                               i === 0
-                                ? 'bg-accent-500 text-text-on-accent'
+                                ? 'bg-accent-700 text-text-on-accent'
                                 : 'bg-surface text-text-tertiary',
                             )}
                           >
@@ -936,7 +960,11 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
     <Surface elevation="border" padding="md" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-fw-sans text-h3 font-semibold text-text-primary">Team Pulse</h3>
-        {roundsThisWeek > 0 ? (
+        {/* Suppressed when there is nothing to classify: the pill sat directly
+            above "No movement to read yet" and the card contradicted itself
+            (audit 2026-07-24, H6). The count still shows in the empty-state
+            copy below, where it reads as context rather than a claim. */}
+        {roundsThisWeek > 0 && tracked > 0 ? (
           <StatusPill tone="accent" dot>
             {roundsThisWeek} this week
           </StatusPill>
@@ -947,7 +975,11 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
         <InsufficientData
           compact
           title="No movement to read yet"
-          description="Pulse compares recent rounds. It fills in as players log activity."
+          description={
+            roundsThisWeek > 0
+              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
+              : 'Pulse compares recent rounds. It fills in as players log activity.'
+          }
         />
       ) : (
         <div className="grid grid-cols-3 gap-3">
