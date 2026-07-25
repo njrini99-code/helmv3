@@ -48,6 +48,13 @@ export interface SliderProps
   /** Decimal places for the readout. Inferred from `step` when omitted. */
   decimals?: number;
   /**
+   * Map the raw value to what the reader sees. Use when the stored unit is
+   * engine vocabulary and the displayed one is human — a confidence of 0.55
+   * shown as "55%". Affects the readout, the ticks and `aria-valuetext`; the
+   * value passed to `onValueChange` is always the RAW one.
+   */
+  displayTransform?: (value: number) => number;
+  /**
    * Tick marks under the rail. `true` derives one per `step` (capped so a
    * fine-grained scale doesn't print 40 labels); pass an array for explicit
    * ones. Omit for a clean rail.
@@ -120,6 +127,7 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
     step,
     unit,
     decimals,
+    displayTransform,
     ticks,
     label,
     description,
@@ -138,7 +146,8 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
   const places = decimals ?? decimalsForStep(step);
   const span = max - min;
   const pct = span > 0 ? Math.min(1, Math.max(0, (value - min) / span)) : 0;
-  const readout = value.toFixed(places);
+  const show = (n: number) => (displayTransform ? displayTransform(n) : n).toFixed(places);
+  const readout = show(value);
 
   const marks = React.useMemo(() => {
     if (!ticks) return [];
@@ -258,7 +267,7 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
                 className="absolute -translate-x-1/2 font-fw-mono text-caption tabular-nums text-text-tertiary"
                 style={{ left: railOffset(p) }}
               >
-                {m.toFixed(places)}
+                {show(m)}
               </span>
             );
           })}

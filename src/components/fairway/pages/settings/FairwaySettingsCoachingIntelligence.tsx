@@ -34,7 +34,11 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useCoachPhilosophy } from '@/hooks/coachhelm/useCoachPhilosophy';
 import { PriorityRanker, SensitivitySlider } from '@/components/golf/coachhelm/settings';
-import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
+import {
+  THRESHOLD_RANGES,
+  SIGNAL_CONTROL_RANGES,
+  confidenceFloorForSensitivity,
+} from '@/lib/coachhelm/constants';
 import { ALERT_GROUPS, type CoachPhilosophy } from '@/lib/coachhelm/types';
 import {
   getOrCreateTeamCoachHelmSettings,
@@ -44,7 +48,16 @@ import {
 } from '@/app/golf/actions/insights';
 import { useGolfUser } from '@/contexts/golf-user-context';
 
-import { ViewHeader, Surface, Switch, InlineNotice, EmptyState, Button, Slider } from '@/components/fairway';
+import {
+  ViewHeader,
+  Surface,
+  Switch,
+  InlineNotice,
+  EmptyState,
+  Button,
+  Slider,
+  Segmented,
+} from '@/components/fairway';
 import {
   SettingsStack,
   SettingsGroup,
@@ -69,6 +82,10 @@ type PriorityValues = Pick<
 // persisted (CRUD allowlist), so restoring the slider loses no data; it just
 // stops hiding a control the page's own copy ("Fine-tune Thresholds") promises.
 type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold' | 'bubbleZoneRange';
+/** Signal controls (migration 20260725090000) — each replaces an engine
+ *  constant and defaults to it, so shipping them changed nobody's alert
+ *  volume until they move one. */
+type SignalControlKey = 'minInsightConfidence' | 'minRoundsForSignal';
 type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
@@ -267,6 +284,25 @@ function CoachingIntelligenceBody({
   const handleThresholdChange = (key: ThresholdKey, value: number) => {
     debouncedSave(`threshold:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
   };
+
+  const handleSignalControlChange = (key: SignalControlKey, value: number) => {
+    debouncedSave(`signal:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
+  };
+
+  const handleDigestChange = (value: CoachPhilosophy['alertDigest']) => {
+    debouncedSave('signal:alertDigest', { alertDigest: value });
+  };
+
+  // The sensitivity preset already imposes a floor (0.40 / 0.55 / 0.70). The
+  // Minimum confidence slider is a SECOND floor layered on top via max(), so
+  // below the preset it does nothing — say so plainly rather than letting a
+  // coach drag a control that cannot change anything.
+  const presetConfidenceFloor = philosophy
+    ? confidenceFloorForSensitivity(philosophy.alertSensitivity)
+    : 0.55;
+  const confidenceFloorIsPresetBound = philosophy
+    ? philosophy.minInsightConfidence <= presetConfidenceFloor
+    : true;
 
   // "7/10 on" beside the Active alerts header — with ten switches spread over
   // three sub-groups there was no way to see how much of CoachHelm was muted
@@ -554,6 +590,62 @@ function CoachingIntelligenceBody({
             </p>
           </Surface>
         ) : null}
+
+        {/* Signal controls — new 2026-07-25. Every one of these replaced a
+            constant the engine had hard-coded, and each DEFAULTS to that
+            constant, so a coach who never opens this section is unaffected. */}
+        <SettingsGroup
+          title="Signal controls"
+          description="How much evidence CoachHelm needs before it says anything."
+          footnote={
+            confidenceFloorIsPresetBound
+              ? `Your ${philosophy.alertSensitivity} preset already requires ${Math.round(presetConfidenceFloor * 100)}% — this only matters above that.`
+              : `Above your ${philosophy.alertSensitivity} preset's ${Math.round(presetConfidenceFloor * 100)}% floor, so this is the number in effect.`
+          }
+        >
+          <div className="px-4 py-4">
+            <Slider
+              label="Minimum confidence"
+              description="How sure CoachHelm must be before an insight reaches you."
+              value={philosophy.minInsightConfidence}
+              onValueChange={(v) => handleSignalControlChange('minInsightConfidence', v)}
+              {...SIGNAL_CONTROL_RANGES.minInsightConfidence}
+              decimals={0}
+              // Shown as a percentage — "0.55 confidence" is engine vocabulary,
+              // "55%" is what a coach reads.
+              displayTransform={(n) => Math.round(n * 100)}
+              unit="%"
+            />
+          </div>
+          <div className="px-4 py-4">
+            <Slider
+              label="Minimum rounds"
+              description="Rounds a player needs logged before CoachHelm draws conclusions about them."
+              value={philosophy.minRoundsForSignal}
+              onValueChange={(v) => handleSignalControlChange('minRoundsForSignal', v)}
+              {...SIGNAL_CONTROL_RANGES.minRoundsForSignal}
+              unit="rounds"
+              ticks
+            />
+          </div>
+          <SettingsRow
+            stacked
+            label="Alert delivery"
+            description="Surface alerts the moment they are generated, or batch them."
+            control={
+              <Segmented
+                value={philosophy.alertDigest}
+                onValueChange={(v) => handleDigestChange(v as CoachPhilosophy['alertDigest'])}
+                options={[
+                  { value: 'immediate', label: 'Immediate' },
+                  { value: 'daily', label: 'Daily' },
+                  { value: 'weekly', label: 'Weekly' },
+                ]}
+                aria-label="Alert delivery cadence"
+              />
+            }
+          />
+        </SettingsGroup>
 
         {/* Display Preferences */}
         <Surface elevation="border" padding="lg">

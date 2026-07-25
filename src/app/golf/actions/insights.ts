@@ -40,7 +40,7 @@ import type {
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
-import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
+import { PHILOSOPHY_DEFAULTS, confidenceFloorForSensitivity } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
@@ -219,6 +219,11 @@ interface PhilosophyDbRow {
   show_strokes_gained?: boolean | null;
   show_advanced_stats?: boolean | null;
   insight_verbosity?: string | null;
+  // Migration 20260725090000 — optional so this parses against a database
+  // where the migration has not been applied yet.
+  min_insight_confidence?: string | number | null;
+  min_rounds_for_signal?: number | null;
+  alert_digest?: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -270,6 +275,12 @@ async function getCoachPhilosophy(
     showStrokesGained: true,
     showAdvancedStats: true,
     insightVerbosity: 'detailed',
+    // Signal controls (migration 20260725090000). These defaults ARE the
+    // engine's prior hard-coded constants, so a coach with no row — or a
+    // database where the migration has not landed — behaves exactly as before.
+    minInsightConfidence: 0.3,
+    minRoundsForSignal: 3,
+    alertDigest: 'immediate',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -317,6 +328,12 @@ async function getCoachPhilosophy(
     showStrokesGained: row.show_strokes_gained ?? defaults.showStrokesGained,
     showAdvancedStats: row.show_advanced_stats ?? defaults.showAdvancedStats,
     insightVerbosity: row.insight_verbosity === 'detailed' ? 'detailed' : 'brief',
+    minInsightConfidence: parseNum(row.min_insight_confidence, defaults.minInsightConfidence),
+    minRoundsForSignal: row.min_rounds_for_signal ?? defaults.minRoundsForSignal,
+    alertDigest:
+      row.alert_digest === 'daily' || row.alert_digest === 'weekly'
+        ? row.alert_digest
+        : defaults.alertDigest,
     createdAt: row.created_at ?? defaults.createdAt,
     updatedAt: row.updated_at ?? defaults.updatedAt,
   };
@@ -349,15 +366,32 @@ function shouldIncludeInsight(insightType: InsightType, philosophy: CoachPhiloso
  * Gets the minimum confidence threshold based on alert sensitivity
  */
 function getConfidenceThreshold(sensitivity: CoachPhilosophy['alertSensitivity']): number {
-  switch (sensitivity) {
-    case 'aggressive':
-      return 0.4; // Show more insights
-    case 'conservative':
-      return 0.7; // Only high confidence insights
-    case 'balanced':
-    default:
-      return 0.55;
-  }
+  // Single source of truth — the settings screen renders the same numbers to
+  // explain what a preset already requires, and a client component cannot
+  // import from this `'use server'` module.
+  return confidenceFloorForSensitivity(sensitivity);
+}
+
+/**
+ * The confidence floor actually applied to this coach's insights.
+ *
+ * The Aggressive/Balanced/Conservative preset sets a coarse floor
+ * (0.40 / 0.55 / 0.70). `minInsightConfidence` is an ADDITIONAL floor the
+ * coach can raise on top of it — so someone who wants Balanced's alert mix
+ * but only high-confidence claims can tighten without switching preset (and
+ * inheriting everything else Conservative changes).
+ *
+ * `max`, not override: the setting can only ever make CoachHelm quieter than
+ * the preset, never louder. At its default of 0.30 it sits below every preset
+ * and is a no-op — which is why shipping the control changes nobody's alert
+ * volume until they move it.
+ */
+export function effectiveConfidenceThreshold(
+  philosophy: Pick<CoachPhilosophy, 'alertSensitivity' | 'minInsightConfidence'>,
+): number {
+  const preset = getConfidenceThreshold(philosophy.alertSensitivity);
+  const floor = philosophy.minInsightConfidence;
+  return Number.isFinite(floor) ? Math.max(preset, floor) : preset;
 }
 
 // ============================================================================
@@ -820,7 +854,7 @@ async function generateTeamInsightsImpl() {
 
     // 2.5. Fetch coach philosophy settings
     const philosophy = await getCoachPhilosophy(coach.id);
-    const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+    const confidenceThreshold = effectiveConfidenceThreshold(philosophy);
 
     // 3. Get team players via golf_team_members
     const { data: teamMembers, error: membersError } = await supabase
@@ -3846,7 +3880,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
 
     // Get coach philosophy
     const philosophy = await getCoachPhilosophy(coach.id, admin);
-    let confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+    let confidenceThreshold = effectiveConfidenceThreshold(philosophy);
 
     // W27 — alert_posture multiplier. The coach's per-player intent row
     // modulates the philosophy-level threshold so aggressive players get
@@ -3872,6 +3906,33 @@ async function triggerPlayerInsightsAfterRoundImpl(
         },
         'info',
       );
+    }
+
+    // Coach's "minimum rounds before CoachHelm speaks" floor. Prior to this
+    // the engine's only round gate was ABSOLUTE_MIN_ROUNDS=4 buried in the
+    // pattern miner — a coach could not raise it, so a player with 4 rounds
+    // got the same confident prose as one with 40. Checked here, where the
+    // philosophy is already loaded, so a starved player is skipped BEFORE any
+    // generator runs rather than having its output filtered afterwards.
+    const { count: completedRoundCount } = await admin
+      .from('golf_rounds')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', playerId)
+      .eq('status', 'completed');
+
+    if ((completedRoundCount ?? 0) < philosophy.minRoundsForSignal) {
+      await logServerEvent(
+        `[insights.triggerPlayerInsightsAfterRound] player has ${completedRoundCount ?? 0} completed rounds, coach floor is ${philosophy.minRoundsForSignal} — skipping`,
+        {
+          action: 'insights.triggerPlayerInsightsAfterRound.belowRoundFloor',
+          featureArea: 'coachhelm',
+          playerId,
+          // A coach setting doing its job, not a fault.
+          skipSentry: true,
+        },
+        'info',
+      );
+      return { success: true, insights_created: 0 };
     }
 
     // 2026-05-24 Wave 7B — philosophy gate (replaces the post-filter sweep

@@ -38,6 +38,9 @@ const philosophy: CoachPhilosophy = {
   showAdvancedStats: false,
   insightVerbosity: 'brief',
   createdAt: '2026-05-31T00:00:00.000Z',
+  minInsightConfidence: 0.3,
+  minRoundsForSignal: 3,
+  alertDigest: 'immediate' as const,
   updatedAt: '2026-05-31T00:00:00.000Z',
 };
 
@@ -122,6 +125,32 @@ vi.mock('@/components/fairway', () => ({
     </header>
   ),
   Surface: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
+  // Test double for the Segmented primitive (Alert delivery cadence).
+  Segmented: ({
+    value,
+    onValueChange,
+    options,
+    'aria-label': ariaLabel,
+  }: {
+    value: string;
+    onValueChange: (v: string) => void;
+    options: { value: string; label: string }[];
+    'aria-label'?: string;
+  }) => (
+    <div role="group" aria-label={ariaLabel}>
+      {options.map((o) => (
+        // eslint-disable-next-line helm/no-raw-button
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onValueChange(o.value)}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  ),
   // Test double for the Fairway Slider primitive, which replaced the
   // hand-rolled ThresholdSlider (2026-07-25). Renders the label so the
   // "all 3 thresholds are present" assertion below still has something to

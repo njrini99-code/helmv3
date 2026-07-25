@@ -45,6 +45,16 @@ export interface CoachPhilosophy {
     showAdvancedStats: boolean;
     insightVerbosity: 'brief' | 'detailed';
 
+    // Signal controls (migration 20260725090000).
+    // Each replaces a constant the engine used to hard-code, and each DEFAULTS
+    // to that constant — so a coach who never touches them sees no change.
+    /** Confidence floor an insight must clear to surface (0.10–0.90). */
+    minInsightConfidence: number;
+    /** Rounds a player needs logged before CoachHelm speaks about them (1–15). */
+    minRoundsForSignal: number;
+    /** How alerts reach the coach. */
+    alertDigest: 'immediate' | 'daily' | 'weekly';
+
     createdAt: string;
     updatedAt: string;
 }

@@ -42,6 +42,13 @@ interface PhilosophyDbRow {
     show_strokes_gained: boolean;
     show_advanced_stats: boolean;
     insight_verbosity: string;
+    // Migration 20260725090000. Optional on the row type so a client running
+    // against a database where the migration has not landed yet still parses
+    // — dbToTs falls back to PHILOSOPHY_DEFAULTS, which ARE the engine's
+    // prior constants, so the UI shows the truth either way.
+    min_insight_confidence?: string | number | null;
+    min_rounds_for_signal?: number | null;
+    alert_digest?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -77,6 +84,17 @@ function dbToTs(row: PhilosophyDbRow): CoachPhilosophy {
         alertPar3Issues: row.alert_par_3_issues,
         showStrokesGained: row.show_strokes_gained,
         showAdvancedStats: row.show_advanced_stats,
+        minInsightConfidence:
+            row.min_insight_confidence == null
+                ? PHILOSOPHY_DEFAULTS.minInsightConfidence
+                : typeof row.min_insight_confidence === 'string'
+                  ? parseFloat(row.min_insight_confidence)
+                  : row.min_insight_confidence,
+        minRoundsForSignal: row.min_rounds_for_signal ?? PHILOSOPHY_DEFAULTS.minRoundsForSignal,
+        alertDigest:
+            row.alert_digest === 'daily' || row.alert_digest === 'weekly'
+                ? row.alert_digest
+                : 'immediate',
         // Map 'minimal'/'standard' to 'brief', keep 'detailed' as-is
         insightVerbosity: (row.insight_verbosity === 'detailed' ? 'detailed' : 'brief') as 'brief' | 'detailed',
         createdAt: row.created_at,
@@ -114,6 +132,9 @@ function tsToDb(data: Partial<CoachPhilosophy>): Record<string, unknown> {
         showStrokesGained: 'show_strokes_gained',
         showAdvancedStats: 'show_advanced_stats',
         insightVerbosity: 'insight_verbosity',
+        minInsightConfidence: 'min_insight_confidence',
+        minRoundsForSignal: 'min_rounds_for_signal',
+        alertDigest: 'alert_digest',
     };
 
     const result: Record<string, unknown> = {};

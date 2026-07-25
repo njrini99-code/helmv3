@@ -313,21 +313,34 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <Surface elevation="border" padding="lg">
-      <div className="mb-5 flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-fw-sm bg-surface-sunken text-text-secondary">
+    // The heading sits OUTSIDE the card, as a tracked eyebrow rather than a
+    // display-scale h2 inside it. Thirty-nine of these stacked down the page,
+    // each with an h2 and 32px of padding, is what made settings read as a
+    // long form instead of a settings app — every card announced itself at the
+    // same weight as the page title, and scanning meant reading, not glancing.
+    // Restyled HERE so all 39 call sites inherit it without touching their
+    // bodies (2026-07-25).
+    <section className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2.5 px-1">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-text-tertiary [&_svg]:h-4 [&_svg]:w-4">
           {icon}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h2 className="font-fw-display text-h2 text-text-primary">{title}</h2>
+          <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+            {title}
+          </h2>
           {description ? (
-            <p className="font-fw-sans text-body-sm text-text-secondary">{description}</p>
+            <p className="font-fw-sans text-caption text-text-secondary">{description}</p>
           ) : null}
         </div>
         {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
       </div>
-      {children}
-    </Surface>
+      {/* md (24px), not lg (32px): the title no longer lives in here, so the
+          card is pure content and the extra air only cost screens. */}
+      <Surface elevation="border" padding="md">
+        {children}
+      </Surface>
+    </section>
   );
 }
 
@@ -592,7 +605,7 @@ export function FairwaySettingsGeneral() {
     return (
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
         <ViewHeader eyebrow="Settings" title="Settings" />
-        <div className="mt-8 space-y-6" role="status" aria-busy="true" aria-live="polite">
+        <div className="mt-8 flex flex-col gap-7" role="status" aria-busy="true" aria-live="polite">
           <span className="sr-only">Loading settings…</span>
           {[1, 2, 3].map((i) => (
             <Surface key={i} elevation="border" padding="lg">
@@ -625,7 +638,7 @@ export function FairwaySettingsGeneral() {
         }
       />
 
-      <div className="mt-8 space-y-6">
+      <div className="mt-8 flex flex-col gap-7">
         {/* Identity card */}
         <Surface elevation="border" padding="md" className="flex items-center gap-4">
           <Avatar src={profile.avatarUrl ?? undefined} name={profile.name} size="lg" />
