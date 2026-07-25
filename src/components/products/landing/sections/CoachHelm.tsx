@@ -1,5 +1,9 @@
+'use client';
+
 import Image from 'next/image';
-import styles from '../products-landing.module.css';
+import { useRef } from 'react';
+import { useScene } from '@/lib/motion/gsap/useScene';
+import { coachHelmDeepScene } from '../scenes/coachHelmDeepScene';
 
 const grid2: React.CSSProperties = {
   display: 'grid',
@@ -51,8 +55,13 @@ function BulletList({ items }: { items: string[] }) {
 
 /** CoachHelm — diagnosis, development plan, and coach triage in three beats. */
 export function CoachHelm() {
+  const rootRef = useRef<HTMLElement>(null);
+  // P5 · the evidence cascade: symptom → candidates → elimination → survivor →
+  // cause → receipts → verdict. Replaces the ambient `.scan` sweep.
+  useScene(rootRef, coachHelmDeepScene);
+
   return (
-    <section id="coachhelm" style={{ scrollMarginTop: 80, background: 'var(--canvas)' }}>
+    <section ref={rootRef} id="coachhelm" style={{ scrollMarginTop: 80, background: 'var(--canvas)' }}>
       {/* Intro */}
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(60px,8vw,112px) clamp(20px,4vw,64px) clamp(16px,3vw,32px)' }}>
         <div style={{ maxWidth: 680 }} data-reveal>
@@ -96,8 +105,7 @@ export function CoachHelm() {
           </div>
 
           <div data-reveal data-reveal-delay="90" style={{ position: 'relative' }}>
-            <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(165deg,#12110f,var(--dark))', color: '#fff', boxShadow: 'var(--raise)', border: '1px solid oklch(1 0 0/0.08)' }}>
-              <div className={styles.scan} aria-hidden style={{ position: 'absolute', top: 0, bottom: 0, width: '60%', background: 'linear-gradient(90deg,transparent,oklch(0.648 0.149 149.6/0.07),transparent)', pointerEvents: 'none' }} />
+            <div data-ch-card style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(165deg,#12110f,var(--dark))', color: '#fff', boxShadow: 'var(--raise)', border: '1px solid oklch(1 0 0/0.08)' }}>
               <div style={{ position: 'relative', padding: 'clamp(22px,3vw,30px)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'oklch(0.62 0.008 85)' }}>Root cause · Putting</span>
@@ -105,10 +113,52 @@ export function CoachHelm() {
                     <span style={{ fontSize: 9 }}>■</span>Measured
                   </span>
                 </div>
-                <h4 style={{ margin: '16px 0 0', fontSize: 'clamp(1.2rem,2vw,1.5rem)', lineHeight: 1.2, fontWeight: 640, letterSpacing: '-0.015em' }}>
+                <h4 data-ch-symptom style={{ margin: '16px 0 0', fontSize: 'clamp(1.2rem,2vw,1.5rem)', lineHeight: 1.2, fontWeight: 640, letterSpacing: '-0.015em' }}>
                   3.2 three-putts per round — up from 1.4 in the fall.
                 </h4>
-                <p style={{ margin: '12px 0 0', fontSize: 14, lineHeight: 1.6, color: 'oklch(0.78 0.008 85)' }}>
+                {/* THE CAUSAL TEST — the one beat neither marketing page had.
+                    CoachHelm's actual differentiator is that it tests for
+                    causation rather than surfacing correlations
+                    (lib/coachhelm/v2/mining/causal-engine.ts: temporal
+                    precedence, dose–response, confounder elimination). A card
+                    that only prints the conclusion asks for trust; showing the
+                    candidates being eliminated earns it. The scene strikes
+                    these through one at a time, leaving the survivor. */}
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'oklch(0.6 0.008 85)', marginBottom: 9 }}>
+                    Candidate causes tested
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {[
+                      { label: 'Green speeds changed mid-season', why: 'no temporal precedence' },
+                      { label: 'Putting practice volume dropped', why: 'no dose–response' },
+                      { label: 'Equipment change', why: 'confounded with travel' },
+                    ].map((c) => (
+                      <div
+                        key={c.label}
+                        data-cause="ruled-out"
+                        style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}
+                      >
+                        <span data-cause-label style={{ fontSize: 13, color: 'oklch(0.72 0.008 85)' }}>{c.label}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'oklch(0.58 0.008 85)', whiteSpace: 'nowrap' }}>
+                          {c.why}
+                        </span>
+                      </div>
+                    ))}
+                    <div
+                      data-cause="survivor"
+                      style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, paddingTop: 3 }}
+                    >
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Lag speed control beyond 30 ft</span>
+                      <span data-cause-marker style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--mono)', fontSize: 10.5, color: 'oklch(0.82 0.11 150)', whiteSpace: 'nowrap' }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+                        survives
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <p data-ch-cause style={{ margin: '16px 0 0', fontSize: 14, lineHeight: 1.6, color: 'oklch(0.78 0.008 85)' }}>
                   <span style={{ color: 'oklch(0.6 0.008 85)', fontWeight: 500 }}>Caused by — </span>lag speed control
                   breaks down beyond 30 ft; the first putt is finishing 6+ ft short, leaving knee-knockers for par.
                 </p>
@@ -142,7 +192,7 @@ export function CoachHelm() {
                     </p>
                   </div>
                 </div>
-                <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 14px' }}>
+                <div data-ch-verdict style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 14px' }}>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'oklch(0.62 0.008 85)' }}>82% confidence</span>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 600, color: 'oklch(0.82 0.11 150)', background: 'oklch(0.648 0.149 149.6/0.14)', padding: '3px 9px', borderRadius: 9999 }}>Proven</span>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'oklch(0.78 0.008 85)' }}>~2.0 str/rd at stake</span>
@@ -166,7 +216,7 @@ export function CoachHelm() {
                 {/* Focus 1 */}
                 <div style={{ border: '1px solid var(--line)', borderRadius: 16, padding: 15, background: 'var(--canvas)' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
-                    <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent)', color: '#fff', fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>1</span>
+                    <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent700)', color: '#fff', fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>1</span>
                     <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--accent50)', color: 'var(--accent700)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                         <circle cx="12" cy="12" r="9" />
@@ -259,8 +309,8 @@ export function CoachHelm() {
             <div style={{ borderRadius: 22, background: 'var(--surface)', border: '1px solid var(--line)', boxShadow: 'var(--raise)', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 20px', borderBottom: '1px solid var(--line)' }}>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink3)' }}>Intelligence · Triage Desk</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--onacc)', background: 'var(--accent)', padding: '6px 12px', borderRadius: 9999, boxShadow: '0 2px 6px oklch(.35 .08 150/.28)' }}>
-                  <span className={styles.pulse} style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--onacc)', background: 'var(--accent700)', padding: '6px 12px', borderRadius: 9999, boxShadow: '0 2px 6px oklch(.35 .08 150/.28)' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />
                   Scan team
                 </span>
               </div>
@@ -287,7 +337,7 @@ export function CoachHelm() {
                     <div style={{ marginTop: 2, fontSize: 12.5, color: 'var(--ink2)' }}>3-putts spiking beyond 30 ft</div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--onacc)', background: 'var(--accent)', padding: '3px 8px', borderRadius: 6 }}>New</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--onacc)', background: 'var(--accent700)', padding: '3px 8px', borderRadius: 6 }}>New</span>
                     <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink3)' }}>~2.0 str</span>
                   </div>
                 </div>

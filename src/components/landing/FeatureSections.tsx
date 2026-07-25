@@ -5,7 +5,10 @@ import { useRef } from 'react';
 import { CoachHelmPanel } from './mockups/CoachHelmPanel';
 import { PlayerDetailCard } from './mockups/PlayerDetailCard';
 import { TrackingCockpit } from './mockups/TrackingCockpit';
-import { Reveal, useParallax, useSequence } from './motion';
+import { Reveal } from './motion';
+import { useScene } from '@/lib/motion/gsap/useScene';
+import { captureScene } from './scenes/captureScene';
+import { coachHelmScene } from './scenes/coachHelmScene';
 
 /**
  * The two feature chapters with distinct spatial signatures:
@@ -19,9 +22,10 @@ const AUTO_GRID = { gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100
 
 export function CoachHelmSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  useParallax(sectionRef);
-  useSequence(panelRef);
+  // GSAP owns this chapter end to end — see coachHelmScene. The legacy
+  // `useParallax` tilt and `useSequence` stagger wrote the same transforms and
+  // opacities the scene drives, so they were removed rather than layered.
+  useScene(sectionRef, coachHelmScene);
 
   return (
     <section id="coachhelm" ref={sectionRef} className="scroll-mt-[90px] bg-stone-950 text-text-on-accent">
@@ -29,7 +33,7 @@ export function CoachHelmSection() {
         className="mx-auto grid max-w-[1320px] items-center gap-[clamp(36px,5vw,72px)] px-[clamp(20px,4vw,64px)] py-[clamp(80px,10vw,150px)]"
         style={AUTO_GRID}
       >
-        <Reveal wipeOnly data-parallax="22" className="max-w-[440px]">
+        <div data-ch="copy" className="max-w-[440px]">
           <div className="flex items-center gap-[9px]">
             <Image src="/helm-golf-logo-transparent.png" alt="" width={22} height={22} className="h-[22px] w-[22px]" />
             <span className="font-fw-mono text-[0.719rem] uppercase tracking-[0.18em] text-[oklch(0.75_0.13_150)]">CoachHelm</span>
@@ -44,18 +48,16 @@ export function CoachHelmSection() {
             An intelligence layer that reads your program&apos;s own rounds and resolves them into an evidence-backed
             focus — with the sources it used, never a black box.
           </p>
-        </Reveal>
-        <Reveal
-          wipeOnly
-          data-parallax="52"
+        </div>
+        <div
           className="will-change-transform"
           role="img"
           aria-label="Preview of a CoachHelm insight: strokes gained by category over the last 10 rounds, putting flagged as the leak at −0.6 strokes per round, with a recommended practice block"
         >
-          <div ref={panelRef} aria-hidden="true">
+          <div aria-hidden="true">
             <CoachHelmPanel />
           </div>
-        </Reveal>
+        </div>
       </div>
     </section>
   );
@@ -63,9 +65,11 @@ export function CoachHelmSection() {
 
 export function PerformanceSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
-  const cockpitRef = useRef<HTMLDivElement | null>(null);
-  useParallax(sectionRef);
-  useSequence(cockpitRef);
+  // The capture chapter is GSAP-owned end to end: the legacy `useParallax`
+  // tilt and `useSequence` on-enter stagger were removed rather than left
+  // alongside it, because both write transforms/opacity onto the same nodes
+  // `captureScene` drives — two owners for one property is a race.
+  useScene(sectionRef, captureScene);
 
   return (
     <section
@@ -103,16 +107,16 @@ export function PerformanceSection() {
             </div>
           </Reveal>
         </Reveal>
-        <Reveal
-          delay={120}
+        <div
+          data-capture="stage"
           className="order-2 w-full max-w-[380px] justify-self-center md:order-1"
           role="img"
           aria-label="Preview of live shot tracking: hole 7, par 4, 412 yards — an approach shot resolving to the green, 18 feet from the hole, with strokes gained, GIR, and putts readouts"
         >
-          <div ref={cockpitRef} aria-hidden="true">
+          <div aria-hidden="true">
             <TrackingCockpit />
           </div>
-        </Reveal>
+        </div>
       </div>
     </section>
   );

@@ -1,4 +1,9 @@
+'use client';
+
+import { useRef } from 'react';
 import styles from '../products-landing.module.css';
+import { useScene } from '@/lib/motion/gsap/useScene';
+import { dockScene } from '../scenes/dockScene';
 
 const chipStyle: React.CSSProperties = {
   display: 'flex',
@@ -35,30 +40,45 @@ const tileDesc: React.CSSProperties = {
   color: 'var(--ink2)',
 };
 
+/**
+ * A surface on the board.
+ *
+ * Rendered as a plain element, not a link. Every one of these used to be an
+ * `<a href="#getdemo">`, which meant eight identical anchors all going to the
+ * same modal — a capability list wearing navigation's clothes. Screen-reader
+ * users got eight "Roster, link" / "Calendar, link" announcements that all led
+ * to one place. The section's job is to show the surface area; converting is
+ * the header's and the closing band's job.
+ *
+ * `readout` is the live state this surface lands in once the qualifier decision
+ * reaches it, and it only exists on the four surfaces that decision actually
+ * touches.
+ */
 function FeatureTile({
-  gridColumn,
+  span,
   direction,
-  delay,
   icon,
   title,
   desc,
+  opTarget,
+  readout,
 }: {
-  gridColumn: string;
+  /** Column span on the 12-col board. Applied as a class — see the CSS note. */
+  span: 2 | 3 | 4 | 5 | 6;
   direction: 'row' | 'column';
-  delay: number;
   icon: React.ReactNode;
   title: string;
   desc: string;
+  opTarget?: string;
+  readout?: string;
 }) {
   const isRow = direction === 'row';
   return (
-    <a
-      data-reveal
-      data-reveal-delay={delay}
-      href="#getdemo"
-      className={styles.card}
+    <div
+      data-dock="tile"
+      data-op-target={opTarget}
+      className={`${styles.card} ${styles[`span${span}`]}`}
       style={{
-        gridColumn,
         display: 'flex',
         flexDirection: direction,
         alignItems: isRow ? 'center' : undefined,
@@ -73,52 +93,87 @@ function FeatureTile({
       <div style={{ minWidth: 0 }}>
         <h3 style={tileTitle}>{title}</h3>
         <p style={tileDesc}>{desc}</p>
+        {readout ? (
+          <p
+            data-op="readout"
+            style={{
+              margin: '10px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              fontFamily: 'var(--mono)',
+              fontSize: 11.5,
+              letterSpacing: '0.02em',
+              color: 'var(--accent700)',
+            }}
+          >
+            <span aria-hidden style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', flex: 'none' }} />
+            {readout}
+          </p>
+        ) : null}
       </div>
-    </a>
+    </div>
   );
 }
 
+/**
+ * A row in the qualifier standings.
+ *
+ * The board USED to render the outcome pre-decided: rows one to four already
+ * washed and ticked, row five already dimmed. That is a screenshot of an
+ * answer. Every row now renders undecided, and the decision — who travels —
+ * happens on screen when the cut line is drawn, which is the actual moment of
+ * work this tile exists for.
+ *
+ * The wash is a separate absolutely-positioned layer rather than an animated
+ * `background-color` so the reveal stays on the compositor.
+ *
+ * The below-the-cut row is NOT dimmed. It earns its de-emphasis from position
+ * (under the cut line) and from the absence of the accent wash and the check —
+ * an opacity multiplier drove its text to 2.2:1 against the cream, which the
+ * axe pass flags and a low-vision reader cannot read at all.
+ */
 function StandingRow({
   rank,
   name,
   score,
   pick,
-  dim,
+  belowCut,
 }: {
   rank: number;
   name: string;
   score: string;
   pick?: boolean;
-  dim?: boolean;
+  belowCut?: boolean;
 }) {
   return (
     <div
       style={{
+        position: 'relative',
         display: 'grid',
         gridTemplateColumns: '22px 1fr auto auto',
         alignItems: 'center',
         gap: 12,
         padding: '10px 16px',
-        borderBottom: dim ? undefined : '1px solid var(--line)',
-        background: dim ? undefined : 'var(--accent-wash)',
-        opacity: dim ? 0.6 : undefined,
+        borderBottom: belowCut ? undefined : '1px solid var(--line)',
       }}
     >
-      <span
-        style={{
-          fontFamily: 'var(--mono)',
-          fontSize: 13,
-          fontWeight: 600,
-          color: dim ? 'var(--ink3)' : 'var(--accent700)',
-        }}
-      >
+      {belowCut ? null : (
+        <span
+          data-op="wash"
+          aria-hidden
+          style={{ position: 'absolute', inset: 0, background: 'var(--accent-wash)', pointerEvents: 'none' }}
+        />
+      )}
+      <span style={{ position: 'relative', fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 600, color: 'var(--ink2)' }}>
         {rank}
       </span>
       <span
         style={{
+          position: 'relative',
           fontSize: 13.5,
           fontWeight: 560,
-          color: dim ? 'var(--ink2)' : 'var(--ink)',
+          color: 'var(--ink)',
           display: pick ? 'flex' : undefined,
           alignItems: pick ? 'center' : undefined,
           gap: pick ? 7 : undefined,
@@ -133,7 +188,7 @@ function StandingRow({
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
               color: 'var(--onacc)',
-              background: 'var(--accent)',
+              background: 'var(--accent700)',
               padding: '2px 6px',
               borderRadius: 5,
             }}
@@ -142,20 +197,13 @@ function StandingRow({
           </span>
         ) : null}
       </span>
-      <span
-        style={{
-          fontFamily: 'var(--mono)',
-          fontSize: 12.5,
-          fontWeight: 600,
-          color: dim ? 'var(--ink3)' : 'var(--accent700)',
-        }}
-      >
+      <span style={{ position: 'relative', fontFamily: 'var(--mono)', fontSize: 12.5, fontWeight: 600, color: 'var(--ink2)' }}>
         {score}
       </span>
-      {dim ? (
+      {belowCut ? (
         <span />
       ) : (
-        <span style={{ width: 16, height: 16, color: 'var(--accent)' }}>
+        <span data-op="check" style={{ position: 'relative', width: 16, height: 16, color: 'var(--accent)' }}>
           <svg viewBox="0 0 24 24" fill="none" style={{ stroke: 'currentColor', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M20 6 9 17l-5-5" />
           </svg>
@@ -165,11 +213,61 @@ function StandingRow({
   );
 }
 
+/**
+ * The travel cut. A rule drawn between fourth and fifth is the single most
+ * consequential gesture in a college golf program's week, and it is the origin
+ * of every downstream hop in this section.
+ */
+function CutLine() {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '7px 16px',
+        borderBottom: '1px solid var(--line)',
+      }}
+    >
+      <span
+        data-op="cutrule"
+        aria-hidden
+        style={{ flex: 1, height: 2, borderRadius: 2, background: 'var(--accent)' }}
+      />
+      <span
+        data-op="cutline"
+        style={{
+          fontFamily: 'var(--mono)',
+          fontSize: 9.5,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: 'var(--accent700)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Travel cut
+      </span>
+    </div>
+  );
+}
+
 /** Team Management — flagship qualifying tile + the feature bento. */
 export function TeamManagement() {
+  const rootRef = useRef<HTMLElement>(null);
+  // P2 · the dock. Eight loose tools become one board — a real Flip layout
+  // transition (absolute scatter → CSS grid), pinned and scrubbed.
+  // Once docked, the same scene has the board OPERATE: one qualifier decision
+  // propagates along the real dependency chain — travel, calendar,
+  // announcements, tasks — drawn as wiring routed through the grid gutters.
+  // The two beats share a scene because the wiring has to be measured against
+  // the DOCKED tile boxes, which only the dock timeline can produce on demand.
+  useScene(rootRef, dockScene);
+
   return (
     <section
       id="team"
+      ref={rootRef}
       style={{
         scrollMarginTop: 80,
         position: 'relative',
@@ -245,14 +343,26 @@ export function TeamManagement() {
           </p>
         </div>
 
-        <div className={styles.teamGrid}>
+        <div className={styles.teamGrid} data-dock="grid">
+          {/* The wiring layer. Empty in the markup — `operateBoard` measures the
+              tiles and injects one path per dependency hop, so the geometry is
+              never hard-coded and re-routes on every refresh. Deliberately has
+              NO viewBox: without one, SVG user units are the element's CSS
+              pixels 1:1, which is what keeps `getTotalLength()` in agreement
+              with the rendered stroke (a non-uniform viewBox scale silently
+              desyncs the dash and the line appears to leak). */}
+          <svg
+            data-op="threads"
+            aria-hidden
+            className={styles.threads}
+          />
+
           {/* Flagship tile — Qualifying & Travel Selection */}
           <div
-            data-reveal
-            data-reveal-delay="90"
+            data-dock="tile"
+            data-op="source"
+            className={styles.span7}
             style={{
-              gridColumn: 'span 7',
-              gridRow: 'span 2',
               display: 'flex',
               flexDirection: 'column',
               background: 'var(--surface)',
@@ -272,7 +382,7 @@ export function TeamManagement() {
                     width: 40,
                     height: 40,
                     borderRadius: 12,
-                    background: 'var(--accent)',
+                    background: 'var(--accent700)',
                     color: 'var(--onacc)',
                     flex: 'none',
                   }}
@@ -328,9 +438,29 @@ export function TeamManagement() {
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink3)' }}>
                     Fall Qualifier · Standings
                   </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--accent700)' }}>
-                    <span className={styles.pulse} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
-                    Top 4 travel
+                  {/* Two states stacked in one box so the swap costs no layout:
+                      the qualifier is open until the cut is drawn, then it is
+                      locked. The old ambient `pulse` dot is gone — it blinked
+                      forever without ever meaning anything. */}
+                  <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', fontSize: 11, fontWeight: 600 }}>
+                    <span data-op="pending" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--ink3)' }}>
+                      Day 5 of 5
+                    </span>
+                    <span
+                      data-op="locked"
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        whiteSpace: 'nowrap',
+                        color: 'var(--accent700)',
+                      }}
+                    >
+                      Squad locked
+                    </span>
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -338,16 +468,16 @@ export function TeamManagement() {
                   <StandingRow rank={2} name="J. Okafor" score="−3" />
                   <StandingRow rank={3} name="T. Bennett" score="E" />
                   <StandingRow rank={4} name="D. Park" score="+2" pick />
-                  <StandingRow rank={5} name="R. Costa" score="+4" dim />
+                  <CutLine />
+                  <StandingRow rank={5} name="R. Costa" score="+4" belowCut />
                 </div>
               </div>
             </div>
           </div>
 
           <FeatureTile
-            gridColumn="span 5"
+            span={5}
             direction="column"
-            delay={130}
             title="Roster"
             desc="Every player's profile, academics, eligibility, and status in one living directory."
             icon={
@@ -360,11 +490,12 @@ export function TeamManagement() {
             }
           />
           <FeatureTile
-            gridColumn="span 3"
+            span={3}
             direction="column"
-            delay={170}
             title="Calendar"
             desc="Practices, events, and RSVPs — the team's whole schedule, synced."
+            opTarget="calendar"
+            readout="Oct 14–16 blocked · 11 RSVPs out"
             icon={
               <svg {...svgProps}>
                 <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -373,11 +504,12 @@ export function TeamManagement() {
             }
           />
           <FeatureTile
-            gridColumn="span 2"
+            span={2}
             direction="column"
-            delay={200}
             title="Travel"
             desc="Trip logistics and travel squads, planned in-app."
+            opTarget="travel"
+            readout="Squad of 4 named"
             icon={
               <svg {...svgProps}>
                 <path d="M17.8 19.2 16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7l4.6 3-1.9 3.4-2.1-.4a.8.8 0 0 0-.8 1.2L6 21l1.9-3.5 3.4-1.9 3 4.6a1 1 0 0 0 1.7-.9Z" />
@@ -385,9 +517,8 @@ export function TeamManagement() {
             }
           />
           <FeatureTile
-            gridColumn="span 4"
+            span={4}
             direction="column"
-            delay={230}
             title="Messages"
             desc="Team and 1:1 chat, without another group text to manage."
             icon={
@@ -397,11 +528,12 @@ export function TeamManagement() {
             }
           />
           <FeatureTile
-            gridColumn="span 4"
+            span={4}
             direction="column"
-            delay={260}
             title="Announcements"
             desc="Broadcast to the whole roster with read receipts."
+            opTarget="announcements"
+            readout="Sent to 11 · 9 read"
             icon={
               <svg {...svgProps}>
                 <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
@@ -410,11 +542,12 @@ export function TeamManagement() {
             }
           />
           <FeatureTile
-            gridColumn="span 4"
+            span={4}
             direction="column"
-            delay={290}
             title="Tasks"
             desc="Assign follow-ups and track what's actually done."
+            opTarget="tasks"
+            readout="4 assigned · 0 overdue"
             icon={
               <svg {...svgProps}>
                 <rect x="8" y="3" width="8" height="4" rx="1" />
@@ -424,9 +557,8 @@ export function TeamManagement() {
             }
           />
           <FeatureTile
-            gridColumn="span 6"
+            span={6}
             direction="row"
-            delay={320}
             title="Documents"
             desc="Forms, waivers, and files — shared and organized."
             icon={
@@ -437,9 +569,8 @@ export function TeamManagement() {
             }
           />
           <FeatureTile
-            gridColumn="span 6"
+            span={6}
             direction="row"
-            delay={350}
             title="Recruiting HQ"
             desc="Track prospects from first look to commit."
             icon={

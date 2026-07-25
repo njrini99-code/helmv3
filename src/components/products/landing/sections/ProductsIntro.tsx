@@ -190,7 +190,7 @@ export function ProductsIntro() {
           <span>
             <h3 style={titleStyle}>Shot Tracking &amp; Stats</h3>
             <p style={descStyle}>
-              Log every shot live, and turn one round into 87 measured, benchmarked stats.
+              Log every shot live, and turn one round into 85 measured, benchmarked stats.
             </p>
           </span>
           <Arrow />

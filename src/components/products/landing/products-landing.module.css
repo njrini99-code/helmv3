@@ -57,29 +57,8 @@
 /* --- keyframes (module-scoped; every reference lives in THIS file so CSS
    Modules rewrites the @keyframes name and its animation usage together. No
    `:global` wrapper — Turbopack rejects `:global { @keyframes }`.) ---------- */
-@keyframes helmHeroUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes helmMqL {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-@keyframes helmMqR {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
-}
-@keyframes helmScan {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(320%); }
-}
-@keyframes helmPulseDot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
-}
 
 /* --- hero entrance ------------------------------------------------------- */
-.heroItem { opacity: 0; animation: helmHeroUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 /* --- hover tiles (base props live here so :hover can win over the class) -- */
 .card {
@@ -134,14 +113,10 @@
 .root .footLink:hover { color: var(--onacc); }
 
 /* --- marquee + ambient loops -------------------------------------------- */
-.mq { display: flex; width: max-content; }
-.mqL { animation: helmMqL 46s linear infinite; }
-.mqR { animation: helmMqR 52s linear infinite; }
-.scan { animation: helmScan 3.6s ease-in-out infinite; }
-.pulse { animation: helmPulseDot 2s ease-in-out infinite; }
 
 /* --- team bento: 1-col on phones, the designed 12-col grid on ≥768px ----- */
 .teamGrid {
+  position: relative;
   margin: clamp(30px, 4vw, 48px) 0 0;
   display: grid;
   grid-template-columns: 1fr;
@@ -149,7 +124,52 @@
   align-items: stretch;
 }
 @media (min-width: 768px) {
-  .teamGrid { grid-template-columns: repeat(12, 1fr); }
+  /* `minmax(0, 1fr)`, not `1fr`. A bare `1fr` is `minmax(auto, 1fr)`, so a
+     track never shrinks below its content's min-content width — with nine
+     tiles of prose the twelve tracks summed to ~1,530px inside a 1,085px
+     container and the board overflowed its own section (measured, not
+     assumed). `minmax(0, …)` lets the tracks be genuinely equal and hands the
+     shrinking to the tiles, which already carry `min-width: 0` internally. */
+  .teamGrid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+
+  /* Column spans live HERE, not in an inline `style={{ gridColumn }}`.
+     `Flip.from(..., { absolute: true })` rewrites each animating element's
+     inline style to position it absolutely and does not restore unrelated
+     inline properties — so every tile silently lost its `grid-column`, the
+     12-column board collapsed into ~49 implicit tracks, and tiles rendered
+     between 125px and 520px wide. (Diagnosed from computed
+     `grid-template-columns`: "38.6px ×7, 521px, 468px …".) A class survives
+     inline-style rewriting; an inline placement does not.
+
+     Below 768px none of these apply, so the grid falls back to its single
+     column with no `!important` fight. */
+  .span2 { grid-column: span 2; }
+  .span3 { grid-column: span 3; }
+  .span4 { grid-column: span 4; }
+  .span5 { grid-column: span 5; }
+  .span6 { grid-column: span 6; }
+  .span7 { grid-column: span 7; grid-row: span 2; }
+}
+
+/* The wiring layer sits BEHIND the tiles, so a hop that has to cross a tile
+   face is hidden rather than scribbled over it. Every hop is routed through a
+   grid gutter by `operateBoard`, so in practice the whole path stays visible —
+   this is the belt-and-braces for a content change that moves a tile.
+   The z-index goes on a class, not inline: `dockScene` writes and then clears
+   inline styles on these same tiles, and a cleared inline z-index would drop
+   the tile behind the wiring. */
+.teamGrid > *:not([data-op='threads']) {
+  position: relative;
+  z-index: 1;
+}
+.threads {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
 }
 /* On a single column every tile must forfeit BOTH inline placements: the
    tiles carry `gridColumn: 'span N'` inline for the 12-col layout, and a
@@ -165,10 +185,6 @@
 
 /* --- reduced motion ------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
-  .heroItem { animation: none !important; opacity: 1 !important; }
-  .mqL, .mqR { animation: none !important; }
-  .scan { animation: none !important; }
-  .pulse { animation: none !important; }
   .card { transition: none; }
   .card:hover { transform: none; }
 }

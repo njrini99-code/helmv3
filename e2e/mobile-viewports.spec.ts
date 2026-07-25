@@ -26,7 +26,10 @@ const VIEWPORTS = [
   { width: 430, height: 932 },
 ] as const;
 
-const PUBLIC_ROUTES = ['/', '/golf/login', '/baseball/login'];
+// `/products` carries the site's heaviest scroll choreography — a Flip layout
+// transition, scrubbed path drawing and a measured wiring overlay — all of
+// which write transforms that a narrow viewport can push past the fold.
+const PUBLIC_ROUTES = ['/', '/products', '/golf/login', '/baseball/login'];
 
 const COACH_ROUTES = [
   '/baseball/dashboard/command-center',

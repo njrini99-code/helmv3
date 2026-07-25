@@ -85,10 +85,10 @@ export function StatsMock() {
 
       <div style={{ marginTop: 20, display: 'flex', gap: 18, alignItems: 'stretch' }}>
         {/* Spine */}
-        <div style={{ flex: 'none', width: 290, background: 'linear-gradient(168deg, #1d6440, #123d28)', borderRadius: 18, padding: '22px 20px', color: '#e9f8ee', display: 'flex', flexDirection: 'column' }}>
+        <div data-stat="spine" style={{ flex: 'none', width: 290, background: 'linear-gradient(168deg, #1d6440, #123d28)', borderRadius: 18, padding: '22px 20px', color: '#e9f8ee', display: 'flex', flexDirection: 'column' }}>
           <div style={{ ...monoLabel(9.5, '#93d3aa'), letterSpacing: '0.13em' }}>Strokes Gained</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
-            <span style={{ ...num, fontSize: 50, fontWeight: 600 }}>−4.44</span>
+            <span data-stat="sg" style={{ ...num, fontSize: 50, fontWeight: 600 }}>−4.44</span>
             <span style={{ fontFamily: M.mono, fontSize: 11.5, color: '#93d3aa' }}>SG / rd</span>
           </div>
           <p style={{ margin: '10px 0 0', fontSize: 12.5, lineHeight: 1.5, color: '#c2e6cf' }}>−4.44 strokes per round vs the field. Leaking most in putting.</p>
@@ -106,7 +106,7 @@ export function StatsMock() {
               { n: '02', label: 'SG: Approach', v: '−1.54' },
               { n: '03', label: 'Three-putts / round', v: '−1.06' },
             ].map((p) => (
-              <div key={p.n} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5 }}>
+              <div key={p.n} data-stat="priority" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5 }}>
                 <span style={{ ...num, color: '#93d3aa' }}>{p.n}</span>
                 <span style={{ flex: 1 }}>{p.label}</span>
                 <span style={num}>{p.v}</span>
@@ -133,7 +133,7 @@ export function StatsMock() {
 
         {/* Bento */}
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          <div style={{ ...cell, gridColumn: '1 / 3' }}>
+          <div data-stat="cell" data-rank="3" style={{ ...cell, gridColumn: '1 / 3' }}>
             <div style={lab()}>Core ball striking</div>
             <TripleStat items={[
               { value: <>61<span style={{ fontSize: 13, color: M.ink3 }}>%</span></>, label: 'Fairways' },
@@ -142,7 +142,7 @@ export function StatsMock() {
             ]} />
             <p style={{ ...sent, marginTop: 12 }}>The three conversion rates that shape scoring opportunity.</p>
           </div>
-          <div style={{ ...cell, gridColumn: '3 / 5' }}>
+          <div data-stat="cell" data-rank="4" style={{ ...cell, gridColumn: '3 / 5' }}>
             <div style={lab()}>Per 18 holes</div>
             <TripleStat items={[
               { value: '75.3', label: 'Score avg' },
@@ -153,7 +153,7 @@ export function StatsMock() {
             <span style={arw}>→</span>
           </div>
 
-          <div style={{ ...cell, gridColumn: '1 / 3', gridRow: '2 / 4' }}>
+          <div data-stat="cell" data-rank="0" style={{ ...cell, gridColumn: '1 / 3', gridRow: '2 / 4' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={lab()}>Putting</span>
               <span style={{ fontFamily: M.mono, fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 9999, color: M.warnDeep, background: 'oklch(0.72 0.13 55 / 0.16)' }}>Leak</span>
@@ -184,7 +184,7 @@ export function StatsMock() {
             <span style={arw}>→</span>
           </div>
 
-          <div style={{ ...cell, gridColumn: '3' }}>
+          <div data-stat="cell" data-rank="5" style={{ ...cell, gridColumn: '3' }}>
             <div style={lab()}>Off the tee</div>
             <div style={{ marginTop: 7, display: 'flex', alignItems: 'baseline', gap: 5 }}>
               <span style={hl}>61%</span>
@@ -197,7 +197,7 @@ export function StatsMock() {
             </div>
             <span style={arw}>→</span>
           </div>
-          <div style={{ ...cell, gridColumn: '4' }}>
+          <div data-stat="cell" data-rank="1" style={{ ...cell, gridColumn: '4' }}>
             <div style={lab()}>Approach</div>
             <div style={{ marginTop: 7, display: 'flex', alignItems: 'baseline', gap: 5 }}>
               <span style={hl}>65%</span>
@@ -210,7 +210,7 @@ export function StatsMock() {
             </div>
             <span style={arw}>→</span>
           </div>
-          <div style={{ ...cell, gridColumn: '3' }}>
+          <div data-stat="cell" data-rank="2" style={{ ...cell, gridColumn: '3' }}>
             <div style={lab()}>Short game</div>
             <div style={{ marginTop: 7, display: 'flex', alignItems: 'baseline', gap: 5 }}>
               <span style={hl}>34%</span>
@@ -223,7 +223,7 @@ export function StatsMock() {
             <p style={{ ...sent, marginTop: 10 }}>Up-and-down and bunker recovery.</p>
             <span style={arw}>→</span>
           </div>
-          <div style={{ ...cell, gridColumn: '4' }}>
+          <div data-stat="cell" data-rank="6" style={{ ...cell, gridColumn: '4' }}>
             <div style={lab()}>Scoring</div>
             <div style={{ marginTop: 7, display: 'flex', alignItems: 'baseline', gap: 5 }}>
               <span style={hl}>+3.50</span>
@@ -247,7 +247,7 @@ export function StatsMock() {
             <span style={arw}>→</span>
           </div>
 
-          <div style={{ ...cell, gridColumn: '1 / 3' }}>
+          <div data-stat="cell" data-rank="7" style={{ ...cell, gridColumn: '1 / 3' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={lab()}>Standing</span>
               <span style={{ fontFamily: M.mono, fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 9999, color: M.accent700, background: M.accent50 }}>Best</span>
@@ -271,7 +271,7 @@ export function StatsMock() {
             <p style={{ ...sent, marginTop: 10 }}>Strongest in off the tee; leaking most in putting.</p>
             <span style={arw}>→</span>
           </div>
-          <div style={{ ...cell, gridColumn: '3 / 5' }}>
+          <div data-stat="cell" data-rank="8" style={{ ...cell, gridColumn: '3 / 5' }}>
             <div style={lab()}>Last 10 rounds</div>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 5 }}>
               <span style={{ ...num, fontSize: 20, fontWeight: 600 }}>10</span>
