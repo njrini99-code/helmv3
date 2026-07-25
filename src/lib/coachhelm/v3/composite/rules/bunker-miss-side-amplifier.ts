@@ -10,13 +10,14 @@
  * predictable when the green-side is right; when miss-side and putt-
  * bias overlap, the player is "short-siding themselves" repeatedly.
  *
- * DORMANT (BLOCKED on putt-bias revival): this rule needs a `putt_bias`
- * insight, but gen:putt-bias never emits today (break-direction cache
- * cols are 100% NULL — audit §5). `detect()` already no-ops correctly
- * when no putt_bias insight is present (the isPuttBias guard below), so
- * the rule fails safe rather than silently mis-firing. It will revive
- * automatically once putt-bias produces rows; no logic change needed
- * here. Tracked as a cross-file dependency on the putt-bias generator.
+ * LIVE (hedged template only — see coOccurrenceShare): putt-bias does emit
+ * rows in prod, so this rule is no longer blocked on putt-bias revival —
+ * both live prod rows carry the hedged copy below. But `detect()` has no
+ * hole-level data to pass into `coOccurrenceShare`, so `same_hole_share`
+ * is hardcoded to 0 and `compose()` can only ever render the "two separate
+ * leaks" template; the stronger "compounding" template is structurally
+ * unreachable until per-hole data is threaded through. See the note above
+ * `coOccurrenceShare` for what wiring that requires.
  */
 
 import type { CompositeRule, EvidenceInsight, CompositeMatch, CompositeContent } from '../types';
@@ -26,6 +27,14 @@ import type { CompositeRule, EvidenceInsight, CompositeMatch, CompositeContent }
  *  survives the loader's 40-yd START filter. 75 ft = 25 yd (the loader's own
  *  greenside ceiling), so anything above it is dropped. */
 const MAX_RECOVERY_LEAVE_FT = 75;
+
+/**
+ * NOT YET WIRED. `detect()` has no hole-level data to pass, so it hardcodes
+ * `same_hole_share: 0` and `compose()` always renders the hedged template.
+ * Wiring this requires per-hole bunker and putt-miss arrays reaching detect();
+ * until then the stronger compounding claim is deliberately unreachable
+ * rather than silently wrong.
+ */
 
 /** Share the two leaks co-occur on the SAME holes (Jaccard of their hole-sets).
  *  0 when either set is empty — we never claim co-occurrence we can't show. */
