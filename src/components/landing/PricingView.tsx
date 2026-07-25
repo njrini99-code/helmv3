@@ -97,7 +97,10 @@ function PricingCapture() {
             isLoading={status === 'sending'}
             className="w-full rounded-full bg-primary-700 px-7 text-[0.9375rem] font-semibold hover:bg-primary-800 shadow-[0_1px_1px_oklch(0.35_0.08_150/0.4),0_3px_10px_oklch(0.35_0.08_150/0.28)] sm:w-auto"
           >
-            {status === 'sending' ? 'Sending…' : 'Set up a call'}
+            {/* One CTA verb across every marketing surface: "Request Demo".
+                This button used to read "Set up a call" — the only label on the
+                site that diverged from the other 15 call sites. */}
+            {status === 'sending' ? 'Sending…' : 'Request Demo'}
           </Button>
         </div>
       </div>
@@ -164,7 +167,8 @@ export function PricingView() {
             delay={160}
             className="mx-auto mt-4 max-w-[32em] text-[clamp(0.95rem,1.25vw,1.1rem)] leading-relaxed text-text-tertiary [text-wrap:pretty]"
           >
-            Set up a quick call to see how Helm can fit in with your program.
+            Request a demo and we&apos;ll walk your program through it — rounds, stats, and
+            what your roster looks like inside Helm.
           </Reveal>
           <Reveal delay={180} className="w-full">
             <PricingCapture />
