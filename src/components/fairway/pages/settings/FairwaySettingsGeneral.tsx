@@ -41,6 +41,7 @@ import Link from 'next/link';
 import { Field } from '@base-ui-components/react/field';
 
 import { createClient } from '@/lib/supabase/client';
+import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
 import { logError } from '@/lib/error-logging';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { regenerateJoinCode } from '@/app/golf/actions/teams';
@@ -670,7 +671,7 @@ export function FairwaySettingsGeneral() {
         <DistanceUnitsPanel />
         {/* Notifications — coach + player. Writes users.notification_preferences,
             the column the email/push delivery gate actually reads. */}
-        <NotificationsPanel />
+        <NotificationsPanel coachId={profile.role === 'coach' ? profile.coachId : undefined} />
         {profile.role === 'player' ? (
           <Surface elevation="border" padding="none">
             <Link
@@ -1399,12 +1400,17 @@ export function DistanceUnitsPanel() {
  * quiet mode silences everything except the quiet-exempt rows. Available to
  * BOTH coaches and players (the live shell previously gave coaches no UI here).
  */
-export function NotificationsPanel() {
+export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
   const [prefs, setPrefs] = useState<DeliveryNotificationPreferences | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   // P384: auto-save signal (each toggle persists immediately, no Save button).
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  // Coach-only digest opt-out. Lives on golf_coach_philosophy, not in
+  // users.notification_preferences, because that is the column the two
+  // recurring coach emails actually read. `null` = not loaded yet.
+  const [digestEnabled, setDigestEnabled] = useState<boolean | null>(null);
+  const [digestSaving, setDigestSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoadFailed(false);
@@ -1424,6 +1430,36 @@ export function NotificationsPanel() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Coach digest preference. A missing philosophy row means "never configured",
+  // which both cron jobs treat as enabled (`!== false`), so the switch shows on
+  // in that case rather than inventing a row just to render a default.
+  useEffect(() => {
+    if (!coachId) return;
+    let cancelled = false;
+    void (async () => {
+      const supabase = createClient();
+      const { data, error } = await fromUntyped(supabase, 'golf_coach_philosophy')
+        .select('email_digest_enabled')
+        .eq('coach_id', coachId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        logError(
+          new Error(`Failed to load digest preference: ${error.message}`),
+          { component: 'NotificationsPanel', action: 'load-email-digest', sport: 'golf' },
+          'low',
+        );
+        setDigestEnabled(true);
+        return;
+      }
+      const row = data as { email_digest_enabled?: boolean | null } | null;
+      setDigestEnabled(row?.email_digest_enabled !== false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachId]);
 
   // Optimistic single-key toggle: flip locally, persist, roll back on failure.
   const toggle = useCallback(
@@ -1563,6 +1599,67 @@ export function NotificationsPanel() {
             );
           })}
         </ul>
+
+        {/* Coach email digests — the ONLY opt-out for the recurring coach
+            email. `/api/cron/v3/weekly-coach-email` skips the coach entirely
+            when `email_digest_enabled === false`. It has honoured this column
+            all along; until 2026-07-25 nothing rendered it, so coaches received
+            the email with no way to stop it. Rendered only for coaches, because
+            the column lives on golf_coach_philosophy.
+
+            Scope note: this originally covered TWO emails. The daily
+            `coach-morning-digest` was deleted in #1052 (merged 2026-07-25), so
+            the weekly send is the only remaining consumer — the copy above says
+            "weekly team email", not "digests", so it stays honest.
+
+            KNOWN SIDE EFFECT: saveCoachingPhilosophy upserts, so a coach who
+            has never had a philosophy row gets one created by toggling this.
+            That row picks up the POSTGRES column defaults, which currently
+            disagree with PHILOSOPHY_DEFAULTS in constants.ts on four fields
+            (pressure_gap_threshold 2.0 vs 2.5, bubble_zone_range 1.5 vs 1.0,
+            and short-game/putting priority inverted) — so their alert
+            thresholds shift as a side effect of an email preference. 10 of 15
+            coaches currently have no row. See
+            docs/audits/COACHHELM_PHILOSOPHY_DEFAULTS_DRIFT_2026-07-25.md;
+            resolving that drift removes this hazard. */}
+        {coachId ? (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-fw-sm bg-surface-sunken p-3">
+            <div className="min-w-0">
+              <p className="font-fw-sans text-body-sm font-medium text-text-primary">
+                Coach email digests
+              </p>
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                The weekly team email.
+              </p>
+            </div>
+            <Switch
+              checked={digestEnabled ?? true}
+              onCheckedChange={(v) => {
+                const previous = digestEnabled ?? true;
+                setDigestEnabled(v);
+                setDigestSaving(true);
+                void saveCoachingPhilosophy(coachId, { email_digest_enabled: v })
+                  .then((res) => {
+                    if (!res.success) {
+                      // Roll back so the switch never claims a state the
+                      // database does not hold.
+                      setDigestEnabled(previous);
+                      logError(
+                        new Error(res.error || 'Failed to save digest preference'),
+                        { component: 'NotificationsPanel', action: 'save-email-digest', sport: 'golf' },
+                        'medium',
+                      );
+                      return;
+                    }
+                    setSavedAt(Date.now());
+                  })
+                  .finally(() => setDigestSaving(false));
+              }}
+              disabled={digestSaving || digestEnabled === null}
+              aria-label="Coach email digests"
+            />
+          </div>
+        ) : null}
       </div>
     </SectionCard>
   );
@@ -1903,7 +2000,7 @@ export function GolfScoringPanel({ teamId }: { teamId: string }) {
     <SectionCard
       icon={<IconUser size={18} aria-hidden />}
       title="Scoring & format"
-      description="Scoring format, handicap system, default tees and benchmark."
+      description="Scoring format, handicap system, default tees and timezone."
     >
       <div className="space-y-4">
         <div>

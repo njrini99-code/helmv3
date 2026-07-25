@@ -152,7 +152,7 @@ export function StandingStrip(props: StandingStripProps) {
             className={cn(
               'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-caption font-bold tabular-nums',
               delta.tone === 'good'
-                ? 'bg-accent-700 text-text-on-accent'
+                ? 'bg-accent-650 text-text-on-accent'
                 : delta.tone === 'bad'
                   ? 'bg-fw-warning-bg text-fw-warning-ink'
                   : 'bg-inset text-text-secondary',
@@ -277,8 +277,19 @@ function StripTrack({
   if (teamPct !== null) trueOrder.push({ key: 'team', pct: teamPct });
   trueOrder.sort((a, b) => a.pct - b.pct);
   const rawMarkers: MarkerLayoutInput[] = trueOrder.map((m) => ({ key: m.key, pct: clampPct(m.pct) }));
+  // Pass the 13-87 band INTO the layout instead of clamping its output.
+  //
+  // This line used to be `.map((p) => [p.key, clampPct(p.pct)])`, which undid
+  // the work it had just done: `layoutMarkerPositions` guarantees a 9-point
+  // gap but only knew about the full 0-100 rail, so on a card where every
+  // value sits outside the band the nudged positions landed below 13 and the
+  // per-marker clamp collapsed them all back onto 13 — drawing the Team tick
+  // underneath the You dot. Reproduced on prod 2026-07-25 with SG: Putting
+  // (you -3.00, team -3.15 on a ±3.65 domain → 8.9% and 6.8%, both clamped to
+  // 13). Given the bounds, the layout shifts the whole chain instead, so the
+  // gap survives.
   const nudged = new Map(
-    layoutMarkerPositions(rawMarkers, MARKER_MIN_GAP_PCT).map((p) => [p.key, clampPct(p.pct)]),
+    layoutMarkerPositions(rawMarkers, MARKER_MIN_GAP_PCT, 13, 87).map((p) => [p.key, p.pct]),
   );
   const you = nudged.get('you')!;
   const pga = pgaPct !== null ? nudged.get('pga')! : null;
@@ -296,7 +307,7 @@ function StripTrack({
           are — this is a structural guarantee, not a distance threshold. */}
       <div className="relative h-7" data-slot="you-badge-tier">
         <div
-          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-700 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
+          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-650 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
           style={{ left: `${you}%` }}
         >
           {youValue}
