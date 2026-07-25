@@ -141,8 +141,18 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const gate = await checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD);
   if (!gate.allowed) {
+    // "Reached your daily limit" is the wrong sentence for a coach whose team
+    // was switched off, and both are the wrong sentence for an account we
+    // could not resolve at all. A coach who is told the wrong thing waits for
+    // tomorrow instead of asking the one person who can fix it.
+    const message =
+      gate.fallback_reason === 'budget_unresolved'
+        ? 'CoachHelm could not verify your program’s analysis settings. Contact support — this is not something waiting will fix.'
+        : gate.fallback_reason === 'budget_disabled'
+          ? 'AI analysis is switched off for your program. An administrator can turn it on in coaching settings.'
+          : 'You have reached today’s analysis limit for your program. It resets tomorrow.';
     return NextResponse.json(
-      { error: 'Daily analysis budget reached', reason: gate.fallback_reason ?? 'budget_gated' },
+      { error: message, reason: gate.fallback_reason ?? 'budget_gated' },
       { status: 429 },
     );
   }
