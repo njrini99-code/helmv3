@@ -275,8 +275,14 @@ export function CoachHelmSubNav({
                   'font-fw-sans text-label font-medium',
                   fwTransition,
                   fwFocusRing,
+                  // Active tab reads in brand green, not graphite. The
+                  // underline below is already bg-accent-500, so the label was
+                  // the only part of an active tab with no green in it — which
+                  // is what made the chrome read as off-white and black.
+                  // accent-700 (not 500) because this is TEXT on the champagne
+                  // canvas: 5.02:1 passes AA, while accent-500 is 2.67:1.
                   isActive
-                    ? 'text-text-primary'
+                    ? 'text-accent-700'
                     : 'text-text-secondary hover:text-text-primary',
                 )}
               >
