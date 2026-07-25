@@ -169,6 +169,13 @@ export const RATE_LIMITS = {
     windowMs: 5 * 60 * 1000,
     blockDurationMs: 15 * 60 * 1000,
   },
+  DEMO_REQUEST: {
+    // Public lead form: enough headroom for a campus NAT, but not enough for
+    // one client to manufacture an unbounded number of service-role CRM rows.
+    maxAttempts: 10,
+    windowMs: 10 * 60 * 1000,
+    blockDurationMs: 30 * 60 * 1000,
+  },
 } as const;
 
 /**

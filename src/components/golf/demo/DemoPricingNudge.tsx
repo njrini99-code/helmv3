@@ -24,6 +24,11 @@
  * The trigger race itself (30s timer vs. 8 clicks, whichever first) is a
  * pure function — see `./arm-nudge` — so it's unit-tested without mocking
  * timers or DOM events.
+ *
+ * The toast action goes through our own tracked redirect rather than
+ * straight to the calendar — see DEMO_PRICING_CALL_PATH below. Asking for a
+ * call is the highest-intent thing a prospect does in the demo, and until
+ * that route existed it produced no database row at all.
  */
 
 import { useEffect } from 'react';
@@ -36,8 +41,22 @@ import {
   shouldFireNudge,
 } from './arm-nudge';
 
-/** Founder's booking page. Single exported const — keep this greppable. */
-export const DEMO_PRICING_CALL_URL = 'https://calendar.app.google/s9DBb3bKD2teLLBT7';
+/**
+ * Tracked booking link — same-origin on purpose.
+ *
+ * The founder's actual Google Calendar URL now lives server-side, in
+ * src/app/api/crm/book-call/route.ts, which is its single source of truth.
+ * That route records the click (referrer, user-agent, traffic-quality
+ * verdict) and then 302s on. Keeping the real URL out of the client bundle
+ * means the destination can move without a redeploy of this component, and
+ * that nothing shipped to the browser can be edited to retarget the link.
+ *
+ * The `src` token is opaque and only ever lands in a jsonb column — the
+ * route takes no destination parameter of any kind, by design.
+ *
+ * Single exported const — keep this greppable.
+ */
+export const DEMO_PRICING_CALL_PATH = '/api/crm/book-call?src=demo-pricing-nudge';
 
 function readSessionFlag(key: string): string | null {
   try {
@@ -89,7 +108,11 @@ export function DemoPricingNudge() {
         duration: Infinity,
         action: {
           label: 'Schedule a call',
-          onClick: () => window.open(DEMO_PRICING_CALL_URL, '_blank', 'noopener'),
+          // Still `_blank` + `noopener`: the tab starts same-origin but the
+          // route immediately 302s it to calendar.app.google, so the opened
+          // window ends up cross-origin and must not keep an opener handle
+          // back to the demo session.
+          onClick: () => window.open(DEMO_PRICING_CALL_PATH, '_blank', 'noopener'),
         },
       });
     };
