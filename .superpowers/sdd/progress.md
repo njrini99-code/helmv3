@@ -451,6 +451,70 @@ Task 2: COMPLETE (commits 2a36a79f8, 656c858fa, fix 5c1f5820b; review
   Review test spies on the bootstrap and would not be called at all before
   the fix.
 
+=== OWNER-APPROVED FIXES (separate from the 12-task plan) ===
+Owner approved 3 fixes 2026-07-25: backfill the stranded rounds, fix the
+effectiveness ledger, move post-round analysis to Inngest. Spec produced by a
+9-agent workflow whose adversarial phase returned NEEDS_REVISION on all 4
+lanes with 1 blocker — the revisions are folded into
+docs/audits/COACHHELM_APPROVED_FIXES_PLAN_2026-07-25.md. Order: Fix2 -> Fix1
+-> Fix3 (1 and 3 both edit the safety-net route).
+
+FIX 2 — effectiveness ledger. COMPLETE (39dedaf26, 12 files, +285/-385).
+  Full unit project green (7432 tests). Verified by me: the live Triage Desk
+  functions were NOT deleted, they now await recordInsightAction at
+  intelligence-dashboard.ts:551 and :643; no `void recordInsightAction`
+  remains in src (only a test comment describing the regression guard);
+  coach-behavior.ts deleted.
+  THE BLOCKER THIS AVOIDED: the original design called
+  acknowledgeInsight/dismissInsight dead code and proposed deleting them.
+  They are the live Triage Desk chain (CoachIntelligenceHome.tsx:110 ->
+  TriageDesk.tsx:37 -> signal-groups.ts:272-292 -> intelligence-dashboard).
+  Shipping that would have broken the coach's primary surface.
+  THE OPEN QUESTION IS NOW SETTLED, both causes proven: (a) the void writes
+  ARE dropped — 4 real from_insight_id focus-area creates produced only 3
+  rows, a measured ~25% loss; and (b) the Triage Desk path never called the
+  recorder AT ALL — 4/4 insights with acknowledged_at set produced 0
+  'acknowledged' rows. It was never "coaches don't click".
+  FLAGGED, NOT FIXED: createAdminClient() sets no db.timeout, so admin REST
+  calls have no library-enforced bound. Pre-existing and systemic
+  (withAdminObserved already awaits an admin call post-return today), not
+  introduced here. Implementer correctly declined a bespoke wrapper for one
+  call site; a shared default is an owner decision.
+  Also still present: golf_coach_behavior_log table (now write-less; dropping
+  it needs a migration, out of scope).
+
+FIX 1 — drain + honest self-reporting. COMPLETE (c73c05f23). RED->GREEN, 4
+  fix-specific tests failed pre-change including "old round now selected";
+  40/40 green, typecheck + lint 0. Verified by me against all five traps the
+  adversarial review flagged:
+    .gte('created_at', sinceIso) REMOVED from the query (not widened — the
+      terminal-state columns are already a deterministic gate, and widening
+      is what produced this backlog TWICE);
+    `pending` modified in place carrying created_at (a second const would
+      have been a TS2451 compile error);
+    staleness compared NUMERICALLY (new Date(r.created_at).getTime() <
+      staleCutoff) — a raw string compare on a PostgREST timestamptz vs
+      toISOString() is not order-preserving;
+    alarm via logServerError only;
+    NO write to background_job_logs.metadata — fetchJobsTab does not select
+      that column, so it would have persisted invisibly: the exact
+      computes-and-has-no-effect defect this mission exists to kill.
+  STALE_THRESHOLD_MS is now reporting-only, env-overridable, default 30d.
+  Alarm severity 'warning' (sibling-cron convention); 1-line change if the
+  owner prefers 'error'.
+  ON DEPLOY: drains all 200 stranded rounds (not just the owner's 76).
+  Estimated 80-200s, inside the 300s budget; safe if killed mid-batch since
+  each round's terminal state is written independently. OWNER ASKED whether
+  to scope it to his team — awaiting his answer; one-line filter if so.
+
+FIX 3 — Inngest migration. DISPATCHED. Must NOT use a static event id or
+  function-level idempotency: submitGolfRoundComprehensive is a real wired
+  resubmission path (new-round-client.tsx:1526, continue-round-client.tsx:808,
+  FairwayRecoverRound.tsx:386) and deduping it would silently swallow a
+  legitimate re-analysis with no cron backstop — the same disease in a new
+  place. Must degrade to today's direct postRoundTrigger path when the
+  Inngest keys are absent (owner has not set them; Vercel bakes env at deploy).
+
 Task 6: COMPLETE (3e7be9462). Verified BY ME in full rather than via a
   separate reviewer — it is a config change I could check exhaustively, and
   I state that plainly rather than implying an independent gate.
