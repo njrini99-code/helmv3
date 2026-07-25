@@ -4,7 +4,7 @@
 // #918 — GolfHelm demo gate hardening. Covers:
 //   1. Rate-limit denial (per-IP DEMO_GATE throttle), before touching DB/auth.
 //   2. Missing demo credentials short-circuit.
-//   3. Lead-row capture into golf_demo_sessions before sign-in.
+//   3. Lead-row capture into golf_demo_sessions alongside sign-in.
 //   4. The is_demo user_metadata stamp set right after sign-in — the signal
 //      the shared idle-timeout flow (middleware + useSessionActivity) reads
 //      to route an expired demo session back to /golf/demo instead of the
@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
   adminFrom: vi.fn(),
   insert: vi.fn(async () => ({ data: null, error: null })),
+  coachInsert: vi.fn(),
   logLogin: vi.fn(async () => ({})),
   checkRateLimit: vi.fn(async () => ({ allowed: true, remaining: 4, resetAt: Date.now() + 60_000 })),
   formatTimeRemaining: vi.fn(() => '15 minutes'),
@@ -35,7 +36,21 @@ const mocks = vi.hoisted(() => ({
     throw new Error(`REDIRECT:${path}`);
   }),
 }));
-mocks.adminFrom.mockImplementation(() => ({ insert: mocks.insert }));
+
+function mockAdminTable(table: string) {
+  if (table === 'crm_coaches') {
+    return {
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({ maybeSingle: vi.fn(async () => ({ data: null, error: null })) })),
+        ilike: vi.fn(() => ({ limit: vi.fn(async () => ({ data: [], error: null })) })),
+      })),
+      insert: mocks.coachInsert,
+      update: vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) })),
+    };
+  }
+  return { insert: mocks.insert };
+}
+mocks.adminFrom.mockImplementation(mockAdminTable);
 
 vi.mock('next/headers', () => ({
   headers: vi.fn(async () => new Map([
@@ -92,8 +107,13 @@ const VALID_INPUT = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.adminFrom.mockImplementation(() => ({ insert: mocks.insert }));
+  mocks.adminFrom.mockImplementation(mockAdminTable);
   mocks.insert.mockResolvedValue({ data: null, error: null });
+  mocks.coachInsert.mockImplementation(() => ({
+    select: vi.fn(() => ({
+      single: vi.fn(async () => ({ data: { id: 'coach-created' }, error: null })),
+    })),
+  }));
   mocks.checkRateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 60_000 });
   mocks.getDemoCoachCredentials.mockReturnValue({ email: 'demo@golfhelmdemo.com', password: 'Demo2026' });
   mocks.signInWithPassword.mockResolvedValue({
@@ -132,7 +152,7 @@ describe('enterDemo — missing credentials', () => {
 });
 
 describe('enterDemo — lead-row capture', () => {
-  it('inserts a golf_demo_sessions row with visitor + request metadata before signing in', async () => {
+  it('inserts a golf_demo_sessions row with visitor, quality, and request metadata', async () => {
     await expect(enterDemo(VALID_INPUT)).rejects.toThrow('REDIRECT:/golf/dashboard?demo=1');
 
     expect(mocks.adminFrom).toHaveBeenCalledWith('golf_demo_sessions');
@@ -144,12 +164,17 @@ describe('enterDemo — lead-row capture', () => {
         ip: '203.0.113.7',
         user_agent: 'TestAgent/1.0 (TestOS)',
         referrer: 'https://example.com/landing',
-        metadata: {},
+        traffic_quality: 'unknown',
+        crm_coach_id: 'coach-created',
+        metadata: expect.objectContaining({
+          engagement: expect.objectContaining({
+            verdict: 'unknown',
+            reason: 'missing_reference_timestamp',
+          }),
+        }),
       }),
     );
-    const insertOrder = mocks.insert.mock.invocationCallOrder[0]!;
-    const signInOrder = mocks.signInWithPassword.mock.invocationCallOrder[0]!;
-    expect(insertOrder).toBeLessThan(signInOrder);
+    expect(mocks.signInWithPassword).toHaveBeenCalledTimes(1);
   });
 
   it('never blocks demo entry when the tracking insert fails', async () => {
