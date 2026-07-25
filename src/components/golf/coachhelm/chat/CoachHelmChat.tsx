@@ -37,6 +37,8 @@ export interface CoachHelmChatProps {
   initialInput?: string;
   /** Greeting shown above the composer on an empty thread. */
   greeting?: React.ReactNode;
+  /** Fires when the server mints a conversation for a thread that had none. */
+  onConversationId?: (id: string) => void;
   className?: string;
 }
 
@@ -49,9 +51,15 @@ export function CoachHelmChat({
   variant = 'page',
   initialInput,
   greeting,
+  onConversationId,
   className,
 }: CoachHelmChatProps) {
-  const chat = useCoachHelmChat({ conversationId, initialMessages, initialContext });
+  const chat = useCoachHelmChat({
+    conversationId,
+    initialMessages,
+    initialContext,
+    onConversationId,
+  });
   const scroller = React.useRef<HTMLDivElement>(null);
   const isEmpty = chat.messages.length === 0;
 
@@ -106,24 +114,20 @@ export function CoachHelmChat({
             {greeting}
             <div className={cn(greeting ? 'mt-6' : '')}>{composer}</div>
             {suggestions.length > 0 && (
-              <ul
-                className={cn(
-                  'mt-4 gap-2',
-                  // On a phone the suggestions scroll horizontally rather than
-                  // stacking into a wall that pushes the composer off-screen.
-                  variant === 'drawer'
-                    ? '-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-1'
-                    : 'flex flex-wrap',
-                )}
-              >
-                {suggestions.slice(0, 5).map((s) => (
-                  <li key={s} className={variant === 'drawer' ? 'shrink-0 snap-start' : undefined}>
+              <ul className="mt-4 flex flex-wrap gap-2">
+                {/* Both variants wrap. A horizontal rail was tried in the drawer
+                    and looked broken rather than scrollable: at ~28rem a single
+                    suggestion fills the width and the next is sliced down the
+                    middle at the panel edge. The drawer is desktop-only, so it
+                    has the vertical room a phone did not — it just gets fewer. */}
+                {suggestions.slice(0, variant === 'drawer' ? 3 : 5).map((s) => (
+                  <li key={s} className="max-w-full">
                     {/* eslint-disable-next-line helm/no-raw-button -- opening suggestion chip — a rounded-full pill of its own scale */}
                     <button
                       type="button"
                       onClick={() => chat.send(s)}
                       className={cn(
-                        'inline-flex min-h-[44px] items-center rounded-full border border-border-subtle bg-surface px-4',
+                        'inline-flex min-h-[44px] max-w-full items-center rounded-full border border-border-subtle bg-surface px-4 py-1.5',
                         'text-left font-fw-sans text-body-sm text-text-secondary transition-colors',
                         'hover:border-accent-300 hover:text-text-primary',
                         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',

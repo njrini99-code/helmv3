@@ -282,6 +282,35 @@ const CLAIM_EXEMPT = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}\s*(?:am|pm)?)\b/gi;
 const MATCH_EPSILON = 0.051;
 
 /**
+ * A number written as an approximation or a bound rather than as a reading.
+ *
+ * "two rounds where he lost more than 7.5 strokes" is good coaching prose and
+ * the 7.5 is deliberately rounded *outward* from a real -7.61. Demanding an
+ * exact match there flags careful writing as fabrication, so a hedge widens the
+ * tolerance to {@link HEDGED_RELATIVE_TOLERANCE} — enough to cover rounding,
+ * nowhere near enough to cover an invented figure.
+ */
+const HEDGE_BEFORE =
+  /(?:\b(?:about|around|roughly|approximately|nearly|almost|over|under|above|below|more than|less than|fewer than|greater than|at least|at most|upwards of|north of|shy of)|~)\s*[-−]?$/i;
+
+/** Proportional slack granted to a hedged number. 10% catches rounding, not invention. */
+const HEDGED_RELATIVE_TOLERANCE = 0.1;
+
+/**
+ * Cap on anchors per metric before pairwise differencing is skipped.
+ *
+ * Differencing is O(n²) and a 40-round series with means is already 41 anchors.
+ * Past this size the extra pairs buy nothing — a long series' values are dense
+ * enough that near-anything falls between two of them.
+ */
+const PAIRWISE_ANCHOR_CAP = 32;
+
+/** `sg_putting_mean` and `sg_putting` describe one metric; deltas span both. */
+function metricGroup(metricId: string): string {
+  return metricId.replace(/_(?:mean|avg|average)$/, '');
+}
+
+/**
  * Read the model's finished text and flag numbers no measurement supports.
  *
  * The comparison is deliberately generous — a measurement of 58.3 supports the
@@ -298,45 +327,88 @@ export function auditNumericClaims(
   text: string,
   measurements: readonly Measurement[],
   series: readonly MeasurementSeries[] = [],
+  /**
+   * Every other number the turn's tools returned — typically the values inside
+   * an envelope's `detail` (team averages, per-round rows, RSVP counts).
+   *
+   * Without this the audit fires on legitimately-sourced figures. A real
+   * example from verification: the weakest-area tool returns each metric's team
+   * average in `detail.gaps`, the model correctly cited "-0.09 team average",
+   * and the audit flagged it as fabricated because only `measurements` was
+   * being checked. Five false positives on a good answer — and a check that
+   * cries wolf is a check people switch off, which is exactly what happened to
+   * the grounding gate this replaced.
+   */
+  extraSupported: readonly number[] = [],
 ): UnsupportedClaim[] {
   if (!text) return [];
 
   // Every value a tool actually produced, at any precision the prose might use.
   const supported = new Set<number>();
-  const add = (n: number | null | undefined) => {
+  /** Anchors grouped by metric, so a delta only spans figures of one kind. */
+  const byMetric = new Map<string, Set<number>>();
+
+  const add = (n: number | null | undefined, metricId?: string) => {
     if (typeof n !== 'number' || !Number.isFinite(n)) return;
-    supported.add(n);
-    supported.add(Math.round(n));
-    supported.add(Math.round(n * 10) / 10);
+    for (const v of [n, Math.abs(n)]) {
+      // "lost 7.61 strokes" and "-7.61 strokes" are the same statement, so a
+      // magnitude counts as sourced wherever its signed value does.
+      supported.add(v);
+      supported.add(Math.round(v));
+      supported.add(Math.round(v * 10) / 10);
+    }
+    if (metricId) {
+      const key = metricGroup(metricId);
+      const group = byMetric.get(key) ?? new Set<number>();
+      group.add(n);
+      byMetric.set(key, group);
+    }
   };
+
   for (const m of measurements) {
-    add(m.value);
+    add(m.value, m.metric_id);
     add(m.sample_size);
     add(m.denominator);
-    add(m.benchmark?.value);
+    add(m.benchmark?.value, m.metric_id);
     // A stated delta between a value and its benchmark is itself supported.
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {
       add(m.value - m.benchmark.value);
-      add(Math.abs(m.value - m.benchmark.value));
     }
   }
+  for (const n of extraSupported) add(n);
   for (const s of series) {
     for (const p of s.points) {
-      add(p.value);
+      add(p.value, s.metric_id);
       add(p.sample_size);
     }
     // First-to-last movement is the whole point of a trend, so allow the delta.
     const first = s.points[0]?.value;
     const last = s.points[s.points.length - 1]?.value;
-    if (typeof first === 'number' && typeof last === 'number') {
-      add(last - first);
-      add(Math.abs(last - first));
+    if (typeof first === 'number' && typeof last === 'number') add(last - first);
+  }
+
+  /**
+   * Differences between two sourced figures of the same metric.
+   *
+   * "Bennett's deficit is roughly 2.4 strokes per round larger than Rivers's" is
+   * the entire point of a comparison, and no tool can pre-compute every pair a
+   * coach might ask about. The number is still checkable against the evidence
+   * on screen — it is arithmetic on two published values, not an assertion —
+   * so it is supported. Held to one metric so a strokes figure can never be
+   * justified by subtracting two putt counts.
+   */
+  for (const group of byMetric.values()) {
+    if (group.size < 2 || group.size > PAIRWISE_ANCHOR_CAP) continue;
+    const values = [...group];
+    for (const [i, left] of values.entries()) {
+      for (const right of values.slice(i + 1)) add(left - right);
     }
   }
 
   const scrubbed = text.replace(CLAIM_EXEMPT, ' ');
   const found: UnsupportedClaim[] = [];
   const seen = new Set<string>();
+  const anchors = [...supported];
 
   for (const match of scrubbed.matchAll(/-?\d+(?:\.\d+)?/g)) {
     const raw = match[0];
@@ -346,12 +418,37 @@ export function auditNumericClaims(
     if (Number.isInteger(value) && Math.abs(value) <= 12) continue;
     if (seen.has(raw)) continue;
 
-    const ok = [...supported].some((s) => Math.abs(s - value) <= MATCH_EPSILON);
-    if (!ok) {
+    const at = match.index ?? 0;
+    const hedged = HEDGE_BEFORE.test(scrubbed.slice(Math.max(0, at - 24), at));
+    const tolerance = hedged
+      ? Math.max(MATCH_EPSILON, Math.abs(value) * HEDGED_RELATIVE_TOLERANCE)
+      : MATCH_EPSILON;
+
+    if (!anchors.some((s) => Math.abs(s - value) <= tolerance)) {
       seen.add(raw);
       found.push({ text: raw, value });
     }
   }
 
   return found;
+}
+
+/**
+ * Every finite number reachable inside an arbitrary tool payload.
+ *
+ * Tools put structured context in `ToolEnvelope.detail` — team averages, round
+ * rows, RSVP counts — and the model is entitled to cite it. Walking it means
+ * the audit stays a fabrication detector rather than a `measurements`-only
+ * detector. Depth-bounded so a pathological payload cannot spin.
+ */
+export function collectNumbers(value: unknown, depth = 0): number[] {
+  if (depth > 6 || value === null || value === undefined) return [];
+  if (typeof value === 'number') return Number.isFinite(value) ? [value] : [];
+  if (Array.isArray(value)) return value.flatMap((v) => collectNumbers(v, depth + 1));
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).flatMap((v) =>
+      collectNumbers(v, depth + 1),
+    );
+  }
+  return [];
 }

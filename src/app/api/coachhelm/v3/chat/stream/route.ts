@@ -49,6 +49,7 @@ import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agen
 import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
   auditNumericClaims,
+  collectNumbers,
   type Measurement,
   type MeasurementSeries,
   type ToolEnvelope,
@@ -74,6 +75,19 @@ const Body = z.object({
   messages: z.array(z.unknown()).min(1),
   client_turn_id: z.string().min(1).max(128),
 });
+
+/**
+ * The parts of a turn that may be stored and replayed to the coach.
+ *
+ * Reasoning is excluded twice — once at the transport (`sendReasoning: false`)
+ * and again here — because the two protect against different failures. The
+ * transport flag stops it reaching the browser; this stops an SDK default
+ * change quietly filling the conversation table with model deliberation that a
+ * reload would then hand back to the client.
+ */
+function publishableParts(parts: readonly { type: string }[]): unknown[] {
+  return parts.filter((p) => p.type !== 'reasoning');
+}
 
 const UNGROUNDED_NOTE =
   "\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._";
@@ -154,9 +168,14 @@ export async function POST(req: NextRequest) {
   // Everything the turn measured, for the post-generation claim audit.
   const measurements: Measurement[] = [];
   const seriesAll: MeasurementSeries[] = [];
+  // Numbers a tool returned in its structured `detail` — team averages, round
+  // rows, RSVP counts. The model may legitimately cite these, so they count as
+  // supported. See auditNumericClaims' `extraSupported`.
+  const detailNumbers: number[] = [];
   const collect = (envelope: ToolEnvelope) => {
     measurements.push(...envelope.measurements);
     seriesAll.push(...envelope.series);
+    if (envelope.detail !== undefined) detailNumbers.push(...collectNumbers(envelope.detail));
   };
 
   const convId = conversationId;
@@ -193,7 +212,11 @@ export async function POST(req: NextRequest) {
       });
 
       usagePromise = result.usage;
-      writer.merge(result.toUIMessageStream({ sendStart: true, sendFinish: true }));
+      // `sendReasoning: false` keeps the model's private deliberation off the
+      // wire entirely. It renders nowhere today, but "not rendered" is not the
+      // requirement — the requirement is that it never reaches the browser,
+      // where it sits in network responses and React state either way.
+      writer.merge(result.toUIMessageStream({ sendStart: true, sendFinish: true, sendReasoning: false }));
     },
 
     /**
@@ -209,7 +232,7 @@ export async function POST(req: NextRequest) {
         if (!assistant) return;
 
         const text = textOf(assistant);
-        const unsupported = auditNumericClaims(text, measurements, seriesAll);
+        const unsupported = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
         const grounded = unsupported.length === 0;
 
         if (!grounded) {
@@ -226,7 +249,7 @@ export async function POST(req: NextRequest) {
           content: grounded ? text : text + UNGROUNDED_NOTE,
           status: grounded ? 'complete' : 'failed',
           client_turn_id: clientTurnId,
-          ui_parts: assistant.parts as unknown,
+          ui_parts: publishableParts(assistant.parts) as unknown,
         });
         await touchConversation(supabase, convId);
 

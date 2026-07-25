@@ -52,6 +52,14 @@ export interface UseCoachHelmChatOptions {
   initialMessages?: UIMessage[];
   /** Chips the host page suggests. The coach may remove any of them. */
   initialContext?: ChatContextChip[];
+  /**
+   * Called once the server has minted the conversation for a brand-new thread.
+   *
+   * The page surface uses this to put the id in the address bar so a reload
+   * resumes; the drawer deliberately does not, because it floats over whatever
+   * page the coach is actually on and must not rewrite that URL.
+   */
+  onConversationId?: (id: string) => void;
 }
 
 export interface UseCoachHelmChatResult {
@@ -87,10 +95,37 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   // is retrying, and a new question must not.
   const turnKey = React.useRef<string>(newKey());
 
+  const onConversationId = options.onConversationId;
+  /**
+   * Adopt the id the server minted for a brand-new thread.
+   *
+   * Without this the next question posts `conversation_id: null` again and the
+   * server mints ANOTHER conversation — a two-question thread lands in the
+   * history pane as two stubs, and reloading either one shows an empty page.
+   * The id arrives on the response header, so the transport's `fetch` is the
+   * one place that sees it.
+   */
+  const adoptConversation = React.useCallback(
+    (id: string) => {
+      setConversationId((prev) => {
+        if (prev === id) return prev;
+        onConversationId?.(id);
+        return id;
+      });
+    },
+    [onConversationId],
+  );
+
   const transport = React.useMemo(
     () =>
       new DefaultChatTransport({
         api: STREAM_ENDPOINT,
+        fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+          const response = await fetch(input, init);
+          const minted = response.headers.get('x-conversation-id');
+          if (minted) adoptConversation(minted);
+          return response;
+        },
         prepareSendMessagesRequest: ({ messages }: { messages: UIMessage[] }) => ({
           body: {
             messages,
@@ -99,16 +134,14 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           },
         }),
       }),
-    [conversationId],
+    [conversationId, adoptConversation],
   );
 
   const chat = useChat({
     transport,
     messages: options.initialMessages,
     onFinish: () => {
-      // The server mints the conversation on the first turn and returns it as a
-      // response header; `useChat` surfaces it via the transport's response.
-      // Falling back to a re-read keeps the deep link correct either way.
+      // A finished turn must not dedupe against the next question.
       turnKey.current = newKey();
     },
   });

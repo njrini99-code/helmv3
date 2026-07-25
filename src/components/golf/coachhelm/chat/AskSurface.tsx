@@ -51,6 +51,26 @@ export function AskSurface({
 }: AskSurfaceProps) {
   const [historyOpen, setHistoryOpen] = React.useState(false);
 
+  /**
+   * Put the freshly-minted conversation in the address bar.
+   *
+   * `history.replaceState`, not `router.replace`: a router navigation re-runs
+   * this server component and remounts the chat on its `conversationId` key,
+   * which would throw away a stream that is still arriving. Only the URL needs
+   * to change — the thread on screen is already correct — and changing it is
+   * what makes a reload, a bookmark, or a shared link resume the conversation
+   * instead of opening an empty one.
+   */
+  const adoptConversationInUrl = React.useCallback((id: string) => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('c') === id) return;
+    url.searchParams.set('c', id);
+    // `q` seeded the first question; leaving it would re-seed the composer on
+    // every subsequent visit to this now-permanent link.
+    url.searchParams.delete('q');
+    window.history.replaceState(window.history.state, '', url.toString());
+  }, []);
+
   return (
     <div className="flex h-[calc(100dvh-var(--fw-shell-offset,7rem))] min-h-0 flex-col">
       {/* ── Slim bar. Deliberately not a page header: the conversation is the
@@ -162,6 +182,7 @@ export function AskSurface({
             suggestions={suggestions}
             conversationId={conversationId}
             initialMessages={initialMessages}
+            onConversationId={adoptConversationInUrl}
             variant="page"
             initialInput={pendingQuestion ?? undefined}
             greeting={<Greeting teamName={teamName} />}
