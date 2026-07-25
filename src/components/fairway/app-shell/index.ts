@@ -13,13 +13,9 @@ export { FairwayBottomNav, type FairwayBottomNavProps } from './FairwayBottomNav
 export { FairwayHubSubNav, type FairwayHubSubNavProps } from './FairwayHubSubNav';
 export {
   FairwayLargeTitleProvider,
-  FairwayHeaderSentinel,
-  FairwayContentAnchor,
   LargeTitleContext,
   useLargeTitle,
   type FairwayLargeTitleProviderProps,
-  type FairwayHeaderSentinelProps,
-  type FairwayContentAnchorProps,
   type LargeTitleContextValue,
 } from './LargeTitleContext';
 export { FairwayLargeTitle, type FairwayLargeTitleProps } from './FairwayLargeTitle';

@@ -130,7 +130,7 @@ export default async function WorkLogPage({
 
   return (
     <div className="space-y-6">
-      <div data-fw-title-anchor>
+      <div>
         <Eyebrow as="p" tone="accent">
           Work log
         </Eyebrow>

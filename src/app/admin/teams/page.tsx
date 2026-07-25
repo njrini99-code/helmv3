@@ -122,7 +122,7 @@ export default async function TeamsPulsePage({
     <div className="space-y-4">
       <AutoRefresh intervalMs={60_000} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div data-fw-title-anchor>
+        <div>
           <h1 className="text-h3 font-semibold text-warm-900">Teams pulse</h1>
           <p className="text-body-sm text-warm-500">
             Every team, one 30-day heartbeat — quiet and spiking teams float to the top. Click a row for its full Thread.

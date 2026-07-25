@@ -219,15 +219,12 @@ export function AdminShell({
     [],
   );
 
-  // Mobile parity (375px mandate): below `md` FairwayTopBar's breadcrumb slot
-  // is hidden entirely (desktop-only chrome, condensing-header decision 4) —
-  // it is NOT the on-screen "where am I" signal on phone. That job belongs to
-  // each page's own in-content masthead: a mounted `<FairwayLargeTitle>` (or
-  // any element marked `data-fw-title-anchor`) both renders full-size at rest
-  // AND registers its text as the top bar's condensed-copy fallback once it
-  // scrolls away. Tabs that render no masthead at all have no on-screen page
-  // identity until they adopt one (bridge-tab-audit-p0p1 finding 11) — this
-  // `breadcrumbs` value only feeds the DESKTOP trail below.
+  // Below `md` FairwayTopBar renders no breadcrumb trail (desktop-only chrome,
+  // MOBILE_DOCTRINE rule 7) — but it DOES render this trail's leaf label as
+  // the bar's standing destination title, so `breadcrumbs` is the phone
+  // "where am I" signal as well as the desktop one. A page that wants a better
+  // label than its leaf crumb mounts `<FairwayLargeTitle>`, whose registered
+  // title wins (see LargeTitleContext).
   const breadcrumbs = useMemo(() => computeBreadcrumbs(pathname), [pathname]);
 
   useEffect(() => {

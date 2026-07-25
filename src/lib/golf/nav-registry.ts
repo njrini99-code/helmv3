@@ -77,10 +77,20 @@ export interface GolfSubTab {
   matchPrefixes?: readonly string[];
 }
 
-/** A multi-tab hub's metadata — id, accessible label, and its ordered tabs. */
+/** A multi-tab hub's metadata — id, human + accessible label, ordered tabs. */
 export interface GolfHubDef {
   /** Stable id (telemetry / test anchor / aria-label seed). */
   id: string;
+  /**
+   * The hub's human name — what the mobile top bar calls the SECTION you are
+   * in, with the sub-nav strip below naming which tab within it. This is the
+   * same name the bottom nav gives the destination, so the two chrome
+   * surfaces always agree: on `/dashboard/roster` the bottom nav highlights
+   * "Team", so the bar says "Team" and the strip says "Roster" — rather than
+   * the bar saying "Roster" a second time directly above the strip's own
+   * active "Roster" tab.
+   */
+  label: string;
   ariaLabel: string;
   tabs: readonly GolfSubTab[];
 }
@@ -213,11 +223,11 @@ const COACH_OPERATIONS_TABS: readonly GolfSubTab[] = [
 /** Ordered list of the coach's multi-tab hubs (Dashboard/CoachHelm/Courses are
  *  single-tab rail items and intentionally excluded — see module header). */
 export const GOLF_COACH_HUBS: readonly GolfHubDef[] = [
-  { id: 'team', ariaLabel: 'Team sections', tabs: COACH_TEAM_TABS },
-  { id: 'calendar', ariaLabel: 'Calendar sections', tabs: COACH_CALENDAR_TABS },
-  { id: 'rounds-stats', ariaLabel: 'Rounds & Stats sections', tabs: COACH_ROUNDS_STATS_TABS },
-  { id: 'messages', ariaLabel: 'Messages sections', tabs: COACH_MESSAGES_TABS },
-  { id: 'operations', ariaLabel: 'Operations sections', tabs: COACH_OPERATIONS_TABS },
+  { id: 'team', label: 'Team', ariaLabel: 'Team sections', tabs: COACH_TEAM_TABS },
+  { id: 'calendar', label: 'Calendar', ariaLabel: 'Calendar sections', tabs: COACH_CALENDAR_TABS },
+  { id: 'rounds-stats', label: 'Rounds & Stats', ariaLabel: 'Rounds & Stats sections', tabs: COACH_ROUNDS_STATS_TABS },
+  { id: 'messages', label: 'Messages', ariaLabel: 'Messages sections', tabs: COACH_MESSAGES_TABS },
+  { id: 'operations', label: 'Operations', ariaLabel: 'Operations sections', tabs: COACH_OPERATIONS_TABS },
 ];
 
 // -----------------------------------------------------------------------------
@@ -243,7 +253,7 @@ const PLAYER_TEAM_TABS: readonly GolfSubTab[] = [
 ];
 
 export const GOLF_PLAYER_HUBS: readonly GolfHubDef[] = [
-  { id: 'team', ariaLabel: 'Team sections', tabs: PLAYER_TEAM_TABS },
+  { id: 'team', label: 'Team', ariaLabel: 'Team sections', tabs: PLAYER_TEAM_TABS },
 ];
 
 // -----------------------------------------------------------------------------
