@@ -677,8 +677,11 @@ git commit -m "fix(coachhelm): anchor pressure-gap priority to college cohort, n
 
 > **SUPERSEDED — implement `.superpowers/sdd/task-5-brief-REPAIRED.md` instead.**
 > Every path in the version below points at
-> `src/components/fairway/pages/coachhelm/`, a directory that does not exist in
-> this repo, and its test fixture matches no real component's props. The live
+> `src/components/fairway/pages/coachhelm/InsightCard.tsx` and an
+> `InsightListView.tsx` beside it. Neither file exists. (The *directory* does
+> exist and holds 53 files including `FairwayPlayerInsight.tsx` — an earlier
+> report that the whole directory was absent was wrong; corrected here.) Its
+> test fixture matches no real component's props. The live
 > wiring is `golf/coachhelm/insights/InsightListView.tsx` rendering
 > `golf/coachhelm/insight-card/InsightCard.tsx` with `audience="coach"`.
 > `InsightTrustChips` itself was verified real, exported, and genuinely unused.

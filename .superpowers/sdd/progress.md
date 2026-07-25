@@ -197,6 +197,42 @@ BRIEF REPAIRS LANDED (4,5,7,8,9 written; 11 running). Notable beyond the
     task-9-brief-REPAIRED.md. 24 existing golf_learned_behavior rows have no
     usable type; learning starts from zero. No backfill, no deletes.
 
+=== ROOT CAUSE FOUND 2026-07-25: "accurate insights don't reach the UI" ===
+  It is NOT a filter bug and NOT bad data. The pipeline works; the UI
+  truncates it. Quantified against prod (read-only):
+
+  252 active v3 insights, 24 players, avg 10.5 each, max 18 for one player.
+  All 252 have populated evidence.
+    - Player's own /dashboard/coachhelm: hard cap 6
+      (coachhelm/page.tsx:214 getInsightsForPlayer(..., {limit: 6})).
+      130 of 252 (52%) are never visible to the player, and there is NO
+      view-more/pagination path anywhere for #7+.
+    - Coach's per-player deep-dive (/dashboard/players/[playerId]/game):
+      fetch capped at 4 (FairwayPlayerInsight.tsx:460) then
+      `out.slice(0, 2)` for display (:612). 207 of 252 (82.1%) never appear
+      in that view. NUANCE, stated honestly: the file's own comment says
+      "The plan still gets the full list" — so the remainder may feed the
+      development plan rather than vanish entirely. The 82% figure is
+      specific to that insight view, not "reaches no surface at all".
+    - That route's SSR insight query (.limit(20)) is DEAD: the prop is
+      commented `insights: InsightRow[]; // legacy; client re-fetches
+      evidence rows` (FairwayPlayerInsight.tsx:175). 20 rows fetched
+      server-side and discarded on every page load.
+
+  CORRECTION to trace-A's "most severe" claim: it flagged an asymmetry where
+  the coach Signals queue lacks the `evidence IS NOT NULL` filter that the
+  whole player-facing delivery layer requires. The mechanism is real, but I
+  queried prod: ZERO rows have evidence NULL or '{}'. It currently blocks
+  nothing — a latent trap, not the cause. Do not report it as the answer.
+
+  CORRECTION to brief-repair-5: it claimed
+  src/components/fairway/pages/coachhelm/ "is not in the repo". FALSE — the
+  directory exists with 53 files (FairwayPlayerInsight.tsx lives there).
+  What is absent is InsightCard.tsx / InsightListView.tsx specifically. Its
+  operative conclusion still stands (the live card is
+  golf/coachhelm/insight-card/), but the Task 5 supersede banner in the plan
+  overstates this and should be softened when Task 5 is dispatched.
+
 Task 1: complete (commits 19a3ee91f..32316ad7c, review clean — Approved).
   Reviewer independently confirmed the epsilon bug from source and verified
   the 0.85 fixture does NOT mask a filter regression (totalPredictions
