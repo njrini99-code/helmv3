@@ -6,7 +6,7 @@
 // auth redirect call sites, missing entirely — a bare `undefined` env var
 // baked straight into the URL) across the codebase. Mirrors the chain already
 // established in src/lib/crm/unsubscribe-token.ts and
-// src/lib/email/coach-digest-template.ts, with VERCEL_URL added as a preview-
+// the email templates, with VERCEL_URL added as a preview-
 // deploy fallback: branch/preview deployments get VERCEL_URL set
 // automatically by Vercel but rarely have NEXT_PUBLIC_APP_URL /
 // NEXT_PUBLIC_SITE_URL configured, so without this they'd fall straight
