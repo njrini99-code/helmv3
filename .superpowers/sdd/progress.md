@@ -147,6 +147,56 @@ RUNNING TALLY of plan quality: 12 of 12 tasks examined; 7 carried at least
   up — the defects are all in the implementation detail I wrote around them.
   Tasks verified ready as written: 3, 6 (patched), 10.
 
+BRIEF REPAIRS LANDED (4,5,7,8,9 written; 11 running). Notable beyond the
+  original defects:
+
+  Task 4: verified its own blast radius — nothing outside pressure-gap.ts
+    constructs a PressureGapAggregate, so widening it is safe. Also caught
+    that the existing 7 aggregate tests BREAK once aggregate() gains the
+    loadStandingForMetric call (mock builder lacks .maybeSingle). I checked
+    its full-file test replacement: all 13 original test names preserved,
+    23 total. Zero dropped.
+
+  Task 5: TWO findings bigger than the wrong path. (a) InsightListView AND
+    InsightsFeed are themselves DEAD — zero live consumers, only their own
+    barrel + tests. The real live audience="coach" InsightCard render is
+    FairwayPlayerInsight.tsx:866,871 at /golf/dashboard/players/[playerId]/game.
+    So my brief's wiring target was dead code too. (b) SECURITY: my original
+    brief had client code calling getInsightEffectivenessSignals, which uses
+    the ADMIN client with no caller-authorization check — that would have
+    introduced an authz hole. Repaired brief routes through the auth-checked
+    getInsightTrustSignals (coachhelm-analytics.ts), same action
+    FairwayEffectiveness.tsx already uses. No redundancy with
+    EvidencePanel/WhyPopover/MovementPill/OutcomeBadge — task stands.
+
+  Task 7: recordJobRun is `<T>(jobType, fn) => Promise<T>` with 29 call sites
+    across 21 route files. Options-arg design confirmed as the only clean
+    seam; implemented as optional extraMetadataKeys merged via Set so
+    no-options callers get byte-identical output. duration_ms excluded (it is
+    already its own column).
+
+  Task 8: repo already has the 23505 idiom (courses.ts:215) — followed it.
+    A multi-row INSERT is atomic so a 23505 rolls back the batch; on conflict
+    it early-returns leaving suggestions_inserted at 0 and result.error unset.
+
+  Task 9: BLOCKED ON EXPANDED SCOPE — do not dispatch the reorder alone.
+    Verified the whole chain: the reorder can never fire because a coach's
+    preferredInsightTypes can only ever be ['unknown'].
+      - insights.ts:1598 rating uses interactionType 'feedback', which is in
+        NEITHER ACK_TYPES nor DISMISS_TYPES (behavior-learner.ts:63-77), so it
+        is NOT COUNTED AT ALL. Renaming its camelCase insightType key would
+        change nothing — a trap that looks like a one-word fix. Do not do it.
+      - insights.ts:3620 ('action', counted) and :3726 ('dismiss', counted)
+        record NO type — only insightTone + confidence. Both INSERT a new row
+        with hardcoded insight_type 'pattern_detected' (:3594, :3699) and
+        receive a client-supplied ComposedInsight, the very type with no
+        insightType. So there is no real type in scope to record.
+      - player-feedback.ts:182 is the ONLY writer that does it right.
+    Task 9 must therefore ALSO thread AlertInsight.insightType out to the
+    client and back through ack/dismiss. Prerequisite Step 0 written into
+    task-9-brief-REPAIRED.md. 24 existing golf_learned_behavior rows have no
+    usable type; learning starts from zero. No backfill, no deletes.
+
 Task 1: complete (commits 19a3ee91f..32316ad7c, review clean — Approved).
   Reviewer independently confirmed the epsilon bug from source and verified
   the 0.85 fixture does NOT mask a filter regression (totalPredictions
