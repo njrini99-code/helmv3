@@ -1,6 +1,7 @@
 'use client';
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -19,7 +20,7 @@ interface PerformancePredictionProps {
 }
 
 export function PerformancePrediction({ prediction, playerState }: PerformancePredictionProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Empty state when no prediction available
   if (!prediction) {
     return (

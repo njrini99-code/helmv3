@@ -12,7 +12,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { Card } from '@/components/ui/card';
 import { generateHeroNarrative } from '@/app/golf/actions/v3/llm';
 import {
@@ -43,7 +44,7 @@ export interface HeroNarrativeCardProps {
 }
 
 export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const inverted = props.inverted ?? false;
   const [text, setText] = useState(props.fallbackText);
   const [usedLlm, setUsedLlm] = useState(false);

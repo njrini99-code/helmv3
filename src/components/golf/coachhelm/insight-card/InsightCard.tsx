@@ -19,7 +19,8 @@
  *     mounts `<LazyMotion>` at the shell layer.
  */
 import { forwardRef, useState, useTransition } from 'react';
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import {
@@ -388,7 +389,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
     { insight, tone, config, audience, showDrills, hasActions, onAction, onClick, className },
     ref,
   ) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
     const [expanded, setExpanded] = useState(false);
     const Icon = config.icon;
     const impact = Math.abs(Number(insight.evidence.strokes_impact ?? 0));

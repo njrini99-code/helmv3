@@ -11,7 +11,8 @@
  * wrapper at the top of their layouts.
  */
 import type { CSSProperties } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { InsightCard, type InsightCardProps } from './InsightCard';
 
 export interface HeroInsightCardProps extends Omit<InsightCardProps, 'density'> {
@@ -32,7 +33,7 @@ export function HeroInsightCard({
   mountAnimation = true,
   ...rest
 }: HeroInsightCardProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   if (!mountAnimation) {
     return <InsightCard {...rest} density="hero" />;
   }

@@ -25,7 +25,8 @@
  */
 
 import { useState, useTransition, useEffect } from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import {
   createGoal,
   suggestGoalTarget,
@@ -74,7 +75,7 @@ export function GoalCreationModal({
   onClose,
   initialMetricId,
 }: GoalCreationModalProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [metricId, setMetricId] = useState<MetricId>(initialMetricId ?? 'sg_putting');
   const [windowDays, setWindowDays] = useState(30);
   const [targetValue, setTargetValue] = useState<string>('');

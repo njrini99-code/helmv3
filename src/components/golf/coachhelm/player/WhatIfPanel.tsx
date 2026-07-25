@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -44,7 +45,7 @@ export function WhatIfPanel({
   playerId: _playerId,
   profileData,
 }: WhatIfPanelProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Resolve props: prefer typed props, fall back to parsing from profileData
   const resolvedCurrentPrediction = currentPrediction ?? (profileData?.currentPrediction as number | undefined) ?? 0;
   const hasPrediction = currentPrediction != null || (profileData?.currentPrediction != null);

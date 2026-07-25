@@ -19,7 +19,8 @@
  * Motion 12 honors `prefers-reduced-motion` automatically.
  */
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
@@ -64,7 +65,7 @@ function progressPct(g: Goal): number | null {
 }
 
 export function GoalCard({ goal, expanded = true }: GoalCardProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const cfg = getMetricRenderConfig(goal.metric_id);
   const stateChip = STATE_CHIP[goal.state];
   const days = daysRemaining(goal.ends_at);

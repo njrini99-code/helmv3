@@ -13,7 +13,8 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -155,7 +156,7 @@ function derivePromoteSuggestion(
 // ============================================================================
 
 export default function RoundReviewPage() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const params = useParams();
   const { addToast } = useToast();
   const roundId = params.id as string;

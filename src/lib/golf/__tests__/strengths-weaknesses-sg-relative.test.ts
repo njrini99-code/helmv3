@@ -3,7 +3,7 @@ import {
   generateStatisticalStrengthsWeaknesses,
   type StatisticalStrengthWeakness,
 } from '../strokes-gained';
-import type { GolfStats } from '@/lib/types';
+import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 /**
  * Regression cover for the 2026-07-25 strengths/weaknesses recalibration.

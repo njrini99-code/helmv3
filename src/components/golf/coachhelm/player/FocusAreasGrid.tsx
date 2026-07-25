@@ -1,6 +1,7 @@
 'use client';
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
@@ -178,7 +179,7 @@ function FocusAreaCardContent({
   interactive: boolean;
   recommendation: string;
 }) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const trendConfig = getTrendConfig(focusArea.trend);
   const TrendIcon = trendConfig.icon;
   const display = resolveDisplay(focusArea);
@@ -325,7 +326,7 @@ function FocusAreaCard({
 }
 
 export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Empty state
   if (focusAreas.length === 0) {
     return (
