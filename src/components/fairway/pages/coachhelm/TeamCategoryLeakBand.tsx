@@ -97,12 +97,29 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
                   key={i}
                   className={cn(
                     'h-1.5 min-w-[3px] flex-1 rounded-sm',
-                    i < category.attentionCount ? 'bg-fw-warning' : 'bg-surface-sunken',
+                    // The non-attention ticks now read GREEN rather than the
+                    // beige surface-sunken they used to. Those players ARE on
+                    // track, so the rail states both halves instead of only
+                    // flagging the bad one against an inert background — and it
+                    // puts the brand green back into a band that was entirely
+                    // amber-on-champagne.
+                    i < category.attentionCount ? 'bg-fw-warning' : 'bg-accent-500',
                   )}
                 />
               ))}
             </div>
-            <Badge tone={category.attentionCount > 0 ? 'warning' : 'success'} size="sm" numeric>
+            {/* `whitespace-normal` deliberately overrides Badge's built-in
+                whitespace-nowrap (twMerge lets className win). At 390px the
+                two-up grid makes each card ~165px while "2 of 7 need work"
+                needs ~181px, so the nowrap pill was CLIPPED by 16px — measured
+                on prod 2026-07-25. Wrapping to a second line matches the
+                "+0.7 str/rd available" pill already in this view. */}
+            <Badge
+              tone={category.attentionCount > 0 ? 'warning' : 'success'}
+              size="sm"
+              numeric
+              className="whitespace-normal"
+            >
               {category.attentionCount > 0
                 ? `${category.attentionCount} of ${scored} need work`
                 : `${scored} of ${scored} on track`}
