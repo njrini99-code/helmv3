@@ -5,6 +5,13 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logLogin } from '@/lib/admin-logger';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
+import {
+  classifyEngagement,
+  countsAsHumanEngagement,
+  type EngagementClassification,
+} from '@/lib/crm/engagement-quality';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
 import { isTransientAuthError, signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
@@ -59,6 +66,381 @@ function validateInput(input: EnterDemoInput): string | null {
 }
 
 // ---------------------------------------------------------------------------
+// CRM capture: lead creation + scanner-prefetch quarantine
+//
+// Two defects are fixed here, and they pull in opposite directions, so the
+// balance below is deliberate.
+//
+//   1. A coach could tour the entire product and leave no trace in the
+//      pipeline. Entering the gate wrote one `golf_demo_sessions` row and
+//      never created or touched a `crm_coaches` row, so 220 recorded tours
+//      were invisible to sales.
+//
+//   2. Most of those tours were not people. Corporate email security scanners
+//      follow every link in outbound mail, and the demo-invite email carries
+//      an AUTO-SUBMITTING gate link — so a scanner following it manufactures a
+//      complete, entirely fake session including name, email and school. 178
+//      of the first 220 rows fired under two minutes after that coach's send
+//      timestamp. Naively fixing (1) would have converted those 178 fakes into
+//      178 fake leads that a human then wastes a week chasing.
+//
+// The resolution: classify every entry, write the session row either way (the
+// evidence is worth keeping), and only ever create or link a coach when the
+// entry is NOT classified 'automated'.
+// ---------------------------------------------------------------------------
+
+/**
+ * A validated, normalized gate entry as the capture path sees it.
+ */
+interface DemoGateVisit {
+  name: string;
+  email: string;
+  school: string;
+  /** Already defaulted to 'unknown' by the caller — the same value the rate limiter keyed on. */
+  ip: string;
+  /**
+   * Raw `user-agent` header, `null` when absent. Deliberately NOT defaulted to
+   * 'unknown' before it reaches the classifier: a missing user-agent and a
+   * client that literally calls itself "unknown" are different facts, and the
+   * classifier branches on the difference.
+   */
+  userAgent: string | null;
+  referrer: string;
+}
+
+/** The subset of `crm_coaches` the capture path reads. */
+interface ExistingCoach {
+  id: string;
+  status: string | null;
+  last_contacted_at: string | null;
+}
+
+/**
+ * `coach_status` ladder, lowest first. See
+ * src/app/golf/admin/crm/components/automations/AutomationsSeed.ts.
+ */
+const COACH_STATUS_RANK: Readonly<Record<string, number>> = {
+  new_lead: 1,
+  contacted: 2,
+  engaged: 3,
+  proposal: 4,
+  won: 5,
+  lost: 6,
+  nurture: 7,
+};
+
+/**
+ * Where a confirmed-human demo tour lands a coach who is still behind it.
+ * `engaged` is defined by AutomationsSeed.ts as "opened or clicked our email";
+ * walking the whole product is strictly stronger evidence than a click.
+ */
+const DEMO_TOUR_STATUS = 'engaged' as const;
+
+/**
+ * Rank on the `coach_status` ladder.
+ *
+ * An UNRECOGNIZED status returns `Infinity` on purpose: if someone later adds
+ * a stage beyond `nurture`, the safe failure is to leave that coach alone, not
+ * to rewind them to `engaged`.
+ */
+function coachStatusRank(status: string | null | undefined): number {
+  if (!status) return 0;
+  return COACH_STATUS_RANK[status] ?? Number.POSITIVE_INFINITY;
+}
+
+/**
+ * Escape LIKE/ILIKE metacharacters so an address matches literally.
+ *
+ * `_` is a legal email character and `%` is legal in a local part, so handing a
+ * raw address to `.ilike()` would turn it into a wildcard pattern that can
+ * match a different coach entirely.
+ */
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+/**
+ * Human-readable justification stored next to the verdict in `quality_reason`.
+ *
+ * The classifier is heuristic and will be retuned, which makes a bare verdict
+ * unauditable after the fact — the reason code plus the measured latency is
+ * what lets someone decide whether a specific row was called correctly.
+ */
+function buildQualityReason(classification: EngagementClassification): string {
+  const latency =
+    classification.latencyMs === null
+      ? 'latency=n/a'
+      : `latency=${Math.round(classification.latencyMs / 1000)}s`;
+  return `${classification.reason} confidence=${classification.confidence} ${latency}`;
+}
+
+/**
+ * Case-insensitive coach lookup.
+ *
+ * `crm_coaches.email` stores whatever casing an import or an admin typed, while
+ * the gate lowercases the visitor's address — so an equality match misses every
+ * coach whose stored address carries an uppercase character. That is the same
+ * defect that makes the Gmail reply cron drop known senders.
+ *
+ * Returns `null` on any failure: this lookup only supplies the classifier's
+ * reference timestamp and decides create-vs-link, and neither is worth failing
+ * a visitor over.
+ */
+async function findCoachByEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+): Promise<ExistingCoach | null> {
+  try {
+    // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc on enterDemoImpl.
+    const { data, error } = await admin
+      .from('crm_coaches')
+      .select('id, status, last_contacted_at')
+      .ilike('email', escapeLikePattern(email))
+      // `email` carries only a plain (non-unique) index, so duplicate rows are
+      // possible; oldest-first makes "which row wins" deterministic rather than
+      // dependent on heap order.
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    if (error) {
+      await logServerError(`Demo gate CRM coach lookup failed: ${describeError(error)}`, {
+        action: 'enterDemo.findCoachByEmail',
+        sport: 'golf',
+        feature: 'auth_onboarding',
+        errorCode: error.code,
+        metadata: { email },
+      });
+      return null;
+    }
+
+    return data?.[0] ?? null;
+  } catch (error) {
+    await logServerError(`Demo gate CRM coach lookup threw: ${describeError(error)}`, {
+      action: 'enterDemo.findCoachByEmail',
+      sport: 'golf',
+      feature: 'auth_onboarding',
+      metadata: { email },
+    });
+    return null;
+  }
+}
+
+/**
+ * Record the tour on a coach we already know, and return their id.
+ *
+ * Deliberately does NOT copy the gate's name / school over the existing row:
+ * that input is unverified free text typed by whoever is at the keyboard, and
+ * overwriting curated CRM data with it would be a net loss.
+ *
+ * The id is returned even when the update fails — the coach exists, so the
+ * `crm_coach_id` link on the session row is still correct and still worth
+ * writing.
+ */
+async function recordTourOnExistingCoach(
+  admin: ReturnType<typeof createAdminClient>,
+  existing: ExistingCoach,
+  classification: EngagementClassification,
+): Promise<string> {
+  // Status only ever moves FORWARD, and only on a MEASURED human. A tour whose
+  // verdict is 'unknown' still surfaces the coach (the touch below bumps them
+  // in the CRM's recently-active ordering) but must not assert a buying signal
+  // we could not measure — `countsAsHumanEngagement` is the module's one
+  // predicate for that, and it excludes 'unknown' by design.
+  const promote =
+    countsAsHumanEngagement(classification) &&
+    coachStatusRank(existing.status) < coachStatusRank(DEMO_TOUR_STATUS);
+
+  // `status` is included ONLY when it actually changes: trg_crm_stage_transition
+  // fires on UPDATE OF status whether or not the value differs, so sending it
+  // unconditionally would write a no-op stage-history row on every tour.
+  //
+  // `updated_at` is immediately overwritten by trg_crm_coaches_updated_at; it is
+  // in the patch so the statement always has at least one column to set and
+  // therefore always bumps the row for the CRM's recently-touched ordering.
+  const patch = {
+    updated_at: new Date().toISOString(),
+    ...(promote ? { status: DEMO_TOUR_STATUS } : {}),
+  };
+
+  try {
+    // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc on enterDemoImpl.
+    const { error } = await admin // nosemgrep: helmv3-action-missing-revalidate -- redirect-terminated demo flow
+      .from('crm_coaches')
+      .update(patch)
+      .eq('id', existing.id);
+
+    if (error) {
+      await logServerError(`Demo gate CRM coach touch failed: ${describeError(error)}`, {
+        action: 'enterDemo.recordTourOnExistingCoach',
+        sport: 'golf',
+        feature: 'auth_onboarding',
+        errorCode: error.code,
+        metadata: { coachId: existing.id, promoted: promote },
+      });
+    }
+  } catch (error) {
+    await logServerError(`Demo gate CRM coach touch threw: ${describeError(error)}`, {
+      action: 'enterDemo.recordTourOnExistingCoach',
+      sport: 'golf',
+      feature: 'auth_onboarding',
+      metadata: { coachId: existing.id, promoted: promote },
+    });
+  }
+
+  return existing.id;
+}
+
+/**
+ * Create the coach row a walk-in visitor never used to get.
+ *
+ * Mirrors the lead shape written by the landing-page demo-request action
+ * (src/app/actions/demo-request.ts) so both inbound doors produce rows the CRM
+ * treats identically — `conference` / `division` / `program` are NOT NULL with
+ * no usable default, so they get the same placeholders that path uses.
+ * `source` is what distinguishes them.
+ */
+async function createLeadFromGate(
+  admin: ReturnType<typeof createAdminClient>,
+  visit: DemoGateVisit,
+): Promise<string | null> {
+  try {
+    // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc on enterDemoImpl.
+    const { data, error } = await admin // nosemgrep: helmv3-action-missing-revalidate -- redirect-terminated demo flow
+      .from('crm_coaches')
+      .insert({
+        // name / school are guaranteed non-empty by validateInput above.
+        name: visit.name,
+        email: visit.email,
+        school: visit.school,
+        conference: 'Unknown',
+        division: 'D3',
+        program: 'both',
+        status: 'new_lead',
+        source: 'demo_gate',
+        notes: 'Entered the GolfHelm demo gate',
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      await logServerError(`Demo gate CRM lead creation failed: ${describeError(error)}`, {
+        action: 'enterDemo.createLeadFromGate',
+        sport: 'golf',
+        feature: 'auth_onboarding',
+        errorCode: error.code,
+        metadata: { email: visit.email },
+      });
+      return null;
+    }
+
+    return data?.id ?? null;
+  } catch (error) {
+    await logServerError(`Demo gate CRM lead creation threw: ${describeError(error)}`, {
+      action: 'enterDemo.createLeadFromGate',
+      sport: 'golf',
+      feature: 'auth_onboarding',
+      metadata: { email: visit.email },
+    });
+    return null;
+  }
+}
+
+/**
+ * Classify a gate entry, create or link its CRM lead, and persist the
+ * `golf_demo_sessions` row.
+ *
+ * Fail-soft by contract: every failure path logs and returns, and the caller
+ * ignores the result. A tracking or CRM failure must never stop a real coach
+ * from entering the demo. What is no longer acceptable is the bare
+ * `try {} catch {}` this replaces — it discarded every error silently, so a
+ * broken capture path was indistinguishable from a quiet week.
+ */
+async function captureDemoGateVisit(visit: DemoGateVisit): Promise<void> {
+  const admin = createAdminClient();
+
+  // --- a. Resolve the coach BEFORE classifying -----------------------------
+  //    `last_contacted_at` — when WE last reached out — is the reference the
+  //    classifier measures entry latency against, because the prefetch we are
+  //    trying to catch is a scanner walking the links in that very message.
+  //    With no known coach there is no reference, and the classifier is
+  //    required to answer 'unknown' rather than guess: a wrong reference
+  //    produces a confident wrong answer.
+  const existing = await findCoachByEmail(admin, visit.email);
+
+  const classification = classifyEngagement({
+    occurredAt: new Date(),
+    referenceAt: existing?.last_contacted_at ?? null,
+    userAgent: visit.userAgent,
+    ip: visit.ip,
+  });
+
+  // --- b. Create or link the CRM lead --------------------------------------
+  //    The gate is the one surface where 'unknown' must still produce a lead.
+  //    An organic walk-in from the public /golf/demo page has no outreach to
+  //    measure against BY CONSTRUCTION, so gating on countsAsHumanEngagement()
+  //    here — the module's normal advice, and correct everywhere a reference
+  //    timestamp exists — would reject 100% of genuine walk-ins and re-create
+  //    the exact defect this change fixes. 'automated' is the only verdict that
+  //    blocks lead capture; 'unknown' is admitted at the lowest status and
+  //    countsAsHumanEngagement() still gates the status promotion below.
+  //
+  //    Known gap, worth naming: a scanner prefetching the invite link for a
+  //    coach whose `last_contacted_at` is NULL classifies 'unknown' and will
+  //    create a lead. Latency cannot see that case; the batch IP fan-out
+  //    helper (detectUserAgentIpFanOut) is what catches it, and it needs a
+  //    sweep across rows rather than a single-request decision.
+  let crmCoachId: string | null = null;
+  if (classification.verdict !== 'automated') {
+    crmCoachId = existing
+      ? await recordTourOnExistingCoach(admin, existing, classification)
+      : await createLeadFromGate(admin, visit);
+  }
+
+  // --- c. Persist the session row ------------------------------------------
+  //    Written for automated entries too. They are the evidence that the
+  //    invite link is being prefetched, and dropping them would only hide the
+  //    problem again — they are simply never linked to a coach.
+  try {
+    // `golf_demo_sessions` isn't in the generated Database type until the
+    // migration + `npm run db:types` land; cast through unknown until then.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyAdmin = admin as unknown as { from: (table: string) => any };
+    // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc below.
+    const { error } = await anyAdmin.from('golf_demo_sessions').insert({ // nosemgrep: helmv3-action-missing-revalidate -- redirect-terminated demo flow
+      name: visit.name,
+      email: visit.email,
+      school: visit.school,
+      ip: visit.ip,
+      user_agent: visit.userAgent ?? 'unknown',
+      referrer: visit.referrer,
+      traffic_quality: classification.verdict,
+      quality_reason: buildQualityReason(classification),
+      crm_coach_id: crmCoachId,
+      // The full verdict is kept machine-readable alongside the two summary
+      // columns so a retuned classifier can be re-scored against old rows.
+      metadata: { engagement: classification },
+    });
+
+    if (error) {
+      await logServerError(`Demo gate session capture failed: ${describeError(error)}`, {
+        action: 'enterDemo.captureDemoGateVisit',
+        sport: 'golf',
+        feature: 'auth_onboarding',
+        errorCode: error.code,
+        metadata: { email: visit.email, verdict: classification.verdict },
+      });
+    }
+  } catch (error) {
+    await logServerError(`Demo gate session capture threw: ${describeError(error)}`, {
+      action: 'enterDemo.captureDemoGateVisit',
+      sport: 'golf',
+      feature: 'auth_onboarding',
+      metadata: { email: visit.email, verdict: classification.verdict },
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main action
 // ---------------------------------------------------------------------------
 
@@ -66,7 +448,10 @@ function validateInput(input: EnterDemoInput): string | null {
  * Public demo gate server action.
  *
  * 1. Validates name / email / school.
- * 2. Captures the visitor in `golf_demo_sessions` (fire-and-forget via admin client).
+ * 2. Captures the visitor: classifies the entry as human vs. security-scanner
+ *    prefetch, creates or links the `crm_coaches` lead for anything not
+ *    classified 'automated', and writes the `golf_demo_sessions` row (via the
+ *    admin client, fail-soft but never silent).
  * 3. Logs a 'login' admin_event titled "Demo entered" (fire-and-forget).
  * 4. Signs the visitor into the shared demo coach account server-side so the
  *    session cookie is set for this browser.
@@ -96,10 +481,13 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   // --- 2. Read request metadata -------------------------------------------
   const headersList = await headers();
   const ip =
-    headersList.get('x-forwarded-for') ??
+    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     headersList.get('x-real-ip') ??
     'unknown';
-  const userAgent = headersList.get('user-agent') ?? 'unknown';
+  // Kept nullable here: the capture path needs to tell "no header" apart from
+  // a client whose user-agent is the literal string 'unknown'. The stored
+  // column still falls back to 'unknown' at the insert, unchanged.
+  const userAgent = headersList.get('user-agent');
   const referrer = headersList.get('referer') ?? headersList.get('referrer') ?? '';
 
   // --- 2b. Rate limit by IP ------------------------------------------------
@@ -123,39 +511,40 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
     };
   }
 
-  // --- 4. Capture the visitor in golf_demo_sessions (authoritative "who") ---
-  //    Awaited (not detached) so the write isn't dropped when the serverless
-  //    function unwinds on redirect. Resilient: a tracking failure (e.g. the
-  //    table not yet migrated) must never block demo entry.
-  try {
-    const adminDb = createAdminClient();
-    // `golf_demo_sessions` isn't in the generated Database type until the
-    // migration + `npm run db:types` land; cast through unknown until then.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const anyAdmin = adminDb as unknown as { from: (table: string) => any };
-    // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc above.
-    await anyAdmin.from('golf_demo_sessions').insert({ // nosemgrep: helmv3-action-missing-revalidate -- redirect-terminated demo flow
-      name,
-      email,
-      school,
-      ip,
-      user_agent: userAgent,
-      referrer,
-      metadata: {},
+  // --- 4. Capture + sign in concurrently -----------------------------------
+  //    The CRM capture and Supabase Auth sign-in are independent network
+  //    chains. Starting them together removes a full waterfall from the public
+  //    gate. Capture is still awaited before redirect so serverless teardown
+  //    cannot drop the write, and the outer catch preserves the fail-soft
+  //    contract if even client construction unexpectedly throws.
+  const capturePromise = captureDemoGateVisit({
+    name,
+    email,
+    school,
+    ip,
+    userAgent,
+    referrer,
+  }).catch(async (error) => {
+    await logServerError(`Golf demo gate capture failed unexpectedly: ${describeError(error)}`, {
+      action: 'enterDemo.captureDemoGateVisit',
+      sport: 'golf',
+      feature: 'golf_demo_access',
+      featureArea: 'golf-demo-access',
     });
-  } catch {
-    // Never block entry on a tracking failure.
-  }
+  });
 
   // --- 5. Sign visitor into the shared demo account server-side ------------
   //    Retried on 429/5xx/network: mass-send bursts funnel every sign-in
   //    through Vercel's egress IPs into Supabase's per-IP auth limits, and a
   //    throttled sign-in is congestion — not a reason to fail the visitor.
   const supabase = await createClient();
-  const { data, error: signInError } = await signInWithPasswordResilient(supabase, {
-    email: creds.email,
-    password: creds.password,
-  });
+  const [{ data, error: signInError }] = await Promise.all([
+    signInWithPasswordResilient(supabase, {
+      email: creds.email,
+      password: creds.password,
+    }),
+    capturePromise,
+  ]);
 
   if (signInError || !data.session || !data.user) {
     return {
