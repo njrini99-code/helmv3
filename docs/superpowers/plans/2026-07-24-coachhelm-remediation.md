@@ -810,7 +810,7 @@ for c in d['crons']:
 "
 ```
 
-Expected: the five entries in the table above, plus `standing-refresh 0 4`, `genome-nightly 0 5`, `causality-attribute 0 6`.
+Expected: **11 lines**, not 8 — the five entries in the table above, plus `standing-refresh 0 4`, `genome-nightly 0 5`, `causality-attribute 0 6`, and then these three, which this filter also matches and which you must leave exactly as they are: `coachhelm-validation 15 * * * *`, `coachhelm-safety-net */30 * * * *`, `v3/weekly-coach-email 0 23 * * 0`. Seeing those three extra lines is correct and is not a sign anything is wrong.
 
 - [ ] **Step 2: Rewrite the schedules**
 
@@ -1096,7 +1096,41 @@ Record the finding — the specific predicate and why it now excludes everything
 
 ### Task 11: Scale `minSampleN` by round volume
 
-V3 generators use a flat `minSampleN = 5` (15 for tee-strategy) regardless of a player's total round volume. V2's pattern-miner already scales its floor — `Math.min(6, Math.max(3, Math.round(roundCount * 0.15)))` — after a documented incident of "18 starvation events across 5 players in 24h" (`pattern-miner.ts:143-145`). A player with 5 rounds currently gets the same statistical treatment as one with 40.
+V3 generators use a flat `minSampleN = 5` (15 for tee-strategy) regardless of a player's total round volume. V2's pattern-miner already scales its floor, after a documented incident of "18 starvation events across 5 players in 24h" (the incident comment is at `pattern-miner.ts:143-145`). A player with 5 rounds currently gets the same statistical treatment as one with 40.
+
+> **OPEN DECISION — do not dispatch this task until the owner resolves it.**
+> This task as originally written conflated two OPPOSITE goals, and they
+> produce different products. V2's real function (`pattern-miner.ts:155-158`,
+> not :143-145 — that citation is the incident comment) is:
+>
+> ```typescript
+>   if (roundCount < 6) return 2;
+>   return Math.min(THRESHOLDS.minSampleSize /* 6 */,
+>                   Math.max(3, Math.round(roundCount * 0.15)));
+> ```
+>
+> V2 goes **down** to 2 for low-volume players — it was fixing *starvation*
+> (the "18 starvation events" incident), i.e. floors set too high for players
+> early in a season who consequently saw nothing.
+>
+> The V3 function prescribed in Step 3 below does the **opposite**: it uses
+> `baseMin` as a floor and only ever raises it, so a 5-round player is
+> unaffected and a 40-round player faces a higher bar. Its doc comment says
+> "a 40-round player should clear a higher bar" while this task's own opening
+> paragraph cites V2's starvation incident. Both cannot be the goal.
+>
+> - **Option A (port V2 — relax for low volume):** an early-season player with
+>   4 rounds starts seeing patterns instead of nothing. Costs precision: more
+>   false positives on thin data.
+> - **Option B (as prescribed — tighten for high volume):** a 40-round player's
+>   patterns get better evidence behind them. Low-volume players see exactly
+>   what they see today, so the starvation citation is not addressed.
+>
+> Whichever is chosen, Step 3's code has a separate BUG that must be fixed:
+> `Math.min(12, Math.max(baseMin, scaled))` can never exceed 12, so
+> tee-strategy's deliberate `baseMin = 15` would be silently lowered to 12.
+> Correct form is `Math.max(baseMin, Math.min(12, scaled))` — cap the scaled
+> value, never undercut the generator's own floor.
 
 **Files:**
 - Modify: `src/lib/coachhelm/v3/engine/generator-base.ts`
@@ -1167,7 +1201,7 @@ git commit -m "fix(coachhelm): scale v3 minimum sample floor by round volume"
 
 ### Task 12: Decide v2/v3 insight coexistence
 
-**This is a decision task, not a code change.** Many players carry both a v2 and a v3 insight covering the same conceptual ground (e.g. v2 `bubble_player` and v3 `putt_bias`, both category `putting`), with nothing retiring the v2 one. Right now this is neither intentional coexistence nor a sunset — it is accumulation.
+**This is a decision task, not a code change.** Many players carry both a v2 and a v3 insight covering the same conceptual ground — for a verified example, v2's `putting-three-putts` (`category: 'putting'`, about 3-putt frequency and lag putting, `src/lib/coachhelm/v2/mining/stats-insight-generator.ts:822-824`) overlaps v3's `lag_distance_3putt` composite, which has 10 live rows in prod — with nothing retiring the v2 one. Right now this is neither intentional coexistence nor a sunset — it is accumulation.
 
 - [ ] **Step 1: Quantify the overlap**
 
