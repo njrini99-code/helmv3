@@ -560,6 +560,17 @@ git commit -m "fix(coachhelm): derive composite sample_n from source evidence, n
 
 ### Task 4: Anchor PressureGap priority to the college cohort, not the PGA Tour
 
+> **SUPERSEDED — implement `.superpowers/sdd/task-4-brief-REPAIRED.md` instead.**
+> The version below claims `standing?.level_avg` is in scope at
+> `pressure-gap.ts:253`. It is not — `composeContent(agg)` takes only `agg` and
+> `PressureGapAggregate` has no such field, so the prescribed edit is a hard
+> `Cannot find name 'standing'`. The real fix reads `loadStandingForMetric`
+> inside `aggregate()` and stores a `cohort_avg` field, following
+> `course-mgmt.ts:167-175`. Verified safe: nothing outside `pressure-gap.ts`
+> constructs a `PressureGapAggregate`. The repaired version also fixes the
+> existing 7 aggregate tests, which break once `aggregate()` gains the
+> standing read, and preserves all 13 existing test cases.
+
 `pressure-gap.ts:253` gates `priority: 'high'` at `agg.playerValue > 0.5` — a flat PGA Tour reference. The same file's own comment at lines 249-252 says college-typical is 2-5 strokes and flags this as a known open caveat. In prod, active `pressure_gap` rows at `high` priority average **4.08 strokes** — squarely inside the range the code itself calls normal for college.
 
 **Files:**
@@ -663,6 +674,14 @@ git commit -m "fix(coachhelm): anchor pressure-gap priority to college cohort, n
 ---
 
 ### Task 5: Render the trust chips that already exist
+
+> **SUPERSEDED — implement `.superpowers/sdd/task-5-brief-REPAIRED.md` instead.**
+> Every path in the version below points at
+> `src/components/fairway/pages/coachhelm/`, a directory that does not exist in
+> this repo, and its test fixture matches no real component's props. The live
+> wiring is `golf/coachhelm/insights/InsightListView.tsx` rendering
+> `golf/coachhelm/insight-card/InsightCard.tsx` with `audience="coach"`.
+> `InsightTrustChips` itself was verified real, exported, and genuinely unused.
 
 `src/components/fairway/pages/coachhelm/InsightTrustChips.tsx` is a complete, documented, ledger-backed component exported at line 205 and **imported nowhere**. Meanwhile `FairwayEffectiveness.tsx:170-213` hand-rolls a duplicate trust vocabulary. The ledger behind it is real and active: 30,456 exposure rows.
 
@@ -861,6 +880,16 @@ git commit -m "fix(coachhelm): order nightly crons to match the documented depen
 
 ### Task 7: Make the causality-attribution stall visible
 
+> **SUPERSEDED — implement `.superpowers/sdd/task-7-brief-REPAIRED.md` instead.**
+> The version below has the root cause wrong. The route already writes a
+> `background_job_logs` row via `recordJobRun` (`route.ts:24,83,88`). The
+> summary vanishes because `extractOutcomeMetadata` in
+> `src/lib/admin/job-log.ts` copies only a hardcoded 7-key whitelist that none
+> of the causality keys appear in — a file the Files section never listed, and
+> whose `writeRow` is unexported, so the prescribed edit has no insertion
+> point. Its verification SQL also uses two columns that do not exist
+> (`job_name`, `created_at`; real are `job_type`, `started_at`).
+
 The cron reports `status=completed` daily while attributing nothing. A live run on 2026-07-25 returned `{"considered":28,"attributed":0,"no_data":28}`. 19 of the last 22 "completed" runs produced zero rows. The summary object is computed but never persisted to `background_job_logs.metadata`, so the stall is invisible from health signals.
 
 **Files:**
@@ -916,6 +945,18 @@ git commit -m "fix(coachhelm): persist causality-attribution summary so stalls a
 ---
 
 ### Task 8: Add the missing dedup constraint to goal suggestions
+
+> **SUPERSEDED — implement `.superpowers/sdd/task-8-brief-REPAIRED.md` instead.**
+> The version below creates a PARTIAL unique index and then upserts against it
+> with a bare `onConflict` column list. Postgres will not infer a partial index
+> as an arbiter without its predicate, and supabase-js cannot send one, so that
+> call fails at runtime — a bug this repo already shipped and documented in
+> `supabase/migrations/20260701010000_fix_baseball_signals_dedupe_and_disposition.sql:1-33`.
+> Its claim to "mirror `insertNew()` exactly" is also false: that arbiter is
+> NON-partial, which is the whole difference. The repaired version keeps the
+> partial index (correct here — `accepted`/`dismissed`/`expired` rows must not
+> block a re-suggestion, so a global unique would overwrite history) and makes
+> the writer treat SQLSTATE 23505 as benign instead.
 
 `golf_coach_insights` was specifically hardened with a DB-level unique constraint against a three-cron race. `golf_goal_suggestions` has the same exposure and no constraint — `pg_constraint`/`pg_indexes` show only a PK, FKs and CHECKs. The writer (`suggestion-writer.ts:520`) is a plain `.insert()` behind a non-atomic pre-flight read, and the file's own comment at lines 17-20 documents the race. Zero duplicates today: latent, not manifested.
 
@@ -983,6 +1024,14 @@ git commit -m "fix(coachhelm): add DB-level dedup for active goal suggestions"
 ---
 
 ### Task 9: Stop discarding the BehaviorLearner result
+
+> **SUPERSEDED — implement `.superpowers/sdd/task-9-brief-REPAIRED.md` instead.**
+> The version below types the reorder key as OPTIONAL
+> (`T extends { insightType?: string }`) and wires it onto
+> `ComposedInsight[]`, which has no `insightType` and no `id`. It therefore
+> compiles, its synthetic-mock test passes green, and in production the key is
+> always `undefined` so the reorder does nothing — forever. This is the same
+> compiles-passes-does-nothing failure this whole plan exists to fix.
 
 `orchestrator.ts:705-706` constructs a `BehaviorLearner` and awaits `getLearnedPreferences()` — then never assigns the result. A real DB round-trip runs on every alert batch and is thrown away. `golf_learned_behavior` holds 24 real rows fed by player insight ratings from five live UI files.
 
