@@ -451,6 +451,65 @@ Task 2: COMPLETE (commits 2a36a79f8, 656c858fa, fix 5c1f5820b; review
   Review test spies on the bootstrap and would not be called at all before
   the fix.
 
+Task 3: COMPLETE (ae40d4b17, e0ec16dfc; review APPROVED, verdict in
+  .superpowers/sdd/task-3-review.md — no Critical, no Important).
+  248/248 tests, typecheck + lint 0. The three literals now derive via
+  Math.min() of source-insight sample sizes, mirroring lag-distance-3putt.
+  The boxed "wire coOccurrenceShare" instruction was MINE and was WRONG —
+  no hole-level data reaches detect() (putt-bias never selects hole_number;
+  scrambling discards it before its aggregate; detect() takes no ctx).
+  Implementer caught it and asked instead of fabricating a hole array to
+  pass a test. Step 6 implemented instead: honest NOT-YET-WIRED docblock
+  ("deliberately unreachable rather than silently wrong") + DORMANT->LIVE
+  relabel, no behaviour change. Retraction committed at 7ad12c7c3.
+  Follow-up feature recorded (persist hole_number through PuttRow and
+  ScramblingAggregate, add a CompositeContext field, give detect() a ctx).
+  REVIEW RISK I FLAGGED — RESOLVED, not a hole: InsightEvidence.sample_n is
+  NON-OPTIONAL (v2/insights/types.ts:131), so the `?? 0` is defense-in-depth;
+  and if 0 ever occurred, upsertInsight Rule 1 (v2/insights/upsert.ts:105,
+  MIN_SAMPLE_N=5) REFUSES to publish rather than shipping a thin number,
+  caught via isEvidenceRefusal in synthesis.ts. Strictly safer than the old
+  always-emits literal.
+
+  BONUS the reviewer found: normalizeCompositeEvidence READS sample_n
+  (synthesis.ts:171) to compute sample_adequacy and the confidence blend, and
+  never reassigns it (verified :396-414). So these composite insights were
+  wrong TWICE — a fabricated sample size AND a confidence score derived from
+  it. Fixing the first silently corrects the second.
+
+  MINOR recorded for a future task (not a defect): unlike
+  lag-distance-3putt.ts:78-81, the three fixed rules do not early-return null
+  in detect() when derived sample_n is thin (that file has its own
+  MIN_SOURCE_N=5 gate). Harmless today because Rule 1 refuses to publish
+  anyway, but the asymmetry means the three rules do wasted compose() work
+  and log a refusal warning where the reference rule exits early.
+
+WORKFLOW (14 agents, 0 errors) COMPLETE. Docs committed at 6fcdb9d48.
+  ITS HEADLINE DID NOT SURVIVE VERIFICATION — corrected in place with a
+  banner on the roadmap. It claimed a whole v2 alert vocabulary is generated
+  daily and hidden by the engine_version gate (101 rows / 18%, "generated as
+  recently as this morning"), and made repointing a shared v2 write path the
+  #1 fix. Truth: all 101 v2 rows are status resolved/dismissed, so ZERO
+  would become visible without that gate; and "this morning" misread
+  updated_at (lifecycle cron touching old rows) as creation — newest v2 row
+  was CREATED 2026-07-21. Acting on it as written = Medium-risk change to a
+  shared write path for zero user-visible gain.
+  WHAT IT GOT RIGHT, incl. a real gap in MY Task 2 fix: the calibrator is
+  bootstrapped once for prediction_type 'score_to_par' and then reused for
+  pattern_detected / performance_change / shot_pattern, which still get raw
+  passthrough labelled "calibrated" — and their buckets can NEVER fill
+  because performance-predictor.ts only ever writes metric 'score_to_par'.
+  Task 2 made calibration real for ONE of four prediction types. Also:
+  golf_coach_behavior_log has ZERO rows ever (coach-behavior.ts fully built,
+  never called); golf_insight_action has 3 rows, all 'create_focus', despite
+  dismiss/acknowledge/resolve being live; real lifecycle values are
+  detected/tentative/matured/addressed/resolved + archived (there is no
+  'confirmed'); RLS gates ownership only, so applyInsightVisibility is the
+  ONLY thing keeping archived/tentative rows off screens.
+  Verified the false-DEAD contamination did NOT reach coachhelm-ai.md — it
+  treats InsightCard as live and marks only InsightListView dead. AUTOGEN
+  files correctly untouched.
+
 Task 1: complete (commits 19a3ee91f..32316ad7c, review clean — Approved).
   Reviewer independently confirmed the epsilon bug from source and verified
   the 0.85 fixture does NOT mask a filter regression (totalPredictions
