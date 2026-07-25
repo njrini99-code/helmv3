@@ -67,4 +67,54 @@ describe('orchestrator calibration bootstrap wiring', () => {
     await expect(orchestrator.ensureCalibrationBootstrapped()).resolves.toBeUndefined();
     expect(orchestrator.getCalibratedConfidence(0.65)).toBeCloseTo(0.65, 5);
   });
+
+  it('resets the bootstrap flag after a failed attempt so a later call retries', async () => {
+    const orchestrator = await freshOrchestrator();
+
+    selectMock.mockRejectedValueOnce(new Error('connection refused'));
+    await orchestrator.ensureCalibrationBootstrapped();
+    // First attempt failed: still raw passthrough, and the flag must not be
+    // stuck `true` — otherwise this process never recovers from one blip.
+    expect(orchestrator.getCalibratedConfidence(0.65)).toBeCloseTo(0.65, 5);
+
+    selectMock.mockResolvedValueOnce({ data: PROD_ROWS, error: null });
+    await orchestrator.ensureCalibrationBootstrapped();
+    // The retry actually hit the DB again (not short-circuited by a
+    // permanently-true flag) and bootstrapped for real this time.
+    expect(selectMock).toHaveBeenCalledTimes(2);
+    expect(orchestrator.getCalibratedConfidence(0.65)).toBeCloseTo(0.8, 5);
+  });
+
+  /**
+   * Pins the Round Review gap a reviewer found in this task: `.calibrate()`
+   * runs inside `generateRoundReview` (directly, and via `generateInsights`)
+   * but nothing on that path called `ensureCalibrationBootstrapped()` before
+   * the fix, so Round Review's `calibratedConfidence` stayed raw-passthrough
+   * whenever it was the first calibration touchpoint in a process — the
+   * normal case for its two production callers (`round-review-system.ts`,
+   * `api/golf/rounds/generate-review/route.ts`).
+   *
+   * `generateRoundReview`'s other dependencies (extractAllFeatures,
+   * PatternMiner, CausalEngine, ...) are real, unmocked modules that reach
+   * well past the `@/lib/supabase/admin` shape this file stubs for the
+   * calibration query alone, so a full end-to-end run isn't feasible here
+   * without a much heavier fixture. Spying on the bootstrap method itself
+   * — while letting whatever happens downstream happen — isolates exactly
+   * the thing this fix changed: does `generateRoundReview` bootstrap
+   * calibration before doing anything else. This fails before the fix
+   * (bootstrap never called) and passes after (called as the first
+   * statement, regardless of what the unmocked downstream calls do).
+   */
+  it('generateRoundReview bootstraps calibration before anything else', async () => {
+    const orchestrator = await freshOrchestrator();
+    const bootstrapSpy = vi.spyOn(orchestrator, 'ensureCalibrationBootstrapped');
+
+    await orchestrator.generateRoundReview('round-1', 'player-1').catch(() => {
+      // Downstream dependencies past the bootstrap call are real modules
+      // this file doesn't mock; only that the bootstrap fires is under
+      // test here, so any rejection from those unmocked calls is expected.
+    });
+
+    expect(bootstrapSpy).toHaveBeenCalled();
+  });
 });

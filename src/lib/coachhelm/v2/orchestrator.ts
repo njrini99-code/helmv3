@@ -254,8 +254,10 @@ class CoachHelmIntelligence {
    * Idempotent and failure-silent: a calibration outage must degrade to
    * today's behaviour (raw passthrough), never break analysis.
    *
-   * Public and idempotent by design — safe to call from any analysis entry
-   * point as a pre-warm, not just `analyzePlayer`.
+   * Public because it's wired into the two production entry points that
+   * reach `.calibrate()` — `analyzePlayer` and `generateRoundReview`. Any
+   * new entry point that calls `.calibrate()` (directly or via
+   * `generateInsights`) must call this first too, the same way those two do.
    */
   async ensureCalibrationBootstrapped(): Promise<void> {
     if (this.calibrationBootstrapped) return;
@@ -264,8 +266,17 @@ class CoachHelmIntelligence {
       const supabase = createAdminClient();
       const record = await bootstrapFromDb(supabase, 'score_to_par');
       this.confidenceCalibrator.setRecord(record);
-    } catch {
+    } catch (error) {
       // Leave the empty record in place — raw passthrough, same as before.
+      // Reset the flag so a later call retries instead of staying stuck on
+      // raw passthrough for the rest of the process's lifetime after a
+      // single transient failure (e.g. a cold-start network blip).
+      this.calibrationBootstrapped = false;
+      await logServerError(
+        `ensureCalibrationBootstrapped failed: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'orchestrator.ensureCalibrationBootstrapped', featureArea: 'coachhelm' },
+        'warning',
+      );
     }
   }
 
@@ -630,6 +641,8 @@ class CoachHelmIntelligence {
     roundId: string,
     playerId: string
   ): Promise<IntelligentRoundReview | null> {
+    await this.ensureCalibrationBootstrapped();
+
     // Get features
     const features = await extractAllFeatures(playerId);
     if (!features) {
