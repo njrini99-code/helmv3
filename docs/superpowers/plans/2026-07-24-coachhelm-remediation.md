@@ -411,6 +411,34 @@ git commit -m "fix(coachhelm): bootstrap ConfidenceCalibrator so calibrated conf
 
 ### Task 3: Stop three composite rules shipping a fake `sample_n`
 
+> **ADDED 2026-07-25 — a second dead signal in the same file, verified in
+> source. Fix it in this task; you are already editing this file.**
+>
+> `bunker-miss-side-amplifier.ts` hardcodes `same_hole_share: 0` at line 80.
+> `compose()` then reads it at :87 (`const share = Number(match.signals
+> .same_hole_share ?? 0)`) and derives `const proven = share >=
+> COOCCURRENCE_THRESHOLD` at :88. Since the signal is always `0`, **`proven`
+> is always `false`**, so the rule can only ever emit its weaker branch.
+>
+> The stronger branch — "Bunker + <dir>-bias putt pattern is compounding …
+> overlapping on N% of the holes where either shows up" — is unreachable.
+> The branch that DOES ship tells the coach "we can't yet confirm they
+> overlap on the same scoring holes," which is false: the code to confirm it
+> exists. `coOccurrenceShare(holesA, holesB)` is defined and exported at
+> line 32 and is **never called anywhere** — it appears exactly once in the
+> file, its own definition.
+>
+> Both live prod rows for this rule carry the weak copy.
+>
+> Fix: call `coOccurrenceShare` with the two rules' hole sets in `detect()`
+> and put the real value on `same_hole_share`, replacing the literal `0`.
+> Add a test that a hole set with genuine overlap produces `proven === true`
+> and the compounding copy — it must fail before the change. Do NOT delete
+> the weak branch; it is correct when overlap is genuinely low.
+>
+> This is the same defect class as the hardcoded `sample_n` below: a real
+> computation written, then bypassed by a literal.
+
 `short-approach-proximity-gap.ts:77` ships `sample_n: 10`, `bunker-miss-side-amplifier.ts:117` ships `sample_n: 5`, `long-approach-3putt-cascade.ts:85` ships `sample_n: 5` — all literals. In prod, every live `short_approach_proximity_gap` row carries an identical `sample_n = 10`, and both `bunker_miss_side_amplifier` rows carry `sample_n = 5`. These are the insights combining the *richest* evidence, and they are the ones bypassing the confidence-honesty guarantee.
 
 `lag-distance-3putt.ts:78-81` already does it correctly — take the minimum of the source insights' real sample sizes.
