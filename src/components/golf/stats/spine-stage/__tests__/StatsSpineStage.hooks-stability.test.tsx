@@ -166,6 +166,20 @@ function mockHealthyBundle() {
 }
 
 /** Every real `?area=` stage view StatsSpineStage registers (buildStatsViewModel.ts's StatsArea union + 'home'). */
+/**
+ * How long an async lookup waits for a re-render to land.
+ *
+ * Testing Library's default is 1s, which is generous locally and not generous
+ * enough in CI: the area cycle below drives ~28 lookups through a full
+ * StageRouter re-render, and on 2026-07-25 the back-chip lookup lost that race
+ * on a shared runner while passing every time locally. This test asserts that
+ * hooks order survives an update — it asserts nothing about how fast the
+ * update arrives — so a one-second wall-clock budget is the wrong thing for it
+ * to fail on. The same race was patched once before in #1043 by switching
+ * these lookups from sync to async; the budget is the half that was left.
+ */
+const FIND_TIMEOUT_MS = 15_000;
+
 const AREAS = ['home', 'putting', 'driving', 'approach', 'short-game', 'scoring', 'standing', 'rounds'] as const;
 
 const AREA_HEADING: Record<(typeof AREAS)[number], string> = {
@@ -179,7 +193,10 @@ const AREA_HEADING: Record<(typeof AREAS)[number], string> = {
   rounds: 'Last 10 rounds',
 };
 
-describe('StatsSpineStage — hooks-order stability across ?area= switches', () => {
+// The per-lookup budget above is worthless if the test itself is killed first:
+// the area cycle drives eight views through open → home → re-open, and one slow
+// re-render on a shared runner can exceed the 5s default on its own.
+describe('StatsSpineStage — hooks-order stability across ?area= switches', { timeout: 60_000 }, () => {
   beforeEach(() => {
     getPlayerStatsDashboardBundle.mockReset();
     mockHealthyBundle();
@@ -208,7 +225,9 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', () 
     // etc.), so assert presence via `findAllByText` rather than requiring a
     // single unique match.
     const expectStageShows = async (text: string) => {
-      const matches = await within(stage as HTMLElement).findAllByText(text);
+      const matches = await within(stage as HTMLElement).findAllByText(text, undefined, {
+        timeout: FIND_TIMEOUT_MS,
+      });
       expect(matches.length).toBeGreaterThan(0);
     };
 
@@ -232,7 +251,7 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', () 
       // reliable "navigation finished" signal. Await the back chip itself —
       // it only exists inside a drill's DrillPanel — otherwise a synchronous
       // lookup here races the click's re-render under CI load.
-      const backChip = await screen.findByRole('button', { name: /home|all areas/i });
+      const backChip = await screen.findByRole('button', { name: /home|all areas/i }, { timeout: FIND_TIMEOUT_MS });
       fireEvent.click(backChip);
       await expectStageShows('Core ball striking');
 
@@ -241,7 +260,7 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', () 
       const cellAgain = screen.getAllByRole('button').find((btn) => btn.textContent?.includes(AREA_HEADING[area]));
       fireEvent.click(cellAgain!);
       await expectStageShows(AREA_HEADING[area]);
-      fireEvent.click(await screen.findByRole('button', { name: /home|all areas/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /home|all areas/i }, { timeout: FIND_TIMEOUT_MS }));
       await expectStageShows('Core ball striking');
     }
   });
