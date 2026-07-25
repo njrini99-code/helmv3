@@ -34,6 +34,7 @@ import { formatAgeDays, formatCategoryLabel } from './buildTriageViewModel';
 import { SeverityChip } from './SignalRow';
 import { PromoteToFocusAreaButton } from './PromoteToFocusAreaButton';
 import { toCoachVoice } from '@/lib/golf/claim-voice';
+import { formatScoringAverage } from '@/lib/golf/format-scoring-average';
 
 export interface SignalDossierEntry {
   signal: GroupedSignal;
@@ -196,7 +197,7 @@ export function SignalDossier({
                 <TrendGlyph direction={playerStats.recent_trend} />
                 {playerStats.avg_score != null ? (
                   <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                    {playerStats.avg_score} avg score
+                    {formatScoringAverage(playerStats.avg_score)} avg score
                   </span>
                 ) : null}
               </div>

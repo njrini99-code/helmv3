@@ -107,6 +107,7 @@ import {
   reactivateFocusArea,
   type FocusAreaOutcome,
 } from '@/app/golf/actions/development';
+import { formatScoringAverage } from '@/lib/golf/format-scoring-average';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the development route's loader output EXACTLY
@@ -590,7 +591,7 @@ export function PlayersGridView({
         cell: ({ row }) => {
           const s = row.original.stats;
           return s?.avg_score != null ? (
-            <span className="font-fw-mono tabular-nums text-text-primary">{s.avg_score}</span>
+            <span className="font-fw-mono tabular-nums text-text-primary">{formatScoringAverage(s.avg_score)}</span>
           ) : (
             <span className="text-text-tertiary">—</span>
           );
@@ -1170,7 +1171,7 @@ export function RosterPlayerCard({
             <div className="flex items-center gap-2">
               {stats?.avg_score != null ? (
                 <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">
-                  {stats.avg_score}
+                  {formatScoringAverage(stats.avg_score)}
                 </span>
               ) : (
                 <span className="font-fw-sans text-eyebrow text-text-tertiary">—</span>
