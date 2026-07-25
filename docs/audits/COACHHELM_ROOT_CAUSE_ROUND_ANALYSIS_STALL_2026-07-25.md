@@ -135,5 +135,33 @@ Stated explicitly, because a defect list reads as if nothing works.
 | Question | What would settle it |
 |---|---|
 | Why did `after()` fail for these specific rounds — cold-start eviction, deploy mid-request, or an unhandled throw upstream? | Correlate the 200 rounds' `created_at` against deploy timestamps and function logs for that window |
-| Are the 5 orphaned insight rows a data-integrity bug or intentional (players removed from a roster)? | Check whether those players were ever team members; if removal is expected, decide whether their insights should be archived |
+| ~~Are the 5 orphaned insight rows a data-integrity bug or intentional?~~ **ANSWERED — see below** | — |
 | Do the 200 rounds have enough shot data to produce useful insights, or will analysis produce thin results? | Sample `golf_shots` coverage for those round IDs before backfilling |
+
+### Answered: the orphaned insights are an onboarding gap, not a data bug
+
+The 5 insights with `team_id` and `coach_id` both NULL belong to **two players**,
+and **neither has any `golf_team_members` row at all** — not even an inactive or
+removed one. So this is not roster removal (that would leave a membership row
+behind); these are players who created an account, logged rounds, and were never
+added to a team.
+
+| player | orphaned insights | newest | rounds logged | membership rows |
+|---|---|---|---|---|
+| `d75439ba-…` | 1 | 1.5 days (the freshest insight in the whole table) | 1 | 0 |
+| `654d35a1-…` | 4 | 48 days | **12** | 0 |
+
+The insight rows themselves are correctly scoped — RLS is doing the right thing.
+The gap is upstream: **a player can fully use the product and remain invisible to
+every coach.** Twelve logged rounds is an engaged user, not a test account.
+
+Worth deciding, as product questions rather than bugs:
+
+- Should round entry require, or at least prompt for, a team join?
+- Should a coach see unrostered players who have logged rounds, so they can be
+  claimed onto a team?
+- Should the join flow be surfaced to a player who has logged rounds but has no
+  membership?
+
+No action taken. Archiving or reassigning these rows would be a prod write and is
+not proposed — the rows are correct; the onboarding path is what needs the fix.
