@@ -841,9 +841,13 @@ export function FairwayCoachDashboard({
       />
 
       {/* ── 6 · TEAM region — Trend + Pulse + Top Performers (matte) ────────── */}
-      <section aria-label="Team" className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+      {/* items-stretch (the grid default) + h-full on both columns: at 1440 the
+          3-wide Trend column ended ~313px above the 2-wide stack beside it,
+          leaving a dead quadrant at the bottom-left of the page (audit M5).
+          Stretching makes both columns end together. */}
+      <section aria-label="Team" className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-5">
         {/* Performance trend (reskin-preserve-logic: same teamScoringTrend) */}
-        <div className="lg:col-span-3">
+        <div className="flex flex-col lg:col-span-3 [&>*]:h-full">
           {hasTrend ? (
             <TrendChart
               title="Performance Trend"

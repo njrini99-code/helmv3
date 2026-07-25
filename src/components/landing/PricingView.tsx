@@ -141,7 +141,12 @@ export function PricingView() {
           className="absolute top-[46%] left-1/2 aspect-square w-[min(440px,64vw)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[oklch(0.4_0.02_60/0.1)]"
         />
 
-        <div className="relative mx-auto flex min-h-[calc(100dvh-160px)] max-w-[880px] flex-col items-center justify-center px-[clamp(20px,4vw,64px)] py-[clamp(80px,12vw,150px)] text-center">
+        {/* py-10 on a phone, not clamp(80px,…): min-h + justify-center ALREADY
+          centres the composition, so the 80px clamp stacked on top of it left
+          ~180px of empty canvas above the eyebrow and ~150px below the form
+          (audit L-22). The clamp still applies from `sm` up, where there is
+          room for it to read as composition rather than as a gap. */}
+      <div className="relative mx-auto flex min-h-[calc(100dvh-160px)] max-w-[880px] flex-col items-center justify-center px-[clamp(20px,4vw,64px)] py-10 text-center sm:py-[clamp(80px,12vw,150px)]">
           <Reveal className="flex items-center justify-center gap-2.5 font-fw-mono text-[0.75rem] uppercase tracking-[0.2em] text-accent-700">
             <span className="inline-block h-px w-[22px] bg-accent-500" />
             Pricing

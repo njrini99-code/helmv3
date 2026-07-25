@@ -134,24 +134,34 @@ export function FocusAreaCard({ focusArea, onClick, index = 0 }: FocusAreaCardPr
             : undefined
         }
       >
-        <div className="flex items-start gap-3">
-          <Badge
-            tone={PRIORITY_TONE[focusArea.priority] ?? 'neutral'}
-            numeric
-            className="h-8 w-8 shrink-0 justify-center rounded-fw-md p-0 text-body-sm"
-          >
-            {focusArea.priority}
-          </Badge>
+        {/*
+          Below `sm` the badge + icon move to a HEADER ROW above the text
+          instead of a left gutter beside it. As a gutter they cost ~76px of a
+          390px card, and with the chevron on the right the body text was
+          measured clamped into a 123px column with up to 465px of the actual
+          coaching hidden (audit P-25). The card carries the coaching; the
+          decoration should not outrank it.
+        */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+          <div className="flex items-center gap-2 sm:contents">
+            <Badge
+              tone={PRIORITY_TONE[focusArea.priority] ?? 'neutral'}
+              numeric
+              className="h-8 w-8 shrink-0 justify-center rounded-fw-md p-0 text-body-sm"
+            >
+              {focusArea.priority}
+            </Badge>
 
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
-            <AreaIcon size={17} />
-          </span>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
+              <AreaIcon size={17} />
+            </span>
+          </div>
 
           <div className="min-w-0 flex-1">
             <h4 className="font-fw-sans text-body font-medium leading-snug text-text-primary">
               {focusArea.title}
             </h4>
-            <p className="mt-1 line-clamp-2 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
+            <p className="mt-1 line-clamp-3 font-fw-sans text-body-sm leading-relaxed text-text-secondary sm:line-clamp-2">
               {focusArea.description}
             </p>
 

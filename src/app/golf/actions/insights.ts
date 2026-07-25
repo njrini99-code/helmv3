@@ -40,7 +40,7 @@ import type {
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
-import { PHILOSOPHY_DEFAULTS, confidenceFloorForSensitivity } from '@/lib/coachhelm/constants';
+import { PHILOSOPHY_DEFAULTS, effectiveConfidenceThreshold } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
@@ -362,37 +362,8 @@ function shouldIncludeInsight(insightType: InsightType, philosophy: CoachPhiloso
   return philosophy[alertKey] as boolean;
 }
 
-/**
- * Gets the minimum confidence threshold based on alert sensitivity
- */
-function getConfidenceThreshold(sensitivity: CoachPhilosophy['alertSensitivity']): number {
-  // Single source of truth — the settings screen renders the same numbers to
-  // explain what a preset already requires, and a client component cannot
-  // import from this `'use server'` module.
-  return confidenceFloorForSensitivity(sensitivity);
-}
 
-/**
- * The confidence floor actually applied to this coach's insights.
- *
- * The Aggressive/Balanced/Conservative preset sets a coarse floor
- * (0.40 / 0.55 / 0.70). `minInsightConfidence` is an ADDITIONAL floor the
- * coach can raise on top of it — so someone who wants Balanced's alert mix
- * but only high-confidence claims can tighten without switching preset (and
- * inheriting everything else Conservative changes).
- *
- * `max`, not override: the setting can only ever make CoachHelm quieter than
- * the preset, never louder. At its default of 0.30 it sits below every preset
- * and is a no-op — which is why shipping the control changes nobody's alert
- * volume until they move it.
- */
-export function effectiveConfidenceThreshold(
-  philosophy: Pick<CoachPhilosophy, 'alertSensitivity' | 'minInsightConfidence'>,
-): number {
-  const preset = getConfidenceThreshold(philosophy.alertSensitivity);
-  const floor = philosophy.minInsightConfidence;
-  return Number.isFinite(floor) ? Math.max(preset, floor) : preset;
-}
+
 
 // ============================================================================
 // PHILOSOPHY-WEIGHTED INSIGHT PRIORITIZATION
@@ -3911,18 +3882,31 @@ async function triggerPlayerInsightsAfterRoundImpl(
     // Coach's "minimum rounds before CoachHelm speaks" floor. Prior to this
     // the engine's only round gate was ABSOLUTE_MIN_ROUNDS=4 buried in the
     // pattern miner — a coach could not raise it, so a player with 4 rounds
-    // got the same confident prose as one with 40. Checked here, where the
+    // got the same confident prose as one with 40. Resolved here, where the
     // philosophy is already loaded, so a starved player is skipped BEFORE any
     // generator runs rather than having its output filtered afterwards.
+    //
+    // A FLAG, NOT AN EARLY RETURN. The aging sweep further down is
+    // housekeeping — it retires stale insights that are already on the board —
+    // and returning here would leave a below-floor player's old insights
+    // active forever. The floor suppresses NEW claims; it does not suspend
+    // maintenance of old ones.
     const { count: completedRoundCount } = await admin
       .from('golf_rounds')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
       .eq('status', 'completed');
 
-    if ((completedRoundCount ?? 0) < philosophy.minRoundsForSignal) {
+    // `count` is null when the client can't report one (and in test doubles
+    // that don't implement head/count) — treat an UNKNOWN count as "no
+    // opinion" and let analysis proceed, rather than silently muting a coach.
+    const belowRoundFloor =
+      typeof completedRoundCount === 'number' &&
+      completedRoundCount < philosophy.minRoundsForSignal;
+
+    if (belowRoundFloor) {
       await logServerEvent(
-        `[insights.triggerPlayerInsightsAfterRound] player has ${completedRoundCount ?? 0} completed rounds, coach floor is ${philosophy.minRoundsForSignal} — skipping`,
+        `[insights.triggerPlayerInsightsAfterRound] player has ${completedRoundCount} completed rounds, coach floor is ${philosophy.minRoundsForSignal} — skipping generation`,
         {
           action: 'insights.triggerPlayerInsightsAfterRound.belowRoundFloor',
           featureArea: 'coachhelm',
@@ -3932,7 +3916,6 @@ async function triggerPlayerInsightsAfterRoundImpl(
         },
         'info',
       );
-      return { success: true, insights_created: 0 };
     }
 
     // 2026-05-24 Wave 7B — philosophy gate (replaces the post-filter sweep
@@ -3953,17 +3936,21 @@ async function triggerPlayerInsightsAfterRoundImpl(
     // This is non-critical: the round saved successfully, only post-round insights are skipped.
     let analysis;
     try {
-      analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
-        includePatterns: true,
-        includeCausal: true,
-        includePredictions: true,
-        includeShotPatterns: true,
-        depth: 'standard',
-        // F061 — flow the coach's saved Insight Detail Level into the NLG so
-        // composed insight bodies honor 'brief' / 'detailed'.
-        verbosity: philosophy.insightVerbosity,
-        philosophyGate,
-      });
+      // Below the coach's round floor: skip generation entirely, but fall
+      // through so the aging sweep below still runs.
+      analysis = belowRoundFloor
+        ? null
+        : await coachHelmIntelligence.analyzePlayer(playerId, {
+            includePatterns: true,
+            includeCausal: true,
+            includePredictions: true,
+            includeShotPatterns: true,
+            depth: 'standard',
+            // F061 — flow the coach's saved Insight Detail Level into the NLG so
+            // composed insight bodies honor 'brief' / 'detailed'.
+            verbosity: philosophy.insightVerbosity,
+            philosophyGate,
+          });
     } catch {
       // Expected in fire-and-forget/cron contexts (roster-sweep, post-round
       // trigger) — analyzePlayer()'s user-scoped client has no session to

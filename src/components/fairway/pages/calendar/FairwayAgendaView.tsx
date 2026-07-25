@@ -165,6 +165,26 @@ export function FairwayAgendaView({
 
   const totalEvents = buckets.reduce((sum, b) => sum + b.events.length, 0);
 
+  // Past/upcoming split for the "Show earlier" affordance (audit P-05).
+  // Day mode is a single explicit date, so it never hides anything.
+  const [showPast, setShowPast] = React.useState(false);
+  const todayStartRef = nowRef ? startOfDay(nowRef) : null;
+  const pastBuckets = React.useMemo(
+    () =>
+      mode === 'range' && todayStartRef
+        ? buckets.filter((b) => isBefore(b.date, todayStartRef))
+        : [],
+    [buckets, mode, todayStartRef],
+  );
+  const pastEventCount = pastBuckets.reduce((sum, b) => sum + b.events.length, 0);
+  // If EVERYTHING in range is past (the all-past demo season), collapsing would
+  // leave an empty list under a "Show earlier" button — show them instead.
+  const allPast = pastBuckets.length === buckets.length;
+  const visibleBuckets =
+    mode === 'range' && !showPast && !allPast
+      ? buckets.filter((b) => !pastBuckets.includes(b))
+      : buckets;
+
   // ── Anchor scroll to today/next-upcoming on genuine navigation ─────────────
   // Range mode's window spans months back AND forward (up to ±3 for Agenda),
   // so with no anchor the DOM's natural scroll position is simply the TOP of
@@ -254,7 +274,32 @@ export function FairwayAgendaView({
   // ── Populated agenda ───────────────────────────────────────────────────────
   return (
     <div className={cn('flex flex-col gap-7', className)}>
-      {buckets.map((bucket) => {
+      {/*
+        Past days are COLLAPSED behind an explicit affordance in range mode.
+        The agenda's fetch window runs from three months back (deliberately —
+        it is load-bearing for the all-past demo season), so the list used to
+        OPEN six weeks in the past under a masthead reading "5 upcoming"
+        (audit P-05 / M11). The scroll anchor above helps, but past events
+        still sat above the fold and any scroll-up walked into history the
+        reader never asked for. Collapsing them makes the list agree with its
+        own header while keeping every past event one tap away.
+      */}
+      {mode === 'range' && pastBuckets.length > 0 ? (
+        <div>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setShowPast((v) => !v)}
+            aria-expanded={showPast}
+            className="h-auto min-h-[44px] w-full justify-center gap-2 rounded-fw-sm border border-border-subtle bg-surface-sunken px-4 font-fw-sans text-body-sm font-medium text-text-secondary hover:bg-inset hover:text-text-primary"
+          >
+            {showPast
+              ? 'Hide earlier events'
+              : `Show ${pastEventCount} earlier ${pastEventCount === 1 ? 'event' : 'events'}`}
+          </Button>
+        </div>
+      ) : null}
+      {visibleBuckets.map((bucket) => {
         const bucketIsToday = nowRef ? isSameDay(bucket.date, nowRef) : false;
         // Days strictly before today are rendered at reduced opacity — they are
         // historical record, not actionable upcoming items. `nowRef` is the

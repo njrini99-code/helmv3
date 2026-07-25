@@ -199,10 +199,24 @@ export function DayScheduleSwipe({
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              {/*
+                The feed only carries today-forward, so "previous" is disabled
+                at offset 0 and a player tapping back for yesterday's practice
+                hit a dead control with no explanation (audit P-29). The reason
+                goes in `title` — which becomes the accessible DESCRIPTION —
+                not in `aria-label`: the NAME of a control must stay stable
+                ("Previous day") whatever state it is in, or the same button
+                answers to a different name depending on where you are.
+              */}
               <IconButton
                 size="sm"
                 variant="ghost"
                 aria-label="Previous day"
+                title={
+                  clampedOffset === 0
+                    ? 'This card only shows today onward. Open the calendar for past days.'
+                    : undefined
+                }
                 disabled={clampedOffset === 0}
                 onClick={() => goto(clampedOffset - 1)}
               >
@@ -212,6 +226,11 @@ export function DayScheduleSwipe({
                 size="sm"
                 variant="ghost"
                 aria-label="Next day"
+                title={
+                  clampedOffset >= maxOffset
+                    ? 'End of the loaded schedule. Open the calendar for later dates.'
+                    : undefined
+                }
                 disabled={clampedOffset >= maxOffset}
                 onClick={() => goto(clampedOffset + 1)}
               >
@@ -319,17 +338,24 @@ export function DayScheduleSwipe({
               animate={reduce ? undefined : { opacity: 1, x: 0 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               aria-live="polite"
+              // Reserve the height of ~2 event rows. Measured heights walked
+              // 258 -> 200 -> 271 as you paged, so every swipe shifted the
+              // whole page below by up to 71px, and the card visibly SHRANK
+              // the moment it finally had content — the empty state was taller
+              // than a real day (audit P-17).
+              className="min-h-[132px]"
             >
               {dayEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
-                  <CalendarClock aria-hidden className="h-5 w-5 text-text-tertiary" />
-                  <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
+                // One line, not a centred three-line illustration. A day with
+                // nothing on it should occupy LESS room than a day with
+                // something on it, not more.
+                <div className="flex items-center gap-2 px-2 py-3">
+                  <CalendarClock aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
+                  <p className="font-fw-sans text-body-sm text-text-secondary">
                     Nothing scheduled
-                  </p>
-                  <p className="font-fw-sans text-caption text-text-tertiary">
-                    {clampedOffset === 0
-                      ? 'A clear day — new events will show up here.'
-                      : 'Nothing on the books for this day yet.'}
+                    <span className="text-text-tertiary">
+                      {clampedOffset === 0 ? ' — a clear day.' : ' for this day yet.'}
+                    </span>
                   </p>
                 </div>
               ) : (

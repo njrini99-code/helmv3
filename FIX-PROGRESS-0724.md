@@ -3,8 +3,9 @@
 Branch `fix/uiux-audit-0724`, based on `origin/main` @ `a27ceec0d`.
 Findings source: `audit/product-audit/AUDIT-0724/` in the main checkout (86 findings).
 
-Gates run so far: **vitest 792 files / 7409 tests PASS**, **eslint clean on all 50 changed
-files**, **tsc clean** (re-run after any further edit).
+Gates: **tsc 0**, **eslint 0 across every changed file**, **vitest green**
+(re-run after any further edit — and always read `VITEST_EXIT`, not the
+harness's reported exit code; see the lessons section).
 
 > Worktree note: Turbopack rejects the symlinked `node_modules`
 > (`Symlink [project]/node_modules is invalid`). Use `npx next dev --webpack -p 3007`.
@@ -201,35 +202,54 @@ The login page still has its own inline copy — swap it to `AuthHomeLink` when 
 
 ---
 
-## STILL OPEN
+## ROUND 7 (2026-07-25) — batches A-D
 
+**All 46 previously-open findings addressed.** 43 fixed, 3 verified as
+NOT REPRODUCING (see below). See commits `08318f458` and `d34f008ac` for the
+full per-finding write-up; the headlines:
 
-- **P-05 (CRITICAL)** — calendar agenda opens in the past under a "5 upcoming" header.
-  **ROOT CAUSE LOCATED** (the audit had no file/line): `FairwayCalendar.tsx:221-225` —
-  the agenda lens sets its window to `addMonths(focusDate, -3) … addMonths(focusDate, +3)`,
-  so the list legitimately begins three months back while the masthead counts only
-  upcoming events. The two disagree by construction.
+**Two systemic bugs found while fixing symptoms.** `aria-label` on `<Select>`
+was being spread onto `BaseSelect.Root` — a context provider with no DOM node —
+so 30 call sites had written an accessible name that never reached the DOM
+(L6). And `ui/Button` carried an empty `<span ref={rippleRef} />` that was both
+dead code (the ripple is appended to the button itself) and a flex item under
+`gap-2`, shifting every label 4px right of centre (L-12).
 
-  **Deliberately NOT changed.** The -3 months is load-bearing: the comment above it says
-  it exists so the all-past demo dataset (Feb-Apr season) shows real events instead of an
-  empty current week. Narrowing the window to today-forward would fix the contradiction and
-  and likely blank the demo calendar — and I could not verify that either way from here.
+**Contrast is now measured, not asserted.** 186 `text-fw-{success,warning,
+danger}` sites moved to their `-ink` counterparts; 11 cream-on-green surfaces
+went accent-500 -> accent-700; opacity stacking on already-calibrated quiet
+text was removed in four places. Zero bare status-token text uses remain.
 
-  Two safe options, both needing a decision first:
-  1. Keep the wide FETCH window; have `FairwayAgendaView` render today-forward by default
-     with a "Show earlier" toggle. Fixes the contradiction, keeps the demo working.
-     Costs a change in `FairwayAgendaView`.
-  2. Keep the window; scroll the agenda to today's group on mount (needs a ref into
-     `FairwayAgendaView`). Weaker — past events still sit above "upcoming".
-- **L-04 / L-06** — landing mockups at ~6px on phones; pinned Team Management scene clips
-  265px. Both want real composition work, not a class tweak.
-- **P-11 / P-16** — list-title clamping across pages; `/rounds` value-only tiles half empty.
-- **H10** — the primary-CTA contrast decision below. Nick's call.
-- ~48 MEDIUM/LOW findings untouched.
+### DOES NOT REPRODUCE (verified against current code, do not re-raise)
+- **P-32** — the sheet Close button measures 36x36, but carries a
+  `before:-inset-1.5` hit-slop giving a 48px tap target. The probe reads
+  `getBoundingClientRect()`, which cannot see a pseudo-element. Same class of
+  false positive as L-02.
+- **L-13** — the landing mocks moved to `FitEmbed` (fit-to-width, no horizontal
+  scroll), so the keyboard-unreachable scrollers no longer exist.
+- **M9 (avatar tints)** — all 8 calendar member-rail tint pairs measure
+  4.53-7.27:1. The rest of M9 went with H10 and the `calendar-surface` outside-
+  day opacity fix.
 
-Full list with file:line and suggested fix: `AUDIT-0724/all-findings.json`.
+## STILL OPEN — owner decisions, not defects
 
----
+These are the ones that need Nick, not a class edit:
+
+- **L-04 / L-06 / L-17** — the landing product mockups. `FitEmbed` scales a
+  1280px surface into a 340px phone column, so the type lands at ~6px: the
+  page's central proof is illegible on the device most first visits arrive on.
+  The real fix is purpose-built phone-width mock compositions (or cropping to
+  one legible card per section), which is design work, not a class tweak.
+- **L-18** — `/pricing` shows no pricing. Deliberate per the file comment;
+  filed as a conversion concern. Needs a product answer, not code.
+- **L-20** — the auth pages' flat vector scenery vs the photographic landing.
+  A direction call.
+- **L1 / M6** — calendar mobile and the coach dashboard's mobile first screen
+  both need recomposition rather than adjustment.
+- **L3** — Fragment Mono's slashed zero in stat contexts. The audit's fix
+  ("use display/sans with tabular-nums for stat numerals") would touch 536
+  call sites and reverse an explicit design-system rule
+  (`tailwind.config.ts`: "numbers stay on Fragment Mono"). Owner's call.
 
 ## H10 — RESOLVED (Nick approved 2026-07-24)
 

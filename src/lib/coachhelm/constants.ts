@@ -58,3 +58,32 @@ export function confidenceFloorForSensitivity(
         SENSITIVITY_CONFIDENCE_FLOOR.balanced
     );
 }
+
+/**
+ * NOTE ON PLACEMENT: this lives here, not in actions/insights.ts, for two
+ * reasons. A `'use server'` module may only export async functions — exporting
+ * this pure helper from there breaks the Next build — and the golf server-action
+ * observability coverage contract requires every export in those files to be
+ * Bridge-wrapped, which a pure calculation should not be.
+ */
+/**
+ * The confidence floor actually applied to this coach's insights.
+ *
+ * The Aggressive/Balanced/Conservative preset sets a coarse floor
+ * (0.40 / 0.55 / 0.70). `minInsightConfidence` is an ADDITIONAL floor the
+ * coach can raise on top of it — so someone who wants Balanced's alert mix
+ * but only high-confidence claims can tighten without switching preset (and
+ * inheriting everything else Conservative changes).
+ *
+ * `max`, not override: the setting can only ever make CoachHelm quieter than
+ * the preset, never louder. At its default of 0.30 it sits below every preset
+ * and is a no-op — which is why shipping the control changes nobody's alert
+ * volume until they move it.
+ */
+export function effectiveConfidenceThreshold(
+  philosophy: { alertSensitivity: string; minInsightConfidence: number },
+): number {
+  const preset = confidenceFloorForSensitivity(philosophy.alertSensitivity);
+  const floor = philosophy.minInsightConfidence;
+  return Number.isFinite(floor) ? Math.max(preset, floor) : preset;
+}
