@@ -148,10 +148,20 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
   const lastPoint = points.split(' ').slice(-1)[0] ?? '0,0';
   const [lastX = 0, lastY = 0] = lastPoint.split(',').map(Number);
 
+  // Finding #2/#6 (AUDIT-0724): when a caller hands in a pre-computed
+  // `direction` (e.g. from the shared `computeSeriesTrend()`, which classifies
+  // a SPLIT-HALF AVERAGE, not an endpoint diff), the old "from {first} to
+  // {last}" framing could read as self-contradictory to a screen reader — a
+  // "declining" verdict paired with "from 61 to 61" when the endpoints
+  // happen to match even though the recent half really did fall. Drop the
+  // endpoint clause in that case rather than narrate a delta this verdict
+  // wasn't computed from; the internal endpoint-diff fallback (no `direction`
+  // supplied) still narrates its own true first→last move.
   const summary =
     `${label ? `${label}: ` : ''}` +
-    `${verdict} over ${values.length} points, ` +
-    `from ${first} to ${last}.`;
+    (direction != null
+      ? `${verdict} trend over ${values.length} points.`
+      : `${verdict} over ${values.length} points, from ${first} to ${last}.`);
 
   return (
     <span

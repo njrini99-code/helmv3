@@ -168,7 +168,7 @@ export function AvatarUpload({
         </div>
 
         {error && (
-          <p className="flex items-center gap-1.5 font-fw-sans text-body-sm text-fw-danger">
+          <p className="flex items-center gap-1.5 font-fw-sans text-body-sm text-fw-danger-ink">
             <IconAlertCircle size={15} className="shrink-0" aria-hidden />
             {error}
           </p>

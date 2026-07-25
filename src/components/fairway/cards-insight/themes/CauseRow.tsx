@@ -219,7 +219,7 @@ export function CauseRow({
           </span>
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {showStrokesPill ? (
-              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-sans text-eyebrow font-medium text-fw-warning">
+              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-sans text-eyebrow font-medium text-fw-warning-ink">
                 <span className="tabular-nums">{strokes.toFixed(1)}</span>
                 <span>strokes/round {primaryLabel}</span>
               </span>

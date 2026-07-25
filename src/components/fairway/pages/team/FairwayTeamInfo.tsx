@@ -365,7 +365,7 @@ export function FairwayTeamInfo({
                               // treatment in instead of letting it hard-pop
                               // once `now` lands (mustFix #3).
                               isOverdue
-                                ? 'animate-fade-in font-semibold text-fw-danger'
+                                ? 'animate-fade-in font-semibold text-fw-danger-ink'
                                 : 'text-text-tertiary',
                             )}
                             suppressHydrationWarning
@@ -438,7 +438,7 @@ export function FairwayTeamInfo({
                       className="flex items-center gap-3 rounded-fw-md px-3 py-2.5"
                     >
                       {player.avatar_url ? (
-                        <Avatar src={player.avatar_url} name={name} size="md" />
+                        <Avatar decorative src={player.avatar_url} name={name} size="md" />
                       ) : (
                         <ColoredInitialsAvatar
                           seed={player.id}
@@ -447,7 +447,7 @@ export function FairwayTeamInfo({
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                        <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
                           {name}
                         </p>
                       </div>

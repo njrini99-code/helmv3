@@ -19,7 +19,7 @@ export const RAMP_CLASSES: Record<0 | 1 | 2 | 3 | 4, string> = {
   0: 'bg-surface-sunken text-text-tertiary',
   1: 'bg-accent-100 text-accent-900',
   2: 'bg-accent-300 text-accent-900',
-  3: 'bg-accent-500 text-text-on-accent',
+  3: 'bg-accent-700 text-text-on-accent',
   4: 'bg-accent-700 text-text-on-accent',
 };
 

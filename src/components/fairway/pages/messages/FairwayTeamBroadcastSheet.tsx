@@ -305,7 +305,7 @@ export function FairwayTeamBroadcastSheet({
                         >
                           {isSelected ? <Check className="h-3 w-3" /> : null}
                         </span>
-                        <Avatar name={player.name} src={player.avatarUrl} size="md" />
+                        <Avatar decorative name={player.name} src={player.avatarUrl} size="md" />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
                             {player.name}

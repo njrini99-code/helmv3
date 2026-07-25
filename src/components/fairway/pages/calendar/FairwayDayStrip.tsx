@@ -170,7 +170,7 @@ export function FairwayDayStrip({
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'motion-reduce:transition-none',
               // Selected — the green CTA fill (overrides everything else).
-              dayIsSelected && 'bg-accent-500 text-text-on-accent shadow-soft hover:bg-accent-500',
+              dayIsSelected && 'bg-accent-700 text-text-on-accent shadow-soft hover:bg-accent-800',
               // Today (not selected) — quiet accent ring on a toasted well.
               !dayIsSelected && dayIsToday && 'bg-inset ring-2 ring-accent-300',
               // Resting / past — toasted-cream well with a subtle hover.

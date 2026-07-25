@@ -346,18 +346,41 @@ describe('summarizeThemeCauseCounts', () => {
 
 describe('classifyTrendSignal', () => {
   it('maps every known humanized MultiWindowAnalysis signal to a tone + label', () => {
-    expect(classifyTrendSignal('Strong improving')).toEqual({ tone: 'hot', label: 'Improving' });
-    expect(classifyTrendSignal('Short term spike')).toEqual({ tone: 'hot', label: 'Spiking' });
-    expect(classifyTrendSignal('Strong declining')).toEqual({ tone: 'watch', label: 'Declining' });
-    expect(classifyTrendSignal('Short term dip')).toEqual({ tone: 'watch', label: 'Dipping' });
-    expect(classifyTrendSignal('Trajectory change')).toEqual({ tone: 'watch', label: 'Shifting' });
-    expect(classifyTrendSignal('Mixed')).toEqual({ tone: 'quiet', label: 'Mixed signals' });
-    expect(classifyTrendSignal('Stable')).toEqual({ tone: 'quiet', label: 'Stable' });
+    expect(classifyTrendSignal('Strong improving')).toMatchObject({ tone: 'hot', label: 'Improving' });
+    expect(classifyTrendSignal('Short term spike')).toMatchObject({ tone: 'hot', label: 'Spiking' });
+    expect(classifyTrendSignal('Strong declining')).toMatchObject({ tone: 'watch', label: 'Declining' });
+    expect(classifyTrendSignal('Short term dip')).toMatchObject({ tone: 'watch', label: 'Dipping' });
+    expect(classifyTrendSignal('Trajectory change')).toMatchObject({ tone: 'watch', label: 'Shifting' });
+    expect(classifyTrendSignal('Mixed')).toMatchObject({ tone: 'quiet', label: 'Mixed signals' });
+    expect(classifyTrendSignal('Stable')).toMatchObject({ tone: 'quiet', label: 'Stable' });
+  });
+
+  // Every chip must carry player-facing prose. The bento used to print the
+  // humanized ENUM ("Strong declining") as the card body under a chip that
+  // already said "Declining" — a raw signal name showing through as a
+  // sentence (audit P-27). toMatchObject above allows the added field; this
+  // asserts it is actually populated and is not just the label again.
+  it('carries a real sentence for every signal, distinct from the label', () => {
+    for (const signal of [
+      'Strong improving',
+      'Short term spike',
+      'Strong declining',
+      'Short term dip',
+      'Trajectory change',
+      'Mixed',
+      'Stable',
+    ]) {
+      const chip = classifyTrendSignal(signal);
+      expect(chip).not.toBeNull();
+      expect(chip!.sentence.length).toBeGreaterThan(20);
+      expect(chip!.sentence).not.toBe(chip!.label);
+      expect(chip!.sentence.toLowerCase()).not.toBe(signal.toLowerCase());
+    }
   });
 
   it('matches case-insensitively', () => {
-    expect(classifyTrendSignal('stable')).toEqual({ tone: 'quiet', label: 'Stable' });
-    expect(classifyTrendSignal('STRONG IMPROVING')).toEqual({ tone: 'hot', label: 'Improving' });
+    expect(classifyTrendSignal('stable')).toMatchObject({ tone: 'quiet', label: 'Stable' });
+    expect(classifyTrendSignal('STRONG IMPROVING')).toMatchObject({ tone: 'hot', label: 'Improving' });
   });
 
   it('returns null for null/undefined/unrecognized input', () => {

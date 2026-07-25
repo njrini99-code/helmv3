@@ -151,7 +151,7 @@ function PlayerTileList({
       )}
     >
       {/* Avatar */}
-      <Avatar src={avatarUrl} name={name} size="sm" />
+      <Avatar decorative src={avatarUrl} name={name} size="sm" />
 
       {/* Name + position */}
       <div className="flex-1 min-w-0">
@@ -209,7 +209,7 @@ function PlayerTileGrid({
       )}
     >
       {/* Avatar */}
-      <Avatar src={avatarUrl} name={name} size="md" />
+      <Avatar decorative src={avatarUrl} name={name} size="md" />
 
       {/* Name */}
       <p className="text-sm font-medium text-warm-900 text-center truncate w-full leading-tight">
@@ -260,7 +260,7 @@ function PlayerTileCompact({
         className
       )}
     >
-      <Avatar src={avatarUrl} name={name} size="xs" />
+      <Avatar decorative src={avatarUrl} name={name} size="xs" />
       <span className="truncate max-w-[120px]">{name}</span>
     </div>
   );

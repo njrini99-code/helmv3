@@ -168,13 +168,13 @@ export interface PriorityTone {
 export const PRIORITY: Record<InsightPriority, PriorityTone> = {
   critical: {
     bar: 'bg-fw-danger',
-    iconWrap: 'text-fw-danger bg-fw-danger-bg',
+    iconWrap: 'text-fw-danger-ink bg-fw-danger-bg',
     icon: AlertTriangle,
     word: 'Critical',
   },
   high: {
     bar: 'bg-fw-warning',
-    iconWrap: 'text-fw-warning bg-fw-warning-bg',
+    iconWrap: 'text-fw-warning-ink bg-fw-warning-bg',
     icon: Flame,
     word: 'High priority',
   },
@@ -221,8 +221,8 @@ export const PRIORITY: Record<InsightPriority, PriorityTone> = {
 export type InsightIconTone = 'positive' | 'negative' | 'neutral';
 
 export const ICON_TONE: Record<InsightIconTone, { iconWrap: string; icon: LucideIcon }> = {
-  positive: { iconWrap: 'text-fw-success bg-fw-success-bg', icon: TrendingUp },
-  negative: { iconWrap: 'text-fw-warning bg-fw-warning-bg', icon: TrendingDown },
+  positive: { iconWrap: 'text-fw-success-ink bg-fw-success-bg', icon: TrendingUp },
+  negative: { iconWrap: 'text-fw-warning-ink bg-fw-warning-bg', icon: TrendingDown },
   neutral: { iconWrap: 'text-text-secondary bg-surface-sunken', icon: Info },
 };
 
@@ -353,14 +353,19 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
           },
         };
 
-    /* -- the left priority tint bar (consistent across variants) -- */
+    /* -- priority marker --
+       Was a 4px full-height rail down the card's left edge. Two problems: a
+       colour rail on a card edge is banned in this system (colour belongs in a
+       dot or a label), and `rounded-l-card` on a 4px-wide element collapses, so
+       the stripe's square corners sat OUTSIDE the card's rounded silhouette and
+       read as a rendering glitch (audit 2026-07-24, P-13). Now the dot the rest
+       of the system already uses. */
     const tintBar = (
       <span
         aria-hidden
         className={cn(
-          'absolute left-0 top-0 h-full w-1 rounded-l-card',
+          'absolute left-3 top-4 h-1.5 w-1.5 rounded-full',
           tone.bar,
-          // hero glass: soften the bar to a breath rather than a hard stripe
           isHero && 'opacity-80',
         )}
       />

@@ -64,7 +64,7 @@ import { ProfileDrill, type GameProfileAxis, type GameProfileDimensionCell, type
 import { StandingDrill } from './StandingDrill';
 import { InsightsDrill } from './InsightsDrill';
 import { DeepDiveDrill } from './DeepDiveDrill';
-import { PlayerCoachHelmNav } from './PlayerCoachHelmNav';
+import { PlayerCoachHelmNav, useCoachHelmSectionLabel } from './PlayerCoachHelmNav';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -295,9 +295,16 @@ export function PlayerCoachHelmHome({
 
   const trendSummary = useMemo(() => trendSummaryFrom(trendData), [trendData]);
 
+  /* The stage has no visible title, so the surface shipped with no <h1> and
+     opened at <h2> (audit P-21). Visually-hidden heading, tracking the
+     active section so the document outline is honest on every view. */
+  const sectionLabel = useCoachHelmSectionLabel();
+  const pageHeading = <h1 className="sr-only">CoachHelm — {sectionLabel}</h1>;
+
   if (!hasData) {
     return (
       <Surface padding="lg">
+        {pageHeading}
         <EmptyState
           title="No insights yet"
           description="Log a few rounds and CoachHelm will surface the patterns that move your scores."
@@ -399,6 +406,7 @@ export function PlayerCoachHelmHome({
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
+      {pageHeading}
       <PlayerCoachHelmNav />
       <div className={cn('flex min-w-0 flex-col gap-5 min-[940px]:grid min-[940px]:grid-cols-[280px_minmax(0,1fr)] min-[940px]:items-start min-[1180px]:grid-cols-[300px_minmax(0,1fr)]')}>
         <PlayerSpine

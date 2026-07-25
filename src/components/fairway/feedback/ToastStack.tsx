@@ -85,10 +85,10 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
       // We render our own tone icons, so disable sonner's rich colors.
       richColors={false}
       icons={{
-        success: <CheckCircle2 className="h-5 w-5 text-fw-success" aria-hidden="true" />,
+        success: <CheckCircle2 className="h-5 w-5 text-fw-success-ink" aria-hidden="true" />,
         info: <Info className="h-5 w-5 text-text-secondary" aria-hidden="true" />,
-        warning: <AlertTriangle className="h-5 w-5 text-fw-warning" aria-hidden="true" />,
-        error: <AlertOctagon className="h-5 w-5 text-fw-danger" aria-hidden="true" />,
+        warning: <AlertTriangle className="h-5 w-5 text-fw-warning-ink" aria-hidden="true" />,
+        error: <AlertOctagon className="h-5 w-5 text-fw-danger-ink" aria-hidden="true" />,
         loading: (
           <Loader2 className="h-5 w-5 animate-spin text-text-tertiary motion-reduce:animate-none" aria-hidden="true" />
         ),
@@ -110,7 +110,7 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
           title: 'text-[13px] font-semibold leading-5 text-text-primary',
           description: 'mt-0.5 text-[13px] leading-5 text-text-secondary',
           actionButton:
-            'rounded-fw-sm bg-accent-500 px-3 py-1.5 text-[13px] font-medium text-text-on-accent transition-colors [transition-duration:180ms] hover:bg-accent-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
+            'rounded-fw-sm bg-accent-700 px-3 py-1.5 text-[13px] font-medium text-text-on-accent transition-colors [transition-duration:180ms] hover:bg-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
           cancelButton:
             'rounded-fw-sm px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors [transition-duration:180ms] hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
           closeButton:

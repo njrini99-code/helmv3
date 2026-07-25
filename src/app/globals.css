@@ -2112,10 +2112,21 @@
    * touch-target sizing via their own component classes — alone.
    */
   @media (max-width: 1023px) {
+    /* `li a` and `span a` were removed here (audit 2026-07-24, H1).
+     *
+     * They matched every CARD and LIST ROW that happens to be an anchor — not
+     * just inline body links — and forced `display: inline-block` on them.
+     * Measured on Top Performers: rows went from block/full-width at 1280px to
+     * inline-block at 768px and below, so the row shrank to its text width
+     * (236-249px inside a 394px li), scores stopped aligning in a column, and
+     * the negative margins pulled rows out of their own padding box. At 320px
+     * names truncated while 53px of the row sat unused.
+     *
+     * Prose lists keep the treatment via `.prose a` (which already matches
+     * `.prose li a`). Card and list rows own their own 44px touch sizing
+     * through their component classes and never needed this. */
     .prose a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a),
-    p a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a),
-    li a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a),
-    span a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a) {
+    p a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a) {
       display: inline-block;
       padding: 0.375rem 0.125rem;
       margin: -0.375rem -0.125rem;
@@ -2168,11 +2179,20 @@
       overscroll-behavior: contain;
     }
 
-    /* Better focus states for mobile — larger ring for touch */
-    *:focus-visible {
-      outline: 3px solid rgb(34 197 94 / 0.5);
+    /* Better focus states for mobile — larger ring for touch.
+     *
+     * Scoped to genuinely interactive elements. The `*` selector this replaces
+     * also matched the page stage (`[data-slot="stageview"]` and any scroll
+     * container carrying a tabindex), painting a 3px outline around a box up to
+     * 9,000px tall the moment it took focus — it read as the whole screen being
+     * selected (audit 2026-07-24, P-02). `border-radius` is gone too: focus
+     * styling must not reshape the element it is decorating.
+     *
+     * Colour comes from the focus token rather than a raw green literal, so it
+     * tracks the theme like every other focus ring in this file. */
+    :where(a, button, [role='button'], input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+      outline: 3px solid var(--fw-color-border-focus);
       outline-offset: 2px;
-      border-radius: 4px;
     }
 
     /* Prevent text selection on buttons and UI chrome */

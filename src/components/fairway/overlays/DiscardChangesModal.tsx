@@ -50,7 +50,7 @@ export function DiscardChangesModal({ open, onStay, onDiscard, itemLabel }: Disc
       <div className="px-6 pb-6 pt-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md bg-fw-warning-bg">
-            <AlertTriangle className="h-5 w-5 text-fw-warning" aria-hidden />
+            <AlertTriangle className="h-5 w-5 text-fw-warning-ink" aria-hidden />
           </div>
           <div>
             <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">

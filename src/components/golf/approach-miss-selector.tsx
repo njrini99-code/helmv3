@@ -68,7 +68,7 @@ export function ApproachMissSelector({
                   'font-fw-sans font-medium',
                   'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   isSelected
-                    ? 'bg-accent-500 border-accent-500 text-text-on-accent shadow-flat'
+                    ? 'bg-accent-700 border-accent-700 text-text-on-accent shadow-flat'
                     : 'bg-surface-sunken border-border-subtle hover:border-accent-300 hover:bg-surface-tint active:bg-surface-tint',
                   disabled && 'opacity-50 cursor-not-allowed'
                 )}

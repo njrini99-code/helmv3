@@ -487,7 +487,7 @@ export default function CollegeInterestClient({ teamId }: { teamId: string | nul
             <Reveal key={interest.player_id} staggerIndex={Math.min(i, 10)}>
               <PaperCard className="p-4 lg:p-5">
                 <div className="flex items-start gap-3 lg:gap-4">
-                  <Avatar name={interest.player_name} src={interest.player_avatar_url || undefined} size="md" />
+                  <Avatar decorative name={interest.player_name} src={interest.player_avatar_url || undefined} size="md" />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-annual text-h3 font-semibold leading-tight text-text-primary">

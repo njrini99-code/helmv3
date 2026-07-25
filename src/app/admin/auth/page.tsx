@@ -132,7 +132,7 @@ async function AuthBody({ filters }: { filters: AuthTabFilters }) {
                       {l.failed_attempts} failed
                     </span>
                     {isLocked && lockedUntilDate ? (
-                      <span className="font-fw-mono text-xs tabular-nums text-fw-danger">
+                      <span className="font-fw-mono text-xs tabular-nums text-fw-danger-ink">
                         until <LocalTime iso={lockedUntilDate.toISOString()} variant="time" />
                       </span>
                     ) : null}

@@ -127,7 +127,20 @@ function BreadcrumbTrail({
         {breadcrumbs.map((crumb, i) => {
           const isLast = i === breadcrumbs.length - 1;
           return (
-            <li key={crumb.label + i} className="flex min-w-0 items-center gap-1.5">
+            // Only the LAST crumb may shrink. Every <li> used to be
+            // `min-w-0`, so flex distributed the squeeze evenly across the
+            // whole trail and at 768 — where the 256px rail is still expanded
+            // and the search field is fixed-width — the bar rendered a literal
+            // "D.. / C..", 19-29px per crumb with ~45px hidden each (audit
+            // P-28). Ancestors keep their intrinsic width; the current page,
+            // which the reader can also see in the page's own h1, absorbs it.
+            <li
+              key={crumb.label + i}
+              className={cn(
+                'flex items-center gap-1.5',
+                isLast ? 'min-w-0' : 'shrink-0',
+              )}
+            >
               {i > 0 && (
                 <span className="select-none text-text-tertiary" aria-hidden>
                   /
@@ -137,7 +150,7 @@ function BreadcrumbTrail({
                 <Link
                   href={crumb.href}
                   className={cn(
-                    'truncate rounded-fw-sm px-0.5 text-text-secondary',
+                    'whitespace-nowrap rounded-fw-sm px-0.5 text-text-secondary',
                     'transition-colors [transition-duration:var(--fw-dur-fast)] hover:text-text-primary',
                   )}
                 >

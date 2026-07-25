@@ -112,7 +112,7 @@ function TeamShotWeaknessesPanel({ data }: { data: TeamShotAnalysis | undefined 
                     </p>
                   </div>
                   <div className="ml-3 shrink-0 text-right">
-                    <p className="font-fw-mono text-body-sm font-medium tabular-nums text-fw-danger">
+                    <p className="font-fw-mono text-body-sm font-medium tabular-nums text-fw-danger-ink">
                       {weakness.avgSG.toFixed(2)}
                     </p>
                     <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
@@ -127,12 +127,12 @@ function TeamShotWeaknessesPanel({ data }: { data: TeamShotAnalysis | undefined 
 
         {deadZones.length > 0 ? (
           <div className="rounded-fw-md border border-border-subtle bg-fw-danger-bg px-3 py-2.5">
-            <p className="mb-1 text-caption font-medium text-fw-danger">Dead zones</p>
+            <p className="mb-1 text-caption font-medium text-fw-danger-ink">Dead zones</p>
             <div className="flex flex-wrap gap-x-3 gap-y-1">
               {deadZones.map((dz, i) => (
                 <span
                   key={`${dz.rangeStart}-${dz.rangeEnd}-${i}`}
-                  className="inline-flex items-center gap-1 font-fw-mono text-caption tabular-nums text-fw-danger"
+                  className="inline-flex items-center gap-1 font-fw-mono text-caption tabular-nums text-fw-danger-ink"
                 >
                   {dz.rangeStart}-{dz.rangeEnd}y
                   <span className="opacity-80">({dz.deficit.toFixed(2)} deficit)</span>

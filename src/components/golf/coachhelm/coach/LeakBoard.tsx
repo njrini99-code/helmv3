@@ -174,7 +174,7 @@ export function LeakBoard({ insights, flameThreshold, className }: LeakBoardProp
                       · {r.players.size} player{r.players.size !== 1 ? 's' : ''}
                     </span>
                   ) : null}
-                  {hot ? <span className="font-medium text-fw-danger">· high bleed</span> : null}
+                  {hot ? <span className="font-medium text-fw-danger-ink">· high bleed</span> : null}
                 </div>
               </div>
             );

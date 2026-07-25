@@ -496,7 +496,7 @@ function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <h3 className="truncate font-fw-sans text-body-lg font-medium text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+          <h3 className="line-clamp-2 font-fw-sans text-body-lg font-medium text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
             {qualifier.name}
           </h3>
           {qualifier.description && (

@@ -34,7 +34,7 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
   // --fw-* tokens resolve on :root so these read warm-matte under the live
   // Fairway page and stay on-system for the legacy/baseball callers too.
   if (mimeType === 'application/pdf') {
-    return <FileTextIcon className={cn('text-fw-danger', className)} />;
+    return <FileTextIcon className={cn('text-fw-danger-ink', className)} />;
   }
   if (mimeType.startsWith('image/')) {
     return <FileImageIcon className={cn('text-accent-600', className)} />;
@@ -43,7 +43,7 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
     return <FileVideoIcon className={cn('text-accent-700', className)} />;
   }
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') {
-    return <FileSpreadsheetIcon className={cn('text-fw-success', className)} />;
+    return <FileSpreadsheetIcon className={cn('text-fw-success-ink', className)} />;
   }
   if (mimeType.startsWith('text/') || mimeType === 'application/json') {
     return <FileTextIcon className={cn('text-text-secondary', className)} />;
@@ -181,8 +181,8 @@ export function DocumentPreview({
       return (
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center max-w-md">
-            <AlertCircleIcon className="h-12 w-12 text-fw-danger mx-auto mb-4" />
-            <p className="font-fw-sans text-body font-medium text-fw-danger mb-2">Preview unavailable</p>
+            <AlertCircleIcon className="h-12 w-12 text-fw-danger-ink mx-auto mb-4" />
+            <p className="font-fw-sans text-body font-medium text-fw-danger-ink mb-2">Preview unavailable</p>
             <p className="font-fw-sans text-body-sm text-text-tertiary mb-4">{error}</p>
             <div className="flex gap-2 justify-center">
               <Button variant="secondary" leftIcon={<DownloadIcon className="h-4 w-4" />} onClick={handleDownload}>

@@ -318,7 +318,7 @@ export function FairwayRecruitFormSheet({
                 leftIcon={<Trash2 className="h-4 w-4" />}
                 onClick={() => setConfirmingDelete(true)}
                 disabled={saving}
-                className="text-fw-danger hover:bg-fw-danger-bg"
+                className="text-fw-danger-ink hover:bg-fw-danger-bg"
               >
                 Remove
               </Button>

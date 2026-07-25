@@ -76,8 +76,8 @@ export function Card(props: CardProps) {
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
   const toneColor =
-    delta.tone === 'good' ? 'text-fw-success' :
-    delta.tone === 'bad'  ? 'text-fw-danger' :
+    delta.tone === 'good' ? 'text-fw-success-ink' :
+    delta.tone === 'bad'  ? 'text-fw-danger-ink' :
                             'text-text-tertiary';
 
   const subjectLabel = standingSubjectLabel(props.viewer_context, props.player_name);

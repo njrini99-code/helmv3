@@ -238,7 +238,7 @@ export function SearchAutocomplete({
                     ${index !== suggestions.length - 1 ? 'border-b border-warm-100' : ''}
                   `}
                 >
-                  <Avatar
+                  <Avatar decorative
                     src={player.avatar_url}
                     name={fullName}
                     size="sm"

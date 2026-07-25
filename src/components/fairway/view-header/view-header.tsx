@@ -250,7 +250,15 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
                     data-slot="view-header-description"
                     className={cn(
                       "max-w-[68ch] font-fw-sans text-text-secondary",
-                      compact ? "text-body-sm" : "text-body-lg",
+                      // One line on a phone. These descriptions are orientation
+                      // copy a returning user has read many times, and at
+                      // body-lg over two lines they were part of the ~610px of
+                      // chrome standing between the top of Team Hub and its
+                      // first actual task (audit P-22). Full text from `sm` up,
+                      // and `line-clamp` keeps it selectable + readable by AT
+                      // either way — nothing is removed, only visually capped.
+                      "line-clamp-1 sm:line-clamp-none",
+                      compact ? "text-body-sm" : "text-body-sm sm:text-body-lg",
                     )}
                   >
                     {description}
@@ -275,6 +283,13 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
           {secondaryActions != null || primaryAction != null
             ? motionItem(
                 "actions",
+                // Below `sm` the primary CTA comes FIRST. The row wraps on a
+                // phone, and with the secondaries ahead of it in DOM order the
+                // primary ("Add Player") wrapped onto a second line UNDER two
+                // quieter actions — the page's main call to action ranked last
+                // (audit L4). `order-*` flips the paint order at the narrow
+                // breakpoint only; the DOM order is unchanged, so tab order
+                // still runs secondaries -> primary as before.
                 <div
                   data-slot="view-header-actions"
                   className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end"
@@ -282,13 +297,16 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
                   {secondaryActions != null ? (
                     <div
                       data-slot="view-header-secondary-actions"
-                      className="flex items-center gap-2"
+                      className="order-2 flex items-center gap-2 sm:order-none"
                     >
                       {secondaryActions}
                     </div>
                   ) : null}
                   {primaryAction != null ? (
-                    <PrimarySlot data-slot="view-header-primary-action">
+                    <PrimarySlot
+                      data-slot="view-header-primary-action"
+                      className="order-1 sm:order-none"
+                    >
                       {primaryAction}
                     </PrimarySlot>
                   ) : null}

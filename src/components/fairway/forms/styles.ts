@@ -77,11 +77,11 @@ export const helpClasses = "font-fw-sans text-caption text-text-secondary";
 
 /** Inline error message — danger, sits in the reserved message row. */
 export const errorClasses =
-  "flex items-start gap-1.5 font-fw-sans text-caption font-medium text-fw-danger";
+  "flex items-start gap-1.5 font-fw-sans text-caption font-medium text-fw-danger-ink";
 
 /** Inline success message — success green, same reserved row. */
 export const successClasses =
-  "flex items-start gap-1.5 font-fw-sans text-caption font-medium text-fw-success";
+  "flex items-start gap-1.5 font-fw-sans text-caption font-medium text-fw-success-ink";
 
 /** Inline validating message — warm secondary with a quiet spinner. */
 export const validatingClasses =

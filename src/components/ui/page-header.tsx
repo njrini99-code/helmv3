@@ -1137,7 +1137,7 @@ function RoundHeader({
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
               className="flex items-center gap-4"
             >
-              <Avatar
+              <Avatar decorative
                 src={playerAvatarUrl}
                 name={playerName}
                 size="xl"

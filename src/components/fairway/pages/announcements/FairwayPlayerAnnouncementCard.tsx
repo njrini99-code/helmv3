@@ -145,7 +145,7 @@ function FairwayTaskItem({
       <span
         className={cn(
           'mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-fw-sm border-2 transition-colors',
-          completed ? 'border-accent-500 bg-accent-500 text-text-on-accent' : 'border-border-strong',
+          completed ? 'border-accent-500 bg-accent-700 text-text-on-accent' : 'border-border-strong',
         )}
         aria-hidden
       >
@@ -167,7 +167,7 @@ function FairwayTaskItem({
           <span
             className={cn(
               'mt-1 inline-flex items-center gap-1 font-fw-sans text-caption font-medium',
-              isOverdue ? 'text-fw-danger' : completed ? 'text-accent-600' : 'text-text-tertiary',
+              isOverdue ? 'text-fw-danger-ink' : completed ? 'text-accent-600' : 'text-text-tertiary',
             )}
             suppressHydrationWarning
           >

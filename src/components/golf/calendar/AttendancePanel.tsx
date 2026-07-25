@@ -62,12 +62,12 @@ const PENDING_BADGE = {
 const RSVP_BADGES: Record<string, { label: string; className: string }> = {
   accepted: { label: 'Going', className: 'bg-fw-success-bg text-accent-700 ring-accent-100' },
   attending: { label: 'Going', className: 'bg-fw-success-bg text-accent-700 ring-accent-100' },
-  declined: { label: 'Declined', className: 'bg-fw-danger-bg text-fw-danger ring-fw-danger/20' },
-  not_attending: { label: 'Declined', className: 'bg-fw-danger-bg text-fw-danger ring-fw-danger/20' },
+  declined: { label: 'Declined', className: 'bg-fw-danger-bg text-fw-danger-ink ring-fw-danger/20' },
+  not_attending: { label: 'Declined', className: 'bg-fw-danger-bg text-fw-danger-ink ring-fw-danger/20' },
   tentative: { label: 'Maybe', className: 'bg-fw-warning-bg text-fw-warning-ink ring-fw-warning-ring' },
   maybe: { label: 'Maybe', className: 'bg-fw-warning-bg text-fw-warning-ink ring-fw-warning-ring' },
   excused: { label: 'Excused', className: 'bg-surface-sunken text-text-secondary ring-border-subtle' },
-  unexcused: { label: 'Unexcused', className: 'bg-fw-danger-bg text-fw-danger ring-fw-danger/20' },
+  unexcused: { label: 'Unexcused', className: 'bg-fw-danger-bg text-fw-danger-ink ring-fw-danger/20' },
   pending: PENDING_BADGE,
 };
 
@@ -394,7 +394,7 @@ function PlayerSelfView({ rows, viewerPlayerId, presentCount }: PlayerSelfViewPr
     own.mark === 'present' || own.mark === 'late'
       ? { label: own.mark === 'late' ? 'Checked in (late)' : 'Checked in', className: 'text-accent-700' }
       : own.mark === 'no_show'
-        ? { label: 'Marked absent', className: 'text-fw-danger' }
+        ? { label: 'Marked absent', className: 'text-fw-danger-ink' }
         : { label: '— Not recorded yet', className: 'text-text-tertiary' };
 
   return (

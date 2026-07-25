@@ -65,7 +65,7 @@ export function kindChipClasses(tone: FwStatusTone): { bg: string; icon: string 
     case 'accent':
       return { bg: 'bg-accent-100', icon: 'text-accent-700' };
     case 'danger':
-      return { bg: 'bg-fw-danger-bg', icon: 'text-fw-danger' };
+      return { bg: 'bg-fw-danger-bg', icon: 'text-fw-danger-ink' };
     default:
       return { bg: 'bg-surface-sunken', icon: 'text-warm-500' };
   }

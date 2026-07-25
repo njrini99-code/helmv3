@@ -620,7 +620,7 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
       )}
     >
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-accent-700 shadow-flat transition-[transform,background-color,color] [transition-duration:var(--fw-dur-base)] group-hover:scale-110 group-hover:bg-accent-500 group-hover:text-white motion-reduce:group-hover:scale-100">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-accent-700 shadow-flat transition-[transform,background-color,color] [transition-duration:var(--fw-dur-base)] group-hover:scale-110 group-hover:bg-accent-800 group-hover:text-white motion-reduce:group-hover:scale-100">
         <IconPlus size={22} aria-hidden />
       </span>
       <span className="font-fw-display text-title-3 font-semibold text-text-primary">Add a course</span>

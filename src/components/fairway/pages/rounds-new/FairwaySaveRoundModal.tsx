@@ -92,7 +92,7 @@ export function FairwaySaveRoundModal({
       <Sheet.Body className="flex flex-col gap-4">
         {/* Info banner */}
         <div className="flex items-start gap-3 rounded-fw-md border border-border-subtle bg-fw-warning-bg p-4">
-          <TriangleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-fw-warning" aria-hidden />
+          <TriangleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-fw-warning-ink" aria-hidden />
           <div>
             <p className="font-fw-sans text-body-sm font-medium text-text-primary">Round in progress</p>
             <p className="mt-1 font-fw-sans text-caption text-text-secondary">
@@ -103,7 +103,7 @@ export function FairwaySaveRoundModal({
 
         {error && (
           <div className="rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg p-4">
-            <p className="font-fw-sans text-body-sm text-fw-danger">{error}</p>
+            <p className="font-fw-sans text-body-sm text-fw-danger-ink">{error}</p>
           </div>
         )}
 
@@ -116,7 +116,7 @@ export function FairwaySaveRoundModal({
             disabled={saving}
             className="h-auto min-h-0 w-full items-center justify-start gap-4 rounded-fw-md border border-accent-200 bg-accent-50 p-4 text-left transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-accent-500 text-text-on-accent">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-accent-700 text-text-on-accent">
               <Clock className="h-5 w-5" aria-hidden />
             </span>
             <span className="flex-1">
@@ -154,7 +154,7 @@ export function FairwaySaveRoundModal({
               <span
                 className={cn(
                   'block font-fw-sans text-body-sm font-medium',
-                  confirmingDelete ? 'text-fw-danger' : 'text-text-primary',
+                  confirmingDelete ? 'text-fw-danger-ink' : 'text-text-primary',
                 )}
               >
                 {confirmingDelete ? 'Tap again to confirm' : 'Delete round'}
@@ -162,7 +162,7 @@ export function FairwaySaveRoundModal({
               <span
                 className={cn(
                   'mt-0.5 block font-fw-sans text-caption',
-                  confirmingDelete ? 'text-fw-danger/80' : 'text-text-tertiary',
+                  confirmingDelete ? 'text-fw-danger-ink/80' : 'text-text-tertiary',
                 )}
               >
                 {confirmingDelete ? 'This cannot be undone' : 'Discard this round completely'}

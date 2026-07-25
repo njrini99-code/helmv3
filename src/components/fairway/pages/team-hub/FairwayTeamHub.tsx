@@ -371,7 +371,7 @@ function ClassRow({ klass }: { klass: TeamHubClass }) {
         style={{ backgroundColor: klass.color || 'var(--fw-color-accent-500)' }}
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+        <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
           {klass.class_name}
         </p>
         {when ? (

@@ -1,10 +1,24 @@
 /**
  * Event-reminder cron.
  *
- * Sends reminders (in-app row + push + email) for upcoming events. Two
- * cadences, designed for an HOURLY schedule (`0 * * * *` in vercel.json):
- *   - `event_reminder_24h`: events starting in the next ~25h
- *   - `event_reminder_1h`:  events starting in the next ~75min
+ * Sends reminders (in-app row + push + email) for upcoming events. Two SLOTS
+ * per event, on an HOURLY schedule (`0 * * * *` in vercel.json):
+ *   - `event_reminder_24h`: the EARLY reminder
+ *   - `event_reminder_1h`:  the LATE reminder
+ *
+ * PER-TEAM LEAD TIMES (2026-07-25, migration 20260725150000). Those two
+ * notification_type strings are now SLOT IDENTIFIERS, not literal durations:
+ * each team sets its own `event_reminder_early_hours` /
+ * `event_reminder_late_minutes` on `golf_team_settings`, defaulting to the 24h
+ * / 1h this route used to hard-code. Keeping the historical strings preserves
+ * the UNIQUE (event_id, user_id, notification_type) idempotency key and every
+ * already-sent row; all user-facing copy is generated from the team's ACTUAL
+ * lead, so nothing says "Tomorrow" for a team set to 3 days.
+ *
+ * Because leads now differ per team, the events query looks ahead by the widest
+ * lead ANY team could configure (`MAX_REMINDER_LEAD_MS`) in one pass, then
+ * filters each event against its own team's window in process. One query, not
+ * one per team.
  *
  * Idempotency comes from the UNIQUE (event_id, user_id, notification_type)
  * constraint on golf_calendar_notifications. Ordering matters: the external
@@ -21,17 +35,25 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { sendEmailNotification } from '@/lib/notifications/email';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { recordJobRun } from '@/lib/admin/job-log';
+import {
+  MAX_REMINDER_LEAD_MS,
+  REMINDER_WINDOW_MARGIN_MS,
+  EVENT_REMINDER_FALLBACK,
+  resolveEventReminderSettings,
+  formatLead,
+  type TeamEventReminderSettings,
+  type EventReminderRow,
+} from '@/lib/golf/event-reminder-settings';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-const REMINDER_24H_MS = 25 * 60 * 60 * 1000;
-const REMINDER_1H_MS = 75 * 60 * 1000;
 
 /** Stop launching new send batches past this point so the row upsert for
  * already-completed sends always lands within maxDuration (300s). Recipients
@@ -51,6 +73,7 @@ interface EventRow {
   title: string;
   start_time: string;
   location: string | null;
+  team_id: string;
 }
 
 interface AttendanceRow {
@@ -91,8 +114,13 @@ export async function GET(req: NextRequest) {
     let result1h: KindResult;
 
     try {
-      result24h = await dispatchReminders(supabase, now, REMINDER_24H_MS, 'event_reminder_24h', deadlineAt);
-      result1h = await dispatchReminders(supabase, now, REMINDER_1H_MS, 'event_reminder_1h', deadlineAt);
+      // One look-ahead covering the widest lead any team can configure, plus
+      // that team's settings, shared by both slots. Fetching this once (rather
+      // than once per slot) also guarantees the two slots agree on which teams
+      // have reminders switched off.
+      const { events, settingsByTeam } = await loadWindow(supabase, now);
+      result24h = await dispatchReminders(supabase, now, events, settingsByTeam, 'event_reminder_24h', deadlineAt);
+      result1h = await dispatchReminders(supabase, now, events, settingsByTeam, 'event_reminder_1h', deadlineAt);
     } catch (err) {
       await logServerError(
         `cron.eventReminders failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -131,15 +159,21 @@ export async function GET(req: NextRequest) {
   });
 }
 
-async function dispatchReminders(
+/**
+ * One platform-wide look-ahead plus the reminder settings of every team that
+ * appears in it.
+ *
+ * The look-ahead is the WIDEST lead any team can configure. That over-fetches
+ * for teams on shorter leads — the per-team filter in `dispatchReminders`
+ * discards those rows — but it is one bounded query instead of one per team,
+ * and the volume is capped by the CHECK constraint's 7-day ceiling.
+ */
+async function loadWindow(
   supabase: ReturnType<typeof createAdminClient>,
   now: Date,
-  windowMs: number,
-  kind: ReminderKind,
-  deadlineAt: number,
-): Promise<KindResult> {
-  const horizon = new Date(now.getTime() + windowMs).toISOString();
+): Promise<{ events: EventRow[]; settingsByTeam: Map<string, TeamEventReminderSettings> }> {
   const nowIso = now.toISOString();
+  const horizon = new Date(now.getTime() + MAX_REMINDER_LEAD_MS).toISOString();
 
   // Skip cancelled events. Schema uses cancelled_at (timestamp set when an
   // event is cancelled) plus a status enum that includes 'cancelled'. Both
@@ -149,7 +183,7 @@ async function dispatchReminders(
   const { data: events, error: eventsErr } = await fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_events')
-      .select('id, title, start_time, location, cancelled_at, status')
+      .select('id, title, start_time, location, cancelled_at, status, team_id')
       .gt('start_time', nowIso)
       .lte('start_time', horizon)
       .is('cancelled_at', null)
@@ -157,7 +191,7 @@ async function dispatchReminders(
       .order('id', { ascending: true })
       .range(from, to),
     undefined,
-    { table: 'golf_events', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
+    { table: 'golf_events', action: 'loadWindow', feature: 'calendar_events', sport: 'golf' },
   );
 
   if (eventsErr) {
@@ -165,6 +199,69 @@ async function dispatchReminders(
   }
 
   const eventRows = (events ?? []) as EventRow[];
+  const settingsByTeam = new Map<string, TeamEventReminderSettings>();
+  if (eventRows.length === 0) return { events: eventRows, settingsByTeam };
+
+  const teamIds = Array.from(new Set(eventRows.map((e) => e.team_id).filter(Boolean)));
+  for (const ids of chunk(teamIds, ID_CHUNK_SIZE)) {
+    // `fromUntyped`: the three reminder columns land with migration
+    // 20260725150000 and are not in the generated database types until those
+    // are regenerated. Same idiom the settings panel uses for this table.
+    const { data: rows, error: settingsErr } = await fetchAllRowsResult((from, to) =>
+      fromUntyped(supabase, 'golf_team_settings')
+        .select(
+          'team_id, event_reminders_enabled, event_reminder_early_hours, event_reminder_late_minutes',
+        )
+        .in('team_id', ids)
+        .order('team_id', { ascending: true })
+        .range(from, to),
+      undefined,
+      { table: 'golf_team_settings', action: 'loadWindow', feature: 'calendar_events', sport: 'golf' },
+    );
+    if (settingsErr) {
+      throw new Error(`fetch team settings: ${settingsErr.message}`);
+    }
+    for (const row of rows ?? []) {
+      const r = row as EventReminderRow & { team_id: string };
+      settingsByTeam.set(r.team_id, resolveEventReminderSettings(r));
+    }
+  }
+
+  return { events: eventRows, settingsByTeam };
+}
+
+async function dispatchReminders(
+  supabase: ReturnType<typeof createAdminClient>,
+  now: Date,
+  allEvents: EventRow[],
+  settingsByTeam: Map<string, TeamEventReminderSettings>,
+  kind: ReminderKind,
+  deadlineAt: number,
+): Promise<KindResult> {
+  const nowMs = now.getTime();
+
+  // Narrow the shared look-ahead to the events whose OWN team wants this slot
+  // fired right now. A team with reminders switched off drops out here, before
+  // any attendance or user data is read for it.
+  const leadByEventId = new Map<string, number>();
+  const eventRows = allEvents.filter((e) => {
+    const settings = settingsByTeam.get(e.team_id) ?? EVENT_REMINDER_FALLBACK;
+    if (!settings.enabled) return false;
+    const leadMinutes =
+      kind === 'event_reminder_24h' ? settings.earlyHours * 60 : settings.lateMinutes;
+    const startMs = new Date(e.start_time).getTime();
+    if (!Number.isFinite(startMs)) return false;
+    const untilStart = startMs - nowMs;
+    // `(now, now + lead + margin]`. Every legal lead keeps this window wider
+    // than the hourly tick gap, so an event can't slip between two ticks
+    // without ever being reminded.
+    if (untilStart <= 0 || untilStart > leadMinutes * 60 * 1000 + REMINDER_WINDOW_MARGIN_MS) {
+      return false;
+    }
+    leadByEventId.set(e.id, leadMinutes);
+    return true;
+  });
+
   if (eventRows.length === 0) return { sent: 0, failed: 0, skipped: 0 };
 
   const eventIds = eventRows.map((e) => e.id);
@@ -298,7 +395,14 @@ async function dispatchReminders(
     }
     const batch = pending.slice(i, i + SEND_CONCURRENCY);
     const outcomes = await Promise.allSettled(
-      batch.map((recipient) => sendReminderToRecipient(recipient.userId, recipient.event, kind, emailByUserId)),
+      batch.map((recipient) =>
+        sendReminderToRecipient(
+          recipient.userId,
+          recipient.event,
+          leadByEventId.get(recipient.event.id) ?? 0,
+          emailByUserId,
+        ),
+      ),
     );
     outcomes.forEach((outcome, idx) => {
       const recipient = batch[idx];
@@ -317,9 +421,9 @@ async function dispatchReminders(
     user_id: userId,
     event_id: event.id,
     notification_type: kind,
-    title: kind === 'event_reminder_24h'
-      ? `Tomorrow: ${event.title}`
-      : `Starting soon: ${event.title}`,
+    // Generated from the team's ACTUAL lead, not from the slot name — a team on
+    // a 3-day early reminder must not be told "Tomorrow".
+    title: buildTitle(event, kind, leadByEventId.get(event.id) ?? 0),
     message: buildMessage(event, kind),
     action_url: `/golf/dashboard/calendar?event=${event.id}`,
   }));
@@ -350,7 +454,7 @@ async function dispatchReminders(
 async function sendReminderToRecipient(
   userId: string,
   event: EventRow,
-  kind: ReminderKind,
+  leadMinutes: number,
   emailByUserId: Map<string, string>,
 ): Promise<boolean> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
@@ -367,7 +471,9 @@ async function sendReminderToRecipient(
     }),
     location: event.location || '',
     eventUrl: `${baseUrl}/golf/dashboard/calendar?event=${event.id}`,
-    reminderWindow: kind === 'event_reminder_24h' ? '24h' : '1h',
+    // The template renders this verbatim, so it has to describe the team's real
+    // lead ("3 days", "45 minutes") rather than the slot's historical name.
+    reminderWindow: formatLead(leadMinutes),
   };
 
   const email = emailByUserId.get(userId);
@@ -379,6 +485,18 @@ async function sendReminderToRecipient(
   ]);
 
   return pushResult.success && emailResult.success;
+}
+
+/**
+ * Notification title. The EARLY slot names the horizon ("In 3 days: …") except
+ * at the one lead where English has a better word for it; the LATE slot is
+ * always imminent, so "Starting soon" holds at any legal late lead (15–720
+ * minutes).
+ */
+function buildTitle(event: EventRow, kind: ReminderKind, leadMinutes: number): string {
+  if (kind !== 'event_reminder_24h') return `Starting soon: ${event.title}`;
+  if (leadMinutes === 24 * 60) return `Tomorrow: ${event.title}`;
+  return `In ${formatLead(leadMinutes)}: ${event.title}`;
 }
 
 function buildMessage(event: EventRow, kind: ReminderKind): string {

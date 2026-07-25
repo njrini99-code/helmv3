@@ -84,8 +84,8 @@ const DIR: Record<TrendWindow['direction'], { glyph: string; tone: Tone; label: 
 };
 
 const TONE_TEXT: Record<Tone, string> = {
-  good: 'text-fw-success',
-  bad: 'text-fw-danger',
+  good: 'text-fw-success-ink',
+  bad: 'text-fw-danger-ink',
   neutral: 'text-text-tertiary',
 };
 
@@ -145,8 +145,8 @@ export function perRoundStreakMagnitude(magnitude: number, length: number): numb
 }
 
 const TRUST_CHIP: Record<Tone, string> = {
-  good: 'bg-fw-success-bg text-fw-success',
-  bad: 'bg-fw-danger-bg text-fw-danger',
+  good: 'bg-fw-success-bg text-fw-success-ink',
+  bad: 'bg-fw-danger-bg text-fw-danger-ink',
   neutral: 'bg-surface-sunken text-text-tertiary',
 };
 

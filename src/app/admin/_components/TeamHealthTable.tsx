@@ -71,7 +71,7 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
                 </StatusPill>
               </div>
               {t.errors7d > 0 ? (
-                <p className="mt-2 font-fw-mono text-xs font-semibold tabular-nums text-fw-danger">
+                <p className="mt-2 font-fw-mono text-xs font-semibold tabular-nums text-fw-danger-ink">
                   {t.errors7d} errors this week
                 </p>
               ) : null}
@@ -119,7 +119,7 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
                 <td
                   className={cn(
                     'px-3 font-fw-mono font-semibold tabular-nums',
-                    t.errors7d > 0 ? 'text-fw-danger' : 'text-warm-900',
+                    t.errors7d > 0 ? 'text-fw-danger-ink' : 'text-warm-900',
                   )}
                 >
                   {t.errors7d}

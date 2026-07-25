@@ -273,7 +273,7 @@ export function FairwayRoundSubmitOverlay({
                     <span
                       className={cn(
                         'font-fw-sans text-body-lg font-medium',
-                        toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-accent-100' : 'text-fw-warning',
+                        toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-accent-100' : 'text-fw-warning-ink',
                       )}
                     >
                       ({toParLabel})
@@ -347,7 +347,7 @@ export function FairwayRoundSubmitOverlay({
               tabIndex={-1}
               className="relative w-full max-w-sm rounded-card bg-surface p-6 text-center shadow-fw-modal outline-none"
             >
-              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-fw-danger/20 bg-fw-danger-bg text-fw-danger">
+              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-fw-danger/20 bg-fw-danger-bg text-fw-danger-ink">
                 <TriangleAlert className="h-7 w-7" aria-hidden />
               </div>
               <h3 id="fw-round-submit-error-title" className="mb-2 font-fw-display text-h3 font-semibold text-text-primary">Submission failed</h3>

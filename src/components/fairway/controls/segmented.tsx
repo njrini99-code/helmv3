@@ -56,7 +56,7 @@
  * primitive.
  * ========================================================================== */
 
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, useEffect, useId, useRef } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -263,9 +263,30 @@ export function Segmented<T extends string = string>({
   // desktop rendering, where every segment already fits, is unaffected.
   const { ref: scrollFadeRef, fadeStyle } = useScrollFade<HTMLDivElement>('x');
 
+  // Keep the SELECTED segment in view.
+  //
+  // The track scrolls horizontally once the options outgrow it, but nothing
+  // scrolled the active one into view — at 320px the "Window" control's track
+  // ended after "Season" while "All" was selected and sitting 34px past the
+  // right edge, so the control looked like it had no selection at all
+  // (audit 2026-07-24, H7).
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    if (track.scrollWidth <= track.clientWidth) return;
+    const active = track.querySelector<HTMLElement>('[data-state="on"]');
+    active?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }, [value]);
+
   return (
     <ToggleGroup.Root
-      ref={scrollFadeRef}
+      // Composed: useScrollFade owns a callback ref (its own docs say to
+      // compose it), and the selected-segment effect below needs the node too.
+      ref={(node) => {
+        scrollFadeRef(node);
+        trackRef.current = node;
+      }}
       type="single"
       value={value}
       // Radix passes "" when the active item is toggled off; ignore that to keep

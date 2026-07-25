@@ -74,7 +74,7 @@ export function MoreSheetFooter({
         className={cn(
           rowBase,
           'justify-start bg-transparent hover:bg-fw-danger/10',
-          'text-text-secondary hover:text-fw-danger disabled:opacity-50',
+          'text-text-secondary hover:text-fw-danger-ink disabled:opacity-50',
         )}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0" />

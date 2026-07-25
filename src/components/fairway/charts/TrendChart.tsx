@@ -105,7 +105,48 @@ export function computeTrendYDomain(
   const max = Math.max(...finite);
   const span = max - min;
   const pad = Math.max(span * 0.15, Math.max(Math.abs(max), 1) * 0.05);
-  return [min - pad, max + pad];
+  const fitted = niceAxis(min - pad, max + pad);
+  return [fitted.min, fitted.max];
+}
+
+/**
+ * Snap a raw [lo, hi] to round bounds on a uniform step, and return the tick
+ * values that fall on it.
+ *
+ * The padded domain above is an arbitrary pair of decimals, so Recharts laid
+ * its interior gridlines on round numbers but pinned the TOP one to the raw
+ * domain max — producing gridlines at 80.8 / 79.4 / 76.4 / 73.4 / 70.4, where
+ * the first gap is 1.4 and every other is 3.0 (audit M7). A reader takes even
+ * gridlines as a scale; an uneven top band silently misreports distance.
+ *
+ * Standard 1/2/2.5/5/10 × 10^n step selection — the same family of "nice
+ * numbers" d3 and Excel use, so the axis reads like an axis.
+ */
+export function niceAxis(
+  lo: number,
+  hi: number,
+  targetTicks = 5,
+): { min: number; max: number; step: number; ticks: number[] } {
+  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) {
+    return { min: lo, max: hi, step: 0, ticks: [] };
+  }
+  const rawStep = (hi - lo) / Math.max(1, targetTicks - 1);
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const normalized = rawStep / magnitude;
+  const niceUnit = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
+  const step = niceUnit * magnitude;
+
+  const min = Math.floor(lo / step) * step;
+  const max = Math.ceil(hi / step) * step;
+
+  // Binary error: 70.4 / 0.5 * 0.5 is not exactly 70.4. Round each tick to the
+  // step's own precision or the axis prints 76.40000000000001.
+  const places = Math.max(0, -Math.floor(Math.log10(step)));
+  const snap = (n: number) => Number(n.toFixed(places + 2));
+
+  const ticks: number[] = [];
+  for (let v = min; v <= max + step / 2; v += step) ticks.push(snap(v));
+  return { min: snap(min), max: snap(max), step, ticks };
 }
 
 export function TrendChart({
@@ -133,6 +174,13 @@ export function TrendChart({
   const yDomain = React.useMemo(
     () => computeTrendYDomain(rows.map((r) => r.y), benchmark?.value),
     [rows, benchmark],
+  );
+  // Explicit ticks, not `tickCount`: tickCount is a HINT Recharts may ignore,
+  // and ignoring it is what left the top gridline half-spaced (audit M7).
+  // niceAxis already snapped the domain to a round step, so these land on it.
+  const yTicks = React.useMemo(
+    () => (yDomain ? niceAxis(yDomain[0], yDomain[1]).ticks : undefined),
+    [yDomain],
   );
 
   const resolvedState: ChartFrameState = state ?? (data.length === 0 ? 'empty' : 'ready');
@@ -190,7 +238,7 @@ export function TrendChart({
             axisLine={false}
             width={40}
             tickFormatter={fmt}
-            tickCount={5}
+            ticks={yTicks}
             domain={yDomain ?? ['auto', 'auto']}
           />
 

@@ -206,7 +206,7 @@ export function ShotAnalysisCard({
                     <span
                       className={cn(
                         'w-12 shrink-0 text-right font-fw-mono text-caption tabular-nums',
-                        isPositive ? 'text-fw-success' : 'text-fw-danger'
+                        isPositive ? 'text-fw-success-ink' : 'text-fw-danger-ink'
                       )}
                     >
                       {isPositive ? '+' : ''}{Number(bucket.avgSG ?? 0).toFixed(2)}
@@ -232,12 +232,12 @@ export function ShotAnalysisCard({
         {resolvedYardageCurve?.buckets && resolvedYardageCurve.buckets.length > 0 && (
           resolvedDeadZones && resolvedDeadZones.length > 0 ? (
             <div className="rounded-fw-md border border-border-subtle bg-fw-danger-bg px-3 py-2.5">
-              <p className="mb-1 text-caption font-medium text-fw-danger">Dead Zones</p>
+              <p className="mb-1 text-caption font-medium text-fw-danger-ink">Dead Zones</p>
               <div className="flex flex-wrap gap-x-3 gap-y-1">
                 {resolvedDeadZones.map((dz) => (
                   <span
                     key={`${dz.rangeStart}-${dz.rangeEnd}`}
-                    className="inline-flex items-center gap-1 font-fw-mono text-caption tabular-nums text-fw-danger"
+                    className="inline-flex items-center gap-1 font-fw-mono text-caption tabular-nums text-fw-danger-ink"
                   >
                     {dz.rangeStart}-{dz.rangeEnd}y
                     <span className="opacity-80">({Number(dz.deficit ?? 0).toFixed(2)} deficit)</span>
@@ -247,7 +247,7 @@ export function ShotAnalysisCard({
             </div>
           ) : (
             <div className="rounded-fw-md border border-border-subtle bg-fw-success-bg px-3 py-2.5">
-              <p className="mb-0.5 text-caption font-medium text-fw-success">No dead zones</p>
+              <p className="mb-0.5 text-caption font-medium text-fw-success-ink">No dead zones</p>
               <p className="text-caption text-text-secondary">
                 Yardage performance is consistent, no distance range is bleeding strokes.
               </p>
@@ -281,7 +281,7 @@ export function ShotAnalysisCard({
                       </p>
                     </div>
                     <div className="ml-3 shrink-0 text-right">
-                      <p className="font-fw-mono text-body-sm font-medium tabular-nums text-fw-danger">
+                      <p className="font-fw-mono text-body-sm font-medium tabular-nums text-fw-danger-ink">
                         {Number(weakness.avgSG ?? 0).toFixed(2)}
                       </p>
                       <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
@@ -312,7 +312,7 @@ export function ShotAnalysisCard({
                 <p
                   className={cn(
                     'text-caption font-medium',
-                    Number(safeResilience ?? 0) >= 1.0 ? 'text-fw-success' : 'text-fw-warning'
+                    Number(safeResilience ?? 0) >= 1.0 ? 'text-fw-success-ink' : 'text-fw-warning-ink'
                   )}
                 >
                   {Number(safeResilience ?? 0) >= 1.0 ? 'Good recovery' : 'Compounds errors'}

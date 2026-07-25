@@ -132,7 +132,7 @@ export function UploadNewVersionModal({
         <div className="min-h-0 flex-1 overflow-y-auto p-6 space-y-4">
           {/* Error */}
           {error && (
-            <div className="p-3 bg-fw-danger-bg border border-fw-danger/30 rounded-lg text-sm text-fw-danger">
+            <div className="p-3 bg-fw-danger-bg border border-fw-danger/30 rounded-lg text-sm text-fw-danger-ink">
               {error}
             </div>
           )}
@@ -239,7 +239,7 @@ export function UploadNewVersionModal({
           <Button variant="primary"
             onClick={handleSubmit}
             disabled={!selectedFile || uploading}
-            className="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-text-on-accent font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-accent-700 hover:bg-accent-800 text-text-on-accent font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {uploading ? (
               <>

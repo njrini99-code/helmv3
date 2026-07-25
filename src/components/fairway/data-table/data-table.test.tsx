@@ -100,10 +100,16 @@ describe('DataTable — mobileCard render path', () => {
       />,
     );
 
-    // The scroll container that owns the <table> must be hidden below `sm`.
+    // The scroll container that owns the <table> must be hidden below `lg`.
+    //
+    // Threshold moved sm -> lg (audit 2026-07-24, C1): the breakpoint measures
+    // the VIEWPORT, but the table's real constraint is its own box, and the
+    // coach shell's 260px fixed rail eats the difference. At 768px main was
+    // 508px wide and 249px of a 691px table was silently clipped — Score, To
+    // Par and Date vanished with no scroll affordance.
     const scrollRegion = container.querySelector('table')?.parentElement;
     expect(scrollRegion?.className).toContain('hidden');
-    expect(scrollRegion?.className).toContain('sm:block');
+    expect(scrollRegion?.className).toContain('lg:block');
 
     // Exactly one mobile card per data row, rendered via the caller's function
     // (not a clipped subset of table columns) — same real data as the (still

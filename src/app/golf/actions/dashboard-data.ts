@@ -5,6 +5,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTodayRangeForTz } from '@/lib/utils/timezone';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
 // ============================================================================
 // TYPES
@@ -396,7 +397,7 @@ async function getCoachDashboardDataImpl(
         const recentRoundsPromise = fetchAllRowsResult((from, to) => {
             let q = supabase
                 .from('golf_rounds')
-                .select('id, player_id, course_name, total_score, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
+                .select('id, player_id, course_name, total_score, score_to_par, front_nine, back_nine, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
                 .in('player_id', playerIds)
                 .eq('status', 'completed')
                 .not('total_score', 'is', null);
@@ -411,7 +412,7 @@ async function getCoachDashboardDataImpl(
         const allRoundsPromise = fetchAllRowsResult((from, to) => {
             let q = supabase
                 .from('golf_rounds')
-                .select('id, player_id, total_score, score_to_par, round_date, holes_played, total_putts, total_gir, total_gir_possible')
+                .select('id, player_id, total_score, score_to_par, front_nine, back_nine, round_date, holes_played, total_putts, total_gir, total_gir_possible')
                 .in('player_id', playerIds)
                 .eq('status', 'completed')
                 .not('total_score', 'is', null);
@@ -437,7 +438,8 @@ async function getCoachDashboardDataImpl(
         // Map recent rounds
         type RoundWithPlayer = {
             id: string; player_id: string; course_name: string | null;
-            total_score: number | null; score_to_par: number | null; round_date: string;
+            total_score: number | null; score_to_par: number | null;
+            front_nine: number | null; back_nine: number | null; round_date: string;
             round_type: string | null; total_putts: number | null;
             total_fairways_hit: number | null; total_fairways: number | null;
             total_gir: number | null; total_gir_possible: number | null;
@@ -445,25 +447,39 @@ async function getCoachDashboardDataImpl(
         };
 
         if (recentRoundsResult.data) {
-            recentRounds = (recentRoundsResult.data as RoundWithPlayer[]).map(r => ({
-                id: r.id,
-                player_id: r.player_id,
-                player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
-                player_avatar_url: r.player?.avatar_url || null,
-                course_name: r.course_name || 'Unknown Course',
-                total_score: r.total_score ?? 0,
-                total_to_par: r.score_to_par ?? 0,
-                round_date: r.round_date,
-                round_type: r.round_type || null,
-                total_putts: r.total_putts,
-                total_fairways_hit: r.total_fairways_hit,
-                total_fairways: r.total_fairways,
-                total_gir: r.total_gir,
-                total_gir_possible: r.total_gir_possible,
-            }));
+            recentRounds = (recentRoundsResult.data as RoundWithPlayer[]).map(r => {
+                // Finding #1/#4/#5 (AUDIT-0724): prefer Σgolf_holes.score (proxied by
+                // front_nine+back_nine) over the sometimes-stale total_score column —
+                // see src/lib/golf/round-total.ts for the full root-cause. Keeps the
+                // coach dashboard's "Recent Rounds" card in agreement with the round
+                // detail page and the Stats page for the same round.
+                const canonical = withCanonicalRoundTotal(r);
+                return {
+                    id: r.id,
+                    player_id: r.player_id,
+                    player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
+                    player_avatar_url: r.player?.avatar_url || null,
+                    course_name: r.course_name || 'Unknown Course',
+                    total_score: canonical.total_score ?? 0,
+                    total_to_par: canonical.score_to_par ?? 0,
+                    round_date: r.round_date,
+                    round_type: r.round_type || null,
+                    total_putts: r.total_putts,
+                    total_fairways_hit: r.total_fairways_hit,
+                    total_fairways: r.total_fairways,
+                    total_gir: r.total_gir,
+                    total_gir_possible: r.total_gir_possible,
+                };
+            });
         }
 
-        const allRounds = allRoundsResult.data || [];
+        // Finding #1/#4/#5 (AUDIT-0724): normalize total_score/score_to_par ONCE
+        // here (front_nine+back_nine over the sometimes-stale total_score column
+        // — see src/lib/golf/round-total.ts) so every downstream consumer below
+        // (team scoring average, top players, monthly trend, sparklines, team
+        // pulse trend) reads the same corrected value without having to know
+        // this correction exists.
+        const allRounds = (allRoundsResult.data || []).map(withCanonicalRoundTotal);
         teamPulse.roundsThisWeek = weekRoundsResult.count || 0;
 
         if (allRounds.length > 0) {
@@ -801,7 +817,7 @@ async function getPlayerDashboardDataImpl(
             : Promise.resolve({ data: null }),
         supabase
             .from('golf_rounds')
-            .select('id, course_name, total_score, score_to_par, round_date, holes_played, total_putts, total_gir, total_gir_possible')
+            .select('id, course_name, total_score, score_to_par, front_nine, back_nine, round_date, holes_played, total_putts, total_gir, total_gir_possible')
             .eq('player_id', playerId)
             .eq('status', 'completed')
             .not('total_score', 'is', null)
@@ -863,7 +879,15 @@ async function getPlayerDashboardDataImpl(
     ]);
 
     const team = teamResult.data;
-    const rounds = roundsResult.data || [];
+    // Finding #1/#4/#5 (AUDIT-0724): normalize total_score/score_to_par ONCE
+    // here (front_nine+back_nine over the sometimes-stale total_score column —
+    // see src/lib/golf/round-total.ts) so every per-round consumer below
+    // (recent trend, sparklines, scoring trend chart, recentRounds list) reads
+    // the same corrected value a player's own round detail page and Stats page
+    // would show for that round. The `statsCache.*` headline aggregates just
+    // below (scoringAverage, bestRound) intentionally stay sourced from
+    // golf_player_stats_cache — see the comment there.
+    const rounds = (roundsResult.data || []).map(withCanonicalRoundTotal);
     const playerHandicap = playerDetailResult.data?.handicap ?? null;
     const statsCache = statsCacheResult.data as {
         sg_total_per_round: number | null;
@@ -929,6 +953,21 @@ async function getPlayerDashboardDataImpl(
     // 50-round fetch now feeds ONLY recent-form widgets (sparklines, trend
     // arrows, scoring trend, recent-rounds list). A null cache row (player
     // with no completed rounds) preserves the cold-start null/zero behavior.
+    //
+    // Finding #4/#5 (AUDIT-0724): `statsCache.scoring_average` /
+    // `.best_round` are DB-side aggregates the `update_player_stats_complete`
+    // trigger derives from `SUM(golf_rounds.total_score)` — they cannot be
+    // corrected here in JS without either reintroducing the 50-round cap bug
+    // above (recomputing from the capped `rounds` fetch) or re-summing every
+    // completed round's holes on every dashboard load (an expensive
+    // reimplementation of the DB trigger). The 1-stroke/round drift behind
+    // findings #4/#5 is a DATA problem, not a code problem, here — once
+    // round-total-repair.sql corrects the 15 drifted `golf_rounds.total_score`
+    // rows, the existing triggers cascade (golf_rounds -> golf_round_stats_cache
+    // -> golf_player_stats_cache) and this cache value self-heals with no code
+    // change. The per-round values below (sparklines, trend, recentRounds) are
+    // already corrected via `withCanonicalRoundTotal` above, independent of
+    // that data fix.
     const roundsPlayed = statsCache?.rounds_played ?? 0;
     const scoringAverage = statsCache?.scoring_average != null ? Number(statsCache.scoring_average) : null;
     const bestRound = statsCache?.best_round != null ? Number(statsCache.best_round) : null;

@@ -111,6 +111,35 @@ export function DayScheduleSwipe({
     return max;
   }, [isReady, byDay, todayKey]);
 
+  // Offsets (from today) that actually hold events — the pager's real content.
+  const eventOffsets = useMemo(() => {
+    if (!isReady) return [] as number[];
+    const out: number[] = [];
+    for (const key of byDay.keys()) {
+      const diff = Math.round(
+        (new Date(`${key}T00:00:00Z`).getTime() - new Date(`${todayKey}T00:00:00Z`).getTime()) /
+          86400000,
+      );
+      if (diff >= 0) out.push(diff);
+    }
+    return out.sort((a, b) => a - b);
+  }, [isReady, byDay, todayKey]);
+
+  // Land on the next day that HAS something rather than a blank today.
+  //
+  // The feed is sparse — measured 4 populated days across a 34-day reachable
+  // range, so opening on today showed "Nothing scheduled" and the next real
+  // event was six taps away (audit 2026-07-24, P-01). One-day-at-a-time paging
+  // only works if it starts where the content is.
+  const [landed, setLanded] = useState(false);
+  useEffect(() => {
+    if (!isReady || landed) return;
+    setLanded(true);
+    if ((byDay.get(todayKey as string) ?? []).length === 0 && eventOffsets.length > 0) {
+      setOffset(eventOffsets[0]!);
+    }
+  }, [isReady, landed, byDay, todayKey, eventOffsets]);
+
   const clampedOffset = Math.min(offset, maxOffset);
   const dayKey = isReady ? addDaysToKey(todayKey as string, clampedOffset) : '';
   const dayEvents = byDay.get(dayKey) ?? [];
@@ -126,7 +155,10 @@ export function DayScheduleSwipe({
   const headerAction = viewAllHref ? (
     <Link
       href={viewAllHref}
-      className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      /* -my-2.5 keeps the visual rhythm while the padding lifts the hit area
+         to 44px — it measured 72x20 at every viewport, failing both the touch
+         minimum and WCAG 2.2 2.5.8 (audit 2026-07-24, P-15). */
+      className="-my-2.5 inline-flex min-h-11 items-center gap-1 px-2 py-2.5 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
     >
       Calendar
       <ChevronRight aria-hidden className="h-3.5 w-3.5" />
@@ -160,17 +192,31 @@ export function DayScheduleSwipe({
                   variant="ghost"
                   size="sm"
                   onClick={() => goto(0)}
-                  className="min-h-0 px-2 py-0.5 text-caption font-medium text-accent-700 hover:text-accent-600"
+                  className="px-2 text-caption font-medium text-accent-700 hover:text-accent-600"
                 >
                   Back to today
                 </Button>
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              {/*
+                The feed only carries today-forward, so "previous" is disabled
+                at offset 0 and a player tapping back for yesterday's practice
+                hit a dead control with no explanation (audit P-29). The reason
+                goes in `title` — which becomes the accessible DESCRIPTION —
+                not in `aria-label`: the NAME of a control must stay stable
+                ("Previous day") whatever state it is in, or the same button
+                answers to a different name depending on where you are.
+              */}
               <IconButton
                 size="sm"
                 variant="ghost"
                 aria-label="Previous day"
+                title={
+                  clampedOffset === 0
+                    ? 'This card only shows today onward. Open the calendar for past days.'
+                    : undefined
+                }
                 disabled={clampedOffset === 0}
                 onClick={() => goto(clampedOffset - 1)}
               >
@@ -180,6 +226,11 @@ export function DayScheduleSwipe({
                 size="sm"
                 variant="ghost"
                 aria-label="Next day"
+                title={
+                  clampedOffset >= maxOffset
+                    ? 'End of the loaded schedule. Open the calendar for later dates.'
+                    : undefined
+                }
                 disabled={clampedOffset >= maxOffset}
                 onClick={() => goto(clampedOffset + 1)}
               >
@@ -188,9 +239,84 @@ export function DayScheduleSwipe({
             </div>
           </div>
 
-          {/* Swipeable day panel — pointer events, chevrons cover non-touch. */}
+          {/* Week map — a 7-day strip anchored on the day in view, each chip
+              dotted when that day holds events.
+              Without it the pager was blind: you could not tell whether the
+              next day held anything, so a sparse feed read as an empty
+              product, and on desktop the card was a wide box holding one
+              centred line with its chevrons ~1,000px from the day label
+              (audit 2026-07-24, P-01 / P-14). It doubles as the keyboard
+              affordance the chevron-only version never had. */}
           <div
-            className="min-w-0 touch-pan-y select-none overflow-hidden"
+            role="toolbar"
+            aria-label="Pick a day"
+            aria-orientation="horizontal"
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goto(clampedOffset - 1);
+              } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                goto(clampedOffset + 1);
+              }
+            }}
+            className="-mx-1 flex min-w-0 items-stretch gap-1 overflow-x-auto px-1 pb-1"
+          >
+            {Array.from({ length: 7 }, (_, i) => {
+              // Keep the selected day visible: window follows it once it
+              // passes the 4th slot instead of scrolling off the left edge.
+              const windowStart = Math.max(0, Math.min(clampedOffset - 3, maxOffset - 6));
+              const dayOffset = windowStart + i;
+              if (dayOffset > maxOffset) return null;
+              const key = addDaysToKey(todayKey as string, dayOffset);
+              const count = (byDay.get(key) ?? []).length;
+              const selected = dayOffset === clampedOffset;
+              const d = new Date(`${key}T00:00:00Z`);
+              return (
+                // eslint-disable-next-line helm/no-raw-button -- compact day cell inside a toolbar, not a <Button> pill (audit P-01)
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => goto(dayOffset)}
+                  aria-current={selected ? 'true' : undefined}
+                  aria-label={`${dayLabel(key, todayKey as string)}${
+                    count > 0 ? ` — ${count} event${count === 1 ? '' : 's'}` : ' — nothing scheduled'
+                  }`}
+                  className={cn(
+                    'flex min-h-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
+                    selected
+                      ? 'bg-accent-700 text-text-on-accent'
+                      : 'text-text-tertiary hover:bg-surface-sunken',
+                  )}
+                >
+                  <span className="font-fw-sans text-micro font-medium uppercase tracking-wide">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getUTCDay()]}
+                  </span>
+                  <span className="font-fw-mono text-caption font-semibold tabular-nums">
+                    {d.getUTCDate()}
+                  </span>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'h-1 w-1 rounded-full',
+                      count > 0
+                        ? selected
+                          ? 'bg-text-on-accent'
+                          : 'bg-accent-600'
+                        : 'bg-transparent',
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Swipeable day panel — pointer events, chevrons cover non-touch.
+              Arrow keys page it for keyboard users. */}
+          <div
+            aria-live="polite"
+            aria-label={`Schedule for ${label}`}
+            className="min-w-0 touch-pan-y select-none overflow-hidden rounded-fw-sm"
             onPointerDown={(e) => {
               dragStartX.current = e.clientX;
             }}
@@ -212,17 +338,24 @@ export function DayScheduleSwipe({
               animate={reduce ? undefined : { opacity: 1, x: 0 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               aria-live="polite"
+              // Reserve the height of ~2 event rows. Measured heights walked
+              // 258 -> 200 -> 271 as you paged, so every swipe shifted the
+              // whole page below by up to 71px, and the card visibly SHRANK
+              // the moment it finally had content — the empty state was taller
+              // than a real day (audit P-17).
+              className="min-h-[132px]"
             >
               {dayEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
-                  <CalendarClock aria-hidden className="h-5 w-5 text-text-tertiary" />
-                  <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
+                // One line, not a centred three-line illustration. A day with
+                // nothing on it should occupy LESS room than a day with
+                // something on it, not more.
+                <div className="flex items-center gap-2 px-2 py-3">
+                  <CalendarClock aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
+                  <p className="font-fw-sans text-body-sm text-text-secondary">
                     Nothing scheduled
-                  </p>
-                  <p className="font-fw-sans text-caption text-text-tertiary">
-                    {clampedOffset === 0
-                      ? 'A clear day — new events will show up here.'
-                      : 'Nothing on the books for this day yet.'}
+                    <span className="text-text-tertiary">
+                      {clampedOffset === 0 ? ' — a clear day.' : ' for this day yet.'}
+                    </span>
                   </p>
                 </div>
               ) : (

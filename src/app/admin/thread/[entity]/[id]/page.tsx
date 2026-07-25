@@ -22,7 +22,7 @@ const FEATURE_LABELS: Record<string, string> = Object.fromEntries(FEATURE_REGIST
 const LANE_META: Record<ThreadLane, { label: string; icon: typeof KeyRound; tone: string }> = {
   auth: { label: 'Auth', icon: KeyRound, tone: 'text-accent-700' },
   product: { label: 'Product', icon: Zap, tone: 'text-accent-600' },
-  error: { label: 'Error', icon: AlertTriangle, tone: 'text-fw-danger' },
+  error: { label: 'Error', icon: AlertTriangle, tone: 'text-fw-danger-ink' },
   lift: { label: 'Lift Lab', icon: Dumbbell, tone: 'text-warm-700' },
   roster: { label: 'Roster', icon: Users, tone: 'text-warm-600' },
   account: { label: 'Account', icon: Flag, tone: 'text-warm-500' },
@@ -130,7 +130,7 @@ async function Body({ kind, id }: { kind: ThreadEntityKind; id: string }) {
         </div>
 
         {degradedSources.length > 0 ? (
-          <p className="mt-3 border-t border-warm-200 pt-3 text-caption text-fw-warning">
+          <p className="mt-3 border-t border-warm-200 pt-3 text-caption text-fw-warning-ink">
             Some sources were unavailable this load ({degradedSources.join(', ')}) — the timeline below may be missing
             those events. Reload to retry.
           </p>

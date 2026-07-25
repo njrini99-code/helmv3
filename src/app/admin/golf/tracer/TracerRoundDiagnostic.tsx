@@ -198,7 +198,7 @@ export function TracerRoundDiagnostic({
           ) : null}
         </div>
         {fixResult ? (
-          <p className={cn('mt-2 text-xs', fixResult.ok ? 'text-fw-success' : 'text-fw-danger')}>{fixResult.message}</p>
+          <p className={cn('mt-2 text-xs', fixResult.ok ? 'text-fw-success-ink' : 'text-fw-danger-ink')}>{fixResult.message}</p>
         ) : null}
       </div>
     </div>
@@ -209,7 +209,7 @@ function Stat({ label, value, danger = false }: { label: string; value: string; 
   return (
     <div className="rounded-lg bg-surface-sunken px-2.5 py-2">
       <p className="text-eyebrow uppercase tracking-wider text-warm-400">{label}</p>
-      <p className={cn('font-fw-mono text-sm font-semibold tabular-nums', danger ? 'text-fw-danger' : 'text-warm-900')}>
+      <p className={cn('font-fw-mono text-sm font-semibold tabular-nums', danger ? 'text-fw-danger-ink' : 'text-warm-900')}>
         {value}
       </p>
     </div>

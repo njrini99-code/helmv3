@@ -50,6 +50,12 @@ export interface SelectProps
   className?: string;
   /** Composed children (Select.Group / Select.Item …). Ignored if `options` set. */
   children?: React.ReactNode;
+  /** Accessible name for the trigger button (forwarded to the Trigger). */
+  "aria-label"?: string;
+  /** Accessible name by reference (forwarded to the Trigger). */
+  "aria-labelledby"?: string;
+  /** Supplementary description (forwarded to the Trigger). */
+  "aria-describedby"?: string;
 }
 
 /**
@@ -61,6 +67,14 @@ function SelectRoot({
   size = "md",
   className,
   children,
+  // Labelling props belong on the TRIGGER, not the Root. `BaseSelect.Root` is
+  // a context provider with no DOM node, so anything spread onto it is
+  // silently discarded — 30 call sites wrote `<Select aria-label="…">` and
+  // shipped an unnamed button, which is what axe reported as `button-name`
+  // on /rounds (audit L6). Destructure them out and forward explicitly.
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
   ...rootProps
 }: SelectProps) {
   // Build a value->label lookup so <Select.Value> can render the selected
@@ -84,6 +98,9 @@ function SelectRoot({
     <BaseSelect.Root {...rootProps}>
       <BaseSelect.Trigger
         data-slot="select-trigger"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         className={cn(
           "flex w-full items-center justify-between gap-2 font-fw-sans rounded-fw-sm",
           "bg-surface-sunken border border-border-subtle text-text-primary text-left",

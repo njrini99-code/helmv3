@@ -139,7 +139,15 @@ export function FairwayCalendarMemberRail({
         ) : null}
         <div
           ref={scrollerRef}
-          className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5"
+          className={cn(
+            'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
+            // Reserve the chevron's own 28px gutter, and only while that
+            // chevron is actually shown — otherwise the overlay paints on top
+            // of the last avatar chip (audit L2). scroll-p* keeps
+            // scroll-snapping/`scrollIntoView` clear of the gutter too.
+            canScrollLeft && 'pl-7 scroll-pl-7',
+            canScrollRight && 'pr-7 scroll-pr-7',
+          )}
         >
         {/* ALL */}
         <Button
@@ -151,7 +159,7 @@ export function FairwayCalendarMemberRail({
           className={cn(
             'flex h-9 min-h-0 flex-shrink-0 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
             allSelected
-              ? 'bg-accent-500 text-text-on-accent shadow-flat'
+              ? 'bg-accent-700 text-text-on-accent shadow-flat'
               : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
           )}
         >

@@ -251,7 +251,7 @@ export function LineupBuilder({ roster, onSave, initialLineup, initialName }: Li
                         onDragStart={() => handleDragStart(slot.player!, index)}
                       >
                         <IconMoreVertical size={20} className="text-warm-400" />
-                        <Avatar
+                        <Avatar decorative
                           name={getFullName(slot.player.first_name, slot.player.last_name)}
                           src={slot.player.avatar_url || undefined}
                           size="sm"
@@ -304,7 +304,7 @@ export function LineupBuilder({ roster, onSave, initialLineup, initialName }: Li
                   >
                     <div className="flex items-center gap-3">
                       <IconMoreVertical size={16} className="text-warm-400 flex-shrink-0" />
-                      <Avatar
+                      <Avatar decorative
                         name={getFullName(player.first_name, player.last_name)}
                         src={player.avatar_url || undefined}
                         size="xs"

@@ -36,6 +36,13 @@ export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chil
   square?: boolean;
   /** Override the auto-generated initials. */
   fallback?: ReactNode;
+  /**
+   * Set when the avatar sits beside a visible name label. Suppresses the
+   * screen-reader name (and the image alt) so the name is announced once
+   * rather than twice — rows were reading "DB Dylan Brooks Dylan Brooks"
+   * because the sr-only span duplicated the adjacent label (audit M4).
+   */
+  decorative?: boolean;
 }
 
 const sizePx: Record<AvatarSize, string> = {
@@ -82,7 +89,7 @@ export function initialsFromName(name?: string | null): string {
 }
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
-  { className, src, name, alt, size = 'md', status, square = false, fallback, ...props },
+  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, ...props },
   ref,
 ) {
   const [errored, setErrored] = useState(false);
@@ -112,7 +119,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
         {showImage ? (
           <img
             src={src ?? undefined}
-            alt={alt ?? name ?? ''}
+            alt={decorative ? '' : (alt ?? name ?? '')}
             className="h-full w-full object-cover"
             onError={() => setErrored(true)}
             loading="lazy"
@@ -128,7 +135,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
           </svg>
         )}
         {/* Screen-reader name when the image carries no alt context */}
-        {!showImage && name && <span className="sr-only">{name}</span>}
+        {!showImage && name && !decorative && <span className="sr-only">{name}</span>}
       </span>
 
       {status && (
@@ -195,6 +202,9 @@ export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function
             'bg-surface-sunken text-text-secondary font-fw-mono font-semibold tabular-nums',
             sizePx[size],
           )}
+          // aria-label is prohibited on a generic-role element, so AT drops it.
+          // role="img" gives the chip a role that accepts a name (audit P-19).
+          role="img"
           aria-label={`${overflow} more`}
         >
           +{overflow}

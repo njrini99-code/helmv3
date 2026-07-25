@@ -50,12 +50,18 @@ export function SpineLedger({ rows, className }: SpineLedgerProps) {
             {row.value}
             {row.delta ? (
               <span
-                aria-label={deltaAriaLabel(row.label, row.delta)}
                 className={cn(
                   'inline-flex items-center gap-0.5 text-caption font-semibold',
                   row.delta.good ? 'text-accent-300' : 'text-text-tertiary',
                 )}
               >
+                {/*
+                  sr-only text, NOT aria-label: aria-label is prohibited on a
+                  generic-role element, so AT dropped it entirely and the
+                  direction was announced as silence — the glyph beside it is
+                  aria-hidden (audit P-19). Same pattern as TrendChip.
+                */}
+                <span className="sr-only">{deltaAriaLabel(row.label, row.delta)}</span>
                 <span aria-hidden="true">{DELTA_GLYPH[row.delta.direction]}</span>
               </span>
             ) : null}

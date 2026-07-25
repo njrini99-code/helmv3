@@ -120,7 +120,7 @@ export function StandingStrip(props: StandingStripProps) {
   // read used elsewhere on the same stats surfaces.
   const deltaToneClass =
     delta.tone === 'good' ? 'text-accent-600' :
-    delta.tone === 'bad'  ? 'text-fw-warning' :
+    delta.tone === 'bad'  ? 'text-fw-warning-ink' :
                             'text-text-tertiary';
 
   return (
@@ -152,9 +152,9 @@ export function StandingStrip(props: StandingStripProps) {
             className={cn(
               'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-caption font-bold tabular-nums',
               delta.tone === 'good'
-                ? 'bg-accent-500 text-text-on-accent'
+                ? 'bg-accent-700 text-text-on-accent'
                 : delta.tone === 'bad'
-                  ? 'bg-fw-warning-bg text-fw-warning'
+                  ? 'bg-fw-warning-bg text-fw-warning-ink'
                   : 'bg-inset text-text-secondary',
             )}
           >
@@ -259,9 +259,24 @@ function StripTrack({
   // here so both the tier-1 "You" badge above and the tier-2 dot/ticks
   // below read the SAME final position (nudging only one of the two would
   // make the badge point at a different spot than the dot it labels).
-  const rawMarkers: MarkerLayoutInput[] = [{ key: 'you', pct: clampPct(youPct) }];
-  if (pgaPct !== null) rawMarkers.push({ key: 'pga', pct: clampPct(pgaPct) });
-  if (teamPct !== null) rawMarkers.push({ key: 'team', pct: clampPct(teamPct) });
+  //
+  // ORDER BEFORE CLAMP (audit 2026-07-24, P-06). `clampPct` squashes every
+  // out-of-domain value onto the same band edge, so two markers below the
+  // domain both became 13% — and `layoutMarkerPositions` separates ties in
+  // ARRAY order, not by value. That silently INVERTED the comparison: on
+  // "SG: Total" (you -4.44, team -5.02) the You dot drew to the LEFT of the
+  // Team tick, contradicting both the numbers printed beside it and the
+  // card's own "Above team average" verdict — and "SG: Putting", where the
+  // player really was behind, rendered a pixel-identical chart.
+  //
+  // Ranking by the TRUE (unclamped) value first means the tie-break inside
+  // `layoutMarkerPositions` — a stable sort — preserves real value order, so
+  // clamping can never reorder two markers again.
+  const trueOrder: MarkerLayoutInput[] = [{ key: 'you', pct: youPct }];
+  if (pgaPct !== null) trueOrder.push({ key: 'pga', pct: pgaPct });
+  if (teamPct !== null) trueOrder.push({ key: 'team', pct: teamPct });
+  trueOrder.sort((a, b) => a.pct - b.pct);
+  const rawMarkers: MarkerLayoutInput[] = trueOrder.map((m) => ({ key: m.key, pct: clampPct(m.pct) }));
   const nudged = new Map(
     layoutMarkerPositions(rawMarkers, MARKER_MIN_GAP_PCT).map((p) => [p.key, clampPct(p.pct)]),
   );
@@ -281,7 +296,7 @@ function StripTrack({
           are — this is a structural guarantee, not a distance threshold. */}
       <div className="relative h-7" data-slot="you-badge-tier">
         <div
-          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-500 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
+          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-700 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
           style={{ left: `${you}%` }}
         >
           {youValue}

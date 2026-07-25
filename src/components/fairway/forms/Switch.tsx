@@ -41,7 +41,12 @@ const trackBase = cn(
   // keeps the slim track comfortably tappable on the tight notifications matrix.
   "before:absolute before:-inset-y-[0.625rem] before:inset-x-0 before:content-['']",
   "transition-[background-color,border-color] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
-  "data-[checked]:border-accent-500 data-[checked]:bg-accent-500",
+  // accent-700, not accent-500. The ON track is a UI COMPONENT, so WCAG 1.4.11
+  // wants 3:1 against what surrounds it — accent-500 measures 2.92:1 on the
+  // card and 2.67:1 on canvas, so "on" read as a washed-out mint rather than a
+  // decisive state. accent-700 is 5.70:1, and matches what H10 already did to
+  // the primary Button (2026-07-25).
+  "data-[checked]:border-accent-700 data-[checked]:bg-accent-700",
   "outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
   "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
 );

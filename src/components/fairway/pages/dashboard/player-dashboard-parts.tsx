@@ -174,7 +174,7 @@ export function TodayCard({
               className={cn(
                 'grid h-9 w-9 shrink-0 place-items-center rounded-fw-md',
                 leadTask.overdue
-                  ? 'bg-fw-warning-bg text-fw-warning'
+                  ? 'bg-fw-warning-bg text-fw-warning-ink'
                   : 'bg-surface text-text-tertiary',
               )}
             >
@@ -319,7 +319,7 @@ function formatRoundDate(date: string): string {
 
 function toParLabel(toPar: number): { text: string; tone: string } {
   if (toPar === 0) return { text: 'E', tone: 'text-text-secondary' };
-  if (toPar < 0) return { text: `${toPar}`, tone: 'text-fw-success' };
+  if (toPar < 0) return { text: `${toPar}`, tone: 'text-fw-success-ink' };
   return { text: `+${toPar}`, tone: 'text-text-secondary' };
 }
 
@@ -427,7 +427,7 @@ export function StandingCard({ ready }: { ready: boolean }) {
             : 'Log a few rounds to compare your game against your team and the PGA baseline.'}
         </p>
       </div>
-      <span className="mt-3 inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700">
+      <span className="mt-3 inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700">
         View standing
         <ChevronRight aria-hidden className="h-3.5 w-3.5" />
       </span>

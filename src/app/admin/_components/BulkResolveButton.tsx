@@ -56,7 +56,7 @@ export function BulkResolveButton({
       >
         {isPending ? 'Resolving…' : `Resolve all (filtered) · ${eventIds.length}`}
       </Button>
-      {error ? <p className="text-xs text-fw-danger">{error}</p> : null}
+      {error ? <p className="text-xs text-fw-danger-ink">{error}</p> : null}
     </div>
   );
 }

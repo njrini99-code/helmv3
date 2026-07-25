@@ -70,7 +70,7 @@ const STATUS_TONE: Record<TrustStatus, TrustChipTone> = {
   },
   // Underperforming — danger red: a MEASURED regression (the only red use).
   underperforming: {
-    pill: 'bg-fw-danger-bg text-fw-danger',
+    pill: 'bg-fw-danger-bg text-fw-danger-ink',
     dot: 'bg-fw-danger',
     word: 'Underperforming',
   },

@@ -421,7 +421,7 @@ export default function CampDetailClient() {
                       squeezed off. */}
                   <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4">
                     <div className="flex min-w-0 flex-1 items-center gap-4">
-                      <Avatar
+                      <Avatar decorative
                         name={getFullName(reg.player?.first_name, reg.player?.last_name)}
                         src={reg.player?.avatar_url}
                         size="md"

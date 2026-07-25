@@ -50,7 +50,7 @@ export function ConfirmDialog({
   // every consumer (live Fairway + retiring legacy fork) with no warm/primary.
   const variantStyles = {
     danger: {
-      icon: 'bg-fw-danger-bg text-fw-danger',
+      icon: 'bg-fw-danger-bg text-fw-danger-ink',
       button: 'bg-fw-danger hover:bg-fw-danger/90 text-text-on-accent',
       // Destructive confirm: Cancel must read QUIET so the eye doesn't land on
       // the safe action first — a bordered/shadowed `secondary` Cancel next to
@@ -61,7 +61,7 @@ export function ConfirmDialog({
     warning: {
       // Canonical Fairway amber tokens (fw-warning) — tinted tile + solid fill,
       // mirroring the danger recipe. No raw warning hex.
-      icon: 'bg-fw-warning-bg text-fw-warning',
+      icon: 'bg-fw-warning-bg text-fw-warning-ink',
       button: 'bg-fw-warning hover:bg-fw-warning/90 text-text-on-accent',
       cancelVariant: 'secondary' as const,
     },
@@ -69,7 +69,7 @@ export function ConfirmDialog({
       icon: 'bg-surface-sunken text-text-secondary',
       // Brand light green (#16A34A = accent-500), matching the Fairway primary
       // button. Intentional brand decision — do NOT re-darken to accent-700.
-      button: 'bg-accent-500 hover:bg-accent-600 text-text-on-accent',
+      button: 'bg-accent-700 hover:bg-accent-800 text-text-on-accent',
       cancelVariant: 'secondary' as const,
     },
   };
@@ -124,7 +124,7 @@ export function ConfirmDialog({
               type="button"
               onClick={handleConfirm}
               disabled={isLoading}
-              className="w-full px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-fw-danger transition-colors active:bg-surface-sunken disabled:opacity-50"
+              className="w-full px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-fw-danger-ink transition-colors active:bg-surface-sunken disabled:opacity-50"
             >
               {isLoading ? 'Please wait…' : confirmLabel}
             </button>

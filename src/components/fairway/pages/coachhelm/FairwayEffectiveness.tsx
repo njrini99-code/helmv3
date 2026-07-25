@@ -279,7 +279,7 @@ function TrustTrendGlyph({ trend }: { trend: TrustSignal['recentTrend'] }) {
   }
   if (trend === 'down') {
     return (
-      <span className="inline-flex items-center gap-1 text-fw-danger" title="Recent outcomes trending down">
+      <span className="inline-flex items-center gap-1 text-fw-danger-ink" title="Recent outcomes trending down">
         <TrendingDown className="h-3.5 w-3.5" aria-hidden />
         <span className="sr-only">Trending down</span>
       </span>
@@ -725,7 +725,7 @@ function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; d
             <span
               className={cn(
                 'mb-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-fw-sans text-caption font-semibold',
-                climbing ? 'bg-fw-success-bg text-fw-success' : 'bg-surface-sunken text-text-tertiary',
+                climbing ? 'bg-fw-success-bg text-fw-success-ink' : 'bg-surface-sunken text-text-tertiary',
               )}
             >
               <span aria-hidden>{climbing ? '↗' : '→'}</span>

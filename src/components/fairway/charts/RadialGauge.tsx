@@ -298,8 +298,8 @@ export function RadialGauge({
                 'mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1',
                 'font-fw-sans text-caption font-semibold',
                 onGoodSide
-                  ? 'bg-fw-success-bg text-fw-success'
-                  : 'bg-fw-warning-bg text-fw-warning',
+                  ? 'bg-fw-success-bg text-fw-success-ink'
+                  : 'bg-fw-warning-bg text-fw-warning-ink',
               )}
             >
               <span

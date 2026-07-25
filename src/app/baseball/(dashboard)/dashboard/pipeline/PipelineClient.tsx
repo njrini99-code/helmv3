@@ -541,7 +541,7 @@ function PipelineListRow({
               <span>, so Avatar + div as siblings stack vertically (see
               Button's CHILDREN CONTRACT doc). Same pattern as the card row. */}
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Avatar src={item.player?.avatar_url} name={name} size="md" />
+            <Avatar decorative src={item.player?.avatar_url} name={name} size="md" />
             <div className="min-w-0">
               <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
               <span className="text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</span>
@@ -669,7 +669,7 @@ function PipelineListCard({
               (MessagesClient.tsx, AcademicsClient.tsx) instead of relying on
               the Button's auto-wrapping children slot. */}
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Avatar src={item.player?.avatar_url} name={name} size="md" />
+            <Avatar decorative src={item.player?.avatar_url} name={name} size="md" />
             <div className="min-w-0 flex-1">
               <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
               <span className="block truncate text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</span>

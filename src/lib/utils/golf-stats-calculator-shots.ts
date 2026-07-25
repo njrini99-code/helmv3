@@ -1286,6 +1286,17 @@ export function calculateStatsFromShots(
     // aggregates additionally require every hole to carry a real score
     // (see hasCompleteScores in aggregateRoundStats) so a partial sum can
     // never masquerade as a full round total.
+    //
+    // Findings #1/#4/#5 (AUDIT-0724 stats-visual-accuracy.md): this Σgolf_holes
+    // .score IS the canonical round total — `golf_rounds.total_score` is only
+    // a denormalized copy of this same sum, written once at submission time,
+    // that can drift stale by ±1 stroke if a hole is ever corrected afterward
+    // (see src/lib/golf/round-total.ts for the full root-cause + the DB
+    // trigger gap). Dashboard/Rounds-page reads have been switched to prefer
+    // the holes-derived value too (via that helper) so this Stats-page engine
+    // and those surfaces agree; do NOT "fix" this line to read
+    // `round.total_score` instead — that would make this engine wrong for the
+    // rounds where the drift exists.
     const totalScore = holeStats.reduce((sum, h) => sum + (h.score ?? 0), 0);
 
     roundsWithStats.push({
@@ -2843,6 +2854,24 @@ function aggregateRoundStats(rounds: Array<{
   // the DB cache (update_player_stats_strokes_gained divides every category by
   // COUNT of rounds with strokes_gained_total IS NOT NULL) — dividing by ALL
   // rounds in the window let shot-untracked rounds dilute the averages.
+  //
+  // Finding #8 (AUDIT-0724): this recomputes every shot's SG live, on every
+  // call, against the CURRENT sg-benchmarks table. `golf_player_stats_cache
+  // .sg_putting_per_round` instead sums the PERSISTED per-round
+  // `golf_round_stats_cache.strokes_gained_putting` values (frozen at
+  // whatever benchmark version was live when each round was scored/cached —
+  // see update_player_stats_strokes_gained(p_player_id) in
+  // 20260527000000_prod_public_baseline.sql:6631-6698) and divides by round
+  // count. A ~0.03-stroke (~0.8%) gap between the two (e.g. -3.88 live vs
+  // -3.91 cached) is therefore EXPECTED whenever the benchmark table has been
+  // recalibrated since a round's cache row was last written (see the
+  // 2026-06-06 SG recalibration) — it is not a bug in this function, and
+  // recomputing live is the more accurate of the two. Do not silently swap
+  // this to read the cache instead: that would trade "always current" for
+  // "matches a possibly-stale snapshot." If exact parity with the cache is
+  // ever required, the fix belongs in the caller (StatsBento.tsx's
+  // Priorities panel) choosing to read golf_player_stats_cache directly for
+  // that one figure, not here.
   stats.sgTeePerRound = sgTeeCount > 0 ? safeAverage(sgTee, roundsWithSg) : null;
   stats.sgApproachPerRound = sgApproachCount > 0 ? safeAverage(sgApproach, roundsWithSg) : null;
   stats.sgAroundGreenPerRound = sgAroundGreenCount > 0 ? safeAverage(sgAroundGreen, roundsWithSg) : null;

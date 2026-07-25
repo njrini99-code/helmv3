@@ -97,7 +97,7 @@ export function StuckRoundsPanel({ rounds }: { rounds: readonly StuckRound[] }) 
         const isPending = pendingId === r.round_id;
         return (
           <li key={r.round_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5 text-sm">
-            <AlertTriangle size={15} className="shrink-0 text-fw-warning" aria-hidden />
+            <AlertTriangle size={15} className="shrink-0 text-fw-warning-ink" aria-hidden />
             <div className="min-w-0 flex-1 basis-full sm:basis-auto">
               <p className="truncate font-medium text-warm-900">
                 {r.player_name}
@@ -107,7 +107,7 @@ export function StuckRoundsPanel({ rounds }: { rounds: readonly StuckRound[] }) 
                 hole {r.current_hole ?? '?'}/{r.expected_holes} · {formatStuckDuration(r.hours_stuck)} · last touched{' '}
                 <LocalTime iso={r.updated_at} variant="datetime" />
               </p>
-              {fb ? <p className="mt-0.5 text-xs text-fw-danger">{fb.message}</p> : null}
+              {fb ? <p className="mt-0.5 text-xs text-fw-danger-ink">{fb.message}</p> : null}
             </div>
             {confirmingId === r.round_id ? (
               <div className="flex items-center gap-2">

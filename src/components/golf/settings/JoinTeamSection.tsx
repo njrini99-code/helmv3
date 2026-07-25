@@ -245,7 +245,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                   className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken p-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-fw-warning-bg text-fw-warning">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-fw-warning-bg text-fw-warning-ink">
                       <IconClock size={20} aria-hidden />
                     </span>
                     <div className="min-w-0">
@@ -325,8 +325,8 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
 
           {error && (
             <div className="flex items-center gap-2 rounded-fw-sm border border-fw-danger/30 bg-fw-danger-bg p-3">
-              <IconAlertCircle size={16} className="shrink-0 text-fw-danger" aria-hidden />
-              <p className="font-fw-sans text-body-sm text-fw-danger">{error}</p>
+              <IconAlertCircle size={16} className="shrink-0 text-fw-danger-ink" aria-hidden />
+              <p className="font-fw-sans text-body-sm text-fw-danger-ink">{error}</p>
             </div>
           )}
 

@@ -24,7 +24,7 @@ const GRADE_TONE: Record<TeamGrade, string> = {
   A: 'border-accent-500 bg-accent-50 text-accent-700',
   B: 'border-accent-300 bg-accent-50 text-accent-700',
   C: 'border-fw-warning bg-fw-warning-bg text-warm-800',
-  D: 'border-fw-danger bg-fw-danger-bg text-fw-danger',
+  D: 'border-fw-danger bg-fw-danger-bg text-fw-danger-ink',
 };
 
 const ERROR_SEVERITY_TONE: Record<string, FwStatusTone> = {
@@ -57,7 +57,7 @@ function GraphiteStat({
       <span
         className={cn(
           'font-fw-mono text-2xl font-bold tabular-nums',
-          tone === 'danger' ? 'text-fw-danger' : 'text-warm-900',
+          tone === 'danger' ? 'text-fw-danger-ink' : 'text-warm-900',
         )}
       >
         {value}
@@ -227,7 +227,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
                   >
                     {e.title}
                   </Link>
-                  <span className="font-fw-mono text-xs font-semibold tabular-nums text-fw-danger">
+                  <span className="font-fw-mono text-xs font-semibold tabular-nums text-fw-danger-ink">
                     {e.occurrences}×
                   </span>
                   <span className="font-fw-mono text-xs tabular-nums text-warm-500">

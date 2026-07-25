@@ -153,8 +153,16 @@ export const ChartFrame = React.forwardRef<HTMLDivElement, ChartFrameProps>(func
             style={{ height }}
             className="relative w-full"
           >
-            {/* The inner chart is decorative for SR (the table is the readout). */}
-            <div aria-hidden className="absolute inset-0">
+            {/*
+              The inner chart is decorative for SR (the table is the readout).
+              `inert` — not just aria-hidden — because recharts injects
+              tabindex="0" nodes in here, and focusable content inside an
+              aria-hidden subtree is an axe `aria-hidden-focus` violation and a
+              real keyboard trap: Tab lands on a node no screen reader can
+              describe. inert removes the subtree from BOTH the tab order and
+              the a11y tree (audit P-20).
+            */}
+            <div aria-hidden inert className="absolute inset-0">
               {children}
             </div>
           </div>
@@ -182,6 +190,8 @@ function ViewToggle({ showTable, onToggle }: { showTable: boolean; onToggle: () 
       data-slot="chart-view-toggle"
       className={cn(
         'inline-flex h-7 min-w-[24px] items-center gap-1.5 rounded-fw-sm px-2.5',
+        // 28px visual chip, 44px tap target via invisible hit-slop (audit M10).
+        "relative before:absolute before:-inset-2 before:content-['']",
         'font-fw-sans text-caption font-medium',
         'text-text-secondary',
         'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',

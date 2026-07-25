@@ -26,7 +26,7 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
       />
       <div
         className="mx-auto grid max-w-[1320px] items-center gap-[clamp(32px,5vw,72px)] px-[clamp(20px,4vw,64px)] pt-[clamp(40px,7vw,96px)] pb-[clamp(56px,7vw,110px)]"
-        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))' }}
       >
         <div className="max-w-[600px]">
           <h1

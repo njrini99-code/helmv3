@@ -526,7 +526,7 @@ function CoachPicks({
                             size="sm"
                             onClick={() => handleRemove(c)}
                             busy={isPending}
-                            className="text-fw-danger hover:text-fw-danger"
+                            className="text-fw-danger-ink hover:text-fw-danger-ink"
                           >
                             Remove
                           </Button>

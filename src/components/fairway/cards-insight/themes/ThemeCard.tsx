@@ -28,8 +28,8 @@
  * category label), the eyebrow is dropped rather than repeating it verbatim.
  *
  * The magnitude pill reuses the `CauseEffectCard` pill placement from
- * `FairwayStatsCockpit.tsx`: `bg-fw-warning-bg text-fw-warning` + TrendingDown
- * for a leak, `bg-fw-success-bg text-fw-success` + TrendingUp for a strength.
+ * `FairwayStatsCockpit.tsx`: `bg-fw-warning-bg text-fw-warning-ink` + TrendingDown
+ * for a leak, `bg-fw-success-bg text-fw-success-ink` + TrendingUp for a strength.
  * Copy is human prose in `font-fw-sans` (tabular-nums on the digits only) —
  * NOT `font-fw-mono` debug notation (no `≈`, no `/rd`, no parenthetical
  * ceiling note cramped onto the same line).
@@ -71,8 +71,8 @@ function describeTrend(trend: ThemeTrend): TrendChipDisplay {
   const magnitude = Math.abs(trend.delta).toFixed(1);
   // Higher SG is better → improving is the GOOD direction (success/green, up arrow).
   return trend.direction === 'improving'
-    ? { label: 'Improving', cls: 'text-fw-success', arrow: '↗', magnitude }
-    : { label: 'Declining', cls: 'text-fw-warning', arrow: '↘', magnitude };
+    ? { label: 'Improving', cls: 'text-fw-success-ink', arrow: '↗', magnitude }
+    : { label: 'Declining', cls: 'text-fw-warning-ink', arrow: '↘', magnitude };
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -192,8 +192,8 @@ export function ThemeCard({
           <span
             className={
               isStrength
-                ? 'inline-flex w-fit max-w-full flex-shrink-0 flex-wrap items-center gap-1.5 rounded-full bg-fw-success-bg px-2.5 py-1 font-fw-sans text-caption font-medium text-fw-success'
-                : 'inline-flex w-fit max-w-full flex-shrink-0 flex-wrap items-center gap-1.5 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-sans text-caption font-medium text-fw-warning'
+                ? 'inline-flex w-fit max-w-full flex-shrink-0 flex-wrap items-center gap-1.5 rounded-full bg-fw-success-bg px-2.5 py-1 font-fw-sans text-caption font-medium text-fw-success-ink'
+                : 'inline-flex w-fit max-w-full flex-shrink-0 flex-wrap items-center gap-1.5 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-sans text-caption font-medium text-fw-warning-ink'
             }
           >
             {isStrength ? (

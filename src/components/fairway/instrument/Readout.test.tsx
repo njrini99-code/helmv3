@@ -33,7 +33,11 @@ describe('Readout — awaiting state never uses a broken slash-opacity class', (
     const dashWrapper = dash!.parentElement!;
     expect(dashWrapper.className).not.toMatch(BROKEN_CLASS_PATTERN);
     expect(dashWrapper.className).toContain('text-text-tertiary');
-    expect(dashWrapper.className).toContain('opacity-70');
+    // NOT `opacity-70` any more. The slash-opacity guard above is still the
+    // point of this test, but the plain-opacity WORKAROUND was itself dimming
+    // an already-calibrated token below 4.5:1 (audit P-26), so the awaiting
+    // state now relies on text-text-tertiary alone.
+    expect(dashWrapper.className).not.toContain('opacity-');
   });
 
   it('the awaiting label carries the working muted color class, never the broken one', () => {
@@ -43,6 +47,6 @@ describe('Readout — awaiting state never uses a broken slash-opacity class', (
     const label = getByText('Does a 70% call land 70%?');
     expect(label.className).not.toMatch(BROKEN_CLASS_PATTERN);
     expect(label.className).toContain('text-text-tertiary');
-    expect(label.className).toContain('opacity-80');
+    expect(label.className).not.toContain('opacity-');
   });
 });

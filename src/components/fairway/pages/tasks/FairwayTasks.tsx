@@ -574,7 +574,7 @@ export function FairwayTasks({
                         {/* P288 — on-system text tokens (no legacy warm-* class). The
                             warning surface is carried by bg-fw-warning-bg; the numerals
                             stay readable on it (text-primary ≈ 13:1, text-secondary ≈ 4.9:1,
-                            both clear WCAG AA — text-fw-warning would only be ~2:1 here). */}
+                            both clear WCAG AA — text-fw-warning-ink would only be ~2:1 here). */}
                         <p className="font-fw-display text-h3 font-medium tabular-nums text-text-primary">
                           {stats.overdue_tasks}
                         </p>
@@ -948,9 +948,9 @@ function FairwayTaskCard({
               <PopoverPanel.Separator />
               <PopoverPanel.Item
                 onClick={() => setPendingDelete(true)}
-                className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+                className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
               >
-                <IconTrash size={18} className="text-fw-danger" />
+                <IconTrash size={18} className="text-fw-danger-ink" />
                 Delete task
               </PopoverPanel.Item>
             </PopoverPanel>
@@ -978,6 +978,13 @@ function FairwayTaskCard({
             aria-valuenow={Math.round(completionRate)}
             aria-valuemin={0}
             aria-valuemax={100}
+            // A progressbar needs an accessible NAME, not just a value — /tasks
+            // shipped 8 of these and a screen reader announced eight identical
+            // unnamed "42%" bars with no way to tell which task each belonged
+            // to (audit 2026-07-24, M8). aria-valuetext also replaces the bare
+            // number with the count the sighted label already shows.
+            aria-label={`${task.title} — subtask progress`}
+            aria-valuetext={`${completedCount} of ${totalCount} subtasks completed`}
           >
             <div
               className="h-full rounded-full bg-accent-500 transition-[width] duration-300 motion-reduce:transition-none"
@@ -994,7 +1001,7 @@ function FairwayTaskCard({
             <span
               className={cn(
                 'inline-flex items-center gap-1.5 tabular-nums',
-                isOverdue ? 'text-fw-danger' : 'text-text-secondary',
+                isOverdue ? 'text-fw-danger-ink' : 'text-text-secondary',
               )}
               suppressHydrationWarning
             >

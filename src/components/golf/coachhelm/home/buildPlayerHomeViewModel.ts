@@ -374,16 +374,52 @@ export function summarizeThemeCauseCounts(themes: ReadonlyArray<ThemeCauseCounts
 export interface TrendSignalChip {
   tone: SignalTone;
   label: string;
+  /**
+   * Player-facing prose for the cell body.
+   *
+   * The bento used to print the humanized enum itself underneath the chip, so
+   * the card read "Declining" over the body text "Strong declining" — the raw
+   * signal name showing through as if it were a sentence (audit P-27).
+   */
+  sentence: string;
 }
 
 const TREND_SIGNAL_CHIPS: Record<string, TrendSignalChip> = {
-  'strong improving': { tone: 'hot', label: 'Improving' },
-  'short term spike': { tone: 'hot', label: 'Spiking' },
-  'strong declining': { tone: 'watch', label: 'Declining' },
-  'short term dip': { tone: 'watch', label: 'Dipping' },
-  'trajectory change': { tone: 'watch', label: 'Shifting' },
-  mixed: { tone: 'quiet', label: 'Mixed signals' },
-  stable: { tone: 'quiet', label: 'Stable' },
+  'strong improving': {
+    tone: 'hot',
+    label: 'Improving',
+    sentence: 'Your scoring has moved in the right direction across recent windows.',
+  },
+  'short term spike': {
+    tone: 'hot',
+    label: 'Spiking',
+    sentence: 'A sharp recent gain — too new to call a trend, worth protecting.',
+  },
+  'strong declining': {
+    tone: 'watch',
+    label: 'Declining',
+    sentence: 'Your scoring has slipped across recent windows. Worth a look.',
+  },
+  'short term dip': {
+    tone: 'watch',
+    label: 'Dipping',
+    sentence: 'A short-term dip against an otherwise steady baseline.',
+  },
+  'trajectory change': {
+    tone: 'watch',
+    label: 'Shifting',
+    sentence: 'Your trajectory changed direction recently.',
+  },
+  mixed: {
+    tone: 'quiet',
+    label: 'Mixed signals',
+    sentence: 'Windows disagree — some parts of your game are moving, others are flat.',
+  },
+  stable: {
+    tone: 'quiet',
+    label: 'Stable',
+    sentence: 'Holding steady across recent windows.',
+  },
 };
 
 export function classifyTrendSignal(trendSummary: string | null | undefined): TrendSignalChip | null {
