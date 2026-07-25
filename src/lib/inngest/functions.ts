@@ -1,6 +1,8 @@
 import type { InngestFunction } from 'inngest';
 import { inngest } from './client';
 import { logServerException } from '@/lib/server-error-logger';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 
 /**
  * Inngest function registry.
@@ -73,37 +75,74 @@ export const weeklyHealthPing: InngestFunction.Any = inngest.createFunction(
     }),
 );
 
+interface CoachHelmRoundSubmittedEventData {
+  roundId: string;
+  playerId: string;
+}
+
 /**
- * Example: event-driven workflow. A round-completion event triggers
- * a CoachHelm review pass with step-level retries on the LLM call.
+ * Durable post-round CoachHelm trigger (2026-07-25, Fix 3 of the CoachHelm
+ * remediation plan). Runs `postRoundTrigger` off an Inngest event instead of
+ * `after()` — see the routing branch in `submitGolfRoundComprehensive`
+ * (src/app/golf/actions/golf.ts), which sends this event when
+ * `isInngestConfigured()` is true and falls back to calling
+ * `postRoundTrigger` directly (today's exact behavior) otherwise.
  *
  * Emit with:
  *   await inngest.send({
- *     name: 'round/completed',
- *     data: { roundId, playerId, teamId },
+ *     name: 'coachhelm/round.submitted',
+ *     data: { roundId, playerId },
  *   });
  *
- * Uncomment + implement when integrating with the round-completion
- * flow. The shape here is illustrative.
+ * Deliberately NO static event `id` on the send() call above and NO
+ * function-level `idempotency` config here. A coach can legitimately
+ * resubmit the same round (fix a miskeyed hole via
+ * `submitGolfRoundComprehensive(roundData, existingRoundId)`) and today
+ * that reliably re-triggers a fresh CoachHelm pass through the direct path
+ * — relied-upon behavior. A static per-round id + `idempotency:
+ * 'event.data.roundId'` would silently dedupe that second submission
+ * inside Inngest's ~24h idempotency window: no error, no fallback (send()
+ * doesn't throw on a dedupe), and `coachhelm_analyzed_at` is already
+ * non-NULL from the first pass so the safety-net cron never picks it up
+ * either — reproducing the exact "stale insight, silent no-op, no
+ * backstop" defect class this whole mission exists to eliminate, in a
+ * subtler place. The real requirement — never run two analyses of the SAME
+ * round concurrently — is expressed by `concurrency` below instead:
+ * Inngest's own retry model already prevents duplicate *independent* runs
+ * from a single event without an idempotency key layered on top.
  */
-// export const onRoundCompleted = inngest.createFunction(
-//   { id: 'on-round-completed', retries: 3 },
-//   { event: 'round/completed' },
-//   async ({ event, step }) => {
-//     const stats = await step.run('compute-strokes-gained', async () => {
-//       // ... call your scoring lib ...
-//     });
-//
-//     const review = await step.run('compose-round-review', async () => {
-//       // ... call your LLM composer with citation enforcement ...
-//     });
-//
-//     await step.run('persist-review', async () => {
-//       // ... upsert into golf_round_reviews ...
-//     });
-//
-//     return { roundId: event.data.roundId, reviewId: review.id };
-//   },
-// );
+export const onCoachHelmRoundSubmitted: InngestFunction.Any = inngest.createFunction(
+  {
+    id: 'coachhelm-round-submitted',
+    triggers: [{ event: 'coachhelm/round.submitted' }],
+    concurrency: [
+      { scope: 'fn', key: 'event.data.roundId', limit: 1 },
+      { scope: 'fn', limit: 3 },
+    ],
+    retries: 3,
+    onFailure: async ({ error }: { error: Error }) => {
+      await logServerException(error, { action: 'coachhelm-round-submitted', source: 'background_job' }, 'error');
+    },
+  },
+  async ({ event, step }) =>
+    withBridgeLogging('coachhelm-round-submitted', async () => {
+      const { roundId, playerId } = event.data as CoachHelmRoundSubmittedEventData;
+      return step.run('post-round-trigger', async () => {
+        const admin = createAdminClient();
+        return postRoundTrigger(admin, {
+          playerId,
+          roundId,
+          triggerReason: 'round_submitted',
+        });
+      });
+    }),
+);
 
-export const functions = [weeklyHealthPing];
+// 2026-07-25: no baseball CoachHelm function is registered here yet —
+// src/app/baseball/actions/coachhelm.ts:13 and
+// src/lib/baseball/coachhelm/outcome-sweep.ts:15 both reference a future
+// "Inngest scheduled sweep (src/lib/inngest/functions.ts)" as planned, not
+// present. Confirmed by reading this file: only weeklyHealthPing existed
+// before this change. When that baseball function lands, add it to the
+// array below alongside these two rather than replacing either entry.
+export const functions = [weeklyHealthPing, onCoachHelmRoundSubmitted];

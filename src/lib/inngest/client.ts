@@ -19,3 +19,20 @@ export const inngest = new Inngest({
   id: 'helmv3',
   // env is detected from NODE_ENV; explicit override only if needed.
 });
+
+/**
+ * True only when both env vars needed for Inngest to actually deliver
+ * events are present. Vercel bakes env vars into a deployment at deploy
+ * time, so this reflects whatever was set when the CURRENT deployment was
+ * built — a key added in the dashboard afterward has no effect until the
+ * next deploy.
+ *
+ * Single source of truth for "is Inngest wired" (2026-07-25, Fix 3 of the
+ * CoachHelm remediation plan) — both the golf round-submit routing branch
+ * (src/app/golf/actions/golf.ts) and the admin Bridge jobs board
+ * (src/lib/admin/data/jobs.ts) call this instead of each re-deriving the
+ * same boolean from process.env, so the two can't silently drift apart.
+ */
+export function isInngestConfigured(): boolean {
+  return Boolean(process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY);
+}

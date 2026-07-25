@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isInngestConfigured } from '@/lib/inngest/client';
 import {
   CRON_REGISTRY,
   classifyCronStatus,
@@ -153,6 +154,9 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       errorLogs: errorLogsCount.count ?? 0,
       jobLogs: jobLogsCount.count ?? 0,
     },
-    inngestActivated: Boolean(process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY),
+    // 2026-07-25: single source of truth moved to isInngestConfigured()
+    // (src/lib/inngest/client.ts) so this board and the golf round-submit
+    // routing branch can't silently drift onto two different booleans.
+    inngestActivated: isInngestConfigured(),
   };
 }

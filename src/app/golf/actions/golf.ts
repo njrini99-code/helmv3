@@ -7,6 +7,7 @@ import { derivePlayerQualifierProgress } from './qualifier-progress';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
+import { inngest, isInngestConfigured } from '@/lib/inngest/client';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -25,7 +26,7 @@ import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 // docs/architecture/coachhelm-evidence-contract.md and Plan 04. The previous
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
-import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -1930,6 +1931,54 @@ async function submitGolfRoundComprehensiveImpl(
       // refresh warned). postRoundTrigger writes terminal state to
       // golf_rounds.coachhelm_{analyzed,failed}_at so the safety-net cron can
       // recover deterministically if the after-callback dies.
+      //
+      // 2026-07-25: Fix 3 of the CoachHelm remediation plan. `after()` is
+      // fire-and-forget and NOT durable — if this instance is torn down
+      // before postRoundTrigger finishes, it silently never ran, no error,
+      // no failure flag. That's how 206 of 290 rounds went unanalyzed. When
+      // Inngest is configured (INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY, set
+      // in Vercel Production BEFORE this deploy — Vercel bakes env vars in
+      // at deploy time), route through it instead for retries + durability.
+      // When it's NOT configured, or the send itself fails, fall through to
+      // the exact direct call below — byte-for-byte identical to today's
+      // behavior. Never silently stop analyzing rounds because keys are
+      // absent; that would be strictly worse than the status quo.
+      if (isInngestConfigured()) {
+        try {
+          await inngest.send({
+            name: 'coachhelm/round.submitted',
+            data: { roundId: backgroundRoundId, playerId: backgroundPlayerId },
+          });
+          return;
+        } catch (err) {
+          await logServerError(
+            `Failed to send coachhelm/round.submitted to Inngest, falling back to direct postRoundTrigger: ${err instanceof Error ? err.message : String(err)}`,
+            {
+              action: 'submitGolfRoundComprehensive.inngestSendFailed',
+              featureArea: 'coachhelm',
+              roundId: backgroundRoundId,
+              playerId: backgroundPlayerId,
+              userId: cacheUserId,
+              userEmail: cacheUserEmail,
+              extra: { stack: err instanceof Error ? err.stack : undefined },
+            },
+            'warning',
+          );
+        }
+      } else {
+        await logServerEvent(
+          'Inngest not configured for round submit (INNGEST_EVENT_KEY/INNGEST_SIGNING_KEY unset) — using direct postRoundTrigger',
+          {
+            action: 'submitGolfRoundComprehensive.inngestNotConfigured',
+            featureArea: 'coachhelm',
+            roundId: backgroundRoundId,
+            playerId: backgroundPlayerId,
+            skipSentry: true,
+          },
+          'info',
+        );
+      }
+
       const admin = createAdminClient();
       await postRoundTrigger(admin, {
         playerId: backgroundPlayerId,

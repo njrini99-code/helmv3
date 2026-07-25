@@ -22,6 +22,15 @@
  *      rows that are not yet stale.
  *   4. The terminal-state gate itself (analyzed/failed already set) still
  *      excludes rows, unchanged from before.
+ *
+ * 2026-07-25 addition (Fix 3 companion change, §1/§3 of the same plan):
+ * this route also gained a MIN_AGE_MS floor (`.lte('created_at', ...)`) so
+ * the cron doesn't race a round still inside its first Inngest attempt's
+ * own retry backoff window. Every `created_at` fixture below that predates
+ * this change was seeded at or near "now" (irrelevant before the floor
+ * existed) — those are shifted to `OLD_ENOUGH_MS` ago so they stay
+ * eligible under the new filter without changing what each test is
+ * actually asserting. A dedicated MIN_AGE_MS test is added at the bottom.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
@@ -50,6 +59,10 @@ const postRoundTriggerMock = vi.mocked(postRoundTrigger);
 type Row = Record<string, unknown>;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+// Comfortably past the route's MIN_AGE_MS floor (10 minutes) without
+// tying every fixture to that exact constant.
+const OLD_ENOUGH_MS = 20 * MINUTE_MS;
 
 function seed(golfRounds: Row[]) {
   fake = createFakeSupabase({ tables: { golf_rounds: golfRounds } });
@@ -123,6 +136,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({
           data: null,
@@ -197,7 +211,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
       pendingRound({
         id: `r${i}`,
         player_id: `p${i}`,
-        created_at: new Date(Date.now() - i * 1000).toISOString(),
+        created_at: new Date(Date.now() - OLD_ENOUGH_MS - i * 1000).toISOString(),
       }),
     );
     seed(rounds);
@@ -212,7 +226,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
   });
 
   it('counts rejected postRoundTrigger calls as failed', async () => {
-    seed([pendingRound({ id: 'r1', player_id: 'p1', created_at: new Date().toISOString() })]);
+    seed([pendingRound({ id: 'r1', player_id: 'p1', created_at: new Date(Date.now() - OLD_ENOUGH_MS).toISOString() })]);
     postRoundTriggerMock.mockRejectedValueOnce(new Error('engine_boom'));
 
     const res = await callGet();
@@ -223,7 +237,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
   });
 
   it('counts structured postRoundTrigger failures as failed', async () => {
-    seed([pendingRound({ id: 'r1', player_id: 'p1', created_at: new Date().toISOString() })]);
+    seed([pendingRound({ id: 'r1', player_id: 'p1', created_at: new Date(Date.now() - OLD_ENOUGH_MS).toISOString() })]);
     postRoundTriggerMock.mockResolvedValueOnce({ success: false, error: 'team disabled coachhelm' });
 
     const res = await callGet();
@@ -231,5 +245,30 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
     const body = (await res.json()) as { recovered: number; failed: number };
     expect(body.recovered).toBe(0);
     expect(body.failed).toBe(1);
+  });
+
+  it('excludes a completed, unanalyzed round created within the MIN_AGE_MS floor (still inside its first Inngest retry window)', async () => {
+    seed([pendingRound({ id: 'r-fresh', player_id: 'p-fresh', created_at: new Date().toISOString() })]);
+
+    const res = await callGet();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { pending: number; recovered: number };
+    expect(body.pending).toBe(0);
+    expect(body.recovered).toBe(0);
+    expect(postRoundTriggerMock).not.toHaveBeenCalled();
+  });
+
+  it('includes a round once it is older than the MIN_AGE_MS floor, alongside one still inside it', async () => {
+    seed([
+      pendingRound({ id: 'r-old-enough', player_id: 'p1', created_at: new Date(Date.now() - OLD_ENOUGH_MS).toISOString() }),
+      pendingRound({ id: 'r-too-fresh', player_id: 'p2', created_at: new Date().toISOString() }),
+    ]);
+
+    const res = await callGet();
+    const body = (await res.json()) as { pending: number; recovered: number };
+    expect(body.pending).toBe(1);
+    expect(body.recovered).toBe(1);
+    expect(postRoundTriggerMock).toHaveBeenCalledTimes(1);
+    expect(postRoundTriggerMock).toHaveBeenCalledWith(fake, expect.objectContaining({ roundId: 'r-old-enough' }));
   });
 });
