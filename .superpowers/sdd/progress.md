@@ -434,6 +434,23 @@ Task 2 REVIEWED (verdict: .superpowers/sdd/task-2-review-b.md). Spec ✅ for
   stale calibration snapshot after the nightly cron recomputes. Inherent to
   the idempotency contract.
 
+Task 2: COMPLETE (commits 2a36a79f8, 656c858fa, fix 5c1f5820b; review
+  verdict in task-2-review-b.md, all findings fixed). 24/24 tests,
+  typecheck + lint exit 0. Calibration is now real on BOTH entry points that
+  render it (analyzePlayer and generateRoundReview).
+  I verified the fix commit directly rather than dispatching a third review
+  pass, given two reviewers had already failed to deliver and the delta was
+  19 source lines: bootstrap is the first statement of generateRoundReview;
+  flag still set true BEFORE the await (no stampede) and reset to false ONLY
+  in the catch; logServerError at severity 'warning' matching loadBuckets;
+  and I confirmed the new `await logServerError` inside the catch cannot
+  break the never-throws contract — logServerError -> captureServerTrace
+  wraps its writes in try/catch with an explicit "Skip, don't rethrow".
+  Both new tests fail for the right reason: the retry test asserts
+  selectMock is called TWICE and the value moves 0.65 -> 0.80; the Round
+  Review test spies on the bootstrap and would not be called at all before
+  the fix.
+
 Task 1: complete (commits 19a3ee91f..32316ad7c, review clean — Approved).
   Reviewer independently confirmed the epsilon bug from source and verified
   the 0.85 fixture does NOT mask a filter regression (totalPredictions
