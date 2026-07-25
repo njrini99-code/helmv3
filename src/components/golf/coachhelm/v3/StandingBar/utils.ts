@@ -354,18 +354,30 @@ export interface MarkerLayoutInput {
 }
 
 /** Minimum gap (in track %) between two marker CENTERS before they're
- *  considered "colliding" and nudged apart. The Bar/Track markers here are
- *  small circular chips (8-16px) rather than the wider text labels
- *  `layoutTrackLabels` (fairway/modules/StandingTrack.tsx) separates.
+ *  considered "colliding" and nudged apart.
  *
- *  Sized from the actual geometry, not picked by feel: the widest chip is
- *  `hero` at 14px, and the narrowest rail this renders on is a card at a
- *  390px viewport (~300px of track inside the card's padding) — 14/300 =
+ *  This is the WIDE-ELEMENT gap, used by `fairway/charts/StandingStrip`,
+ *  whose colliding elements are not small chips: its "you" mark is a 16px
+ *  dot inside a `ring-[3px]` (22px effective) and it carries a
+ *  `whitespace-nowrap px-2.5` numeric pill plus a TEAM text label. Those
+ *  need real clearance, so do NOT lower this — see BAR_MARKER_MIN_GAP_PCT
+ *  below for the small-chip case. */
+export const MARKER_MIN_GAP_PCT = 9;
+
+/** Minimum gap for `StandingBar`'s `Bar`, whose markers are plain circular
+ *  chips (`w-2`..`w-3.5`, i.e. 8-14px) with no attached label.
+ *
+ *  Sized from the actual geometry rather than picked by feel: the widest
+ *  chip is `hero` at 14px and the narrowest rail it renders on is a card at
+ *  a 390px viewport (~300px of track inside the card's padding) — 14/300 =
  *  4.7%, so 4.5% has two neighbouring circles just kissing and never
- *  overlapping. The previous value (9) was double what geometry required,
- *  and every excess point of gap is a point of positional LIE: it is spent
- *  displacing a marker away from the value it is supposed to report. */
-export const MARKER_MIN_GAP_PCT = 4.5;
+ *  overlapping.
+ *
+ *  Every excess point of gap beyond that is a point of positional LIE: it
+ *  is spent displacing a marker away from the value it reports. Sharing the
+ *  9% wide-element gap above cost the bar 7.2x exaggeration on Nick's 07-24
+ *  round-review screenshot (a 2.5-point real spread drawn as 18 points). */
+export const BAR_MARKER_MIN_GAP_PCT = 4.5;
 
 /**
  * Nudge apart marker positions that land within `minGapPct` of one another,

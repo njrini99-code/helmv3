@@ -38,6 +38,7 @@ import {
   teamRelativeText,
   valuesDisplayEqual,
   MARKER_MIN_GAP_PCT,
+  BAR_MARKER_MIN_GAP_PCT,
 } from './utils';
 
 // ---------------------------------------------------------------------------
@@ -133,7 +134,7 @@ describe('layoutMarkerPositions (pure)', () => {
       { key: 'you', pct: 81.25 },
       { key: 'pga', pct: 82.5 },
     ];
-    const result = layoutMarkerPositions(raw);
+    const result = layoutMarkerPositions(raw, BAR_MARKER_MIN_GAP_PCT);
     const rawMid = (80 + 82.5) / 2;
     const drawn = result.map((r) => r.pct);
     const drawnMid = (Math.min(...drawn) + Math.max(...drawn)) / 2;
@@ -147,9 +148,11 @@ describe('layoutMarkerPositions (pure)', () => {
       { key: 'you', pct: 81.25 },
       { key: 'pga', pct: 82.5 },
     ];
-    const byKey = Object.fromEntries(layoutMarkerPositions(raw).map((r) => [r.key, r.pct]));
+    const byKey = Object.fromEntries(
+      layoutMarkerPositions(raw, BAR_MARKER_MIN_GAP_PCT).map((r) => [r.key, r.pct]),
+    );
     for (const { key, pct } of raw) {
-      expect(Math.abs(byKey[key]! - pct)).toBeLessThanOrEqual(MARKER_MIN_GAP_PCT);
+      expect(Math.abs(byKey[key]! - pct)).toBeLessThanOrEqual(BAR_MARKER_MIN_GAP_PCT);
     }
   });
 
@@ -159,11 +162,11 @@ describe('layoutMarkerPositions (pure)', () => {
       { key: 'you', pct: 50 },
       { key: 'pga', pct: 50 },
     ];
-    const drawn = layoutMarkerPositions(raw).map((r) => r.pct);
+    const drawn = layoutMarkerPositions(raw, BAR_MARKER_MIN_GAP_PCT).map((r) => r.pct);
     // 3 markers => exactly 2 gaps. Anything wider is spacing invented from
     // nothing and read by a coach as a real performance difference.
     const span = Math.max(...drawn) - Math.min(...drawn);
-    expect(span).toBeCloseTo(MARKER_MIN_GAP_PCT * 2, 5);
+    expect(span).toBeCloseTo(BAR_MARKER_MIN_GAP_PCT * 2, 5);
   });
 
   it('never pushes a marker outside [0, 100] even for a cluster pinned at the edge', () => {

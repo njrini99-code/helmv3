@@ -22,7 +22,7 @@ import {
   deriveState,
   formatValue,
   layoutMarkerPositions,
-  MARKER_MIN_GAP_PCT,
+  BAR_MARKER_MIN_GAP_PCT,
   pgaReferenceLabel,
   resolveDisplayScale,
   shouldShowTeamMarker,
@@ -279,13 +279,14 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
   // near-equal (e.g. team 0.70 vs player 0.81 on a 3-unit scale is only
   // ~3.7% apart) their circles land on top of each other and render as a
   // single unreadable blob. Nudge apart any markers within MARKER_MIN_GAP_PCT
-  // of one another before rendering; the underlying values/positions used
+  // of one another before rendering (BAR_MARKER_MIN_GAP_PCT — the small-chip
+  // gap, NOT StandingStrip's wider text-pill gap); the underlying values/positions used
   // everywhere ELSE (readouts, aria label) are untouched — only the glyph's
   // drawn position moves.
   const rawPositions: Array<{ key: 'pga' | 'team' | 'you'; pct: number }> = [{ key: 'you', pct: youPct }];
   if (pgaPct !== null) rawPositions.push({ key: 'pga', pct: pgaPct });
   if (teamPct !== null) rawPositions.push({ key: 'team', pct: teamPct });
-  const laidOut = layoutMarkerPositions(rawPositions, MARKER_MIN_GAP_PCT);
+  const laidOut = layoutMarkerPositions(rawPositions, BAR_MARKER_MIN_GAP_PCT);
   const drawnPct = new Map(laidOut.map((p) => [p.key, p.pct]));
 
   // The rail itself renders IMMEDIATELY (a plain div, no entrance animation).
