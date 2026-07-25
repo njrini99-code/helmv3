@@ -28,8 +28,14 @@ export type {
   FwIconButtonSize,
 } from './button';
 
-export { Segmented } from './segmented';
-export type { SegmentedProps, SegmentedOption } from './segmented';
+export {
+  Segmented,
+  SegmentedPill,
+  segmentedTrackClassName,
+  segmentedItemClassName,
+  TRACK_SUNKEN_SHADOW as SEGMENTED_TRACK_SUNKEN_SHADOW,
+} from './segmented';
+export type { SegmentedProps, SegmentedOption, SegmentedPillProps } from './segmented';
 
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
 export type { TabsProps, TabsTriggerProps } from './tabs';

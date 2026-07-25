@@ -25,6 +25,35 @@
  * targets (44px on coarse pointers). `lg` exists for primary, high-frequency
  * mobile toggles (e.g. the calendar view switcher) that must clear the WCAG
  * 2.2 AA (2.5.8) 44px touch target.
+ *
+ * The moving pill also carries a small green "on" mark (owner request,
+ * 2026-07-25) — see `SegmentedPill` below.
+ *
+ * SHARED VISUAL RECIPE (exported): `TRACK_SUNKEN_SHADOW`, `SegmentedPill`,
+ * `segmentedTrackClassName`, and `segmentedItemClassName` are exported so
+ * `ViewSwitch` (`src/components/golf/coachhelm/triage/ViewSwitch.tsx`) can
+ * render the IDENTICAL track/pill/dot treatment on `next/link` anchors
+ * instead of Radix `ToggleGroup.Item`s. That control is deliberately NOT a
+ * `Segmented` instance: Radix's `Toggle` fires its internal `onPressedChange`
+ * (→ `onValueChange`) for ANY unmodified-or-not click that isn't
+ * `event.defaultPrevented`, with no modifier-key awareness and no consumer
+ * override point (`onPressedChange` is hard-wired in `ToggleGroupItemImpl`,
+ * spread AFTER the consumer's props). `ViewSwitch`'s hrefs are real
+ * navigation — a cmd/ctrl/shift/middle-click must open the target view in a
+ * new tab and leave the CURRENT tab's `view` state untouched. Gating that
+ * requires calling `preventDefault()` only for a plain primary click, but
+ * Radix only skips its internal activation when `defaultPrevented` is
+ * already true — so any click that must NOT `preventDefault()` (a modified
+ * click, to let the browser's native new-tab behavior proceed) also can't be
+ * stopped from firing Radix's activation, which would incorrectly mutate the
+ * current tab's `view`. Wrapping the anchor via `asChild` would also swap
+ * the item's exposed role to Radix's `role="radio"` + `aria-checked`
+ * (`ToggleGroupItemImpl`'s `singleProps`) on an element whose real behavior
+ * is "navigate to a URL" — a widget/document semantic mismatch (confirmed:
+ * `TriageDesk.navigation.test.tsx` already asserts
+ * `getByRole('link', { name: 'Players' })`, i.e. these ARE links, not
+ * radios). So the two components share styling/motion, never the Radix
+ * primitive.
  * ========================================================================== */
 
 import { type ReactNode, useId } from 'react';
@@ -65,6 +94,28 @@ const sizeTrack: Record<'sm' | 'md' | 'lg', string> = {
   lg: 'p-1 gap-1',
 };
 
+/**
+ * The track's full class list — exported so `ViewSwitch` can build the exact
+ * same sunken well (radius, padding, hidden native scrollbar) around its
+ * `next/link` anchors instead of hand-copying the string. Pair with a `style`
+ * spreading `TRACK_SUNKEN_SHADOW` (and, for a scrolling track, `fadeStyle`
+ * from `useScrollFade`) — this function only owns the Tailwind classes.
+ */
+export function segmentedTrackClassName(
+  size: 'sm' | 'md' | 'lg' = 'md',
+  fullWidth = false,
+  className?: string,
+): string {
+  return cn(
+    'inline-flex max-w-full items-center overflow-x-auto rounded-fw-sm bg-surface-sunken',
+    '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+    'border border-border-subtle',
+    sizeTrack[size],
+    fullWidth && 'flex w-full',
+    className,
+  );
+}
+
 const sizeItem: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'min-h-[30px] [@media(pointer:coarse)]:min-h-[44px] px-3 text-[13px] leading-4 gap-1.5',
   // Dense (36px) on fine pointers, but expands to the WCAG 2.2 AA 2.5.8 / DoD
@@ -76,14 +127,44 @@ const sizeItem: Record<'sm' | 'md' | 'lg', string> = {
 };
 
 /**
+ * A single segment item's full class list (minus the `key`/`value`/handler
+ * props) — exported so `ViewSwitch` renders byte-identical sizing, transition,
+ * focus ring, and selected/unselected typography on its anchors. `relative
+ * isolate` is required: it's what lets the pill's `-z-10` sit correctly
+ * behind this item's own label instead of behind the whole track.
+ */
+export function segmentedItemClassName(
+  selected: boolean,
+  size: 'sm' | 'md' | 'lg' = 'md',
+  fullWidth = false,
+): string {
+  return cn(
+    'relative isolate inline-flex items-center justify-center rounded-md',
+    'font-fw-sans',
+    fwTransition,
+    fwFocusRing,
+    'disabled:opacity-40 disabled:pointer-events-none',
+    sizeItem[size],
+    fullWidth ? 'flex-1' : 'flex-shrink-0',
+    // Crisper active/inactive hierarchy: the selected label sits on the
+    // elevated pill and reads semibold + primary; everything else stays
+    // medium-weight and secondary until hovered.
+    selected
+      ? 'font-semibold text-text-primary'
+      : 'font-medium text-text-secondary hover:text-text-primary',
+  );
+}
+
+/**
  * The sunken track's inset shadow — a warm, low-alpha two-layer inset (same
  * hue-60 oklch language as `--fw-shadow-flat`/`--fw-shadow-soft` in
  * design-tokens.css) so the well reads as genuinely carved into the surface,
  * not just a flat tint swap. Inline (not a new Tailwind shadow key) so the
  * track and the pill's brightness-lift below can share this file without a
- * design-tokens.css change.
+ * design-tokens.css change. Exported so `ViewSwitch` carves the exact same
+ * well.
  */
-const TRACK_SUNKEN_SHADOW =
+export const TRACK_SUNKEN_SHADOW =
   'inset 0 1px 3px oklch(0.18 0.01 60 / 0.10), inset 0 1px 0 oklch(0.18 0.01 60 / 0.04)';
 
 /**
@@ -91,8 +172,76 @@ const TRACK_SUNKEN_SHADOW =
  * exact recipe the `shadow-soft` utility already applied) PLUS an inset warm-
  * white top highlight — the same "lit from above" tell `--fw-shadow-card`
  * uses for light matte cards — for the requested slight brightness lift.
+ * Not exported: only `SegmentedPill` below needs it, and exporting the
+ * component is what gives `ViewSwitch` the shared implementation (not just
+ * the shadow string).
  */
 const PILL_SHADOW = 'inset 0 1px 0 oklch(1 0 0 / 0.6), var(--fw-shadow-soft)';
+
+export interface SegmentedPillProps {
+  /**
+   * Unique `layoutId` for the framer-motion shared-layout glide between
+   * segments. `undefined` disables the animated travel (reduced motion: the
+   * pill simply appears at its new position, no magic-move).
+   */
+  layoutId?: string;
+  /** The consumer's resolved reduced-motion flag (never pass the raw,
+   *  possibly-`null` hook value — resolve it first). */
+  reduceMotion: boolean;
+}
+
+/**
+ * The moving selection pill — the "little buckle" depth (warm `bg-surface`
+ * fill lifted off the sunken track via `PILL_SHADOW` + a hairline border)
+ * PLUS the green "on" mark the owner asked for. Shared by `Segmented`
+ * (Radix `ToggleGroup.Item`) and `ViewSwitch` (`next/link` anchors) — see
+ * the file docblock for why `ViewSwitch` can't just become a `Segmented`
+ * instance. Purely decorative (`aria-hidden`, `absolute inset-0 -z-10`): it
+ * never participates in the host item's box model, so it can never cause a
+ * sibling to reflow when the active segment changes.
+ */
+export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
+  return (
+    <motion.span
+      layoutId={layoutId}
+      aria-hidden="true"
+      className="absolute inset-0 -z-10 rounded-md border border-border-subtle bg-surface"
+      style={{ boxShadow: PILL_SHADOW }}
+      transition={
+        reduceMotion
+          ? { duration: 0 }
+          : // Slightly underdamped (ζ≈0.85) — a real, physical settle with
+            // the faintest single overshoot, not a dead-flat snap.
+            { type: 'spring', stiffness: 450, damping: 28, mass: 0.6 }
+      }
+    >
+      {/*
+       * The "lil toggle" green mark (owner request, 2026-07-25): a small
+       * decorative dot — the repo's established idiom (StatusPill's leading
+       * dot; NEVER a side-rail/bar, a standing project rule) — not the
+       * label's text color, since `accent-500` fails WCAG AA as text
+       * (~2.67:1; see `fairway_accent_green_fails_aa`). `accent-600` is
+       * reused here because `fwFocusRing` (`./_internal.ts`) already proved
+       * it clears the WCAG 1.4.11 non-text 3:1 minimum against
+       * canvas/surface/sunken/elevated in BOTH themes — a decorative dot is
+       * exempt from TEXT contrast rules but still must clear that non-text
+       * bar. `ring-1 ring-surface` is a solid (not alpha) ring — never
+       * `bg-fw-accent/30` or similar `/NN` alpha shorthand on a CSS-
+       * variable-backed color, which silently compiles to nothing in this
+       * repo's Tailwind config. Nested INSIDE this decorative pill (not the
+       * item's flex flow), it's mounted/unmounted with the pill and is
+       * carried along by the SAME `layoutId` glide — it can never lag
+       * behind the pill or animate on its own timeline, and it can never
+       * change the item's width the way inserting it into the label row
+       * would have.
+       */}
+      <span
+        aria-hidden="true"
+        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-surface"
+      />
+    </motion.span>
+  );
+}
 
 export function Segmented<T extends string = string>({
   options,
@@ -130,14 +279,7 @@ export function Segmented<T extends string = string>({
       aria-label={aria['aria-label']}
       data-slot="fw-segmented"
       style={{ ...fadeStyle, boxShadow: TRACK_SUNKEN_SHADOW }}
-      className={cn(
-        'inline-flex max-w-full items-center overflow-x-auto rounded-fw-sm bg-surface-sunken',
-        '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'border border-border-subtle',
-        sizeTrack[size],
-        fullWidth && 'flex w-full',
-        className,
-      )}
+      className={segmentedTrackClassName(size, fullWidth, className)}
     >
       {options.map((opt) => {
         const selected = opt.value === value;
@@ -148,47 +290,21 @@ export function Segmented<T extends string = string>({
             disabled={opt.disabled}
             aria-label={typeof opt.label === 'string' ? opt.label : undefined}
             data-slot="fw-segment"
-            className={cn(
-              // No min-w-0 here (deliberately): a flex item's default
-              // `min-width: auto` floors it at its own content size, which is
-              // what lets the row overflow into the track's `overflow-x-auto`
-              // + useScrollFade affordance above instead of every segment
-              // shrinking to an illegible sliver (the bug this comment
-              // replaces). `fullWidth` still grows items to share the row
-              // evenly when there's slack, via flex-1; when there isn't
-              // enough room even for that, the same content-size floor kicks
-              // in and the row scrolls, same as the non-fullWidth case.
-              'relative isolate inline-flex items-center justify-center rounded-md',
-              'font-fw-sans',
-              fwTransition,
-              fwFocusRing,
-              'disabled:opacity-40 disabled:pointer-events-none',
-              sizeItem[size],
-              fullWidth ? 'flex-1' : 'flex-shrink-0',
-              // Crisper active/inactive hierarchy: the selected label sits on
-              // the elevated pill and reads semibold + primary; everything
-              // else stays medium-weight and secondary until hovered.
-              selected
-                ? 'font-semibold text-text-primary'
-                : 'font-medium text-text-secondary hover:text-text-primary',
-            )}
+            // No min-w-0 here (deliberately): a flex item's default
+            // `min-width: auto` floors it at its own content size, which is
+            // what lets the row overflow into the track's `overflow-x-auto`
+            // + useScrollFade affordance above instead of every segment
+            // shrinking to an illegible sliver (the bug this comment
+            // replaces). `fullWidth` still grows items to share the row
+            // evenly when there's slack, via flex-1; when there isn't
+            // enough room even for that, the same content-size floor kicks
+            // in and the row scrolls, same as the non-fullWidth case.
+            className={segmentedItemClassName(selected, size, fullWidth)}
           >
             {selected && (
-              <motion.span
-                // The moving selection pill — matte warm surface, elevated off
-                // the sunken track via PILL_SHADOW (soft outer shadow + inset
-                // brightness-lift highlight) + a hairline border.
+              <SegmentedPill
                 layoutId={reduceMotion ? undefined : `fw-segment-pill-${pillId}`}
-                aria-hidden="true"
-                className="absolute inset-0 -z-10 rounded-md bg-surface border border-border-subtle"
-                style={{ boxShadow: PILL_SHADOW }}
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    // Slightly underdamped (ζ≈0.85) — a real, physical settle
-                    // with the faintest single overshoot, not a dead-flat snap.
-                    : { type: 'spring', stiffness: 450, damping: 28, mass: 0.6 }
-                }
+                reduceMotion={Boolean(reduceMotion)}
               />
             )}
             {opt.icon && <span className="flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4">{opt.icon}</span>}

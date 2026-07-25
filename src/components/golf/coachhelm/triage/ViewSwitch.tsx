@@ -10,10 +10,35 @@
  * so every old bookmark keeps landing on the right tab — see
  * `resolveTriageView` in `buildTriageViewModel.ts`, the only place that
  * decodes the param.
+ *
+ * Visual treatment (owner request, 2026-07-25 — "give that more depth ... add
+ * some green ... like a lil toggle"): renders the SAME sunken-track +
+ * elevated-pill + green "on" mark that `Segmented`
+ * (`src/components/fairway/controls/segmented.tsx`) already gives its 34+
+ * call sites, via that file's exported shared recipe
+ * (`TRACK_SUNKEN_SHADOW`, `segmentedTrackClassName`, `segmentedItemClassName`,
+ * `SegmentedPill`) — NOT by becoming a `Segmented` instance. See that file's
+ * docblock for the full reasoning; short version: Radix `ToggleGroup.Item`'s
+ * internal click handling has no modifier-key awareness and no override
+ * point, so it can't honor this control's "cmd/ctrl/shift/middle-click opens
+ * the target view in a NEW tab and leaves THIS tab's `view` untouched"
+ * contract (below) the way a plain anchor + our own gated `onClick` can; and
+ * `asChild`-wrapping the anchor would swap its exposed role to Radix's
+ * `role="radio"` on an element whose real behavior is page navigation
+ * (`TriageDesk.navigation.test.tsx` already asserts
+ * `getByRole('link', { name: 'Players' })`).
  * ========================================================================== */
 
+import { useId } from 'react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import {
+  SegmentedPill,
+  segmentedTrackClassName,
+  segmentedItemClassName,
+  TRACK_SUNKEN_SHADOW,
+} from '@/components/fairway/controls/segmented';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import type { TriageView } from './buildTriageViewModel';
 
 export interface ViewSwitchProps {
@@ -29,10 +54,27 @@ const OPTIONS: ReadonlyArray<{ value: TriageView; label: string }> = [
 ];
 
 export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
+  // CoachHelm v3 surfaces always resolve reduced-motion through this guard
+  // (never the raw framer-motion hook) — it defaults the SSR/first-paint
+  // `null` to `false` so the animated path hydrates byte-identical, then
+  // flips client-side for reduced-motion users without a #418 mismatch.
+  const prefersReducedMotion = useReducedMotionGuard();
+  // Unique layoutId so this instance's pill never shares a magic-move with
+  // any other Segmented/ViewSwitch pill on the same page.
+  const pillId = useId();
+  // Same graceful narrow-screen affordance every other Segmented switcher
+  // gets: at 390px "Signals / Players / Effectiveness" can overflow the
+  // track, so it scrolls internally with a soft edge fade instead of
+  // clipping (the app's mobile `overflow-x: clip` guard — see globals.css).
+  const { ref: scrollFadeRef, fadeStyle } = useScrollFade<HTMLElement>('x');
+
   return (
     <nav
+      ref={scrollFadeRef}
       aria-label="CoachHelm view"
-      className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-fw-sm border border-border-subtle bg-surface-sunken p-1"
+      data-slot="fw-segmented"
+      style={{ ...fadeStyle, boxShadow: TRACK_SUNKEN_SHADOW }}
+      className={segmentedTrackClassName('md', false)}
     >
       {OPTIONS.map((option) => {
         const selected = option.value === view;
@@ -42,6 +84,7 @@ export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
             href={hrefFor(option.value)}
             replace
             scroll={false}
+            data-slot="fw-segment"
             onClick={(event) => {
               if (
                 event.defaultPrevented ||
@@ -57,16 +100,15 @@ export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
               onSelect(option.value);
             }}
             aria-current={selected ? 'page' : undefined}
-            className={cn(
-              'relative inline-flex min-h-9 flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md px-4 [@media(pointer:coarse)]:min-h-[44px]',
-              'font-fw-sans text-body-sm font-medium outline-none transition-colors',
-              'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
-              selected
-                ? 'border border-border-subtle bg-surface text-text-primary shadow-soft'
-                : 'text-text-secondary hover:bg-surface-tint hover:text-text-primary',
-            )}
+            className={segmentedItemClassName(selected, 'md', false)}
           >
-            {option.label}
+            {selected && (
+              <SegmentedPill
+                layoutId={prefersReducedMotion ? undefined : `fw-segment-pill-${pillId}`}
+                reduceMotion={prefersReducedMotion}
+              />
+            )}
+            <span className="whitespace-nowrap">{option.label}</span>
           </Link>
         );
       })}
