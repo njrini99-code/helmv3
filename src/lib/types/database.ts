@@ -11253,6 +11253,89 @@ export type Database = {
           },
         ]
       }
+      golf_coachhelm_action_runs: {
+        Row: {
+          coach_id: string
+          completed_at: string | null
+          conversation_id: string | null
+          decided_at: string | null
+          error_message: string | null
+          id: string
+          idempotency_key: string
+          message_id: string | null
+          partial_failures: Json | null
+          proposed_at: string
+          proposed_input: Json
+          result: Json | null
+          status: string
+          team_id: string
+          tool_name: string
+        }
+        Insert: {
+          coach_id: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          decided_at?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key: string
+          message_id?: string | null
+          partial_failures?: Json | null
+          proposed_at?: string
+          proposed_input: Json
+          result?: Json | null
+          status?: string
+          team_id: string
+          tool_name: string
+        }
+        Update: {
+          coach_id?: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          decided_at?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string
+          message_id?: string | null
+          partial_failures?: Json | null
+          proposed_at?: string
+          proposed_input?: Json
+          result?: Json | null
+          status?: string
+          team_id?: string
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_action_runs_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_action_runs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coachhelm_chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_action_runs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coachhelm_chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_action_runs_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coachhelm_chat_conversations: {
         Row: {
           archived_at: string | null
@@ -11303,6 +11386,7 @@ export type Database = {
           status: string | null
           tool_calls: Json | null
           tool_results: Json | null
+          ui_parts: Json | null
         }
         Insert: {
           client_turn_id?: string | null
@@ -11315,6 +11399,7 @@ export type Database = {
           status?: string | null
           tool_calls?: Json | null
           tool_results?: Json | null
+          ui_parts?: Json | null
         }
         Update: {
           client_turn_id?: string | null
@@ -11327,6 +11412,7 @@ export type Database = {
           status?: string | null
           tool_calls?: Json | null
           tool_results?: Json | null
+          ui_parts?: Json | null
         }
         Relationships: [
           {

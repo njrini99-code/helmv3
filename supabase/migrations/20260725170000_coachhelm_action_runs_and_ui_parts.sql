@@ -100,6 +100,15 @@ CREATE POLICY coachhelm_action_runs_coach_only
   USING (coach_id = public.current_coach_id())
   WITH CHECK (coach_id = public.current_coach_id());
 
--- Explicit grants. No anon access: this ledger is coach-private by definition.
+-- Grants. This ledger is AUDIT EVIDENCE — who proposed what, who approved it,
+-- what it did — so a coach must be able to record and complete a run but never
+-- to erase one.
+--
+-- The REVOKE is the load-bearing half. Supabase's default privileges grant
+-- `authenticated` everything on a new table in `public`, so a bare
+-- `GRANT SELECT, INSERT, UPDATE` is purely additive and leaves DELETE in place.
+-- Verified on production: relacl reads `authenticated=arwm` (insert/select/
+-- update), with no `d` and no anon entry at all.
 REVOKE ALL ON public.golf_coachhelm_action_runs FROM anon;
+REVOKE DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.golf_coachhelm_action_runs FROM authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.golf_coachhelm_action_runs TO authenticated;

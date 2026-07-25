@@ -157,7 +157,16 @@ declare module 'ai' {
     [key: string]: unknown;
   }): Response;
 
-  export function convertToModelMessages(messages: UIMessage[]): ModelMessage[];
+  /**
+   * ASYNC in AI SDK 7 — returns a Promise. Declaring it synchronous here
+   * type-checked fine and then handed `streamText` a Promise, which failed at
+   * runtime with "messages.some is not a function". Keep this in step with
+   * `node_modules/ai/dist/index.d.ts`.
+   */
+  export function convertToModelMessages(
+    messages: UIMessage[],
+    options?: { tools?: ToolSet; ignoreIncompleteToolCalls?: boolean },
+  ): Promise<ModelMessage[]>;
 
   export function stepCountIs(count: number): unknown;
 

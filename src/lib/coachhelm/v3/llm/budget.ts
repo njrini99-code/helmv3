@@ -151,13 +151,45 @@ async function resolveDefaultBudgetForCoach(supabase: Sb, coach_id: string): Pro
     .maybeSingle();
   if (!staff) return 0;
 
-  const { data: settings } = await supabase
+  // `.maybeSingle()` was wrong here: `golf_coachhelm_settings` has no unique
+  // constraint on team_id, and production carries two rows for at least one
+  // team (one configured, one with a null budget). maybeSingle ERRORS on a
+  // multi-row result, `settings` comes back undefined, and the coach silently
+  // gets a $0 budget — i.e. CoachHelm is switched off for that team with no
+  // signal anywhere. Read the rows and resolve deterministically instead.
+  const { data: settingsRows, error: settingsError } = await supabase
     .from('golf_coachhelm_settings')
     .select('llm_budget_usd_per_day')
-    .eq('team_id', staff.team_id)
-    .maybeSingle();
+    .eq('team_id', staff.team_id);
 
-  const raw = settings?.llm_budget_usd_per_day;
-  if (raw === null || raw === undefined) return 0;
-  return Number(raw);
+  if (settingsError) {
+    // A failed read is NOT "this team has no budget". Fail closed on spend —
+    // that part is correct — but say so, rather than letting it look like a
+    // deliberate zero.
+    await logServerError(
+      `budget: settings lookup failed for team_id=${staff.team_id} — ${settingsError.message}`,
+      { action: 'v3.llm.budget.settings' },
+      'warning',
+    );
+    return 0;
+  }
+
+  const configured = (settingsRows ?? [])
+    .map((r) => r.llm_budget_usd_per_day)
+    .filter((v): v is NonNullable<typeof v> => v !== null && v !== undefined)
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
+
+  if ((settingsRows?.length ?? 0) > 1) {
+    await logServerError(
+      `budget: ${settingsRows!.length} settings rows for team_id=${staff.team_id}; using the highest configured budget`,
+      { action: 'v3.llm.budget.duplicate_settings' },
+      'warning',
+    );
+  }
+
+  if (configured.length === 0) return 0;
+  // Highest wins: with duplicate rows, honouring a configured budget over a
+  // null one is the reading that matches what an admin actually set.
+  return Math.max(...configured);
 }

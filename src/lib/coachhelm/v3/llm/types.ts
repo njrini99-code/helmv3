@@ -4,6 +4,10 @@
  * Three task classes per master plan Part XI.1. Each task has a fixed
  * model assignment (Part XI.5 amended 2026-05-25): Haiku for
  * round_review + hero_narrative, Sonnet for coach_chat.
+ *
+ * 2026-07-25 — coach_chat moved to Sonnet 5. The chat agent is the one task
+ * that runs a multi-step tool loop and has to reason about which reads to make
+ * before answering, so it is the task that benefits most from the newer model.
  */
 
 export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat';
@@ -12,7 +16,7 @@ export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat';
 export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
   round_review: 'anthropic/claude-haiku-4-5',
   hero_narrative: 'anthropic/claude-haiku-4-5',
-  coach_chat: 'anthropic/claude-sonnet-4-6',
+  coach_chat: 'anthropic/claude-sonnet-5',
 };
 
 /**
@@ -67,12 +71,32 @@ export interface ComposeResult {
 const MODEL_COST_USD_PER_MTOK: Record<string, { input: number; output: number }> = {
   'anthropic/claude-haiku-4-5':   { input: 1.0,  output: 5.0  },
   'anthropic/claude-sonnet-4-6':  { input: 3.0,  output: 15.0 },
+  // Sonnet 5 — carried at the standing Sonnet tier. VERIFY against current
+  // published pricing before relying on the spend figures for billing; the
+  // budget gate is only as accurate as this table.
+  'anthropic/claude-sonnet-5':    { input: 3.0,  output: 15.0 },
   'anthropic/claude-opus-4-7':    { input: 15.0, output: 75.0 },
 };
 
+/**
+ * Conservative rate for a model that is not in the table.
+ *
+ * This used to return 0, which is the worst possible default: an unpriced model
+ * bills nothing, `checkBudget` never sees spend accumulate, and the daily cap
+ * silently stops existing. The failure mode of guessing HIGH is that a coach
+ * runs out of budget early and someone notices; the failure mode of guessing
+ * zero is an uncapped bill nobody notices. Priced at the Opus tier so an
+ * unrecognised model is always over- rather than under-charged.
+ */
+const UNKNOWN_MODEL_RATE = { input: 15.0, output: 75.0 } as const;
+
+/** True when the model has a real published rate rather than the fallback. */
+export function hasKnownPricing(model_id: string): boolean {
+  return model_id in MODEL_COST_USD_PER_MTOK;
+}
+
 export function estimateCostUsd(model_id: string, prompt_tokens: number, completion_tokens: number): number {
-  const rates = MODEL_COST_USD_PER_MTOK[model_id];
-  if (!rates) return 0;
+  const rates = MODEL_COST_USD_PER_MTOK[model_id] ?? UNKNOWN_MODEL_RATE;
   return (prompt_tokens / 1_000_000) * rates.input
     + (completion_tokens / 1_000_000) * rates.output;
 }

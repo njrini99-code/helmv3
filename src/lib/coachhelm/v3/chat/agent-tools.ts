@@ -56,6 +56,15 @@ import {
 } from './practice-planner';
 import type { ActionProposal, ActionReceipt, RecurringPracticePlan } from './action-types';
 import { claimForExecution, recordOutcome, recordProposal } from './action-runs';
+import {
+  ActionPlanError,
+  planAnnouncement,
+  planFocusArea,
+  planTask,
+  executeAnnouncement,
+  executeFocusArea,
+  executeTask,
+} from './action-planners';
 
 type Sb = SupabaseClient<Database>;
 
@@ -143,6 +152,19 @@ function guarded(
     });
 }
 
+/**
+ * The propose → claim → execute → receipt sequence, once.
+ *
+ * Every confirm-required tool has the same shape and the same failure modes, so
+ * duplicating it four times would mean four places for the idempotency claim to
+ * drift out of. `plan` runs before the gate (preview), `run` runs after it.
+ */
+interface GatedAction<TInput, TPlan> {
+  toolName: string;
+  plan: (input: TInput) => { plan: TPlan; proposal: ActionProposal };
+  run: (plan: TPlan) => Promise<ActionReceipt>;
+}
+
 export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: BuildToolsArgs): ToolSet {
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
@@ -173,6 +195,117 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     };
 
   const PlayerId = z.string().uuid().describe('Player id from the roster. Use find_player if you only have a name.');
+
+  /**
+   * Compute the preview and record the proposal. Runs BEFORE the approval gate
+   * and writes nothing to the domain — only to the audit ledger.
+   */
+  const proposeGated = async <TInput, TPlan>(
+    action: GatedAction<TInput, TPlan>,
+    input: TInput,
+  ): Promise<void> => {
+    progress(action.toolName, input as Record<string, unknown>);
+    try {
+      const { plan, proposal } = action.plan(input);
+      await recordProposal(sb, {
+        coach_id: ctx.coach_id,
+        team_id: ctx.team_id,
+        conversation_id: conversationId,
+        tool_name: action.toolName,
+        proposed_input: plan,
+        idempotency_key: proposal.idempotency_key,
+      });
+      writer.write({
+        type: 'data-action-proposal',
+        id: `proposal-${proposal.idempotency_key}`,
+        data: { ...proposal, tool: action.toolName },
+      });
+    } catch (err) {
+      // A plan we cannot build must never produce a Confirm button.
+      writer.write({
+        type: 'data-progress',
+        id: `progress-${(progressId += 1)}`,
+        data: {
+          label:
+            err instanceof ActionPlanError || err instanceof PracticePlanError
+              ? err.message
+              : err instanceof CoachContextError
+                ? err.message
+                : 'Could not prepare that action',
+          tool: action.toolName,
+        },
+      });
+    }
+  };
+
+  /** Runs ONLY after the coach approves. Idempotent by construction. */
+  const executeGated = async <TInput, TPlan>(
+    action: GatedAction<TInput, TPlan>,
+    input: TInput,
+  ): Promise<{ status: string; message: string }> => {
+    let plan: TPlan;
+    let proposal: ActionProposal;
+    try {
+      const built = action.plan(input);
+      plan = built.plan;
+      proposal = built.proposal;
+    } catch (err) {
+      return {
+        status: 'failed',
+        message:
+          err instanceof ActionPlanError || err instanceof PracticePlanError
+            ? err.message
+            : 'Could not build that action.',
+      };
+    }
+
+    const claim = await claimForExecution(sb, {
+      coach_id: ctx.coach_id,
+      idempotency_key: proposal.idempotency_key,
+    });
+    if (claim.kind === 'already_completed') {
+      writer.write({
+        type: 'data-action-receipt',
+        id: `receipt-${proposal.idempotency_key}`,
+        data: claim.receipt,
+      });
+      return { status: 'already_done', message: 'That was already done.' };
+    }
+    if (claim.kind === 'in_flight') {
+      return { status: 'in_flight', message: 'That action is already running.' };
+    }
+    if (claim.kind === 'error') {
+      return { status: 'failed', message: 'Could not start the action safely.' };
+    }
+
+    const receipt = await action.run(plan);
+    await recordOutcome(sb, { run_id: claim.run_id, receipt });
+    writer.write({
+      type: 'data-action-receipt',
+      id: `receipt-${proposal.idempotency_key}`,
+      data: receipt,
+    });
+    return { status: receipt.status, message: receipt.summary };
+  };
+
+  const FOCUS_AREA: GatedAction<Parameters<typeof planFocusArea>[1], ReturnType<typeof planFocusArea>['plan']> = {
+    toolName: 'create_focus_area',
+    plan: (input) => planFocusArea(ctx, input),
+    run: (plan) => executeFocusArea(plan),
+  };
+  const TASK: GatedAction<Parameters<typeof planTask>[1], ReturnType<typeof planTask>['plan']> = {
+    toolName: 'create_task',
+    plan: (input) => planTask(ctx, input),
+    run: (plan) => executeTask(plan),
+  };
+  const ANNOUNCEMENT: GatedAction<
+    Parameters<typeof planAnnouncement>[1],
+    ReturnType<typeof planAnnouncement>['plan']
+  > = {
+    toolName: 'create_team_announcement',
+    plan: (input) => planAnnouncement(ctx, input),
+    run: (plan) => executeAnnouncement(plan),
+  };
 
   return {
     // =====================================================================
@@ -290,6 +423,64 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     // =====================================================================
     // CONFIRM-REQUIRED
     // =====================================================================
+
+    create_focus_area: tool({
+      description:
+        "Create a development focus area for one player. REQUIRES the coach to confirm — calling it shows a preview, it does not create anything. Prefer passing from_insight_id when the focus area comes from a signal you read, so the effectiveness ledger can close the loop.",
+      inputSchema: z.object({
+        player_id: PlayerId,
+        title: z.string().min(1).max(120),
+        area_type: z
+          .enum([
+            'putting',
+            'driving',
+            'iron_play',
+            'short_game',
+            'course_management',
+            'mental_game',
+            'fitness',
+            'other',
+          ])
+          .describe('Which part of the game this targets.'),
+        description: z.string().max(600).optional(),
+        target_metric: z.string().max(60).optional().describe('The metric this will be judged on.'),
+        current_value: z.number().optional(),
+        target_value: z.number().optional(),
+        target_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        target_rounds: z.number().int().min(1).max(60).optional(),
+        from_insight_id: z.string().uuid().optional(),
+      }),
+      onInputAvailable: ({ input }) => proposeGated(FOCUS_AREA, input as never),
+      execute: (input) => executeGated(FOCUS_AREA, input as never),
+    }),
+
+    create_task: tool({
+      description:
+        'Assign a task to players. REQUIRES the coach to confirm — calling it shows a preview, it does not create anything. Omit assign_to_player_ids to assign to the whole active roster.',
+      inputSchema: z.object({
+        title: z.string().min(1).max(160),
+        description: z.string().max(600).optional(),
+        due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        priority: z.enum(['low', 'medium', 'high']).optional(),
+        assign_to_player_ids: z.array(PlayerId).optional(),
+      }),
+      onInputAvailable: ({ input }) => proposeGated(TASK, input as never),
+      execute: (input) => executeGated(TASK, input as never),
+    }),
+
+    create_team_announcement: tool({
+      description:
+        'Draft a team update. REQUIRES the coach to confirm — the full message text is shown to them before anything is sent. Omit recipient_player_ids to send to the whole team.',
+      inputSchema: z.object({
+        title: z.string().min(1).max(120),
+        body: z.string().min(1).max(2000),
+        urgency: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+        requires_acknowledgement: z.boolean().optional(),
+        recipient_player_ids: z.array(PlayerId).optional(),
+      }),
+      onInputAvailable: ({ input }) => proposeGated(ANNOUNCEMENT, input as never),
+      execute: (input) => executeGated(ANNOUNCEMENT, input as never),
+    }),
 
     create_recurring_practice: tool({
       description:

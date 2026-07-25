@@ -163,8 +163,12 @@ export function CoachHelmChat({
 
           {chat.error && (
             <div className="mt-6 rounded-card border border-border-subtle bg-surface p-4">
+              {/* Show the server's own sanitised reason when it sent one. A
+                  generic "that didn't come through" in front of an exhausted
+                  model quota sends a coach to retry forever against something
+                  no amount of retrying fixes. */}
               <p className="font-fw-sans text-body-sm text-text-primary">
-                That answer did not come through.
+                {chat.error.message?.trim() || 'That answer did not come through.'}
               </p>
               {/* eslint-disable-next-line helm/no-raw-button -- inline retry inside an error notice */}
               <button

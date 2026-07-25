@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
   // key when present, else the gateway model string. No provider name appears
   // in tool or UI code.
   const model = process.env.ANTHROPIC_API_KEY
-    ? anthropic('claude-sonnet-4-6')
+    ? anthropic('claude-sonnet-5')
     : MODEL_FOR_TASK.coach_chat;
 
   const startedAt = Date.now();
@@ -160,15 +160,20 @@ export async function POST(req: NextRequest) {
   };
 
   const convId = conversationId;
+  // Captured in `execute` so `onFinish` can bill ACTUAL tokens, not the gate's
+  // worst-case estimate. See recordTurnCost below.
+  let usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null = null;
 
   const stream = createUIMessageStream({
-    execute: ({ writer }) => {
+    execute: async ({ writer }) => {
       const tools = buildCoachTools({ sb: supabase, ctx, conversationId: convId, writer, collect });
 
       const result = streamText({
         model,
         instructions: buildInstructions(ctx, new Date().toISOString()),
-        messages: convertToModelMessages(uiMessages),
+        // Pass the tool set so tool parts from earlier turns convert correctly —
+        // without it, a resumed approval loses the call it belongs to.
+        messages: await convertToModelMessages(uiMessages, { tools }),
         tools,
         // Every mutating tool suspends for an explicit coach decision. This is
         // the gate the whole action framework rests on — a model cannot reach
@@ -187,6 +192,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      usagePromise = result.usage;
       writer.merge(result.toUIMessageStream({ sendStart: true, sendFinish: true }));
     },
 
@@ -223,6 +229,22 @@ export async function POST(req: NextRequest) {
           ui_parts: assistant.parts as unknown,
         });
         await touchConversation(supabase, convId);
+
+        // Latency telemetry: first token and total. No player name, prompt
+        // text or database value — only timings and the model tier.
+        if (firstTokenMs !== null && firstTokenMs > 8000) {
+          await logServerError(
+            `chat/stream: slow first token ${firstTokenMs}ms (total ${Date.now() - startedAt}ms) model=${MODEL_FOR_TASK.coach_chat}`,
+            { action: 'v3.chat.stream.latency' },
+            'warning',
+          );
+        }
+
+        // Bill the turn from REPORTED token counts. Recording the gate's
+        // worst-case estimate instead (which an earlier revision of this route
+        // did) over-charges every short answer several times over and
+        // exhausts a coach's daily budget long before they have spent it.
+        await recordTurnCost({ admin, ctx, conversationId: convId, usagePromise });
       } catch (err) {
         await logServerError(
           `chat/stream: persistence failed — ${err instanceof Error ? err.message : String(err)}`,
@@ -244,9 +266,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Cost + telemetry, recorded out of band so the response is not held up.
-  void recordTurnCost({ admin, ctx, conversationId: convId, startedAt });
-
   return createUIMessageStreamResponse({
     stream,
     headers: { 'x-conversation-id': convId },
@@ -264,33 +283,42 @@ function textOf(message: UIMessage | undefined): string {
 }
 
 /**
- * Record spend against the day's budget.
+ * Record what the turn actually cost.
  *
- * Uses the same conservative per-turn estimate the gate used. The streaming
- * API reports usage on the result promise rather than synchronously, and a
- * turn whose cost is recorded late is a turn that can be spent twice — an
- * estimate applied immediately is the safer error.
+ * The pre-flight gate reserves a conservative worst case so a turn cannot start
+ * without headroom; what gets BILLED has to be the real number. Using the
+ * estimate for both means a $0.01 answer is charged like a $0.12 one, and a
+ * coach hits "daily budget reached" after a handful of questions.
  *
- * Telemetry carries the model, latency and cost. It deliberately carries no
- * player name, prompt text or database value.
+ * Telemetry carries model, latency and cost. It carries no player name, no
+ * prompt text and no database value.
  */
 async function recordTurnCost(args: {
   admin: ReturnType<typeof createAdminClient>;
   ctx: CoachChatContext;
   conversationId: string;
-  startedAt: number;
+  usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null;
 }): Promise<void> {
-  const { admin, ctx, conversationId } = args;
-  const cost = CHAT_TURN_COST_ESTIMATE_USD;
+  const { admin, ctx, conversationId, usagePromise } = args;
   try {
+    const usage = usagePromise ? await usagePromise : undefined;
+    const promptTokens = usage?.inputTokens ?? 0;
+    const completionTokens = usage?.outputTokens ?? 0;
+    // If the provider reported nothing, fall back to the reserved estimate
+    // rather than billing zero — an unmeasured turn must not be free.
+    const cost =
+      promptTokens + completionTokens > 0
+        ? estimateCostUsd(MODEL_FOR_TASK.coach_chat, promptTokens, completionTokens)
+        : CHAT_TURN_COST_ESTIMATE_USD;
+
     await admin.from('golf_coachhelm_llm_calls').insert({
       task: 'coach_chat',
       coach_id: ctx.coach_id,
       player_id: null,
       prompt_hash: conversationId.slice(0, 16),
       model_id: MODEL_FOR_TASK.coach_chat,
-      prompt_tokens: 0,
-      completion_tokens: 0,
+      prompt_tokens: promptTokens,
+      completion_tokens: completionTokens,
       cost_usd: cost,
       citations: null,
       verified: false,

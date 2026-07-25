@@ -11,6 +11,7 @@ import {
   MODEL_FOR_TASK,
   FALLBACK_PRIORITY,
   estimateCostUsd,
+  hasKnownPricing,
 } from '@/lib/coachhelm/v3/llm/types';
 import { verifyCitations } from '@/lib/coachhelm/v3/llm/citations';
 import {
@@ -29,8 +30,16 @@ describe('MODEL_FOR_TASK', () => {
   it('uses Haiku for hero_narrative', () => {
     expect(MODEL_FOR_TASK.hero_narrative).toBe('anthropic/claude-haiku-4-5');
   });
-  it('keeps Sonnet for coach_chat (multi-step tool calls)', () => {
-    expect(MODEL_FOR_TASK.coach_chat).toBe('anthropic/claude-sonnet-4-6');
+  it('uses Sonnet 5 for coach_chat (multi-step tool calls)', () => {
+    expect(MODEL_FOR_TASK.coach_chat).toBe('anthropic/claude-sonnet-5');
+  });
+  it('prices every model it routes to', () => {
+    // An unpriced model bills at the conservative fallback rather than its real
+    // rate, which quietly makes the daily budget wrong. Every routed model must
+    // be in the table.
+    for (const model of Object.values(MODEL_FOR_TASK)) {
+      expect(hasKnownPricing(model), `${model} has no pricing entry`).toBe(true);
+    }
   });
 });
 
@@ -52,9 +61,16 @@ describe('estimateCostUsd', () => {
   });
   it('sonnet: $3/MTok in, $15/MTok out', () => {
     expect(estimateCostUsd('anthropic/claude-sonnet-4-6', 1_000_000, 1_000_000)).toBe(18);
+    expect(estimateCostUsd('anthropic/claude-sonnet-5', 1_000_000, 1_000_000)).toBe(18);
   });
-  it('returns 0 for unknown model', () => {
-    expect(estimateCostUsd('made-up/model', 1_000, 1_000)).toBe(0);
+  it('charges an UNKNOWN model conservatively rather than free', () => {
+    // This returned 0 before. An unpriced model that bills nothing means
+    // checkBudget never sees spend accumulate and the daily cap stops
+    // existing — an uncapped bill nobody notices. Guessing high fails safe.
+    const cost = estimateCostUsd('made-up/model', 1_000_000, 1_000_000);
+    expect(cost).toBe(90);
+    expect(cost).toBeGreaterThan(estimateCostUsd('anthropic/claude-sonnet-5', 1_000_000, 1_000_000));
+    expect(hasKnownPricing('made-up/model')).toBe(false);
   });
   it('typical round_review call (~7k in + 250 out) ≈ $0.0083', () => {
     const cost = estimateCostUsd('anthropic/claude-haiku-4-5', 7000, 250);

@@ -27,7 +27,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import type { ReadonlyURLSearchParams } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { MessageSquare, X, Maximize2, Plus } from 'lucide-react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
@@ -46,12 +47,13 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
   const [open, setOpen] = React.useState(false);
   const [session, setSession] = React.useState(0);
   const pathname = usePathname();
+  const search = useSearchParams();
   const reduced = useReducedMotionGuard() ?? false;
 
   const panel = React.useRef<HTMLElement>(null);
   const opener = React.useRef<HTMLButtonElement>(null);
 
-  const routeContext = useRouteContext(pathname, players);
+  const routeContext = useRouteContext(pathname, search, players);
 
   // Focus moves into the panel on open and back to the launcher on close. A
   // drawer that opens without moving focus strands keyboard and screen-reader
@@ -205,17 +207,51 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
 /**
  * Derive a context chip from the current route.
  *
- * Only routes that carry an unambiguous subject produce one. Guessing on a
+ * Only routes that carry an UNAMBIGUOUS subject produce one. Guessing on a
  * generic route would put a chip in front of the coach that they did not choose
  * and cannot explain, which is worse than no context at all.
+ *
+ * Query-string subjects (`?signal=`, `?event=`, `?player=`) are read too,
+ * because the consolidated intelligence and calendar surfaces carry their
+ * selection there rather than in the path. Everything produced here is visible
+ * and removable — see `ChatContextChip`.
  */
-function useRouteContext(pathname: string, players: ComposerPlayer[]): ChatContextChip[] {
+function useRouteContext(
+  pathname: string,
+  search: ReadonlyURLSearchParams,
+  players: ComposerPlayer[],
+): ChatContextChip[] {
+  const signal = search.get('signal') ?? search.get('id');
+  const playerParam = search.get('player');
+  const event = search.get('event');
+  const focus = search.get('focus');
+  const goal = search.get('goal');
+
   return React.useMemo(() => {
-    const player = /\/dashboard\/players\/([0-9a-f-]{36})/i.exec(pathname);
-    if (player?.[1]) {
-      const found = players.find((p) => p.id === player[1]);
+    // A player page, or a player-scoped view of the intelligence surface.
+    const fromPath = /\/dashboard\/players\/([0-9a-f-]{36})/i.exec(pathname)?.[1];
+    const playerId = fromPath ?? (playerParam && UUID.test(playerParam) ? playerParam : null);
+    if (playerId) {
+      const found = players.find((p) => p.id === playerId);
+      // Only when we can NAME them: a chip reading "player 8f3c…" is a raw id
+      // in front of a coach, which is exactly what this product does not do.
       if (found) return [{ kind: 'player', id: found.id, label: found.name }];
     }
+
+    if (signal && UUID.test(signal)) {
+      return [{ kind: 'signal', id: signal, label: 'the selected signal' }];
+    }
+    if (event && UUID.test(event)) {
+      return [{ kind: 'event', id: event, label: 'the selected event' }];
+    }
+    if (focus && UUID.test(focus)) {
+      return [{ kind: 'focus_area', id: focus, label: 'the selected focus area' }];
+    }
+    if (goal && UUID.test(goal)) {
+      return [{ kind: 'goal', id: goal, label: 'the selected goal' }];
+    }
     return [];
-  }, [pathname, players]);
+  }, [pathname, playerParam, signal, event, focus, goal, players]);
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
