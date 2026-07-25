@@ -174,6 +174,12 @@ Stated explicitly, because a defect list reads as if nothing works.
 
 ## Open questions
 
+> **RESOLVED 2026-07-25 — Guilford data reuse is consented.** The owner
+> confirmed Guilford College is aware of and agreed to their round data being
+> used for demo accounts via `scripts/seed-demo-team-from-guilford.ts`. This
+> is no longer an open question and should not be re-raised by future audits.
+> Guilford's own reviews remain computed from their own data.
+
 | Question | What would settle it |
 |---|---|
 | Why did `after()` fail for these specific rounds — cold-start eviction, deploy mid-request, or an unhandled throw upstream? | Correlate the 200 rounds' `created_at` against deploy timestamps and function logs for that window |
