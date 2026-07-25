@@ -151,7 +151,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Build (so dev server boots fast)
+      - name: Build (the suite serves this build via `next start`)
         run: npm run build
 
       - name: Seed BaseballHelm E2E fixtures (issue 375)
@@ -162,7 +162,8 @@ jobs:
         if: steps.baseball-auth-ready.outputs.ready == 'true'
         run: npm run seed:baseball:ci
 
-      # One invocation = one dev-server lifecycle. The mobile viewport
+      # One invocation = one webServer lifecycle (CI serves the production
+      # build via `next start` — see playwright.config.ts). The mobile viewport
       # regression projects (blocking; e2e/mobile-viewports.spec.ts — the
       # #799/#806 phone-width defect classes at 320/390/430px) ride the same
       # Playwright process as the mandatory smoke instead of booting a second
@@ -277,7 +278,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Build (so dev server boots fast)
+      - name: Build (the suite serves this build via `next start`)
         run: npm run build
 
       - name: Run course-library spec (capture screenshots)
@@ -337,7 +338,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Build (so dev server boots fast)
+      - name: Build (the suite serves this build via `next start`)
         run: npm run build
 
       - name: Run baseball-smoke spec

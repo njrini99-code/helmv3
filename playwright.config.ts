@@ -142,13 +142,29 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests. Skipped when
-   * PLAYWRIGHT_BASE_URL points at an external deployment — there is nothing
-   * to boot locally in that case. */
+  /* Boot a server before the tests. Skipped when PLAYWRIGHT_BASE_URL points
+   * at an external deployment — there is nothing to boot locally then.
+   *
+   * CI serves the PRODUCTION build (`next start`); local keeps `next dev`
+   * for hot reload.
+   *
+   * Every CI job that runs this suite already spends ~8.5min on
+   * `npm run build` in a step literally named "Build (so dev server boots
+   * fast)" — but `next dev` does not consume `next build` output at all, so
+   * that bundle was built and then thrown away while the browser tests hit a
+   * dev server that compiles each route in-process on first request. That is
+   * the real cost behind #953: individual tests taking 15-45s, ~230 of them,
+   * a suite that has never once finished inside its window, and a Next dev
+   * process accumulating compilation state across a 59-minute run.
+   *
+   * `next start` serves the bundle the build step already produced, so the
+   * build stops being wasted work and the suite stops paying per-route
+   * compilation on every navigation. It is also the more honest target: the
+   * thing users get is the production build, not the dev server. */
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: 'npm run dev',
+        command: process.env.CI ? 'npm run start' : 'npm run dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
