@@ -193,7 +193,7 @@ export function DrillSheet({
               onClick={handleAddToPlan}
               className={cn(
                 'inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl',
-                'bg-primary-500 text-white text-sm font-medium',
+                'bg-accent-650 text-text-on-accent text-sm font-medium',
                 'hover:bg-primary-600 active:scale-[0.99] transition-all',
                 addPending && 'opacity-60 pointer-events-none',
               )}
