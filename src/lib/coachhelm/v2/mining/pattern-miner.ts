@@ -100,7 +100,16 @@ const THRESHOLDS = {
   minStrokeImpact: 0.3,  // 0.3 strokes — meaningful impact
 };
 
-/** Round-load window (days). Matches the v3 shot-level generators (was unbounded). */
+/**
+ * Default round-load window (days). Matches the v3 shot-level generators (was
+ * unbounded). A coach can override it per-team via
+ * `golf_coach_philosophy.pattern_lookback_days`, which reaches the miner as
+ * `PatternMinerOptions.lookbackDays`; this stays the value when nobody has.
+ *
+ * SCOPED TO THIS MINER. The other windows in the v2 mining layer (approach 60d,
+ * course-management 365d/90d, tee-strategy 90d) are calibrated independently
+ * per insight type and are deliberately NOT driven by the same setting.
+ */
 export const WINDOW_DAYS = 90;
 
 /**
@@ -110,7 +119,7 @@ export const WINDOW_DAYS = 90;
  * sample-size gate (computed by `effectiveMinSampleSize`) is what actually
  * controls whether each individual pattern is admissible.
  */
-const ABSOLUTE_MIN_ROUNDS = 4;
+export const ABSOLUTE_MIN_ROUNDS = 4;
 
 /**
  * Scale `minSampleSize` to the player's round count.
@@ -253,12 +262,58 @@ export const COMPOUND_CONDITION_SPECS: CompoundConditionSpec[] = [
 /**
  * Pattern Mining class for discovering patterns in player data
  */
+export interface PatternMinerOptions {
+  /**
+   * Rolling window (days) of rounds to mine. Defaults to `WINDOW_DAYS`.
+   * Supplied by the caller from `golf_coach_philosophy.pattern_lookback_days`.
+   */
+  lookbackDays?: number;
+  /**
+   * Coach's "minimum rounds before CoachHelm speaks" floor
+   * (`golf_coach_philosophy.min_rounds_for_signal`).
+   *
+   * Combined with `ABSOLUTE_MIN_ROUNDS` by `Math.max`, NOT replaced by it —
+   * these two floors mean different things. `ABSOLUTE_MIN_ROUNDS` is a
+   * technical bound (below 4 rounds there is nothing statistically mineable,
+   * whatever the coach wants); `minRounds` is policy (a coach who wants 10
+   * rounds of evidence before the engine opens its mouth). A coach can raise
+   * the bar, never lower it below what the maths supports.
+   */
+  minRounds?: number;
+}
+
+/**
+ * Resolve the two coach-configurable windows to the values the miner will
+ * actually use. Extracted from the constructor so the precedence rules are
+ * directly testable — they are the whole contract of the setting, and getting
+ * `minRounds` backwards (replace instead of raise) would let a coach silently
+ * lower the engine below what it can compute.
+ */
+export function resolveMinerWindows(options: PatternMinerOptions = {}): {
+  lookbackDays: number;
+  minRounds: number;
+} {
+  const usable = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
+  return {
+    lookbackDays: usable(options.lookbackDays)
+      ? Math.max(1, options.lookbackDays)
+      : WINDOW_DAYS,
+    // max, not replace — see PatternMinerOptions.minRounds.
+    minRounds: Math.max(ABSOLUTE_MIN_ROUNDS, usable(options.minRounds) ? options.minRounds : 0),
+  };
+}
+
 export class PatternMiner {
   private playerId: string;
   private rounds: RoundData[] = [];
+  private lookbackDays: number;
+  private minRounds: number;
 
-  constructor(playerId: string) {
+  constructor(playerId: string, options: PatternMinerOptions = {}) {
     this.playerId = playerId;
+    const windows = resolveMinerWindows(options);
+    this.lookbackDays = windows.lookbackDays;
+    this.minRounds = windows.minRounds;
   }
 
   /**
@@ -271,7 +326,7 @@ export class PatternMiner {
     await extractAllFeatures(this.playerId);
 
     // Load rounds with computed fields
-    const since = new Date(Date.now() - WINDOW_DAYS * 86400_000)
+    const since = new Date(Date.now() - this.lookbackDays * 86400_000)
       .toISOString()
       .slice(0, 10);
     const { data: rounds, error } = await supabase
@@ -283,7 +338,7 @@ export class PatternMiner {
       .order('round_date', { ascending: false })
       .limit(100);
 
-    if (error || !rounds || rounds.length < ABSOLUTE_MIN_ROUNDS) {
+    if (error || !rounds || rounds.length < this.minRounds) {
       return [];
     }
 

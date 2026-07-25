@@ -6,7 +6,8 @@
  * ----------------------------------------------------------------------------
  * The full score-by-round `Ribbon` trend (with the last-30-day scoring
  * average as a dashed benchmark), a `Personal bests` readout band, a
- * `Last 30 days vs previous 30` direction-aware comparison band, and the
+ * `Last N days vs previous N` direction-aware comparison band (N = the coach's
+ * `stats_benchmark_window_days`, default 30), and the
  * last-10 logged rounds list, each linking out to its own Round Review.
  *
  * `scoreTrend`/`personalBests`/`periodComparison` all come from the SAME
@@ -107,6 +108,10 @@ export function RoundsDrill({
 
   const ribbonPoints: RibbonPoint[] = scoreTrend.map((p) => ({ x: p.date, y: p.value }));
   const scoreBenchmark = finite(periodComparison?.last30Days.scoringAvg ?? null);
+  // The payload keys still read `last30Days`/`previous30Days`, but the window is
+  // the coach's `stats_benchmark_window_days` setting. Every label below reads
+  // `windowDays` so it can never claim 30 while comparing 90.
+  const windowDays = periodComparison?.windowDays ?? 30;
 
   const comparisonMetrics: ComparisonMetric[] = [
     {
@@ -157,7 +162,7 @@ export function RoundsDrill({
             title="Score by round"
             overline="Trend"
             data={ribbonPoints}
-            benchmark={scoreBenchmark !== null ? { value: scoreBenchmark, label: 'Last 30d avg' } : undefined}
+            benchmark={scoreBenchmark !== null ? { value: scoreBenchmark, label: `Last ${windowDays}d avg` } : undefined}
             valueFormatter={(v) => String(Math.round(v))}
             seriesName="Score"
             goodDirection="down"
@@ -229,7 +234,7 @@ export function RoundsDrill({
           </div>
 
           <div className="flex flex-col gap-3">
-            <Eyebrow as="h4">Last 30 days vs previous 30</Eyebrow>
+            <Eyebrow as="h4">{`Last ${windowDays} days vs previous ${windowDays}`}</Eyebrow>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {comparisonMetrics.map((m) => {
                 const diff = m.last !== null && m.previous !== null ? m.last - m.previous : null;
@@ -247,7 +252,7 @@ export function RoundsDrill({
                               value: diff,
                               direction: deltaDirection(diff, m.higherIsBetter),
                               format: m.formatDelta,
-                              caption: 'vs prior 30d',
+                              caption: `vs prior ${windowDays}d`,
                             }
                           : undefined
                       }

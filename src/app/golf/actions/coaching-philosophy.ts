@@ -44,6 +44,14 @@ const ALLOWED_DB_COLUMNS = new Set<string>([
   'show_strokes_gained',
   'show_advanced_stats',
   'insight_verbosity',
+  // Signal controls (migration 20260725090000).
+  'min_insight_confidence',
+  'min_rounds_for_signal',
+  'alert_digest',
+  // Window controls (migration 20260725140000).
+  'min_hole_plays_for_ranking',
+  'pattern_lookback_days',
+  'stats_benchmark_window_days',
 ]);
 
 /**

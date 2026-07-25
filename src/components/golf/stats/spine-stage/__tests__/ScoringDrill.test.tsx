@@ -138,6 +138,7 @@ describe('ScoringDrill', () => {
     renderScoring({
       detailedStats: fixtureStats(),
       periodComparison: {
+        windowDays: 30,
         last30Days: { roundCount: 6, scoringAvg: 73, girPct: null, fairwayPct: null, puttsPerRound: null },
         previous30Days: { roundCount: 6, scoringAvg: 75, girPct: null, fairwayPct: null, puttsPerRound: null },
       },

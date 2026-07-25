@@ -224,7 +224,7 @@ export function ScoringDrill({
                 periodComparison?.last30Days.scoringAvg,
                 periodComparison?.previous30Days.scoringAvg,
                 false,
-                'vs prior 30d',
+                `vs prior ${periodComparison?.windowDays ?? 30}d`,
               )}
             />
           </InstrumentPanel>

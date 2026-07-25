@@ -141,6 +141,7 @@ function fixtureTrend(): TrendAnalysisResponse {
     trends: { score: [], gir: [], fairway: [], putts: [] },
     rollingAverages: { score5: [], score10: [], score20: [] },
     periodComparison: {
+      windowDays: 30,
       last30Days: { roundCount: 6, scoringAvg: 74, girPct: 58, fairwayPct: 62, puttsPerRound: 30 },
       previous30Days: { roundCount: 6, scoringAvg: 75, girPct: 55, fairwayPct: 60, puttsPerRound: 31 },
     },

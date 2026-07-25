@@ -20,6 +20,12 @@ export const PHILOSOPHY_DEFAULTS = {
     minInsightConfidence: 0.3,
     minRoundsForSignal: 3,
     alertDigest: 'immediate' as const,
+    // Window controls — again, these DEFAULTS ARE the engine's prior constants
+    // (worst-hole-ranking DEFAULT_MIN_PLAYS=3, pattern-miner WINDOW_DAYS=90,
+    // the stats benchmark's hardcoded 30-day split).
+    minHolePlaysForRanking: 3,
+    patternLookbackDays: 90,
+    statsBenchmarkWindowDays: 30,
 };
 
 export const THRESHOLD_RANGES = {
@@ -34,7 +40,14 @@ export const THRESHOLD_RANGES = {
 export const SIGNAL_CONTROL_RANGES = {
     minInsightConfidence: { min: 0.1, max: 0.9, step: 0.05 },
     minRoundsForSignal: { min: 1, max: 15, step: 1 },
+    minHolePlaysForRanking: { min: 2, max: 10, step: 1 },
+    patternLookbackDays: { min: 30, max: 365, step: 5 },
 };
+
+/** The Stats benchmark window is an enum, not a range — "last N vs previous N"
+ *  only reads clearly at a few sizes. Must match the CHECK constraint in
+ *  migration 20260725140000. */
+export const STATS_BENCHMARK_WINDOWS = [14, 30, 60, 90] as const;
 
 /**
  * Confidence floor implied by each Alert Sensitivity preset.

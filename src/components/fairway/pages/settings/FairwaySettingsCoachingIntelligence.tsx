@@ -37,6 +37,7 @@ import { PriorityRanker, SensitivitySlider } from '@/components/golf/coachhelm/s
 import {
   THRESHOLD_RANGES,
   SIGNAL_CONTROL_RANGES,
+  STATS_BENCHMARK_WINDOWS,
   confidenceFloorForSensitivity,
 } from '@/lib/coachhelm/constants';
 import { ALERT_GROUPS, type CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -86,6 +87,9 @@ type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold' | 'bubbleZoneRan
  *  constant and defaults to it, so shipping them changed nobody's alert
  *  volume until they move one. */
 type SignalControlKey = 'minInsightConfidence' | 'minRoundsForSignal';
+/** Window controls (migration 20260725140000) — same contract as the signal
+ *  controls above: each replaces a hard-coded window and defaults to it. */
+type WindowControlKey = 'minHolePlaysForRanking' | 'patternLookbackDays';
 type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
@@ -287,6 +291,14 @@ function CoachingIntelligenceBody({
 
   const handleSignalControlChange = (key: SignalControlKey, value: number) => {
     debouncedSave(`signal:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
+  };
+
+  const handleWindowControlChange = (key: WindowControlKey, value: number) => {
+    debouncedSave(`window:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
+  };
+
+  const handleBenchmarkWindowChange = (value: number) => {
+    debouncedSave('window:statsBenchmarkWindowDays', { statsBenchmarkWindowDays: value });
   };
 
   const handleDigestChange = (value: CoachPhilosophy['alertDigest']) => {
@@ -642,6 +654,53 @@ function CoachingIntelligenceBody({
                   { value: 'weekly', label: 'Weekly' },
                 ]}
                 aria-label="Alert delivery cadence"
+              />
+            }
+          />
+        </SettingsGroup>
+
+        {/* Analysis windows — new 2026-07-25 (migration 20260725140000). Same
+            contract as Signal controls: each replaced a hard-coded constant and
+            defaults to it. These say how much HISTORY the engine looks at,
+            where Signal controls say how much CERTAINTY it needs. */}
+        <SettingsGroup
+          title="Analysis windows"
+          description="How far back CoachHelm looks, and how much repetition it needs before calling something a pattern."
+        >
+          <div className="px-4 py-4">
+            <Slider
+              label="Hole ranking threshold"
+              description="Plays a hole needs before it can be listed as your toughest or easiest. Higher means shorter lists, better evidence."
+              value={philosophy.minHolePlaysForRanking}
+              onValueChange={(v) => handleWindowControlChange('minHolePlaysForRanking', v)}
+              {...SIGNAL_CONTROL_RANGES.minHolePlaysForRanking}
+              unit="plays"
+              ticks
+            />
+          </div>
+          <div className="px-4 py-4">
+            <Slider
+              label="Pattern lookback"
+              description="How far back pattern mining reads. A shorter window follows current form; a longer one finds habits."
+              value={philosophy.patternLookbackDays}
+              onValueChange={(v) => handleWindowControlChange('patternLookbackDays', v)}
+              {...SIGNAL_CONTROL_RANGES.patternLookbackDays}
+              unit="days"
+            />
+          </div>
+          <SettingsRow
+            stacked
+            label="Stats benchmark window"
+            description={`The Stats page compares the last ${philosophy.statsBenchmarkWindowDays} days against the ${philosophy.statsBenchmarkWindowDays} before them.`}
+            control={
+              <Segmented
+                value={String(philosophy.statsBenchmarkWindowDays)}
+                onValueChange={(v) => handleBenchmarkWindowChange(Number(v))}
+                options={STATS_BENCHMARK_WINDOWS.map((days) => ({
+                  value: String(days),
+                  label: `${days}d`,
+                }))}
+                aria-label="Stats benchmark window"
               />
             }
           />

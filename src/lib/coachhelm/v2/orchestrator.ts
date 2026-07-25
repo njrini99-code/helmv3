@@ -42,6 +42,7 @@ import { TeeStrategyGenerator } from '@/lib/coachhelm/v3/generators/tee-strategy
 // Tier-1 rows. Failure-isolated — never throws; logs internally.
 import { synthesizeForPlayer } from '@/lib/coachhelm/v3/composite';
 import { runWithGate } from './insights/gate-context';
+import { getPlayerSignalSettings } from '@/lib/golf/player-signal-settings';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, CrossLearner } from './learning';
@@ -458,7 +459,10 @@ class CoachHelmIntelligence {
       predictionResult,
     ] = await Promise.all([
       includePatterns
-        ? new PatternMiner(playerId).minePatterns()
+        ? new PatternMiner(playerId, {
+            lookbackDays: options.patternLookbackDays,
+            minRounds: options.minRoundsForSignal,
+          }).minePatterns()
         : Promise.resolve<MinedPattern[]>([]),
       wantShotPatterns
         ? new ShotPatternMiner(playerId).analyzeShotPatterns({ persistPatterns })
@@ -534,7 +538,21 @@ class CoachHelmIntelligence {
           feedbackScore: scoreInsight(insight.confidence, insight.strokeImpact ?? 0, insightType, []).finalScore,
         };
       })
-      .filter(insight => shouldShowInsight({ baseScore: insight.confidence, feedbackAdjustment: 0, finalScore: insight.feedbackScore, shouldShow: true }))
+      // Pass the COACH'S threshold, not the module default. `shouldShowInsight`
+      // takes an optional `minimumThreshold` and this call omitted it, so every
+      // composed insight was filtered against DEFAULT_MINIMUM_THRESHOLD (0.3)
+      // regardless of Alert Sensitivity — a coach on "Conservative" (0.70) saw
+      // the same noise floor here as one on "Aggressive" (0.40). The threshold
+      // was already computed and handed in via `philosophyGate`; it just never
+      // reached this filter. The gate governs upsert WRITES (Wave 7B), so
+      // sensitivity was not entirely inert — but what analyzePlayer RETURNS
+      // ignored it. Falls back to the module default when no gate is supplied.
+      .filter(insight =>
+        shouldShowInsight(
+          { baseScore: insight.confidence, feedbackAdjustment: 0, finalScore: insight.feedbackScore, shouldShow: true },
+          options.philosophyGate?.confidenceThreshold,
+        ),
+      )
       .sort((a, b) => b.feedbackScore - a.feedbackScore);
 
     // Determine alert level
@@ -595,8 +613,15 @@ class CoachHelmIntelligence {
       return null;
     }
 
-    // Get patterns
-    const miner = new PatternMiner(playerId);
+    // Get patterns. Round review has no options bag of its own, so it resolves
+    // the coach's window directly — otherwise a coach who widened the lookback
+    // would see it honoured on the Insights surface but silently ignored in
+    // every round review, which is worse than not having the setting.
+    const signalSettings = await getPlayerSignalSettings(playerId);
+    const miner = new PatternMiner(playerId, {
+      lookbackDays: signalSettings.patternLookbackDays,
+      minRounds: signalSettings.minRoundsForSignal,
+    });
     const patterns = await miner.minePatterns();
 
     // Get causal relationships

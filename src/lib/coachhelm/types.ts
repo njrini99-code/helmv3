@@ -55,6 +55,15 @@ export interface CoachPhilosophy {
     /** How alerts reach the coach. */
     alertDigest: 'immediate' | 'daily' | 'weekly';
 
+    // Window / sample-size controls (migration 20260725140000). Same contract:
+    // each replaces an engine constant and defaults to it.
+    /** Plays a hole needs before it can be ranked toughest/easiest (2-10). */
+    minHolePlaysForRanking: number;
+    /** Rolling window (days) for v2 pattern mining (30-365). */
+    patternLookbackDays: number;
+    /** Stats-page benchmark comparison window in days (14 | 30 | 60 | 90). */
+    statsBenchmarkWindowDays: number;
+
     createdAt: string;
     updatedAt: string;
 }

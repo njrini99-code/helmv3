@@ -41,6 +41,9 @@ const philosophy: CoachPhilosophy = {
   minInsightConfidence: 0.3,
   minRoundsForSignal: 3,
   alertDigest: 'immediate' as const,
+  minHolePlaysForRanking: 3,
+  patternLookbackDays: 90,
+  statsBenchmarkWindowDays: 30,
   updatedAt: '2026-05-31T00:00:00.000Z',
 };
 

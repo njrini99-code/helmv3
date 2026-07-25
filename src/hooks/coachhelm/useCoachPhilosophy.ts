@@ -49,6 +49,10 @@ interface PhilosophyDbRow {
     min_insight_confidence?: string | number | null;
     min_rounds_for_signal?: number | null;
     alert_digest?: string | null;
+    // Migration 20260725140000 — optional for the same reason as above.
+    min_hole_plays_for_ranking?: number | null;
+    pattern_lookback_days?: number | null;
+    stats_benchmark_window_days?: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -95,6 +99,11 @@ function dbToTs(row: PhilosophyDbRow): CoachPhilosophy {
             row.alert_digest === 'daily' || row.alert_digest === 'weekly'
                 ? row.alert_digest
                 : 'immediate',
+        minHolePlaysForRanking:
+            row.min_hole_plays_for_ranking ?? PHILOSOPHY_DEFAULTS.minHolePlaysForRanking,
+        patternLookbackDays: row.pattern_lookback_days ?? PHILOSOPHY_DEFAULTS.patternLookbackDays,
+        statsBenchmarkWindowDays:
+            row.stats_benchmark_window_days ?? PHILOSOPHY_DEFAULTS.statsBenchmarkWindowDays,
         // Map 'minimal'/'standard' to 'brief', keep 'detailed' as-is
         insightVerbosity: (row.insight_verbosity === 'detailed' ? 'detailed' : 'brief') as 'brief' | 'detailed',
         createdAt: row.created_at,
@@ -135,6 +144,9 @@ function tsToDb(data: Partial<CoachPhilosophy>): Record<string, unknown> {
         minInsightConfidence: 'min_insight_confidence',
         minRoundsForSignal: 'min_rounds_for_signal',
         alertDigest: 'alert_digest',
+        minHolePlaysForRanking: 'min_hole_plays_for_ranking',
+        patternLookbackDays: 'pattern_lookback_days',
+        statsBenchmarkWindowDays: 'stats_benchmark_window_days',
     };
 
     const result: Record<string, unknown> = {};

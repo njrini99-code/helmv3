@@ -224,6 +224,9 @@ interface PhilosophyDbRow {
   min_insight_confidence?: string | number | null;
   min_rounds_for_signal?: number | null;
   alert_digest?: string | null;
+  min_hole_plays_for_ranking?: number | null;
+  pattern_lookback_days?: number | null;
+  stats_benchmark_window_days?: number | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -281,6 +284,9 @@ async function getCoachPhilosophy(
     minInsightConfidence: 0.3,
     minRoundsForSignal: 3,
     alertDigest: 'immediate',
+    minHolePlaysForRanking: 3,
+    patternLookbackDays: 90,
+    statsBenchmarkWindowDays: 30,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -334,6 +340,10 @@ async function getCoachPhilosophy(
       row.alert_digest === 'daily' || row.alert_digest === 'weekly'
         ? row.alert_digest
         : defaults.alertDigest,
+    minHolePlaysForRanking: row.min_hole_plays_for_ranking ?? defaults.minHolePlaysForRanking,
+    patternLookbackDays: row.pattern_lookback_days ?? defaults.patternLookbackDays,
+    statsBenchmarkWindowDays:
+      row.stats_benchmark_window_days ?? defaults.statsBenchmarkWindowDays,
     createdAt: row.created_at ?? defaults.createdAt,
     updatedAt: row.updated_at ?? defaults.updatedAt,
   };
@@ -3950,6 +3960,11 @@ async function triggerPlayerInsightsAfterRoundImpl(
             // composed insight bodies honor 'brief' / 'detailed'.
             verbosity: philosophy.insightVerbosity,
             philosophyGate,
+            // Window controls (migration 20260725140000). The philosophy is
+            // already loaded here, so hand the miner its window rather than
+            // making it re-resolve player → coach on its own.
+            patternLookbackDays: philosophy.patternLookbackDays,
+            minRoundsForSignal: philosophy.minRoundsForSignal,
           });
     } catch {
       // Expected in fire-and-forget/cron contexts (roster-sweep, post-round
