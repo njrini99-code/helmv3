@@ -388,6 +388,52 @@ Task 11 repair landed (task-11-brief-REPAIRED.md). Rule:
   golf/coachhelm/insight-card/), but the Task 5 supersede banner in the plan
   overstates this and should be softened when Task 5 is dispatched.
 
+Task 2 REVIEWED (verdict: .superpowers/sdd/task-2-review-b.md). Spec ✅ for
+  the literal steps; QUALITY: Needs fixes — one Important, plan-mandated.
+  NOTE ON DELIVERY: the first reviewer (opus) completed and went idle FOUR
+  times without its verdict ever arriving. A replacement (sonnet) did the
+  same until asked to write to a FILE, which worked first try. Messages have
+  been ~50% reliable this session; file writes 100%. Use files for anything
+  that matters.
+
+  IMPORTANT (my plan's fault, not the implementer's): generateRoundReview
+  (orchestrator.ts:629) calls .calibrate() at :696, and the generateInsights
+  it invokes at :660 calls it at :1111/:1135/:1165 — with NO
+  ensureCalibrationBootstrapped() anywhere on that path. generateRoundReview
+  never calls analyzePlayer (the only this.analyzePlayer( in the file is in
+  generateAlerts:814, which is fine and bootstraps transitively). It is an
+  independent production entry point (round-review-system.ts:1004,
+  api/golf/rounds/generate-review/route.ts:119) feeding
+  insight-composer.ts:442's reasoning.calibratedConfidence — user-facing.
+  Under Vercel per-route isolation that route rarely has a warm
+  analyzePlayer, so ROUND REVIEW STILL SHOWS THE PRE-FIX BUG. Root cause:
+  my Step 3 said "call it at the top of analyzePlayer" and nowhere else.
+  I treated this as an incomplete plan rather than a plan-vs-review conflict
+  needing owner arbitration — it is a gap that defeats the task's own stated
+  goal, and the fix is one line consistent with that goal.
+
+  All three named risks came back clean: predicate correct for all 5
+  canonical starts (non-canonical values skipped via the retained -1 guard);
+  0.65->0.80 holds because predictedCount===5 fails a `< 5` guard; the
+  flag-before-await is benign (a concurrent second caller gets raw
+  passthrough, which is the stated contract). Task 1's fixture still pins
+  what it was written to pin.
+
+  FIX DISPATCHED (one subagent, all findings): (1) bootstrap
+  generateRoundReview; (2) add logServerError to the bare catch at
+  orchestrator.ts:260-269 — a silent catch is the exact shape that hid
+  today's month-long stall; (3) reset the guard flag on FAILURE so a
+  transient blip stops permanently disabling calibration for the process
+  lifetime — this is a deliberate change to the brief's contract and an
+  improvement, flagged as such; (4) correct the docstring's overclaim.
+  Tests required: a generateRoundReview bootstrap test that genuinely fails
+  before fix 1, plus a flag-reset test.
+
+  KNOWN CEILING, accepted, not fixed: ensureCalibrationBootstrapped never
+  re-fires once successful, so a long-warm process serves an increasingly
+  stale calibration snapshot after the nightly cron recomputes. Inherent to
+  the idempotency contract.
+
 Task 1: complete (commits 19a3ee91f..32316ad7c, review clean — Approved).
   Reviewer independently confirmed the epsilon bug from source and verified
   the 0.85 fixture does NOT mask a filter regression (totalPredictions
