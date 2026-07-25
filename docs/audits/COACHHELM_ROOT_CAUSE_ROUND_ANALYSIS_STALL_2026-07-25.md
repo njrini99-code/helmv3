@@ -112,6 +112,48 @@ membership) — those correctly get `coachhelm_failed_at` and stop being retried
 
 ---
 
+## Related finding: the effectiveness ledger records exposure and almost nothing else
+
+Verified by query 2026-07-25. Not part of the round-analysis stall, but the same
+shape and it blocks the "is CoachHelm helping?" question outright.
+
+| table | rows | note |
+|---|---|---|
+| `golf_insight_exposure` | **30,613** | every render is faithfully recorded |
+| `golf_insight_action` | **3** | all `action_type='create_focus'` |
+| `golf_insight_outcome` | 44 | |
+| `golf_coach_insights.outcome_status` | **0 of 548 populated** | the `OutcomeBadge` renders on every card with nothing to show |
+| `golf_coach_behavior_log` | **0 rows, ever** | `v2/feedback/coach-behavior.ts` is fully built and never called |
+
+`recordInsightAction` has three call sites (`insights.ts:1244`, `:1328`, `:1500`)
+recording `acknowledged`, `dismissed`, and `resolved`. **None of those three action
+types has ever been written.** The only rows present come from a different path.
+
+Two candidate explanations, and I have NOT established which:
+
+1. All three call sites use `void recordInsightAction({...})` — unawaited
+   fire-and-forget in a serverless runtime. That is the same non-durable pattern
+   that stranded 200 rounds via `after()`, so it is a natural suspect.
+2. Coaches genuinely never used acknowledge/dismiss/resolve. Note the exposure
+   count is auto-generated per render, not per user action, so 30,613 does not
+   imply heavy interaction — but zero across all three types, while a fourth
+   action type recorded successfully, is an odd asymmetry.
+
+`acknowledgeInsight` IS reachable from live components
+(`FairwayPlayerGameFingerprint.tsx`, `alerts.ts`, `intelligence-dashboard.ts`), so
+"unreachable code" is ruled out.
+
+**Settling it:** instrument or await one of the three writers and take a single
+real action in the product, then re-query. That distinguishes a dropped write from
+a genuine absence of clicks in one step.
+
+**Why it matters:** effectiveness cannot be computed from exposure alone. This is
+why `FairwayEffectiveness.tsx` — 1,809 lines, self-described as "the flagship
+effectiveness surface… answers 'is CoachHelm actually helping'" — would have had
+nothing to display even if it were still wired to a route. Fixing the ledger is a
+prerequisite for that surface being worth reviving, and for `outcome_status` and
+the learning loop to mean anything.
+
 ## Verified working
 
 Stated explicitly, because a defect list reads as if nothing works.
