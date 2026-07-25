@@ -69,6 +69,9 @@ const config: Config = {
           400: tokenColor('--fw-color-accent-400'),
           500: tokenColor('--fw-color-accent-500'),
           600: tokenColor('--fw-color-accent-600'),
+          // The solid-button fill — brightest green that carries cream copy at
+          // AA. See the token comment in design-tokens.css before changing it.
+          650: tokenColor('--fw-color-accent-650'),
           700: tokenColor('--fw-color-accent-700'),
           800: tokenColor('--fw-color-accent-800'),
           900: tokenColor('--fw-color-accent-900'),

@@ -519,6 +519,15 @@ function FairwayDashboardContent({
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
 
+  // The name the mobile top bar gives the current view. Inside a multi-tab hub
+  // that is the HUB, not the leaf: the strip immediately below the bar already
+  // names the leaf on its active tab, so the crumb leaf here stacked "Roster"
+  // over the strip's own "Roster" over the page's "ROSTER" eyebrow. The hub
+  // label is also what the bottom nav calls the destination, so the two chrome
+  // surfaces finally agree (bottom nav "Team" ⇄ bar "Team"). Desktop is
+  // unaffected — it reads `breadcrumbs`, never this.
+  const mobilePageTitle = activeHub?.label ?? breadcrumbs.at(-1)?.label;
+
   // Stable identity across pathname-only re-renders (perf packet
   // [shell-render-hygiene]) — was a fresh object literal every render,
   // defeating FairwaySidebar's React.memo (it reads `user` from AppShell).
@@ -629,12 +638,12 @@ function FairwayDashboardContent({
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}
         searchPlaceholder="Search players, rounds, pages…"
-        // M1 (condensing-header): the shared sub-tab strip now renders as
-        // part of AppShell's ONE sticky chrome unit; `pageTitle` is the
-        // condensed-bar fallback for routes that haven't adopted
-        // `<FairwayLargeTitle>` yet (already-computed breadcrumb trail).
+        // The shared sub-tab strip renders as part of AppShell's ONE sticky
+        // chrome unit; `pageTitle` is the name the bar shows on phone (see
+        // `mobilePageTitle` above — hub label inside a hub, crumb leaf
+        // otherwise).
         subNav={subNav}
-        pageTitle={breadcrumbs.at(-1)?.label}
+        pageTitle={mobilePageTitle}
         // M1: the More sheet's identity row links here; its footer is the
         // light-themed Settings + Sign out row (moreSheetFooter, below).
         settingsHref="/golf/dashboard/settings"

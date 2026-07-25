@@ -101,12 +101,7 @@ export default async function UtilizationPage() {
   return (
     <div className="space-y-4">
       <AutoRefresh intervalMs={60_000} />
-      {/* This page previously rendered no masthead at all — the mobile
-          condense observer (FairwayContentAnchor) had no title-sized node to
-          anchor on, so the condensed top-bar title never had honest content
-          to show at rest (same gap fixed on baseball/work/users in this same
-          wave). */}
-      <div data-fw-title-anchor>
+      <div>
         <Eyebrow as="p" tone="accent">
           Utilization
         </Eyebrow>

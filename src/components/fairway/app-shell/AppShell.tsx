@@ -27,13 +27,13 @@
  * calls `setMobileOpen(true)` (via SidebarContext) opens the SAME sheet, not
  * a dead drawer.
  *
- * M1 (condensing-header, rules 2/7): the top bar + an optional `subNav` render
- * as ONE sticky chrome unit wrapped in `FairwayLargeTitleProvider` — at `<md`
- * the bar's center cross-fades in the page's condensed title once its
- * in-content large title (an adopted `<FairwayLargeTitle>`, or the breadcrumb
- * fallback) scrolls under it. The condense toggle lives entirely in that
- * provider's own state so a scroll-driven re-render never reaches this
- * component (see `LargeTitleContext.tsx`'s module doc).
+ * Rules 2/7: the top bar + an optional `subNav` render as ONE sticky chrome
+ * unit wrapped in `FairwayLargeTitleProvider`. At `<md` the bar's leading slot
+ * carries a STANDING title naming the current destination — an adopted
+ * `<FairwayLargeTitle>`'s registered title, else the `pageTitle`/breadcrumb
+ * fallback computed below. It is visible from first paint; nothing about it
+ * depends on scroll (see `FairwayTopBar`'s module doc for why the previous
+ * scroll-gated cross-fade was removed).
  *
  * Layout / spacing (§A "light & airy"): page gutters 48–56px, the content column
  * sits on `bg-canvas` and is the brightest, warmest thing; the rail recedes.
@@ -49,7 +49,7 @@ import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { FairwaySidebar, type FairwaySidebarProps } from './FairwaySidebar';
 import { FairwayTopBar, type FairwayTopBarProps } from './FairwayTopBar';
-import { FairwayLargeTitleProvider, FairwayHeaderSentinel, FairwayContentAnchor } from './LargeTitleContext';
+import { FairwayLargeTitleProvider } from './LargeTitleContext';
 import { MoreNavSheet } from './MoreNavSheet';
 import { RouteTransition } from './RouteTransition';
 import type { Breadcrumb, NavSection, ShellLinkComponent, ShellUser } from './types';
@@ -85,21 +85,20 @@ export interface AppShellProps {
   /** Top-bar right action cluster. */
   topBarActions?: React.ReactNode;
   /**
-   * M1 (condensing-header): a hub sub-tab strip rendered as part of the ONE
-   * sticky chrome unit — immediately below the top bar, above the header
-   * sentinel/`{children}`. Presence sets `flush` on the top bar (drops its
-   * own bottom hairline at `<md` so bar+strip read as one surface) and adds
-   * the strip's height to the condense observer's shrunk root. Memoize at
-   * the call site exactly like `sidebarFooter`/`brand` (Decision 7).
+   * A hub sub-tab strip rendered as part of the ONE sticky chrome unit —
+   * immediately below the top bar, above `{children}`. Presence sets `flush`
+   * on the top bar (drops its own bottom hairline at `<md` so the bar's
+   * standing title and the strip's tabs read as one surface). Memoize at the
+   * call site exactly like `sidebarFooter`/`brand` (Decision 7).
    */
   subNav?: React.ReactNode;
   /**
-   * M1 (condensing-header): the page's title, used ONLY as the top bar's
-   * condensed-copy fallback on routes that haven't adopted
-   * `<FairwayLargeTitle>` yet — `pageTitle ?? breadcrumbs.at(-1)?.label`.
-   * A mounted `<FairwayLargeTitle>` always wins over this (see
-   * `LargeTitleContext`'s `registeredTitle`). A plain string — never an
-   * object/array — so it can't defeat any memoization downstream.
+   * The page's title, used as the top bar's standing destination label on
+   * routes that haven't adopted `<FairwayLargeTitle>` —
+   * `pageTitle ?? breadcrumbs.at(-1)?.label`. A mounted `<FairwayLargeTitle>`
+   * always wins over this (see `LargeTitleContext`'s `registeredTitle`). A
+   * plain string — never an object/array — so it can't defeat any
+   * memoization downstream.
    */
   pageTitle?: string;
   /**
@@ -310,11 +309,11 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     actions: topBarActions,
     accentColor,
     linkComponent,
-    // M1: the condensed-title FALLBACK (a mounted `<FairwayLargeTitle>`
-    // always overrides this internally via context — see FairwayTopBar's own
-    // doc comment). A plain string derived from props that only change on
-    // navigation, so this stays stable across scroll.
-    condensedTitle: pageTitle ?? breadcrumbs?.at(-1)?.label,
+    // The standing destination label's FALLBACK (a mounted
+    // `<FairwayLargeTitle>` always overrides this internally via context —
+    // see FairwayTopBar's own doc comment). A plain string derived from props
+    // that only change on navigation.
+    pageTitle: pageTitle ?? breadcrumbs?.at(-1)?.label,
     flush: !!subNav,
   };
 
@@ -383,22 +382,14 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
             style={{ backgroundColor: `color-mix(in oklch, ${accentColor} 12%, transparent)` }}
           />
         )}
-        {/* M1: the ONE condensing chrome unit — top bar, then an optional
-            hub sub-nav strip immediately below it (both sticky; together
-            they occlude the observer's shrunk root, see `hasSubNav` below),
-            then the header sentinel, then the actual content. `enabled`
-            mirrors the desktop-rail mount gate above so the observer never
-            runs at md+ (the desktop masthead/breadcrumb never condenses).
-            DEFECT FIX: `FairwayContentAnchor` (inside RouteTransition, not
-            around it) registers the page's real first element as the
-            observer's target — see LargeTitleContext.tsx's module doc —
-            so condense fires once the true title has scrolled under the
-            bar, not after ~1px because the static sentinel's resting
-            position happened to cancel out the rootMargin shrink. */}
-        <FairwayLargeTitleProvider enabled={!isDesktop} hasSubNav={!!subNav}>
+        {/* The ONE sticky chrome unit — top bar (carrying the standing
+            destination title at `<md`), then an optional hub sub-nav strip
+            immediately below it, then the content. The provider supplies only
+            the per-route title registry a page can write to; it holds no
+            scroll state, so it never re-renders on scroll. */}
+        <FairwayLargeTitleProvider>
           <FairwayTopBar {...topBarProps} />
           {subNav}
-          <FairwayHeaderSentinel />
 
           <main className="flex-1">
             <div
@@ -420,11 +411,9 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
               )}
             >
               {disableRouteTransition ? (
-                <FairwayContentAnchor>{children}</FairwayContentAnchor>
+                children
               ) : (
-                <RouteTransition routeKey={pathname}>
-                  <FairwayContentAnchor>{children}</FairwayContentAnchor>
-                </RouteTransition>
+                <RouteTransition routeKey={pathname}>{children}</RouteTransition>
               )}
             </div>
           </main>

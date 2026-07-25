@@ -1,13 +1,16 @@
 // =============================================================================
 // src/components/fairway/app-shell/FairwayTopBar.test.tsx
 //
-// M1 (condensing-header, 2026-07-10) — pins the single condensing chrome
-// unit's contract on `FairwayTopBar`: the leading crumb/⌘K pill are desktop-
-// only (`hidden`/`md:block`, `hidden`/`md:flex`) with NO separate mobile-only
-// crumb copy left behind; the condensed title is `aria-hidden`, decorative,
-// and cross-fades purely off `LargeTitleContext`'s `condensed` (never a
-// prop); `registeredTitle` wins over the `condensedTitle` fallback prop; and
-// `flush` drops the bar's own bottom hairline at `<md` only.
+// Pins the sticky chrome unit's contract on `FairwayTopBar`: the crumb trail
+// and ⌘K pill are desktop-only (`hidden`/`md:block`, `hidden`/`md:flex`) with
+// NO mobile crumb copy left behind; the phone leading slot carries a STANDING
+// destination title that is present regardless of scroll (the 2026-07-25 fix —
+// it used to be `opacity-0` until an IntersectionObserver said you had
+// scrolled past the page masthead, so at rest nothing named the view); that
+// title is `aria-hidden` with the accessible name on the `<header>` landmark
+// instead, so it never becomes a second heading; `registeredTitle` wins over
+// the `pageTitle` fallback prop; and `flush` drops the bar's own bottom
+// hairline at `<md` only.
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
@@ -24,11 +27,8 @@ const BREADCRUMBS: Breadcrumb[] = [
 
 function ctx(overrides: Partial<LargeTitleContextValue> = {}): LargeTitleContextValue {
   return {
-    condensed: false,
     registeredTitle: null,
     setRegisteredTitle: () => {},
-    sentinelRef: { current: null },
-    registerTitleNode: () => {},
     ...overrides,
   };
 }
@@ -36,25 +36,25 @@ function ctx(overrides: Partial<LargeTitleContextValue> = {}): LargeTitleContext
 function renderBar(props: Partial<React.ComponentProps<typeof FairwayTopBar>> = {}, value = ctx()) {
   return render(
     <LargeTitleContext.Provider value={value}>
-      <FairwayTopBar breadcrumbs={BREADCRUMBS} condensedTitle="Roster" {...props} />
+      <FairwayTopBar breadcrumbs={BREADCRUMBS} pageTitle="Roster" {...props} />
     </LargeTitleContext.Provider>,
   );
 }
 
-/** The condensed-title span, scoped under its own `data-slot` wrapper so it
+/** The standing-title span, scoped under its own `data-slot` wrapper so it
  *  never collides with the (also-textually-"Roster") breadcrumb trail. */
-function condensedTitleEl(container: HTMLElement): HTMLElement {
-  const el = container.querySelector('[data-slot="fw-topbar-condensed-title"] span');
-  if (!el) throw new Error('condensed title span not found');
+function titleEl(container: HTMLElement): HTMLElement {
+  const el = container.querySelector('[data-slot="fw-topbar-title"] span');
+  if (!el) throw new Error('standing title span not found');
   return el as HTMLElement;
 }
 
 describe('FairwayTopBar — desktop-only chrome leaves the phone entirely', () => {
   it('renders exactly ONE breadcrumb element (no leftover <md-only crumb copy)', () => {
     const { container } = renderBar();
-    // Pre-M1 there were TWO: the desktop `<nav aria-label="Breadcrumb">` trail
+    // There used to be TWO: the desktop `<nav aria-label="Breadcrumb">` trail
     // AND a separate `<md`-only last-crumb `<div aria-label="Breadcrumb">`.
-    // M1 deletes the latter — the leading slot is EMPTY at rest on phone.
+    // The phone gets the standing title instead — never a crumb (rule 7).
     expect(container.querySelectorAll('[aria-label="Breadcrumb"]')).toHaveLength(1);
   });
 
@@ -75,37 +75,68 @@ describe('FairwayTopBar — desktop-only chrome leaves the phone entirely', () =
   });
 });
 
-describe('FairwayTopBar — condensed title', () => {
-  it('is aria-hidden and decorative (never a second announced heading)', () => {
-    const { container } = renderBar({}, ctx({ condensed: true }));
-    const wrapper = container.querySelector('[data-slot="fw-topbar-condensed-title"]')!;
+describe('FairwayTopBar — standing destination title (phone)', () => {
+  it('is VISIBLE at rest — no scroll required to learn where you are', () => {
+    // The regression this file exists to prevent: the title used to render
+    // `opacity-0 translate-y-1` until a scroll observer flipped `condensed`,
+    // so the phone header showed nothing but a notification bell at scroll 0.
+    const { container } = renderBar();
+    const el = titleEl(container);
+    expect(el).toHaveTextContent('Roster');
+    expect(el.className).not.toContain('opacity-0');
+  });
+
+  it('never animates or transitions — it is not a scroll-driven affordance', () => {
+    const { container } = renderBar();
+    const el = titleEl(container);
+    expect(el.className).not.toContain('transition');
+    expect(el.className).not.toContain('translate-y');
+  });
+
+  it('lives in the LEADING slot on phone and is hidden at md+ (crumbs take over)', () => {
+    const { container } = renderBar();
+    const wrapper = container.querySelector('[data-slot="fw-topbar-title"]')!;
+    expect(wrapper.className).toContain('md:hidden');
+    // Leading: it is the first child of the header row, before the crumb trail.
+    const row = container.querySelector('header > div')!;
+    expect(row.firstElementChild).toBe(wrapper);
+  });
+
+  it('truncates rather than colliding with the action cluster at narrow widths', () => {
+    const { container } = renderBar();
+    const wrapper = container.querySelector('[data-slot="fw-topbar-title"]')!;
+    expect(wrapper.className).toContain('min-w-0');
+    expect(titleEl(container).className).toContain('truncate');
+  });
+
+  it('is aria-hidden, with the accessible name on the <header> landmark instead', () => {
+    // Promoting it to a heading would put a second h1-level node on every page
+    // and strict-mode-fail the unscoped getByRole('heading', { level: 1 }) in
+    // e2e/golf-dashboard.spec.ts.
+    const { container } = renderBar();
+    const wrapper = container.querySelector('[data-slot="fw-topbar-title"]')!;
     expect(wrapper).toHaveAttribute('aria-hidden');
-    expect(condensedTitleEl(container)).toHaveTextContent('Roster');
+    expect(container.querySelector('header')).toHaveAttribute('aria-label', 'Roster');
+    expect(container.querySelector('[data-slot="fw-topbar-title"] [role="heading"]')).toBeNull();
   });
 
-  it('fades in (opacity-100) when condensed, fades out (opacity-0) at rest', () => {
-    const { container, rerender } = renderBar({}, ctx({ condensed: false }));
-    expect(condensedTitleEl(container).className).toContain('opacity-0');
-
-    rerender(
-      <LargeTitleContext.Provider value={ctx({ condensed: true })}>
-        <FairwayTopBar breadcrumbs={BREADCRUMBS} condensedTitle="Roster" />
-      </LargeTitleContext.Provider>,
-    );
-    expect(condensedTitleEl(container).className).toContain('opacity-100');
-  });
-
-  it('prefers the registered title from context over the condensedTitle fallback prop', () => {
+  it('prefers the registered title from context over the pageTitle fallback prop', () => {
     const { container } = renderBar(
-      { condensedTitle: 'Dashboard' },
-      ctx({ condensed: true, registeredTitle: 'My Custom Title' }),
+      { pageTitle: 'Dashboard' },
+      ctx({ registeredTitle: 'My Custom Title' }),
     );
-    expect(condensedTitleEl(container)).toHaveTextContent('My Custom Title');
+    expect(titleEl(container)).toHaveTextContent('My Custom Title');
+    expect(container.querySelector('header')).toHaveAttribute('aria-label', 'My Custom Title');
   });
 
-  it('falls back to condensedTitle when nothing is registered', () => {
-    const { container } = renderBar({ condensedTitle: 'Dashboard' }, ctx({ condensed: true, registeredTitle: null }));
-    expect(condensedTitleEl(container)).toHaveTextContent('Dashboard');
+  it('falls back to pageTitle when nothing is registered', () => {
+    const { container } = renderBar({ pageTitle: 'Dashboard' }, ctx({ registeredTitle: null }));
+    expect(titleEl(container)).toHaveTextContent('Dashboard');
+  });
+
+  it('omits the landmark aria-label entirely when there is no title to show', () => {
+    const { container } = renderBar({ pageTitle: undefined, breadcrumbs: undefined });
+    expect(container.querySelector('header')).not.toHaveAttribute('aria-label');
   });
 });
 
