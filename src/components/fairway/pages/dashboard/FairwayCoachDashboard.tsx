@@ -57,6 +57,12 @@ import {
   type ColumnDef,
   type TrendPoint,
 } from '@/components/fairway';
+// The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
+// BOTH a KPI card's delta chip AND its Sparkline's `direction` prop from a
+// single call, so the two can never classify the same series two different
+// ways again. Direct-file import (not the barrel) mirrors how MetricCard
+// itself imports its trend classifier.
+import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import {
   IconUsers,
   IconCalendar,
@@ -173,32 +179,23 @@ function shortDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-/** A sparkline delta with the ACTUAL window it was computed over, so the
- *  chip's label never claims a window depth the data can't back. */
-interface SeriesDelta {
-  value: number;
-  points: number;
-}
-
 /**
- * Honest windowed delta over a sparkline series (oldest → newest): the SAME
- * split-half-average comparison `computeTrend()`/`computeTrendHigherIsBetter()`
- * already use server-side (dashboard-data.ts) to classify the qualitative
- * trend arrow — recent-half average vs. older-half average — not a raw
+ * Honest windowed delta + verdict over a sparkline series (oldest → newest).
+ * `computeSeriesTrend()` (charts/seriesTrend.ts) is the SAME split-half-
+ * average comparison `computeTrend()`/`computeTrendHigherIsBetter()` already
+ * use server-side (dashboard-data.ts) to classify the qualitative trend
+ * arrow — recent-half average vs. older-half average — not a raw
  * first-vs-last endpoint diff.
  *
- * Two bugs this fixes together (both reported against the Team KPI row):
- *   1. WINDOW MISMATCH — the chip was always labeled "last 5 rounds" even
- *      when the underlying sparkline had fewer finite points (a round
- *      missing GIR/putts data drops out before the 5-point slice is taken
- *      upstream). The label now states the REAL point count used.
- *   2. IMPLAUSIBLE SWINGS (e.g. a −50% GIR delta) — a raw endpoint diff
- *      compares exactly TWO individual rounds, and a single noisy/short
- *      round (a rain-shortened 9-hole round has a tiny GIR denominator) can
- *      swing that by tens of points. Averaging each half smooths a single
- *      outlier instead of handing it the whole delta, and — because it's the
- *      identical split used for the `trend` field — the numeric delta and
- *      the qualitative trend/color can never disagree.
+ * AUDIT-0724 finding #2: this dashboard used to compute this locally (via a
+ * duplicated `seriesDelta()`) and hand ONLY the numeric `.value` to the
+ * MetricCard delta chip, while `<Sparkline>` classified the SAME raw series
+ * on its own via endpoint diff — the GIR% card [61,78,72,50,61] rendered a
+ * "flat" sparkline next to a red "declining" chip because the two widgets
+ * were never told about each other's math. Now the ONE `computeSeriesTrend()`
+ * call below feeds both: `.value` → the delta chip, `.direction` → the
+ * Sparkline's `direction` prop (overriding its own internal classification),
+ * so they can only ever agree.
  *
  * Requires ≥3 finite points (mirrors this page's own "Need 3+ rounds"
  * honesty gate) — fewer than that suppresses the chip entirely rather than
@@ -206,19 +203,6 @@ interface SeriesDelta {
  * movement the dashboard payload supports client-side — the payload's
  * `trend` field is a qualitative direction, not a magnitude.
  */
-function seriesDelta(series: number[] | undefined): SeriesDelta | null {
-  if (!series) return null;
-  const finite = series.filter((v) => Number.isFinite(v));
-  if (finite.length < 3) return null;
-  const mid = Math.floor(finite.length / 2);
-  const olderHalf = finite.slice(0, mid); // series is oldest → newest
-  const recentHalf = finite.slice(mid);
-  if (olderHalf.length === 0 || recentHalf.length === 0) return null;
-  const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
-  const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
-  return { value: recentAvg - olderAvg, points: finite.length };
-}
-
 function seriesDeltaLabel(points: number): string {
   return `last ${points} round${points === 1 ? '' : 's'}`;
 }
@@ -399,9 +383,13 @@ export function FairwayCoachDashboard({
   const scoringSeries = enhancedData?.sparklines.scoringAvg.sparkline ?? [];
   const girSeries = enhancedData?.sparklines.girPct.sparkline ?? [];
   const puttsSeries = enhancedData?.sparklines.puttsPerRound.sparkline ?? [];
-  const scoringDelta = seriesDelta(scoringSeries);
-  const girDelta = seriesDelta(girSeries);
-  const puttsDelta = seriesDelta(puttsSeries);
+  // goodDirection matches each metric's own <Sparkline goodDirection=...> a
+  // few lines down (down for scoring/putts, up for GIR%) — same input, same
+  // options, ONE function, so the chip and the sparkline it sits next to
+  // can never disagree (AUDIT-0724 #2).
+  const scoringDelta = computeSeriesTrend(scoringSeries, { goodDirection: 'down' });
+  const girDelta = computeSeriesTrend(girSeries, { goodDirection: 'up' });
+  const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
 
   const trendFirst = trendPoints[0];
   const trendLast = trendPoints[trendPoints.length - 1];
@@ -631,7 +619,18 @@ export function FairwayCoachDashboard({
               }
               sparkline={
                 scoringSeries.length >= 2 ? (
-                  <Sparkline data={scoringSeries} goodDirection="down" label="Scoring average" />
+                  <Sparkline
+                    data={scoringSeries}
+                    goodDirection="down"
+                    label="Scoring average"
+                    // AUDIT-0724 #2/#6: force the SAME verdict the delta chip
+                    // above renders (computeSeriesTrend's split-half average)
+                    // instead of letting Sparkline classify its own endpoint
+                    // diff — undefined (n<3, no computed trend) falls back to
+                    // Sparkline's own internal classification, which is fine
+                    // since no delta chip renders alongside it to disagree.
+                    direction={scoringDelta?.direction}
+                  />
                 ) : undefined
               }
               footnote={`${roundsLogged} ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
@@ -665,7 +664,17 @@ export function FairwayCoachDashboard({
               }
               sparkline={
                 girSeries.length >= 2 ? (
-                  <Sparkline data={girSeries} goodDirection="up" label="Greens in regulation" />
+                  <Sparkline
+                    data={girSeries}
+                    goodDirection="up"
+                    label="Greens in regulation"
+                    // AUDIT-0724 #2 — the exact reported case: series
+                    // [61,78,72,50,61] used to draw "flat" here (endpoint
+                    // diff 61-61=0) beside a red "declining" chip. Forcing
+                    // the chip's own computeSeriesTrend() verdict here makes
+                    // them agree.
+                    direction={girDelta?.direction}
+                  />
                 ) : undefined
               }
             />
@@ -698,7 +707,12 @@ export function FairwayCoachDashboard({
               }
               sparkline={
                 puttsSeries.length >= 2 ? (
-                  <Sparkline data={puttsSeries} goodDirection="down" label="Putts per round" />
+                  <Sparkline
+                    data={puttsSeries}
+                    goodDirection="down"
+                    label="Putts per round"
+                    direction={puttsDelta?.direction}
+                  />
                 ) : undefined
               }
             />

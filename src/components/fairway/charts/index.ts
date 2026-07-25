@@ -46,6 +46,7 @@ export {
   classifyTrendFromValues,
   TREND_COLOR,
   TREND_ARROW,
+  TREND_TONE_CLASS,
   TrendGlyph,
 } from './TrendChip';
 export type {
@@ -58,6 +59,13 @@ export type {
 
 export { Sparkline } from './Sparkline';
 export type { SparklineProps } from './Sparkline';
+
+// computeSeriesTrend: the ONE series→delta→verdict reducer (split-half
+// average + classifyTrend) — Sparkline color and MetricCard's delta chip
+// must both derive from ONE call to this on the SAME series (AUDIT-0724
+// findings #2/#6/#7), never two independently-computed deltas.
+export { computeSeriesTrend } from './seriesTrend';
+export type { SeriesTrend, ComputeSeriesTrendOptions } from './seriesTrend';
 
 // ── Pulse Grid's dual-lane heartbeat row (activity + error overlay + halo) ──
 export { EkgSparkline } from './EkgSparkline';

@@ -7,6 +7,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerException } from '@/lib/server-error-logger';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import {
   FairwayRoundsLibrary,
   type RoundLibraryRound as FairwayRoundLibraryRound,
@@ -62,6 +63,8 @@ export default async function RoundsPage() {
     round_type,
     total_score,
     score_to_par,
+    front_nine,
+    back_nine,
     total_putts,
     total_fairways,
     total_fairways_hit,
@@ -120,8 +123,13 @@ export default async function RoundsPage() {
       );
       if (error) throw new Error(`Failed to load team rounds: ${error.message}`);
 
+      // Finding #1/#4/#5 (AUDIT-0724): correct total_score/score_to_par ONCE
+      // here — front_nine+back_nine over the sometimes-stale total_score column
+      // (see src/lib/golf/round-total.ts) — so the rounds library list AND the
+      // roundStats aggregate below (avg/best/avgToPar) both read the same
+      // canonical value, matching the round detail page and the Stats page.
       rounds = (completedData ?? []).map(r => ({
-        ...r,
+        ...withCanonicalRoundTotal(r),
         player: r.player && !('error' in r.player) ? r.player : null
       })) as RoundWithPlayer[];
     }
@@ -150,8 +158,9 @@ export default async function RoundsPage() {
     if (completedResult.error) throw new Error(`Failed to load rounds: ${completedResult.error.message}`);
     if (inProgressResult.error) throw new Error(`Failed to load in-progress rounds: ${inProgressResult.error.message}`);
 
+    // Finding #1/#4/#5 (AUDIT-0724): same correction as the coach branch above.
     rounds = (completedResult.data ?? []).map(r => ({
-      ...r,
+      ...withCanonicalRoundTotal(r),
       player: r.player && !('error' in r.player) ? r.player : null
     })) as RoundWithPlayer[];
 

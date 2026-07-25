@@ -179,7 +179,15 @@ const SIZE: Record<'sm' | 'md', string> = {
   md: 'h-6 px-2 text-caption gap-1',
 };
 
-const TONE: Record<TrendDirection, string> = {
+/**
+ * Tailwind bg+text pair for each trend verdict. Exported (not a local
+ * const) so MetricCard's DeltaChip (Finding #7, AUDIT-0724) can consume the
+ * SAME tone map instead of maintaining its own — that duplicate map is what
+ * let `declining` drift onto real danger-red there while this file's own
+ * chip stayed on amber for the identical verdict. `declining` is warm
+ * amber, NEVER red — red stays reserved for genuine error states.
+ */
+export const TREND_TONE_CLASS: Record<TrendDirection, string> = {
   improving: 'bg-fw-success-bg text-fw-success-ink',
   flat: 'bg-inset text-text-tertiary',
   declining: 'bg-fw-warning-bg text-fw-warning-ink',
@@ -222,7 +230,7 @@ export const TrendChip = React.forwardRef<HTMLSpanElement, TrendChipProps>(funct
         'inline-flex items-center rounded-full align-middle whitespace-nowrap',
         'font-fw-sans font-semibold leading-none tracking-normal normal-case',
         SIZE[size],
-        TONE[verdict],
+        TREND_TONE_CLASS[verdict],
         numeric && 'font-fw-mono',
         className,
       )}

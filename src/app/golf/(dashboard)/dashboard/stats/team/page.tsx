@@ -313,10 +313,22 @@ export default async function TeamStatsPage() {
           totalScrambleAttempts++;
           if (hole.score <= hole.par) totalScramblesMade++;
         }
-        // Putts — track the holes that actually carry a putts value so the
-        // per-round denominator matches the numerator (some holes lack putts;
-        // counting them in the denominator understated putts/round).
-        if (hole.putts !== null && hole.putts > 0) {
+        // Putts — track the holes that actually carry a RECORDED putts value
+        // (audit finding #3, stats-visual-accuracy.md): only `null` means
+        // "never recorded" and should be excluded. `putts === 0` is a real,
+        // recorded opportunity (e.g. a chip-in that holed out without a
+        // putt) and must stay IN both the numerator and denominator — the
+        // page's own caption promises figures are "pooled from every
+        // recorded opportunity." The previous `&& hole.putts > 0` guard
+        // silently dropped 10 legitimate zero-putt holes from the
+        // denominator while the numerator still (correctly) added their 0,
+        // inflating this page's Putts/18 to 33.1 vs the Dashboard KPI's
+        // correct 32.9 for the identical 90-round dataset — the two
+        // surfaces must agree because they describe the same rounds. This
+        // also matches the sibling aggregation in
+        // golf-stats-calculator-shots.ts, which already only gates on
+        // `hole.putts !== null` (no `> 0`).
+        if (hole.putts !== null) {
           totalPutts += hole.putts;
           totalHolesWithPutts++;
         }
