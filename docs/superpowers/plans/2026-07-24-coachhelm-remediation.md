@@ -65,7 +65,7 @@ Task 2 wires the calibration read path back on. Doing that first would immediate
 
 Run:
 ```bash
-npx supabase db remote query "SELECT prediction_type, bucket, predictions_count, correct_count, actual_accuracy, updated_at::date FROM golf_confidence_calibration ORDER BY prediction_type, bucket;"
+npx supabase db query "SELECT prediction_type, bucket, predictions_count, correct_count, actual_accuracy, updated_at::date FROM golf_confidence_calibration ORDER BY prediction_type, bucket;"
 ```
 
 Expected: 7 rows. `general` and `round_score` each have buckets 0.7 and 0.8 with `correct_count = 0` and `updated_at = 2026-03-14`. `score_to_par` has 3 buckets with recent dates. **If `general`/`round_score` show a recent `updated_at`, STOP** — something has started revalidating them and this task's premise no longer holds.
@@ -93,7 +93,7 @@ WHERE prediction_type IN ('general', 'round_score');
 
 Run:
 ```bash
-npx supabase db remote query "SELECT prediction_type, count(*) FROM golf_confidence_calibration GROUP BY 1;"
+npx supabase db query "SELECT prediction_type, count(*) FROM golf_confidence_calibration GROUP BY 1;"
 ```
 
 Expected: exactly one row — `score_to_par | 3`.
@@ -739,7 +739,7 @@ Trigger the cron against production and read the row back:
 
 ```bash
 curl -sS "https://helmsportslabs.com/api/cron/v3/causality-attribute" -H "Authorization: Bearer $CRON_SECRET"
-npx supabase db remote query "SELECT created_at, metadata FROM background_job_logs WHERE job_name LIKE '%causality%' ORDER BY created_at DESC LIMIT 1;"
+npx supabase db query "SELECT created_at, metadata FROM background_job_logs WHERE job_name LIKE '%causality%' ORDER BY created_at DESC LIMIT 1;"
 ```
 
 Expected: the newest row's `metadata` contains non-null `considered` and `attributed` keys.
@@ -769,7 +769,7 @@ git commit -m "fix(coachhelm): persist causality-attribution summary so stalls a
 
 Run:
 ```bash
-npx supabase db remote query "SELECT player_id, metric_id, count(*) FROM golf_goal_suggestions WHERE state IN ('pending','snoozed') GROUP BY 1,2 HAVING count(*) > 1;"
+npx supabase db query "SELECT player_id, metric_id, count(*) FROM golf_goal_suggestions WHERE state IN ('pending','snoozed') GROUP BY 1,2 HAVING count(*) > 1;"
 ```
 
 Expected: 0 rows. **If any rows come back, STOP** — resolve them first or the index creation will fail.
@@ -806,7 +806,7 @@ This mirrors `insertNew()` in `src/lib/coachhelm/v2/insights/upsert.ts` exactly 
 
 Run:
 ```bash
-npx supabase db remote query "SELECT indexname FROM pg_indexes WHERE tablename = 'golf_goal_suggestions';"
+npx supabase db query "SELECT indexname FROM pg_indexes WHERE tablename = 'golf_goal_suggestions';"
 ```
 
 Expected: includes `golf_goal_suggestions_active_dedup`.
@@ -1010,7 +1010,7 @@ git commit -m "fix(coachhelm): scale v3 minimum sample floor by round volume"
 - [ ] **Step 1: Quantify the overlap**
 
 ```bash
-npx supabase db remote query "SELECT category, count(*) FILTER (WHERE signature LIKE 'v3:%') AS v3, count(*) FILTER (WHERE signature NOT LIKE 'v3:%') AS v2 FROM golf_coach_insights WHERE archived_at IS NULL GROUP BY 1 ORDER BY 1;"
+npx supabase db query "SELECT category, count(*) FILTER (WHERE signature LIKE 'v3:%') AS v3, count(*) FILTER (WHERE signature NOT LIKE 'v3:%') AS v2 FROM golf_coach_insights WHERE archived_at IS NULL GROUP BY 1 ORDER BY 1;"
 ```
 
 - [ ] **Step 2: Put the options to the owner**
