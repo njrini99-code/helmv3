@@ -66,21 +66,28 @@ const base = cn(
 const variantStyles: Record<FwButtonVariant, string> = {
   // Green CTA — the plant in the room. Cream text on green, no border.
   //
-  // Fill is accent-700. This REPLACES an earlier "keep accent-500, do not
-  // re-darken for WCAG" decision, reversed by the owner on 2026-07-24 once the
-  // numbers were re-checked — the old rationale was wrong on the facts:
-  //   • text-on-accent on accent-500 measures 3.06:1; normal text needs 4.5:1.
+  // Fill is accent-650 (#248342) as of 2026-07-25. The constraint that produced
+  // the previous accent-700 fill is unchanged and still correct:
+  //   • text-on-accent on accent-500 measures 3.24:1; normal text needs 4.5:1.
   //   • WCAG large text is >=24px, or >=18.66px BOLD. A 14-15px bold control
   //     label is NOT large text, so 1.4.3's 3:1 allowance never applied.
-  //   • 1.4.11 (3:1 non-text) governs the button's BOUNDARY, not the label
-  //     sitting on top of it.
-  //   • accent-600 does not rescue it either (4.23:1).
-  // accent-700 gives 5.93:1 and clears AA. accent-500 stays the brand green for
-  // decorative fills, strokes and dots.
+  //   • 1.4.11 (3:1 non-text) governs the button's BOUNDARY, not the label.
+  //   • accent-600 does not rescue it either (4.17:1).
+  // What changed is that accent-700 (5.86:1) overshot: it bought contrast nobody
+  // needed and read as dark forest, and the owner flagged the whole product as
+  // having lost its green. accent-650 is the BRIGHTEST step that still clears
+  // AA with cream copy — 4.69:1, or 4.77:1 against pure white.
+  //
+  // It also fixes a dark-mode bug: accent-700 is redefined light in the dark
+  // block (it doubles as text on deep-green washes), so `bg-accent-700` rendered
+  // a LIGHT green fill under cream copy at night. accent-650 is deliberately not
+  // flipped, so the button is one solid green in both themes.
+  //
+  // accent-500 remains the brand green for decorative fills, strokes and dots.
   primary: cn(
-    'border-transparent bg-accent-700 text-text-on-accent shadow-flat',
-    'hover:bg-accent-800 hover:shadow-soft hover:-translate-y-px',
-    'active:bg-accent-800 active:shadow-flat active:-translate-y-0',
+    'border-transparent bg-accent-650 text-text-on-accent shadow-flat',
+    'hover:bg-accent-700 hover:shadow-soft hover:-translate-y-px',
+    'active:bg-accent-700 active:shadow-flat active:-translate-y-0',
   ),
   // Matte surface with a warm hairline (border OR shadow at rest — border here).
   secondary: cn(
@@ -223,16 +230,16 @@ const iconBase = cn(
 );
 
 const iconVariantStyles: Record<FwIconButtonVariant, string> = {
-  // Matches Button primary — accent-700.
+  // Matches Button primary — accent-650.
   //
-  // The icon-only case genuinely DID clear its bar (a glyph is a UI component
-  // judged at 3:1 by 1.4.11, and 3.06:1 passes). It moves anyway: a primary
-  // IconButton sitting beside a primary Button in a different green reads as a
+  // The icon-only case genuinely DID clear its bar at every step (a glyph is a
+  // UI component judged at 3:1 by 1.4.11). It tracks Button primary anyway: a
+  // primary IconButton beside a primary Button in a different green reads as a
   // rendering bug, and "matches Button primary" is the contract this variant
   // exists to hold. See the Button primary note above for the full reasoning.
   primary: cn(
-    'border-transparent bg-accent-700 text-text-on-accent',
-    'hover:bg-accent-800 hover:shadow-soft',
+    'border-transparent bg-accent-650 text-text-on-accent',
+    'hover:bg-accent-700 hover:shadow-soft',
   ),
   secondary: cn(
     'border-border-subtle bg-surface text-text-primary',

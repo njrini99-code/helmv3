@@ -129,7 +129,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onAction }: InsightRo
         className={cn(
           'absolute top-3 left-3 z-10 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
           isSelected
-            ? 'bg-primary-500 border-primary-500 text-white'
+            ? 'bg-accent-650 border-accent-650 text-text-on-accent'
             : 'bg-cream-100/82 border-warm-300 hover:border-warm-400',
         )}
       >
@@ -209,7 +209,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
                 className={cn(
                   'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                   pageNum === page
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-accent-650 text-text-on-accent'
                     : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
                 )}
               >

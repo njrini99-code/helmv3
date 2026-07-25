@@ -167,7 +167,12 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
                   "before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
                   fwTransition,
                   fwFocusRing,
-                  isActive ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary',
+                  // Match the icon directly below, which has always been
+                  // accent-600 when active — the LABEL was the odd one out,
+                  // leaving every hub sub-tab half-green/half-graphite.
+                  // accent-700 for text on canvas (5.02:1, AA); the icon can
+                  // stay 600 because non-text only needs 3:1.
+                  isActive ? 'text-accent-700' : 'text-text-secondary hover:text-text-primary',
                 )}
               >
                 {Icon ? (

@@ -59,10 +59,19 @@ export function MoreSheetFooter({
         aria-current={settingsActive ? 'page' : undefined}
         className={cn(
           rowBase,
-          settingsActive ? 'bg-surface-sunken text-text-primary' : 'text-text-secondary hover:bg-surface-sunken hover:text-text-primary',
+          // Follows MoreNavSheet.tsx:99, which already uses accent-700 for the
+          // active row. This footer row was the only one in the same sheet not
+          // following the sheet's own pattern.
+          settingsActive ? 'bg-surface-sunken text-accent-700' : 'text-text-secondary hover:bg-surface-sunken hover:text-text-primary',
         )}
       >
-        <IconSettings size={18} aria-hidden className="flex-shrink-0" />
+        {/* The icon had no active branch at all, so an active Settings row
+            showed a green label beside a grey icon. */}
+        <IconSettings
+          size={18}
+          aria-hidden
+          className={cn('flex-shrink-0', settingsActive && 'text-accent-700')}
+        />
         Settings
       </Link>
       <Button
