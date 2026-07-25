@@ -395,6 +395,19 @@ export const BAR_MARKER_MIN_GAP_PCT = 4.5;
 export function layoutMarkerPositions(
   items: ReadonlyArray<MarkerLayoutInput>,
   minGapPct: number = MARKER_MIN_GAP_PCT,
+  /**
+   * The usable band, in percent. Defaults to the full rail (0-100).
+   *
+   * Callers that keep markers inside a NARROWER band (StandingStrip reserves
+   * 13-87 so edge labels don't overflow the card) must pass it here rather
+   * than clamping the returned values themselves: clamping per-marker after
+   * the fact squashes everything outside the band onto the same edge and
+   * re-collides the very markers this function just separated. Passing the
+   * bounds in lets the chain SHIFT as a unit, which preserves the gaps.
+   * (Root cause of the overlapping T/You dots on SG rails, 2026-07-25.)
+   */
+  minPct: number = 0,
+  maxPct: number = 100,
 ): MarkerLayoutInput[] {
   if (items.length <= 1) return items.map((i) => ({ key: i.key, pct: i.pct }));
 
@@ -424,12 +437,12 @@ export function layoutMarkerPositions(
     for (const item of ordered) item.pct += rawMid - spreadMid;
   }
 
-  const rightOverflow = ordered[ordered.length - 1]!.pct - 100;
+  const rightOverflow = ordered[ordered.length - 1]!.pct - maxPct;
   if (rightOverflow > 0) {
     for (const item of ordered) item.pct -= rightOverflow;
   }
 
-  const leftOverflow = 0 - ordered[0]!.pct;
+  const leftOverflow = minPct - ordered[0]!.pct;
   if (leftOverflow > 0) {
     for (const item of ordered) item.pct += leftOverflow;
   }
@@ -439,7 +452,7 @@ export function layoutMarkerPositions(
     if (ordered[i]!.pct > max) ordered[i]!.pct = max;
   }
 
-  for (const item of ordered) item.pct = Math.max(0, Math.min(100, item.pct));
+  for (const item of ordered) item.pct = Math.max(minPct, Math.min(maxPct, item.pct));
 
   return ordered;
 }

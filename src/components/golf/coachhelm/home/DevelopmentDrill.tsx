@@ -462,9 +462,20 @@ export function DevelopmentDrill({
         </Button>
       ) : null}
       {canCreateOwn ? (
-        <Button variant="primary" onClick={() => setCreateOpen(true)}>
-          <IconPlus size={16} />
-          New focus area
+        // flex-nowrap + a real <span> around the label: DrillPanel gives this
+        // chip slot `w-full` on mobile, so the two header buttons share one
+        // narrow row and this one gets squeezed. The bare text node was an
+        // anonymous flex item that broke onto its own line, stacking the "+"
+        // ABOVE "New focus area" (iPhone, 2026-07-25). Button's base
+        // whitespace-nowrap stops the text breaking mid-phrase but cannot stop
+        // two flex items separating.
+        <Button
+          variant="primary"
+          onClick={() => setCreateOpen(true)}
+          className="flex-nowrap"
+        >
+          <IconPlus size={16} className="shrink-0" />
+          <span className="whitespace-nowrap">New focus area</span>
         </Button>
       ) : null}
     </div>
