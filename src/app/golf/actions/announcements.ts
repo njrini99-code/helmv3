@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
@@ -265,13 +266,35 @@ async function createEnrichedAnnouncementImpl(input: {
         if (playerRows && playerRows.length > 0) {
           const userIds = playerRows.map(p => p.user_id);
 
-          // Get emails for those users
-          const { data: userRows } = await supabase
+          // Get emails for those users.
+          //
+          // SERVICE-ROLE, not the caller's client. `public.users` only allows
+          // `users_select_own` (auth.uid() = id) and `admin_read_all`, so a
+          // coach reading their players' rows here returned `[]` — silently
+          // starving BOTH the email loop and the push below, which is why
+          // every row in golf_announcements has send_push = false. Not a
+          // privilege widening: `userIds` is derived from targetPlayerIds,
+          // already authorized above against the coach's own team.
+          const { data: userRows, error: userRowsError } = await createAdminClient()
             .from('users')
             .select('id, email')
             .in('id', userIds);
 
-          if (userRows) {
+          // Same observability the message fan-out has. Without this, a failed
+          // lookup skips the whole email+push block, the action still returns
+          // success:true with send_email/send_push false, and nothing records
+          // that delivery was attempted at all — the exact silent-failure
+          // class this change exists to remove.
+          if (userRowsError || !userRows || userRows.length === 0) {
+            await logServerError(
+              userRowsError
+                ? `[createEnrichedAnnouncement] Recipient lookup FAILED for ${userIds.length} player(s): ${userRowsError.message}`
+                : `[createEnrichedAnnouncement] ${userIds.length} player(s) resolved to 0 user rows — announcement not delivered`,
+              { action: 'announcements.createEnrichedAnnouncement' },
+            );
+          }
+
+          if (userRows && userRows.length > 0) {
             // Non-blocking: notify all players in parallel. send_email reflects
             // whether at least one addressable recipient was emailed.
             const emailResults = await Promise.allSettled(

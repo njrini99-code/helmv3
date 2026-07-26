@@ -225,10 +225,53 @@ export async function sendPushNotification(
               /* body unreadable — keep the generic error message */
             }
           }
+          // Two independent signals, because the DEPLOYED edge function and
+          // the copy in this repo have drifted.
+          //
+          // `supabase/functions/send-apns-push/index.ts` returns
+          // `shouldDeactivateToken: true` on 410/400 — but the function
+          // actually live in production (slug send-apns-push, v5) returns only
+          // `{ success, error, apnsStatus }`; the string
+          // "shouldDeactivateToken" does not appear in it. So that flag was
+          // permanently `undefined`, no token was ever deactivated, and in
+          // production one token reached failed_count 364 while still
+          // `active: true` — hammered by the hourly cron forever.
+          //
+          // Reading the deployed shape as well makes pruning work against BOTH
+          // versions, so this self-heals without an edge-function redeploy.
+          //
+          // BUT: match on the REASON, never on a bare 400. Apple returns 400
+          // for roughly fourteen unrelated reasons — BadTopic, MissingTopic,
+          // PayloadEmpty, BadExpirationDate, TopicDisallowed, InvalidPushType
+          // and friends — of which only a couple are about the token. Those
+          // others are CONFIGURATION faults, and a config fault is by nature
+          // identical for every token in the sweep. Treating 400 as "dead
+          // token" would therefore mass-deactivate every live device in the
+          // batch the first time someone mistyped a bundle id — the exact
+          // "worse than the bug being fixed" outcome this prune exists to
+          // avoid. (Caught in review of this very change, which did do that.)
+          //
+          // 410 is safe to match on its status alone: Apple only ever returns
+          // it for Unregistered, and it is per-token by construction.
+          const DEAD_TOKEN_REASONS = new Set([
+            'Unregistered',
+            'BadDeviceToken',
+            'DeviceTokenNotForTopic',
+          ]);
           let shouldDeactivateToken = false;
           try {
-            const parsed = JSON.parse(errorText) as { shouldDeactivateToken?: boolean };
-            shouldDeactivateToken = parsed.shouldDeactivateToken === true;
+            const parsed = JSON.parse(errorText) as {
+              shouldDeactivateToken?: boolean;
+              apnsStatus?: number;
+              /** The deployed function puts Apple's `reason` string here. */
+              error?: string;
+              reason?: string;
+            };
+            const reason = parsed.reason ?? parsed.error ?? '';
+            shouldDeactivateToken =
+              parsed.shouldDeactivateToken === true ||
+              parsed.apnsStatus === 410 ||
+              [...DEAD_TOKEN_REASONS].some((r) => reason.includes(r));
           } catch {
             /* not JSON — fall through, treated as a transient failure */
           }
