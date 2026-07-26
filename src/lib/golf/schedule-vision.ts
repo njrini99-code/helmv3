@@ -24,12 +24,49 @@ import { z } from 'zod';
 import { detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
+import { logServerError } from '@/lib/server-error-logger';
 
-// Gateway slug per https://vercel.com/changelog/opus-4-8-on-ai-gateway
-// (note the dot — the gateway catalog differs from Anthropic's first-party
-// "claude-opus-4-8" ID). Env var is the override hatch if the catalog moves.
+/**
+ * The model this runs on, and why it is not Opus.
+ *
+ * It WAS `anthropic/claude-opus-4.8`, and every schedule import failed —
+ * verified against this account by sending a real Banner screenshot through the
+ * real prompt:
+ *
+ *   GatewayInternalServerError: Free tier users do not have access to this
+ *   model. Upgrade to paid credits …
+ *
+ * Both slug spellings (`opus-4.8` and `opus-4-8`) are refused. Nothing about
+ * the image mattered — the call never reached a model. And because this file
+ * passes a bare `'provider/model'` STRING, it always routes through the Vercel
+ * AI Gateway; it never uses `ANTHROPIC_API_KEY` the way the chat route does, so
+ * having that key set in production does not rescue it.
+ *
+ * The same image through the same prompt on Sonnet 5 returns all four classes
+ * with correct times and rooms, so that is the default: a model the account can
+ * actually call beats a better model it cannot. `SCHEDULE_VISION_MODEL` remains
+ * the override for when Opus access exists.
+ */
 const SCHEDULE_VISION_MODEL =
-  process.env.SCHEDULE_VISION_MODEL ?? 'anthropic/claude-opus-4.8';
+  process.env.SCHEDULE_VISION_MODEL ?? 'anthropic/claude-sonnet-5';
+
+/**
+ * Last resort when the configured model cannot be reached at all.
+ *
+ * A tier/access/catalog error is not a bad screenshot, and a student who
+ * uploaded a perfectly good schedule should not be told it is unreadable
+ * because of a billing state. If the primary model is unreachable we retry once
+ * on the one that is known to work here.
+ */
+const SCHEDULE_VISION_FALLBACK_MODEL = 'anthropic/claude-sonnet-5';
+
+/** Does this error mean "the model was unreachable", not "the image was bad"? */
+function isModelAccessError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /do not have access|not available|unknown model|model_not_found|does not exist|upgrade to paid/i.test(
+    message,
+  );
+}
 
 const meetingDaySchema = z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
 
@@ -94,6 +131,7 @@ DAY NOTATION (normalize ALL of these to the enum):
 - Compound strings split per letter-group: MWF, MW, TR (=Tue+Thu), TTh/TTH/TuTh (=Tue+Thu), MTWRF, MoWeFr, "M W F", "Mon/Wed/Fri", "Tuesday/Thursday"
 - CRITICAL: "R" and "H" mean THURSDAY. "TR" is Tuesday+Thursday, never Thursday alone or Tue+"R".
 - DAY-PILL TRAP (Workday/Banner): many portals print a fixed strip of ALL SEVEN day labels ("Su Mo Tu We Th Fr Sa" or "M T W R F S U") for every class, with only the actual meeting days bolded/filled/highlighted. Read the highlighted state — never transcribe all seven letters as meeting days.
+- NEVER INFER DAYS FROM CLASS LENGTH. A 75-minute block is not evidence of MWF and a 105-minute block is not evidence of TR; those patterns are conventions, not facts, and plenty of sections break them. Days come from the pills, the day column, or the calendar columns — from something you can actually see. This is not hypothetical: on a Banner schedule whose pills read S [M] T [W] T [F] S, guessing from duration returned Wed/Fri and dropped the Monday class, so a coach would have believed a player was free at 1pm Monday when she was in Marketing Management. If the highlighted state is genuinely unreadable, return the days you CAN see, add a warning naming that class, and set image_quality to "fair" or "poor" — a flagged gap is recoverable, a confident wrong day is not.
 - "Days: TBA", "ARR", "Arranged", "Online", "Asynchronous", "ASYNC", "Web" → days: [] and empty times.
 
 TIME NOTATION (normalize to 24-hour HH:MM):
@@ -128,23 +166,41 @@ export async function extractScheduleFromImage(
   images: ScheduleImageInput[],
   playerId?: string | null,
 ): Promise<ScheduleExtraction> {
-  const res = await generateObject({
-    model: SCHEDULE_VISION_MODEL,
-    schema: extractionSchema,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          ...images.map((img) => ({
-            type: 'image' as const,
-            image: img.base64,
-            mediaType: img.mediaType,
-          })),
-          { type: 'text' as const, text: EXTRACTION_PROMPT },
-        ],
-      },
-    ],
-  });
+  const call = (model: string) =>
+    generateObject({
+      model,
+      schema: extractionSchema,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            ...images.map((img) => ({
+              type: 'image' as const,
+              image: img.base64,
+              mediaType: img.mediaType,
+            })),
+            { type: 'text' as const, text: EXTRACTION_PROMPT },
+          ],
+        },
+      ],
+    });
+
+  let res: Awaited<ReturnType<typeof call>>;
+  try {
+    res = await call(SCHEDULE_VISION_MODEL);
+  } catch (error) {
+    // Only retry when the model was unreachable. A schema or content failure is
+    // a real failure and must surface — retrying it would just spend twice.
+    if (!isModelAccessError(error) || SCHEDULE_VISION_MODEL === SCHEDULE_VISION_FALLBACK_MODEL) {
+      throw error;
+    }
+    await logServerError(
+      `schedule-vision: ${SCHEDULE_VISION_MODEL} unreachable, retrying on ${SCHEDULE_VISION_FALLBACK_MODEL}`,
+      { action: 'golf.scheduleVision.modelFallback' },
+      'warning',
+    );
+    res = await call(SCHEDULE_VISION_FALLBACK_MODEL);
+  }
 
   await recordVisionSpend(res.usage, playerId ?? null);
   return res.object;
