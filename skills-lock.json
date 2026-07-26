@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "momentic-explore-prompt": {
+      "source": "momentic-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/momentic-explore-prompt/SKILL.md",
+      "computedHash": "634d580d60e3dae42a3281f8779502fe3c28fed5e05379c13db258d11572907e"
+    },
+    "momentic-result-classification": {
+      "source": "momentic-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/momentic-result-classification/SKILL.md",
+      "computedHash": "98bcf63fac5915d8a7d84086415f9226a454a4977d05e93dd35761079d4a8c62"
+    },
+    "momentic-test": {
+      "source": "momentic-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/momentic-test/SKILL.md",
+      "computedHash": "5c8f41e27dc8d178b971d64ae6ee3f6be488e5a83edb0559473ccc1cc2f9c897"
+    }
+  }
+}

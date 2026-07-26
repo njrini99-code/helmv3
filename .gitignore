@@ -152,6 +152,7 @@ scripts/rotate-demo-passwords.mjs
 # Test-runner output.
 /test-results/
 /playwright-report/
+.momentic-mcp/
 
 # Large generated showcase binaries (repo already ignores GolfHelm-Prospect-Deck.pptx).
 GolfHelm-CoachHelm-Showcase.pdf

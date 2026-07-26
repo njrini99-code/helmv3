@@ -79,3 +79,18 @@ Pre-merge gate blocks (must be `error`-clean before merge):
 Static analyzers enabled: ESLint, Biome, oxc, ast-grep, ruff, pylint,
 swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool,
 hadolint, checkov, gitleaks, semgrep, sqlfluff.
+
+## Momentic QA
+
+- Never directly edit Momentic test (`*.test.yaml`) or module
+  (`*.module.yaml`) files. Use Momentic MCP tools to create, update, run,
+  and diagnose tests.
+- Helm QA currently uses production-hosted infrastructure. Use only
+  designated Helm QA accounts, organizations, teams, and fictional records.
+  Never read, modify, delete, or expose non-QA records.
+- Do not run a mutating test until QA tenant isolation and outbound email,
+  SMS, push, webhook, billing, and AI-action suppression are verified.
+- Keep execution sequential (`parallel: 1`) until test-data isolation is
+  proven. Do not mask instability by increasing retries.
+- Never store QA passwords, API keys, Supabase service-role keys, cookies,
+  or other secrets in Momentic YAML or source control.
