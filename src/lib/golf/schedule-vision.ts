@@ -68,7 +68,52 @@ function isModelAccessError(error: unknown): boolean {
   );
 }
 
+/**
+ * Second opinion on the days, and only the days.
+ *
+ * Measured on a real Banner "Schedule Details" screenshot, the same image
+ * through the same prompt returned 4/4 correct day sets on one run and 2/4 on
+ * the next — inventing a Wednesday and a Friday for two Tue/Thu classes. This
+ * is not a prompt problem and it is not a resolution problem: slicing the page
+ * into native-resolution columns scored 3/4 while REPORTING higher confidence,
+ * and the page has no margin to trim. Some portals encode the meeting days
+ * only as fill-state on seven tiny letter boxes, and that is genuinely at the
+ * edge of what vision does reliably.
+ *
+ * The rule this product states is that a wrong day is worse than a blank, so
+ * the fix is not to try harder — it is to stop presenting a coin flip as fact.
+ * A focused second pass reads ONLY the day indicators; where the two readings
+ * disagree, that class's days are cleared and named in a warning, and the
+ * player picks them in the confirm step (which has day toggles). Where they
+ * agree, the reading stands.
+ *
+ * Note this deliberately does NOT gate times, rooms or titles — those were
+ * stable across every run, and re-reading them would spend tokens to confirm
+ * something that was never in doubt.
+ */
+const DAY_VERIFY_PROMPT = `Look at this class schedule image and report ONLY the meeting days of each class. Ignore times, rooms, instructors and credits entirely.
+
+Many portals print all seven day letters for every class ("S M T W T F S") and FILL or HIGHLIGHT only the meeting days. Report the filled/highlighted ones. Read the boxes — do not infer days from how long the class runs, and do not assume 75-minute classes are MWF or 105-minute classes are Tue/Thu.
+
+If you cannot tell whether a box is filled, return an empty day list for that class rather than guessing.
+
+List the classes in the order they appear, identified by course title.`;
+
+/** Normalized key for matching a verification row to an extracted class. */
+function classKey(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 const meetingDaySchema = z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
+
+const dayVerifySchema = z.object({
+  classes: z.array(
+    z.object({
+      course_name: z.string().describe('Course title as displayed, to match against the main read.'),
+      days: z.array(meetingDaySchema).describe('Only days whose indicator is visibly filled/highlighted.'),
+    }),
+  ),
+});
 
 const extractedClassSchema = z.object({
   course_code: z
@@ -203,7 +248,113 @@ export async function extractScheduleFromImage(
   }
 
   await recordVisionSpend(res.usage, playerId ?? null);
-  return res.object;
+  return reconcileDays(res.object, images, playerId ?? null);
+}
+
+/**
+ * Blank the days of any class the two reads disagree about. Pure; exported for
+ * tests. `secondRead` is the day-only pass; see DAY_VERIFY_PROMPT.
+ *
+ * WHY BLANK RATHER THAN PICK A WINNER. Measured on a real Banner screenshot
+ * (Guilford, Fall 2026, four classes) whose day pills are ~16px wide — and note
+ * the source screenshot is 1600px wide against a 1568px transmit limit, so this
+ * is the resolution the portal itself produced, not something we downscaled
+ * away. There is no sharper version of this image to ask for:
+ *
+ *   - the day-only pass misread ONE class (Marketing Management: read Wed/Fri,
+ *     actually Mon/Wed/Fri) in 4 of 4 runs. Systematic, not noise.
+ *   - a best-of-three majority vote SHIPPED that wrong reading in 2 of 3 runs,
+ *     because two passes made the same mistake and outvoted the correct one.
+ *     Voting launders a repeated error into confidence.
+ *   - blanking on any disagreement shipped ZERO wrong day sets in 3 runs.
+ *
+ * Also measured and rejected: slicing the page into native-resolution columns
+ * (3/4, and it raised confidence while lowering accuracy — the worst
+ * combination), trimming margins (no scale gain, content spans full width), and
+ * reading the pill strip by position rather than letter (8/16 vs 10/16).
+ *
+ * The intersection or the union of two disagreeing reads is still a guess, and
+ * a guess is the thing this exists to prevent: a coach seeing no Monday class
+ * believes the player is free at 1pm Monday. A blank is one tap to fix in the
+ * confirm step (which renders per-class day toggles and a "Missing days" badge);
+ * a confident wrong day is never questioned.
+ */
+export function applyDayVerification(
+  extraction: ScheduleExtraction,
+  secondRead: { course_name: string; days: ScheduleExtraction['classes'][number]['days'] }[],
+): ScheduleExtraction {
+  const second = new Map(secondRead.map((c) => [classKey(c.course_name), c.days]));
+  const disputed: string[] = [];
+
+  const classes = extraction.classes.map((c) => {
+    if (c.days.length === 0) return c;
+    const other = second.get(classKey(c.course_name));
+    // No matching row in the second read is not disagreement — it is silence,
+    // and silence should not erase a reading.
+    if (!other) return c;
+    const same =
+      other.length === c.days.length && [...c.days].sort().join() === [...other].sort().join();
+    if (same) return c;
+
+    disputed.push(c.course_name || c.course_code || 'a class');
+    return {
+      ...c,
+      days: [],
+      confidence: Math.min(c.confidence, 0.4),
+      note: c.note || 'Meeting days were unclear in the screenshot — please set them.',
+    };
+  });
+
+  if (disputed.length === 0) return { ...extraction, classes };
+
+  return {
+    ...extraction,
+    classes,
+    image_quality: extraction.image_quality === 'good' ? 'fair' : extraction.image_quality,
+    warnings: [
+      ...extraction.warnings,
+      `Two reads of this screenshot disagreed on the meeting days for ${disputed.join(', ')}, so those days were left blank rather than guessed. Please set them below.`,
+    ],
+  };
+}
+
+/**
+ * Run the day-only second read and apply it.
+ *
+ * Never throws: a verification pass that fails leaves the extraction exactly as
+ * it was. Losing the second opinion is a smaller harm than losing the import.
+ */
+async function reconcileDays(
+  extraction: ScheduleExtraction,
+  images: ScheduleImageInput[],
+  playerId: string | null,
+): Promise<ScheduleExtraction> {
+  const withDays = extraction.classes.filter((c) => c.days.length > 0);
+  if (!extraction.is_class_schedule || withDays.length === 0) return extraction;
+
+  try {
+    const verify = await generateObject({
+      model: SCHEDULE_VISION_FALLBACK_MODEL,
+      schema: dayVerifySchema,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            ...images.map((img) => ({
+              type: 'image' as const,
+              image: img.base64,
+              mediaType: img.mediaType,
+            })),
+            { type: 'text' as const, text: DAY_VERIFY_PROMPT },
+          ],
+        },
+      ],
+    });
+    await recordVisionSpend(verify.usage, playerId);
+    return applyDayVerification(extraction, verify.object.classes);
+  } catch {
+    return extraction;
+  }
 }
 
 /**
