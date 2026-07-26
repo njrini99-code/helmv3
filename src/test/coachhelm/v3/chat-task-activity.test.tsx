@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TaskActivity, describeWork } from '@/components/golf/coachhelm/chat/TaskActivity';
-import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
+import type { Measurement, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 
 /**
  * The activity surface is derived entirely from parts the stream already
@@ -28,10 +28,10 @@ function envelope(over: Partial<ToolEnvelope> = {}): ToolEnvelope {
     coverage_note: null,
     as_of: '2026-07-25T12:00:00Z',
     ...over,
-  } as ToolEnvelope;
+  } satisfies ToolEnvelope;
 }
 
-function measurement(over: Record<string, unknown> = {}) {
+function measurement(over: Partial<Measurement> = {}): Measurement {
   return {
     metric_id: 'putts_per_round',
     metric_label: 'Putts per round',
@@ -51,7 +51,7 @@ function measurement(over: Record<string, unknown> = {}) {
     benchmark: null,
     direction: 'lower_better',
     ...over,
-  };
+  } satisfies Measurement;
 }
 
 describe('TaskActivity', () => {
