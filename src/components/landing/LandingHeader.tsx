@@ -93,9 +93,23 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
   );
 
   const lens = scrolled ? LENS_SCROLLED : LENS_REST;
+  const resetForRoute = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (
+      e.defaultPrevented ||
+      e.button !== 0 ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey ||
+      pathname === href
+    ) {
+      return;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  };
 
   return (
-    <header className="sticky top-0 z-[100] py-3.5">
+    <header className="pointer-events-auto sticky top-0 z-[100] isolate py-3.5">
       {/* Frosted bar — transparent while pinned over the hero, fades in once
           the page scrolls so sections passing underneath don't collide with
           the floating logo / Request Demo CTA (on mobile the nav lens is
@@ -145,6 +159,8 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
             <Link
               key={route.href}
               href={route.href}
+              scroll
+              onClick={(e) => resetForRoute(e, route.href)}
               className={`rounded-full px-3.5 py-2 text-body-sm font-medium transition-colors hover:bg-[oklch(1_0_0/0.5)] hover:text-text-primary ${
                 pathname === route.href ? 'text-text-primary' : 'text-text-secondary'
               }`}
@@ -202,7 +218,10 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
               <Link
                 key={route.href}
                 href={route.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  resetForRoute(e, route.href);
+                  setMenuOpen(false);
+                }}
                 className="rounded-2xl px-4 py-3 text-body font-medium text-text-primary transition-colors hover:bg-[oklch(1_0_0/0.5)]"
               >
                 {route.label}

@@ -166,8 +166,13 @@ function visibleFraction(el: HTMLElement): number {
   const r = el.getBoundingClientRect();
   if (r.height <= 0) return 0;
   const vh = window.innerHeight;
-  const visible = Math.min(r.bottom, vh * 0.92) - Math.max(r.top, 0);
-  return clamp01(visible / r.height);
+  const compact = window.innerWidth < 768;
+  const visible = Math.min(r.bottom, vh * (compact ? 0.98 : 0.94)) - Math.max(r.top, 0);
+  // A reveal wrapper can legitimately be taller than the viewport on mobile.
+  // Basing the fraction on its full height made those scenes wait until a
+  // large chunk had already passed the fold. Cap the denominator at the usable
+  // viewport so arrival timing follows what the reader can actually see.
+  return clamp01(visible / Math.min(r.height, vh * 0.9));
 }
 
 interface RevealProps extends HTMLAttributes<HTMLElement> {
@@ -190,14 +195,15 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
   useIsoLayoutEffect(() => {
     const el = ref.current;
     if (!el || prefersReducedMotion()) return;
+    const compact = window.innerWidth < 768;
     revealedRef.current = false;
     el.style.clipPath = CLIP_HIDDEN;
     if (wipeOnly) {
-      el.style.transition = `clip-path 0.9s ${LANDING_EASE}`;
+      el.style.transition = `clip-path ${compact ? '0.64s' : '0.82s'} ${LANDING_EASE}`;
     } else {
-      el.style.transform = 'translateY(26px)';
-      el.style.transition = `clip-path 0.8s ${LANDING_EASE}, transform 0.8s ${LANDING_EASE}`;
-      if (delay) el.style.transitionDelay = `${delay}ms`;
+      el.style.transform = `translateY(${compact ? 14 : 22}px)`;
+      el.style.transition = `clip-path ${compact ? '0.56s' : '0.72s'} ${LANDING_EASE}, transform ${compact ? '0.56s' : '0.72s'} ${LANDING_EASE}`;
+      if (delay) el.style.transitionDelay = `${compact ? Math.min(Math.round(delay * 0.4), 80) : delay}ms`;
     }
   }, [delay, wipeOnly]);
 
@@ -205,7 +211,8 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
     useCallback(() => {
       const el = ref.current;
       if (!el || revealedRef.current || prefersReducedMotion()) return;
-      if (visibleFraction(el) < 0.15) return;
+      const threshold = window.innerWidth < 768 ? 0.06 : 0.12;
+      if (visibleFraction(el) < threshold) return;
       revealedRef.current = true;
       // Double-rAF: guarantee one painted hidden frame first, so content
       // already in the viewport at load still gets its entrance wipe.

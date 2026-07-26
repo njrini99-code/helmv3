@@ -10,7 +10,7 @@ const rowBase: React.CSSProperties = {
   padding: 'clamp(22px,2.8vw,32px) 0',
   borderBottom: '1px solid var(--line)',
   color: 'inherit',
-  overflow: 'hidden',
+  overflow: 'clip',
 };
 
 const glyphBase: React.CSSProperties = {

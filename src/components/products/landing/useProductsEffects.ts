@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
+
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
  * Scroll-driven effects for the Products landing, ported 1:1 from the Claude
@@ -18,7 +20,19 @@ import { useEffect, type RefObject } from 'react';
  * media query, so they aren't touched here.
  */
 export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void {
+  const [compact, setCompact] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches,
+  );
+
   useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const sync = () => setCompact(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
+  useIsoLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
@@ -32,11 +46,12 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
     if (!reduce && typeof IntersectionObserver === 'function') {
       reveals.forEach((el) => {
         el.style.opacity = '0';
-        el.style.transform = 'translateY(24px)';
+        el.style.transform = `translateY(${compact ? 14 : 20}px)`;
         el.style.transition =
-          'opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1)';
-        const d = el.getAttribute('data-reveal-delay');
-        if (d) el.style.transitionDelay = `${d}ms`;
+          `opacity ${compact ? '.52s' : '.68s'} cubic-bezier(.16,1,.3,1), transform ${compact ? '.52s' : '.68s'} cubic-bezier(.16,1,.3,1)`;
+        const authoredDelay = Number(el.getAttribute('data-reveal-delay') ?? 0);
+        const delay = compact ? Math.min(Math.round(authoredDelay * 0.3), 80) : authoredDelay;
+        if (delay) el.style.transitionDelay = `${delay}ms`;
       });
       io = new IntersectionObserver(
         (entries) => {
@@ -49,7 +64,9 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
             }
           });
         },
-        { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+        compact
+          ? { threshold: 0.04, rootMargin: '0px 0px 10% 0px' }
+          : { threshold: 0.1, rootMargin: '0px 0px -2% 0px' },
       );
       reveals.forEach((el) => io?.observe(el));
     }
@@ -123,7 +140,7 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
         fx.forEach((el) => {
           if (done.has(el)) return;
           const r = el.getBoundingClientRect();
-          if (r.top > vh * 0.9 || r.bottom < 0) return;
+          if (r.top > vh * (compact ? 0.98 : 0.92) || r.bottom < 0) return;
           done.add(el);
           const kind = el.getAttribute('data-fx');
           if (kind === 'count') countUp(el);
@@ -133,7 +150,7 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
           }
           if (kind === 'stagger') {
             el.querySelectorAll<HTMLElement>('[data-si]').forEach((r, i) => {
-              r.style.transitionDelay = `${120 + i * 110}ms`;
+              r.style.transitionDelay = `${compact ? 40 + i * 55 : 100 + i * 90}ms`;
               r.style.opacity = '1';
               r.style.transform = 'none';
             });
@@ -155,5 +172,5 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
       io?.disconnect();
       if (onScroll) window.removeEventListener('scroll', onScroll);
     };
-  }, [rootRef]);
+  }, [rootRef, compact]);
 }
