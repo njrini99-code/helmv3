@@ -16,7 +16,13 @@ import {
   type DeliverabilitySummary,
   type CrmFunnel,
 } from '@/app/golf/actions/crm-insights';
-import { SEGMENTED_TABLIST_CLASS, segmentedTabClass } from '@/app/golf/admin/crm/page-contracts';
+import {
+  CRM_DANGER_ACTION_CLASS,
+  CRM_ICON_ACTION_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+  SEGMENTED_TABLIST_CLASS,
+  segmentedTabClass,
+} from '@/app/golf/admin/crm/page-contracts';
 import { DeliverabilityCards } from './DeliverabilityCards';
 import { FunnelCard } from './FunnelCard';
 import { TemplatePerformanceTable } from './TemplatePerformanceTable';
@@ -110,7 +116,7 @@ export function InsightsDashboard() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-warm-900 tracking-tight">Insights</h2>
+          <h2 className="text-xl font-bold text-warm-900 tracking-tight">Analytics overview</h2>
           <p className="text-sm text-warm-500 mt-1">
             Per-template performance, time-to-open distribution, and top-clicked
             destinations across your CRM email program.
@@ -145,12 +151,7 @@ export function InsightsDashboard() {
             onClick={() => fetchAll(window)}
             disabled={loading}
             aria-label="Refresh insights"
-            className={cn(
-              'inline-flex items-center justify-center w-9 h-9 rounded-full',
-              'glass-standard shadow-glass-sm',
-              'text-warm-600 hover:text-warm-900 hover:bg-cream-100 transition-colors',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-            )}
+            className={cn(CRM_ICON_ACTION_CLASS, 'disabled:cursor-not-allowed disabled:opacity-50')}
           >
             <IconRefresh size={14} className={loading ? 'animate-spin' : ''} />
           </IconButton>
@@ -166,7 +167,7 @@ export function InsightsDashboard() {
           </div>
           <Button variant="danger"
             onClick={() => fetchAll(window)}
-            className="text-xs font-semibold text-red-700 hover:text-red-900"
+            className={CRM_DANGER_ACTION_CLASS}
           >
             Retry
           </Button>
@@ -181,7 +182,7 @@ export function InsightsDashboard() {
           </p>
           <Button variant="ghost"
             onClick={() => fetchAll(window)}
-            className="text-xs font-semibold text-amber-700 hover:text-amber-900 px-2 py-1 rounded-lg"
+            className={CRM_TERTIARY_ACTION_CLASS}
           >
             Refresh
           </Button>

@@ -104,6 +104,8 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { nextStepLabel } from './components/next-step-label';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
+import { fairwayScope } from '@/lib/redesign/flag';
+import styles from './crm-shell.module.css';
 
 // ============================================================================
 // SIDEBAR TABS + shell contracts
@@ -1351,56 +1353,55 @@ export default function CRMPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream-100 flex">
+    <div className={fairwayScope(styles.shell, 'min-h-dvh bg-canvas font-fw-sans text-text-primary flex')}>
       {/* ═══════════════════ Mobile Header ═══════════════════ */}
       {/* Below lg the dark sidebar is hidden; navigation moves to the fixed
-          bottom tab bar (see below). This top header keeps only the back link,
-          the active destination's label, and the Import / Export / Add actions
-          so we don't double up on navigation. */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-warm-900/95 backdrop-blur-xl border-b border-white/10">
-        <div className="flex items-center gap-2 px-3 h-12">
-          <a href="/golf/admin" aria-label="Back to admin dashboard" className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-white transition-all duration-200">
-            <ArrowLeft size={16} />
+          bottom tab bar (see below). This standard action header keeps one
+          leading control, the active destination, useful queue meta, and one
+          primary action. Low-frequency data tools live in More. */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-nav-bg/95 backdrop-blur-xl border-b border-white/10">
+        <div className="flex items-center gap-3 px-3 h-14">
+          <a
+            href="/golf/admin"
+            aria-label="Back to admin dashboard"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-nav-text-dim hover:bg-nav-surface hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nav-accent transition-colors"
+          >
+            <ArrowLeft size={18} />
           </a>
-          <span className="flex-1 min-w-0 truncate font-semibold text-sm text-white">
-            {tabsById.get(activeTab)?.label}
-          </span>
-          {/* Import / Export — surfaced on mobile (desktop has them in the sidebar) */}
-          <IconButton variant="default" aria-label="Import coaches"
-            onClick={() => setShowImportModal(true)}
-            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-warm-50/10 transition-all duration-200"
-          >
-            <IconUpload size={16} />
-          </IconButton>
-          <IconButton variant="default" aria-label="Export CSV"
-            onClick={exportToCSV}
-            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-warm-50/10 transition-all duration-200"
-          >
-            <IconDownload size={16} />
-          </IconButton>
-          <IconButton variant="primary" aria-label="Add"
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold leading-tight text-nav-text">
+              {tabsById.get(activeTab)?.label}
+            </p>
+            <p className="mt-0.5 truncate text-caption leading-none text-nav-text-dim">
+              {loading ? 'Updating…' : `${stats.total} coaches · ${stats.followUpsDue} due`}
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            aria-label="Add coach"
             onClick={() => setShowAddModal(true)}
-            className="flex-shrink-0 p-1.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all duration-200 shadow-sm"
+            className="min-h-10 flex-shrink-0 gap-1.5 rounded-xl bg-accent-650 px-3 text-sm font-semibold text-text-on-accent hover:bg-accent-700 focus-visible:ring-2 focus-visible:ring-nav-accent"
           >
             <IconPlus size={16} />
-          </IconButton>
+            Add
+          </Button>
         </div>
-      </div>
+      </header>
 
       {/* ═══════════════════ Desktop Sidebar ═══════════════════ */}
       <aside className={cn(
         'fixed left-0 top-0 bottom-0 z-50 flex flex-col',
-        'bg-warm-900 border-r border-white/5',
+        'bg-nav-bg border-r border-white/5',
         'transition-all duration-300 ease-in-out',
         sidebarCollapsed ? 'w-[72px]' : 'w-[260px]',
         'hidden lg:flex'
       )}>
         {/* Logo */}
         <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
-          <div className="w-9 h-9 rounded-md bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
-            <IconTarget size={18} className="text-white" />
+          <div className="w-9 h-9 rounded-md bg-accent-650 flex items-center justify-center shadow-lg shadow-accent-900/20">
+            <IconTarget size={18} className="text-text-on-accent" />
           </div>
-          {!sidebarCollapsed && <span className="font-bold text-lg text-white tracking-tight">Coach CRM</span>}
+          {!sidebarCollapsed && <span className="font-semibold text-lg text-nav-text tracking-tight">Fairway CRM</span>}
         </div>
 
         {/* Back to Dashboard */}
@@ -1525,11 +1526,11 @@ export default function CRMPage() {
         // descendant (tables, charts, long subjects) pushed the whole panel past
         // the mobile viewport — the right-edge clipping seen on phones.
         'flex-1 min-w-0 flex flex-col min-h-dvh transition-all duration-300',
-        'pt-12 lg:pt-0',
+        'pt-14 lg:pt-0',
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
       )}>
         {/* Top Bar */}
-        <header className="sticky top-12 lg:top-0 z-30 glass-standard border-b-0 rounded-none px-4 sm:px-6 py-3">
+        <header className="hidden lg:block sticky top-0 z-30 glass-standard border-b-0 rounded-none px-6 py-3">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-warm-900">{TABS.find(t => t.id === activeTab)?.label}</h2>
@@ -1566,7 +1567,7 @@ export default function CRMPage() {
 
         {/* Content Area — extra bottom padding below lg so the fixed mobile
             bottom tab bar (~64px + safe-area inset) never covers content. */}
-        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-6 bg-cream-100 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6">
+        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-6 bg-canvas pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6">
           {/* ── Today Work Queue (DEFAULT) ── */}
           {activeTab === 'today' && (
             error ? (
@@ -1807,7 +1808,7 @@ export default function CRMPage() {
         aria-label="Primary"
         className={cn(
           'lg:hidden fixed bottom-0 left-0 right-0 z-40',
-          'glass-standard border-t-0 rounded-t-2xl shadow-glass',
+          'bg-elevated/95 backdrop-blur-xl border-t border-border-subtle rounded-t-2xl shadow-glass',
           'pb-[env(safe-area-inset-bottom)]',
         )}
       >
@@ -1825,7 +1826,7 @@ export default function CRMPage() {
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-xl px-1 transition-colors duration-200',
-                  isActive ? 'text-primary-600' : 'text-warm-500 hover:text-warm-900',
+                  isActive ? 'bg-accent-50 text-accent-700' : 'text-text-tertiary hover:text-text-primary',
                 )}
               >
                 <TabIcon size={22} className="flex-shrink-0" />
@@ -1845,7 +1846,7 @@ export default function CRMPage() {
                 aria-expanded={moreSheetOpen}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-xl px-1 transition-colors duration-200',
-                  moreActive || moreSheetOpen ? 'text-primary-600' : 'text-warm-500 hover:text-warm-900',
+                  moreActive || moreSheetOpen ? 'bg-accent-50 text-accent-700' : 'text-text-tertiary hover:text-text-primary',
                 )}
               >
                 <IconMoreHorizontal size={22} className="flex-shrink-0" />
@@ -1881,7 +1882,7 @@ export default function CRMPage() {
                 <IconX size={18} />
               </IconButton>
             </div>
-            <div className="px-3 pb-4 grid grid-cols-2 gap-2">
+            <div className="px-3 pb-3 grid grid-cols-2 gap-2">
               {MOBILE_MORE_TABS.map((id) => {
                 const tab = tabsById.get(id);
                 if (!tab) return null;
@@ -1905,6 +1906,27 @@ export default function CRMPage() {
                   </Button>
                 );
               })}
+            </div>
+            <div className="mx-3 border-t border-border-subtle px-1 py-3">
+              <p className="mb-2 px-2 text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+                Data tools
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => { setMoreSheetOpen(false); setShowImportModal(true); }}
+                  className="min-h-11 justify-start gap-2 rounded-xl bg-surface-tint px-3 text-sm font-medium text-text-secondary"
+                >
+                  <IconUpload size={17} /> Import
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => { setMoreSheetOpen(false); exportToCSV(); }}
+                  className="min-h-11 justify-start gap-2 rounded-xl bg-surface-tint px-3 text-sm font-medium text-text-secondary"
+                >
+                  <IconDownload size={17} /> Export CSV
+                </Button>
+              </div>
             </div>
           </div>
         </div>

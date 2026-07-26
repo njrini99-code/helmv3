@@ -16,6 +16,13 @@ import {
   IconPlus,
   IconLoader,
 } from '@/components/icons';
+import {
+  CRM_CHOICE_GROUP_CLASS,
+  CRM_ICON_ACTION_CLASS,
+  CRM_PRIMARY_ACTION_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+  crmChoiceClass,
+} from '../page-contracts';
 
 // ── Types ──
 interface EmailTemplate {
@@ -43,17 +50,17 @@ interface TemplatePickerProps {
 
 // ── Category colors ──
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  intro: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  follow_up: { bg: 'bg-amber-50', text: 'text-amber-700' },
-  demo_invite: { bg: 'bg-primary-50', text: 'text-primary-700' },
-  proposal: { bg: 'bg-violet-50', text: 'text-violet-700' },
-  check_in: { bg: 'bg-teal-50', text: 'text-teal-700' },
-  general: { bg: 'bg-warm-50', text: 'text-warm-700' },
-  cold_outreach: { bg: 'bg-sky-50', text: 'text-sky-700' },
-  active_conversation: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
-  re_engage: { bg: 'bg-orange-50', text: 'text-orange-700' },
-  close: { bg: 'bg-rose-50', text: 'text-rose-700' },
-  post_close: { bg: 'bg-lime-50', text: 'text-lime-700' },
+  intro: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  follow_up: { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink' },
+  demo_invite: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  proposal: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  check_in: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  general: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  cold_outreach: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  active_conversation: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  re_engage: { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink' },
+  close: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  post_close: { bg: 'bg-fw-success-bg', text: 'text-fw-success-ink' },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -160,7 +167,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
     <div className="glass-standard rounded-xl border border-primary-200 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-warm-800">Create Template</h4>
-        <IconButton variant="default" onClick={onCancel} aria-label="Cancel" className="text-warm-400 hover:text-warm-600 transition-colors">
+        <IconButton variant="default" onClick={onCancel} aria-label="Cancel" className={CRM_ICON_ACTION_CLASS}>
           <IconX size={16} aria-hidden="true" />
         </IconButton>
       </div>
@@ -182,7 +189,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
         />
 
         {/* Format selector — closes G1 (UI templates can be text/html/plain) */}
-        <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Email format">
+        <div className={CRM_CHOICE_GROUP_CLASS} role="radiogroup" aria-label="Email format">
           {FORMAT_OPTIONS.map(f => {
             const active = format === f.key;
             return (
@@ -193,12 +200,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
                 role="radio"
                 aria-checked={active}
                 onClick={() => setFormat(f.key)}
-                className={cn(
-                  'px-2 py-1.5 rounded-xl border text-xs font-semibold min-h-0 transition-all',
-                  active
-                    ? 'bg-primary-50 border-primary-300 text-primary-800 ring-1 ring-primary-200'
-                    : 'bg-cream-50/60 border-warm-200 text-warm-600 hover:bg-cream-100',
-                )}
+                className={crmChoiceClass(active)}
               >
                 {f.label}
               </Button>
@@ -231,14 +233,14 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
       <div className="flex justify-end gap-2">
         <Button variant="ghost"
           onClick={onCancel}
-          className="px-3 py-1.5 rounded-lg text-sm text-warm-600 hover:bg-warm-100 transition-colors"
+          className={CRM_TERTIARY_ACTION_CLASS}
         >
           Cancel
         </Button>
         <Button variant="primary"
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 transition-colors"
+          className={CRM_PRIMARY_ACTION_CLASS}
         >
           {saving && <IconLoader size={14} className="animate-spin" />}
           Save Template
@@ -342,28 +344,21 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
             leftIcon={<IconSearch size={14} />}
             clearable
             onClear={() => setSearch('')}
-            className="bg-cream-50/60 min-h-0 py-1.5"
+            className="min-h-11 bg-cream-50/60 py-1.5"
           />
         </div>
       </div>
 
       {/* Category filter tabs */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+      <div className={CRM_CHOICE_GROUP_CLASS}>
         {CATEGORY_OPTIONS.map(cat => {
-          const colors = cat.key !== 'all' ? getCategoryColor(cat.key) : null;
           const isActive = activeCategory === cat.key;
           return (
             <Button variant="ghost"
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
-              className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border',
-                isActive && colors
-                  ? `${colors.bg} ${colors.text} border-current/20`
-                  : isActive
-                    ? 'bg-warm-100 text-warm-700 border-warm-200'
-                    : 'text-warm-500 hover:bg-warm-50 border-transparent'
-              )}
+              aria-pressed={isActive}
+              className={crmChoiceClass(isActive)}
             >
               {cat.label}
             </Button>
@@ -375,7 +370,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
       {loading ? (
         <TemplateSkeleton />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {filtered.length === 0 && !showNewForm ? (
             <div className="col-span-full py-8 text-center text-sm text-warm-400">
               {search ? 'No templates match your search' : 'No templates in this category'}
@@ -388,9 +383,10 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                 <Button variant="ghost"
                   key={template.id}
                   onClick={() => handleSelect(template)}
+                  aria-pressed={isSelected}
                   className={cn(
                     'w-full text-left glass-standard rounded-xl p-4 cursor-pointer transition-all duration-200 hover:bg-cream-100 hover:shadow-sm',
-                    isSelected && 'ring-2 ring-primary-500 border-primary-300'
+                    isSelected && 'border-accent-300 ring-2 ring-accent-500'
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1.5">

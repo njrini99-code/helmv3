@@ -256,14 +256,14 @@ export function CoachFilters({
   ];
 
   return (
-    <div className="glass-standard rounded-2xl p-4 space-y-3">
+    <div className="glass-standard rounded-2xl p-3 sm:p-4 space-y-3">
       {/* Row 1: Search + single Filters trigger + Save + Clear */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:flex sm:flex-wrap items-center gap-2">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative min-w-0 sm:flex-1 sm:min-w-[200px] sm:max-w-sm">
           <Input
             type="text"
-            placeholder="Search coaches, schools, conferences..."
+            placeholder="Search coaches or schools"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             clearable
@@ -308,7 +308,7 @@ export function CoachFilters({
         </Button>
 
         {/* Spacer pushes the action group to the right when present */}
-        {activeFilterCount > 0 && <div className="flex-1" />}
+        {activeFilterCount > 0 && <div className="hidden sm:block flex-1" />}
 
         {/* Save as segment — an ACTION, so it earns a kelly-green fill */}
         {activeFilterCount > 0 && (
@@ -317,7 +317,7 @@ export function CoachFilters({
             size="sm"
             leftIcon={<IconBookmark size={14} />}
             onClick={() => setSaveSegmentOpen(true)}
-            className="rounded-full whitespace-nowrap"
+            className="col-span-1 sm:col-auto rounded-xl whitespace-nowrap"
             title="Save current filters as a reusable segment"
           >
             Save segment
@@ -331,7 +331,7 @@ export function CoachFilters({
             size="sm"
             leftIcon={<IconX size={14} />}
             onClick={clearFilters}
-            className="rounded-full whitespace-nowrap"
+            className="col-span-1 sm:col-auto rounded-xl whitespace-nowrap"
           >
             Clear {activeFilterCount}
           </Button>

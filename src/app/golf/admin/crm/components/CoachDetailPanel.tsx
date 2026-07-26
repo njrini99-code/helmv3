@@ -44,6 +44,14 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  CRM_CHOICE_GROUP_CLASS,
+  CRM_ICON_ACTION_CLASS,
+  CRM_PRIMARY_ACTION_CLASS,
+  CRM_SECONDARY_ACTION_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+  crmChoiceClass,
+} from '../page-contracts';
 
 // ============================================================================
 // TYPES
@@ -72,10 +80,10 @@ interface CoachDetailPanelProps {
 // CONSTANTS
 // ============================================================================
 const CONTACT_TYPES = [
-  { value: 'email', label: 'Email', Icon: IconMail, dotColor: 'bg-blue-500' },
-  { value: 'call', label: 'Call', Icon: IconPhone, dotColor: 'bg-primary-500' },
-  { value: 'demo', label: 'Demo', Icon: IconVideo, dotColor: 'bg-violet-500' },
-  { value: 'meeting', label: 'Meeting', Icon: IconUsers, dotColor: 'bg-cyan-500' },
+  { value: 'email', label: 'Email', Icon: IconMail, dotColor: 'bg-accent-650' },
+  { value: 'call', label: 'Call', Icon: IconPhone, dotColor: 'bg-accent-500' },
+  { value: 'demo', label: 'Demo', Icon: IconVideo, dotColor: 'bg-accent-300' },
+  { value: 'meeting', label: 'Meeting', Icon: IconUsers, dotColor: 'bg-warm-500' },
   { value: 'note', label: 'Note', Icon: StickyNote, dotColor: 'bg-warm-400' },
 ] as const;
 
@@ -469,10 +477,10 @@ function CoachDetailPanelInner({
                   </div>
                   <div className="flex gap-2 pt-1">
                     <Button variant="primary" onClick={saveContactInfo} disabled={!contactForm.name.trim() || !contactForm.school.trim()}
-                      className="px-3 py-1.5 bg-primary-600 text-white rounded-xl text-xs font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
+                      className={CRM_PRIMARY_ACTION_CLASS}>
                       Save
                     </Button>
-                    <Button variant="ghost" onClick={cancelEditContact} className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800">Cancel</Button>
+                    <Button variant="ghost" onClick={cancelEditContact} className={CRM_TERTIARY_ACTION_CLASS}>Cancel</Button>
                   </div>
                 </div>
                 <IconButton variant="default" onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 ml-2 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center">
@@ -615,7 +623,7 @@ function CoachDetailPanelInner({
         {!editingContact && (
           <div className="flex items-center gap-2 px-5 py-2.5 border-b border-warm-200/30 glass-subtle flex-shrink-0 flex-wrap">
             {coach.email ? (
-              <a href={`mailto:${coach.email}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-medium transition-colors">
+              <a href={`mailto:${coach.email}`} className="flex min-h-11 items-center gap-1.5 rounded-xl bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-800 transition-colors hover:bg-accent-100">
                 <IconMail size={12} /> {coach.email}
               </a>
             ) : (
@@ -633,7 +641,7 @@ function CoachDetailPanelInner({
               </Button>
             )}
             {coach.athletics_url && (
-              <a href={coach.athletics_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-medium transition-colors">
+              <a href={coach.athletics_url} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-1.5 rounded-xl border border-border-subtle bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-tint">
                 <IconExternalLink size={12} /> Golf Staff Page
               </a>
             )}
@@ -670,8 +678,8 @@ function CoachDetailPanelInner({
                       <Textarea value={notesValue} onChange={e => setNotesValue(e.target.value)} autoFocus rows={3}
                         className="w-full bg-cream-50 border border-warm-200/60 rounded-lg px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" placeholder="Add notes..." />
                       <div className="flex gap-1.5">
-                        <Button variant="primary" onClick={saveNotes} className="px-2 py-1 bg-primary-600 text-white rounded-md text-eyebrow font-semibold hover:bg-primary-700 transition-colors">Save</Button>
-                        <Button variant="ghost" onClick={() => { setEditingNotes(false); setNotesValue(coach.notes || ''); }} className="px-2 py-1 text-eyebrow text-warm-500 hover:text-warm-700">Cancel</Button>
+                        <Button variant="primary" onClick={saveNotes} className={CRM_PRIMARY_ACTION_CLASS}>Save</Button>
+                        <Button variant="ghost" onClick={() => { setEditingNotes(false); setNotesValue(coach.notes || ''); }} className={CRM_TERTIARY_ACTION_CLASS}>Cancel</Button>
                       </div>
                     </div>
                   ) : (
@@ -691,13 +699,13 @@ function CoachDetailPanelInner({
                   {(coach.tags || []).map((tag, i) => (
                     <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary-50 text-primary-700 rounded-md text-eyebrow font-medium">
                       {tag}
-                      <IconButton variant="default" onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className="hover:text-red-600 transition-colors"><IconX size={8} aria-hidden="true" /></IconButton>
+                      <IconButton variant="default" onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className={CRM_ICON_ACTION_CLASS}><IconX size={8} aria-hidden="true" /></IconButton>
                     </span>
                   ))}
                   <div className="flex items-center gap-0.5">
                     <Input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
                       placeholder="+" className="bg-transparent border-none rounded-none min-h-0 px-0 py-0 text-eyebrow text-warm-400 w-12 focus:outline-none focus:ring-0 focus:w-20 transition-all placeholder:text-warm-300" />
-                    {newTag && <IconButton variant="primary" onClick={addTag} aria-label="Add tag" className="w-4 h-4 rounded bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={8} aria-hidden="true" /></IconButton>}
+                    {newTag && <IconButton variant="primary" onClick={addTag} aria-label="Add tag" className={CRM_ICON_ACTION_CLASS}><IconPlus size={12} aria-hidden="true" /></IconButton>}
                   </div>
                 </div>
               </div>
@@ -717,8 +725,8 @@ function CoachDetailPanelInner({
                   <div className="flex items-center gap-1">
                     <Input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
                       className="bg-cream-50 border border-warm-200/60 rounded-md px-2 py-1 text-xs min-h-0 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                    <IconButton variant="default" onClick={saveFollowUp} aria-label="Save follow-up date" className="text-primary-600"><IconCheck size={12} aria-hidden="true" /></IconButton>
-                    <IconButton variant="default" onClick={() => setEditingFollowUp(false)} aria-label="Cancel" className="text-warm-400"><IconX size={12} aria-hidden="true" /></IconButton>
+                    <IconButton variant="default" onClick={saveFollowUp} aria-label="Save follow-up date" className={CRM_ICON_ACTION_CLASS}><IconCheck size={12} aria-hidden="true" /></IconButton>
+                    <IconButton variant="default" onClick={() => setEditingFollowUp(false)} aria-label="Cancel" className={CRM_ICON_ACTION_CLASS}><IconX size={12} aria-hidden="true" /></IconButton>
                   </div>
                 ) : (
                   <Button variant="danger" onClick={() => setEditingFollowUp(true)}
@@ -789,13 +797,14 @@ function CoachDetailPanelInner({
               ================================================================ */}
           {showContactForm && (
             <div className="mx-5 mb-4 p-3 rounded-xl border border-primary-200/50 bg-primary-50/20 space-y-3">
-              <div className="flex gap-1.5 flex-wrap">
+              <div className={CRM_CHOICE_GROUP_CLASS} role="radiogroup" aria-label="Contact type">
                 {CONTACT_TYPES.map(type => {
                   const TypeIcon = type.Icon;
                   return (
-                    <Button variant="primary" key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
-                      className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 inline-flex items-center gap-1.5',
-                        newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-cream-50 border border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100')}>
+                    <Button variant="ghost" key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
+                      role="radio"
+                      aria-checked={newContact.type === type.value}
+                      className={cn(crmChoiceClass(newContact.type === type.value), 'inline-flex items-center gap-1.5')}>
                       <TypeIcon size={12} /> {type.label}
                     </Button>
                   );
@@ -804,8 +813,8 @@ function CoachDetailPanelInner({
               <Textarea placeholder="Notes..." value={newContact.notes} onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
                 className="w-full bg-cream-50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={2} />
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setShowContactForm(false)} className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800">Cancel</Button>
-                <Button variant="primary" onClick={submitContact} disabled={submitting} className="px-4 py-1.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
+                <Button variant="ghost" onClick={() => setShowContactForm(false)} className={CRM_TERTIARY_ACTION_CLASS}>Cancel</Button>
+                <Button variant="primary" onClick={submitContact} disabled={submitting} className={CRM_PRIMARY_ACTION_CLASS}>
                   {submitting ? 'Saving...' : 'Save'}
                 </Button>
               </div>
@@ -825,15 +834,15 @@ function CoachDetailPanelInner({
         <div className="glass-standard p-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex-shrink-0">
           {/* On phones the actions stretch to fill the bar for one-handed reach;
               every action is >=44px tall. On desktop they revert to auto width. */}
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             {coach.email ? (
               <a href={`mailto:${coach.email}`}
-                className="flex-1 lg:flex-initial min-h-[44px] bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
+                className={cn(CRM_PRIMARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
                 <IconMail size={14} /> Email
               </a>
             ) : (
               <Button variant="primary" onClick={() => setEditingContact(true)}
-                className="flex-1 lg:flex-initial min-h-[44px] bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
+                className={cn(CRM_PRIMARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
                 <IconMail size={14} /> Email
               </Button>
             )}
@@ -842,7 +851,7 @@ function CoachDetailPanelInner({
                 title={gmailDirectSend
                   ? 'Send this email directly through your Workspace mailbox (Gmail API)'
                   : 'Open a pre-filled Gmail compose window for this coach'}
-                className="flex-1 lg:flex-initial min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
+                className={cn(CRM_SECONDARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
                 {gmailDirectSend
                   ? <><IconSend size={14} className="text-primary-500" /> Send</>
                   : <><IconExternalLink size={14} className="text-primary-500" /> Gmail</>}
@@ -850,21 +859,21 @@ function CoachDetailPanelInner({
             )}
             {coach.phone ? (
               <a href={`tel:${coach.phone}`}
-                className="flex-1 lg:flex-initial min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
+                className={cn(CRM_SECONDARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
                 <IconPhone size={14} /> Call
               </a>
             ) : (
               <Button variant="ghost" onClick={() => setEditingContact(true)}
-                className="flex-1 lg:flex-initial min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
+                className={cn(CRM_SECONDARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
                 <IconPhone size={14} /> Call
               </Button>
             )}
             <Button variant="ghost" onClick={() => setEditingFollowUp(true)}
-              className="flex-1 lg:flex-initial min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
+              className={cn(CRM_SECONDARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
               <IconCalendar size={14} /> Schedule
             </Button>
             <Button variant="ghost" onClick={() => { setShowContactForm(true); setNewContact({ ...newContact, type: 'note' }); }}
-              className="flex-1 lg:flex-initial min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
+              className={cn(CRM_SECONDARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
               <IconFileText size={14} /> Note
             </Button>
           </div>
