@@ -3,9 +3,31 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 import type { ComponentProps } from 'react';
 
-// Cleanup after each test
-afterEach(() => {
+/**
+ * Unmount, then let the unmount finish.
+ *
+ * `cleanup()` is synchronous, but some unmount paths are not. Radix's
+ * FocusScope schedules a `setTimeout` on teardown that dispatches a focus event
+ * at the container it just released. If nothing yields before the file's
+ * environment is torn down, that timer fires into a dead jsdom and throws
+ * `Failed to execute 'dispatchEvent' on 'EventTarget': parameter 1 is not of
+ * type 'Event'` — the Event constructor it captured belongs to a realm that no
+ * longer exists.
+ *
+ * Vitest counts that as an unhandled error and exits non-zero even when every
+ * assertion passed, which is exactly how `main` went red on 2026-07-26: 7712
+ * tests passed, one uncaught exception between them, CI red. It is intermittent
+ * because it depends on whether the timer lands before or after teardown, so it
+ * survives green PR runs and appears later.
+ *
+ * Yielding one macrotask lets any unmount-scheduled work run while the DOM it
+ * refers to is still alive. It costs a tick per test and removes the whole
+ * class — this is not specific to one component, it is true of anything that
+ * defers work to a timer on unmount.
+ */
+afterEach(async () => {
   cleanup();
+  await new Promise((resolve) => setTimeout(resolve, 0));
 });
 
 // Mock Next.js router
