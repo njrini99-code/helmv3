@@ -21,7 +21,9 @@ import { PanelLeft, Plus, X } from 'lucide-react';
 import type { UIMessage } from 'ai';
 import { cn } from '@/lib/utils';
 import type { ChatConversation } from '@/lib/coachhelm/v3/chat/types';
+import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { CoachHelmChat } from './CoachHelmChat';
+import { ProgramOpening } from './ProgramOpening';
 import type { ComposerPlayer } from './PromptComposer';
 
 export interface AskSurfaceProps {
@@ -31,6 +33,11 @@ export interface AskSurfaceProps {
   conversations: ChatConversation[];
   conversationId: string | null;
   initialMessages: UIMessage[];
+  /** The program's current findings, rendered as the empty state. */
+  pulseItems: PulseItem[];
+  /** Preformatted server-side — a client-formatted time mismatches on hydration. */
+  asOfLabel: string | null;
+  coverage: string | null;
   /**
    * A question started on the Brief and carried here via `?q=`. Seeded into
    * the composer so the coach does not retype it — but not auto-sent, because
@@ -47,6 +54,9 @@ export function AskSurface({
   conversations,
   conversationId,
   initialMessages,
+  pulseItems,
+  asOfLabel,
+  coverage,
   pendingQuestion,
 }: AskSurfaceProps) {
   const [historyOpen, setHistoryOpen] = React.useState(false);
@@ -193,6 +203,14 @@ export function AskSurface({
             variant="page"
             initialInput={pendingQuestion ?? undefined}
             greeting={<Greeting teamName={teamName} />}
+            opening={(ask) => (
+              <ProgramOpening
+                items={pulseItems}
+                coverage={coverage}
+                asOfLabel={asOfLabel}
+                onAsk={ask}
+              />
+            )}
           />
         </div>
       </div>

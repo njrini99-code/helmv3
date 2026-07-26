@@ -144,6 +144,23 @@ declare module 'ai' {
     });
   }
 
+  /**
+   * `sendAutomaticallyWhen` predicate for `useChat`: true once every tool
+   * approval in the last assistant step has an answer.
+   *
+   * This is what makes an approved action actually run. `addToolApprovalResponse`
+   * only writes the coach's answer into local message state; without this
+   * predicate resubmitting the thread, the suspended tool call is never resumed
+   * and Confirm is silently inert.
+   *
+   * NOT interchangeable with `lastAssistantMessageIsCompleteWithToolCalls` —
+   * that one fires on completed tool CALLS, which would post a card with two
+   * pending confirmations after the first click.
+   */
+  export function lastAssistantMessageIsCompleteWithApprovalResponses(options: {
+    messages: UIMessage[];
+  }): boolean;
+
   export function createUIMessageStream(options: {
     execute: (options: { writer: UIMessageStreamWriter }) => void | Promise<void>;
     onFinish?: (options: { messages: UIMessage[]; [key: string]: unknown }) => void | Promise<void>;

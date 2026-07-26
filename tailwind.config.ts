@@ -556,6 +556,7 @@ const config: Config = {
         // ═══════════════════════════════════════════════════════════════
         // INTERACTIVE ANIMATIONS - Use for user feedback
         // ═══════════════════════════════════════════════════════════════
+        'scan': 'scan 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite',
         'shake': 'shake 0.4s ease-in-out',
         'card-hover': 'card-hover 0.2s ease-out',
         'check-bounce': 'check-bounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
@@ -590,6 +591,14 @@ const config: Config = {
         pulse: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.5' },
+        },
+        // A segment travelling along a short track. Used for CoachHelm's
+        // working indicator: the job being narrated is READING — rounds,
+        // signals, a schedule — and a scan reads as that, where a row of
+        // bouncing dots reads as a person typing.
+        scan: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(400%)' },
         },
         'fade-in': {
           '0%': { opacity: '0' },

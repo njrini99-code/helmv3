@@ -37,6 +37,21 @@ export interface CoachHelmChatProps {
   initialInput?: string;
   /** Greeting shown above the composer on an empty thread. */
   greeting?: React.ReactNode;
+  /**
+   * What fills the rest of an empty page, below the composer and the openers.
+   *
+   * The page passes the program's current findings here. Without it the empty
+   * state is a greeting and a text box floating in a full-height column, which
+   * is how this surface shipped and why the top third of it was blank. The
+   * drawer passes nothing — at ~28rem there is no room for it, and it gets the
+   * suggestion pills alone.
+   *
+   * A render prop rather than a node: asking is the whole point of these rows,
+   * and `send` belongs to the hook inside this component. Handing the caller a
+   * node would mean lifting the conversation state out to whoever composes the
+   * page, which is exactly the split this component exists to prevent.
+   */
+  opening?: (ask: (text: string) => void) => React.ReactNode;
   /** Fires when the server mints a conversation for a thread that had none. */
   onConversationId?: (id: string) => void;
   className?: string;
@@ -51,6 +66,7 @@ export function CoachHelmChat({
   variant = 'page',
   initialInput,
   greeting,
+  opening,
   onConversationId,
   className,
 }: CoachHelmChatProps) {
@@ -97,18 +113,27 @@ export function CoachHelmChat({
     />
   );
 
-  // ── Empty: a calm opening, composer centred, a few real suggestions ──────
+  // ── Empty: the greeting, the composer, then the program itself ───────────
   if (isEmpty) {
     return (
       <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
+        {/*
+          The question block is PINNED and the findings scroll beneath it.
+
+          Top-aligned, not centred: `justify-center` was described as calm and
+          was in practice a blank top third — a greeting and a text box floating
+          in the middle of a 100dvh column with nothing above them. Centring is
+          right for a genuinely empty room, and this page is not one; it opens
+          with what the program looks like today.
+
+          But once the findings are real content they can overflow a laptop, and
+          putting the whole empty state in one scroller meant the composer —
+          the one control this page exists for — scrolled away with them. So the
+          greeting, the composer and the openers are a fixed header, and only the
+          findings move.
+        */}
         <div
-          className={cn(
-            'flex flex-1 flex-col',
-            // The page opens centred — that calm is the point of the empty state.
-            // In a full-height 456px panel the same centring strands the
-            // composer in the middle of a tall dead band, so it sits at the top.
-            variant === 'page' ? 'justify-center px-4 py-10 sm:px-6' : 'justify-start px-4 py-5',
-          )}
+          className={cn('shrink-0', variant === 'page' ? 'px-4 pt-6 sm:px-6' : 'px-4 pt-5')}
         >
           <div className={cn('mx-auto w-full', variant === 'page' ? 'max-w-[46rem]' : 'max-w-full')}>
             {greeting}
@@ -141,6 +166,21 @@ export function CoachHelmChat({
             )}
           </div>
         </div>
+
+        {opening && (
+          <div
+            className={cn(
+              'min-h-0 flex-1 overflow-y-auto overscroll-contain',
+              variant === 'page' ? 'px-4 pb-10 sm:px-6' : 'px-4 pb-5',
+            )}
+          >
+            <div
+              className={cn('mx-auto w-full', variant === 'page' ? 'max-w-[46rem]' : 'max-w-full')}
+            >
+              {opening(chat.send)}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -151,17 +191,34 @@ export function CoachHelmChat({
       <div
         ref={scroller}
         className={cn(
-          'min-h-0 flex-1 overflow-y-auto overscroll-contain',
+          'flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain',
           variant === 'page' ? 'px-4 pb-6 pt-2 sm:px-6' : 'px-4 pb-4 pt-3',
         )}
       >
-        <div className={cn('mx-auto w-full', variant === 'page' ? 'max-w-[52rem]' : 'max-w-full')}>
+        {/*
+          `mt-auto` anchors a SHORT conversation to the composer.
+
+          Without it the first exchange pinned itself to the top of a
+          full-height column and left ~550px of empty canvas between the answer
+          and the input — the same blank-screen problem the empty state had,
+          just one question later.
+
+          `mt-auto` rather than `justify-end` on the scroller: both push short
+          content down, but `justify-end` on a scroll container makes the
+          overflowing top unreachable in Chrome and Firefox. An auto margin on
+          the child is the long-standing fix and scrolls correctly once the
+          thread outgrows the viewport.
+        */}
+        <div
+          className={cn('mx-auto mt-auto w-full', variant === 'page' ? 'max-w-[52rem]' : 'max-w-full')}
+        >
           <ChatThread
             messages={chat.messages}
             busy={chat.busy}
             onApprove={chat.approve}
             onDeny={chat.deny}
             onSuggestion={chat.send}
+            onStop={chat.stop}
             playersByName={playersByName}
           />
 

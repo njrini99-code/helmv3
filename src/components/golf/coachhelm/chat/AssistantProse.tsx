@@ -27,10 +27,25 @@ export interface AssistantProseProps {
   text: string;
   /** Roster display name → player id. Only these become links. */
   playersByName?: Record<string, string>;
+  /**
+   * The opening block of a turn — the takeaway.
+   *
+   * Set one step larger than the body that follows it. Every paragraph at the
+   * same size made a six-paragraph answer a uniform slab with no way in; the
+   * first sentence is the one a coach reads to decide whether to read the rest,
+   * so it gets the weight. Purely typographic — no colour, no box, and the
+   * paragraph is the same element either way.
+   */
+  lead?: boolean;
   className?: string;
 }
 
-export function AssistantProse({ text, playersByName, className }: AssistantProseProps) {
+export function AssistantProse({
+  text,
+  playersByName,
+  lead = false,
+  className,
+}: AssistantProseProps) {
   const blocks = React.useMemo(() => parseBlocks(text), [text]);
 
   return (
@@ -50,8 +65,17 @@ export function AssistantProse({ text, playersByName, className }: AssistantPros
             </ul>
           );
         }
+        // Only the FIRST paragraph of a lead block is the takeaway — a lead
+        // text part that runs to four paragraphs is an answer, not a headline.
+        const isTakeaway = lead && i === 0;
         return (
-          <p key={i} className="font-fw-sans text-body leading-[1.65] text-text-primary [text-wrap:pretty]">
+          <p
+            key={i}
+            className={cn(
+              'font-fw-sans text-text-primary [text-wrap:pretty]',
+              isTakeaway ? 'text-body-lg leading-[1.55]' : 'text-body leading-[1.65]',
+            )}
+          >
             <Inline text={block.text} playersByName={playersByName} />
           </p>
         );
@@ -191,10 +215,21 @@ function Mentions({
         <Link
           key={(key += 1)}
           href={`/golf/dashboard/players/${id}/game`}
+          // A roster answer names seven players. Rendered as `text-accent-700`
+          // with a green underline, that put seven green links in a seven-line
+          // list — the answer read as a navigation menu, and the accent stopped
+          // marking anything because it was on every proper noun.
+          //
+          // A player's name keeps the ink of the sentence it is in, and carries
+          // a hairline rule to say it is reachable. The accent arrives on hover
+          // and focus, where it is doing work: confirming what is about to be
+          // clicked. No `px-0.5` either — horizontal padding on an inline link
+          // widens the word and breaks the spacing of the prose around it.
           className={cn(
-            'rounded px-0.5 font-medium text-accent-700 underline decoration-accent-200 underline-offset-2',
-            'transition-colors hover:decoration-accent-500',
-            'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
+            'font-medium text-text-primary underline decoration-border-strong',
+            'underline-offset-[3px] decoration-1',
+            'transition-colors hover:text-accent-800 hover:decoration-accent-600',
+            'rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
           )}
         >
           {name}

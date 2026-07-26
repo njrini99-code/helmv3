@@ -116,6 +116,21 @@ export async function POST(req: NextRequest) {
   const lastUser = [...uiMessages].reverse().find((m) => m.role === 'user');
   const userText = textOf(lastUser);
 
+  // Is this a new question, or the continuation of one the coach already asked?
+  //
+  // When an action is approved, the client resubmits the SAME thread so the
+  // suspended tool call can run. There is no new user message in it — the
+  // approval rides on the assistant message as a tool-approval-response part, so
+  // the last entry is the assistant, not the coach.
+  //
+  // `lastUser` still resolves to the original question in that case, which is
+  // correct for the model (it needs the full thread) and wrong for persistence:
+  // the resubmit carries a fresh `client_turn_id`, so the upsert's
+  // (conversation_id, role, client_turn_id) conflict target does not match the
+  // stored turn and it would INSERT the coach's question a second time. Every
+  // approved action would leave a duplicate of the question above it.
+  const isApprovalContinuation = uiMessages[uiMessages.length - 1]?.role !== 'user';
+
   // ── Conversation: load (and verify ownership) or create ──────────────────
   let conversationId = parsed.data.conversation_id ?? null;
   if (conversationId) {
@@ -157,7 +172,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (userText) {
+  if (userText && !isApprovalContinuation) {
     await upsertUserTurn(supabase, {
       conversation_id: conversationId,
       content: userText,

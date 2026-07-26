@@ -247,10 +247,33 @@ export function PromptComposer({
       )}
 
       {/* ── The field ───────────────────────────────────────────────────── */}
+      {/*
+        Focus is expressed as DEFINITION, not colour.
+
+        This field was green twice over. `focus-within:border-accent-300` turned
+        the frame green, and — the louder of the two — the global
+        `textarea:focus-visible` rule in globals.css put a `ring-primary-500/40`
+        halo directly around the textarea. An empty Ask page autofocuses the
+        composer, so that green box was not a focus response at all: it was the
+        page's resting state, the first thing the coach saw, sitting in the
+        middle of a cream layout.
+
+        The frame now carries the whole focus indicator — the border firms to
+        `border-strong` and a soft neutral halo lifts the surface — and the
+        textarea's own ring is suppressed below. One indicator, not two stacked,
+        and the accent is spent where it means something: the send button.
+
+        The global rule is left alone deliberately. It is the app-wide focus
+        affordance for every input in every product; narrowing it here is a
+        composer decision, not a licence to restyle focus everywhere.
+      */}
       <div
         className={cn(
           'flex items-end gap-2 rounded-fw-lg border border-border-subtle bg-surface p-2',
-          'shadow-soft transition-colors focus-within:border-accent-300',
+          'transition-[border-color,box-shadow] duration-200',
+          'shadow-[0_1px_2px_rgb(0_0_0/0.04)]',
+          'focus-within:border-border-strong',
+          'focus-within:shadow-[0_0_0_3px_rgb(23_23_23/0.07),0_2px_12px_rgb(0_0_0/0.06)]',
         )}
       >
         {/* eslint-disable-next-line helm/no-raw-button -- composer + menu trigger — an icon affordance inside the field frame */}
@@ -286,7 +309,10 @@ export function PromptComposer({
           className={cn(
             'min-h-[44px] flex-1 resize-none bg-transparent py-2.5',
             'font-fw-sans text-body text-text-primary placeholder:text-text-tertiary',
-            'outline-none',
+            // Utilities beat the `@layer base` rule in globals.css. Focus is
+            // shown once, by the frame above — not by a ring drawn around the
+            // text itself inside a box that is already outlined.
+            'outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
           )}
         />
 
