@@ -22,6 +22,8 @@ import 'server-only';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
 
 // Gateway slug per https://vercel.com/changelog/opus-4-8-on-ai-gateway
 // (note the dot — the gateway catalog differs from Anthropic's first-party
@@ -116,9 +118,15 @@ export interface ScheduleImageInput {
   mediaType: string;
 }
 
-/** Raw vision call. Throws on gateway/model errors (caller handles). */
+/**
+ * Raw vision call. Throws on gateway/model errors (caller handles).
+ *
+ * `playerId` is only used for the spend ledger — the extraction itself does not
+ * depend on who is asking.
+ */
 export async function extractScheduleFromImage(
   images: ScheduleImageInput[],
+  playerId?: string | null,
 ): Promise<ScheduleExtraction> {
   const res = await generateObject({
     model: SCHEDULE_VISION_MODEL,
@@ -137,7 +145,57 @@ export async function extractScheduleFromImage(
       },
     ],
   });
+
+  await recordVisionSpend(res.usage, playerId ?? null);
   return res.object;
+}
+
+/**
+ * Write this call into the same ledger every other LLM call uses.
+ *
+ * This path was invisible. `golf_coachhelm_llm_calls` is the only record of
+ * model spend the product has — the admin console reads it, `checkBudget` reads
+ * the daily rollup derived from it — and schedule vision wrote nothing to it.
+ * That is the worst possible thing to leave unmetered here: it is the ONE call
+ * in the app that runs on Opus against IMAGES, and a screenshot is thousands of
+ * input tokens before a word of prompt. Several schedule imports could outspend
+ * a month of chat and leave no trace in any number anyone looks at.
+ *
+ * Note the model id: `anthropic/claude-opus-4.8` is not in
+ * MODEL_COST_USD_PER_MTOK (which carries `opus-4-7`, hyphenated), so pricing
+ * falls through to the deliberately-conservative unknown-model rate. That is
+ * the right failure direction — an unpriced model over-charges rather than
+ * billing zero — but it means these figures are an upper bound, not an invoice.
+ *
+ * Accounting must never break an import: a coach who uploaded a valid schedule
+ * gets their classes even if the ledger insert fails.
+ */
+async function recordVisionSpend(
+  usage: { inputTokens?: number; outputTokens?: number } | undefined,
+  playerId: string | null,
+): Promise<void> {
+  try {
+    const promptTokens = usage?.inputTokens ?? 0;
+    const completionTokens = usage?.outputTokens ?? 0;
+    // A call the provider did not measure still happened. Logging a zero-token
+    // row keeps the COUNT honest while making it obvious the cost is unknown.
+    const admin = createAdminClient();
+    await admin.from('golf_coachhelm_llm_calls').insert({
+      task: 'schedule_vision',
+      coach_id: null,
+      player_id: playerId,
+      prompt_hash: 'schedule-image',
+      model_id: SCHEDULE_VISION_MODEL,
+      prompt_tokens: promptTokens,
+      completion_tokens: completionTokens,
+      cost_usd: estimateCostUsd(SCHEDULE_VISION_MODEL, promptTokens, completionTokens),
+      citations: null,
+      verified: false,
+      fallback_to_template: false,
+    });
+  } catch {
+    // Never fail a schedule import because accounting hiccuped.
+  }
 }
 
 // ============================================================================

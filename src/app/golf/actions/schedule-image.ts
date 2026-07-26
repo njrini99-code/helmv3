@@ -69,7 +69,16 @@ async function extractClassesFromScheduleImageImpl(
   }
 
   try {
-    const extraction = await extractScheduleFromImage(images);
+    // Attribution for the spend ledger only. `maybeSingle` and a plain `??
+    // null`: a coach importing on a player's behalf has no golf_players row,
+    // and that must log an unattributed call rather than fail the import.
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const extraction = await extractScheduleFromImage(images, player?.id ?? null);
 
     if (!extraction.is_class_schedule) {
       const kind = extraction.document_kind.trim();

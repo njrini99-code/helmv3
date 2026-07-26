@@ -32,13 +32,18 @@ import {
   createUIMessageStreamResponse,
   stepCountIs,
   streamText,
+  type LanguageModelUsage,
   type UIMessage,
 } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import { estimateCostUsd, MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
+import {
+  estimateCachedCostUsd,
+  estimateCostUsd,
+  MODEL_FOR_TASK,
+} from '@/lib/coachhelm/v3/llm/types';
 import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import {
   CoachContextError,
@@ -214,7 +219,29 @@ export async function POST(req: NextRequest) {
 
       const result = streamText({
         model,
-        instructions: buildInstructions(ctx, new Date().toISOString()),
+        // ── Prompt caching on the static prefix ─────────────────────────
+        //
+        // One turn is several model calls: the agent loop re-sends the system
+        // prompt AND every tool definition on each step, and the ledger shows
+        // what that costs — a turn's median input is 19,120 tokens while the
+        // smallest single-step turn is 3,363. Most of the difference is the
+        // same prefix, paid for again and again.
+        //
+        // A cache breakpoint on the system block covers the tool definitions
+        // too (Anthropic orders the payload tools → system → messages and
+        // caches everything before the breakpoint), so steps 2..N of a turn
+        // read the whole prefix at a tenth of the input rate.
+        //
+        // This only works because `buildInstructions` is stable: it formats the
+        // date to the DAY, not to an ISO timestamp. A prefix carrying
+        // `new Date().toISOString()` would change on every request and could
+        // never produce a cache hit — worth preserving deliberately if that
+        // string is ever edited.
+        instructions: {
+          role: 'system',
+          content: buildInstructions(ctx, new Date().toISOString()),
+          providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
+        },
         // Pass the tool set so tool parts from earlier turns convert correctly —
         // without it, a resumed approval loses the call it belongs to.
         messages: await convertToModelMessages(uiMessages, { tools }),
@@ -345,7 +372,7 @@ async function recordTurnCost(args: {
   admin: ReturnType<typeof createAdminClient>;
   ctx: CoachChatContext;
   conversationId: string;
-  usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null;
+  usagePromise: Promise<LanguageModelUsage> | null;
 }): Promise<void> {
   const { admin, ctx, conversationId, usagePromise } = args;
   try {
@@ -354,9 +381,18 @@ async function recordTurnCost(args: {
     const completionTokens = usage?.outputTokens ?? 0;
     // If the provider reported nothing, fall back to the reserved estimate
     // rather than billing zero — an unmeasured turn must not be free.
+    // Cache-aware: `promptTokens` INCLUDES the cached portions, and a cache
+    // read costs a tenth of a fresh token. Billing the total at the full input
+    // rate would spend a coach's daily budget on tokens that were never
+    // freshly processed.
     const cost =
       promptTokens + completionTokens > 0
-        ? estimateCostUsd(MODEL_FOR_TASK.coach_chat, promptTokens, completionTokens)
+        ? estimateCachedCostUsd(
+            MODEL_FOR_TASK.coach_chat,
+            promptTokens,
+            completionTokens,
+            usage?.inputTokenDetails,
+          )
         : CHAT_TURN_COST_ESTIMATE_USD;
 
     await admin.from('golf_coachhelm_llm_calls').insert({
