@@ -27,7 +27,7 @@
 
 import * as React from 'react';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses } from 'ai';
 import type { UIMessage } from 'ai';
 
 const STREAM_ENDPOINT = '/api/coachhelm/v3/chat/stream';
@@ -79,8 +79,12 @@ export interface UseCoachHelmChatResult {
   retry: () => void;
   newConversation: () => void;
 
-  approve: (toolCallId: string) => void;
-  deny: (toolCallId: string) => void;
+  /**
+   * Answer a pending approval. The argument is the APPROVAL id
+   * (`part.approval.id`), not the tool-call id — see `approve` below.
+   */
+  approve: (approvalId: string) => void;
+  deny: (approvalId: string) => void;
 }
 
 export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
@@ -140,6 +144,20 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const chat = useChat({
     transport,
     messages: options.initialMessages,
+    // Recording an approval is a LOCAL state change: `addToolApprovalResponse`
+    // writes the coach's answer into the message parts and stops there. Nothing
+    // goes back to the server, so the suspended tool call is never resumed.
+    //
+    // Without this line, pressing Confirm was silent and total: no request, no
+    // error, no toast. The action-run ledger showed it exactly — rows sitting at
+    // `status='proposed'` with `decided_at` NULL and `error_message` NULL, which
+    // is the signature of a decision that was taken but never delivered.
+    //
+    // This is the resubmit trigger. It fires once every approval in the last
+    // assistant step has an answer, which is why it is the approval-specific
+    // predicate and not `lastAssistantMessageIsCompleteWithToolCalls`: a card
+    // with two pending confirmations must not post after the first click.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onFinish: () => {
       // A finished turn must not dedupe against the next question.
       turnKey.current = newKey();
@@ -185,16 +203,26 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     setContext((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
+  // `addToolApprovalResponse` keys on `id` — the APPROVAL id carried by the tool
+  // part (`part.approval.id`) — NOT the tool-call id.
+  //
+  // This was previously called with `{ toolCallId }`. The SDK read `id` as
+  // undefined, matched no pending approval, and did nothing. It should have been
+  // a type error; it was not, because `src/types/ai-shim.d.ts` shadows the real
+  // `ai` types and `@ai-sdk/react` resolves `AbstractChat` through that shim, so
+  // the whole `chat` object degrades to a loosely-typed surface. Anything passed
+  // here type-checks. Treat this call as unchecked and keep it matched to
+  // `ChatAddToolApproveResponseFunction` in `node_modules/ai/dist/index.d.ts`.
   const approve = React.useCallback(
-    (toolCallId: string) => {
-      void chat.addToolApprovalResponse({ toolCallId, approved: true });
+    (approvalId: string) => {
+      void chat.addToolApprovalResponse({ id: approvalId, approved: true });
     },
     [chat],
   );
 
   const deny = React.useCallback(
-    (toolCallId: string) => {
-      void chat.addToolApprovalResponse({ toolCallId, approved: false });
+    (approvalId: string) => {
+      void chat.addToolApprovalResponse({ id: approvalId, approved: false });
     },
     [chat],
   );

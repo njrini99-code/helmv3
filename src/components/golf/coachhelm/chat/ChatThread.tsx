@@ -37,8 +37,9 @@ type Part = { type: string; [key: string]: unknown };
 export interface ChatThreadProps {
   messages: UIMessage[];
   busy: boolean;
-  onApprove: (toolCallId: string) => void;
-  onDeny: (toolCallId: string) => void;
+  /** Receives the APPROVAL id (`part.approval.id`), not the tool-call id. */
+  onApprove: (approvalId: string) => void;
+  onDeny: (approvalId: string) => void;
   onSuggestion?: (text: string) => void;
   /** Roster, so @-mentions in prose can link to the right player. */
   playersByName?: Record<string, string>;
@@ -157,7 +158,13 @@ function MessageTurn({
           // card can show "Confirmed" instead of live buttons after a decision.
           const approvalPart = parts.find(
             (p) => p.type.startsWith('tool-') && String(p.type).includes(proposal.tool),
-          ) as { toolCallId?: string; state?: string; approval?: { approved?: boolean } } | undefined;
+          ) as
+            | { toolCallId?: string; state?: string; approval?: { id?: string; approved?: boolean } }
+            | undefined;
+
+          // The SDK answers an approval by its OWN id, not the tool-call id.
+          // Passing `toolCallId` here matched nothing and made Confirm inert.
+          const approvalId = approvalPart?.approval?.id;
 
           const decision =
             approvalPart?.approval?.approved === true
@@ -171,10 +178,8 @@ function MessageTurn({
               <ActionProposalCard
                 proposal={proposal}
                 decision={decision}
-                onApprove={
-                  approvalPart?.toolCallId ? () => onApprove(approvalPart.toolCallId!) : undefined
-                }
-                onDeny={approvalPart?.toolCallId ? () => onDeny(approvalPart.toolCallId!) : undefined}
+                onApprove={approvalId ? () => onApprove(approvalId) : undefined}
+                onDeny={approvalId ? () => onDeny(approvalId) : undefined}
               />
             </div>
           );
