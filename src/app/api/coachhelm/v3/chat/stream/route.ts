@@ -94,6 +94,22 @@ function publishableParts(parts: readonly { type: string }[]): unknown[] {
   return parts.filter((p) => p.type !== 'reasoning');
 }
 
+/**
+ * What the coach is allowed to see when a turn fails.
+ *
+ * An upstream error can carry provider internals or echo prompt text, neither
+ * of which belongs in a browser — but "An error occurred" is not a safer
+ * alternative, it is just a less useful one. Name the cause when it is a class
+ * the coach can act on.
+ */
+function sanitiseStreamError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/quota|credit|tier|Free tier users|balance is too low/i.test(message)) {
+    return 'CoachHelm is out of model credit for this account, so it cannot answer right now. Retrying will not help until that is topped up.';
+  }
+  return 'Something went wrong while answering. Please try again.';
+}
+
 const UNGROUNDED_NOTE =
   "\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._";
 
@@ -268,7 +284,26 @@ export async function POST(req: NextRequest) {
       // wire entirely. It renders nowhere today, but "not rendered" is not the
       // requirement — the requirement is that it never reaches the browser,
       // where it sits in network responses and React state either way.
-      writer.merge(result.toUIMessageStream({ sendStart: true, sendFinish: true, sendReasoning: false }));
+      // `onError` HAS to be passed here too.
+      //
+      // A model failure happens INSIDE this merged stream, not inside the
+      // outer `execute`, so the outer `createUIMessageStream.onError` never
+      // sees it — `toUIMessageStream` falls back to the SDK default, and the
+      // coach is shown the literal string "An error occurred."
+      //
+      // That is what a coach saw in production while the account's model
+      // credit was exhausted: six identical retries, each answered with four
+      // words that named neither the cause nor anything they could do. The
+      // sanitised message below already said "the model quota is exhausted";
+      // it was just never reaching the browser.
+      writer.merge(
+        result.toUIMessageStream({
+          sendStart: true,
+          sendFinish: true,
+          sendReasoning: false,
+          onError: sanitiseStreamError,
+        }),
+      );
     },
 
     /**
@@ -284,6 +319,22 @@ export async function POST(req: NextRequest) {
         if (!assistant) return;
 
         const text = textOf(assistant);
+
+        // A turn that produced NOTHING must not be stored as an answer.
+        //
+        // `onFinish` fires on a failed turn too. With no guard it wrote a row
+        // with empty content and `status: 'complete'` — the audit finds zero
+        // claims, so `grounded` is true and a total failure is recorded as a
+        // finished answer. Production has six of them, one per retry, and each
+        // renders on reload as a blank assistant turn.
+        //
+        // A turn with no prose is not necessarily empty: an action proposal is
+        // a card with no text. So the test is text OR a real data part —
+        // `step-start` alone does not count as an answer.
+        const hasContent =
+          text.trim().length > 0 ||
+          assistant.parts.some((p) => p.type.startsWith('data-'));
+        if (!hasContent) return;
         const unsupported = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
         const grounded = unsupported.length === 0;
 
@@ -332,13 +383,7 @@ export async function POST(req: NextRequest) {
      * Sanitised for the wire. An upstream error message can carry provider
      * internals or echo prompt text, neither of which belongs in a browser.
      */
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      if (/quota|credit|tier|Free tier users/i.test(message)) {
-        return 'Analysis is temporarily unavailable — the model quota is exhausted.';
-      }
-      return 'Something went wrong while answering. Please try again.';
-    },
+    onError: sanitiseStreamError,
   });
 
   return createUIMessageStreamResponse({

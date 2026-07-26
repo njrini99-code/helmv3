@@ -99,6 +99,14 @@ export async function findAssistantTurn(
     .eq('conversation_id', conversation_id)
     .eq('client_turn_id', client_turn_id)
     .eq('role', 'assistant')
+    // A FAILED turn is not an answer, and must not satisfy idempotency.
+    //
+    // This is the "replayed" branch in the stream route: a matching assistant
+    // row short-circuits the request and returns the stored turn instead of
+    // running the model. Without this filter a turn that failed — and was
+    // stored anyway — poisons its own key: every retry replays the failure and
+    // the model is never called again for that question.
+    .neq('status', 'failed')
     .maybeSingle();
   return data ? rowToMessage(data) : null;
 }
