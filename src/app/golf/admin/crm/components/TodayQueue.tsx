@@ -151,11 +151,11 @@ function isBetterContact(cand: Coach, cur: Coach): boolean {
 
 // Division chip palette (kept local; soft tints, brand-green for the strongest fit).
 const DIVISION_CHIP: Record<string, string> = {
-  D1: 'bg-warm-100 text-warm-600 ring-warm-200',
-  D2: 'bg-blue-50 text-blue-700 ring-blue-200',
-  D3: 'bg-primary-50 text-primary-700 ring-primary-200',
-  NAIA: 'bg-violet-50 text-violet-700 ring-violet-200',
-  JUCO: 'bg-amber-50 text-amber-700 ring-amber-200',
+  D1: 'bg-surface-tint text-text-secondary ring-border-subtle',
+  D2: 'bg-surface-tint text-text-secondary ring-border-subtle',
+  D3: 'bg-accent-50 text-accent-800 ring-accent-200',
+  NAIA: 'bg-surface-tint text-text-secondary ring-border-subtle',
+  JUCO: 'bg-surface-tint text-text-secondary ring-border-subtle',
 };
 
 interface TodayQueueProps {

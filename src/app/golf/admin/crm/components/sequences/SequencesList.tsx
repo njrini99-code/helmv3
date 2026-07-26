@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { cn } from '@/lib/utils';
 import { IconPlus, IconLoader, IconRocket } from '@/components/icons';
 import {
   listSequences,
@@ -14,6 +13,10 @@ import { SequenceCard } from './SequenceCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  CRM_PRIMARY_ACTION_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+} from '../../page-contracts';
 
 interface SequencesListProps {
   selectedId: string | null;
@@ -93,15 +96,11 @@ export function SequencesList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-warm-900">Sequences</h2>
+        <h2 className="text-base font-semibold text-warm-900">Sequence library</h2>
         <Button variant="primary"
           type="button"
           onClick={() => setShowCreateForm((v) => !v)}
-          className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium',
-            'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800',
-            'transition-colors shadow-sm shadow-primary-500/25',
-          )}
+          className={CRM_PRIMARY_ACTION_CLASS}
         >
           <IconPlus size={14} /> Create sequence
         </Button>
@@ -132,9 +131,9 @@ export function SequencesList({
       )}
 
       {!loading && !error && sequences.length === 0 && !showCreateForm && (
-        <div className="py-12 text-center glass-standard rounded-2xl">
-          <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
-            <IconRocket size={24} className="text-warm-400" />
+        <div className="py-8 sm:py-12 text-center glass-standard rounded-2xl">
+          <div className="w-11 h-11 rounded-xl bg-surface-tint flex items-center justify-center mx-auto mb-3">
+            <IconRocket size={20} className="text-text-tertiary" />
           </div>
           <h3 className="text-base font-semibold text-warm-700 mb-1">
             No sequences yet
@@ -251,18 +250,14 @@ function CreateSequenceForm({
           type="button"
           onClick={onCancel}
           disabled={submitting}
-          className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
+          className={CRM_TERTIARY_ACTION_CLASS}
         >
           Cancel
         </Button>
         <Button variant="primary"
           type="submit"
           disabled={submitting || !name.trim()}
-          className={cn(
-            'flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-xl shadow-sm',
-            'bg-primary-600 text-white hover:bg-primary-700 transition-colors',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-          )}
+          className={CRM_PRIMARY_ACTION_CLASS}
         >
           {submitting && <IconLoader size={14} className="animate-spin" />}
           Create sequence

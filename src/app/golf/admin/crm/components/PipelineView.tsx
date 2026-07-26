@@ -653,7 +653,7 @@ function KanbanCard({
           {/* Division badge */}
           <span className={cn(
             'text-eyebrow font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-            coach.division === 'D2' ? 'bg-blue-50 text-blue-700' : 'bg-primary-50 text-primary-700'
+            'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
           )}>
             {coach.division}
           </span>

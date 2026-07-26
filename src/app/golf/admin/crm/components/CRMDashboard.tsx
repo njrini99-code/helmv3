@@ -149,48 +149,48 @@ export function CRMDashboard({
   };
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-[1400px] mx-auto">
       {/* ── Weekly Pulse ── */}
       <WeeklyPulse />
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
         <KPICard
           icon={<IconUsers size={20} />}
-          iconBg="bg-blue-50"
-          iconColor="text-blue-600"
+          iconBg="bg-surface-tint"
+          iconColor="text-text-secondary"
           label="Total Coaches"
           value={stats.total}
           detail={divisionBreakdown.slice(0, 2).map(d => `${d.count} ${d.label}`).join(' · ') || 'No divisions yet'}
         />
         <KPICard
           icon={<IconTrendingUp size={20} />}
-          iconBg="bg-primary-50"
-          iconColor="text-primary-600"
+          iconBg="bg-accent-50"
+          iconColor="text-accent-700"
           label="In Pipeline"
           value={stats.inPipeline}
           detail={`${stats.total > 0 ? Math.round((stats.inPipeline / stats.total) * 100) : 0}% of total`}
         />
         <KPICard
           icon={<IconMessageSquare size={20} />}
-          iconBg="bg-violet-50"
-          iconColor="text-violet-600"
+          iconBg="bg-accent-100"
+          iconColor="text-accent-800"
           label="Contacted"
           value={stats.contacted}
           detail={`${stats.total > 0 ? Math.round((stats.contacted / stats.total) * 100) : 0}% contact rate`}
         />
         <KPICard
           icon={<IconTrophy size={20} />}
-          iconBg="bg-primary-50"
-          iconColor="text-primary-600"
+          iconBg="bg-fw-success-bg"
+          iconColor="text-fw-success-ink"
           label="Won"
           value={stats.byStatus.won || 0}
           detail="Closed customers"
         />
         <KPICard
           icon={<IconTarget size={20} />}
-          iconBg="bg-orange-50"
-          iconColor="text-orange-600"
+          iconBg="bg-fw-warning-bg"
+          iconColor="text-fw-warning-ink"
           label="Hot Leads"
           value={stats.hot}
           detail={`${followUpsDueToday.length} follow-ups due`}
@@ -246,8 +246,8 @@ export function CRMDashboard({
         <div className="lg:col-span-2 glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                <IconChartBar size={16} className="text-blue-600" />
+              <div className="w-8 h-8 rounded-lg bg-accent-50 flex items-center justify-center">
+                <IconChartBar size={16} className="text-accent-700" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-warm-900">Pipeline Funnel</h3>
@@ -306,8 +306,8 @@ export function CRMDashboard({
         <div className="glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
-                <IconTrophy size={16} className="text-violet-600" />
+              <div className="w-8 h-8 rounded-lg bg-surface-tint flex items-center justify-center">
+                <IconTrophy size={16} className="text-text-secondary" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-warm-900">Top Conferences</h3>
@@ -349,8 +349,8 @@ export function CRMDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="glass-standard rounded-2xl p-5 shadow-sm flex flex-col">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-              <IconClock size={16} className="text-amber-600" />
+            <div className="w-8 h-8 rounded-lg bg-fw-warning-bg flex items-center justify-center">
+              <IconClock size={16} className="text-fw-warning-ink" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Needs attention</h3>
@@ -360,11 +360,11 @@ export function CRMDashboard({
           <div className="space-y-3 flex-1">
             <div className="flex items-center justify-between">
               <span className="text-sm text-warm-700">Follow-ups due</span>
-              <span className="text-sm font-semibold text-amber-600 tabular-nums">{loading ? '—' : followUpsDueToday.length}</span>
+              <span className="text-sm font-semibold text-fw-warning-ink tabular-nums">{loading ? '—' : followUpsDueToday.length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-warm-700">Stale leads (7d+)</span>
-              <span className="text-sm font-semibold text-red-600 tabular-nums">{loading ? '—' : staleLeads.length}</span>
+              <span className="text-sm font-semibold text-fw-danger-ink tabular-nums">{loading ? '—' : staleLeads.length}</span>
             </div>
           </div>
           <Button
@@ -457,13 +457,12 @@ export function CRMDashboard({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {divisionBreakdown.map((d, i) => (
+            {divisionBreakdown.map((d) => (
               <DivisionCard
                 key={d.label}
                 label={d.label}
                 count={d.count}
                 total={stats.total}
-                color={i % 2 === 0 ? 'blue' : 'primary'}
               />
             ))}
           </div>
@@ -491,18 +490,18 @@ function KPICard({
   return (
     <div className={cn(
       'relative overflow-hidden',
-      'glass-standard rounded-2xl',
+      'glass-standard rounded-xl sm:rounded-2xl',
       'shadow-sm',
-      'p-5',
+      'p-3.5 sm:p-5',
       'transition-[transform,box-shadow] duration-200 group',
       'hover:-translate-y-0.5 hover:shadow-lg',
       className
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-warm-500 uppercase tracking-wider font-semibold">{label}</p>
-          <p className="text-2xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
-          <p className="text-xs text-warm-400 mt-1">{detail}</p>
+          <p className="text-caption sm:text-xs text-warm-500 uppercase tracking-wider font-semibold">{label}</p>
+          <p className="text-xl sm:text-2xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
+          <p className="hidden sm:block text-xs text-warm-400 mt-1">{detail}</p>
         </div>
         <div className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
@@ -516,18 +515,12 @@ function KPICard({
   );
 }
 
-function DivisionCard({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+function DivisionCard({ label, count, total }: { label: string; count: number; total: number }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
-    <div className={cn(
-      'flex items-center gap-4 p-4 rounded-xl border',
-      color === 'blue' ? 'bg-blue-50/50 border-blue-200/30' : 'bg-primary-50/50 border-primary-200/30'
-    )}>
-      <div className={cn(
-        'w-12 h-12 rounded-xl flex items-center justify-center',
-        color === 'blue' ? 'bg-blue-100' : 'bg-primary-100'
-      )}>
-        <span className={cn('text-lg font-bold', color === 'blue' ? 'text-blue-700' : 'text-primary-700')}>
+    <div className="flex items-center gap-4 p-4 rounded-xl border border-border-subtle bg-surface-tint/60">
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-accent-50">
+        <span className="text-lg font-bold text-accent-800">
           {label}
         </span>
       </div>
@@ -557,7 +550,7 @@ function CoachRow({
     >
       <span className={cn(
         'text-micro font-bold px-1.5 py-0.5 rounded flex-shrink-0',
-        coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
+        'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
       )}>
         {coach.division}
       </span>

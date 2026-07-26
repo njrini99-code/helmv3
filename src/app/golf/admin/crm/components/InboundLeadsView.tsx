@@ -27,6 +27,15 @@ import {
   buildDeclineUpdate,
 } from './demo-request-status';
 import { getCrmDemoSessions, type DemoSessionRow } from '@/app/golf/actions/crm-demo-sessions';
+import {
+  CRM_CHOICE_GROUP_CLASS,
+  CRM_DANGER_ACTION_CLASS,
+  CRM_ICON_ACTION_CLASS,
+  CRM_PRIMARY_ACTION_CLASS,
+  CRM_RADIX_CHOICE_CLASS,
+  CRM_SECONDARY_ACTION_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+} from '../page-contracts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -261,8 +270,8 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-warm-900 tracking-tight">
-            Inbound leads
+          <h2 className="text-xl font-bold text-warm-900 tracking-tight">
+            Demo activity
           </h2>
           <p className="text-sm text-warm-500 mt-1">
             Two separate intents, tracked separately: coaches who walked into the live demo,
@@ -273,7 +282,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
           type="button"
           onClick={refreshAll}
           aria-label="Refresh inbound leads"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-600 hover:text-warm-900 hover:bg-cream-100 transition-colors self-start sm:self-auto"
+          className={cn(CRM_SECONDARY_ACTION_CLASS, 'self-start sm:self-auto')}
         >
           <IconRefresh size={13} aria-hidden="true" />
           Refresh
@@ -378,7 +387,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                         type="button"
                         onClick={() => onOpenCoach(session.matched_coach_id!)}
                         aria-label={`Open coach record for ${session.name}`}
-                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-700 hover:bg-cream-100 hover:text-warm-900 transition-colors inline-flex items-center gap-1"
+                        className={CRM_TERTIARY_ACTION_CLASS}
                       >
                         <IconExternalLink size={12} aria-hidden="true" />
                         Open coach
@@ -448,6 +457,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
             if (v) setFilter(v as FilterStatus);
           }}
           aria-label="Filter inbound leads by status"
+          className={CRM_CHOICE_GROUP_CLASS}
         >
           {(Object.keys(FILTER_LABELS) as FilterStatus[]).map((f) => {
             const count =
@@ -460,7 +470,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                 key={f}
                 value={f}
                 aria-controls="inbound-leads-list"
-                className="flex items-center gap-1.5"
+                className={cn(CRM_RADIX_CHOICE_CLASS, 'flex items-center gap-1.5')}
               >
                 {FILTER_LABELS[f]}
                 <span
@@ -532,7 +542,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                   <li
                     key={request.id}
                     className={cn(
-                      'flex items-center gap-4 px-6 py-4 transition-colors',
+                      'flex flex-col items-stretch gap-3 px-4 py-4 transition-colors sm:flex-row sm:items-center sm:gap-4 sm:px-6',
                       rowIsNew && 'bg-amber-50/30',
                     )}
                   >
@@ -541,17 +551,17 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                       className={cn(
                         'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
                         rowIsNew && 'bg-amber-100',
-                        rowIsContacted && 'bg-violet-100',
-                        rowIsScheduled && 'bg-blue-100',
-                        rowIsConverted && 'bg-primary-100',
+                        rowIsContacted && 'bg-accent-50',
+                        rowIsScheduled && 'bg-surface-tint',
+                        rowIsConverted && 'bg-fw-success-bg',
                         rowIsDeclined && 'bg-warm-100',
                       )}
                       aria-hidden="true"
                     >
                       {rowIsNew && <IconMail size={18} className="text-amber-600" />}
-                      {rowIsContacted && <IconCheckCircle2 size={18} className="text-violet-600" />}
-                      {rowIsScheduled && <IconCalendar size={18} className="text-blue-600" />}
-                      {rowIsConverted && <IconUserPlus size={18} className="text-primary-600" />}
+                      {rowIsContacted && <IconCheckCircle2 size={18} className="text-accent-700" />}
+                      {rowIsScheduled && <IconCalendar size={18} className="text-text-secondary" />}
+                      {rowIsConverted && <IconUserPlus size={18} className="text-fw-success-ink" />}
                       {rowIsDeclined && <IconXCircle size={18} className="text-warm-500" />}
                     </div>
 
@@ -615,23 +625,23 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                     {/* Actions — wraps rather than overflowing now that a row
                         can carry up to 4 buttons (Mark Contacted / Mark
                         scheduled / Add to CRM / Decline) plus the mailto icon. */}
-                    <div className="flex flex-wrap items-center justify-end gap-2 flex-shrink-0">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-shrink-0 sm:justify-end">
                       {isDeclining ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                           <Input
                             type="text"
                             value={declineReason}
                             onChange={(e) => setDeclineReason(e.target.value)}
                             placeholder="Reason (optional)"
                             aria-label={`Decline reason for ${request.email}`}
-                            className="w-40 min-h-0 px-2.5 py-1.5 rounded-lg text-xs"
+                            className="min-h-11 w-full rounded-lg px-2.5 py-1.5 text-xs sm:w-40"
                           />
                           <Button variant="danger"
                             type="button"
                             onClick={() => declineRequest(request.id, declineReason)}
                             disabled={isProcessing}
                             aria-label={`Confirm decline for ${request.email}`}
-                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+                            className={CRM_DANGER_ACTION_CLASS}
                           >
                             Confirm
                           </Button>
@@ -640,7 +650,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                             onClick={() => { setDecliningId(null); setDeclineReason(''); }}
                             disabled={isProcessing}
                             aria-label="Cancel decline"
-                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+                            className={CRM_TERTIARY_ACTION_CLASS}
                           >
                             Cancel
                           </Button>
@@ -653,7 +663,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                               onClick={() => markContacted(request.id)}
                               disabled={isProcessing}
                               aria-label={`Mark ${request.email} as contacted`}
-                              className="px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-700 hover:bg-cream-100 hover:text-warm-900 transition-colors disabled:opacity-50"
+                              className={CRM_SECONDARY_ACTION_CLASS}
                             >
                               Mark Contacted
                             </Button>
@@ -664,7 +674,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                               onClick={() => markScheduled(request.id)}
                               disabled={isProcessing}
                               aria-label={`Mark ${request.email} as scheduled`}
-                              className="px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-700 hover:bg-cream-100 hover:text-warm-900 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                              className={CRM_SECONDARY_ACTION_CLASS}
                             >
                               <IconCalendar size={12} aria-hidden="true" />
                               Mark scheduled
@@ -676,7 +686,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                               onClick={() => addToCRM(request)}
                               disabled={isProcessing}
                               aria-label={`Add ${request.email} to CRM`}
-                              className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                              className={CRM_PRIMARY_ACTION_CLASS}
                             >
                               <IconUserPlus size={12} aria-hidden="true" />
                               Add to CRM
@@ -688,7 +698,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                               onClick={() => { setDecliningId(request.id); setDeclineReason(''); }}
                               disabled={isProcessing}
                               aria-label={`Decline ${request.email}`}
-                              className="px-3 py-1.5 rounded-xl text-xs font-medium disabled:opacity-50"
+                              className={CRM_DANGER_ACTION_CLASS}
                             >
                               Decline
                             </Button>
@@ -714,7 +724,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                           <a
                             href={`mailto:${request.email}`}
                             aria-label={`Compose email to ${request.email}`}
-                            className="p-1.5 rounded-lg hover:bg-cream-100 text-warm-400 hover:text-warm-700 transition-colors"
+                            className={cn(CRM_ICON_ACTION_CLASS, 'inline-flex items-center justify-center')}
                           >
                             <IconExternalLink size={14} aria-hidden="true" />
                           </a>

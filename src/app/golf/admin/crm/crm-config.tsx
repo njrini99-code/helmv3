@@ -110,23 +110,23 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   {
     id: 'active',
     label: 'Active',
-    icon: <IconMessageSquare size={16} className="text-blue-600" />,
+    icon: <IconMessageSquare size={16} className="text-accent-600" />,
     statuses: ['contacted', 'engaged'],
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-t-violet-400',
-    gradient: 'from-blue-400 to-violet-500',
+    color: 'text-accent-700',
+    bgColor: 'bg-accent-50',
+    borderColor: 'border-t-accent-400',
+    gradient: 'from-accent-400 to-accent-600',
     description: 'Outreach & active conversations',
   },
   {
     id: 'closing',
     label: 'Closing',
-    icon: <IconTarget size={16} className="text-amber-600" />,
+    icon: <IconTarget size={16} className="text-fw-warning-ink" />,
     statuses: ['proposal'],
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-t-amber-400',
-    gradient: 'from-amber-400 to-orange-500',
+    color: 'text-fw-warning-ink',
+    bgColor: 'bg-fw-warning-bg',
+    borderColor: 'border-t-fw-warning',
+    gradient: 'from-fw-warning to-warm-500',
     description: 'Proposals & negotiation',
   },
   {
@@ -137,7 +137,7 @@ export const PIPELINE_STAGES: PipelineStage[] = [
     color: 'text-primary-700',
     bgColor: 'bg-primary-50',
     borderColor: 'border-t-primary-500',
-    gradient: 'from-primary-400 to-primary-600',
+    gradient: 'from-accent-500 to-accent-700',
     description: 'Terminal states',
   },
 ];
@@ -170,11 +170,11 @@ export const STATUS_CONFIG: Record<CoachStatus, {
   stage: string;
 }> = {
   new_lead:  { label: 'New Lead',   color: 'text-warm-700',    bgColor: 'bg-warm-100',    ringColor: 'ring-warm-300',    icon: <Inbox size={14} />,         iconLabel: <Inbox size={14} className="text-warm-600" />, order: 1, gradient: 'from-warm-400 to-warm-500',       stage: 'new' },
-  contacted: { label: 'Contacted',  color: 'text-blue-700',    bgColor: 'bg-blue-50',     ringColor: 'ring-blue-300',    icon: <PhoneOutgoing size={14} />, iconLabel: <PhoneOutgoing size={14} className="text-blue-600" />, order: 2, gradient: 'from-blue-400 to-blue-500',       stage: 'active' },
-  engaged:   { label: 'Engaged',    color: 'text-violet-700',  bgColor: 'bg-violet-50',   ringColor: 'ring-violet-300',  icon: <IconSparkles size={14} />,  iconLabel: <IconSparkles size={14} className="text-violet-600" />, order: 3, gradient: 'from-violet-400 to-violet-500',   stage: 'active' },
-  proposal:  { label: 'Proposal',   color: 'text-amber-700',   bgColor: 'bg-amber-50',    ringColor: 'ring-amber-300',   icon: <FileCheck size={14} />,     iconLabel: <FileCheck size={14} className="text-amber-600" />, order: 4, gradient: 'from-amber-400 to-amber-500',     stage: 'closing' },
+  contacted: { label: 'Contacted',  color: 'text-accent-700',  bgColor: 'bg-accent-50',   ringColor: 'ring-accent-200',  icon: <PhoneOutgoing size={14} />, iconLabel: <PhoneOutgoing size={14} className="text-accent-600" />, order: 2, gradient: 'from-accent-300 to-accent-500', stage: 'active' },
+  engaged:   { label: 'Engaged',    color: 'text-accent-800',  bgColor: 'bg-accent-100',  ringColor: 'ring-accent-300',  icon: <IconSparkles size={14} />,  iconLabel: <IconSparkles size={14} className="text-accent-700" />, order: 3, gradient: 'from-accent-500 to-accent-700', stage: 'active' },
+  proposal:  { label: 'Proposal',   color: 'text-fw-warning-ink', bgColor: 'bg-fw-warning-bg', ringColor: 'ring-fw-warning-ring', icon: <FileCheck size={14} />, iconLabel: <FileCheck size={14} className="text-fw-warning-ink" />, order: 4, gradient: 'from-fw-warning to-warm-500', stage: 'closing' },
   won:       { label: 'Customer',   color: 'text-primary-700', bgColor: 'bg-primary-50',  ringColor: 'ring-primary-400', icon: <Trophy size={14} />,        iconLabel: <Trophy size={14} className="text-primary-600" />, order: 5, gradient: 'from-primary-400 to-primary-500', stage: 'closed' },
-  lost:      { label: 'Lost',       color: 'text-red-700',     bgColor: 'bg-red-50',      ringColor: 'ring-red-300',     icon: <CircleX size={14} />,       iconLabel: <CircleX size={14} className="text-red-600" />,  order: 6, gradient: 'from-red-400 to-red-500',         stage: 'closed' },
+  lost:      { label: 'Lost',       color: 'text-fw-danger-ink', bgColor: 'bg-fw-danger-bg', ringColor: 'ring-fw-danger', icon: <CircleX size={14} />, iconLabel: <CircleX size={14} className="text-fw-danger-ink" />, order: 6, gradient: 'from-fw-danger to-warm-600', stage: 'closed' },
   // Deeper primary tint than `won` (not a second green hue) — keeps the two
   // "closed" stages visually distinct while staying inside the primary family.
   nurture:   { label: 'Nurture',    color: 'text-primary-900', bgColor: 'bg-primary-100', ringColor: 'ring-primary-600', icon: <Sprout size={14} />,        iconLabel: <Sprout size={14} className="text-primary-700" />, order: 7, gradient: 'from-primary-600 to-primary-700', stage: 'closed' },
@@ -185,12 +185,12 @@ export const STATUS_CONFIG: Record<CoachStatus, {
 // ============================================================================
 export const STATUS_COLORS: Record<CoachStatus, { bg: string; text: string; border: string; dot: string }> = {
   new_lead:  { bg: 'bg-warm-50',    text: 'text-warm-700',    border: 'border-warm-200',    dot: 'bg-warm-400' },
-  contacted: { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400' },
-  engaged:   { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200',  dot: 'bg-violet-400' },
-  proposal:  { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400' },
+  contacted: { bg: 'bg-accent-50',  text: 'text-accent-700',  border: 'border-accent-200',  dot: 'bg-accent-400' },
+  engaged:   { bg: 'bg-accent-100', text: 'text-accent-800',  border: 'border-accent-300',  dot: 'bg-accent-600' },
+  proposal:  { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink', border: 'border-fw-warning-ring', dot: 'bg-fw-warning' },
   won:       { bg: 'bg-primary-50', text: 'text-primary-700', border: 'border-primary-200', dot: 'bg-primary-500' },
-  lost:      { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     dot: 'bg-red-400' },
-  nurture:   { bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-200',    dot: 'bg-teal-400' },
+  lost:      { bg: 'bg-fw-danger-bg', text: 'text-fw-danger-ink', border: 'border-fw-danger', dot: 'bg-fw-danger' },
+  nurture:   { bg: 'bg-primary-100', text: 'text-primary-900', border: 'border-primary-300', dot: 'bg-primary-700' },
 };
 
 // ============================================================================

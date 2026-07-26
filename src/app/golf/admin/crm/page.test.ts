@@ -8,6 +8,11 @@ import {
   LEGACY_TAB_ALIASES,
   MOBILE_BAR_TABS,
   MOBILE_MORE_TABS,
+  CRM_PRIMARY_ACTION_CLASS,
+  CRM_SECONDARY_ACTION_CLASS,
+  CRM_RADIX_TAB_CLASS,
+  SEGMENTED_TABLIST_CLASS,
+  segmentedTabClass,
 } from './page-contracts';
 
 // ============================================================================
@@ -95,5 +100,28 @@ describe('nav consolidation (2026-07-20)', () => {
   it('keyboard shortcuts are unique across destinations', () => {
     const shortcuts = TABS.map((t) => t.shortcut.toLowerCase());
     expect(new Set(shortcuts).size).toBe(shortcuts.length);
+  });
+});
+
+describe('Fairway CRM control contract', () => {
+  it('gives tabs and primary actions mobile-safe touch targets', () => {
+    expect(segmentedTabClass(true)).toContain('min-h-11');
+    expect(CRM_RADIX_TAB_CLASS).toContain('min-h-11');
+    expect(CRM_PRIMARY_ACTION_CLASS).toContain('min-h-11');
+    expect(CRM_SECONDARY_ACTION_CLASS).toContain('min-h-11');
+  });
+
+  it('uses one accent language instead of destination-specific rainbow colors', () => {
+    const contract = [
+      SEGMENTED_TABLIST_CLASS,
+      segmentedTabClass(true),
+      segmentedTabClass(false),
+      CRM_RADIX_TAB_CLASS,
+      CRM_PRIMARY_ACTION_CLASS,
+      CRM_SECONDARY_ACTION_CLASS,
+    ].join(' ');
+
+    expect(contract).toContain('accent-');
+    expect(contract).not.toMatch(/\b(?:blue|violet|purple|sky|indigo)-/);
   });
 });
