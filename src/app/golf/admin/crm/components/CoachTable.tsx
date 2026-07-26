@@ -406,7 +406,7 @@ const CoachTableRow = React.memo(
             <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
             <span className={cn(
               'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-              coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700',
+              'bg-surface-tint text-text-secondary ring-1 ring-border-subtle',
             )}>
               {coach.division}
             </span>
@@ -738,18 +738,25 @@ const CoachTableCard = React.memo(
     const handleStar = () => onToggleStar(coach.id, coach.is_starred);
 
     return (
-      <Button
-        variant="ghost"
-        type="button"
-        haptic="none"
+      <div
+        role="button"
+        tabIndex={0}
         className={cn(
           'flex flex-col items-stretch justify-start rounded-none min-h-0',
-          'cursor-pointer group transition-colors duration-150 px-4 py-3.5 w-full text-left',
+          'cursor-pointer group transition-colors duration-150 px-3 py-3.5 w-full text-left',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500',
           isSelected && 'bg-primary-50/50',
           !isSelected && isFocused && 'bg-cream-100',
           !isSelected && !isFocused && 'hover:bg-cream-100',
         )}
         onClick={handleCardClick}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleCardClick();
+          }
+        }}
+        aria-label={`Open ${coach.name} at ${coach.school}`}
       >
         {/* Top row: checkbox + name/title + star + action menu */}
         <div className="flex items-start gap-3">
@@ -770,7 +777,7 @@ const CoachTableCard = React.memo(
               <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
               <span className={cn(
                 'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-                coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700',
+                'bg-surface-tint text-text-secondary ring-1 ring-border-subtle',
               )}>
                 {coach.division}
               </span>
@@ -1004,7 +1011,7 @@ const CoachTableCard = React.memo(
             </div>
           )}
         </div>
-      </Button>
+      </div>
     );
   },
   (prev, next) => {
@@ -1244,7 +1251,7 @@ function SchoolGroupView({
                 <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                   <span className={cn(
                     'px-2 py-0.5 rounded-lg text-micro font-bold tabular-nums',
-                    group.division === 'D2' ? 'bg-blue-50 text-blue-700' : 'bg-primary-50 text-primary-700'
+                    'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
                   )}>
                     {group.division}
                   </span>
@@ -1677,9 +1684,9 @@ export function CoachTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-clip">
       {/* Toolbar — density toggle + group-by-school, above the select-all banner */}
-      <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-1">
+      <div className="flex items-center justify-between md:justify-end gap-2 px-3 sm:px-4 pt-3 pb-2">
         {/* Density toggle (Comfortable / Compact) — desktop table only; the
             mobile card layout is fixed. */}
         <div className="hidden md:inline-flex items-center rounded-full glass-subtle p-0.5" role="group" aria-label="Row density">
@@ -1706,9 +1713,11 @@ export function CoachTable({
         </div>
         <Button variant="ghost" type="button"
           onClick={() => setGroupBySchool(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium glass-subtle text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+          className="flex items-center gap-1.5 min-h-10 px-3 py-1.5 rounded-xl text-xs font-medium glass-subtle text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
         >
-          <IconSchool size={13} aria-hidden="true" /> Group by School
+          <IconSchool size={13} aria-hidden="true" />
+          <span className="md:hidden">By school</span>
+          <span className="hidden md:inline">Group by School</span>
         </Button>
       </div>
 
@@ -1812,7 +1821,7 @@ export function CoachTable({
           checkbox, star toggle, and the full action menu (which surfaces
           email / phone / role / priority + last-contact + segments) are all
           preserved — tapping the card opens the detail panel. */}
-      <div className="md:hidden divide-y divide-warm-50">
+      <div className="md:hidden divide-y divide-border-subtle">
         {paginatedCoaches.map((coach, index) => (
           <CoachTableCard
             key={coach.id}
@@ -1848,7 +1857,7 @@ export function CoachTable({
       </div>
 
       {/* Pagination */}
-      <div className="bg-warm-50/20 border-t border-warm-100/30 px-4 py-3">
+      <div className="bg-surface-tint/50 border-t border-border-subtle px-3 sm:px-4 py-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4 text-sm text-warm-600">
             <span className="font-medium tabular-nums">
@@ -1860,7 +1869,7 @@ export function CoachTable({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full sm:w-auto items-center justify-between gap-2">
             <NativeSelect
               value={String(pageSize)}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}

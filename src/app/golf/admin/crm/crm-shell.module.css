@@ -1,0 +1,45 @@
+.shell {
+  /*
+   * CRM-local bridge from the legacy primary-* utilities to Fairway's
+   * AA-safe turf range. A large amount of older CRM code still uses
+   * bg-primary-500/600 with cream or white text. Scoping the channel override
+   * here upgrades every live tab and modal without changing other products.
+   */
+  --c-primary-500: 36 131 66;
+  --c-primary-600: 21 128 61;
+  --c-primary-700: 22 101 52;
+}
+
+.shell :global(button),
+.shell :global(a) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shell :global(button:focus-visible),
+.shell :global(a:focus-visible),
+.shell :global([role='button']:focus-visible) {
+  outline: 2px solid var(--fw-color-border-focus);
+  outline-offset: 2px;
+}
+
+.shell :global([role='tablist']) {
+  scrollbar-width: none;
+}
+
+.shell :global([role='tablist']::-webkit-scrollbar) {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .shell :global(button),
+  .shell :global(input),
+  .shell :global(select) {
+    min-height: 44px;
+  }
+
+  .shell :global([role='tab']),
+  .shell :global([role='radio']),
+  .shell :global(button[aria-pressed]) {
+    min-height: 44px;
+  }
+}

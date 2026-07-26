@@ -31,6 +31,13 @@ import { EmailDetailPanel } from './EmailDetailPanel';
 import { DomainBreakdown } from './DomainBreakdown';
 import { DomainAuthCard } from './DomainAuthCard';
 import { getFailedEmailCounts } from './actions';
+import {
+  CRM_CHOICE_GROUP_CLASS,
+  CRM_RADIX_CHOICE_CLASS,
+  CRM_RADIX_TAB_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+  SEGMENTED_TABLIST_CLASS,
+} from '../../page-contracts';
 
 type FollowupRecipient = {
   email: string;
@@ -115,8 +122,8 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-warm-900 tracking-tight">
-              Resend activity
+            <h2 className="text-xl font-bold text-warm-900 tracking-tight">
+              Deliverability activity
             </h2>
             <a
               href="https://resend.com/emails"
@@ -140,15 +147,16 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
 
       {/* Sub-tabs */}
       <TabsList
-        variant="underline"
-        className="-mx-1 overflow-x-auto px-1 scrollbar-hide"
+        variant="pills"
+        className={SEGMENTED_TABLIST_CLASS}
       >
         {SUB_TABS.map((t) => (
           <TabsTrigger
             key={t.id}
             value={t.id}
-            variant="underline"
+            variant="pills"
             icon={<t.Icon size={15} />}
+            className={CRM_RADIX_TAB_CLASS}
           >
             {t.label}
           </TabsTrigger>
@@ -216,9 +224,10 @@ function WindowSelector({
         if (v) onChange(v as ActivityWindow);
       }}
       aria-label="Activity window"
+      className={CRM_CHOICE_GROUP_CLASS}
     >
       {WINDOW_OPTIONS.map((opt) => (
-        <ToggleGroupItem key={opt.id} value={opt.id}>
+        <ToggleGroupItem key={opt.id} value={opt.id} className={CRM_RADIX_CHOICE_CLASS}>
           {opt.label}
         </ToggleGroupItem>
       ))}
@@ -242,8 +251,8 @@ function SourceBreakdown({
   const entries = Object.entries(bySource).sort((a, b) => b[1] - a[1]);
 
   const COLORS: Record<string, string> = {
-    crm: 'bg-blue-500',
-    transactional: 'bg-primary-500',
+    crm: 'bg-accent-650',
+    transactional: 'bg-accent-300',
     unknown: 'bg-warm-400',
   };
 
@@ -414,7 +423,7 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
                 <Button variant="ghost"
                   type="button"
                   onClick={() => onSelect(row.resend_message_id)}
-                  className="w-full px-6 py-3 cursor-pointer hover:bg-cream-100 transition-colors text-left justify-start rounded-none"
+                  className={cn(CRM_TERTIARY_ACTION_CLASS, 'h-auto w-full justify-start rounded-none px-4 py-3 text-left sm:px-6')}
                 >
                   <div className="flex items-center gap-3">
                     <span

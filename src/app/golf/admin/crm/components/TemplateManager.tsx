@@ -47,6 +47,12 @@ import {
   type TemplateFormat,
 } from '@/app/golf/actions/crm-templates';
 import { SpamCompliancePanel } from './SpamCompliancePanel';
+import {
+  CRM_PRIMARY_ACTION_CLASS,
+  CRM_SECONDARY_ACTION_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+  crmChoiceClass,
+} from '../page-contracts';
 
 // ── Category metadata (mirrors TemplatePicker's palette) ──
 const CATEGORY_LABELS: Record<TemplateCategory, string> = {
@@ -64,17 +70,17 @@ const CATEGORY_LABELS: Record<TemplateCategory, string> = {
 };
 
 const CATEGORY_COLORS: Record<TemplateCategory, { bg: string; text: string }> = {
-  intro: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  follow_up: { bg: 'bg-amber-50', text: 'text-amber-700' },
-  demo_invite: { bg: 'bg-primary-50', text: 'text-primary-700' },
-  proposal: { bg: 'bg-violet-50', text: 'text-violet-700' },
-  check_in: { bg: 'bg-teal-50', text: 'text-teal-700' },
-  general: { bg: 'bg-warm-50', text: 'text-warm-700' },
-  cold_outreach: { bg: 'bg-sky-50', text: 'text-sky-700' },
-  active_conversation: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
-  re_engage: { bg: 'bg-orange-50', text: 'text-orange-700' },
-  close: { bg: 'bg-rose-50', text: 'text-rose-700' },
-  post_close: { bg: 'bg-lime-50', text: 'text-lime-700' },
+  intro: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  follow_up: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  demo_invite: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  proposal: { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink' },
+  check_in: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  general: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
+  cold_outreach: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  active_conversation: { bg: 'bg-accent-100', text: 'text-accent-800' },
+  re_engage: { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink' },
+  close: { bg: 'bg-fw-success-bg', text: 'text-fw-success-ink' },
+  post_close: { bg: 'bg-fw-success-bg', text: 'text-fw-success-ink' },
 };
 
 const CATEGORY_ORDER: TemplateCategory[] = [
@@ -99,17 +105,17 @@ const FORMAT_META: Record<
   text: {
     label: 'Plain text',
     help: 'True text/plain — no shell, no logo. Best for personal cold outreach that should land in Gmail Primary. The body must carry its own greeting + sign-off.',
-    badge: 'bg-sky-900 text-white',
+    badge: 'bg-nav-bg text-nav-text',
   },
   plain: {
     label: 'Branded shell',
     help: 'Your paragraph text wrapped in the standard Helm greeting + signature shell. Good for warm follow-ups.',
-    badge: 'bg-warm-900 text-white',
+    badge: 'bg-nav-bg text-nav-text',
   },
   html: {
     label: 'Full HTML',
     help: 'Your HTML is sent verbatim as the entire email document — it replaces the greeting + signature shell. For designed campaigns.',
-    badge: 'bg-violet-900 text-white',
+    badge: 'bg-accent-800 text-text-on-accent',
   },
 };
 
@@ -412,12 +418,7 @@ function TemplateEditor({
                     role="radio"
                     aria-checked={active}
                     onClick={() => setState((s) => ({ ...s, format: f }))}
-                    className={cn(
-                      'flex flex-col items-start gap-0.5 px-3 py-2 rounded-xl border text-left min-h-[44px] transition-all',
-                      active
-                        ? 'bg-primary-50 border-primary-300 ring-1 ring-primary-200 text-primary-800'
-                        : 'glass-standard border-warm-200 text-warm-600 hover:bg-cream-100',
-                    )}
+                    className={cn('flex flex-col items-start gap-0.5 text-left', crmChoiceClass(active))}
                   >
                     <span className="text-xs font-bold">{FORMAT_META[f].label}</span>
                   </Button>
@@ -612,7 +613,7 @@ function TemplateCard({
           onClick={onEdit}
           disabled={busy}
           leftIcon={<IconPencil size={14} aria-hidden />}
-          className="text-xs min-h-0 px-2.5 py-1.5"
+          className={cn(CRM_TERTIARY_ACTION_CLASS, 'min-h-10 px-2.5 py-1.5 text-xs')}
         >
           Edit
         </Button>
@@ -622,7 +623,7 @@ function TemplateCard({
           onClick={onSendTest}
           disabled={busy}
           leftIcon={<IconSend size={14} aria-hidden />}
-          className="text-xs min-h-0 px-2.5 py-1.5"
+          className={cn(CRM_TERTIARY_ACTION_CLASS, 'min-h-10 px-2.5 py-1.5 text-xs')}
         >
           Test
         </Button>
@@ -786,7 +787,7 @@ export function TemplateManager() {
             <IconFileText size={18} className="text-primary-600" aria-hidden />
           </div>
           <div>
-            <h2 className="text-base font-bold text-warm-900">Email templates</h2>
+            <h2 className="text-base font-bold text-warm-900">Template library</h2>
             <p className="text-xs text-warm-500">
               {templates.length} template{templates.length === 1 ? '' : 's'} · author, preview & test in-app
             </p>
@@ -798,6 +799,7 @@ export function TemplateManager() {
             variant="primary"
             onClick={startCreate}
             leftIcon={<IconPlus size={16} aria-hidden />}
+            className={CRM_PRIMARY_ACTION_CLASS}
           >
             New template
           </Button>
@@ -823,12 +825,12 @@ export function TemplateManager() {
       ) : error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50/60 p-6 text-center">
           <p className="text-sm text-red-700 mb-3">{error}</p>
-          <Button type="button" variant="secondary" onClick={refresh}>
+          <Button type="button" variant="secondary" onClick={refresh} className={CRM_SECONDARY_ACTION_CLASS}>
             Try again
           </Button>
         </div>
       ) : templates.length === 0 && !editor ? (
-        <div className="rounded-2xl border border-dashed border-warm-200/70 glass-subtle p-10 text-center">
+        <div className="rounded-2xl border border-dashed border-warm-200/70 glass-subtle p-6 sm:p-10 text-center">
           <div className="w-12 h-12 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-3">
             <IconFileText size={22} className="text-warm-400" aria-hidden />
           </div>
@@ -841,6 +843,7 @@ export function TemplateManager() {
             variant="primary"
             onClick={startCreate}
             leftIcon={<IconPlus size={16} aria-hidden />}
+            className={CRM_PRIMARY_ACTION_CLASS}
           >
             Create template
           </Button>

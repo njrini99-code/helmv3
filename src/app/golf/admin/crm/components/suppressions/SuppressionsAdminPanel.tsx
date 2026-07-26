@@ -20,6 +20,11 @@ import { SuppressionRow } from './SuppressionRow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import {
+  CRM_CHOICE_GROUP_CLASS,
+  CRM_PRIMARY_ACTION_CLASS,
+  crmChoiceClass,
+} from '../../page-contracts';
 
 // ============================================================================
 // SuppressionsAdminPanel — full-page admin surface for managing the
@@ -131,9 +136,9 @@ export function SuppressionsAdminPanel() {
             <IconShield size={18} className="text-red-600" />
           </span>
           <div>
-            <h1 className="text-2xl font-semibold text-warm-900">
+            <h2 className="text-xl font-semibold text-warm-900">
               Email suppressions
-            </h1>
+            </h2>
             <p className="text-sm text-warm-500 mt-0.5 max-w-2xl">
               Addresses on this list will not receive any email from the
               platform. Suppressions are added automatically by Resend webhooks
@@ -161,7 +166,7 @@ export function SuppressionsAdminPanel() {
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               placeholder="email@example.com"
-              className="pl-9 pr-3 py-2 text-sm min-h-0"
+              className="min-h-11 pl-9 pr-3 py-2 text-sm"
             />
           </div>
           <Select
@@ -169,14 +174,11 @@ export function SuppressionsAdminPanel() {
             value={newReason}
             onChange={(value) => setNewReason(value as SuppressionReason)}
           />
-          <Button variant="primary"
+          <Button
+            variant="primary"
             type="submit"
             disabled={adding || !newEmail.trim()}
-            className={cn(
-              'px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors',
-              'bg-primary-600 text-white hover:bg-primary-700',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-            )}
+            className={CRM_PRIMARY_ACTION_CLASS}
           >
             {adding ? 'Adding...' : 'Add'}
           </Button>
@@ -191,27 +193,24 @@ export function SuppressionsAdminPanel() {
       {/* Filter row */}
       <section className="rounded-2xl border border-warm-200/60 bg-cream-50">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-warm-100">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className={CRM_CHOICE_GROUP_CLASS}>
             {REASON_FILTERS.map((opt) => {
               const isActive = filter === opt.value;
               const count = counts[opt.value] ?? 0;
               return (
-                <Button variant="primary"
+                <Button
+                  variant="ghost"
                   key={opt.value}
                   type="button"
                   onClick={() => setFilter(opt.value)}
-                  className={cn(
-                    'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors',
-                    isActive
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-cream-50 text-warm-700 border-warm-200/80 hover:border-warm-300',
-                  )}
+                  aria-pressed={isActive}
+                  className={crmChoiceClass(isActive)}
                 >
                   {opt.label}
                   <span
                     className={cn(
                       'tabular-nums text-eyebrow',
-                      isActive ? 'text-white/80' : 'text-warm-400',
+                      isActive ? 'text-accent-700' : 'text-warm-400',
                     )}
                   >
                     {count}
@@ -225,7 +224,7 @@ export function SuppressionsAdminPanel() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search emails..."
-            className="px-3 py-1.5 text-xs min-h-0 w-56"
+            className="min-h-11 w-full px-3 py-1.5 text-xs sm:w-56"
           />
         </div>
 

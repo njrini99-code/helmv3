@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { addSuppression } from '@/app/golf/actions/crm-foundations';
@@ -22,6 +21,13 @@ import {
   IconExternalLink,
   IconWarning,
 } from '@/components/icons';
+import {
+  CRM_CHOICE_GROUP_CLASS,
+  CRM_TERTIARY_ACTION_CLASS,
+  SEGMENTED_TABLIST_CLASS,
+  crmChoiceClass,
+  segmentedTabClass,
+} from '../page-contracts';
 
 // ============================================================================
 // TYPES
@@ -190,7 +196,6 @@ const FILTER_TABS: { id: FilterTab; label: string }[] = [
 // MAIN COMPONENT
 // ============================================================================
 export function EmailTrackingView() {
-  const prefersReducedMotion = useReducedMotion();
   const [stats, setStats] = useState<EmailStats>(EMPTY_STATS);
   const [emails, setEmails] = useState<EmailRecord[]>([]);
   const [allOutreach, setAllOutreach] = useState<EmailRecord[]>([]);
@@ -525,34 +530,34 @@ export function EmailTrackingView() {
       </div>
 
       {/* ══════════════ Stats Header Cards ══════════════ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <StatCard
           icon={<IconMail size={20} />}
-          iconBg="bg-blue-100"
-          iconColor="text-blue-600"
+          iconBg="bg-surface-tint"
+          iconColor="text-text-secondary"
           label="Total Outreach"
           value={totalOutreach.toLocaleString()}
           subtitle={`${helmOutreach} via Helm \u00B7 ${gmailOutreach} via Gmail`}
         />
         <StatCard
           icon={<IconUsers size={20} />}
-          iconBg="bg-indigo-100"
-          iconColor="text-indigo-600"
+          iconBg="bg-accent-50"
+          iconColor="text-accent-700"
           label="Coaches Contacted"
           value={contactedCoaches.length.toLocaleString()}
         />
         <StatCard
           icon={<IconEye size={20} />}
-          iconBg="bg-violet-100"
-          iconColor="text-violet-600"
+          iconBg="bg-accent-100"
+          iconColor="text-accent-800"
           label="Open Rate"
           value={stats.total_sent > 0 ? `${openRate}%` : '\u2014'}
           subtitle={stats.total_sent > 0 ? `${stats.opened} of ${stats.total_sent} Helm emails` : 'Helm emails only'}
         />
         <StatCard
           icon={<IconCheckCircle2 size={20} />}
-          iconBg="bg-primary-100"
-          iconColor="text-primary-600"
+          iconBg="bg-fw-success-bg"
+          iconColor="text-fw-success-ink"
           label="Delivery Rate"
           value={stats.total_sent > 0 ? `${deliveryRate}%` : '\u2014'}
           subtitle={stats.total_sent > 0 ? `${stats.delivered} of ${stats.total_sent} Helm emails` : 'Helm emails only'}
@@ -564,7 +569,7 @@ export function EmailTrackingView() {
         <div
           role="tablist"
           aria-label="Email outreach views"
-          className="flex gap-0 border-b border-warm-100 overflow-x-auto scrollbar-hide"
+          className={cn('m-3', SEGMENTED_TABLIST_CLASS)}
         >
           {SUB_TABS.map(tab => {
             const isActive = subTab === tab.id;
@@ -575,19 +580,9 @@ export function EmailTrackingView() {
                 aria-selected={isActive}
                 aria-controls={`email-panel-${tab.id}`}
                 onClick={() => setSubTab(tab.id)}
-                className={cn(
-                  'px-5 py-3 text-sm font-medium transition-colors relative whitespace-nowrap',
-                  isActive ? 'text-warm-900' : 'text-warm-400 hover:text-warm-600'
-                )}
+                className={segmentedTabClass(isActive)}
               >
                 {tab.label}
-                {isActive && (
-                  <motion.div
-                    layoutId="email-tab-underline"
-                    className="absolute bottom-0 left-1 right-1 h-[2px] bg-primary-500 rounded-full"
-                    transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
-                  />
-                )}
               </Button>
             );
           })}
@@ -716,18 +711,13 @@ export function EmailTrackingView() {
                 linkLabel="Resend activity"
               />
               <div className="flex items-center justify-between mb-4">
-                <div className="flex gap-1" role="group" aria-label="Filter campaigns by status">
+                <div className={CRM_CHOICE_GROUP_CLASS} role="group" aria-label="Filter campaigns by status">
                   {FILTER_TABS.map(tab => (
                     <Button variant="ghost"
                       key={tab.id}
                       onClick={() => setFilterTab(tab.id)}
                       aria-pressed={filterTab === tab.id}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                        filterTab === tab.id
-                          ? 'bg-warm-100 text-warm-800'
-                          : 'text-warm-400 hover:text-warm-600 hover:bg-warm-50'
-                      )}
+                      className={crmChoiceClass(filterTab === tab.id)}
                     >
                       {tab.label}
                     </Button>
@@ -736,7 +726,7 @@ export function EmailTrackingView() {
                 <Button variant="ghost"
                   onClick={() => setSortField(sortField === 'date' ? 'status' : 'date')}
                   aria-label={`Sort campaigns by ${sortField === 'date' ? 'status' : 'date'}`}
-                  className="text-xs font-medium text-warm-500 hover:text-warm-700 px-2.5 py-1.5 rounded-lg hover:bg-warm-50 transition-colors"
+                  className={CRM_TERTIARY_ACTION_CLASS}
                 >
                   Sort: {sortField === 'date' ? 'Date' : 'Status'}
                 </Button>
@@ -984,7 +974,7 @@ function StatCard({
 }) {
   return (
     <div className={cn(
-      'glass-standard rounded-2xl p-5',
+      'glass-standard rounded-xl sm:rounded-2xl p-3.5 sm:p-5',
       'shadow-glass',
       'transition-[transform,box-shadow] duration-200 group',
       'hover:-translate-y-0.5 hover:shadow-lg',
@@ -992,11 +982,11 @@ function StatCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-xs text-warm-500 uppercase tracking-wider">{label}</p>
-          <p className="text-2xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
-          {subtitle && <p className="text-eyebrow text-warm-400 mt-0.5">{subtitle}</p>}
+          <p className="text-xl sm:text-2xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
+          {subtitle && <p className="hidden sm:block text-eyebrow text-warm-400 mt-0.5">{subtitle}</p>}
         </div>
         <div className={cn(
-          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
+          'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
           'transition-transform duration-200 group-hover:scale-105',
           iconBg, iconColor
         )}>

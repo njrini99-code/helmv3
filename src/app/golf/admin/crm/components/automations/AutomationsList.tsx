@@ -22,6 +22,11 @@ import type {
 import { AutomationEditor } from './AutomationEditor';
 import { AUTOMATIONS_SEED, TRIGGER_EVENTS, isSeededAutomation } from './AutomationsSeed';
 import { Button, IconButton } from '@/components/ui/button';
+import {
+  CRM_ICON_ACTION_CLASS,
+  CRM_PRIMARY_ACTION_CLASS,
+  CRM_SECONDARY_ACTION_CLASS,
+} from '../../page-contracts';
 
 // ============================================================================
 // AutomationsList — table of automations grouped by trigger_event.
@@ -151,7 +156,7 @@ export function AutomationsList() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-warm-900 flex items-center gap-2">
             <IconZap size={20} className="text-primary-600" />
@@ -161,22 +166,24 @@ export function AutomationsList() {
             Configurable rules that fire on email events and pipeline changes.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!loading && missingSeeds.length > 0 && (
-            <Button variant="outline"
+            <Button
+              variant="outline"
               type="button"
               onClick={handleRestoreDefaults}
               disabled={restoring}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-warm-200 text-warm-700 text-sm font-medium hover:bg-warm-50 transition-colors disabled:opacity-50"
+              className={CRM_SECONDARY_ACTION_CLASS}
             >
               <IconCheckCircle2 size={14} />
               {restoring ? 'Restoring…' : 'Restore defaults'}
             </Button>
           )}
-          <Button variant="primary"
+          <Button
+            variant="primary"
             type="button"
             onClick={handleNew}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
+            className={CRM_PRIMARY_ACTION_CLASS}
           >
             <IconPlus size={14} /> New automation
           </Button>
@@ -201,7 +208,7 @@ export function AutomationsList() {
 
       {/* Empty state */}
       {!loading && automations.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-warm-300 glass-subtle px-6 py-10 text-center">
+        <div className="rounded-2xl border border-dashed border-warm-300 glass-subtle px-5 py-8 text-center sm:px-6 sm:py-10">
           <span className="inline-flex w-10 h-10 rounded-full bg-warm-100 items-center justify-center mb-3">
             <IconZap size={18} className="text-warm-500" />
           </span>
@@ -238,23 +245,29 @@ export function AutomationsList() {
                           className="flex items-start gap-3 px-4 py-3 hover:bg-warm-50/40 transition-colors"
                         >
                           {/* Active toggle */}
-                          <IconButton variant="primary"
+                          <IconButton
+                            variant="default"
                             type="button"
                             onClick={() => handleToggleActive(a)}
                             disabled={togglingId === a.id}
                             aria-label={a.is_active ? 'Deactivate automation' : 'Activate automation'}
-                            className={cn(
-                              'mt-0.5 relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors',
-                              a.is_active ? 'bg-primary-500' : 'bg-warm-300',
-                              togglingId === a.id && 'opacity-50',
-                            )}
+                            aria-pressed={a.is_active}
+                            className="mt-0.5 min-h-11 min-w-11 flex-shrink-0 rounded-xl bg-transparent p-0 hover:bg-surface-tint"
                           >
                             <span
                               className={cn(
-                                'inline-block h-4 w-4 transform rounded-full bg-cream-50 transition-transform',
-                                a.is_active ? 'translate-x-4' : 'translate-x-0.5',
+                                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
+                                a.is_active ? 'bg-accent-650' : 'bg-warm-300',
+                                togglingId === a.id && 'opacity-50',
                               )}
-                            />
+                            >
+                              <span
+                                className={cn(
+                                  'inline-block h-4 w-4 transform rounded-full bg-cream-50 transition-transform',
+                                  a.is_active ? 'translate-x-4' : 'translate-x-0.5',
+                                )}
+                              />
+                            </span>
                           </IconButton>
 
                           <div className="flex-1 min-w-0">
@@ -263,7 +276,7 @@ export function AutomationsList() {
                                 {a.name}
                               </span>
                               {seeded && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-eyebrow font-medium text-blue-700">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-accent-200 bg-accent-50 text-eyebrow font-medium text-accent-800">
                                   <IconCheckCircle2 size={10} /> Seeded
                                 </span>
                               )}
@@ -291,19 +304,21 @@ export function AutomationsList() {
 
                           {/* Actions */}
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            <IconButton variant="default"
+                            <IconButton
+                              variant="default"
                               type="button"
                               onClick={() => handleEdit(a)}
                               aria-label="Edit automation"
-                              className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+                              className={CRM_ICON_ACTION_CLASS}
                             >
                               <IconEdit size={14} />
                             </IconButton>
-                            <IconButton variant="default"
+                            <IconButton
+                              variant="default"
                               type="button"
                               onClick={() => handleDelete(a)}
                               aria-label="Delete automation"
-                              className="p-1.5 rounded-md text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              className="min-h-11 min-w-11 rounded-xl text-text-tertiary hover:bg-fw-danger-bg hover:text-fw-danger-ink"
                             >
                               <IconTrash size={14} />
                             </IconButton>

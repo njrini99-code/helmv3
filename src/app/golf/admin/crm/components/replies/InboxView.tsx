@@ -111,45 +111,35 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-warm-900 flex items-center gap-2">
-            <IconMail size={20} className="text-primary-600" />
-            Inbox
-          </h2>
-          <p className="text-sm text-warm-500 mt-0.5">
-            Everything incoming — replies, tasks due, and demo requests.
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="sr-only">Inbox</h2>
+        <div
+          role="tablist"
+          aria-label="Inbox sections"
+          className={SEGMENTED_TABLIST_CLASS}
+        >
+          {INBOX_SECTIONS.map((s) => {
+            const isActive = section === s.id;
+            const SectionIcon = s.Icon;
+            return (
+              <Button variant="ghost"
+                key={s.id}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setSection(s.id)}
+                className={segmentedTabClass(isActive)}
+              >
+                <SectionIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
+                {s.label}
+              </Button>
+            );
+          })}
         </div>
-        <div className="flex items-center gap-3">
-          {unreadCount > 0 && section === 'replies' && (
-            <span className="px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700">
-              {unreadCount} unread
-            </span>
-          )}
-          <div
-            role="tablist"
-            aria-label="Inbox sections"
-            className={SEGMENTED_TABLIST_CLASS}
-          >
-            {INBOX_SECTIONS.map((s) => {
-              const isActive = section === s.id;
-              const SectionIcon = s.Icon;
-              return (
-                <Button variant="ghost"
-                  key={s.id}
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setSection(s.id)}
-                  className={segmentedTabClass(isActive)}
-                >
-                  <SectionIcon size={15} className={segmentedTabIconClass(isActive)} aria-hidden />
-                  {s.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+        {unreadCount > 0 && section === 'replies' && (
+          <span className="rounded-lg border border-accent-200 bg-accent-50 px-2.5 py-1.5 text-xs font-semibold text-accent-800">
+            {unreadCount} unread
+          </span>
+        )}
       </div>
 
       {section === 'demos' && <InboundLeadsView onOpenCoach={onCoachClick} />}
