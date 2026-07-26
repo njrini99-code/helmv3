@@ -29,7 +29,7 @@
 
 import { gsap } from '@/lib/motion/gsap/register';
 import { DUR, EASE, SCRUB, STAGGER, DIST } from '@/lib/motion/gsap/tokens';
-import { countTo } from '@/lib/motion/gsap/primitives';
+import { arrive, countTo } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 export const DERIVE = {
@@ -110,7 +110,10 @@ export function derivationScene({ root, reduced, compact }: SceneContext): void 
 
     if (rule) tl.to(rule, { scaleX: 1, duration: DUR.short, ease: EASE.soft }, at);
     if (pills.length) {
-      tl.to(pills, { opacity: 1, y: 0, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.wideStep }, at + 0.05);
+      // Snap + translate, never an opacity ramp: these pills carry the metric
+      // NAMES ("SG: Total", "Approach 100-150"), and on a scrubbed timeline a
+      // fade is a resting state — caught parked at 0.13 and 0.04.
+      arrive(tl, [...pills] as HTMLElement[], at + 0.05, { y: 0, duration: DUR.short });
     }
     if (countEl) tl.add(countTo(countEl, n, { duration: DUR.medium }), at + 0.06);
 

@@ -39,8 +39,8 @@ export const CAPTURE = {
   ball: '[data-shot-ball]',
   chipActive: '[data-capture="chip-active"]',
   proximity: '[data-capture="proximity"]',
-  readout: '[data-capture="readout"]',
-  copy: '[data-capture="copy"]',
+  /** The CONTENT of a readout tile, not the tile — see the reveal below. */
+  readoutValue: '[data-capture="readout-value"]',
 } as const;
 
 const PROXIMITY_FEET = 18;
@@ -54,7 +54,8 @@ export function captureScene({ root, reduced, compact }: SceneContext): void {
   const ball = q(CAPTURE.ball)[0] as unknown as SVGCircleElement | undefined;
   const chip = q(CAPTURE.chipActive)[0] as HTMLElement | undefined;
   const proximity = q(CAPTURE.proximity)[0] as HTMLElement | undefined;
-  const readouts = q(CAPTURE.readout) as HTMLElement[];
+  const readouts = q(CAPTURE.readoutValue) as HTMLElement[];
+  const stage = q(CAPTURE.stage)[0] as HTMLElement | undefined;
 
   if (!segments.length) return;
 
@@ -65,7 +66,7 @@ export function captureScene({ root, reduced, compact }: SceneContext): void {
     if (ball) gsap.set(ball, { opacity: 0 });
     if (chip) gsap.set(chip, { scale: 1, autoAlpha: 1 });
     if (proximity) proximity.textContent = `${PROXIMITY_FEET} ft`;
-    gsap.set(readouts, { opacity: 1, y: 0 });
+    gsap.set(readouts, { yPercent: 0 });
     return;
   }
 
@@ -79,23 +80,37 @@ export function captureScene({ root, reduced, compact }: SceneContext): void {
   if (ball) gsap.set(ball, { opacity: 0 });
   // The chip is a LABEL — it says which surface the shot finished on. Ramping
   // its opacity means that for most of the scrub it is white text on a
-  // part-transparent green, which axe measures (correctly) as 4.46:1 against
-  // the cream behind it. The same "a datum never fades" rule the rest of this
-  // page follows applies here: it arrives by scaling from the tap point, and
-  // its own text is fully opaque the entire time.
+  // part-transparent green, which axe measures (correctly) as a contrast
+  // failure against the cream behind it. `autoAlpha` does NOT prevent that: it
+  // only flips `visibility` at opacity 0 and interpolates normally in between,
+  // so every frame from 0.01 to 0.99 is still a half-transparent swatch. Axe
+  // caught it at 1.8:1 (bg resolving to #a0c8a6 mid-tween). The fix is to stop
+  // interpolating opacity at all: visibility snaps once, below, and only
+  // `scale` is scrubbed — so the chip is either absent or fully rendered.
   if (chip) gsap.set(chip, { scale: 0.82, autoAlpha: 0, transformOrigin: 'center' });
-  if (proximity) proximity.textContent = '—';
-  gsap.set(readouts, { opacity: 0, y: 12 });
+  // Each readout tile is an overflow-hidden mask and this is its CONTENT: it
+  // rises into the tile at full opacity instead of fading up from zero. On a
+  // SCRUBBED timeline an opacity ramp is not a reveal, it is a resting state —
+  // the reader stops scrolling wherever they stop, and the numeral sits at
+  // whatever fraction that was. This exact tween used to leave "SG · App +0.4"
+  // parked at opacity 0.27 with 8.7px of leftover translate, permanently, in
+  // production. 140% clears the tile's padding box so nothing peeks below the
+  // clip while it waits.
+  gsap.set(readouts, { yPercent: 140 });
 
-  // The whole chapter is one scrubbed timeline. `end` is generous enough that
-  // the sequence reads as deliberate rather than flicking past, but the section
-  // is NOT pinned on phone — a pinned corridor on a 390px screen costs more in
-  // reachability than it buys in drama.
+  // The whole chapter is one scrubbed timeline, anchored to the COCKPIT rather
+  // than to the section. The section is a tall two-column band whose bottom
+  // edge sits far below the instrument; triggering off it meant the sequence
+  // only reached its final frame once the cockpit had already scrolled most of
+  // the way out of view, so in practice the last beats were never seen resolved
+  // — the defect above. Anchoring to the stage makes the range the element's
+  // own. The section is NOT pinned on phone: a pinned corridor on a 390px
+  // screen costs more in reachability than it buys in drama.
   const tl = gsap.timeline({
     scrollTrigger: {
-      trigger: root,
-      start: compact ? 'top 78%' : 'top 65%',
-      end: compact ? 'bottom 70%' : 'bottom 55%',
+      trigger: stage ?? root,
+      start: compact ? 'top 88%' : 'top 82%',
+      end: compact ? 'bottom 62%' : 'bottom 58%',
       scrub: SCRUB.smooth,
       invalidateOnRefresh: true,
     },
@@ -145,10 +160,10 @@ export function captureScene({ root, reduced, compact }: SceneContext): void {
   // the chip select and the proximity resolve. This ordering is the product's
   // actual write path, not a decorative stagger.
   if (chip) {
-    // `autoAlpha` toggles VISIBILITY alongside opacity, so the chip is either
-    // absent from the accessibility tree or fully rendered — never a
-    // half-transparent swatch that reads as a contrast failure.
-    tl.to(chip, { scale: 1, autoAlpha: 1, duration: DUR.short, ease: EASE.emphasized }, sequenceEnd + 0.05);
+    // Opacity/visibility SNAP (a zero-duration set, which scrubs cleanly in
+    // both directions); only the scale is animated. See the prep note above.
+    tl.set(chip, { autoAlpha: 1 }, sequenceEnd + 0.05);
+    tl.to(chip, { scale: 1, duration: DUR.short, ease: EASE.emphasized }, sequenceEnd + 0.05);
   }
   if (proximity) {
     tl.add(
@@ -161,8 +176,15 @@ export function captureScene({ root, reduced, compact }: SceneContext): void {
   if (readouts.length) {
     tl.to(
       readouts,
-      { opacity: 1, y: 0, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.step },
+      { yPercent: 0, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.step },
       sequenceEnd + 0.24,
     );
   }
+
+  // Tail padding, the same device statsScene and pinScene use. Without it the
+  // last tween above finishes at timeline progress 1.0 — i.e. at the literal
+  // final pixel of the scroll range, which a reader has to overshoot to ever
+  // see. The pad moves the resolved state to ~85% of the range and holds it
+  // there for the rest.
+  tl.to({}, { duration: 0.3 });
 }

@@ -25,8 +25,8 @@
  * ========================================================================== */
 
 import { gsap } from '@/lib/motion/gsap/register';
-import { DUR, EASE, SCRUB, STAGGER, DIST } from '@/lib/motion/gsap/tokens';
-import { countTo } from '@/lib/motion/gsap/primitives';
+import { DUR, SCRUB, DIST } from '@/lib/motion/gsap/tokens';
+import { arrive, countTo } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 export const STAT = {
@@ -78,7 +78,7 @@ export function statsScene({ root, reduced, compact }: SceneContext): void {
     },
   });
 
-  tl.to(spines, { autoAlpha: 1, x: 0, y: 0, duration: DUR.long, ease: EASE.glide }, 0);
+  arrive(tl, spines, 0, { x: 0, y: 0, duration: DUR.long });
   // Counts the MAGNITUDE with an explicit minus prefix rather than counting to
   // a negative: `toFixed` would emit an ASCII hyphen, and this figure sits in
   // the mono face next to other numerals that use a real minus sign (U+2212).
@@ -86,12 +86,8 @@ export function statsScene({ root, reduced, compact }: SceneContext): void {
   sgs.forEach((el) => {
     tl.add(countTo(el, 4.44, { decimals: 2, prefix: '−', duration: DUR.long }), 0.12);
   });
-  tl.to(priorities, { autoAlpha: 1, y: 0, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.step }, 0.4);
-  tl.to(
-    ranked,
-    { autoAlpha: 1, y: 0, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.step },
-    0.66,
-  );
+  arrive(tl, priorities, 0.4, { y: 0, duration: DUR.short });
+  arrive(tl, ranked, 0.66, { y: 0, duration: DUR.short });
 
   tl.to({}, { duration: 0.3 });
 }

@@ -34,6 +34,7 @@
 
 import { gsap, ScrollTrigger, Flip } from '@/lib/motion/gsap/register';
 import { DUR, EASE, SCRUB, STAGGER } from '@/lib/motion/gsap/tokens';
+import { arrive } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 export const DOCK = {
@@ -370,14 +371,14 @@ function operateBoard(
   // ── Reduced motion: the decision, already made and already propagated. Every
   //    readout, every check, the cut line and the wiring all render settled. ──
   if (reduced) {
-    gsap.set(washes, { opacity: 1 });
-    gsap.set(checks, { opacity: 1, scale: 1 });
+    gsap.set(washes, { autoAlpha: 1 });
+    gsap.set(checks, { autoAlpha: 1, scale: 1 });
 
     if (cutRule) gsap.set(cutRule, { scaleX: 1 });
-    if (cutLabel) gsap.set(cutLabel, { opacity: 1 });
+    if (cutLabel) gsap.set(cutLabel, { autoAlpha: 1 });
     if (pending) gsap.set(pending, { display: 'none' });
-    if (locked) gsap.set(locked, { opacity: 1 });
-    links.forEach((l) => l.readout && gsap.set(l.readout, { opacity: 1, y: 0 }));
+    if (locked) gsap.set(locked, { autoAlpha: 1 });
+    links.forEach((l) => l.readout && gsap.set(l.readout, { autoAlpha: 1, y: 0 }));
     return;
   }
 
@@ -480,13 +481,16 @@ function operateBoard(
   layout();
 
   // ── Initial state: nothing decided. ──────────────────────────────────────
-  gsap.set(washes, { opacity: 0 });
-  gsap.set(checks, { opacity: 0, scale: 0.6, transformOrigin: 'center' });
+  // `autoAlpha`, not bare `opacity`, so each of these is the exact inverse of
+  // the `arrive()` snap that brings it back — see that primitive for why none
+  // of this section may interpolate opacity on a scrubbed timeline.
+  gsap.set(washes, { autoAlpha: 0 });
+  gsap.set(checks, { autoAlpha: 0, scale: 0.6, transformOrigin: 'center' });
   if (cutRule) gsap.set(cutRule, { scaleX: 0, transformOrigin: 'left center' });
-  if (cutLabel) gsap.set(cutLabel, { opacity: 0 });
-  if (locked) gsap.set(locked, { opacity: 0 });
+  if (cutLabel) gsap.set(cutLabel, { autoAlpha: 0 });
+  if (locked) gsap.set(locked, { autoAlpha: 0 });
   gsap.set(nodes, { scale: 0, transformOrigin: 'center', autoAlpha: 0 });
-  links.forEach((l) => l.readout && gsap.set(l.readout, { opacity: 0, y: 10 }));
+  links.forEach((l) => l.readout && gsap.set(l.readout, { autoAlpha: 0, y: 10 }));
 
   // ── Beat 1 · THE CUT. Anchored to the qualifier tile itself, because that is
   //    where the decision is made and it has to be legible while it happens.
@@ -502,19 +506,17 @@ function operateBoard(
   });
 
   if (cutRule) cutTl.to(cutRule, { scaleX: 1, duration: DUR.medium, ease: EASE.glide }, 0);
-  if (cutLabel) cutTl.to(cutLabel, { opacity: 1, duration: DUR.short, ease: EASE.glide }, 0.24);
-  if (washes.length) {
-    cutTl.to(washes, { opacity: 1, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.step }, 0.3);
-  }
+  // "Travel cut", the row washes, and "Squad locked" all carry copy, so every
+  // one of them snaps rather than ramps (caught parked at 0.62 and 0.80).
+  if (cutLabel) arrive(cutTl, [cutLabel], 0.24);
+  if (washes.length) arrive(cutTl, washes, 0.3);
   if (checks.length) {
-    cutTl.to(
-      checks,
-      { opacity: 1, scale: 1, duration: DUR.short, ease: EASE.emphasized, stagger: STAGGER.step },
-      0.34,
-    );
+    arrive(cutTl, checks, 0.34, { scale: 1, duration: DUR.short, ease: EASE.emphasized });
   }
-  if (pending) cutTl.to(pending, { opacity: 0, duration: DUR.short, ease: EASE.glide }, 0.66);
-  if (locked) cutTl.to(locked, { opacity: 1, duration: DUR.short, ease: EASE.glide }, 0.78);
+  // A fade OUT parks half-legible for exactly the same reason a fade in does:
+  // "Squad of 4 pending" must be present or gone, never ghosted at 0.5.
+  if (pending) cutTl.set(pending, { autoAlpha: 0 }, 0.66);
+  if (locked) arrive(cutTl, [locked], 0.78);
   cutTl.to({}, { duration: 0.35 });
 
   // ── Beat 2 · THE DECISION PROPAGATES. ────────────────────────────────────
@@ -578,10 +580,10 @@ function operateBoard(
       );
     }
     if (node) {
-      hopTl.to(node, { autoAlpha: 1, scale: 1, duration: DUR.short, ease: EASE.emphasized }, at + 0.22);
+      arrive(hopTl, [node], at + 0.22, { scale: 1, duration: DUR.short, ease: EASE.emphasized });
     }
     if (link.readout) {
-      hopTl.to(link.readout, { opacity: 1, y: 0, duration: DUR.short, ease: EASE.glide }, at + 0.24);
+      arrive(hopTl, [link.readout], at + 0.24, { y: 0, duration: DUR.short });
     }
   });
 
