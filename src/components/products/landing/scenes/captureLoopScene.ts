@@ -33,7 +33,7 @@
 
 import { gsap } from '@/lib/motion/gsap/register';
 import { DUR, EASE, SCRUB, STAGGER } from '@/lib/motion/gsap/tokens';
-import { countTo } from '@/lib/motion/gsap/primitives';
+import { arrive, countTo } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 export const LR = {
@@ -104,7 +104,9 @@ export function captureLoopScene({ root, reduced, compact }: SceneContext): void
   if (presetFill) tl.to(presetFill, { autoAlpha: 1, scale: 1, duration: DUR.short, ease: EASE.emphasized }, 0.74);
 
   // 4. Committed.
-  if (next) tl.to(next, { autoAlpha: 1, scale: 1, duration: DUR.medium, ease: EASE.emphasized }, 0.92);
+  // Scale only — the label reads "Next Shot", so ramping its opacity parks a
+  // half-legible control on screen (caught at 0.43).
+  if (next) arrive(tl, [next], 0.92, { scale: 1, duration: DUR.medium, ease: EASE.emphasized });
 
   tl.to({}, { duration: 0.3 });
 }

@@ -33,7 +33,7 @@
 
 import { gsap, ScrollTrigger } from '@/lib/motion/gsap/register';
 import { DUR, EASE, SCRUB, STAGGER, DIST } from '@/lib/motion/gsap/tokens';
-import { maskedWords } from '@/lib/motion/gsap/primitives';
+import { arrive, maskedWords } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 export const CH = {
@@ -56,8 +56,8 @@ export function coachHelmScene({ root, reduced, compact }: SceneContext): void |
   // ── Reduced motion: the finished analysis, stated plainly ────────────────
   if (reduced) {
     gsap.set(bars, { scaleX: 1 });
-    if (leakRow) gsap.set(leakRow, { opacity: 1 });
-    gsap.set([insight, receipts, recommendation].filter(Boolean) as HTMLElement[], { opacity: 1, y: 0 });
+    if (leakRow) gsap.set(leakRow, { autoAlpha: 1 });
+    gsap.set([insight, receipts, recommendation].filter(Boolean) as HTMLElement[], { autoAlpha: 1, y: 0 });
     return;
   }
 
@@ -70,9 +70,13 @@ export function coachHelmScene({ root, reduced, compact }: SceneContext): void |
     gsap.set(bar, { scaleX: 0, transformOrigin: gained ? 'left center' : 'right center' });
   });
 
-  // The leak highlight is a background wash + ring on the ROW, so it is chrome,
-  // not a datum — opacity is legitimate here.
-  if (leakRow) gsap.set(leakRow, { opacity: 0 });
+  // The leak highlight is a background wash + ring — but it is on the ROW, and
+  // the row carries the words "Putting −0.6". Fading the wash therefore fades
+  // the datum with it (caught at opacity 0.646, parked), so this is NOT the
+  // chrome exemption an earlier comment here claimed. It snaps, like the rest:
+  // a highlight appearing the instant its own bar finishes reads as the system
+  // flagging the row, which is what it is.
+  if (leakRow) gsap.set(leakRow, { autoAlpha: 0 });
 
   let revertWords: (() => void) | undefined;
   let insightTargets: HTMLElement[] = [];
@@ -82,8 +86,8 @@ export function coachHelmScene({ root, reduced, compact }: SceneContext): void |
     insightTargets = split.lines;
   }
 
-  if (receipts) gsap.set(receipts, { opacity: 0, y: DIST.datum });
-  if (recommendation) gsap.set(recommendation, { opacity: 0, y: DIST.datum });
+  if (receipts) gsap.set(receipts, { autoAlpha: 0, y: DIST.datum });
+  if (recommendation) gsap.set(recommendation, { autoAlpha: 0, y: DIST.datum });
 
   const tl = gsap.timeline({
     scrollTrigger: {
@@ -101,7 +105,7 @@ export function coachHelmScene({ root, reduced, compact }: SceneContext): void |
   const barsEnd = DUR.medium + STAGGER.step * Math.max(0, bars.length - 1);
 
   // 2. Name the leak — only after the bar that proves it has finished.
-  if (leakRow) tl.to(leakRow, { opacity: 1, duration: DUR.short, ease: EASE.glide }, barsEnd);
+  if (leakRow) arrive(tl, [leakRow], barsEnd);
 
   // 3. The sentence — on a clock, NOT on the scrub that drives everything else
   //    in this timeline.
@@ -133,11 +137,11 @@ export function coachHelmScene({ root, reduced, compact }: SceneContext): void |
   }
 
   // 4. The receipts.
-  if (receipts) tl.to(receipts, { opacity: 1, y: 0, duration: DUR.short, ease: EASE.glide }, barsEnd + 0.34);
+  if (receipts) arrive(tl, [receipts], barsEnd + 0.34, { y: 0, duration: DUR.short });
 
   // 5. The conclusion, last.
   if (recommendation) {
-    tl.to(recommendation, { opacity: 1, y: 0, duration: DUR.medium, ease: EASE.glide }, barsEnd + 0.46);
+    arrive(tl, [recommendation], barsEnd + 0.46, { y: 0, duration: DUR.medium });
   }
 
   return revertWords;

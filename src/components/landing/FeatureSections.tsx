@@ -111,7 +111,7 @@ export function PerformanceSection() {
           data-capture="stage"
           className="order-2 w-full max-w-[380px] justify-self-center md:order-1"
           role="img"
-          aria-label="Preview of live shot tracking: hole 7, par 4, 412 yards — an approach shot resolving to the green, 18 feet from the hole, with strokes gained, GIR, and putts readouts"
+          aria-label="Preview of live shot tracking: hole 7, par 4, 412 yards — a 244-yard drive into the fairway, then a 168-yard approach resolving to the green, 18 feet from the hole, with strokes gained, GIR, and putts readouts"
         >
           <div aria-hidden="true">
             <TrackingCockpit />

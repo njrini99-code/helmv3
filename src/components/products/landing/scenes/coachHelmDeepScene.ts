@@ -32,7 +32,7 @@
 
 import { gsap } from '@/lib/motion/gsap/register';
 import { DUR, EASE, SCRUB, STAGGER, DIST } from '@/lib/motion/gsap/tokens';
-import { maskedWords } from '@/lib/motion/gsap/primitives';
+import { arrive, maskedWords } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 export const CHD = {
@@ -67,8 +67,8 @@ export function coachHelmDeepScene({ root, reduced, compact }: SceneContext): vo
     ruledLabels.forEach((l) => {
       l.style.textDecoration = 'line-through';
     });
-    gsap.set([survivorMark, cause, verdict].filter(Boolean) as HTMLElement[], { opacity: 1, y: 0 });
-    gsap.set(evidence, { opacity: 1, y: 0 });
+    gsap.set([survivorMark, cause, verdict].filter(Boolean) as HTMLElement[], { autoAlpha: 1, y: 0 });
+    gsap.set(evidence, { autoAlpha: 1, y: 0 });
     return;
   }
 
@@ -88,9 +88,11 @@ export function coachHelmDeepScene({ root, reduced, compact }: SceneContext): vo
   // opacity from the start — it is on the table, not absent. What arrives when
   // it survives is its verdict marker, not its legibility.
   if (survivorMark) gsap.set(survivorMark, { autoAlpha: 0 });
-  if (cause) gsap.set(cause, { opacity: 0, y: DIST.datum });
-  gsap.set(evidence, { opacity: 0, y: DIST.datum });
-  if (verdict) gsap.set(verdict, { opacity: 0, y: DIST.datum });
+  // `autoAlpha`, the exact inverse of `arrive()`'s snap — never bare `opacity`,
+  // which would leave these parked mid-ramp (caught at 0.03 and 0.34).
+  if (cause) gsap.set(cause, { autoAlpha: 0, y: DIST.datum });
+  gsap.set(evidence, { autoAlpha: 0, y: DIST.datum });
+  if (verdict) gsap.set(verdict, { autoAlpha: 0, y: DIST.datum });
 
   // The trigger is the CARD, not the section root. The section is ~2,100px tall
   // and the card sits near its top, so scrubbing against the section meant the
@@ -140,22 +142,16 @@ export function coachHelmDeepScene({ root, reduced, compact }: SceneContext): vo
   const eliminatedAt = 0.3 + ruledOut.length * 0.14;
 
   // 4. One cause left standing.
-  if (survivorMark) tl.to(survivorMark, { autoAlpha: 1, duration: DUR.medium, ease: EASE.glide }, eliminatedAt);
+  if (survivorMark) arrive(tl, [survivorMark], eliminatedAt);
 
   // 5. Only now is the explanation legitimate.
-  if (cause) tl.to(cause, { opacity: 1, y: 0, duration: DUR.medium, ease: EASE.glide }, eliminatedAt + 0.16);
+  if (cause) arrive(tl, [cause], eliminatedAt + 0.16, { y: 0, duration: DUR.medium });
 
   // 6. The receipts.
-  if (evidence.length) {
-    tl.to(
-      evidence,
-      { opacity: 1, y: 0, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.step },
-      eliminatedAt + 0.3,
-    );
-  }
+  if (evidence.length) arrive(tl, evidence, eliminatedAt + 0.3, { y: 0, duration: DUR.short });
 
   // 7. The verdict, last.
-  if (verdict) tl.to(verdict, { opacity: 1, y: 0, duration: DUR.medium, ease: EASE.glide }, eliminatedAt + 0.46);
+  if (verdict) arrive(tl, [verdict], eliminatedAt + 0.46, { y: 0, duration: DUR.medium });
 
   // Tail padding. Without it the verdict lands on the timeline's final frame,
   // which means it only completes at the very last pixel of the trigger range —

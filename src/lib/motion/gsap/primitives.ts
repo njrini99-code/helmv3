@@ -41,6 +41,19 @@ export interface MaskedLinesResult {
 }
 
 /**
+ * SplitText's default `aria: "auto"` stamps `aria-label="<the text>"` onto the
+ * element it splits. On a `<p>` — which every prose target here is — that is a
+ * PROHIBITED attribute: `paragraph` does not support an accessible name, and
+ * axe fails it `aria-prohibited-attr` (serious) on the landing page at every
+ * breakpoint. `"none"` is the correct mode for running prose: the split leaves
+ * real inline text in the DOM (this mode adds no `aria-hidden` either), so the
+ * paragraph still reads normally — it just stops claiming a name it may not
+ * have. Do not "fix" a future violation here by switching to `"hidden"`; that
+ * hides the copy from assistive tech entirely.
+ */
+const ARIA_MODE = 'none' as const;
+
+/**
  * Split an element into lines, each wrapped in an overflow-hidden mask, and set
  * them to their pre-entrance position (fully below the mask, fully opaque).
  *
@@ -58,6 +71,7 @@ export function maskedLines(target: HTMLElement): MaskedLinesResult {
     // line's own travel without clipping descenders of neighbouring lines.
     mask: 'lines',
     linesClass: 'fw-line',
+    aria: ARIA_MODE,
   });
 
   const lines = split.lines as HTMLElement[];
@@ -67,6 +81,45 @@ export function maskedLines(target: HTMLElement): MaskedLinesResult {
     lines,
     revert: () => split.revert(),
   };
+}
+
+/**
+ * Arrival for something that CANNOT be masked — a whole panel, a highlighted
+ * row, a receipts block: visibility SNAPS once, then only the transform is
+ * scrubbed.
+ *
+ * THE RULE THIS ENFORCES. Never interpolate opacity on a scrubbed timeline.
+ * Scroll is not a clock: the reader stops wherever they stop, so a "fade" is
+ * not a transition, it is a RESTING STATE at whatever fraction that was. This
+ * shipped — "SG · App +0.4" sat permanently at `opacity: 0.27` on the live
+ * landing page — and a sweep then found the same thing in two more scenes,
+ * including ranked stat copy measured at 1.34:1. `autoAlpha` does not save you:
+ * it only flips `visibility` at exactly 0 and interpolates normally in between.
+ *
+ * `set()` is a zero-duration tween, so it still scrubs cleanly in both
+ * directions; the element is either absent or fully legible, and the movement
+ * carries the arrival on its own. Masked text (see {@link maskedLines}) is the
+ * better tool when the target IS text; this is for everything else.
+ *
+ * Guarded by `e2e/landing-motion-legibility.spec.ts`.
+ */
+export function arrive(
+  tl: gsap.core.Timeline,
+  // `Element`, not `HTMLElement`: the products dock brings in SVG nodes on the
+  // same schedule as HTML readouts, and GSAP targets both identically.
+  els: readonly Element[],
+  at: number,
+  vars: gsap.TweenVars = {},
+): void {
+  const step = staggerFor(els.length);
+  els.forEach((el, i) => {
+    const t = at + i * step;
+    tl.set(el, { autoAlpha: 1 }, t);
+    // A pure snap (no transform to animate) is a legitimate arrival for a
+    // highlight/wash — but an empty tween would still be scheduled, so only add
+    // one when there is actually something to move.
+    if (Object.keys(vars).length) tl.to(el, { ease: EASE.glide, ...vars }, t);
+  });
 }
 
 /** The standard arrival tween for masked lines. Translate only — never opacity. */
@@ -82,7 +135,7 @@ export function revealLines(lines: HTMLElement[], vars: gsap.TweenVars = {}): gs
 
 /** Word-level variant, for the one place a sentence assembles word by word. */
 export function maskedWords(target: HTMLElement): MaskedLinesResult {
-  const split = new SplitText(target, { type: 'words', mask: 'words', wordsClass: 'fw-word' });
+  const split = new SplitText(target, { type: 'words', mask: 'words', wordsClass: 'fw-word', aria: ARIA_MODE });
   const words = split.words as HTMLElement[];
   gsap.set(words, { yPercent: 110 });
   return { lines: words, revert: () => split.revert() };
