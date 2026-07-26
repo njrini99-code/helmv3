@@ -150,7 +150,17 @@ export const InstrumentPanel = forwardRef<HTMLDivElement, InstrumentPanelProps>(
               )}
             </div>
             {readout ? (
-              <div className="flex w-full shrink-0 items-start justify-end sm:w-auto">{readout}</div>
+              // `justify-start` at `<sm` — the wrapper above is `flex-col
+              // items-start`, so a right-justified full-width child contradicted
+              // its own stacking rule: the readout flew to the panel's right
+              // edge while the eyebrow and heading stayed left, leaving a wide
+              // dead gutter between them. Measured on CoachHelm's team-leak
+              // panel at 390px: heading left edge 42px, the health gauge
+              // stranded at 190–350px on the line below it. `sm:justify-end`
+              // keeps the desktop top-right bezel readout unchanged.
+              <div className="flex w-full shrink-0 items-start justify-start sm:w-auto sm:justify-end">
+                {readout}
+              </div>
             ) : null}
           </div>
         ) : null}
