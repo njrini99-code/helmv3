@@ -38,7 +38,7 @@
  * touch, reading native scroll.
  * ========================================================================== */
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import Lenis from 'lenis';
 import { gsap, ScrollTrigger } from './register';
 
@@ -47,17 +47,76 @@ export interface MarketingScrollProviderProps {
   anchors?: boolean;
 }
 
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 export function MarketingScrollProvider({ anchors = false }: MarketingScrollProviderProps) {
+  // Next's automatic scroll hand-off can preserve the previous document
+  // position when both routes share sticky marketing chrome. That made a click
+  // from low on `/` render `/products` at the same ~7,000px offset, which read
+  // as a dead link and also initialized every product scene against the wrong
+  // part of the page. Reset before paint; real hash routes still own their
+  // target and are deliberately left alone.
+  useIsoLayoutEffect(() => {
+    if (typeof window === 'undefined' || window.location.hash) return;
+
+    // Browsers may apply their saved position *after* React's layout effects
+    // during a reload. Manual restoration plus two paint-boundary resets keeps
+    // a direct `/products` load at its masthead instead of snapping back to the
+    // previous page-bottom position a frame later.
+    window.history.scrollRestoration = 'manual';
+    const reset = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    reset();
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      reset();
+      secondFrame = requestAnimationFrame(reset);
+    });
+    window.addEventListener('pageshow', reset);
+
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
+      window.removeEventListener('pageshow', reset);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const scrollDriver: { current?: Lenis } = {};
+
+    // Reset as soon as an ordinary cross-page marketing link is activated,
+    // before Next swaps the route. This prevents the outgoing Lenis target from
+    // repainting the old scroll position during the transition. Hash links stay
+    // on the anchor path below, and modified/new-tab clicks keep native browser
+    // behaviour.
+    const onRouteClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const link = (e.target as HTMLElement | null)?.closest('a[href]') as HTMLAnchorElement | null;
+      if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+
+      const destination = new URL(link.href, window.location.href);
+      const current = new URL(window.location.href);
+      if (
+        destination.origin !== current.origin ||
+        destination.hash ||
+        (destination.pathname === current.pathname && destination.search === current.search)
+      ) {
+        return;
+      }
+
+      scrollDriver.current?.stop();
+      scrollDriver.current?.scrollTo(0, { immediate: true, force: true });
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+    document.addEventListener('click', onRouteClick, true);
 
     // Reduced motion: no Lenis at all. Scenes still mount (they render their
     // settled end state), scrolling is native, nothing is interpolated.
     if (prefersReducedMotion) {
       ScrollTrigger.refresh();
-      return;
+      return () => document.removeEventListener('click', onRouteClick, true);
     }
 
     const lenis = new Lenis({
@@ -76,6 +135,7 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
         return !!node.closest('[role="dialog"], [data-radix-popper-content-wrapper]');
       },
     });
+    scrollDriver.current = lenis;
 
     // 1. Lenis publishes scroll → ScrollTrigger recomputes. Without this,
     //    ScrollTrigger samples window.scrollY on its own schedule and drifts
@@ -116,11 +176,14 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
 
     return () => {
       cancelAnimationFrame(refreshId);
+      document.removeEventListener('click', onRouteClick, true);
       if (onAnchorClick) document.removeEventListener('click', onAnchorClick);
       lenis.off('scroll', ScrollTrigger.update);
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33); // restore GSAP's documented default
+      lenis.stop();
       lenis.destroy();
+      scrollDriver.current = undefined;
     };
   }, [anchors]);
 

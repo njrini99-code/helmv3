@@ -489,7 +489,7 @@ function operateBoard(
   if (cutRule) gsap.set(cutRule, { scaleX: 0, transformOrigin: 'left center' });
   if (cutLabel) gsap.set(cutLabel, { autoAlpha: 0 });
   if (locked) gsap.set(locked, { autoAlpha: 0 });
-  gsap.set(nodes, { scale: 0, transformOrigin: 'center', autoAlpha: 0 });
+  if (nodes.length) gsap.set(nodes, { scale: 0, transformOrigin: 'center', autoAlpha: 0 });
   links.forEach((l) => l.readout && gsap.set(l.readout, { autoAlpha: 0, y: 10 }));
 
   // ── Beat 1 · THE CUT. Anchored to the qualifier tile itself, because that is
