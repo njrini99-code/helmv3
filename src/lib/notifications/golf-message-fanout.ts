@@ -42,6 +42,24 @@ export async function notifyGolfMessageRecipients(
 
     const recipientUserIds = otherParticipants.map(p => p.user_id);
 
+    // The recipient lookup MUST use the service-role client.
+    //
+    // `public.users` has exactly two SELECT policies — `users_select_own`
+    // (auth.uid() = id) and `admin_read_all` (is_admin()). A coach reading a
+    // player's row satisfies neither, so under the caller's RLS-scoped client
+    // this returned `[]` — not an error, not null, just nothing. Every branch
+    // below then mapped over an empty array and the whole fan-out became a
+    // no-op: no email, no push, no bell. In production that meant 31 golf
+    // messages produced exactly 0 notifications, silently, for months, because
+    // the outer try/catch has nothing to catch.
+    //
+    // This is not a privilege widening. `recipientUserIds` comes from the
+    // participant query above, which IS RLS-scoped to the sender — so we only
+    // ever resolve emails for users already proven to share a conversation
+    // with them. The admin client is used for the narrowest possible read
+    // (id + email for that exact id list), never for authorization.
+    const adminClient = createAdminClient();
+
     // Batch every lookup into ONE round-trip of parallel queries: sender name
     // (coach → player → email fallback) and all recipient emails via a single
     // .in() instead of sequential per-recipient fetches.
@@ -49,12 +67,12 @@ export async function notifyGolfMessageRecipients(
       { data: senderCoach },
       { data: senderPlayer },
       { data: senderUser },
-      { data: recipientProfiles },
+      { data: recipientProfiles, error: recipientLookupError },
     ] = await Promise.all([
       supabase.from('golf_coaches').select('full_name').eq('user_id', senderId).maybeSingle(),
       supabase.from('golf_players').select('first_name, last_name').eq('user_id', senderId).maybeSingle(),
       supabase.from('users').select('email').eq('id', senderId).maybeSingle(),
-      supabase.from('users').select('id, email').in('id', recipientUserIds),
+      adminClient.from('users').select('id, email').in('id', recipientUserIds),
     ]);
 
     const senderName = senderCoach?.full_name
@@ -62,7 +80,28 @@ export async function notifyGolfMessageRecipients(
       || senderUser?.email
       || 'Someone';
 
-    if (!recipientProfiles) return;
+    // `[]` is truthy. The previous guard was `if (!recipientProfiles) return;`,
+    // which let an empty array straight through into three `.map()` calls that
+    // each did nothing — the failure mode that hid this bug. An empty list here
+    // now means something is genuinely wrong (participants exist, but none of
+    // them resolve to a user row), so it is LOUD rather than a silent return.
+    if (!recipientProfiles || recipientProfiles.length === 0) {
+      // Distinguish the two causes. supabase-js RESOLVES network/Postgrest
+      // failures as { data: null, error } rather than throwing, so a genuine
+      // query failure never reaches the outer catch — reporting it as "0 user
+      // rows" would destroy the only diagnostic and send an on-call engineer
+      // hunting a data anomaly that does not exist. A true 0-row result is
+      // itself near-impossible anyway (participants.user_id is FK'd to
+      // public.users ON DELETE CASCADE), so this branch almost always means
+      // the query broke.
+      await logServerError(
+        recipientLookupError
+          ? `[notifyGolfMessageRecipients] Recipient lookup FAILED for ${recipientUserIds.length} participant(s): ${recipientLookupError.message}`
+          : `[notifyGolfMessageRecipients] ${recipientUserIds.length} participant(s) resolved to 0 user rows — no notification sent`,
+        { action: 'notifications.notifyGolfMessageRecipients' },
+      );
+      return;
+    }
 
     // Email notifications
     await Promise.allSettled(
@@ -97,11 +136,18 @@ export async function notifyGolfMessageRecipients(
       message: previewText,
       action_url: `/golf/dashboard/messages?conversation=${conversationId}`,
     }));
-    // Use admin client to bypass RLS — inserting notifications for other users
-    const adminClient = createAdminClient();
-    await adminClient
+    // Reuses the admin client created above — inserting bell rows for OTHER
+    // users needs RLS bypass. The error was previously discarded, so a failed
+    // insert looked identical to a successful one.
+    const { error: inAppError } = await adminClient
       .from('golf_calendar_notifications')
       .insert(inAppNotifs);
+    if (inAppError) {
+      await logServerError(
+        `[notifyGolfMessageRecipients] In-app notification insert failed: ${inAppError.message}`,
+        { action: 'notifications.notifyGolfMessageRecipients' },
+      );
+    }
   } catch (notifErr) {
     // Never block message delivery on notification failure
     await logServerError(`[notifyGolfMessageRecipients] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'notifications.notifyGolfMessageRecipients' });

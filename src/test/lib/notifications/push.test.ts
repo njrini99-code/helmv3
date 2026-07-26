@@ -330,3 +330,136 @@ describe('sendPushNotification — preference routing (coachhelm_insight / quiet
     expect(fromMock).toHaveBeenCalledWith('device_tokens');
   });
 });
+
+describe('sendPushNotification — deployed-vs-repo edge-function drift', () => {
+  beforeEach(() => {
+    getUserNotificationPreferencesMock.mockClear();
+    logServerEventMock.mockClear();
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://xyz.supabase.co');
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-role-key');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /**
+   * The function ACTUALLY deployed to production (slug send-apns-push, v5)
+   * returns only `{ success, error, apnsStatus }` — the string
+   * "shouldDeactivateToken" does not appear in it, even though the copy in
+   * this repo returns it. So the flag was permanently `undefined` and no
+   * token was ever deactivated: production had a token at failed_count 364
+   * still `active: true`, re-sent to by the hourly cron forever.
+   *
+   * Pruning must therefore key off `apnsStatus` as well, so it works against
+   * both versions without requiring an edge-function redeploy first.
+   */
+  it('deactivates on apnsStatus 410 even when shouldDeactivateToken is absent (deployed shape)', async () => {
+    const updateSpy = vi.fn();
+    const fromMock = makeDeviceTokensFromMock({
+      tokens: [{ token: 'dead-token-deployed-shape', platform: 'ios' }],
+      currentFailedCount: 364,
+      updateSpy,
+    });
+    const invokeMock = makeFunctionsInvokeMock(
+      new Response(
+        JSON.stringify({ success: false, error: 'APNs error: Unregistered', apnsStatus: 410 }),
+        { status: 410 },
+      ),
+    );
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
+    }));
+
+    const { sendPushNotification } = await import('@/lib/notifications/push');
+    await sendPushNotification('new_message', 'user-1', { senderName: 'Coach', preview: 'Hi' });
+
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ active: false, failed_count: 365 }),
+    );
+  });
+
+  it('deactivates on a 400 whose REASON is BadDeviceToken', async () => {
+    const updateSpy = vi.fn();
+    const fromMock = makeDeviceTokensFromMock({
+      tokens: [{ token: 'bad-device-token-abc', platform: 'ios' }],
+      currentFailedCount: 2,
+      updateSpy,
+    });
+    const invokeMock = makeFunctionsInvokeMock(
+      new Response(
+        JSON.stringify({ success: false, error: 'BadDeviceToken', apnsStatus: 400 }),
+        { status: 400 },
+      ),
+    );
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
+    }));
+
+    const { sendPushNotification } = await import('@/lib/notifications/push');
+    await sendPushNotification('new_message', 'user-1', { senderName: 'Coach', preview: 'Hi' });
+
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ active: false }));
+  });
+
+  /**
+   * THE ONE THAT MATTERS. Apple returns 400 for ~14 reasons, most of which are
+   * CONFIGURATION faults (BadTopic, MissingTopic, PayloadEmpty...). A config
+   * fault is identical for every token in the sweep, so matching on the bare
+   * 400 status would deactivate every live device in the batch the first time
+   * someone mistyped a bundle id. An earlier draft of this very fix did that.
+   */
+  it('does NOT deactivate on a 400 whose reason is a CONFIG fault (BadTopic)', async () => {
+    const updateSpy = vi.fn();
+    const fromMock = makeDeviceTokensFromMock({
+      tokens: [{ token: 'perfectly-live-token-1', platform: 'ios' }],
+      currentFailedCount: 0,
+      updateSpy,
+    });
+    const invokeMock = makeFunctionsInvokeMock(
+      new Response(
+        JSON.stringify({ success: false, error: 'BadTopic', apnsStatus: 400 }),
+        { status: 400 },
+      ),
+    );
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
+    }));
+
+    const { sendPushNotification } = await import('@/lib/notifications/push');
+    await sendPushNotification('new_message', 'user-1', { senderName: 'Coach', preview: 'Hi' });
+
+    const payload = updateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toMatchObject({ failed_count: 1 });
+    expect(payload).not.toHaveProperty('active');
+  });
+
+  /**
+   * The other half of the contract, and the one that matters for not making
+   * things worse: a TRANSIENT Apple status must never deactivate a live
+   * token. 429/500/503 are retryable; only 410/400 mean "this token is dead".
+   */
+  it('does NOT deactivate on a transient apnsStatus (503) — only increments failed_count', async () => {
+    const updateSpy = vi.fn();
+    const fromMock = makeDeviceTokensFromMock({
+      tokens: [{ token: 'live-token-transient-fail', platform: 'ios' }],
+      currentFailedCount: 1,
+      updateSpy,
+    });
+    const invokeMock = makeFunctionsInvokeMock(
+      new Response(JSON.stringify({ success: false, apnsStatus: 503 }), { status: 503 }),
+    );
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
+    }));
+
+    const { sendPushNotification } = await import('@/lib/notifications/push');
+    await sendPushNotification('new_message', 'user-1', { senderName: 'Coach', preview: 'Hi' });
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    const payload = updateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toMatchObject({ failed_count: 2 });
+    expect(payload).not.toHaveProperty('active');
+  });
+});

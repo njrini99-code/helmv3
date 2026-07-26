@@ -4,6 +4,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import {
   formatSafeErrorResponse,
@@ -279,8 +280,34 @@ export async function createConversation({
   // Create new conversation
   const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
 
+  // The id is generated HERE rather than read back from the insert.
+  //
+  // This used to be `.insert(insertData).select('id').single()`, i.e.
+  // `INSERT ... RETURNING id`. RETURNING makes Postgres apply the SELECT
+  // policy to the new row on top of the INSERT check, and a brand-new 1:1
+  // conversation cannot satisfy `golf_conversations_select_v2`:
+  //
+  //   id IN user_conversation_ids(auth.uid())          -- false: the
+  //       participant rows are inserted on the NEXT statement, so the creator
+  //       is not yet a participant of the row they just created
+  //   (is_team_chat OR is_team_channel) AND is_golf_team_coach(team_id)
+  //                                                    -- false: a DM sets
+  //       neither flag (only createGolfTeamBroadcast does, which is exactly
+  //       why broadcasts worked and coach→player DMs did not)
+  //
+  // All disjuncts false → RETURNING denied → the statement fails 42501 with
+  // "new row violates row-level security policy", which reads like the INSERT
+  // was rejected. It was not; the INSERT check passes fine. Verified against
+  // production: identical row, identical RETURNING, is_team_chat=true
+  // succeeds and unset fails.
+  //
+  // Supplying the id means no RETURNING, so no SELECT policy is consulted.
+  // Nothing about who may create a conversation changes.
+  const conversationId = crypto.randomUUID();
+
   // Build insert data - golf requires team_id
   const insertData: Record<string, unknown> = {
+    id: conversationId,
     created_by: user.id,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -295,13 +322,11 @@ export async function createConversation({
     insertData.team_id = teamId;
   }
 
-  const { data: newConversation, error: convError } = await supabase
+  const { error: convError } = await supabase
     .from(conversationsTable as any)
-    .insert(insertData)
-    .select('id')
-    .single() as { data: { id: string } | null; error: SupabaseError | null };
+    .insert(insertData) as { error: SupabaseError | null };
 
-  if (convError || !newConversation) {
+  if (convError) {
     await logServerError(`[createConversation] Conversation create error: ${convError?.message ?? 'unknown'}`, {
       action: 'messages.createConversation',
       metadata: {
@@ -324,19 +349,58 @@ export async function createConversation({
     throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
   }
 
-  const conversationId = newConversation.id;
+  // Participants go in TWO statements, self first. The order is load-bearing.
+  //
+  // `golf_participants_insert_v2` allows a row when either
+  //   (a) user_id = auth.uid(), or
+  //   (b) EXISTS (SELECT 1 FROM golf_conversations gc
+  //               WHERE gc.id = conversation_id AND gc.created_by = auth.uid())
+  //
+  // Adding the OTHER person needs (b) — and that subquery reads
+  // `golf_conversations`, so it is itself subject to that table's SELECT
+  // policy. For a brand-new DM that policy denies the row (see the note on
+  // the insert above), so the EXISTS finds nothing and the insert is refused:
+  // "new row violates row-level security policy for table
+  // golf_conversation_participants". Batching everyone into one statement
+  // therefore fails as a whole, which is the second half of this bug and the
+  // reason removing RETURNING alone was not enough.
+  //
+  // Inserting SELF first goes through branch (a), which has no subquery at
+  // all. That single row then puts the conversation into
+  // user_conversation_ids(auth.uid()), so the SELECT policy's first disjunct
+  // now passes, the EXISTS in (b) can finally see the row, and everyone else
+  // inserts normally.
+  //
+  // SCOPE — this is verified against production for GOLF ONLY. This function
+  // is shared with baseball, and baseball is NOT fixed by it: its
+  // `baseball_conversations_select` policy is a raw inline EXISTS against
+  // baseball_conversation_participants rather than golf's SECURITY DEFINER
+  // `user_conversation_ids()` wrapper, so the self-participant insert below
+  // dies with 42P17 "infinite recursion detected in policy" instead. Baseball
+  // DM creation was already 100% broken before this change (it failed one
+  // step earlier, with 42501), so this is not a regression — but it is also
+  // not a fix, and the failure is now a more confusing error. Repairing it
+  // needs a migration wrapping baseball's policy in a SECURITY DEFINER
+  // function the way golf's already is; that is deliberately not done here.
+  const otherParticipantIds = [...new Set(participantUserIds.filter(Boolean))].filter(
+    id => id !== user.id,
+  );
 
-  // Add all participants (including current user)
-  const allParticipantIds = [...new Set([user.id, ...participantUserIds].filter(Boolean))];
-  const participantInserts = allParticipantIds.map(userId => ({
-    conversation_id: conversationId,
-    user_id: userId,
-    joined_at: new Date().toISOString(),
-  }));
-
-  const { error: participantsError } = await supabase
+  const { error: selfParticipantError } = await supabase
     .from(participantsTable as any)
-    .insert(participantInserts);
+    .insert([{ conversation_id: conversationId, user_id: user.id, joined_at: new Date().toISOString() }]);
+
+  const { error: othersParticipantError } = otherParticipantIds.length
+    ? await supabase.from(participantsTable as any).insert(
+        otherParticipantIds.map(userId => ({
+          conversation_id: conversationId,
+          user_id: userId,
+          joined_at: new Date().toISOString(),
+        })),
+      )
+    : { error: null };
+
+  const participantsError = selfParticipantError ?? othersParticipantError;
 
   if (participantsError) {
     await logServerError(`[createConversation] Participants insert error: ${participantsError.message}`, {
@@ -356,7 +420,30 @@ export async function createConversation({
       sport,
       userId: user.id,
     });
-    await supabase.from(conversationsTable as any).delete().eq('id', conversationId);
+    // Roll back the conversation via the SERVICE-ROLE client, not the caller's.
+    //
+    // Neither golf_conversations nor baseball_conversations has a DELETE
+    // policy at all, so under RLS this delete matched zero rows and reported
+    // no error — the rollback has never actually worked. That was masked
+    // before, because the conversation INSERT itself failed and there was
+    // nothing to clean up. Now that the insert succeeds, a failure on the
+    // participant statements would strand a conversation the recipient can
+    // never see, so the rollback has to be real.
+    //
+    // Scoped to the id THIS request just generated, so it can only ever
+    // remove the row we created. Participants and messages cascade
+    // (…_conversation_id_fkey ON DELETE CASCADE), so the self-participant row
+    // written a moment ago goes with it.
+    const { error: rollbackError } = await createAdminClient()
+      .from(conversationsTable as any)
+      .delete()
+      .eq('id', conversationId);
+    if (rollbackError) {
+      await logServerError(
+        `[createConversation] Rollback of orphaned conversation ${conversationId} failed: ${rollbackError.message}`,
+        { action: 'messages.createConversation' },
+      );
+    }
     throw new Error(`Failed to add participants: ${participantsError.message}`);
   }
 
