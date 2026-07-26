@@ -218,6 +218,7 @@ export function CoachHelmChat({
             onApprove={chat.approve}
             onDeny={chat.deny}
             onSuggestion={chat.send}
+            onStop={chat.stop}
             playersByName={playersByName}
           />
 

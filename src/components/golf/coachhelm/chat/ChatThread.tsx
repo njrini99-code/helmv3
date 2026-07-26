@@ -28,6 +28,7 @@ import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/acti
 import { EvidenceRenderer } from './EvidenceVisuals';
 import { ActionProposalCard, ActionReceiptCard } from './ActionCards';
 import { AssistantProse } from './AssistantProse';
+import { TaskActivity, type TaskStep } from './TaskActivity';
 
 /** The readable measure for analytical prose. Charts are allowed past it. */
 const PROSE_WIDTH = 'max-w-[68ch]';
@@ -41,6 +42,8 @@ export interface ChatThreadProps {
   onApprove: (approvalId: string) => void;
   onDeny: (approvalId: string) => void;
   onSuggestion?: (text: string) => void;
+  /** Cancels the streaming turn, offered inside the activity surface. */
+  onStop?: () => void;
   /** Roster, so @-mentions in prose can link to the right player. */
   playersByName?: Record<string, string>;
   className?: string;
@@ -52,37 +55,56 @@ export function ChatThread({
   onApprove,
   onDeny,
   onSuggestion,
+  onStop,
   playersByName,
   className,
 }: ChatThreadProps) {
+  const lastIndex = messages.length - 1;
+  const streamingTurn = messages[lastIndex]?.role === 'assistant';
+
   return (
     <div className={cn('flex flex-col gap-8', className)}>
-      {messages.map((message) => (
+      {messages.map((message, i) => (
         <MessageTurn
           key={message.id}
           message={message}
+          // Only the final assistant turn can be in flight. Passing `busy` to
+          // every turn would put a live activity surface on answers that
+          // finished ten minutes ago.
+          busy={busy && i === lastIndex && message.role === 'assistant'}
           onApprove={onApprove}
           onDeny={onDeny}
           onSuggestion={onSuggestion}
+          onStop={onStop}
           playersByName={playersByName}
         />
       ))}
-      {busy && <ThinkingLine />}
+      {/*
+        Only before the first token comes back. Once the assistant turn exists,
+        its own TaskActivity owns the "working" state — the two were previously
+        rendered together, so a coach could see "Reading 28 recorded rounds"
+        with "Thinking" directly underneath it.
+      */}
+      {busy && !streamingTurn && <ThinkingLine />}
     </div>
   );
 }
 
 function MessageTurn({
   message,
+  busy,
   onApprove,
   onDeny,
   onSuggestion,
+  onStop,
   playersByName,
 }: {
   message: UIMessage;
+  busy: boolean;
   onApprove: (id: string) => void;
   onDeny: (id: string) => void;
   onSuggestion?: (text: string) => void;
+  onStop?: () => void;
   playersByName?: Record<string, string>;
 }) {
   const parts = (message.parts ?? []) as Part[];
@@ -112,30 +134,49 @@ function MessageTurn({
   }
 
   // ── Assistant ──────────────────────────────────────────────────────────
-  // Progress lines are transient scaffolding: once the evidence they were
-  // narrating has arrived, showing them too would double the height of every
-  // answer with information that is no longer true.
-  const evidence = parts.filter((p) => p.type === 'data-evidence');
-  const proposals = parts.filter((p) => p.type === 'data-action-proposal');
-  const receipts = parts.filter((p) => p.type === 'data-action-receipt');
-  const progress = parts.filter((p) => p.type === 'data-progress');
-  const showProgress = evidence.length === 0 && proposals.length === 0 && receipts.length === 0;
+  //
+  // The turn is assembled in one order, every time:
+  //
+  //   1. what CoachHelm did      — the activity surface / its receipt
+  //   2. the takeaway            — the first paragraph, at lead weight
+  //   3. the evidence            — metrics, then charts
+  //   4. the interpretation      — the paragraphs that follow
+  //   5. what to do next         — proposals, receipts, follow-ups
+  //
+  // Steps 2–5 are NOT reordered: they are rendered in the order the model
+  // wrote them. Hoisting a chart above the sentence that introduces it breaks
+  // prose that says "the chart below" and changes the argument the answer is
+  // making. Hierarchy is carried by weight and rhythm instead — the opening
+  // paragraph is set larger, and everything after it is body copy.
+  const steps: TaskStep[] = parts
+    .filter((p) => p.type === 'data-progress')
+    .map((p, i) => ({
+      id: String(p.id ?? `step-${i}`),
+      label: String((p.data as { label?: string } | undefined)?.label ?? 'Working'),
+    }));
+
+  const envelopes = parts
+    .filter((p) => p.type === 'data-evidence')
+    .map((p) => (p.data as { envelope?: ToolEnvelope } | undefined)?.envelope)
+    .filter((e): e is ToolEnvelope => Boolean(e));
+
+  // The first non-empty text block is the takeaway. Tracked while mapping
+  // because the model may open with a tool call rather than a sentence.
+  let leadTaken = false;
 
   return (
     <article className="flex flex-col gap-4">
-      {showProgress &&
-        progress.slice(-1).map((p, i) => {
-          const data = p.data as { label?: string } | undefined;
-          return <ProgressLine key={i} label={data?.label ?? 'Working'} />;
-        })}
+      <TaskActivity steps={steps} busy={busy} envelopes={envelopes} onStop={onStop} />
 
       {parts.map((part, index) => {
         if (part.type === 'text') {
           const text = String(part.text ?? '');
           if (!text.trim()) return null;
+          const isLead = !leadTaken;
+          leadTaken = true;
           return (
             <div key={index} className={PROSE_WIDTH}>
-              <AssistantProse text={text} playersByName={playersByName} />
+              <AssistantProse text={text} playersByName={playersByName} lead={isLead} />
             </div>
           );
         }

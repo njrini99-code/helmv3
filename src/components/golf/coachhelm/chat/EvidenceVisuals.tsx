@@ -26,20 +26,19 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  Cell,
-  LabelList,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { cn } from '@/lib/utils';
+import {
+  BarCompare,
+  computeSeriesTrend,
+  InstrumentTable,
+  InstrumentTableToggle,
+  MakeCurve,
+  Sparkline,
+  StrokesGainedTornado,
+  TrendChart as FairwayTrendChart,
+  TrendChip,
+} from '@/components/fairway/charts';
+import type { ChartTableData } from '@/components/fairway/charts';
 import type {
   Measurement,
   MeasurementSeries,
@@ -106,6 +105,17 @@ function formatFreshness(iso: string): string {
  * Deliberately always present and always in the same place. A coach learns
  * where to look for "how much data is this?" once, and then it is free.
  */
+export function provenanceText(
+  win: string | null,
+  sampleSize: number,
+  sampleUnit: string,
+  asOf: string,
+): string {
+  return [win, sampleSize > 0 ? `${sampleSize} ${sampleUnit}` : null, `computed ${formatFreshness(asOf)}`]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function ProvenanceLine({
   window: win,
   sampleSize,
@@ -117,13 +127,85 @@ function ProvenanceLine({
   sampleUnit: string;
   asOf: string;
 }) {
-  const bits = [
-    win,
-    sampleSize > 0 ? `${sampleSize} ${sampleUnit}` : null,
-    `computed ${formatFreshness(asOf)}`,
-  ].filter(Boolean);
   return (
-    <p className="font-fw-sans text-caption text-text-tertiary">{bits.join(' · ')}</p>
+    <p className="font-fw-sans text-caption text-text-tertiary">
+      {provenanceText(win, sampleSize, sampleUnit, asOf)}
+    </p>
+  );
+}
+
+/**
+ * Header + bare instrument + table readout, with NO card of its own.
+ *
+ * `ChartFrame` is the right shell for a Recharts chart, which is a naked SVG.
+ * It is the wrong shell for the drill-hero instruments (`MakeCurve`,
+ * `SprayField`, `BandHistogram`): those already carry their own card, and they
+ * size themselves by aspect ratio. Putting one inside a ChartFrame produced a
+ * card inside a card AND overflowed it — ChartFrame gives its child a fixed
+ * `height` on an `absolute inset-0` box, so an aspect-ratio instrument taller
+ * than that height painted straight over the metrics panel underneath it.
+ *
+ * This is the matching wrapper: the same header vocabulary and the same "view
+ * as table" affordance, minus the box the instrument already brings.
+ */
+function InstrumentFigure({
+  title,
+  overline,
+  subtitle,
+  ariaLabel,
+  tableData,
+  children,
+}: {
+  title: string;
+  overline?: string;
+  subtitle?: string;
+  ariaLabel: string;
+  tableData?: ChartTableData;
+  children: React.ReactNode;
+}) {
+  const [showTable, setShowTable] = React.useState(false);
+  const hasTable = Boolean(tableData && tableData.rows.length > 0);
+
+  return (
+    <figure className="flex flex-col gap-2.5">
+      <figcaption className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {overline && (
+            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+              {overline}
+            </p>
+          )}
+          <p className="font-fw-sans text-body-sm font-semibold text-text-primary">{title}</p>
+          {subtitle && (
+            <p className="font-fw-sans text-caption text-text-tertiary">{subtitle}</p>
+          )}
+        </div>
+        {hasTable && (
+          // `shrink-0` + `nowrap`: at 390px the flex row squeezed the toggle
+          // until "View as table" broke across two lines beside a title that
+          // still had room.
+          <span className="shrink-0 whitespace-nowrap">
+            <InstrumentTableToggle show={showTable} onToggle={() => setShowTable((v) => !v)} />
+          </span>
+        )}
+      </figcaption>
+      {showTable && tableData ? (
+        <InstrumentTable data={tableData} />
+      ) : (
+        // The same containment ChartFrame applies, and for the same reason: an
+        // instrument's SVG carries `role="img"` while hosting focusable nodes
+        // inside it, which axe flags as `nested-interactive` (serious) and a
+        // keyboard user experiences as Tab landing on something no screen
+        // reader can describe. `inert` — not merely aria-hidden — takes the
+        // subtree out of BOTH the tab order and the a11y tree; the table
+        // toggle above is the accessible readout.
+        <div role="img" aria-label={ariaLabel} className="relative w-full">
+          <div aria-hidden inert className="w-full">
+            {children}
+          </div>
+        </div>
+      )}
+    </figure>
   );
 }
 
@@ -174,7 +256,14 @@ export function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
  * The pattern is the standard one for related KPIs — a calm row, detail on
  * demand — rather than a vertical wall of equally-weighted cards.
  */
-export function MetricPanel({ measurements }: { measurements: Measurement[] }) {
+export function MetricPanel({
+  measurements,
+  series = [],
+}: {
+  measurements: Measurement[];
+  /** Same-metric history, when the envelope carried it — drives the sparkline. */
+  series?: MeasurementSeries[];
+}) {
   const shown = measurements.filter((m) => m.value !== null).slice(0, 6);
   if (shown.length === 0) return null;
 
@@ -222,6 +311,19 @@ export function MetricPanel({ measurements }: { measurements: Measurement[] }) {
             <p className="mt-1.5 font-fw-mono text-h2 font-semibold tabular-nums leading-none text-text-primary">
               {formatValue(m.value, m.unit)}
             </p>
+            {/*
+              The metric's own history, when the same envelope carried it: a
+              sparkline and a signed delta, both derived from ONE call to the
+              shared classifier so the line's colour and the chip's verdict can
+              never disagree.
+
+              `goodDirection` comes off the measurement's own `direction` field.
+              That field has been in the envelope all along and nothing was
+              reading it, so putts-per-round — where DOWN is good — was drawn
+              with the same up-is-good assumption as make rate. A chart that
+              calls an improvement a decline is worse than no chart.
+            */}
+            <MetricTrend measurement={m} series={series} />
             {/* A reference label under the figure: what it is out of, or what
                 it is measured against. This is where a bare number becomes a
                 judgement — 27% means nothing until you know it is 27% of 270. */}
@@ -256,6 +358,66 @@ export function MetricPanel({ measurements }: { measurements: Measurement[] }) {
   );
 }
 
+/**
+ * `direction` → the chart vocabulary's `goodDirection`.
+ *
+ * Null means the tool did not say, and the honest default for an unlabelled
+ * metric is the conventional one rather than a guess dressed as a verdict.
+ */
+function goodDirectionOf(direction: Measurement['direction']): 'up' | 'down' {
+  return direction === 'lower_better' ? 'down' : 'up';
+}
+
+/**
+ * A sparkline + signed delta for one metric, when its history is in the same
+ * envelope.
+ *
+ * Rendered only when there are at least three readings — the same threshold the
+ * full trend chart holds to. A two-point sparkline is a line segment, and it
+ * would carry a trend verdict chip next to it, which is precisely the "his
+ * putting is falling, off two rounds" failure the file's rule 1 exists to stop.
+ */
+function MetricTrend({
+  measurement: m,
+  series,
+}: {
+  measurement: Measurement;
+  series: MeasurementSeries[];
+}) {
+  const history = series.find(
+    (s) => s.metric_id === m.metric_id && s.entity.id === m.entity.id && s.points.length >= MIN_POINTS_FOR_CHART,
+  );
+  if (!history) return null;
+
+  const values = history.points.map((p) => p.value).filter((v) => Number.isFinite(v));
+  if (values.length < MIN_POINTS_FOR_CHART) return null;
+
+  const goodDirection = goodDirectionOf(m.direction);
+
+  // ONE call. The sparkline's colour and the chip's verdict both read this
+  // result, so they cannot disagree — computing a delta separately for each is
+  // the documented way this pair drifts apart.
+  const trend = computeSeriesTrend(values, { goodDirection });
+  if (!trend) return null;
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <Sparkline
+        data={values}
+        direction={trend.direction}
+        goodDirection={goodDirection}
+        label={m.metric_label}
+        width={52}
+        height={16}
+      />
+      <TrendChip
+        direction={trend.direction}
+        label={`${trend.value > 0 ? '+' : ''}${formatValue(trend.value, m.unit)}`}
+      />
+    </div>
+  );
+}
+
 /** The denominator, or the benchmark — whichever this metric actually has. */
 function MetricReference({ measurement: m }: { measurement: Measurement }) {
   if (m.denominator !== null && m.unit === 'percent' && m.value !== null) {
@@ -275,97 +437,9 @@ function MetricReference({ measurement: m }: { measurement: Measurement }) {
   return null;
 }
 
-export function MetricBlock({ measurement }: { measurement: Measurement }) {
-  const m = measurement;
-  return (
-    <div className="rounded-card border border-border-subtle bg-surface p-4">
-      <p className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
-        {m.metric_label}
-      </p>
-      <p className="mt-1 flex items-baseline gap-2">
-        <span className="font-fw-mono text-h2 font-semibold tabular-nums leading-none text-text-primary">
-          {formatValue(m.value, m.unit)}
-        </span>
-        {m.denominator !== null && m.unit === 'percent' && m.value !== null && (
-          <span className="font-fw-sans text-caption text-text-tertiary">
-            {Math.round((m.value / 100) * m.denominator)} of {m.denominator}
-          </span>
-        )}
-      </p>
-      <div className="mt-2">
-        <ProvenanceLine
-          window={formatWindow(m.window_start, m.window_end)}
-          sampleSize={m.sample_size}
-          sampleUnit={m.sample_unit}
-          asOf={m.as_of}
-        />
-      </div>
-      {m.coverage_note && (
-        <p className="mt-2 font-fw-sans text-caption text-text-tertiary">{m.coverage_note}</p>
-      )}
-      {m.benchmark && !m.benchmark.omitted_for_cohort && (
-        <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
-          {m.benchmark.source} ({m.benchmark.version}): {formatValue(m.benchmark.value, m.unit)}
-        </p>
-      )}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Trend chart
 // ---------------------------------------------------------------------------
-
-interface TrendPoint {
-  label: string;
-  value: number;
-  sample: number;
-}
-
-interface EndpointLabelProps {
-  x?: number | string;
-  y?: number | string;
-  value?: number | string;
-  index?: number;
-}
-
-/**
- * Print the first and last reading on the line itself.
- *
- * Direct labelling, rather than making the reader trace a point back to an axis
- * — the axis is gone for exactly this reason. Interior points stay unlabelled:
- * labelling all five would collide at this width and would re-clutter what
- * removing the grid just cleared.
- */
-function EndpointLabel({
-  x,
-  y,
-  value,
-  index,
-  total,
-  unit,
-}: EndpointLabelProps & { total: number; unit: Measurement['unit'] }) {
-  const isFirst = index === 0;
-  const isLast = index === total - 1;
-  if ((!isFirst && !isLast) || typeof value !== 'number') return null;
-  const cx = Number(x);
-  const cy = Number(y);
-  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
-
-  return (
-    <text
-      x={cx}
-      y={cy - 9}
-      textAnchor={isFirst ? 'start' : 'end'}
-      fontSize={11}
-      fontWeight={600}
-      className="font-fw-mono"
-      fill={isLast ? 'var(--fw-color-text-primary)' : 'var(--fw-color-text-tertiary)'}
-    >
-      {formatValue(value, unit)}
-    </text>
-  );
-}
 
 /**
  * Movement over time for one metric.
@@ -375,12 +449,11 @@ function EndpointLabel({
  * one invites reading every wiggle as a story.
  */
 export function TrendChart({ series }: { series: MeasurementSeries }) {
-  const points: TrendPoint[] = series.points.map((p) => ({
-    label: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(
+  const points = series.points.map((p) => ({
+    x: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(
       new Date(`${p.at.slice(0, 10)}T12:00:00Z`),
     ),
-    value: p.value,
-    sample: p.sample_size,
+    y: p.value,
   }));
 
   if (points.length < MIN_POINTS_FOR_CHART) {
@@ -388,129 +461,36 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
     return <SeriesAsTable series={series} />;
   }
 
-  const values = points.map((p) => p.value);
+  const values = series.points.map((p) => p.value);
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const pad = Math.max((max - min) * 0.2, 0.5);
 
-  const summary = `${series.metric_label} for ${series.entity.label} across ${points.length} rounds, from ${formatValue(points[0]!.value, series.unit)} to ${formatValue(points[points.length - 1]!.value, series.unit)}.`;
+  // A real, versioned benchmark beats the series' own mean: "vs PGA Tour" is a
+  // standard, "vs your own average" is a tautology. The mean is the fallback so
+  // the chart always has a reference to read the last point against.
+  const benchmark =
+    series.benchmark && !series.benchmark.omitted_for_cohort
+      ? { value: series.benchmark.value, label: series.benchmark.source }
+      : { value: mean, label: 'avg' };
 
   return (
-    <figure className="rounded-card border border-border-subtle bg-surface p-4">
-      <figcaption className="mb-3">
-        <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-          {series.metric_label}
-          <span className="ml-2 font-normal text-text-tertiary">{series.entity.label}</span>
-          {/* The mean, stated in words next to the title rather than as a label
-              floating on the plot. On the plot it landed on top of the first
-              endpoint label whenever an early round sat near the average —
-              which is most of the time, that being what an average is. */}
-          <span className="ml-2 font-fw-mono font-normal tabular-nums text-text-secondary">
-            avg {formatValue(mean, series.unit)}
-          </span>
-        </p>
-        <ProvenanceLine
-          window={formatWindow(series.window_start, series.window_end)}
-          sampleSize={points.length}
-          sampleUnit="rounds"
-          asOf={series.as_of}
-        />
-      </figcaption>
-
-      {/* The chart is decorative to a screen reader; the sentence below is the
-          accessible equivalent, and it says the same thing. */}
-      <div className="h-[180px] w-full" aria-hidden>
-        <ResponsiveContainer width="100%" height="100%">
-          {/* Real margins now that the Y axis is gone. `left: -18` was pulling
-              the plot under where the axis used to be, which clipped the first
-              endpoint label's minus sign clean off. */}
-          <AreaChart data={points} margin={{ top: 20, right: 28, bottom: 0, left: 26 }}>
-            <defs>
-              <linearGradient id="fw-trend-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--fw-color-accent-500)" stopOpacity={0.22} />
-                <stop offset="100%" stopColor="var(--fw-color-accent-500)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            {/*
-              No grid, no Y axis.
-
-              Both were drawing a lattice around five data points. The Y axis
-              in particular cost 44px of the column to print numbers the reader
-              then had to trace back horizontally — while the values themselves
-              were only available on hover. The mean line is the reference this
-              chart actually needs, and it is labelled in place; the first and
-              last values are printed on the line itself, which is where the
-              question "where did he start and where is he now" is answered.
-            */}
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: 'var(--fw-color-text-tertiary)' }}
-              tickLine={false}
-              axisLine={false}
-              // Roughly five dates, not one per round. Ten rounds printed ten
-              // labels — including the same day twice when two rounds fell on
-              // it — which crowded the axis with dates nobody is reading
-              // individually. The line's shape is the finding; the dates are
-              // there to anchor its ends.
-              interval={Math.max(0, Math.ceil(points.length / 5) - 1)}
-              minTickGap={24}
-            />
-            <YAxis domain={[min - pad, max + pad]} hide />
-            <ReferenceLine y={mean} stroke="var(--fw-color-border-strong)" strokeDasharray="2 4" />
-            <Tooltip
-              cursor={{ stroke: 'var(--fw-color-border-strong)' }}
-              contentStyle={{
-                background: 'var(--fw-color-surface)',
-                border: '1px solid var(--fw-color-border-subtle)',
-                borderRadius: 10,
-                fontSize: 12,
-              }}
-              formatter={(v) => [formatValue(typeof v === 'number' ? v : null, series.unit), series.metric_label]}
-            />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="var(--fw-color-accent-600)"
-              strokeWidth={1.75}
-              fill="url(#fw-trend-fill)"
-              // Fill DOWN from the line, always.
-              //
-              // Recharts fills to y=0 by default. Strokes gained is negative,
-              // so zero sat above every reading and the wash rendered as a
-              // block ABOVE the curve — the shaded region read as the subject
-              // and the line as its edge. Anchoring to the bottom of the domain
-              // makes the fill mean the same thing on every metric, whichever
-              // side of zero it happens to live on.
-              baseValue="dataMin"
-              // Only the endpoints get a dot. A marker on every reading turns a
-              // five-round line into a row of beads and implies each point is
-              // separately meaningful; the shape is the finding, and the two
-              // ends are what the reader is comparing.
-              dot={false}
-              activeDot={{ r: 4 }}
-              isAnimationActive={false}
-            >
-              <LabelList
-                dataKey="value"
-                content={(props) => (
-                  <EndpointLabel
-                    {...(props as EndpointLabelProps)}
-                    total={points.length}
-                    unit={series.unit}
-                  />
-                )}
-              />
-            </Area>
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      <p className="sr-only">{summary}</p>
-      {series.coverage_note && (
-        <p className="mt-2 font-fw-sans text-caption text-text-tertiary">{series.coverage_note}</p>
+    <FairwayTrendChart
+      title={series.metric_label}
+      overline={series.entity.label}
+      subtitle={provenanceText(
+        formatWindow(series.window_start, series.window_end),
+        points.length,
+        'rounds',
+        series.as_of,
       )}
-    </figure>
+      takeaway={`${series.metric_label} for ${series.entity.label}: ${formatValue(
+        values[0]!,
+        series.unit,
+      )} to ${formatValue(values[values.length - 1]!, series.unit)} across ${points.length} rounds.`}
+      data={points}
+      benchmark={benchmark}
+      valueFormatter={(v) => formatValue(v, series.unit)}
+      height={200}
+    />
   );
 }
 
@@ -522,107 +502,79 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
  * Categorical comparison — putting by distance bucket being the case that
  * motivated it.
  *
- * Bars under ten attempts are drawn muted rather than hidden. Hiding them would
- * misrepresent the range the player actually faced; muting says "this is real
- * but thin", which is the honest reading.
+ * A make rate across distance bands is a MAKE CURVE, not a bar chart: it is a
+ * monotonic-ish decay every golf coach already reads by shape, and the sample
+ * behind each band varies wildly (270 attempts inside 3ft, eleven from 25ft+).
+ * `MakeCurve` encodes that sample in the dot radius and draws anything under
+ * the reliability floor hollow, so a thin band cannot pass for a solid one.
+ * That is the honest reading of the same numbers a uniform bar chart flattened.
+ *
+ * Everything else stays a bar comparison, which is what an unordered set of
+ * categories actually is.
  */
 export function BucketChart({ series }: { series: MeasurementSeries }) {
-  const data = series.points.map((p) => ({
+  const points = series.points.map((p) => ({
     label: p.bucket ?? p.at,
     value: p.value,
     sample: p.sample_size,
-    thin: p.sample_size > 0 && p.sample_size < 10,
   }));
 
-  if (data.length === 0) return null;
-  if (data.length < 2) return <SeriesAsTable series={series} />;
+  if (points.length === 0) return null;
+  if (points.length < 2) return <SeriesAsTable series={series} />;
 
-  const summary = data
-    .map((d) => `${d.label}: ${formatValue(d.value, series.unit)} over ${d.sample} attempts`)
-    .join('; ');
+  const subtitle = provenanceText(
+    formatWindow(series.window_start, series.window_end),
+    points.reduce((a, d) => a + d.sample, 0),
+    'attempts',
+    series.as_of,
+  );
+
+  const tableData = {
+    columns: [
+      { key: 'band', label: 'Band' },
+      { key: 'value', label: series.metric_label, numeric: true },
+      { key: 'sample', label: 'Attempts', numeric: true },
+    ],
+    rows: points.map((d) => ({
+      band: d.label,
+      value: formatValue(d.value, series.unit),
+      sample: d.sample,
+    })),
+    caption: `${series.metric_label} by band for ${series.entity.label}.`,
+  };
+
+  // A rate over ordered distance bands → make curve.
+  if (series.unit === 'percent') {
+    return (
+      <InstrumentFigure
+        title={series.metric_label}
+        overline={series.entity.label}
+        subtitle={subtitle}
+        // `metric_label` already reads "Make rate by distance"; appending
+        // "by distance" produced "Make rate by distance by distance for …".
+        ariaLabel={`${series.metric_label} for ${series.entity.label}`}
+        tableData={tableData}
+      >
+        <MakeCurve
+          points={points.map((d) => ({ label: d.label, pct: d.value, n: d.sample }))}
+          ariaLabel={`${series.metric_label} for ${series.entity.label}`}
+        />
+      </InstrumentFigure>
+    );
+  }
 
   return (
-    <figure className="rounded-card border border-border-subtle bg-surface p-4">
-      <figcaption className="mb-3">
-        <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-          {series.metric_label}
-          <span className="ml-2 font-normal text-text-tertiary">{series.entity.label}</span>
-        </p>
-        <ProvenanceLine
-          window={formatWindow(series.window_start, series.window_end)}
-          sampleSize={data.reduce((a, d) => a + d.sample, 0)}
-          sampleUnit="attempts"
-          asOf={series.as_of}
-        />
-      </figcaption>
-
-      <div className="h-[180px] w-full" aria-hidden>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 18, right: 4, bottom: 0, left: 0 }}>
-            {/*
-              Grid and Y axis removed for the same reason as the trend: the
-              value is printed on top of its own bar, so nothing has to be
-              traced back to a scale. What is left is the bars and their labels.
-            */}
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: 'var(--fw-color-text-tertiary)' }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis hide />
-            <Tooltip
-              cursor={{ fill: 'var(--fw-color-surface-sunken)' }}
-              contentStyle={{
-                background: 'var(--fw-color-surface)',
-                border: '1px solid var(--fw-color-border-subtle)',
-                borderRadius: 10,
-                fontSize: 12,
-              }}
-              formatter={(v, _name, item) => [
-                `${formatValue(typeof v === 'number' ? v : null, series.unit)} · ${
-                  ((item as { payload?: { sample?: number } } | undefined)?.payload?.sample ?? 0)
-                } attempts`,
-                series.metric_label,
-              ]}
-            />
-            <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={56} isAnimationActive={false}>
-              {/*
-                `accent-600` at full saturation across every bar made the chart
-                a block of solid green — the strongest colour on a cream page,
-                spent uniformly, so it distinguished nothing. The scale now
-                carries meaning: a thin sample stays visibly lighter (it is real
-                data, so it is never hidden — see the note above), and the rest
-                sit at a weight the labels can be read against.
-              */}
-              {data.map((d, i) => (
-                <Cell
-                  key={i}
-                  fill={d.thin ? 'var(--fw-color-accent-200)' : 'var(--fw-color-accent-500)'}
-                />
-              ))}
-              <LabelList
-                dataKey="value"
-                position="top"
-                offset={6}
-                fontSize={11}
-                fontWeight={600}
-                className="font-fw-mono"
-                fill="var(--fw-color-text-primary)"
-                formatter={(v: unknown) =>
-                  formatValue(typeof v === 'number' ? v : null, series.unit)
-                }
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <p className="sr-only">{summary}</p>
-      {series.coverage_note && (
-        <p className="mt-2 font-fw-sans text-caption text-text-tertiary">{series.coverage_note}</p>
-      )}
-    </figure>
+    <BarCompare
+      title={series.metric_label}
+      overline={series.entity.label}
+      subtitle={subtitle}
+      takeaway={points
+        .map((d) => `${d.label}: ${formatValue(d.value, series.unit)}`)
+        .join('; ')}
+      data={points.map((d) => ({ label: d.label, value: d.value }))}
+      valueFormatter={(v) => formatValue(v, series.unit)}
+      height={Math.max(140, points.length * 34)}
+    />
   );
 }
 
@@ -782,6 +734,12 @@ export function EvidenceRenderer({ envelope }: { envelope: ToolEnvelope }) {
   const isComparison = distinctPlayers.size >= 2 && distinctMetrics.size >= 1 && envelope.series.length === 0;
   const isRanking = distinctPlayers.size >= 3 && distinctMetrics.size === 1;
 
+  // A strokes-gained breakdown is a DIVERGING quantity — every category is a
+  // signed distance from a baseline, and the question the coach is asking is
+  // "which side of zero, and by how much". Four KPI tiles reading −0.8, +0.3,
+  // −1.2, +0.1 make that comparison arithmetic; a tornado makes it a shape.
+  const sg = strokesGainedCategories(envelope.measurements);
+
   return (
     <div className="flex flex-col gap-3">
       {timeSeries.map((s, i) => (
@@ -795,11 +753,62 @@ export function EvidenceRenderer({ envelope }: { envelope: ToolEnvelope }) {
       {envelope.series.length === 0 && isComparison && !isRanking && (
         <ComparisonTable measurements={envelope.measurements} />
       )}
-      {envelope.series.length === 0 && !isComparison && !isRanking && (
-        <MetricPanel measurements={envelope.measurements} />
+      {envelope.series.length === 0 && !isComparison && !isRanking && sg && (
+        <StrokesGainedTornado
+          title="Strokes gained"
+          overline={sg.entityLabel}
+          subtitle={sg.subtitle}
+          takeaway={sg.takeaway}
+          data={sg.data}
+          height={Math.max(150, sg.data.length * 40)}
+        />
+      )}
+      {envelope.series.length === 0 && !isComparison && !isRanking && !sg && (
+        <MetricPanel measurements={envelope.measurements} series={envelope.series} />
       )}
 
       <CoverageNotice envelope={envelope} />
     </div>
   );
+}
+
+/**
+ * Recognise a strokes-gained breakdown.
+ *
+ * Keyed on the unit plus the `sg_` metric-id prefix rather than on label text,
+ * so a relabelled category still routes correctly and an unrelated `strokes`
+ * metric does not get swept in. Needs at least two categories — a single
+ * signed number is a figure, not a breakdown, and renders better as a tile.
+ */
+function strokesGainedCategories(measurements: Measurement[]): {
+  data: { label: string; value: number }[];
+  entityLabel?: string;
+  subtitle: string;
+  takeaway: string;
+} | null {
+  const sg = measurements.filter(
+    (m) => m.unit === 'strokes' && m.metric_id.startsWith('sg_') && m.value !== null,
+  );
+  if (sg.length < 2) return null;
+
+  const entities = new Set(sg.map((m) => m.entity.label));
+  const first = sg[0]!;
+  const worst = [...sg].sort((a, b) => (a.value ?? 0) - (b.value ?? 0))[0]!;
+
+  return {
+    data: sg.map((m) => ({
+      // "Strokes gained: putting" → "Putting". The chart's own title already
+      // says strokes gained; repeating it in every row label eats the gutter.
+      label: m.metric_label.replace(/^strokes gained[:\s-]*/i, '').trim() || m.metric_label,
+      value: m.value ?? 0,
+    })),
+    entityLabel: entities.size === 1 ? first.entity.label : undefined,
+    subtitle: provenanceText(
+      formatWindow(first.window_start, first.window_end),
+      first.sample_size,
+      first.sample_unit,
+      first.as_of,
+    ),
+    takeaway: `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.`,
+  };
 }

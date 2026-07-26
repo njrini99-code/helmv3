@@ -27,10 +27,25 @@ export interface AssistantProseProps {
   text: string;
   /** Roster display name → player id. Only these become links. */
   playersByName?: Record<string, string>;
+  /**
+   * The opening block of a turn — the takeaway.
+   *
+   * Set one step larger than the body that follows it. Every paragraph at the
+   * same size made a six-paragraph answer a uniform slab with no way in; the
+   * first sentence is the one a coach reads to decide whether to read the rest,
+   * so it gets the weight. Purely typographic — no colour, no box, and the
+   * paragraph is the same element either way.
+   */
+  lead?: boolean;
   className?: string;
 }
 
-export function AssistantProse({ text, playersByName, className }: AssistantProseProps) {
+export function AssistantProse({
+  text,
+  playersByName,
+  lead = false,
+  className,
+}: AssistantProseProps) {
   const blocks = React.useMemo(() => parseBlocks(text), [text]);
 
   return (
@@ -50,8 +65,17 @@ export function AssistantProse({ text, playersByName, className }: AssistantPros
             </ul>
           );
         }
+        // Only the FIRST paragraph of a lead block is the takeaway — a lead
+        // text part that runs to four paragraphs is an answer, not a headline.
+        const isTakeaway = lead && i === 0;
         return (
-          <p key={i} className="font-fw-sans text-body leading-[1.65] text-text-primary [text-wrap:pretty]">
+          <p
+            key={i}
+            className={cn(
+              'font-fw-sans text-text-primary [text-wrap:pretty]',
+              isTakeaway ? 'text-body-lg leading-[1.55]' : 'text-body leading-[1.65]',
+            )}
+          >
             <Inline text={block.text} playersByName={playersByName} />
           </p>
         );
