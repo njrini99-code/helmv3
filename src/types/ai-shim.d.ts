@@ -187,16 +187,44 @@ declare module 'ai' {
 
   export function stepCountIs(count: number): unknown;
 
+  /**
+   * `inputTokens` is the TOTAL and already includes the cache figures —
+   * `noCacheTokens + cacheReadTokens + cacheWriteTokens`. Billing code must
+   * therefore subtract the cached portions rather than adding them, or a cached
+   * turn is charged at the full input rate for tokens that cost a tenth of it.
+   */
+  export interface LanguageModelUsage {
+    inputTokens?: number;
+    outputTokens?: number;
+    inputTokenDetails?: {
+      noCacheTokens?: number;
+      cacheReadTokens?: number;
+      cacheWriteTokens?: number;
+    };
+  }
+
   export interface StreamTextResult {
     toUIMessageStream(options?: Record<string, unknown>): unknown;
     text: Promise<string>;
-    usage: Promise<{ inputTokens?: number; outputTokens?: number }>;
+    usage: Promise<LanguageModelUsage>;
     [key: string]: unknown;
   }
 
+  /**
+   * The system prompt. A bare string still works; the object form carries
+   * `providerOptions`, which is where an Anthropic cache breakpoint goes.
+   */
+  export type Instructions =
+    | string
+    | {
+        role: 'system';
+        content: string;
+        providerOptions?: Record<string, Record<string, unknown>>;
+      };
+
   export function streamText(options: {
     model: unknown;
-    instructions?: string;
+    instructions?: Instructions;
     system?: string;
     prompt?: string;
     messages?: ModelMessage[];
