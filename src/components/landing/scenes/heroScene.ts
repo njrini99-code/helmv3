@@ -49,8 +49,17 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
   const sub = q(HERO.sub)[0] as HTMLElement | undefined;
   const actions = q(HERO.actions)[0] as HTMLElement | undefined;
   const plate = q(HERO.plate)[0] as HTMLElement | undefined;
-  const arc = q(HERO.arc)[0] as SVGPathElement | undefined;
-  const ball = q(HERO.ball)[0] as SVGElement | undefined;
+
+  // The hero ships TWO arc frames — a portrait one and a landscape one — because
+  // the viewBox window a `slice` scale exposes depends on the aspect ratio, and
+  // one path cannot sit inside both. Exactly one is rendered at any width, so
+  // take the one that actually has a box, and take the ball from ITS svg:
+  // `q(...)[0]` would animate the hidden portrait arc on desktop and leave the
+  // visible one blank, and pairing a ball with the wrong frame would put it in
+  // another coordinate space entirely.
+  const rendered = (el: Element) => el.getClientRects().length > 0;
+  const arc = (q(HERO.arc) as unknown as SVGPathElement[]).find(rendered);
+  const ball = arc?.ownerSVGElement?.querySelector<SVGGElement>(HERO.ball) ?? undefined;
 
   // ── Reduced motion: everything settled, nothing scrubbed, arc fully drawn ──
   if (reduced) {

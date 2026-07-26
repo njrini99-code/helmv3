@@ -52,17 +52,48 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
           rendering artifact rather than a deliberate mark. A trace that crosses
           the photograph and continues onto the linen is the whole point — it is
           what makes the corridor one continuous plane. */}
+      {/* TWO frames, one gesture. `slice` scales uniformly to COVER the hero,
+          anchored top-left — so on a portrait phone the scale is driven by
+          height (828/700 ≈ 1.18) and the 1000-unit-wide viewBox renders ~1183px
+          across a 390px screen. Two thirds of the arc, including the entire
+          start and most of the ball's flight, was being clipped off the right
+          edge: the ball flew in from nowhere with no trace under it.
+
+          A single responsive path cannot fix that, because the visible user-space
+          window differs per aspect ratio. So the landscape frame keeps the
+          original geometry and the portrait frame redraws the SAME descending
+          tee shot inside a box a phone can actually show. `heroScene` picks
+          whichever is rendered, so only one is ever animated.
+
+          UNIFORM scaling stays mandatory in both: `getTotalLength()` returns
+          viewBox user units and the draw-on is a strokeDasharray in those units,
+          so a non-uniform `preserveAspectRatio="none"` would desync the dash
+          from the rendered stroke and leak the hidden tail at offset 0. */}
       <svg
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-[3] h-full w-full"
+        className="pointer-events-none absolute inset-0 z-[3] h-full w-full md:hidden"
+        viewBox="0 0 340 700"
+        preserveAspectRatio="xMinYMin slice"
+        fill="none"
+      >
+        <path
+          data-hero="arc"
+          d="M 300 70 C 268 214, 214 344, 148 462 S 54 620, 14 700"
+          stroke="oklch(0.44 0.02 70 / 0.34)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        <g data-hero="ball">
+          <circle r="9" cx="0" cy="0" fill="oklch(0.953 0.022 83 / 0.55)" />
+          <circle r="4.5" cx="0" cy="0" fill="oklch(0.28 0.02 60)" />
+        </g>
+      </svg>
+
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[3] hidden h-full w-full md:block"
         viewBox="0 0 1000 700"
-        /* UNIFORM scaling is required, not cosmetic: `getTotalLength()` returns
-           a length in viewBox user units and the draw-on is a strokeDasharray
-           in those same units. Under `preserveAspectRatio="none"` the x and y
-           axes scale by different factors, so the rendered stroke no longer
-           matches the dash length and the "hidden" tail leaks into view at
-           offset 0. `slice` keeps the trace covering the hero while scaling
-           both axes equally, which keeps the dash math honest. */
         preserveAspectRatio="xMinYMin slice"
         fill="none"
       >
@@ -133,8 +164,22 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
           </div>
         </div>
 
-        <div data-hero="plate" className="relative mr-[calc(-1*clamp(20px,4vw,64px))]">
-          <div className="relative aspect-[5/4.3] overflow-hidden rounded-l-3xl shadow-[0_2px_4px_oklch(0.18_0.01_60/0.08),0_20px_48px_oklch(0.18_0.01_60/0.17),0_48px_100px_oklch(0.18_0.01_60/0.14)]">
+        {/* The plate escapes the text column toward the viewport edge. At md+
+            that is one edge: the grid puts it in the right-hand column of a
+            centred max-w-[1320px] container, so pulling only its right margin
+            reads as deliberate.
+
+            On a phone the grid is one column and the same rule bled the photo
+            flush to the right edge — square corner against the screen — while
+            the headline beside it stayed inset 20px on the left. Asymmetric
+            like that reads as a bug, not a decision. Below md it bleeds BOTH
+            edges and drops its rounding, which is the same idea stated in the
+            form a single column can carry. */}
+        <div
+          data-hero="plate"
+          className="relative -mx-[clamp(20px,4vw,64px)] md:ml-0 md:mr-[calc(-1*clamp(20px,4vw,64px))]"
+        >
+          <div className="relative aspect-[5/4.3] overflow-hidden rounded-none shadow-[0_2px_4px_oklch(0.18_0.01_60/0.08),0_20px_48px_oklch(0.18_0.01_60/0.17),0_48px_100px_oklch(0.18_0.01_60/0.14)] md:rounded-l-3xl">
             <Image
               src="/hero-golf.jpg"
               alt="An elevated, sunlit view of a college course green — two players walking the putting surface beside bunkers, flag in place"

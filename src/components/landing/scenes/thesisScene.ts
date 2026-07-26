@@ -26,8 +26,8 @@
  * punctuation — they are not a datum, and there is nothing to read in them.
  * ========================================================================== */
 
-import { gsap, Flip } from '@/lib/motion/gsap/register';
-import { DUR, EASE, SCRUB, STAGGER } from '@/lib/motion/gsap/tokens';
+import { gsap, Flip, ScrollTrigger } from '@/lib/motion/gsap/register';
+import { DUR, EASE, STAGGER } from '@/lib/motion/gsap/tokens';
 import { maskedLines } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
@@ -62,16 +62,31 @@ export function thesisScene({ root, reduced }: SceneContext): void | (() => void
   };
 
   if (!pillars || words.length < 2) {
-    // Still run the type reveal even if the eyebrow is absent.
+    // Still run the type reveal even if the eyebrow is absent — on the clock,
+    // for the same reason the main path is: a masked line is only legible at
+    // the two ends of its travel.
     if (s || b) {
-      const tl = gsap.timeline({
-        scrollTrigger: { trigger: root, start: 'top 76%', end: 'center 56%', scrub: SCRUB.smooth },
-      });
+      const tl = gsap.timeline({ paused: true });
       if (s) tl.to(s.lines, { yPercent: 0, duration: DUR.long, ease: EASE.glide, stagger: STAGGER.step }, 0);
-      if (b) tl.to(b.lines, { yPercent: 0, duration: DUR.medium, ease: EASE.glide, stagger: STAGGER.wideStep }, 0.3);
+      if (b) tl.to(b.lines, { yPercent: 0, duration: DUR.medium, ease: EASE.glide, stagger: STAGGER.step }, 0.3);
+      ScrollTrigger.create({
+        trigger: root,
+        start: 'top 76%',
+        onEnter: () => tl.play(),
+        onRefresh: (self) => {
+          if (self.progress > 0) tl.progress(1);
+        },
+      });
     }
     return revert;
   }
+
+  // The row's resolved height, reserved BEFORE anything moves. `absolute: true`
+  // lifts all three words out of flow for the duration of the resolve, and
+  // without a floor the row collapses to zero — which shunts the statement and
+  // the paragraph below it upward and then drops them back. Reserving the height
+  // costs nothing and keeps the column still.
+  gsap.set(pillars, { minHeight: pillars.getBoundingClientRect().height });
 
   // 1. FIRST — the three concerns, stacked and separate.
   gsap.set(seps, { opacity: 0 });
@@ -82,35 +97,62 @@ export function thesisScene({ root, reduced }: SceneContext): void | (() => void
   //    positions; nothing about them is written here.
   gsap.set(pillars, { clearProps: 'flexDirection,alignItems,gap' });
 
+  // PLAYED, NOT SCRUBBED. This was driven off scroll progress, which meant the
+  // words spent the whole trigger window mid-flight: three absolutely-positioned
+  // labels sitting at staggered diagonal offsets, parked there for as long as
+  // the reader stopped scrolling. A resolve you can halt halfway is a resolve
+  // that reads as breakage — the shape only says "three things becoming one"
+  // if it completes. Scroll starts it; the clock finishes it.
   const resolve = Flip.from(stacked, {
-    duration: 1,
-    ease: EASE.none,
-    stagger: { each: STAGGER.wideStep },
+    duration: DUR.long,
+    ease: EASE.glide,
+    stagger: { each: STAGGER.step },
     absolute: true,
     paused: true,
+    // Flip leaves the words absolute until the tween ends; once they are back
+    // in flow the reserved floor is no longer needed and would fight a resize.
+    onComplete: () => gsap.set(pillars, { clearProps: 'minHeight' }),
   });
 
-  const tl = gsap.timeline({
-    scrollTrigger: {
-      trigger: root,
-      start: 'top 76%',
-      end: 'center 56%',
-      scrub: SCRUB.smooth,
-      invalidateOnRefresh: true,
-      // Same reason as the products dock: a `Flip.from` timeline cannot be
-      // handed to ScrollTrigger's `animation` option — its refresh lifecycle
-      // calls `animation.revert().invalidate()`, which that timeline does not
-      // support. Driving progress directly is equivalent and safe.
-      onUpdate: (self) => resolve.progress(Math.min(1, self.progress / 0.45)),
-      onRefresh: (self) => resolve.progress(Math.min(1, self.progress / 0.45)),
-    },
-  });
+  // ONE arrival, on the clock. Everything here used to hang off a scrub, which
+  // meant a reader who stopped mid-window was left looking at half-resolved
+  // words above a headline sliced through the middle of its own line-boxes. A
+  // masked line reveal is legible at 0% and at 100% and at no point between, so
+  // tying it to scroll position tied LEGIBILITY to scroll position.
+  //
+  // Scroll decides WHEN the section arrives; it no longer decides how far
+  // through its own arrival the section is allowed to be.
+  const tl = gsap.timeline({ paused: true });
 
   // The separators only appear once the words are on one line — before that
-  // there is nothing for them to separate.
-  tl.to(seps, { opacity: 1, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.wideStep }, 0.42);
-  if (s) tl.to(s.lines, { yPercent: 0, duration: DUR.long, ease: EASE.glide, stagger: STAGGER.step }, 0.46);
-  if (b) tl.to(b.lines, { yPercent: 0, duration: DUR.medium, ease: EASE.glide, stagger: STAGGER.wideStep }, 0.78);
+  // there is nothing for them to separate. They ride the tail of the resolve.
+  tl.to(seps, { opacity: 1, duration: DUR.short, ease: EASE.glide, stagger: STAGGER.step }, DUR.long * 0.7);
+  if (s) tl.to(s.lines, { yPercent: 0, duration: DUR.long, ease: EASE.glide, stagger: STAGGER.step }, DUR.long * 0.75);
+  if (b) tl.to(b.lines, { yPercent: 0, duration: DUR.medium, ease: EASE.glide, stagger: STAGGER.step }, DUR.long * 1.15);
+
+  const settle = () => {
+    resolve.progress(1);
+    tl.progress(1);
+  };
+
+  ScrollTrigger.create({
+    trigger: root,
+    start: 'top 76%',
+    invalidateOnRefresh: true,
+    // `Flip.from` cannot be handed to ScrollTrigger's `animation` option — its
+    // refresh lifecycle calls `animation.revert().invalidate()`, which that
+    // timeline does not support — so both are started by hand.
+    onEnter: () => {
+      resolve.play();
+      tl.play();
+    },
+    // Arriving already past the trigger (deep link, restored scroll, a resize
+    // that re-runs this context) must show the settled section, never a
+    // half-resolved one frozen forever because `onEnter` will not fire again.
+    onRefresh: (self) => {
+      if (self.progress > 0) settle();
+    },
+  });
 
   return revert;
 }

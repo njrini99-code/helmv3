@@ -31,7 +31,7 @@
  * intersection and played on a clock unrelated to the reader.
  * ========================================================================== */
 
-import { gsap } from '@/lib/motion/gsap/register';
+import { gsap, ScrollTrigger } from '@/lib/motion/gsap/register';
 import { DUR, EASE, SCRUB, STAGGER, DIST } from '@/lib/motion/gsap/tokens';
 import { maskedWords } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
@@ -103,13 +103,33 @@ export function coachHelmScene({ root, reduced, compact }: SceneContext): void |
   // 2. Name the leak — only after the bar that proves it has finished.
   if (leakRow) tl.to(leakRow, { opacity: 1, duration: DUR.short, ease: EASE.glide }, barsEnd);
 
-  // 3. The sentence.
+  // 3. The sentence — on a clock, NOT on the scrub that drives everything else
+  //    in this timeline.
+  //
+  //    The bars belong on the scrub: a bar at half its length is an honest,
+  //    readable state, and letting the reader's scroll grow it is the point.
+  //    A masked word is the opposite — at half its travel it is a word sliced
+  //    through the middle, and parking there is not a state anyone should be
+  //    able to hold. So the measurement scrubs and the sentence arrives.
   if (insightTargets.length) {
-    tl.to(
-      insightTargets,
-      { yPercent: 0, duration: DUR.medium, ease: EASE.glide, stagger: STAGGER.wideStep },
-      barsEnd + 0.1,
-    );
+    const sentence = gsap.timeline({ paused: true });
+    sentence.to(insightTargets, {
+      yPercent: 0,
+      duration: DUR.medium,
+      ease: EASE.glide,
+      stagger: STAGGER.wideStep,
+    });
+    ScrollTrigger.create({
+      trigger: root,
+      // Late enough that the bars it is describing have grown first — the
+      // sentence names a leak the reader has already watched appear.
+      start: compact ? 'top 55%' : 'top 42%',
+      invalidateOnRefresh: true,
+      onEnter: () => sentence.play(),
+      onRefresh: (self) => {
+        if (self.progress > 0) sentence.progress(1);
+      },
+    });
   }
 
   // 4. The receipts.

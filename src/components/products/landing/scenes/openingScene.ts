@@ -25,8 +25,8 @@
  * curve, which is the same gesture the app uses when a sheet takes focus.
  * ========================================================================== */
 
-import { gsap } from '@/lib/motion/gsap/register';
-import { DUR, EASE, STAGGER, SCRUB } from '@/lib/motion/gsap/tokens';
+import { gsap, ScrollTrigger } from '@/lib/motion/gsap/register';
+import { DUR, EASE, STAGGER } from '@/lib/motion/gsap/tokens';
 import { maskedLines } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
@@ -67,19 +67,16 @@ function statementBand({ root, reduced }: SceneContext, scrubbed: boolean): void
   if (actions) gsap.set(actions, { autoAlpha: 0, y: 14 });
   if (rule) gsap.set(rule, { scaleX: 0, transformOrigin: 'left center' });
 
-  const tl = gsap.timeline(
-    scrubbed
-      ? {
-          scrollTrigger: {
-            trigger: root,
-            start: 'top 72%',
-            end: 'center 58%',
-            scrub: SCRUB.smooth,
-            invalidateOnRefresh: true,
-          },
-        }
-      : { delay: 0.08 },
-  );
+  // Scrubbed or not, this band ARRIVES on a clock.
+  //
+  // The closing band used to hang off `scrub`, which meant its headline was
+  // rendered at whatever fraction of its own travel the reader's scroll happened
+  // to stop at — and a masked line is legible at 0% and at 100% and nowhere in
+  // between. Park mid-window and you are reading a sentence sliced through the
+  // middle of its own line-boxes. Scroll decides WHEN the band arrives; it does
+  // not get to decide how far through arriving it is allowed to be. (Same change,
+  // same reason, as the landing thesis.)
+  const tl = gsap.timeline({ paused: scrubbed, delay: scrubbed ? 0 : 0.08 });
 
   if (mark) tl.to(mark, { scale: 1, autoAlpha: 1, duration: DUR.long, ease: EASE.emphasized }, 0);
   tl.to(h.lines, { yPercent: 0, duration: DUR.long, ease: EASE.glide, stagger: STAGGER.step }, mark ? 0.12 : 0);
@@ -88,6 +85,22 @@ function statementBand({ root, reduced }: SceneContext, scrubbed: boolean): void
   // button that looks disabled and reads as a contrast failure.
   if (actions) tl.to(actions, { autoAlpha: 1, y: 0, duration: DUR.medium, ease: EASE.glide }, '-=0.2');
   if (rule) tl.to(rule, { scaleX: 1, duration: DUR.long, ease: EASE.soft }, '-=0.4');
+
+  if (scrubbed) {
+    ScrollTrigger.create({
+      trigger: root,
+      start: 'top 72%',
+      invalidateOnRefresh: true,
+      onEnter: () => tl.play(),
+      // Landing already past the trigger — a deep link, a restored scroll, or a
+      // resize that re-runs this context — must show the arrived band. Without
+      // this it would sit at progress 0 forever, because `onEnter` has no edge
+      // left to fire on.
+      onRefresh: (self) => {
+        if (self.progress > 0) tl.progress(1);
+      },
+    });
+  }
 
   return () => {
     h.revert();
@@ -100,7 +113,7 @@ export function openingScene(ctx: SceneContext): void | (() => void) {
   return statementBand(ctx, false);
 }
 
-/** P7 · the closing band. Scrubbed, because the reader arrives at it. */
+/** P7 · the closing band. Triggered on the way in, then plays on its own clock. */
 export function closingScene(ctx: SceneContext): void | (() => void) {
   return statementBand(ctx, true);
 }
