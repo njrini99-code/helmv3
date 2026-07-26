@@ -27,8 +27,39 @@ import { renderHook } from '@testing-library/react';
  * one.
  */
 
+/**
+ * Capture the transport's request builder.
+ *
+ * `DefaultChatTransport` keeps its constructor options private, so the only way
+ * to see the `client_turn_id` a request would carry is to stand in for the
+ * class. Everything else from `ai` stays REAL — the approval-predicate tests
+ * above assert against the SDK's own implementation, and mocking the module
+ * wholesale would quietly turn those into tests of a stub.
+ */
+let capturedPrepare:
+  | ((o: { messages: unknown[] }) => { body?: { client_turn_id?: string } })
+  | undefined;
+
+vi.mock('ai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('ai')>();
+  return {
+    ...actual,
+    DefaultChatTransport: class {
+      constructor(options: {
+        prepareSendMessagesRequest?: (o: { messages: unknown[] }) => {
+          body?: { client_turn_id?: string };
+        };
+      }) {
+        capturedPrepare = options.prepareSendMessagesRequest;
+      }
+    },
+  };
+});
+
 const useChatSpy = vi.fn();
 const approvalResponseSpy = vi.fn();
+const sendMessageSpy = vi.fn();
+const regenerateSpy = vi.fn();
 
 vi.mock('@ai-sdk/react', () => ({
   useChat: (config: Record<string, unknown>) => {
@@ -37,7 +68,8 @@ vi.mock('@ai-sdk/react', () => ({
       messages: [],
       status: 'ready',
       error: undefined,
-      sendMessage: vi.fn(),
+      sendMessage: sendMessageSpy,
+      regenerate: regenerateSpy,
       stop: vi.fn(),
       setMessages: vi.fn(),
       addToolApprovalResponse: approvalResponseSpy,
@@ -93,6 +125,8 @@ describe('CoachHelm chat — approval delivery', () => {
   beforeEach(() => {
     useChatSpy.mockClear();
     approvalResponseSpy.mockClear();
+    sendMessageSpy.mockClear();
+    regenerateSpy.mockClear();
   });
 
   it('configures a resubmit trigger, so Confirm reaches the server', async () => {
@@ -157,5 +191,62 @@ describe('CoachHelm chat — approval delivery', () => {
     result.current.deny('appr_1');
 
     expect(approvalResponseSpy).toHaveBeenCalledWith({ id: 'appr_1', approved: false });
+  });
+});
+
+/**
+ * Retry shipped to production as a re-SEND, and a coach pressing "Try again"
+ * six times against a failing model left SIX identical copies of their question
+ * in the conversation — each written to the database under its own
+ * `client_turn_id`, none of them answered.
+ *
+ * Two things had to be true for that to happen, and both are pinned here: retry
+ * must not append a user message, and it must carry the failed turn's key so
+ * the server UPDATEs that row instead of inserting a new one.
+ */
+describe('CoachHelm chat — retry', () => {
+  beforeEach(() => {
+    useChatSpy.mockClear();
+    sendMessageSpy.mockClear();
+    regenerateSpy.mockClear();
+  });
+
+  it('regenerates the turn rather than sending the question again', async () => {
+    const { useCoachHelmChat } = await import(
+      '@/components/golf/coachhelm/chat/useCoachHelmChat'
+    );
+    const { result } = renderHook(() => useCoachHelmChat());
+
+    result.current.send('how is the team putting?');
+    sendMessageSpy.mockClear();
+
+    result.current.retry();
+
+    expect(regenerateSpy).toHaveBeenCalledTimes(1);
+    // The duplicate-question bug in one assertion.
+    expect(sendMessageSpy).not.toHaveBeenCalled();
+  });
+
+  it('retries under the question\'s own turn key, not a fresh one', async () => {
+    const { useCoachHelmChat } = await import(
+      '@/components/golf/coachhelm/chat/useCoachHelmChat'
+    );
+    const { result } = renderHook(() => useCoachHelmChat());
+
+    const prepare = () => capturedPrepare?.({ messages: [] })?.body?.client_turn_id;
+
+    result.current.send('how is the team putting?');
+    const askedUnder = prepare();
+    // Guard against a vacuous pass: if the transport does not expose the
+    // request builder, `prepare()` is undefined on both sides and the
+    // comparison below would succeed while testing nothing.
+    expect(askedUnder).toEqual(expect.any(String));
+
+    // The turn finishes (or fails) — the hook rotates its key for the next
+    // question. A retry has to go back, or the server sees a new turn.
+    (lastConfig().onFinish as ((o: Record<string, unknown>) => void) | undefined)?.({});
+    result.current.retry();
+
+    expect(prepare()).toBe(askedUnder);
   });
 });

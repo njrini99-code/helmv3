@@ -100,3 +100,56 @@ export function estimateCostUsd(model_id: string, prompt_tokens: number, complet
   return (prompt_tokens / 1_000_000) * rates.input
     + (completion_tokens / 1_000_000) * rates.output;
 }
+
+/**
+ * Anthropic's cache multipliers, applied to the model's own input rate.
+ * Writing a cache entry costs a premium; reading one is nearly free.
+ */
+const CACHE_WRITE_MULTIPLIER = 1.25;
+const CACHE_READ_MULTIPLIER = 0.1;
+
+/** The cache split of one call's input tokens, as the AI SDK reports it. */
+export interface InputTokenDetails {
+  noCacheTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+}
+
+/**
+ * Cost for a call that used prompt caching.
+ *
+ * `prompt_tokens` is the TOTAL and already contains the cached portions — the
+ * SDK documents `inputTokens` as the total and `inputTokenDetails` as its
+ * breakdown into `noCacheTokens + cacheReadTokens + cacheWriteTokens`. Pricing
+ * that total at the full input rate is what `estimateCostUsd` does, and once
+ * caching is switched on it becomes an overcharge: a cache READ costs a tenth
+ * of a fresh token, so the ledger would bill ~10x for the majority of a cached
+ * turn's prefix and burn a coach's daily budget on spend that never happened.
+ *
+ * Falls back to the uncached figure when the provider reports no breakdown, so
+ * a model or gateway that does not surface cache details is unaffected.
+ */
+export function estimateCachedCostUsd(
+  model_id: string,
+  prompt_tokens: number,
+  completion_tokens: number,
+  details?: InputTokenDetails,
+): number {
+  const cacheRead = details?.cacheReadTokens ?? 0;
+  const cacheWrite = details?.cacheWriteTokens ?? 0;
+  if (cacheRead === 0 && cacheWrite === 0) {
+    return estimateCostUsd(model_id, prompt_tokens, completion_tokens);
+  }
+
+  const rates = MODEL_COST_USD_PER_MTOK[model_id] ?? UNKNOWN_MODEL_RATE;
+  // Prefer the provider's own uncached count; derive it only if absent, and
+  // never let a mismatch drive it negative.
+  const fresh = details?.noCacheTokens ?? Math.max(0, prompt_tokens - cacheRead - cacheWrite);
+
+  return (
+    (fresh / 1_000_000) * rates.input +
+    (cacheWrite / 1_000_000) * rates.input * CACHE_WRITE_MULTIPLIER +
+    (cacheRead / 1_000_000) * rates.input * CACHE_READ_MULTIPLIER +
+    (completion_tokens / 1_000_000) * rates.output
+  );
+}

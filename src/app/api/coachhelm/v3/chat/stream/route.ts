@@ -32,13 +32,18 @@ import {
   createUIMessageStreamResponse,
   stepCountIs,
   streamText,
+  type LanguageModelUsage,
   type UIMessage,
 } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import { estimateCostUsd, MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
+import {
+  estimateCachedCostUsd,
+  estimateCostUsd,
+  MODEL_FOR_TASK,
+} from '@/lib/coachhelm/v3/llm/types';
 import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import {
   CoachContextError,
@@ -87,6 +92,22 @@ const Body = z.object({
  */
 function publishableParts(parts: readonly { type: string }[]): unknown[] {
   return parts.filter((p) => p.type !== 'reasoning');
+}
+
+/**
+ * What the coach is allowed to see when a turn fails.
+ *
+ * An upstream error can carry provider internals or echo prompt text, neither
+ * of which belongs in a browser — but "An error occurred" is not a safer
+ * alternative, it is just a less useful one. Name the cause when it is a class
+ * the coach can act on.
+ */
+function sanitiseStreamError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/quota|credit|tier|Free tier users|balance is too low/i.test(message)) {
+    return 'CoachHelm is out of model credit for this account, so it cannot answer right now. Retrying will not help until that is topped up.';
+  }
+  return 'Something went wrong while answering. Please try again.';
 }
 
 const UNGROUNDED_NOTE =
@@ -214,7 +235,29 @@ export async function POST(req: NextRequest) {
 
       const result = streamText({
         model,
-        instructions: buildInstructions(ctx, new Date().toISOString()),
+        // ── Prompt caching on the static prefix ─────────────────────────
+        //
+        // One turn is several model calls: the agent loop re-sends the system
+        // prompt AND every tool definition on each step, and the ledger shows
+        // what that costs — a turn's median input is 19,120 tokens while the
+        // smallest single-step turn is 3,363. Most of the difference is the
+        // same prefix, paid for again and again.
+        //
+        // A cache breakpoint on the system block covers the tool definitions
+        // too (Anthropic orders the payload tools → system → messages and
+        // caches everything before the breakpoint), so steps 2..N of a turn
+        // read the whole prefix at a tenth of the input rate.
+        //
+        // This only works because `buildInstructions` is stable: it formats the
+        // date to the DAY, not to an ISO timestamp. A prefix carrying
+        // `new Date().toISOString()` would change on every request and could
+        // never produce a cache hit — worth preserving deliberately if that
+        // string is ever edited.
+        instructions: {
+          role: 'system',
+          content: buildInstructions(ctx, new Date().toISOString()),
+          providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
+        },
         // Pass the tool set so tool parts from earlier turns convert correctly —
         // without it, a resumed approval loses the call it belongs to.
         messages: await convertToModelMessages(uiMessages, { tools }),
@@ -241,7 +284,26 @@ export async function POST(req: NextRequest) {
       // wire entirely. It renders nowhere today, but "not rendered" is not the
       // requirement — the requirement is that it never reaches the browser,
       // where it sits in network responses and React state either way.
-      writer.merge(result.toUIMessageStream({ sendStart: true, sendFinish: true, sendReasoning: false }));
+      // `onError` HAS to be passed here too.
+      //
+      // A model failure happens INSIDE this merged stream, not inside the
+      // outer `execute`, so the outer `createUIMessageStream.onError` never
+      // sees it — `toUIMessageStream` falls back to the SDK default, and the
+      // coach is shown the literal string "An error occurred."
+      //
+      // That is what a coach saw in production while the account's model
+      // credit was exhausted: six identical retries, each answered with four
+      // words that named neither the cause nor anything they could do. The
+      // sanitised message below already said "the model quota is exhausted";
+      // it was just never reaching the browser.
+      writer.merge(
+        result.toUIMessageStream({
+          sendStart: true,
+          sendFinish: true,
+          sendReasoning: false,
+          onError: sanitiseStreamError,
+        }),
+      );
     },
 
     /**
@@ -257,6 +319,22 @@ export async function POST(req: NextRequest) {
         if (!assistant) return;
 
         const text = textOf(assistant);
+
+        // A turn that produced NOTHING must not be stored as an answer.
+        //
+        // `onFinish` fires on a failed turn too. With no guard it wrote a row
+        // with empty content and `status: 'complete'` — the audit finds zero
+        // claims, so `grounded` is true and a total failure is recorded as a
+        // finished answer. Production has six of them, one per retry, and each
+        // renders on reload as a blank assistant turn.
+        //
+        // A turn with no prose is not necessarily empty: an action proposal is
+        // a card with no text. So the test is text OR a real data part —
+        // `step-start` alone does not count as an answer.
+        const hasContent =
+          text.trim().length > 0 ||
+          assistant.parts.some((p) => p.type.startsWith('data-'));
+        if (!hasContent) return;
         const unsupported = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
         const grounded = unsupported.length === 0;
 
@@ -305,13 +383,7 @@ export async function POST(req: NextRequest) {
      * Sanitised for the wire. An upstream error message can carry provider
      * internals or echo prompt text, neither of which belongs in a browser.
      */
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      if (/quota|credit|tier|Free tier users/i.test(message)) {
-        return 'Analysis is temporarily unavailable — the model quota is exhausted.';
-      }
-      return 'Something went wrong while answering. Please try again.';
-    },
+    onError: sanitiseStreamError,
   });
 
   return createUIMessageStreamResponse({
@@ -345,7 +417,7 @@ async function recordTurnCost(args: {
   admin: ReturnType<typeof createAdminClient>;
   ctx: CoachChatContext;
   conversationId: string;
-  usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null;
+  usagePromise: Promise<LanguageModelUsage> | null;
 }): Promise<void> {
   const { admin, ctx, conversationId, usagePromise } = args;
   try {
@@ -354,9 +426,18 @@ async function recordTurnCost(args: {
     const completionTokens = usage?.outputTokens ?? 0;
     // If the provider reported nothing, fall back to the reserved estimate
     // rather than billing zero — an unmeasured turn must not be free.
+    // Cache-aware: `promptTokens` INCLUDES the cached portions, and a cache
+    // read costs a tenth of a fresh token. Billing the total at the full input
+    // rate would spend a coach's daily budget on tokens that were never
+    // freshly processed.
     const cost =
       promptTokens + completionTokens > 0
-        ? estimateCostUsd(MODEL_FOR_TASK.coach_chat, promptTokens, completionTokens)
+        ? estimateCachedCostUsd(
+            MODEL_FOR_TASK.coach_chat,
+            promptTokens,
+            completionTokens,
+            usage?.inputTokenDetails,
+          )
         : CHAT_TURN_COST_ESTIMATE_USD;
 
     await admin.from('golf_coachhelm_llm_calls').insert({

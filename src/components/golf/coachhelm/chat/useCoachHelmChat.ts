@@ -92,12 +92,17 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     options.conversationId ?? null,
   );
   const [context, setContext] = React.useState<ChatContextChip[]>(options.initialContext ?? []);
-  const [lastSent, setLastSent] = React.useState<string | null>(null);
 
   // One key per user turn. Regenerated on a NEW question, reused on a retry —
   // that asymmetry is the whole point: a retry must dedupe against the turn it
   // is retrying, and a new question must not.
   const turnKey = React.useRef<string>(newKey());
+  // The key the last QUESTION was sent under, so a retry can go back to it.
+  // `turnKey` itself has already moved on by then — `onFinish` rotates it, and
+  // it must keep doing so for the approval resubmit's sake (that request has to
+  // carry a key the server has no stored answer for, or it is short-circuited
+  // as an already-answered turn and the approved action never runs).
+  const lastQuestionKey = React.useRef<string>(turnKey.current);
 
   const onConversationId = options.onConversationId;
   /**
@@ -169,7 +174,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
       const trimmed = text.trim();
       if (!trimmed) return;
       turnKey.current = newKey();
-      setLastSent(trimmed);
+      lastQuestionKey.current = turnKey.current;
       // Context is prefixed as visible text, so the transcript records exactly
       // what the model was told — no invisible side channel.
       const prefix =
@@ -182,15 +187,34 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   );
 
   const retry = React.useCallback(() => {
-    if (!lastSent) return;
-    // Deliberately NOT regenerating the key — the server dedupes on it.
-    void chat.sendMessage({ text: lastSent });
-  }, [chat, lastSent]);
+    // `regenerate()`, not `sendMessage()`.
+    //
+    // Retry used to re-SEND the question, on the theory that the server would
+    // dedupe it by `client_turn_id`. It does not, for two reasons that compound:
+    // `onFinish` fires on a failed turn and rotates `turnKey`, so the retry
+    // already carries a NEW key by the time it is clicked; and the failed turn
+    // had been persisted as an assistant row, so the dedupe it was relying on
+    // would have replayed that failure anyway.
+    //
+    // The result in production was six identical copies of one question, each
+    // written to the database with its own key, none of them answered. This is
+    // the SDK's own retry primitive: it re-runs the last assistant turn and
+    // appends no user message, so a failed question cannot fork into a thread
+    // of duplicates however many times the coach presses the button.
+    //
+    // The key has to go back too. `regenerate()` re-posts the thread, whose
+    // last entry is the user's question, so the server WILL upsert that turn —
+    // and `upsertUserTurn` conflicts on (conversation_id, role, client_turn_id).
+    // Under the rotated key that conflict target does not match and the upsert
+    // inserts, which is the duplicate all over again. Restoring the question's
+    // own key makes it an UPDATE of the row already there.
+    turnKey.current = lastQuestionKey.current;
+    void chat.regenerate();
+  }, [chat]);
 
   const newConversation = React.useCallback(() => {
     setConversationId(null);
     setContext([]);
-    setLastSent(null);
     turnKey.current = newKey();
     chat.setMessages([]);
   }, [chat]);
