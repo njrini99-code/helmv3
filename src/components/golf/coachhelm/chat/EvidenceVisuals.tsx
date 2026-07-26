@@ -31,8 +31,8 @@ import {
   AreaChart,
   Bar,
   BarChart,
-  CartesianGrid,
   Cell,
+  LabelList,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -155,6 +155,126 @@ export function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
 // Metric block — what a single observation renders as
 // ---------------------------------------------------------------------------
 
+/**
+ * Several related numbers, as ONE panel.
+ *
+ * This replaces a stack of `MetricBlock` cards, and the reason is visible the
+ * moment a coach asks about putting: four measurements came back and rendered
+ * as four full-width cards, ~470px of column for four numbers, each repeating
+ * the identical line "May 18 – Jul 10 · 15 rounds · computed 5 days ago". Four
+ * boxes, one fact each, the same footnote four times.
+ *
+ * The metrics in one envelope almost always share a window, a sample and an
+ * as-of stamp — they are one measurement of one player. So they are one block
+ * with one provenance line, and the numbers sit in a row where they can be
+ * compared. Where the provenance genuinely differs, it stays per-metric and the
+ * shared line is dropped rather than asserting a window that is not true of
+ * every value.
+ *
+ * The pattern is the standard one for related KPIs — a calm row, detail on
+ * demand — rather than a vertical wall of equally-weighted cards.
+ */
+export function MetricPanel({ measurements }: { measurements: Measurement[] }) {
+  const shown = measurements.filter((m) => m.value !== null).slice(0, 6);
+  if (shown.length === 0) return null;
+
+  const first = shown[0]!;
+
+  // The WINDOW is nearly always shared even when the sample is not: a putting
+  // answer measures the same 15 rounds but counts three-putt rate in holes and
+  // strokes gained in rounds. Keying the shared line on the whole stamp meant
+  // one differing unit sent the identical date range back onto all four cells.
+  // So the window and the as-of are shared whenever they agree, and only the
+  // part that genuinely differs — the sample — stays per-metric.
+  const sharedWindow =
+    shown.every(
+      (m) => m.window_start === first.window_start && m.window_end === first.window_end,
+    ) && shown.every((m) => m.as_of === first.as_of);
+  const sharedSample = shown.every(
+    (m) => m.sample_size === first.sample_size && m.sample_unit === first.sample_unit,
+  );
+
+  // One entity → name it once above the row instead of on every cell.
+  const entities = new Set(shown.map((m) => m.entity.label));
+  const entityLabel = entities.size === 1 ? first.entity.label : null;
+
+  return (
+    <section className="rounded-card border border-border-subtle bg-surface p-4">
+      {entityLabel && (
+        <p className="mb-3 font-fw-sans text-body-sm font-semibold text-text-primary">
+          {entityLabel}
+        </p>
+      )}
+
+      <div
+        className={cn(
+          'grid gap-x-6 gap-y-5',
+          // Two up on a phone, four across from `sm`. A single metric keeps the
+          // full width rather than sitting in a lonely quarter-column.
+          shown.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-4',
+        )}
+      >
+        {shown.map((m) => (
+          <div key={`${m.entity.id}-${m.metric_id}`} className="min-w-0">
+            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+              {m.metric_label}
+            </p>
+            <p className="mt-1.5 font-fw-mono text-h2 font-semibold tabular-nums leading-none text-text-primary">
+              {formatValue(m.value, m.unit)}
+            </p>
+            {/* A reference label under the figure: what it is out of, or what
+                it is measured against. This is where a bare number becomes a
+                judgement — 27% means nothing until you know it is 27% of 270. */}
+            <MetricReference measurement={m} />
+            {!sharedSample && m.sample_size > 0 && (
+              <p className="mt-1 font-fw-sans text-caption text-text-tertiary">
+                {m.sample_size} {m.sample_unit}
+                {!sharedWindow && ` · ${formatWindow(m.window_start, m.window_end) ?? ''}`}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {sharedWindow && (
+        <div className="mt-4 border-t border-border-subtle pt-2.5">
+          <ProvenanceLine
+            window={formatWindow(first.window_start, first.window_end)}
+            sampleSize={sharedSample ? first.sample_size : 0}
+            sampleUnit={first.sample_unit}
+            asOf={first.as_of}
+          />
+        </div>
+      )}
+
+      {shown.some((m) => m.coverage_note) && (
+        <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+          {shown.find((m) => m.coverage_note)?.coverage_note}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** The denominator, or the benchmark — whichever this metric actually has. */
+function MetricReference({ measurement: m }: { measurement: Measurement }) {
+  if (m.denominator !== null && m.unit === 'percent' && m.value !== null) {
+    return (
+      <p className="mt-1 font-fw-sans text-caption text-text-secondary">
+        {Math.round((m.value / 100) * m.denominator)} of {m.denominator}
+      </p>
+    );
+  }
+  if (m.benchmark && !m.benchmark.omitted_for_cohort) {
+    return (
+      <p className="mt-1 font-fw-sans text-caption text-text-secondary">
+        {m.benchmark.source} {formatValue(m.benchmark.value, m.unit)}
+      </p>
+    );
+  }
+  return null;
+}
+
 export function MetricBlock({ measurement }: { measurement: Measurement }) {
   const m = measurement;
   return (
@@ -202,6 +322,51 @@ interface TrendPoint {
   sample: number;
 }
 
+interface EndpointLabelProps {
+  x?: number | string;
+  y?: number | string;
+  value?: number | string;
+  index?: number;
+}
+
+/**
+ * Print the first and last reading on the line itself.
+ *
+ * Direct labelling, rather than making the reader trace a point back to an axis
+ * — the axis is gone for exactly this reason. Interior points stay unlabelled:
+ * labelling all five would collide at this width and would re-clutter what
+ * removing the grid just cleared.
+ */
+function EndpointLabel({
+  x,
+  y,
+  value,
+  index,
+  total,
+  unit,
+}: EndpointLabelProps & { total: number; unit: Measurement['unit'] }) {
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  if ((!isFirst && !isLast) || typeof value !== 'number') return null;
+  const cx = Number(x);
+  const cy = Number(y);
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+
+  return (
+    <text
+      x={cx}
+      y={cy - 9}
+      textAnchor={isFirst ? 'start' : 'end'}
+      fontSize={11}
+      fontWeight={600}
+      className="font-fw-mono"
+      fill={isLast ? 'var(--fw-color-text-primary)' : 'var(--fw-color-text-tertiary)'}
+    >
+      {formatValue(value, unit)}
+    </text>
+  );
+}
+
 /**
  * Movement over time for one metric.
  *
@@ -237,6 +402,13 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
         <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
           {series.metric_label}
           <span className="ml-2 font-normal text-text-tertiary">{series.entity.label}</span>
+          {/* The mean, stated in words next to the title rather than as a label
+              floating on the plot. On the plot it landed on top of the first
+              endpoint label whenever an early round sat near the average —
+              which is most of the time, that being what an average is. */}
+          <span className="ml-2 font-fw-mono font-normal tabular-nums text-text-secondary">
+            avg {formatValue(mean, series.unit)}
+          </span>
         </p>
         <ProvenanceLine
           window={formatWindow(series.window_start, series.window_end)}
@@ -250,33 +422,42 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
           accessible equivalent, and it says the same thing. */}
       <div className="h-[180px] w-full" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={points} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
+          {/* Real margins now that the Y axis is gone. `left: -18` was pulling
+              the plot under where the axis used to be, which clipped the first
+              endpoint label's minus sign clean off. */}
+          <AreaChart data={points} margin={{ top: 20, right: 28, bottom: 0, left: 26 }}>
             <defs>
               <linearGradient id="fw-trend-fill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--fw-color-accent-500)" stopOpacity={0.22} />
                 <stop offset="100%" stopColor="var(--fw-color-accent-500)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="var(--fw-viz-grid)" vertical={false} />
+            {/*
+              No grid, no Y axis.
+
+              Both were drawing a lattice around five data points. The Y axis
+              in particular cost 44px of the column to print numbers the reader
+              then had to trace back horizontally — while the values themselves
+              were only available on hover. The mean line is the reference this
+              chart actually needs, and it is labelled in place; the first and
+              last values are printed on the line itself, which is where the
+              question "where did he start and where is he now" is answered.
+            */}
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'var(--fw-color-text-tertiary)' }}
               tickLine={false}
               axisLine={false}
+              // Roughly five dates, not one per round. Ten rounds printed ten
+              // labels — including the same day twice when two rounds fell on
+              // it — which crowded the axis with dates nobody is reading
+              // individually. The line's shape is the finding; the dates are
+              // there to anchor its ends.
+              interval={Math.max(0, Math.ceil(points.length / 5) - 1)}
+              minTickGap={24}
             />
-            <YAxis
-              domain={[min - pad, max + pad]}
-              tick={{ fontSize: 11, fill: 'var(--fw-color-text-tertiary)' }}
-              tickLine={false}
-              axisLine={false}
-              width={44}
-            />
-            <ReferenceLine
-              y={mean}
-              stroke="var(--fw-color-text-tertiary)"
-              strokeDasharray="3 3"
-              strokeOpacity={0.5}
-            />
+            <YAxis domain={[min - pad, max + pad]} hide />
+            <ReferenceLine y={mean} stroke="var(--fw-color-border-strong)" strokeDasharray="2 4" />
             <Tooltip
               cursor={{ stroke: 'var(--fw-color-border-strong)' }}
               contentStyle={{
@@ -291,12 +472,36 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
               type="monotone"
               dataKey="value"
               stroke="var(--fw-color-accent-600)"
-              strokeWidth={2}
+              strokeWidth={1.75}
               fill="url(#fw-trend-fill)"
-              dot={{ r: 2.5, fill: 'var(--fw-color-accent-600)', strokeWidth: 0 }}
+              // Fill DOWN from the line, always.
+              //
+              // Recharts fills to y=0 by default. Strokes gained is negative,
+              // so zero sat above every reading and the wash rendered as a
+              // block ABOVE the curve — the shaded region read as the subject
+              // and the line as its edge. Anchoring to the bottom of the domain
+              // makes the fill mean the same thing on every metric, whichever
+              // side of zero it happens to live on.
+              baseValue="dataMin"
+              // Only the endpoints get a dot. A marker on every reading turns a
+              // five-round line into a row of beads and implies each point is
+              // separately meaningful; the shape is the finding, and the two
+              // ends are what the reader is comparing.
+              dot={false}
               activeDot={{ r: 4 }}
               isAnimationActive={false}
-            />
+            >
+              <LabelList
+                dataKey="value"
+                content={(props) => (
+                  <EndpointLabel
+                    {...(props as EndpointLabelProps)}
+                    total={points.length}
+                    unit={series.unit}
+                  />
+                )}
+              />
+            </Area>
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -353,20 +558,19 @@ export function BucketChart({ series }: { series: MeasurementSeries }) {
 
       <div className="h-[180px] w-full" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
-            <CartesianGrid stroke="var(--fw-viz-grid)" vertical={false} />
+          <BarChart data={data} margin={{ top: 18, right: 4, bottom: 0, left: 0 }}>
+            {/*
+              Grid and Y axis removed for the same reason as the trend: the
+              value is printed on top of its own bar, so nothing has to be
+              traced back to a scale. What is left is the bars and their labels.
+            */}
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'var(--fw-color-text-tertiary)' }}
               tickLine={false}
               axisLine={false}
             />
-            <YAxis
-              tick={{ fontSize: 11, fill: 'var(--fw-color-text-tertiary)' }}
-              tickLine={false}
-              axisLine={false}
-              width={44}
-            />
+            <YAxis hide />
             <Tooltip
               cursor={{ fill: 'var(--fw-color-surface-sunken)' }}
               contentStyle={{
@@ -382,13 +586,33 @@ export function BucketChart({ series }: { series: MeasurementSeries }) {
                 series.metric_label,
               ]}
             />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+            <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={56} isAnimationActive={false}>
+              {/*
+                `accent-600` at full saturation across every bar made the chart
+                a block of solid green — the strongest colour on a cream page,
+                spent uniformly, so it distinguished nothing. The scale now
+                carries meaning: a thin sample stays visibly lighter (it is real
+                data, so it is never hidden — see the note above), and the rest
+                sit at a weight the labels can be read against.
+              */}
               {data.map((d, i) => (
                 <Cell
                   key={i}
-                  fill={d.thin ? 'var(--fw-color-accent-200)' : 'var(--fw-color-accent-600)'}
+                  fill={d.thin ? 'var(--fw-color-accent-200)' : 'var(--fw-color-accent-500)'}
                 />
               ))}
+              <LabelList
+                dataKey="value"
+                position="top"
+                offset={6}
+                fontSize={11}
+                fontWeight={600}
+                className="font-fw-mono"
+                fill="var(--fw-color-text-primary)"
+                formatter={(v: unknown) =>
+                  formatValue(typeof v === 'number' ? v : null, series.unit)
+                }
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -571,13 +795,9 @@ export function EvidenceRenderer({ envelope }: { envelope: ToolEnvelope }) {
       {envelope.series.length === 0 && isComparison && !isRanking && (
         <ComparisonTable measurements={envelope.measurements} />
       )}
-      {envelope.series.length === 0 &&
-        !isComparison &&
-        !isRanking &&
-        envelope.measurements
-          .filter((m) => m.value !== null)
-          .slice(0, 4)
-          .map((m) => <MetricBlock key={`${m.entity.id}-${m.metric_id}`} measurement={m} />)}
+      {envelope.series.length === 0 && !isComparison && !isRanking && (
+        <MetricPanel measurements={envelope.measurements} />
+      )}
 
       <CoverageNotice envelope={envelope} />
     </div>

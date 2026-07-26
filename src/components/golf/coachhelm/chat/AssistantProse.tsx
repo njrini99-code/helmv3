@@ -191,10 +191,21 @@ function Mentions({
         <Link
           key={(key += 1)}
           href={`/golf/dashboard/players/${id}/game`}
+          // A roster answer names seven players. Rendered as `text-accent-700`
+          // with a green underline, that put seven green links in a seven-line
+          // list — the answer read as a navigation menu, and the accent stopped
+          // marking anything because it was on every proper noun.
+          //
+          // A player's name keeps the ink of the sentence it is in, and carries
+          // a hairline rule to say it is reachable. The accent arrives on hover
+          // and focus, where it is doing work: confirming what is about to be
+          // clicked. No `px-0.5` either — horizontal padding on an inline link
+          // widens the word and breaks the spacing of the prose around it.
           className={cn(
-            'rounded px-0.5 font-medium text-accent-700 underline decoration-accent-200 underline-offset-2',
-            'transition-colors hover:decoration-accent-500',
-            'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
+            'font-medium text-text-primary underline decoration-border-strong',
+            'underline-offset-[3px] decoration-1',
+            'transition-colors hover:text-accent-800 hover:decoration-accent-600',
+            'rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
           )}
         >
           {name}

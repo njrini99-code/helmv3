@@ -370,6 +370,41 @@ export function suggestionsFromPulse(pulse: ProgramPulse, teamName: string): str
   return [...new Set(out)].slice(0, 5);
 }
 
+/**
+ * The openers that are NOT tied to a specific finding.
+ *
+ * `suggestionsFromPulse` mixes these with the items' own asks, which is right
+ * for the drawer — a flat list of pills is all it has room for. The full Ask
+ * page renders the findings themselves, so it needs the generic openers
+ * separately or the same question appears twice: once as a bare pill and once
+ * as the ask on the row that prompted it.
+ *
+ * Gated on the same coverage rule as the mixed list: offering "Where is the
+ * team losing the most strokes?" to a program with no recorded rounds
+ * advertises an answer that does not exist.
+ */
+export function generalOpeners(pulse: ProgramPulse, teamName: string): string[] {
+  if (pulse.active_roster === 0 || pulse.players_without_rounds >= pulse.active_roster) return [];
+  return [`Brief me on ${teamName}`, 'Where is the team losing the most strokes?'];
+}
+
+/**
+ * The coverage sentence, or null when there is nothing honest to say.
+ *
+ * Stated as what IS recorded rather than what is missing. "2 players have no
+ * rounds" reads as a fault list; "6 of 8 players have recorded rounds" is the
+ * same fact as the denominator on every number above it, which is what the
+ * coach is actually being asked to weigh.
+ */
+export function coverageLine(pulse: ProgramPulse): string | null {
+  if (pulse.active_roster === 0) return null;
+  const withRounds = pulse.active_roster - pulse.players_without_rounds;
+  if (withRounds === pulse.active_roster) {
+    return `All ${pulse.active_roster} players have recorded rounds.`;
+  }
+  return `${withRounds} of ${pulse.active_roster} players have recorded rounds — answers cover those ${withRounds}.`;
+}
+
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(
     new Date(`${iso.slice(0, 10)}T12:00:00Z`),

@@ -266,22 +266,41 @@ function FollowUps({
   );
 }
 
-/** The one quiet line that stands in for tool machinery. */
+/**
+ * The one quiet line that stands in for tool machinery.
+ *
+ * A pulsing dot said "something is happening" and nothing else — the same
+ * affordance a disconnected websocket uses. What is actually happening is
+ * READING: rounds, signals, a schedule. So the indicator is a segment
+ * travelling along a short track, and the label states the work in the coach's
+ * own terms ("Reading 28 recorded rounds").
+ *
+ * The label sits at `text-text-secondary`, not tertiary. It is the only thing
+ * on screen during a wait and the coach is reading it deliberately; pushing
+ * live status toward the background to signal "this is temporary" is the
+ * de-emphasis-by-dimming move, and it costs legibility for nothing.
+ *
+ * Under reduced motion the track holds a static segment. The information — that
+ * work is in progress, and which work — is entirely in the label and the
+ * `aria-live` announcement, so nothing is lost when the movement goes.
+ */
 export function ProgressLine({ label }: { label: string }) {
   return (
     <p
-      className="flex items-center gap-2 font-fw-sans text-caption text-text-tertiary"
+      className="flex items-center gap-2.5 font-fw-sans text-caption text-text-secondary"
       aria-live="polite"
     >
       <span
         aria-hidden
-        className="h-1.5 w-1.5 rounded-full bg-accent-500 motion-safe:animate-pulse"
-      />
+        className="relative h-[2px] w-7 shrink-0 overflow-hidden rounded-full bg-border-subtle"
+      >
+        <span className="absolute inset-y-0 left-0 w-1/4 rounded-full bg-accent-600 motion-safe:animate-scan" />
+      </span>
       {label}
     </p>
   );
 }
 
 function ThinkingLine() {
-  return <ProgressLine label="Thinking" />;
+  return <ProgressLine label="Reading your program" />;
 }

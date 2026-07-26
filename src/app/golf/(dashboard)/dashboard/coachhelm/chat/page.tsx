@@ -19,7 +19,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persistence';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import { CoachContextError, resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
-import { getProgramPulse, suggestionsFromPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
+import { getProgramPulse, generalOpeners, coverageLine } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { InlineNotice, Button } from '@/components/fairway';
 import { surfaceName } from '@/lib/golf/surface-registry';
@@ -89,7 +89,22 @@ export default async function AskCoachHelmPage({ searchParams }: PageProps) {
       <AskSurface
         teamName={ctx.team_name}
         players={ctx.roster.map((p) => ({ id: p.id, name: p.name }))}
-        suggestions={pulse ? suggestionsFromPulse(pulse, ctx.team_name) : []}
+        // Only the GENERIC openers as pills. Each finding carries its own ask
+        // on its own row, so `suggestionsFromPulse` — which mixes both — would
+        // print half of them twice, once stripped of the evidence that makes
+        // them worth asking.
+        suggestions={pulse ? generalOpeners(pulse, ctx.team_name) : []}
+        pulseItems={pulse?.items ?? []}
+        coverage={pulse ? coverageLine(pulse) : null}
+        asOfLabel={
+          pulse
+            ? new Intl.DateTimeFormat('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZone: ctx.timezone,
+              }).format(new Date(pulse.as_of))
+            : null
+        }
         conversations={conversations}
         conversationId={conversationId}
         initialMessages={restoreUIMessages(history)}
