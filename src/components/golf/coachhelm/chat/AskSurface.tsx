@@ -72,7 +72,14 @@ export function AskSurface({
   }, []);
 
   return (
-    <div className="flex h-[calc(100dvh-var(--fw-shell-offset,7rem))] min-h-0 flex-col">
+    // `--fw-shell-offset` is the shell's real chrome above + below this page
+    // (AppShell declares it; the golf shell re-declares it for the coach FAB
+    // pad). The old `7rem` fallback was a guess that undercounted the mobile
+    // tab bar and the desktop FAB clearance, so this box was taller than the
+    // space it had: the page scrolled 41px at 390x844 and 97px at 1440x900,
+    // and the composer — the one control this surface exists for — sat under
+    // the bottom tab bar. Keep a fallback for any host that doesn't set it.
+    <div className="flex h-[calc(100dvh-var(--fw-shell-offset,7rem))] min-h-0 flex-col" data-slot="ask-surface">
       {/* ── Slim bar. Deliberately not a page header: the conversation is the
             page, and a tall masthead above a chat is wasted vertical space. ── */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-4 py-2 sm:px-6">

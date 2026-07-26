@@ -47,7 +47,7 @@
  * moment a shell adds an action — it was already 28px off-centre at 390px.
  * `min-w-0 flex-1 truncate` against the `flex-shrink-0` cluster cannot
  * collide at any width, and the label lands on the same left edge as the
- * page's own masthead below it.
+ * page's own masthead below it — see the gutter note on the row itself.
  * ========================================================================== */
 
 import { forwardRef, memo } from 'react';
@@ -242,7 +242,14 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
         className,
       )}
     >
-      <div className="flex h-16 items-center gap-3 px-6 lg:px-8">
+      {/* Gutters: `px-4 sm:px-6 lg:px-8` — the SAME string every page root and
+          `FairwayHubSubNav`'s own tab row already use. The bar was `px-6
+          lg:px-8`, so at phone widths its standing title sat on a 24px rule
+          while the page masthead directly below it — and the sub-nav strip
+          that renders as part of this same sticky chrome unit — sat on 16px.
+          Measured at 390px on every golf route: title left 24, content left 16.
+          Nothing in the mobile frame shared a left edge. */}
+      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
         {/* Leading slot — PHONE: the standing destination title. Present from
             first paint, never gated on scroll, never animated. `min-w-0
             flex-1` + `truncate` against the `flex-shrink-0` action cluster

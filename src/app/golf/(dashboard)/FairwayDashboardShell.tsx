@@ -672,6 +672,13 @@ function FairwayDashboardContent({
             // at md+ ONLY, and only for coach routes (players never render the
             // launcher at all, so their pages keep the tighter default).
             role === 'coach' && 'md:pb-28',
+            // That FAB clearance is real height this shell consumes, so a
+            // full-viewport surface has to subtract it too. Re-declare
+            // `--fw-shell-offset` (AppShell sets the base) for this subtree at
+            // the same breakpoint and the same 7rem, or `/dashboard/coachhelm/
+            // chat` overshoots by exactly that much on a coach's desktop.
+            role === 'coach' &&
+              'md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px)+7rem)]',
           )}
         >
           <NoTeamBanner />

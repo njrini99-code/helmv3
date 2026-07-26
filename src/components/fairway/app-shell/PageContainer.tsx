@@ -9,8 +9,10 @@
  * (760–1536px widths, a Cartesian product of gutters) and don't align to the
  * glass top bar.
  *
- * Gutters match FairwayTopBar (`px-6 lg:px-8`) so the page H1 sits on the same
- * left rule as the top-bar brand. Vertical rhythm: `pt-6 pb-10`, and (by
+ * Gutters match FairwayTopBar and FairwayHubSubNav (`px-4 sm:px-6 lg:px-8`) so
+ * the page H1 sits on the same left rule as the top-bar title — including at
+ * phone widths, where a 24px chrome gutter over 16px page roots left nothing
+ * in the frame sharing an edge. Vertical rhythm: `pt-6 pb-10`, and (by
  * default) children stack with the canonical `gap-10` section rhythm.
  *
  *   <PageContainer>            → standard 1200px dashboard/roster column
@@ -50,7 +52,7 @@ export const PageContainer = forwardRef<HTMLDivElement, PageContainerProps>(
         ref={ref}
         data-slot="page-container"
         className={cn(
-          'mx-auto w-full px-6 pb-10 pt-6 lg:px-8',
+          'mx-auto w-full px-4 pb-10 pt-6 sm:px-6 lg:px-8',
           WIDTH[width],
           flow && 'flex flex-col gap-10',
           className,

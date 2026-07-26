@@ -361,7 +361,29 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
 
       {/* ── Content column (offset by the rail) ── */}
       <div
-        className={cn('relative flex min-h-dvh flex-col transition-[padding] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}
+        className={cn(
+          'relative flex min-h-dvh flex-col transition-[padding] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
+          railOffset,
+          // `--fw-shell-offset`: everything this shell puts ABOVE and BELOW the
+          // page, for the rare surface that wants to fill exactly one viewport
+          // and never scroll the page (the CoachHelm Ask conversation). It is
+          // the top bar plus this column's own bottom pad — declared here from
+          // the SAME terms as the `pb-…` classes on the content wrapper below,
+          // so the two cannot drift.
+          //
+          // It is declared as a Tailwind arbitrary property rather than in the
+          // inline `style` below because the bottom term is breakpoint- and
+          // prop-dependent (the mobile tab bar), and an inline style cannot
+          // carry a media query.
+          //
+          // Consumers previously fell back to a hardcoded `7rem`, which was
+          // never right: measured on prod, `/dashboard/coachhelm/chat`
+          // overshot the viewport by 41px at 390x844 (pushing the composer
+          // under the bottom tab bar) and by 97px at 1440x900.
+          '[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px))]',
+          bottomNav &&
+            'max-md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+56px+env(safe-area-inset-bottom,0px))]',
+        )}
         // In-page sticky sub-headers offset below the glass top bar (4rem tall
         // + the notch inset). The immersive branch sets this var elsewhere.
         style={{ '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))' } as React.CSSProperties}
