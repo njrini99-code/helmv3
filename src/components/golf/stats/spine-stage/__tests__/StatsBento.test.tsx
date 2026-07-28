@@ -26,6 +26,7 @@ import { sgToTrackPct } from '../buildStatsViewModel';
 import { layoutTrackLabels, STANDING_TRACK_SUBJECT_KEY } from '@/components/fairway/modules';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 
 function row(overrides: Partial<PlayerStandingRow> & { metric_id: string; player_value: number }): PlayerStandingRow {
   return {
@@ -113,6 +114,60 @@ describe('StatsBento — Standing pin preview', () => {
     expect(benchLabels).toHaveLength(1);
     expect(benchLabels[0]?.textContent).toBe('Tour');
     expect(screen.getByText('−0.60')).toBeInTheDocument();
+  });
+});
+
+describe('StatsBento — Standing cell chip/headline pairing', () => {
+  function category(
+    label: string,
+    overrides: Partial<StatisticalStrengthWeakness> = {},
+  ): StatisticalStrengthWeakness {
+    return {
+      category: label,
+      subcategory: 'putting',
+      label,
+      detail: '',
+      strokeImpact: 0,
+      playerValue: 0,
+      benchmark: 0,
+      unit: 'strokes/round',
+      confidence: 1,
+      ...overrides,
+    };
+  }
+
+  it('labels the weakest category as a leak, never as the player’s best', () => {
+    render(
+      <StatsBento
+        detailedStats={null}
+        standingByMetric={new Map()}
+        trendData={null}
+        strengths={[category('SG Approach', { subcategory: 'approach' })]}
+        weaknesses={[category('SG Putting')]}
+        leakArea="putting"
+      />,
+    );
+
+    const headline = screen.getByText('SG Putting');
+    const cell = headline.closest('[data-slot="bento-cell"]')!;
+    expect(cell).toHaveTextContent('Leak');
+    expect(cell).not.toHaveTextContent('Best');
+  });
+
+  it('falls back to the strongest category when there is no weakness to report', () => {
+    render(
+      <StatsBento
+        detailedStats={null}
+        standingByMetric={new Map()}
+        trendData={null}
+        strengths={[category('SG Approach', { subcategory: 'approach' })]}
+        weaknesses={[]}
+        leakArea="putting"
+      />,
+    );
+
+    const headline = screen.getByText('SG Approach');
+    expect(headline.closest('[data-slot="bento-cell"]')).toHaveTextContent('Best');
   });
 });
 
