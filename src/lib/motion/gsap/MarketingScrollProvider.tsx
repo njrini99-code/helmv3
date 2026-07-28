@@ -49,6 +49,13 @@ export interface MarketingScrollProviderProps {
 
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
+function hashTarget(hash: string): HTMLElement | null {
+  if (!hash || hash === '#') return null;
+  return document.getElementById(decodeURIComponent(hash.replace(/^#/, '')));
+}
+
+const ANCHOR_OFFSET = -80;
+
 export function MarketingScrollProvider({ anchors = false }: MarketingScrollProviderProps) {
   // Next's automatic scroll hand-off can preserve the previous document
   // position when both routes share sticky marketing chrome. That made a click
@@ -115,8 +122,17 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
     // Reduced motion: no Lenis at all. Scenes still mount (they render their
     // settled end state), scrolling is native, nothing is interpolated.
     if (prefersReducedMotion) {
-      ScrollTrigger.refresh();
-      return () => document.removeEventListener('click', onRouteClick, true);
+      const nativeRefreshId = requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+        hashTarget(window.location.hash)?.scrollIntoView();
+      });
+      const onNativeHashChange = () => hashTarget(window.location.hash)?.scrollIntoView();
+      window.addEventListener('hashchange', onNativeHashChange);
+      return () => {
+        cancelAnimationFrame(nativeRefreshId);
+        window.removeEventListener('hashchange', onNativeHashChange);
+        document.removeEventListener('click', onRouteClick, true);
+      };
     }
 
     const lenis = new Lenis({
@@ -154,6 +170,7 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
     // Anchor links routed through Lenis so in-page jumps inherit the same
     // interpolation instead of fighting it with native smooth scroll.
     let onAnchorClick: ((e: MouseEvent) => void) | undefined;
+    let onHashChange: (() => void) | undefined;
     if (anchors) {
       onAnchorClick = (e: MouseEvent) => {
         if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -161,23 +178,34 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
         if (!link) return;
         const raw = link.getAttribute('href');
         if (!raw || raw === '#') return;
-        const el = document.getElementById(decodeURIComponent(raw.slice(1)));
+        const el = hashTarget(raw);
         if (!el) return;
         e.preventDefault();
-        lenis.scrollTo(el, { offset: -80 });
+        lenis.scrollTo(el, { offset: ANCHOR_OFFSET });
       };
       document.addEventListener('click', onAnchorClick);
+
+      onHashChange = () => {
+        const el = hashTarget(window.location.hash);
+        if (el) lenis.scrollTo(el, { offset: ANCHOR_OFFSET });
+      };
+      window.addEventListener('hashchange', onHashChange);
     }
 
     // Scenes are registered by child components; once they have all mounted the
     // pin spacing needs one recompute. A rAF is enough — layout is settled by
     // the next frame and this avoids a resize-observer feedback loop.
-    const refreshId = requestAnimationFrame(() => ScrollTrigger.refresh());
+    const refreshId = requestAnimationFrame(() => {
+      ScrollTrigger.refresh();
+      const el = hashTarget(window.location.hash);
+      if (el) lenis.scrollTo(el, { offset: ANCHOR_OFFSET, immediate: true });
+    });
 
     return () => {
       cancelAnimationFrame(refreshId);
       document.removeEventListener('click', onRouteClick, true);
       if (onAnchorClick) document.removeEventListener('click', onAnchorClick);
+      if (onHashChange) window.removeEventListener('hashchange', onHashChange);
       lenis.off('scroll', ScrollTrigger.update);
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33); // restore GSAP's documented default
