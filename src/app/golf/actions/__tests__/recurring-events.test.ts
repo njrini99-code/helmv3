@@ -571,6 +571,92 @@ describe('editRecurringEvent — per-row date deltas', () => {
     expect(result).toEqual({ success: false, error: 'Not authorized' });
     expect(eventById('ev-root')?.title).toBe('Practice');
   });
+
+  // -------------------------------------------------------------------------
+  // `golf_events_end_after_start` CHECK (end_time IS NULL OR start_time IS NULL
+  // OR end_time >= start_time). Moving a 14:00–15:00 occurrence to 16:00 while
+  // leaving end_time at 15:00 is rejected outright with SQLSTATE 23514 — and
+  // Postgres rejects it EVERY time, which is why the two production attempts 30
+  // seconds apart on 2026-07-27 both failed. The fake client below does not
+  // enforce check constraints, so only these payload assertions can catch it.
+  //
+  // 'thisAndFuture' and 'all' already carried the end with the start; 'this'
+  // did not, so the same drag succeeded or failed depending on which scope the
+  // coach picked.
+  // -------------------------------------------------------------------------
+  describe('end_time never lands before start_time', () => {
+    const invariant = (row: Row | undefined) => {
+      const start = Date.parse(String(row?.start_time));
+      const end = Date.parse(String(row?.end_time));
+      expect(Number.isFinite(start)).toBe(true);
+      expect(Number.isFinite(end)).toBe(true);
+      expect(end).toBeGreaterThanOrEqual(start);
+    };
+
+    it("scope 'this' carries the end forward when only the start time moves", async () => {
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { startDate: '2026-06-08', startTime: '16:00' },
+      });
+
+      expect(result.success).toBe(true);
+      const row = eventById('ev-c2');
+      invariant(row);
+      // The occurrence keeps its one-hour duration: 16:00 → 17:00.
+      expect(Date.parse(String(row?.end_time))).toBe(Date.parse('2026-06-08T17:00:00Z'));
+      // Siblings are untouched.
+      expect(eventById('ev-c3')?.start_time).toBe('2026-06-15T14:00:00+00:00');
+      expect(eventById('ev-c3')?.end_time).toBe('2026-06-15T15:00:00+00:00');
+    });
+
+    it("scope 'this' still honours an explicit end time over the carried one", async () => {
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { startDate: '2026-06-08', startTime: '16:00', endTime: '18:30' },
+      });
+
+      expect(result.success).toBe(true);
+      const row = eventById('ev-c2');
+      invariant(row);
+      expect(Date.parse(String(row?.end_time))).toBe(Date.parse('2026-06-08T18:30:00Z'));
+    });
+
+    it("scope 'this' does not touch end_time when the start does not move", async () => {
+      const payloads = spyOnUpdatePayloads();
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { title: 'Short game' },
+      });
+
+      expect(result.success).toBe(true);
+      expect(payloads.every((p) => !('end_time' in p))).toBe(true);
+      expect(eventById('ev-c2')?.end_time).toBe('2026-06-08T15:00:00+00:00');
+    });
+
+    it('holds for every scope on the same forward drag', async () => {
+      for (const scope of ['this', 'thisAndFuture', 'all'] as const) {
+        seed('u-coach');
+        const result = await editRecurringEvent({
+          eventId: 'ev-c2',
+          originalStartDate: '2026-06-08',
+          scope,
+          timezoneOffset: 0,
+          updates: { startDate: '2026-06-08', startTime: '16:00' },
+        });
+        expect(result.success, scope).toBe(true);
+        invariant(eventById('ev-c2'));
+      }
+    });
+  });
 });
 
 // ===========================================================================

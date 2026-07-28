@@ -986,7 +986,32 @@ async function editRecurringEventImpl(
         // but unchanged date fields are still omitted.
         const updates: Record<string, unknown> = { ...literalUpdates };
         if (startChanged && newStartMs !== null) updates.start_time = new Date(newStartMs).toISOString();
-        if (endChanged && newEndMs !== null) updates.end_time = new Date(newEndMs).toISOString();
+        if (endChanged && newEndMs !== null) {
+          updates.end_time = new Date(newEndMs).toISOString();
+        } else if (startChanged && oldEndMs !== null && Number.isFinite(oldEndMs)) {
+          // CARRY THE END WITH THE START. Moving a 10:00–11:00 practice to 14:00
+          // used to write start_time alone and leave end_time at 11:00, which
+          // Postgres rejects outright: `golf_events_end_after_start` requires
+          // `end_time >= start_time`, so the write failed with 23514 EVERY time.
+          // That is the `[editRecurringEvent Error]: [object Object]` pair 30
+          // seconds apart on 2026-07-27 — deterministic, so the coach's retry
+          // could not have worked. Reproduced against the real constraint, and
+          // the flattened PostgrestError String()s to exactly that log line.
+          //
+          // The occurrence keeps its duration, which is what 'thisAndFuture'
+          // already did in this same situation (see `startDeltaMs` below). The
+          // two scopes disagreeing was the whole defect — a coach dragging one
+          // practice later succeeded or failed depending on which radio button
+          // was selected.
+          //
+          // `Math.max` is a no-op whenever the row has a start to measure from:
+          // shifting both ends by one delta preserves `end >= start`, which the
+          // constraint already guarantees of the stored row. It only bites for a
+          // row that has an end but NO start — there `startDeltaMs` is 0, so the
+          // untouched old end could still land before the new start.
+          const shiftedEndMs = oldEndMs + startDeltaMs;
+          updates.end_time = new Date(Math.max(shiftedEndMs, newStartMs!)).toISOString();
+        }
         if (Object.keys(updates).length === 0) break; // nothing changed — no-op success
 
         // 2026-05-17: audit Q-NEW-7. .select('id') so we can count
