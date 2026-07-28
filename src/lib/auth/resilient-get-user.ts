@@ -33,8 +33,36 @@ export interface AuthErrorLike {
  */
 export function isTransientAuthError(error: AuthErrorLike | null | undefined): boolean {
   if (!error) return false;
-  if (error.name === 'AuthRetryableFetchError') return true;
+  if (error.name === 'AuthRetryableFetchError' || error.name === 'TimeoutError') return true;
   return error.status === 429 || (typeof error.status === 'number' && error.status >= 500);
+}
+
+function normalizeThrownAuthError(error: unknown): AuthErrorLike {
+  if (error && typeof error === 'object') {
+    const value = error as { name?: unknown; status?: unknown; message?: unknown };
+    return {
+      name: typeof value.name === 'string' ? value.name : undefined,
+      status: typeof value.status === 'number' ? value.status : undefined,
+      message: typeof value.message === 'string' ? value.message : undefined,
+    };
+  }
+  return { message: String(error) };
+}
+
+function isStaleRefreshTokenError(error: AuthErrorLike): boolean {
+  return /refresh token/i.test(error.message ?? '');
+}
+
+async function readUser(supabase: AuthClientLike) {
+  try {
+    return await supabase.auth.getUser();
+  } catch (error) {
+    const normalized = normalizeThrownAuthError(error);
+    if (isTransientAuthError(normalized) || isStaleRefreshTokenError(normalized)) {
+      return { data: { user: null }, error: normalized };
+    }
+    throw error;
+  }
 }
 
 /** Narrow structural client type so middleware + server clients both fit. */
@@ -175,14 +203,14 @@ export async function getUserResilient(
   supabase: AuthClientLike,
   options: { retryTransient?: boolean } = {},
 ): Promise<ResilientUserResult> {
-  const first = await supabase.auth.getUser();
+  const first = await readUser(supabase);
   if (first.data.user) return { user: first.data.user, degraded: false };
   if (!isTransientAuthError(first.error)) return { user: null, degraded: false };
 
   if (options.retryTransient !== false) {
     await jitteredDelay();
 
-    const second = await supabase.auth.getUser();
+    const second = await readUser(supabase);
     if (second.data.user) return { user: second.data.user, degraded: false };
     if (!isTransientAuthError(second.error)) return { user: null, degraded: false };
   }

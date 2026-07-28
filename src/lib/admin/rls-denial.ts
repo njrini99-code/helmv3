@@ -17,6 +17,29 @@ export function isRlsDenial(
   return /row-level security/i.test(error.message ?? '');
 }
 
+/**
+ * Postgres names the offending relation in the denial text itself. Callers that
+ * can't thread a table descriptor (e.g. `fetchAllRowsResult` without an
+ * `rlsCtx`) previously landed in the Bridge as `RLS denial: select on unknown`,
+ * which is un-triageable and can't resolve a feature via `featureForTable`.
+ * Recovering the name from the message keeps those denials actionable.
+ */
+const DENIAL_TABLE_PATTERNS: RegExp[] = [
+  /permission denied for (?:table|relation|view|materialized view)\s+"?([A-Za-z0-9_]+)"?/i,
+  /row-level security policy for (?:table|relation)\s+"?([A-Za-z0-9_]+)"?/i,
+];
+
+const UNNAMED_TABLES = new Set(['', 'unknown']);
+
+export function resolveDenialTable(table: string, message: string | null | undefined): string {
+  if (!UNNAMED_TABLES.has(table.trim().toLowerCase())) return table;
+  for (const pattern of DENIAL_TABLE_PATTERNS) {
+    const match = pattern.exec(message ?? '');
+    if (match?.[1]) return match[1];
+  }
+  return table;
+}
+
 const STORM_WINDOW_MS = 10 * 60 * 1000;
 const STORM_THRESHOLD = 5;
 
@@ -62,10 +85,11 @@ export function maybeCaptureRlsDenial(
 ): void {
   if (!isRlsDenial(error)) return;
   try {
-    const feature = ctx.feature ?? featureForTable(ctx.table) ?? undefined;
-    const isStorm = trackDenialStorm(`${ctx.table}:${ctx.verb}`);
+    const table = resolveDenialTable(ctx.table, error?.message);
+    const feature = ctx.feature ?? featureForTable(table) ?? undefined;
+    const isStorm = trackDenialStorm(`${table}:${ctx.verb}`);
     void logServerEvent(
-      `RLS denial: ${ctx.verb} on ${ctx.table}`,
+      `RLS denial: ${ctx.verb} on ${table}`,
       {
         action: ctx.action,
         source: 'rls_denial',
@@ -73,7 +97,7 @@ export function maybeCaptureRlsDenial(
         userId: ctx.userId ?? null,
         sport: ctx.sport,
         feature: feature ?? null,
-        metadata: { table: ctx.table, verb: ctx.verb, message: error?.message ?? null },
+        metadata: { table, verb: ctx.verb, message: error?.message ?? null },
         tags: isStorm ? { rls_denial_storm: 'true' } : undefined,
         // Routine denials stay admin-feed-only; a storm crossing the
         // threshold escalates to a real Sentry issue at 'error' severity.

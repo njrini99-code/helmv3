@@ -18,6 +18,7 @@ import type {
   CoachRecruitingPhilosophyUpdate,
   PlayerPercentiles,
 } from '@/lib/types';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Note: Tables 'coach_recruiting_philosophy' and 'player_percentiles' are new.
 // Run migration and regenerate Supabase types to remove type assertions.
@@ -112,7 +113,7 @@ export async function saveRecruitingPhilosophy(
     return await saveRecruitingPhilosophyAction(philosophy);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'recruiting-philosophy.saveRecruitingPhilosophy', featureArea: 'baseball-recruiting-philosophy' },
     );
     const mapped = mapRecruitingPhilosophyActionError(error);
@@ -234,7 +235,7 @@ export async function resetRecruitingPhilosophy(): Promise<{
     return await resetRecruitingPhilosophyAction();
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'recruiting-philosophy.resetRecruitingPhilosophy', featureArea: 'baseball-recruiting-philosophy' },
     );
     const mapped = mapRecruitingPhilosophyActionError(error);
@@ -326,7 +327,7 @@ export async function recalculatePercentiles(
     return await recalculatePercentilesAction(gradYear);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'recruiting-philosophy.recalculatePercentiles', featureArea: 'baseball-recruiting-philosophy' },
     );
     const mapped = mapRecruitingPhilosophyActionError(error);

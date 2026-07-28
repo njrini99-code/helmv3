@@ -20,6 +20,7 @@ import {
   confirmSelection,
 } from '@/lib/coachhelm/v3/qualifying/service';
 import type { QualifierSelectionState } from '@/lib/coachhelm/v3/qualifying/types';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface QualifyingActionResult {
   ok: boolean;
@@ -67,7 +68,7 @@ async function advanceSelectionStateImpl(
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `advanceSelectionState failed: ${err instanceof Error ? err.message : String(err)}`,
+      `advanceSelectionState failed: ${describeError(err)}`,
       { action: 'v3.qualifying.advanceSelectionState' },
     );
     return { ok: false, error: 'Internal error' };
@@ -108,7 +109,7 @@ async function setQualifierCoachPickImpl(
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `setQualifierCoachPick failed: ${err instanceof Error ? err.message : String(err)}`,
+      `setQualifierCoachPick failed: ${describeError(err)}`,
       { action: 'v3.qualifying.setCoachPick' },
     );
     return { ok: false, error: 'Internal error' };
@@ -144,7 +145,7 @@ async function removeQualifierCoachPickImpl(
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `removeQualifierCoachPick failed: ${err instanceof Error ? err.message : String(err)}`,
+      `removeQualifierCoachPick failed: ${describeError(err)}`,
       { action: 'v3.qualifying.removeCoachPick' },
     );
     return { ok: false, error: 'Internal error' };
@@ -181,7 +182,7 @@ async function confirmQualifierSelectionImpl(
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `confirmQualifierSelection failed: ${err instanceof Error ? err.message : String(err)}`,
+      `confirmQualifierSelection failed: ${describeError(err)}`,
       { action: 'v3.qualifying.confirmSelection' },
     );
     return { ok: false, error: 'Internal error' };

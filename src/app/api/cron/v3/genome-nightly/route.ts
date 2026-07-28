@@ -19,6 +19,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -129,7 +130,7 @@ async function handle(): Promise<NextResponse> {
       });
     } catch (err) {
       await logServerError(
-        `genome-nightly compute exception for ${pid}: ${err instanceof Error ? err.message : String(err)}`,
+        `genome-nightly compute exception for ${pid}: ${describeError(err)}`,
         { action: 'cron.v3.genome-nightly', source: 'cron' },
       );
       per_player.push({

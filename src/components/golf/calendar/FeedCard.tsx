@@ -18,7 +18,7 @@
  * a separately-colored icon chip — one signal, not two competing ones.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { SubscriptionInstructions } from './SubscriptionInstructions';
 import {
@@ -35,8 +35,9 @@ import {
   ExternalLink,
   type LucideIcon,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistance } from 'date-fns';
 import { Surface, Inset, Button, IconButton, StatusPill, type FwStatusTone } from '@/components/fairway';
+import { formatShortDate } from '@/lib/golf/format-date';
 
 export interface CalendarFeed {
   id: string;
@@ -54,6 +55,22 @@ interface FeedCardProps {
   className?: string;
 }
 
+/**
+ * Relative label measured against a caller-supplied "now".
+ *
+ * React #418 (confirmed Helm Bridge incident, calendar_events, 2026-07-22):
+ * `formatDistanceToNow` reads the clock during render, and this 'use client'
+ * component also renders on the server, so "about 2 hours ago" on the server
+ * can hydrate against "about 3 hours ago" on the client. `now === null` is the
+ * pre-hydration state and degrades to the absolute short date on both sides;
+ * the relative label swaps in from an effect afterwards.
+ */
+function relativeLabel(iso: string, now: Date | null): string {
+  const date = new Date(iso);
+  if (!now) return formatShortDate(date);
+  return formatDistance(date, now, { addSuffix: true });
+}
+
 const FEED_TYPE_META: Record<CalendarFeed['type'], { icon: LucideIcon; label: string; tone: FwStatusTone }> = {
   team: { icon: Users, label: 'Team Events', tone: 'accent' },
   personal: { icon: Calendar, label: 'Personal Events', tone: 'accent' },
@@ -67,6 +84,12 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Client-only clock for the relative labels below — see relativeLabel.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
 
   const meta = FEED_TYPE_META[feed.type];
   const Icon = meta.icon;
@@ -123,8 +146,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
 
             {/* Last synced */}
             {feed.last_synced_at && (
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                Last synced {formatDistanceToNow(new Date(feed.last_synced_at), { addSuffix: true })}
+              <p className="font-fw-sans text-caption text-text-tertiary" suppressHydrationWarning>
+                Last synced {relativeLabel(feed.last_synced_at, now)}
               </p>
             )}
           </div>
@@ -192,8 +215,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
         ) : (
           // Normal actions
           <>
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              Created {formatDistanceToNow(new Date(feed.created_at), { addSuffix: true })}
+            <p className="font-fw-sans text-caption text-text-tertiary" suppressHydrationWarning>
+              Created {relativeLabel(feed.created_at, now)}
             </p>
             <div className="flex items-center gap-1">
               <IconButton

@@ -20,6 +20,7 @@ import { BehaviorLearner } from '@/lib/coachhelm/v2/learning/behavior-learner';
 import type { InteractionType } from '@/lib/coachhelm/v2/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const ratingSchema = z.object({
   insightId: z.string().uuid(),
@@ -190,7 +191,7 @@ async function rateInsightAsPlayerImpl(
     });
   } catch (learnerErr) {
     await logServerError(
-      `rateInsightAsPlayer.recorder failed: ${learnerErr instanceof Error ? learnerErr.message : String(learnerErr)}`,
+      `rateInsightAsPlayer.recorder failed: ${describeError(learnerErr)}`,
       {
         action: 'rateInsightAsPlayer.recorder',
         featureArea: 'player_feedback',

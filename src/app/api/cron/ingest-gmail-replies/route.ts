@@ -14,6 +14,7 @@ import {
   type InboundGmailMessage,
 } from '@/lib/crm/gmail-read';
 import type { Json } from '@/lib/types';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // CRON: mirror inbound mail from the admin@ Gmail inbox into the CRM.
@@ -241,7 +242,7 @@ export async function GET(request: Request) {
       });
     } catch (err) {
       await logServerError(
-        `ingest-gmail-replies failed: ${err instanceof Error ? err.message : String(err)}`,
+        `ingest-gmail-replies failed: ${describeError(err)}`,
         { action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron' },
       );
       return NextResponse.json({ ok: false, error: 'ingest failed' }, { status: 500 });

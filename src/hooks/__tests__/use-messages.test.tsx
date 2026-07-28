@@ -24,10 +24,15 @@ import type { Message } from '@/lib/types';
 // ── Server action mocks (controllable per test) ─────────────────────────────
 const sendMessageMock = vi.fn();
 const markMessagesAsReadMock = vi.fn();
+const logErrorMock = vi.fn();
 
 vi.mock('@/app/baseball/actions/messages', () => ({
   sendMessage: (...args: unknown[]) => sendMessageMock(...args),
   markMessagesAsRead: (...args: unknown[]) => markMessagesAsReadMock(...args),
+}));
+
+vi.mock('@/lib/error-logging', () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
 }));
 
 // ── Supabase client mock — chainable query builder + a channel stub that
@@ -41,7 +46,15 @@ type SubscriptionConfig = { event: string; schema?: string; table?: string; filt
 let subscriptionConfigs: SubscriptionConfig[] = [];
 
 let queryResult: { data: Message[] | null } = { data: [] };
-let rpcResult: { data: unknown[]; error: null | { message: string } } = { data: [], error: null };
+let rpcResult: {
+  data: unknown[];
+  error: null | {
+    message: string;
+    code?: string;
+    details?: string | null;
+    hint?: string | null;
+  };
+} = { data: [], error: null };
 
 function makeQueryChain() {
   const chain: Record<string, unknown> = {};
@@ -105,6 +118,7 @@ describe('useMessages', () => {
     rpcResult = { data: [], error: null };
     sendMessageMock.mockReset();
     markMessagesAsReadMock.mockReset().mockResolvedValue({ success: true });
+    logErrorMock.mockReset();
     vi.mocked(useAuthStore).mockReturnValue({ user: { id: 'me' } } as unknown as ReturnType<typeof useAuthStore>);
   });
 
@@ -188,6 +202,7 @@ describe('useConversations realtime scoping (#451)', () => {
     channelHandlers.clear();
     subscriptionConfigs = [];
     rpcResult = { data: [], error: null };
+    logErrorMock.mockReset();
     vi.mocked(useAuthStore).mockReturnValue({ user: { id: 'me' } } as unknown as ReturnType<typeof useAuthStore>);
   });
 
@@ -210,5 +225,46 @@ describe('useConversations realtime scoping (#451)', () => {
     );
     expect(participantsSub).toBeDefined();
     expect(participantsSub?.filter).toBe('user_id=eq.me');
+  });
+
+  it('normalizes Postgrest errors into a readable message and structured context (#886)', async () => {
+    rpcResult = {
+      data: [],
+      error: {
+        message: 'permission denied for relation baseball_conversations',
+        code: '42501',
+        details: 'RLS policy rejected the read',
+        hint: 'Check team membership',
+      },
+    };
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const { result } = renderHook(() => useConversations());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error fetching conversations:',
+      'code=42501 msg=permission denied for relation baseball_conversations details=RLS policy rejected the read hint=Check team membership',
+    );
+    expect(logErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          'code=42501 msg=permission denied for relation baseball_conversations details=RLS policy rejected the read hint=Check team membership',
+      }),
+      expect.objectContaining({
+        component: 'useMessages',
+        action: 'fetchConversations',
+        sport: 'baseball',
+        supabaseError: {
+          code: '42501',
+          details: 'RLS policy rejected the read',
+          hint: 'Check team membership',
+        },
+      }),
+      'medium',
+    );
+
+    expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain('[object Object]');
+    expect(JSON.stringify(logErrorMock.mock.calls)).not.toContain('[object Object]');
   });
 });

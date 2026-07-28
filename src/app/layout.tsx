@@ -20,6 +20,7 @@ import { StaleDeploymentRecoveryScript } from '@/components/providers/StaleDeplo
 import { VercelAnalyticsProvider } from '@/components/providers/VercelAnalyticsProvider';
 import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ThemeScript } from '@/components/golf/theme/ThemeScript';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -108,6 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        <ThemeScript />
         <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>

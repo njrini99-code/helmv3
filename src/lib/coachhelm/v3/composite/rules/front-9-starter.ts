@@ -3,7 +3,8 @@
  *
  * Fires when avg score-to-par on holes 1-3 is meaningfully worse than
  * on holes 4-18. Slow-starter pattern — warmup or first-tee nerves.
- * Threshold: ≥0.5 strokes/hole worse, ≥3 rounds in sample.
+ * Threshold: ≥0.5 strokes/hole worse, and at least MIN_SAMPLE_N rounds in
+ * sample (the platform evidence floor — see the MIN_ROUNDS note below).
  *
  * Uses ctx.hole_scores. Complementary to closing_hole_fatigue:
  * suppression handles overlap if both fire (subset check by ids —
@@ -18,9 +19,19 @@
  * already exists in the window, defer to it and don't also fire.
  */
 
+import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
 
-const MIN_ROUNDS = 3;
+/**
+ * This rule reports its distinct-round count AS `evidence.sample_n`, so its
+ * detect() gate must be the platform evidence floor itself. At the old value
+ * of 3 the rule fired, composed, and was then refused by `upsertInsight` on
+ * every run for any player with 3-4 rounds — it could never publish, and the
+ * counted throw disabled `synthesizeForPlayer`'s stale-composite sweep for
+ * that player. Declining below the floor is the honest behavior: clamping
+ * sample_n up is forbidden by the evidence contract.
+ */
+const MIN_ROUNDS = MIN_SAMPLE_N;
 const MIN_DELTA = 0.5;
 
 const rule: CompositeRule = {

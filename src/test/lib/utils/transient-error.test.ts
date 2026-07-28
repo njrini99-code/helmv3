@@ -73,6 +73,70 @@ describe('isTransientFetchError', () => {
     expect(isTransientFetchError(new Error('network error'))).toBe(true);
   });
 
+  /**
+   * The 10s `AbortSignal.timeout` in src/lib/supabase/server.ts is the abort
+   * this helper exists to catch, and it reaches callers in two shapes. Both
+   * were classified as NON-transient before 2026-07-28, so every retry gated
+   * on this helper was dead code for the codebase's most common transport
+   * failure — and the Bridge filed each one as a hard error.
+   */
+  describe('the server client\'s own 10s abort', () => {
+    it('returns true for a thrown AbortSignal.timeout DOMException', () => {
+      // Real shape: name is TimeoutError, NOT AbortError.
+      const err = Object.assign(new Error('The operation was aborted due to timeout'), {
+        name: 'TimeoutError',
+      });
+      expect(isTransientFetchError(err)).toBe(true);
+    });
+
+    it('returns true on the message alone when the name is missing', () => {
+      expect(isTransientFetchError(new Error('The operation was aborted due to timeout'))).toBe(
+        true,
+      );
+    });
+
+    it('returns true for an explicit AbortController abort', () => {
+      expect(isTransientFetchError(new Error('This operation was aborted'))).toBe(true);
+    });
+
+    it('returns true for the "user aborted a request" phrasing', () => {
+      expect(isTransientFetchError(new Error('The user aborted a request.'))).toBe(true);
+    });
+
+    it('returns true for the plain object supabase-js resolves with after an abort', () => {
+      // Verbatim from postgrest-js: not an Error, no `name`, empty `code`.
+      // `String(err)` on this is '[object Object]' — the exact production
+      // signature of the editRecurringEvent incidents (2026-07-27).
+      const err = {
+        message: 'TimeoutError: The operation was aborted due to timeout',
+        details: 'TimeoutError: The operation was aborted due to timeout\n    at node:internal',
+        hint: '',
+        code: '',
+      };
+      expect(String(err)).toBe('[object Object]'); // guards the premise
+      expect(isTransientFetchError(err)).toBe(true);
+    });
+
+    it('returns true for the plain-object shape of a bare fetch failure', () => {
+      expect(
+        isTransientFetchError({ message: 'TypeError: fetch failed', details: '', hint: '', code: '' }),
+      ).toBe(true);
+    });
+
+    it('does NOT treat a plain-object PostgrestError with a real pg code as transient', () => {
+      // A constraint violation is a deterministic rejection — retrying it
+      // just fails again. Same envelope shape, opposite verdict.
+      expect(
+        isTransientFetchError({
+          message: 'new row violates row-level security policy for table "golf_events"',
+          details: null,
+          hint: null,
+          code: '42501',
+        }),
+      ).toBe(false);
+    });
+  });
+
   it("returns false for a TypeError reading an undefined property (real bug)", () => {
     expect(
       isTransientFetchError(new TypeError("Cannot read property 'x' of undefined")),

@@ -20,6 +20,7 @@ import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // OWNERSHIP HELPER
@@ -411,7 +412,7 @@ async function getTeamPatternsImpl(
       },
     };
   } catch (error) {
-    await logServerError(`getTeamPatterns failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getTeamPatterns failed: ${describeError(error)}`, {
       action: 'getTeamPatterns',
       featureArea: 'pattern_management',
     });
@@ -524,7 +525,7 @@ async function validatePatternImpl(
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    await logServerError(`validatePattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`validatePattern failed: ${describeError(error)}`, {
       action: 'validatePattern',
       featureArea: 'pattern_management',
       extra: { patternId },
@@ -594,7 +595,7 @@ async function dismissPatternImpl(
     revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
-    await logServerError(`dismissPattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`dismissPattern failed: ${describeError(error)}`, {
       action: 'dismissPattern',
       featureArea: 'pattern_management',
       extra: { patternId },
@@ -670,7 +671,7 @@ async function markPatternAddressedImpl(
     revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
-    await logServerError(`markPatternAddressed failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`markPatternAddressed failed: ${describeError(error)}`, {
       action: 'markPatternAddressed',
       featureArea: 'pattern_management',
       extra: { patternId },
@@ -743,7 +744,7 @@ async function resolvePatternImpl(
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    await logServerError(`resolvePattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`resolvePattern failed: ${describeError(error)}`, {
       action: 'resolvePattern',
       featureArea: 'pattern_management',
       extra: { patternId },
@@ -821,7 +822,7 @@ async function reopenPatternImpl(
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    await logServerError(`reopenPattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`reopenPattern failed: ${describeError(error)}`, {
       action: 'reopenPattern',
       featureArea: 'pattern_management',
       extra: { patternId },
@@ -927,7 +928,7 @@ async function createFocusAreaFromPatternInternal(
 
     return { success: true, focusAreaId: focusArea?.id };
   } catch (error) {
-    await logServerError(`createFocusAreaFromPatternInternal failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`createFocusAreaFromPatternInternal failed: ${describeError(error)}`, {
       action: 'createFocusAreaFromPatternInternal',
       featureArea: 'pattern_management',
       extra: { patternId, coachId },
@@ -1096,7 +1097,7 @@ async function getPatternStatsImpl(): Promise<{
 
     return { success: true, stats };
   } catch (error) {
-    await logServerError(`getPatternStats failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPatternStats failed: ${describeError(error)}`, {
       action: 'getPatternStats',
       featureArea: 'pattern_management',
     });

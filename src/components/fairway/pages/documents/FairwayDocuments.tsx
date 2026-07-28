@@ -180,7 +180,7 @@ const SORT_OPTIONS = [
 type SortKey = (typeof SORT_OPTIONS)[number]['value'];
 
 const UPLOAD_ACCEPT =
-  'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,text/plain,video/mp4,video/webm';
+  'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif,image/svg+xml,text/plain,text/markdown,text/csv,video/mp4,video/webm,video/quicktime,application/zip';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * File-type → Fairway iconography + label + Chip tone (token tones only).

@@ -48,6 +48,7 @@ import { rollupInsightEffectivenessForYesterday } from '@/lib/coachhelm/v2/analy
 import { rollupPredictionPerformanceRolling30d } from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -224,7 +225,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
         evaluated.push({ id: row.id, patch });
       } catch (err) {
         await logServerError(
-          `cron.insight_lifecycle.evaluate failed: ${err instanceof Error ? err.message : String(err)}`,
+          `cron.insight_lifecycle.evaluate failed: ${describeError(err)}`,
           {
             action: 'cron.coachhelm.insight_lifecycle.evaluate',
             featureArea: 'coachhelm',
@@ -279,7 +280,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     effectivenessResult = await rollupInsightEffectivenessForYesterday(supabase);
   } catch (err) {
     await logServerError(
-      `cron.insight_lifecycle.effectiveness_rollup failed: ${err instanceof Error ? err.message : String(err)}`,
+      `cron.insight_lifecycle.effectiveness_rollup failed: ${describeError(err)}`,
       { action: 'cron.coachhelm.insight_lifecycle.effectiveness_rollup', featureArea: 'coachhelm' },
       'error',
     );
@@ -288,7 +289,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     predictionResult = await rollupPredictionPerformanceRolling30d(supabase);
   } catch (err) {
     await logServerError(
-      `cron.insight_lifecycle.prediction_rollup failed: ${err instanceof Error ? err.message : String(err)}`,
+      `cron.insight_lifecycle.prediction_rollup failed: ${describeError(err)}`,
       { action: 'cron.coachhelm.insight_lifecycle.prediction_rollup', featureArea: 'coachhelm' },
       'error',
     );

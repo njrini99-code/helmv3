@@ -4,7 +4,10 @@
  * Single source of truth for "should we make the LLM call or fall back
  * to template?". Reads/upserts `golf_coachhelm_llm_budget` for the
  * (coach_id, today) row, comparing `spent_usd` to either that row's
- * `budget_usd` or the team's default `llm_budget_usd_per_day` setting.
+ * `budget_usd` or the coach's own `golf_coachhelm_settings
+ * .llm_budget_usd_per_day`. Both the cap and the setting are per-coach;
+ * `golf_team_coachhelm_settings` is the team-level kill switch and carries
+ * no budget.
  *
  * Both functions take an admin Supabase client — these run server-side
  * inside compose() and bypass RLS for the upsert.
@@ -27,11 +30,16 @@ type Sb = SupabaseClient<Database>;
  * Only the first is a reason to leave CoachHelm switched off.
  */
 export type BudgetSource =
-  /** A settings row for this team carries a budget. Includes a deliberate 0. */
-  | 'team_configured'
-  /** No settings row, or every row's budget is null — nobody has configured it. */
+  /**
+   * This coach's own settings row carries a budget. Named for the coach, not
+   * the team, because `golf_coachhelm_settings` is UNIQUE on `coach_id` — the
+   * old `team_configured` spelling is what led the resolver to read the whole
+   * team's rows and take their maximum.
+   */
+  | 'coach_configured'
+  /** No settings row, or its budget is null — nobody has configured it. */
   | 'platform_default'
-  /** A team configured 0 on purpose. Distinct from "nobody configured it". */
+  /** A coach configured 0 on purpose. Distinct from "nobody configured it". */
   | 'disabled'
   /** Coach has no team, or the settings read failed. Fails closed, loudly. */
   | 'unresolved';
@@ -97,7 +105,7 @@ export async function checkBudget(
     spent_usd = Number(existing.spent_usd);
     // The day's row already fixed a number; where it originally came from is
     // recorded on the row that seeded it, not re-derived here.
-    source = 'team_configured';
+    source = 'coach_configured';
   } else {
     const resolved = await resolveDefaultBudgetForCoach(supabase, coach_id);
     budget_usd = resolved.budget_usd;
@@ -221,59 +229,66 @@ async function resolveDefaultBudgetForCoach(
     return { budget_usd: 0, source: 'unresolved' };
   }
 
-  // `.maybeSingle()` was wrong here: `golf_coachhelm_settings` has no unique
-  // constraint on team_id, and production carries two rows for at least one
-  // team (one configured, one with a null budget). maybeSingle ERRORS on a
-  // multi-row result, `settings` comes back undefined, and the coach silently
-  // gets a $0 budget — i.e. CoachHelm is switched off for that team with no
-  // signal anywhere. Read the rows and resolve deterministically instead.
-  const { data: settingsRows, error: settingsError } = await supabase
+  // Read THIS coach's own settings row.
+  //
+  // The previous version read every settings row on the coach's team
+  // (`.eq('team_id', ...)`) and took `Math.max` of them, on the belief that a
+  // team could carry duplicate rows. It cannot: `golf_coachhelm_settings` is
+  // UNIQUE on `coach_id` (golf_coachhelm_settings_coach_id_key) with a
+  // nullable `team_id`, i.e. it is a PER-COACH table — as the schema notes
+  // describe it, next to `golf_team_coachhelm_settings`, which is the
+  // team-level kill switch and has no budget column at all. Two rows for one
+  // team means two coaches, each with exactly one row.
+  //
+  // Reading by team therefore broke three things at once:
+  //   1. It logged `v3.llm.budget.duplicate_settings` on every budget
+  //      resolution for any team with two or more coaches — a warning about
+  //      corruption that does not exist and cannot be repaired.
+  //   2. `Math.max` leaked one coach's configured budget to a teammate who
+  //      had deliberately left theirs unset, so a coach's ceiling moved when
+  //      a colleague edited an unrelated setting.
+  //   3. `Math.max` made a deliberate per-coach 0 unenforceable: switching
+  //      one coach off did nothing while any teammate had a positive budget.
+  //
+  // Enforcement was always per-coach — `golf_coachhelm_llm_budget` is keyed
+  // (coach_id, date), and PLATFORM_DEFAULT_DAILY_BUDGET_USD is documented as
+  // a per-coach ceiling — so reading per-coach is what the rest of the gate
+  // already assumed.
+  const { data: settings, error: settingsError } = await supabase
     .from('golf_coachhelm_settings')
     .select('llm_budget_usd_per_day')
-    .eq('team_id', staff.team_id);
+    .eq('coach_id', coach_id)
+    .maybeSingle();
 
   if (settingsError) {
-    // A failed read is NOT "this team has no budget". Fail closed on spend —
+    // A failed read is NOT "this coach has no budget". Fail closed on spend —
     // that part is correct — but say so, rather than letting it look like a
     // deliberate zero.
     await logServerError(
-      `budget: settings lookup failed for team_id=${staff.team_id} — ${settingsError.message}`,
+      `budget: settings lookup failed for coach_id=${coach_id} — ${settingsError.message}`,
       { action: 'v3.llm.budget.settings' },
       'warning',
     );
     return { budget_usd: 0, source: 'unresolved' };
   }
 
-  const configured = (settingsRows ?? [])
-    .map((r) => r.llm_budget_usd_per_day)
-    .filter((v): v is NonNullable<typeof v> => v !== null && v !== undefined)
-    .map(Number)
-    .filter((n) => Number.isFinite(n));
+  const raw = settings?.llm_budget_usd_per_day;
+  const budget_usd = raw === null || raw === undefined ? NaN : Number(raw);
 
-  if ((settingsRows?.length ?? 0) > 1) {
+  if (!Number.isFinite(budget_usd)) {
+    // No row, or a row whose budget column is null. Nobody has set a budget
+    // for this coach. That is not a decision to switch CoachHelm off — it is
+    // the absence of a decision, and the product should work with a ceiling
+    // until someone makes one.
     await logServerError(
-      `budget: ${settingsRows!.length} settings rows for team_id=${staff.team_id}; using the highest configured budget`,
-      { action: 'v3.llm.budget.duplicate_settings' },
-      'warning',
-    );
-  }
-
-  if (configured.length === 0) {
-    // Nobody has set a budget for this team. That is not a decision to switch
-    // CoachHelm off — it is the absence of a decision, and the product should
-    // work with a ceiling until someone makes one.
-    await logServerError(
-      `budget: team_id=${staff.team_id} has no configured daily budget; using the platform default of $${PLATFORM_DEFAULT_DAILY_BUDGET_USD}`,
+      `budget: coach_id=${coach_id} has no configured daily budget; using the platform default of $${PLATFORM_DEFAULT_DAILY_BUDGET_USD}`,
       { action: 'v3.llm.budget.platform_default' },
       'warning',
     );
     return { budget_usd: PLATFORM_DEFAULT_DAILY_BUDGET_USD, source: 'platform_default' };
   }
 
-  // Highest wins: with duplicate rows, honouring a configured budget over a
-  // null one is the reading that matches what an admin actually set.
-  const budget_usd = Math.max(...configured);
   // An explicit 0 IS a decision — honour it, and label it as one so nobody
-  // later mistakes it for a team that was never set up.
-  return { budget_usd, source: budget_usd === 0 ? 'disabled' : 'team_configured' };
+  // later mistakes it for a coach who was never set up.
+  return { budget_usd, source: budget_usd === 0 ? 'disabled' : 'coach_configured' };
 }

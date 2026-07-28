@@ -23,6 +23,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import type { GolfDocument } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -102,7 +103,7 @@ async function getEventDocumentsImpl(
 
     return { success: true, data: rows };
   } catch (err) {
-    await logServerError(`getEventDocuments error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`getEventDocuments error: ${describeError(err)}`, {
       action: 'event_documents.getEventDocuments',
       featureArea: 'calendar',
       extra: { eventId },
@@ -199,7 +200,7 @@ async function attachDocumentToEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (err) {
-    await logServerError(`attachDocumentToEvent error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`attachDocumentToEvent error: ${describeError(err)}`, {
       action: 'event_documents.attachDocumentToEvent',
       featureArea: 'calendar',
       extra: { eventId, documentId },
@@ -265,7 +266,7 @@ async function detachDocumentFromEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (err) {
-    await logServerError(`detachDocumentFromEvent error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`detachDocumentFromEvent error: ${describeError(err)}`, {
       action: 'event_documents.detachDocumentFromEvent',
       featureArea: 'calendar',
       extra: { eventId, documentId },

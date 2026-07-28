@@ -4,6 +4,9 @@ const mocks = vi.hoisted(() => ({
   // Variadic rest param (not `()`) so `.mock.calls[0]` is destructurable —
   // see the same fix in rls-denial.test.ts.
   logServerException: vi.fn(async (..._args: unknown[]) => {}),
+  getUser: vi.fn(async () => ({
+    data: { user: { id: 'user-1', email: 'admin@example.com' } },
+  })),
 }));
 vi.mock('@/lib/server-error-logger', () => ({
   logServerException: mocks.logServerException,
@@ -11,9 +14,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: {
-      getUser: vi.fn(async () => ({
-        data: { user: { id: 'user-1', email: 'admin@example.com' } },
-      })),
+      getUser: mocks.getUser,
     },
   })),
 }));
@@ -44,12 +45,35 @@ describe('isAdminAuthControlFlowError', () => {
 describe('withAdminObserved', () => {
   beforeEach(() => {
     mocks.logServerException.mockClear();
+    mocks.getUser.mockClear();
     __resetEmitThrottleForTests();
   });
 
   it('passes through the return value untouched', async () => {
     const wrapped = withAdminObserved('demo', { sport: 'golf' }, async (n: number) => n * 2);
     await expect(wrapped(21)).resolves.toBe(42);
+    expect(mocks.logServerException).not.toHaveBeenCalled();
+  });
+
+  it('does not call Auth solely to enrich a successful action', async () => {
+    const wrapped = withAdminObserved('healthyRead', { sport: 'golf' }, async () => ({ ok: true }));
+    await expect(wrapped()).resolves.toEqual({ ok: true });
+    expect(mocks.getUser).not.toHaveBeenCalled();
+    expect(mocks.logServerException).not.toHaveBeenCalled();
+  });
+
+  it('can skip a domain-observed soft failure without losing thrown-error coverage', async () => {
+    const wrapped = withAdminObserved(
+      'domainObservedRead',
+      { sport: 'golf', observeSoftFailures: false },
+      async () => ({ success: false, error: 'already recorded with query context' }),
+    );
+
+    await expect(wrapped()).resolves.toEqual({
+      success: false,
+      error: 'already recorded with query context',
+    });
+    expect(mocks.getUser).not.toHaveBeenCalled();
     expect(mocks.logServerException).not.toHaveBeenCalled();
   });
 

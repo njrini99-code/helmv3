@@ -20,6 +20,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { RECRUIT_DOC_CATEGORIES, type RecruitDocCategory } from './recruit-documents-categories';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import { describeError } from '@/lib/utils/describe-error';
 
 const BUCKET = 'recruit-documents';
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB — matches the bucket file_size_limit
@@ -112,7 +113,7 @@ async function getRecruitDocumentsImpl(
     return { success: true, data: (data ?? []) as RecruitDocument[] };
   } catch (err) {
     await logServerError(
-      `getRecruitDocuments error: ${err instanceof Error ? err.message : String(err)}`,
+      `getRecruitDocuments error: ${describeError(err)}`,
       { action: 'recruit_documents.getRecruitDocuments', featureArea: 'recruiting', extra: { recruitId } },
     );
     return { success: false, error: 'Failed to load documents' };
@@ -241,7 +242,7 @@ async function uploadRecruitDocumentImpl(
     return { success: true, data: { id: row.id } };
   } catch (err) {
     await logServerError(
-      `uploadRecruitDocument error: ${err instanceof Error ? err.message : String(err)}`,
+      `uploadRecruitDocument error: ${describeError(err)}`,
       { action: 'recruit_documents.uploadRecruitDocument', featureArea: 'recruiting', extra: { recruitId } },
     );
     return { success: false, error: 'Failed to upload document' };
@@ -323,7 +324,7 @@ async function deleteRecruitDocumentImpl(documentId: string): Promise<ActionResu
     return { success: true };
   } catch (err) {
     await logServerError(
-      `deleteRecruitDocument error: ${err instanceof Error ? err.message : String(err)}`,
+      `deleteRecruitDocument error: ${describeError(err)}`,
       { action: 'recruit_documents.deleteRecruitDocument', featureArea: 'recruiting', extra: { documentId } },
     );
     return { success: false, error: 'Failed to delete document' };
@@ -377,7 +378,7 @@ async function getRecruitDocumentUrlImpl(
     };
   } catch (err) {
     await logServerError(
-      `getRecruitDocumentUrl error: ${err instanceof Error ? err.message : String(err)}`,
+      `getRecruitDocumentUrl error: ${describeError(err)}`,
       { action: 'recruit_documents.getRecruitDocumentUrl', featureArea: 'recruiting', extra: { documentId } },
     );
     return { success: false, error: 'Failed to open document' };

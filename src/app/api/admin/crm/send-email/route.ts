@@ -5,6 +5,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { mergeTags } from '@/lib/crm/merge-tags';
 import { applyUnsubTag } from '@/lib/crm/unsubscribe-token';
 import { buildOutreachExtras } from '@/lib/crm/outreach-headers';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface Recipient {
   id: string;
@@ -390,7 +391,7 @@ export async function POST(request: Request) {
     // (closes G11). The {sent,failed,skipped,total} aggregate counts are preserved.
     return NextResponse.json({ sent, failed, skipped, total: recipients.length, details });
   } catch (error) {
-    await logServerError(`CRM send-email route failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`CRM send-email route failed: ${describeError(error)}`, {
       action: 'crmSendEmailApi',
       source: 'route_handler',
       featureArea: 'admin_crm',

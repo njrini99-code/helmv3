@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -56,7 +57,7 @@ async function refreshAccessToken(supabase: Awaited<ReturnType<typeof createClie
 
     return tokens.access_token;
   } catch (error) {
-    await logServerError(`Token refresh error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.refreshAccessToken' });
+    await logServerError(`Token refresh error: ${describeError(error)}`, { action: 'route.refreshAccessToken' });
     return null;
   }
 }
@@ -242,7 +243,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    await logServerError(`Sync error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
+    await logServerError(`Sync error: ${describeError(error)}`, { action: 'route.POST' });
     return NextResponse.json(
       { error: 'Failed to sync event' },
       { status: 500 }
@@ -402,7 +403,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(results);
 
   } catch (error) {
-    await logServerError(`Batch sync error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.GET' });
+    await logServerError(`Batch sync error: ${describeError(error)}`, { action: 'route.GET' });
     return NextResponse.json(
       { error: 'Failed to sync events' },
       { status: 500 }

@@ -47,6 +47,34 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
   if (!access.allowed) {
     notFound();
   }
+  // baseball_team_members is authenticated-only. Keeping the relationship in
+  // an anonymous PostgREST select makes the entire public profile fail after
+  // the table's anon grant is revoked, so only request team affiliation for a
+  // signed-in viewer. Logged-out visitors still receive the public-safe player
+  // profile; the existing SECURITY DEFINER access gate above decides whether
+  // that profile may be shown.
+  const teamMembershipSelect = user ? `,
+      baseball_team_members (
+        id,
+        joined_at,
+        position,
+        jersey_number,
+        status,
+        team:baseball_teams (
+          id,
+          name,
+          team_type,
+          organization:organizations (
+            id,
+            name,
+            type,
+            logo_url,
+            location_city,
+            location_state
+          )
+        )
+      )` : '';
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: player, error } = await (supabase as any)
     .from('baseball_players')
@@ -70,27 +98,8 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
         achievement_text,
         achievement_type,
         achievement_date
-      ),
-      baseball_team_members (
-        id,
-        joined_at,
-        position,
-        jersey_number,
-        status,
-        team:baseball_teams (
-          id,
-          name,
-          team_type,
-          organization:organizations (
-            id,
-            name,
-            type,
-            logo_url,
-            location_city,
-            location_state
-          )
-        )
-      ),
+      )
+      ${teamMembershipSelect},
       high_school_org:organizations!players_high_school_org_id_fkey (
         id,
         name,

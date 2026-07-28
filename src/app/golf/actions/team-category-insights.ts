@@ -16,6 +16,7 @@ import {
   samplePerPlayerRounds,
   computeTeamHealth,
 } from './team-category-insights-helpers';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -974,7 +975,7 @@ async function getTeamCategoryInsightsImpl(
       }
     } catch (err) {
       await logServerError(
-        `getTeamCategoryInsights engine enrichment failed (continuing with template insights): ${err instanceof Error ? err.message : String(err)}`,
+        `getTeamCategoryInsights engine enrichment failed (continuing with template insights): ${describeError(err)}`,
         { action: 'getTeamCategoryInsights', featureArea: 'insights' },
         'warning',
       );

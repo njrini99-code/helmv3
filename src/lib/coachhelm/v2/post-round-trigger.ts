@@ -25,10 +25,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import '@/app/golf/actions/insights';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
-import {
-  isExpectedEmptyStateCode,
-  isExpectedSoftFailureMessage,
-} from '@/lib/admin/observe-action-result';
+import { classifySoftFailure } from '@/lib/admin/observe-action-result';
 
 export interface PostRoundTriggerArgs {
   playerId: string;
@@ -66,22 +63,15 @@ const PARTIAL_FAILURE_REASON = 'engine_partial_failure' as const;
 /**
  * `postRoundTrigger` is a SECOND, independent consumer of the same
  * `triggerPlayerInsightsAfterRound` result that `observeActionSoftFailure`
- * classifies for the withAdminObserved-wrapped path (see
- * src/lib/admin/observe-action-result.ts `severityForSoftFailure`). Both
- * consumers must agree on severity for the identical `code` — otherwise a
- * routine outcome (no rounds yet, background-context session expiry) is
- * simultaneously logged as a handled 'warning'/'info' by one consumer AND as
- * a live Sentry exception at 'error' by this one, defeating the whole point
- * of the classification.
+ * classifies for the withAdminObserved-wrapped path, and the safety-net cron
+ * is a THIRD. All three must agree on severity for the identical `code` —
+ * otherwise a routine outcome (no rounds yet, an un-rostered player,
+ * background-context session expiry) is simultaneously logged as a handled
+ * 'warning'/'info' by one consumer AND as a live Sentry exception at 'error'
+ * by another, defeating the whole point of the classification. The verdict
+ * itself lives in the classification module so no consumer owns it.
  */
-function classifyEngineFailureSeverity(
-  message: string,
-  code: string | null,
-): { severity: 'info' | 'warning' | 'error'; skipSentry: boolean } {
-  if (isExpectedEmptyStateCode(code)) return { severity: 'info', skipSentry: true };
-  if (isExpectedSoftFailureMessage(message, code)) return { severity: 'warning', skipSentry: true };
-  return { severity: 'error', skipSentry: false };
-}
+const classifyEngineFailureSeverity = classifySoftFailure;
 
 function sanitizeFailureReason(reason: string): FailureCode {
   const lower = reason.toLowerCase();
@@ -144,7 +134,7 @@ async function writeTerminalState(
 export async function postRoundTrigger(
   admin: SupabaseClient,
   args: PostRoundTriggerArgs,
-): Promise<{ success: boolean; error?: string; partial?: boolean }> {
+): Promise<{ success: boolean; error?: string; partial?: boolean; code?: string }> {
   const now = new Date().toISOString();
   try {
     const result = await triggerPlayerInsightsAfterRound(args.playerId);
@@ -175,7 +165,14 @@ export async function postRoundTrigger(
       } else {
         await logServerError(`postRoundTrigger engine failed: ${reason}`, logContext, severity);
       }
-      return { success: false, error: reason };
+      // Hand the engine's classification code back to the caller. The
+      // safety-net cron is a THIRD consumer of this same outcome (alongside
+      // this function and observeActionSoftFailure) and, without the code,
+      // had no way to reach the same verdict — so it re-logged expected
+      // outcomes at hardcoded 'error' right after this call had logged them
+      // at 'info'/'warning'. See the classifyEngineFailureSeverity doc
+      // comment above: all consumers must agree on severity for one code.
+      return { success: false, error: reason, ...(code ? { code } : {}) };
     }
 
     // P0-04: the engine ran but may have lost one or more generators to an

@@ -22,7 +22,12 @@ const { upsertMock, supersedeChain, fromUntypedMock, adminFromMock } = vi.hoiste
     const selectInMock = vi.fn(async () => ({
       data: [] as Array<{ id: string; lifecycle_state: string | null }>,
     }));
-    const upsertMock = vi.fn(async () => ({ error: null }));
+    const upsertMock = vi.fn(
+      async (
+        _row: Record<string, unknown>,
+        _options: { onConflict: string },
+      ): Promise<{ error: { message: string } | null }> => ({ error: null }),
+    );
 
     // Chainable builder double: .update().in().eq().not() return the builder,
     // .or() is the awaited terminal that resolves to { error }.
@@ -91,6 +96,7 @@ function makePattern(i: number, overrides: Partial<MinedPattern> = {}): MinedPat
 describe('PatternMiner.savePatterns soft-supersede (stale-data fix)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    upsertMock.mockResolvedValue({ error: null });
   });
 
   it('retires this player\'s active patterns absent from the fresh batch', async () => {
@@ -136,5 +142,42 @@ describe('PatternMiner.savePatterns soft-supersede (stale-data fix)', () => {
 
     expect(supersedeChain.in).toHaveBeenCalledWith('player_id', ['player-1', 'player-2']);
     expect(supersedeChain.not).toHaveBeenCalledWith('id', 'in', '("p-1","p-2","p-3")');
+  });
+
+  it('upserts in deterministic id order before superseding', async () => {
+    const miner = new PatternMiner('player-1');
+
+    await (miner as unknown as SavePatterns).savePatterns([
+      makePattern(3),
+      makePattern(1),
+      makePattern(2),
+    ]);
+
+    expect(upsertMock.mock.calls.map(([row]) => row.id)).toEqual(['p-1', 'p-2', 'p-3']);
+    expect(supersedeChain.not).toHaveBeenCalledWith('id', 'in', '("p-1","p-2","p-3")');
+  });
+
+  it.each([
+    {
+      failure: 'rejected upsert',
+      arrange: () => upsertMock.mockRejectedValueOnce(new Error('transport unavailable')),
+    },
+    {
+      failure: 'database error',
+      arrange: () => upsertMock.mockResolvedValueOnce({ error: { message: 'constraint failed' } }),
+    },
+  ])('does not supersede stale rows after a $failure', async ({ arrange }) => {
+    const miner = new PatternMiner('player-1');
+    arrange();
+
+    await (miner as unknown as SavePatterns).savePatterns([
+      makePattern(2),
+      makePattern(1),
+    ]);
+
+    // Partial-success behavior remains: every fresh row is attempted.
+    expect(upsertMock).toHaveBeenCalledTimes(2);
+    expect(fromUntypedMock).not.toHaveBeenCalled();
+    expect(supersedeChain.update).not.toHaveBeenCalled();
   });
 });

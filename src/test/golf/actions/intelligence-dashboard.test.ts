@@ -11,8 +11,12 @@ vi.mock('next/cache', () => ({
 // Mock the shared verifyTeamAccess/verifyInsightAccess helpers so tests focus
 // on SQL shape. verifyInsightAccess backs the dynamic-import teamGate inside
 // acknowledgeInsightImpl (Fix 2 / P1-12 Triage Desk ledger fix).
+// Spread the real module so pure helpers exported alongside the probes (e.g.
+// `insightAccessDenialMessage`, which acknowledgeInsightImpl destructures from
+// the same dynamic import) stay real instead of vanishing from the mock.
 const verifyInsightAccessMock = vi.fn();
-vi.mock('@/lib/auth/verify-player-access', () => ({
+vi.mock('@/lib/auth/verify-player-access', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/auth/verify-player-access')>()),
   verifyTeamAccess: vi.fn().mockResolvedValue({ allowed: true, reason: 'coach' }),
   verifyPlayerAccess: vi.fn().mockResolvedValue({ allowed: true, reason: 'coach' }),
   verifyInsightAccess: (...args: unknown[]) => verifyInsightAccessMock(...args),

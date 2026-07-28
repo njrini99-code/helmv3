@@ -42,6 +42,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 }));
 
 vi.mock('@/lib/admin/observe-action-result', () => ({
+  extractActionSoftFailure: vi.fn(() => null),
   observeActionSoftFailure: vi.fn(),
 }));
 

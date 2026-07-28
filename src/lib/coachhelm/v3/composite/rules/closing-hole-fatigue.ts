@@ -3,14 +3,22 @@
  *
  * Fires when the player's avg score-to-par on holes 13-18 is
  * meaningfully worse than on holes 1-12 across the recent window.
- * Threshold: ≥0.5 strokes/hole worse AND ≥3 rounds in sample.
+ * Threshold: ≥0.5 strokes/hole worse AND at least MIN_SAMPLE_N rounds in
+ * sample (the platform evidence floor — see the MIN_ROUNDS note below).
  *
  * Uses ctx.hole_scores (no Tier-1 insight currently captures this).
  */
 
+import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
 
-const MIN_ROUNDS = 3;
+/**
+ * This rule reports its distinct-round count AS `evidence.sample_n`, so its
+ * detect() gate must be the platform evidence floor itself — at the old value
+ * of 3 it composed evidence `upsertInsight` was guaranteed to refuse. See the
+ * matching note in front-9-starter.ts.
+ */
+const MIN_ROUNDS = MIN_SAMPLE_N;
 const MIN_DELTA = 0.5;
 
 const rule: CompositeRule = {

@@ -7,6 +7,7 @@ import { verifyTeamAccess as sharedVerifyTeamAccess } from '@/lib/auth/verify-pl
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -271,7 +272,7 @@ async function getTeamInsightsSummaryImpl(
       .range(offset, offset + limit - 1);
 
     if (insightsError) {
-      await logServerError(`Failed to fetch insights: ${insightsError instanceof Error ? insightsError.message : String(insightsError)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
+      await logServerError(`Failed to fetch insights: ${describeError(insightsError)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
       return { success: false, error: 'Failed to fetch insights' };
     }
 
@@ -444,7 +445,7 @@ async function getTeamInsightsSummaryImpl(
       },
     };
   } catch (error) {
-    await logServerError(`Error in getTeamInsightsSummary: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
+    await logServerError(`Error in getTeamInsightsSummary: ${describeError(error)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
     return { success: false, error: 'Internal server error' };
   }
 }
@@ -480,7 +481,7 @@ async function generateTeamCorrelationsImpl(
     }
     return { success: true, correlations: [] };
   } catch (error) {
-    await logServerError(`Error in generateTeamCorrelations: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.generateTeamCorrelations' });
+    await logServerError(`Error in generateTeamCorrelations: ${describeError(error)}`, { action: 'intelligence_dashboard.generateTeamCorrelations' });
     return { success: false, error: 'Internal server error' };
   }
 }
@@ -543,7 +544,7 @@ async function dismissInsightImpl(
     const { data, error } = await updateQuery.select('id, player_id');
 
     if (error) {
-      await logServerError(`Failed to dismiss insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
+      await logServerError(`Failed to dismiss insight: ${describeError(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
       return { success: false, error: 'Failed to dismiss insight' };
     }
 
@@ -566,7 +567,7 @@ async function dismissInsightImpl(
 
     return { success: true };
   } catch (error) {
-    await logServerError(`Error in dismissInsight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
+    await logServerError(`Error in dismissInsight: ${describeError(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
     return { success: false, error: 'Internal server error' };
   }
 }
@@ -607,10 +608,11 @@ async function acknowledgeInsightImpl(
     // verifyInsightAccess call above proved the user staffs that team, so we
     // mirror it on the UPDATE itself and treat 0 affected rows as 404.
     const { data: { user: gateUser } } = await supabase.auth.getUser();
-    const { verifyInsightAccess: verifyInsightAccessFn } = await import('@/lib/auth/verify-player-access');
+    const { verifyInsightAccess: verifyInsightAccessFn, insightAccessDenialMessage } =
+      await import('@/lib/auth/verify-player-access');
     const teamGate = await verifyInsightAccessFn(insightId, gateUser!.id, supabase);
     if (!teamGate.allowed) {
-      return { success: false, error: teamGate.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(teamGate.reason) };
     }
 
     const { data, error } = await supabase
@@ -626,7 +628,7 @@ async function acknowledgeInsightImpl(
       .select('id, player_id');
 
     if (error) {
-      await logServerError(`Failed to acknowledge insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
+      await logServerError(`Failed to acknowledge insight: ${describeError(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
       return { success: false, error: 'Failed to acknowledge insight' };
     }
 
@@ -660,7 +662,7 @@ async function acknowledgeInsightImpl(
 
     return { success: true };
   } catch (error) {
-    await logServerError(`Error in acknowledgeInsight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
+    await logServerError(`Error in acknowledgeInsight: ${describeError(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
     return { success: false, error: 'Internal server error' };
   }
 }

@@ -13,6 +13,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // INPUT VALIDATION
@@ -886,7 +887,7 @@ async function getPlayerShotAnalyticsImpl(
     };
 
   } catch (error) {
-    await logServerError(`getPlayerShotAnalytics failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPlayerShotAnalytics failed: ${describeError(error)}`, {
       action: 'getPlayerShotAnalytics',
       featureArea: 'shot_analytics',
       playerId,

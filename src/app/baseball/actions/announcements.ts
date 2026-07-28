@@ -22,6 +22,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const ANNOUNCEMENTS_PATH = '/baseball/dashboard/announcements';
 
@@ -111,7 +112,7 @@ export async function createAnnouncement(input: {
     return await createAnnouncementAction(input);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_announcements.createAnnouncement', featureArea: 'baseball_announcements' },
     );
     return mapAnnouncementActionError(error);
@@ -280,7 +281,7 @@ async function getAnnouncementsWithMetaImpl(
 
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_announcements.getAnnouncementsWithMeta', featureArea: 'baseball_announcements' }
     );
     return { success: false, error: 'An unexpected error occurred' };
@@ -361,7 +362,7 @@ async function acknowledgeAnnouncementImpl(
 
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_announcements.acknowledgeAnnouncement', featureArea: 'baseball_announcements' }
     );
     return { success: false, error: 'An unexpected error occurred' };
@@ -379,7 +380,7 @@ export async function deleteAnnouncement(
     return await deleteAnnouncementAction(announcementId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_announcements.deleteAnnouncement', featureArea: 'baseball_announcements' },
     );
     return mapAnnouncementActionError(error);

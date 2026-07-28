@@ -20,6 +20,7 @@ import { getAdapter } from '@/lib/coachhelm/v3/ingest/registry';
 import { nextConnectionState, INGEST_PROVIDERS } from '@/lib/coachhelm/v3/ingest/types';
 import type { IngestConnection, IngestProvider } from '@/lib/coachhelm/v3/ingest/types';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -118,7 +119,7 @@ async function handle(): Promise<NextResponse> {
     } catch (err) {
       summary.errors += 1;
       await logServerError(
-        `ingest-sync ${conn.provider}/${conn.player_id}: ${err instanceof Error ? err.message : String(err)}`,
+        `ingest-sync ${conn.provider}/${conn.player_id}: ${describeError(err)}`,
         { action: 'cron.v3.ingest-sync', source: 'cron' },
       );
       await sb.from('golf_ingest_sync_log').insert({

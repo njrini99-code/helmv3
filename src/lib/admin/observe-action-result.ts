@@ -9,22 +9,55 @@ export type ActionSoftFailureContext = NonNullable<Parameters<typeof logServerEr
   action: string;
 };
 
-/** User-facing control flow — logged as handled warnings, hidden from Sentry. */
+/**
+ * Access denials and missing-context states — logged as handled warnings,
+ * hidden from Sentry. These are still real soft *failures*: somebody wanted
+ * something and didn't get it, and an operator may care who.
+ *
+ * Anchors tolerate trailing punctuation. `Not authenticated.` (one period,
+ * from `insight-delivery.ts`) used to miss `/^not authenticated$/i` and land
+ * in the Bridge at 'error' next to its own identical, correctly-tiered
+ * 'warning' sibling — the same outcome filed as two different incidents.
+ */
 const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
-  /^not authenticated$/i,
-  /^unauthorized$/i,
-  /^forbidden$/i,
+  /^not authenticated[.!]?$/i,
+  /^unauthorized[.!]?$/i,
+  // `Not authorized` is the wording ~30 golf insight actions use for the exact
+  // denial `Forbidden` describes below; without the synonym it was the only
+  // access denial in the codebase tiered as a hard 'error'.
+  /^not authori[sz]ed[.!]?$/i,
+  /^forbidden[.!]?$/i,
   /^you must be signed in/i,
-  /^invalid email or password/i,
-  /^too many login attempts/i,
-  /^account (?:is )?locked/i,
   /^coach or team not found$/i,
   /^player profile not found$/i,
   /^only coaches can/i,
   /^you do not have permission/i,
+];
+
+/**
+ * Correct platform responses to what the visitor typed or clicked: a wrong
+ * password, a tripped rate limiter, a failed field validation, a demo-mode
+ * guard. Nothing failed — the platform did precisely its job — so these sit
+ * at 'info' with the empty states rather than at 'warning' with the denials.
+ *
+ * They were the single largest source of Bridge incidents that no operator
+ * could ever act on (`Invalid email or password` alone, n=18): the incident
+ * feed's default view excludes only 'info', so every mistyped password was a
+ * warning-tier incident competing with real regressions for attention.
+ */
+const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
+  /^invalid email or password/i,
+  /^too many login attempts/i,
+  /^account (?:is )?locked/i,
   /^this isn't available in the live demo/i,
   /^choose a valid/i,
   /^please (enter|select|provide)/i,
+  // Signing up on an address that already has an account. The platform did the
+  // right thing and told the visitor where to go; there is nothing to fix. Four
+  // call sites word the tail differently ("Please sign in instead." on both
+  // sports' auth actions, "…to continue your setup." during onboarding), so
+  // match only the invariant head.
+  /^an account with this email already exists/i,
 ];
 
 /**
@@ -42,6 +75,16 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   // spawned the background work has completed). Same class as the
   // "not authenticated" patterns above, just engine-side.
   'engine_session_expired',
+  // The player isn't on a roster, so the CoachHelm engine has no team →
+  // organisation → coach → philosophy chain to run against. A routine roster
+  // state (never joined, left, or was removed — removal hard-deletes the
+  // golf_team_members row), not a defect: there is no retry that would
+  // succeed and no code for an operator to repair. Kept at 'warning' rather
+  // than moved into EXPECTED_EMPTY_STATE_CODES because it is still a real
+  // soft *failure* — that player's insights genuinely will not generate —
+  // whereas the empty-state codes describe an outcome that was never a
+  // failure at all.
+  'engine_no_team_membership',
 ]);
 
 /*
@@ -95,7 +138,14 @@ export function extractActionSoftFailure(
 export function isExpectedSoftFailureMessage(message: string, code?: string | null): boolean {
   if (code && EXPECTED_SOFT_FAILURE_CODES.has(code)) return true;
   if (isExpectedAuthNoise(message)) return true;
+  if (isUserInputRejection(message)) return true;
   return EXPECTED_SOFT_FAILURE_PATTERNS.some((pattern) => pattern.test(message.trim()));
+}
+
+/** True when the message is a correct response to user input, not a failure. */
+export function isUserInputRejection(message: string): boolean {
+  const text = message.trim();
+  return USER_INPUT_REJECTION_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 /** True for a stable `code` marking a routine empty-state, not a failure. */
@@ -107,7 +157,30 @@ type SoftFailureSeverity = 'info' | 'warning' | 'error';
 
 function severityForSoftFailure(message: string, code: string | null): SoftFailureSeverity {
   if (isExpectedEmptyStateCode(code)) return 'info';
+  if (isUserInputRejection(message)) return 'info';
   return isExpectedSoftFailureMessage(message, code) ? 'warning' : 'error';
+}
+
+/**
+ * The shared verdict for one soft-failure outcome, for consumers OUTSIDE this
+ * module's own `observeActionSoftFailure` path.
+ *
+ * A single engine outcome is observed by several independent consumers — the
+ * withAdminObserved wrapper below, `postRoundTrigger`, and the CoachHelm
+ * safety-net cron. They must all reach the SAME severity for the same
+ * `code`, or one routine outcome is logged as 'info' by one consumer and as
+ * a live 'error' (plus a Sentry capture) by the next, which is how expected
+ * roster/empty states kept surfacing as incidents. Exported from here — not
+ * from any one consumer — so no consumer has to depend on another, and so
+ * adding a code to the sets above updates every verdict at once.
+ */
+export function classifySoftFailure(
+  message: string,
+  code: string | null,
+): { severity: SoftFailureSeverity; skipSentry: boolean } {
+  const severity = severityForSoftFailure(message, code);
+  // 'info' and 'warning' are both routine — never worth a Sentry capture.
+  return { severity, skipSentry: severity !== 'error' };
 }
 
 /**

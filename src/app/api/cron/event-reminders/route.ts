@@ -49,6 +49,7 @@ import {
   type TeamEventReminderSettings,
   type EventReminderRow,
 } from '@/lib/golf/event-reminder-settings';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -123,7 +124,7 @@ export async function GET(req: NextRequest) {
       result1h = await dispatchReminders(supabase, now, events, settingsByTeam, 'event_reminder_1h', deadlineAt);
     } catch (err) {
       await logServerError(
-        `cron.eventReminders failed: ${err instanceof Error ? err.message : String(err)}`,
+        `cron.eventReminders failed: ${describeError(err)}`,
         { action: 'cron.eventReminders', featureArea: 'calendar' },
         'error',
       );

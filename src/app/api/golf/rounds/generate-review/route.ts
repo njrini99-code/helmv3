@@ -17,6 +17,7 @@ import {
 } from '@/lib/coachhelm/v2';
 import { logAIGeneration } from '@/lib/admin-logger';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export async function POST(request: NextRequest) {
   let roundId: string | null = null;
@@ -155,9 +156,9 @@ export async function POST(request: NextRequest) {
       isV2: true
     });
   } catch (error) {
-    await logServerError(`Generate review error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
+    await logServerError(`Generate review error: ${describeError(error)}`, { action: 'route.POST' });
 
-    await logServerError(`Generate review route failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`Generate review route failed: ${describeError(error)}`, {
       action: 'generateRoundReviewApi',
       source: 'route_handler',
       featureArea: 'coachhelm_ai',

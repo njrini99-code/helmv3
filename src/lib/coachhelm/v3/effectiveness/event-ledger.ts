@@ -28,6 +28,7 @@
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // PUBLIC TYPES (shared contract — other agents depend on these exact shapes)
@@ -168,7 +169,7 @@ export async function recordInsightExposure(
     }
   } catch (err) {
     await logServerError(
-      `recordInsightExposure threw: ${err instanceof Error ? err.message : String(err)}`,
+      `recordInsightExposure threw: ${describeError(err)}`,
       { action: 'recordInsightExposure', featureArea: FEATURE_AREA },
     );
   }
@@ -209,7 +210,7 @@ export async function recordInsightAction(row: {
     }
   } catch (err) {
     await logServerError(
-      `recordInsightAction threw: ${err instanceof Error ? err.message : String(err)}`,
+      `recordInsightAction threw: ${describeError(err)}`,
       { action: 'recordInsightAction', featureArea: FEATURE_AREA },
     );
   }
@@ -253,7 +254,7 @@ export async function recordInsightOutcome(row: {
     }
   } catch (err) {
     await logServerError(
-      `recordInsightOutcome threw: ${err instanceof Error ? err.message : String(err)}`,
+      `recordInsightOutcome threw: ${describeError(err)}`,
       { action: 'recordInsightOutcome', featureArea: FEATURE_AREA },
     );
   }
@@ -371,7 +372,7 @@ export async function getInsightEffectivenessSignals(
     return result;
   } catch (err) {
     await logServerError(
-      `getInsightEffectivenessSignals threw: ${err instanceof Error ? err.message : String(err)}`,
+      `getInsightEffectivenessSignals threw: ${describeError(err)}`,
       { action: 'getInsightEffectivenessSignals', featureArea: FEATURE_AREA },
     );
     // Degrade to the zero-evidence seed map (already populated above) rather

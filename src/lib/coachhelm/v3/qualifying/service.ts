@@ -21,6 +21,7 @@ import { composeTravelBrief } from './travel-brief';
 import { pushTravelBriefToChat } from './chat-push';
 import { notifyPlayersOfSelectionOutcome } from './player-notify';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 type Sb = SupabaseClient<Database>;
 
@@ -206,7 +207,7 @@ export async function confirmSelection(
     }
   } catch (err) {
     await logServerError(
-      `travel-brief push failed for qualifier ${args.qualifier_id}: ${err instanceof Error ? err.message : String(err)}`,
+      `travel-brief push failed for qualifier ${args.qualifier_id}: ${describeError(err)}`,
       { action: 'v3.qualifying.confirmSelection.travelBrief' },
     );
   }
@@ -218,7 +219,7 @@ export async function confirmSelection(
     await notifyPlayersOfSelectionOutcome(supabase, workspace);
   } catch (err) {
     await logServerError(
-      `player selection-outcome notify failed for qualifier ${args.qualifier_id}: ${err instanceof Error ? err.message : String(err)}`,
+      `player selection-outcome notify failed for qualifier ${args.qualifier_id}: ${describeError(err)}`,
       { action: 'v3.qualifying.confirmSelection.notifyPlayers' },
     );
   }

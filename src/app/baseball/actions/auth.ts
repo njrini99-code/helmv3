@@ -23,6 +23,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
+import { describeError } from '@/lib/utils/describe-error';
 
 export type LoginResult = {
   success: boolean;
@@ -379,7 +380,7 @@ async function signupActionImpl(
       }
     } catch (seedErr) {
       await logServerError(
-        `[Auth] Unexpected error seeding baseball_players: ${seedErr instanceof Error ? seedErr.message : String(seedErr)}`,
+        `[Auth] Unexpected error seeding baseball_players: ${describeError(seedErr)}`,
         { action: 'auth.signupAction', metadata: { userId: data.user.id } },
       );
     }

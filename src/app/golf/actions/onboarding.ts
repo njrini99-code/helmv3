@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -105,7 +106,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       });
 
     if (usersError) {
-      await logServerError(`[Onboarding] Users upsert warning: ${usersError instanceof Error ? usersError.message : String(usersError)}`, { action: 'onboarding.completeCoachOnboarding' });
+      await logServerError(`[Onboarding] Users upsert warning: ${describeError(usersError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Continue - record might exist
     }
 
@@ -140,7 +141,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
           error: `An organization named "${orgName}" already exists. Ask your program's head coach to add you to the team, or contact support if you believe this is a mistake.`,
         };
       }
-      await logServerError(`[Onboarding] Organization creation failed: ${orgError instanceof Error ? orgError.message : String(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
+      await logServerError(`[Onboarding] Organization creation failed: ${describeError(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
       return { success: false, error: 'Failed to create organization. Please try again.' };
     }
 
@@ -166,7 +167,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       .single();
 
     if (coachError || !coach) {
-      await logServerError(`[Onboarding] Coach creation failed: ${coachError instanceof Error ? coachError.message : String(coachError)}`, { action: 'onboarding.completeCoachOnboarding' });
+      await logServerError(`[Onboarding] Coach creation failed: ${describeError(coachError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete the organization we created
       await supabase.from('organizations').delete().eq('id', org.id);
       return { success: false, error: 'Failed to create coach profile. Please try again.' };
@@ -190,7 +191,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       .single();
 
     if (teamError || !team) {
-      await logServerError(`[Onboarding] Team creation failed: ${teamError instanceof Error ? teamError.message : String(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
+      await logServerError(`[Onboarding] Team creation failed: ${describeError(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete coach and organization
       await supabase.from('golf_coaches').delete().eq('id', coach.id);
       await supabase.from('organizations').delete().eq('id', org.id);
@@ -216,7 +217,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       });
 
     if (staffError) {
-      await logServerError(`[Onboarding] Team staff assignment failed: ${staffError instanceof Error ? staffError.message : String(staffError)}`, { action: 'onboarding.completeCoachOnboarding' });
+      await logServerError(`[Onboarding] Team staff assignment failed: ${describeError(staffError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete team, coach, and organization
       await supabase.from('golf_teams').delete().eq('id', team.id);
       await supabase.from('golf_coaches').delete().eq('id', coach.id);
@@ -250,7 +251,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       await supabase.from('organizations').delete().eq('id', createdOrgId);
     }
 
-    await logServerError(`[Onboarding] Unexpected error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completeCoachOnboarding' });
+    await logServerError(`[Onboarding] Unexpected error: ${describeError(error)}`, { action: 'onboarding.completeCoachOnboarding' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -341,14 +342,14 @@ async function ensurePlayerRecordImpl() {
       .single();
 
     if (insertError) {
-      await logServerError(`[ensurePlayerRecord] Insert failed: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'onboarding.ensurePlayerRecord' });
+      await logServerError(`[ensurePlayerRecord] Insert failed: ${describeError(insertError)}`, { action: 'onboarding.ensurePlayerRecord' });
       return { success: false, error: insertError.message };
     }
 
     revalidatePath('/golf/player');
     return { success: true, playerId: player.id, onboardingCompleted: false };
   } catch (error) {
-    await logServerError(`[ensurePlayerRecord] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.ensurePlayerRecord' });
+    await logServerError(`[ensurePlayerRecord] Error: ${describeError(error)}`, { action: 'onboarding.ensurePlayerRecord' });
     return { success: false, error: 'Failed to ensure player record' };
   }
 }
@@ -412,7 +413,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
       });
 
     if (usersError) {
-      await logServerError(`[Onboarding] Users upsert warning: ${usersError instanceof Error ? usersError.message : String(usersError)}`, { action: 'onboarding.completePlayerOnboarding' });
+      await logServerError(`[Onboarding] Users upsert warning: ${describeError(usersError)}`, { action: 'onboarding.completePlayerOnboarding' });
     }
 
     // Check for existing player record
@@ -446,7 +447,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
         .eq('id', existingPlayer.id);
 
       if (error) {
-        await logServerError(`[Onboarding] Player update failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
+        await logServerError(`[Onboarding] Player update failed: ${describeError(error)}`, { action: 'onboarding.completePlayerOnboarding' });
         return { success: false, error: 'Failed to update player profile. Please try again.' };
       }
     } else {
@@ -460,7 +461,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
         .single();
 
       if (error) {
-        await logServerError(`[Onboarding] Player creation failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
+        await logServerError(`[Onboarding] Player creation failed: ${describeError(error)}`, { action: 'onboarding.completePlayerOnboarding' });
         return { success: false, error: 'Failed to create player profile. Please try again.' };
       }
       playerId = created?.id ?? null;
@@ -481,7 +482,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
           await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for code ${joinCode.trim().toUpperCase()}`, { action: 'onboarding.completePlayerOnboarding' });
         }
       } catch (joinError) {
-        await logServerError(`[Onboarding] Auto-join threw: ${joinError instanceof Error ? joinError.message : String(joinError)}`, { action: 'onboarding.completePlayerOnboarding' });
+        await logServerError(`[Onboarding] Auto-join threw: ${describeError(joinError)}`, { action: 'onboarding.completePlayerOnboarding' });
       }
     }
 
@@ -493,7 +494,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
     };
 
   } catch (error) {
-    await logServerError(`[Onboarding] Unexpected error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
+    await logServerError(`[Onboarding] Unexpected error: ${describeError(error)}`, { action: 'onboarding.completePlayerOnboarding' });
     return formatSafeErrorResponse(error);
   }
 }

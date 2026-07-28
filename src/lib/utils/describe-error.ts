@@ -40,3 +40,37 @@ export function describeError(err: unknown): string {
     return String(err);
   }
 }
+
+/**
+ * Build a structured `extra` payload for a failed write.
+ *
+ * `describeError` makes the incident MESSAGE readable, but the message is also
+ * what incident fingerprints hash, so the useful discriminators (which Postgres
+ * error code, which columns, which scope) cannot live there without minting a
+ * new incident group per variant. Put them in `extra` instead: the group stays
+ * stable and one click still names the cause.
+ *
+ * `code`/`details`/`hint` are lifted out of the Postgres-shaped error so the
+ * common triage question — constraint violation vs. RLS denial vs. statement
+ * timeout vs. a transport failure — is answerable without a repro. Note that
+ * supabase-js also reports fetch/transport failures through this same shape
+ * (with an empty `code`), so `transport: true` distinguishes those.
+ */
+export function describeWriteFailure(
+  err: unknown,
+  context: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const e = (err && typeof err === 'object' ? err : {}) as Record<string, unknown>;
+  const code = typeof e.code === 'string' && e.code.length > 0 ? e.code : null;
+
+  return {
+    ...context,
+    pgCode: code,
+    pgDetails: e.details ?? null,
+    pgHint: e.hint ?? null,
+    // supabase-js wraps a failed fetch as `{ message: 'TypeError: fetch
+    // failed', code: '' }` — no Postgres code, so an empty code with a
+    // message is a transport problem, not a database rejection.
+    transport: !(err instanceof Error) && code === null && e.message != null,
+  };
+}

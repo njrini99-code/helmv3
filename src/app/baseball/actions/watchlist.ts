@@ -21,6 +21,7 @@ import {
 } from '@/lib/baseball/with-baseball-action';
 import type { CoachType } from '@/app/baseball/actions/discover';
 import { z } from 'zod';
+import { describeError } from '@/lib/utils/describe-error';
 
 const WATCHLIST_PATHS = [
   '/baseball/dashboard/discover',
@@ -79,7 +80,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
     return await addToWatchlistAction(coachId, playerId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'watchlist.addToWatchlist', featureArea: 'baseball-watchlist' },
     );
     return mapWatchlistAddError(error);
@@ -155,7 +156,7 @@ const addToWatchlistAction = withBaseballAction(
       });
     if (engagementError) {
       await logServerError(
-        `Failed to record watchlist_add engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+        `Failed to record watchlist_add engagement event: ${describeError(engagementError)}`,
         { action: 'watchlist.addToWatchlist.engagementEvent', featureArea: 'baseball-watchlist' },
       );
     }
@@ -186,7 +187,7 @@ const addToWatchlistAction = withBaseballAction(
         }
       }
     } catch (notifErr) {
-      await logServerError(`[addToWatchlist] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'watchlist.addToWatchlist' });
+      await logServerError(`[addToWatchlist] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'watchlist.addToWatchlist' });
     }
 
     return { success: true };
@@ -198,7 +199,7 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
     return await removeFromWatchlistAction(coachId, playerId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'watchlist.removeFromWatchlist', featureArea: 'baseball-watchlist' },
     );
     return mapWatchlistAddError(error);
@@ -241,7 +242,7 @@ export async function updateWatchlistStatus(
     return await updateWatchlistStatusAction(watchlistId, status);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'watchlist.updateWatchlistStatus', featureArea: 'baseball-watchlist' },
     );
     return mapWatchlistActionError(error);
@@ -323,7 +324,7 @@ const updateWatchlistStatusAction = withBaseballAction(
         }
       }
     } catch (notifErr) {
-      await logServerError(`[updateWatchlistStatus] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'watchlist.updateWatchlistStatus' });
+      await logServerError(`[updateWatchlistStatus] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'watchlist.updateWatchlistStatus' });
     }
 
     revalidatePath('/baseball/dashboard/watchlist');
@@ -340,7 +341,7 @@ export async function updateWatchlistPriority(
     return await updateWatchlistPriorityAction(watchlistId, isHighPriority);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'watchlist.updateWatchlistPriority', featureArea: 'baseball-watchlist' },
     );
     return mapWatchlistActionError(error);
@@ -398,7 +399,7 @@ export async function addWatchlistNote(
     return await addWatchlistNoteAction(watchlistId, note);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'watchlist.addWatchlistNote', featureArea: 'baseball-watchlist' },
     );
     return mapWatchlistActionError(error);
@@ -457,7 +458,7 @@ export async function toggleWatchlistPlayer(playerId: string): Promise<{
     return await toggleWatchlistPlayerAction(playerId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'watchlist.toggleWatchlistPlayer', featureArea: 'baseball-watchlist' },
     );
     return mapWatchlistActionError(error);
@@ -505,7 +506,7 @@ const toggleWatchlistPlayerAction = withBaseballAction(
         });
       if (engagementError) {
         await logServerError(
-          `Failed to record watchlist_remove engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+          `Failed to record watchlist_remove engagement event: ${describeError(engagementError)}`,
           { action: 'watchlist.toggleWatchlistPlayer.engagementEvent', featureArea: 'baseball-watchlist' },
         );
       }
@@ -551,7 +552,7 @@ const toggleWatchlistPlayerAction = withBaseballAction(
       });
     if (engagementError) {
       await logServerError(
-        `Failed to record watchlist_add engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+        `Failed to record watchlist_add engagement event: ${describeError(engagementError)}`,
         { action: 'watchlist.toggleWatchlistPlayer.engagementEvent', featureArea: 'baseball-watchlist' },
       );
     }

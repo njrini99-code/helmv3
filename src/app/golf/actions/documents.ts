@@ -10,6 +10,7 @@ import type { GolfDocument, DocumentVersion, VersionComparison } from '@/lib/typ
 import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Type helper for golf_document_versions table (until types are regenerated)
 interface DocumentVersionRow {
@@ -187,7 +188,7 @@ async function getDocumentsImpl(teamId: string): Promise<{ data: GolfDocument[] 
     return { data: data as GolfDocument[], error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in getDocuments: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in getDocuments: ${describeError(error)}`,
       { action: 'documents.getDocuments', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -258,7 +259,7 @@ async function getDocumentImpl(documentId: string): Promise<{ data: GolfDocument
     return { data: data as GolfDocument, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in getDocument: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in getDocument: ${describeError(error)}`,
       { action: 'documents.getDocument', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -351,7 +352,7 @@ async function createDocumentImpl(
     return { data: document as GolfDocument, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in createDocument: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in createDocument: ${describeError(error)}`,
       { action: 'documents.createDocument', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -468,7 +469,7 @@ async function saveTextDocumentImpl(
     return { data: document as GolfDocument, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in saveTextDocument: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in saveTextDocument: ${describeError(error)}`,
       { action: 'documents.saveTextDocument', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -550,7 +551,7 @@ async function updateDocumentImpl(
     return { data: data as GolfDocument, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in updateDocument: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in updateDocument: ${describeError(error)}`,
       { action: 'documents.updateDocument', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -622,7 +623,7 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
     return { success: true, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in deleteDocument: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in deleteDocument: ${describeError(error)}`,
       { action: 'documents.deleteDocument', featureArea: 'documents' }
     );
     return { success: false, error: handleError(error) };
@@ -733,7 +734,7 @@ async function uploadNewVersionImpl(
     };
   } catch (error) {
     await logServerError(
-      `Unexpected error in uploadNewVersion: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in uploadNewVersion: ${describeError(error)}`,
       { action: 'documents.uploadNewVersion', featureArea: 'documents' }
     );
     return { success: false, error: handleError(error) };
@@ -806,7 +807,7 @@ async function getDocumentVersionsImpl(documentId: string): Promise<{ data: Docu
     return { data: versionsWithUrls as DocumentVersion[], error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in getDocumentVersions: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in getDocumentVersions: ${describeError(error)}`,
       { action: 'documents.getDocumentVersions', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -900,7 +901,7 @@ async function revertToVersionImpl(
     return { success: true, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in revertToVersion: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in revertToVersion: ${describeError(error)}`,
       { action: 'documents.revertToVersion', featureArea: 'documents' }
     );
     return { success: false, error: handleError(error) };
@@ -981,7 +982,7 @@ async function compareVersionsImpl(
     };
   } catch (error) {
     await logServerError(
-      `Unexpected error in compareVersions: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in compareVersions: ${describeError(error)}`,
       { action: 'documents.compareVersions', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -1090,7 +1091,7 @@ async function getPreviewUrlImpl(
     }
   } catch (error) {
     await logServerError(
-      `Unexpected error in getPreviewUrl: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in getPreviewUrl: ${describeError(error)}`,
       { action: 'documents.getPreviewUrl', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };
@@ -1151,7 +1152,7 @@ async function uploadGolfDocumentImpl(
     return { success: true, file_url: urlData.publicUrl, storage_path: storagePath };
   } catch (error) {
     await logServerError(
-      `Unexpected error in uploadGolfDocument: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in uploadGolfDocument: ${describeError(error)}`,
       { action: 'documents.uploadGolfDocument', featureArea: 'documents' }
     );
     return { success: false, error: handleError(error) };
@@ -1249,7 +1250,7 @@ async function createGolfDocumentImpl(data: {
     return { success: true, data: document as GolfDocument };
   } catch (error) {
     await logServerError(
-      `Unexpected error in createGolfDocument: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in createGolfDocument: ${describeError(error)}`,
       { action: 'documents.createGolfDocument', featureArea: 'documents' }
     );
     return { success: false, error: handleError(error) };
@@ -1440,7 +1441,7 @@ async function deleteVersionImpl(
     return { success: true, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in deleteVersion: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in deleteVersion: ${describeError(error)}`,
       { action: 'documents.deleteVersion', featureArea: 'documents' }
     );
     return { success: false, error: handleError(error) };
@@ -1530,7 +1531,7 @@ async function getTextFileContentImpl(
     return { data: text, error: null };
   } catch (error) {
     await logServerError(
-      `Unexpected error in getTextFileContent: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in getTextFileContent: ${describeError(error)}`,
       { action: 'documents.getTextFileContent', featureArea: 'documents' }
     );
     return { data: null, error: handleError(error) };

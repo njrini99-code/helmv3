@@ -137,6 +137,18 @@ const DATA_EXPIRY_DAYS = 30;
 let dbInstance: IDBDatabase | null = null;
 let dbInitPromise: Promise<IDBDatabase> | null = null;
 
+function isClosingConnectionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.name === 'InvalidStateError'
+    || /(?:connection|database).*(?:closed|closing)|(?:closed|closing).*(?:connection|database)/i.test(error.message);
+}
+
+function resetShotDatabase(expected?: IDBDatabase): void {
+  if (expected && dbInstance !== expected) return;
+  dbInstance = null;
+  dbInitPromise = null;
+}
+
 /**
  * Open or create the IndexedDB database with all stores
  */
@@ -144,15 +156,15 @@ async function openShotDatabase(): Promise<IDBDatabase> {
   // Return existing instance if available and connection is still open
   if (dbInstance) {
     try {
-      // Verify the connection is still usable by checking objectStoreNames
-      // A closed connection will throw when accessed
-      if (dbInstance.objectStoreNames.length > 0) {
-        return dbInstance;
-      }
-    } catch {
+      // `objectStoreNames` remains readable on a closing connection in real
+      // browsers, so it is not a liveness check. Transaction creation is the
+      // first operation IndexedDB rejects with InvalidStateError.
+      dbInstance.transaction(SYNC_META_STORE, 'readonly');
+      return dbInstance;
+    } catch (error) {
+      if (!isClosingConnectionError(error)) throw error;
       // Connection is stale/closed, reset and reopen
-      dbInstance = null;
-      dbInitPromise = null;
+      resetShotDatabase(dbInstance);
     }
   }
 
@@ -175,21 +187,28 @@ async function openShotDatabase(): Promise<IDBDatabase> {
     };
 
     request.onsuccess = () => {
-      dbInstance = request.result;
+      const opened = request.result;
+      dbInstance = opened;
 
-      // Handle connection errors
-      dbInstance.onerror = (event) => {
-        console.error('Database error:', event);
+      // IDBDatabase.onerror receives an Event whose target is the failed
+      // IDBRequest. Logging the Event itself stringifies to "[object Event]",
+      // which hides the request's DOMException and creates an unactionable
+      // Sentry issue. Log the actual request error instead.
+      opened.onerror = (event) => {
+        const requestError = (event.target as IDBRequest | null)?.error;
+        console.error(
+          'Database error:',
+          requestError ?? new Error('IndexedDB request failed without an error detail'),
+        );
       };
 
       // Handle version change (another tab upgraded the DB)
-      dbInstance.onversionchange = () => {
-        dbInstance?.close();
-        dbInstance = null;
-        dbInitPromise = null;
+      opened.onversionchange = () => {
+        opened.close();
+        resetShotDatabase(opened);
       };
 
-      resolve(dbInstance);
+      resolve(opened);
     };
 
     request.onupgradeneeded = (event) => {
@@ -243,6 +262,29 @@ async function openShotDatabase(): Promise<IDBDatabase> {
   return dbInitPromise;
 }
 
+/**
+ * Create a transaction, reopening once when another tab closes/upgrades the
+ * cached connection between `openShotDatabase()` and `transaction()`.
+ *
+ * Only transaction SETUP is retried. Request/transaction failures after work
+ * begins are left to the caller, so writes are never replayed ambiguously.
+ */
+async function openShotTransaction(
+  stores: string | string[],
+  mode: IDBTransactionMode,
+): Promise<IDBTransaction> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const db = await openShotDatabase();
+    try {
+      return db.transaction(stores, mode);
+    } catch (error) {
+      if (attempt > 0 || !isClosingConnectionError(error)) throw error;
+      resetShotDatabase(db);
+    }
+  }
+  throw new Error('Failed to open IndexedDB transaction');
+}
+
 // ============================================================================
 // SHOT OPERATIONS
 // ============================================================================
@@ -284,21 +326,9 @@ export async function updateOfflineShot(
  * Get all pending shots
  */
 export async function getPendingShots(): Promise<OfflineShot[]> {
-  const db = await openShotDatabase();
+  const transaction = await openShotTransaction(SHOTS_STORE, 'readonly');
 
   return new Promise((resolve, reject) => {
-    let transaction: IDBTransaction;
-    try {
-      transaction = db.transaction(SHOTS_STORE, 'readonly');
-    } catch (err) {
-      // Connection may have been closed between openShotDatabase() and here
-      // Reset and reject so caller can retry
-      dbInstance = null;
-      dbInitPromise = null;
-      reject(new Error(`Failed to get pending shots: ${err instanceof Error ? err.message : 'transaction creation failed'}`));
-      return;
-    }
-
     const store = transaction.objectStore(SHOTS_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -396,19 +426,9 @@ export async function updateOfflineHole(
  * Get all pending holes
  */
 export async function getPendingHoles(): Promise<OfflineHole[]> {
-  const db = await openShotDatabase();
+  const transaction = await openShotTransaction(HOLES_STORE, 'readonly');
 
   return new Promise((resolve, reject) => {
-    let transaction: IDBTransaction;
-    try {
-      transaction = db.transaction(HOLES_STORE, 'readonly');
-    } catch (err) {
-      dbInstance = null;
-      dbInitPromise = null;
-      reject(new Error(`Failed to get pending holes: ${err instanceof Error ? err.message : 'transaction creation failed'}`));
-      return;
-    }
-
     const store = transaction.objectStore(HOLES_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -506,19 +526,9 @@ export async function updateOfflineRound(
  * Get all pending rounds
  */
 export async function getPendingRounds(): Promise<OfflineRound[]> {
-  const db = await openShotDatabase();
+  const transaction = await openShotTransaction(ROUNDS_STORE, 'readonly');
 
   return new Promise((resolve, reject) => {
-    let transaction: IDBTransaction;
-    try {
-      transaction = db.transaction(ROUNDS_STORE, 'readonly');
-    } catch (err) {
-      dbInstance = null;
-      dbInitPromise = null;
-      reject(new Error(`Failed to get pending rounds: ${err instanceof Error ? err.message : 'transaction creation failed'}`));
-      return;
-    }
-
     const store = transaction.objectStore(ROUNDS_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -605,10 +615,9 @@ export async function setSyncMetadata(key: string, value: unknown): Promise<void
  * Get a sync metadata value
  */
 export async function getSyncMetadata<T>(key: string): Promise<T | null> {
-  const db = await openShotDatabase();
+  const transaction = await openShotTransaction(SYNC_META_STORE, 'readonly');
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SYNC_META_STORE, 'readonly');
     const store = transaction.objectStore(SYNC_META_STORE);
     const request = store.get(key);
 
@@ -629,8 +638,6 @@ export async function getSyncMetadata<T>(key: string): Promise<T | null> {
  * Get offline stats for the current state
  */
 export async function getOfflineStats(): Promise<OfflineStats> {
-  const db = await openShotDatabase();
-
   // Fetch pending items with graceful fallbacks - one failure shouldn't crash stats
   const [pendingRounds, pendingHoles, pendingShots] = await Promise.all([
     getPendingRounds().catch(() => [] as OfflineRound[]),
@@ -647,9 +654,9 @@ export async function getOfflineStats(): Promise<OfflineStats> {
     .catch(() => 0);
 
   // Count failed items
-  const getFailedCount = (store: string): Promise<number> => {
+  const getFailedCount = async (store: string): Promise<number> => {
+    const transaction = await openShotTransaction(store, 'readonly');
     return new Promise((resolve) => {
-      const transaction = db.transaction(store, 'readonly');
       const objectStore = transaction.objectStore(store);
       const index = objectStore.index('_sync_status');
       const request = index.count('failed');
@@ -810,4 +817,3 @@ export function shouldRetry(retryCount: number, lastRetry?: string): boolean {
 // ============================================================================
 // EXPORTS
 // ============================================================================
-

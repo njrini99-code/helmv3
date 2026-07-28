@@ -53,7 +53,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
-import { logServerError } from '@/lib/server-error-logger';
+import { classifySoftFailure } from '@/lib/admin/observe-action-result';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 
@@ -73,6 +74,24 @@ const STALE_THRESHOLD_MS = (() => {
 })();
 const BATCH_LIMIT = 200;
 const CONCURRENCY = 5;
+const RESPONSE_RESERVE_MS = 60_000;
+const MAX_SOFT_DEADLINE_MS = maxDuration * 1000 - RESPONSE_RESERVE_MS;
+const DEFAULT_SOFT_DEADLINE_MS = MAX_SOFT_DEADLINE_MS;
+
+// Leave a full minute of the Vercel function budget for the in-flight chunk
+// to settle, job-run persistence, and the HTTP response. Unprocessed rows keep
+// both terminal columns NULL, so the next 30-minute tick resumes them without
+// manufacturing a failure or losing work. The override exists for deterministic
+// regression tests and emergency tuning. It may shorten the work window, but
+// it may never consume the response reserve; invalid or over-budget values fail
+// closed to the production default.
+function getSoftDeadlineMs(): number {
+  const raw = process.env.COACHHELM_SAFETY_NET_SOFT_DEADLINE_MS;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 && parsed <= MAX_SOFT_DEADLINE_MS
+    ? parsed
+    : DEFAULT_SOFT_DEADLINE_MS;
+}
 
 // 2026-07-25 addition (Fix 3 of the CoachHelm remediation plan, layered on
 // top of the 2026-07-25 rewrite above): a floor so this cron never
@@ -106,6 +125,10 @@ export async function GET(req: NextRequest) {
 }
 
 async function handleSafetyNet(): Promise<NextResponse> {
+  // Start the budget before client creation, eligibility/count queries, and
+  // stale-backlog reporting. Setup time consumes the same Vercel invocation
+  // budget as trigger processing and must not silently eat the response reserve.
+  const runStartedAt = Date.now();
   const supabase = createAdminClient();
 
   // Deterministic eligibility: completed rounds where postRoundTrigger
@@ -156,16 +179,51 @@ async function handleSafetyNet(): Promise<NextResponse> {
   // string over PostgREST, which isn't guaranteed to compare the same way
   // as `Date#toISOString()`'s suffix/precision under a raw `<`.
   const staleCutoff = Date.now() - STALE_THRESHOLD_MS;
+  const staleCutoffIso = new Date(staleCutoff).toISOString();
   const staleBacklog = pending.filter((r) => new Date(r.created_at).getTime() < staleCutoff);
+
   if (staleBacklog.length > 0) {
     const oldest = staleBacklog[0]!;
+
+    // `staleBacklog` is a subset of a BATCH_LIMIT-capped page, so its length
+    // saturates at BATCH_LIMIT and cannot distinguish a 200-round backlog from
+    // a 20,000-round one — the alarm was structurally incapable of reporting
+    // the number an operator needs. Count the real thing with a HEAD query on
+    // the same predicate, so it rides the same partial index (20260517010000)
+    // and stays cheap. Best-effort: a failure here must never suppress the
+    // alarm, so fall back to the (understated) page count and say so.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: staleTotal, error: staleCountError } = await (supabase as any)
+      .from('golf_rounds')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .is('coachhelm_analyzed_at', null)
+      .is('coachhelm_failed_at', null)
+      .lte('created_at', minAgeCutoffIso)
+      .lt('created_at', staleCutoffIso);
+
     await logServerError(
-      `cron.safetyNet.staleBacklog: ${staleBacklog.length} completed round(s) have sat unanalyzed longer than the ${Math.round(STALE_THRESHOLD_MS / (24 * 60 * 60 * 1000))}-day staleness threshold`,
+      // Count-stable message: the count used to be interpolated here, and
+      // incident fingerprints hash a normalised message prefix that only
+      // redacts integers of 5+ digits (lib/admin/incident-grouping.ts). So
+      // every distinct backlog size minted a BRAND-NEW incident — "200" and
+      // "20" from two consecutive ticks of one draining backlog arrived as two
+      // unrelated warnings, neither of which could dedupe or stay resolved.
+      // The numbers live in `extra` instead; same rule the gated-insight
+      // emitter already follows (actions/insights.ts).
+      'cron.safetyNet.staleBacklog: completed round(s) have sat unanalyzed past the staleness threshold',
       {
         action: 'cron.coachhelm.safetyNet.staleBacklog',
         featureArea: 'coachhelm',
         extra: {
-          staleCount: staleBacklog.length,
+          staleCount: staleCountError ? null : staleTotal ?? null,
+          staleCountUnavailable: staleCountError ? staleCountError.message : undefined,
+          // Kept alongside the true total so a saturated page is legible as
+          // such rather than looking like the whole backlog.
+          staleInThisPage: staleBacklog.length,
+          batchLimit: BATCH_LIMIT,
+          pageSaturated: pending.length === BATCH_LIMIT,
+          thresholdDays: Math.round(STALE_THRESHOLD_MS / (24 * 60 * 60 * 1000)),
           totalPending: pending.length,
           oldestRoundId: oldest.id,
           oldestCreatedAt: oldest.created_at,
@@ -177,12 +235,30 @@ async function handleSafetyNet(): Promise<NextResponse> {
 
   let recovered = 0;
   let failed = 0;
+  // Outcomes the engine itself classified as routine (an un-rostered player,
+  // a player with no rounds in the lookback). They are terminal — the trigger
+  // stamped coachhelm_failed_at, so they leave the eligibility query and are
+  // never retried — but they are not cron failures, and counting them as such
+  // made every tick that touched one report `failed > 0` forever.
+  let skippedExpected = 0;
+  let processed = 0;
+  let deadlineReached = false;
+  const softDeadlineMs = getSoftDeadlineMs();
 
   // Chunked Promise.allSettled — runs CONCURRENCY postRoundTrigger calls
   // in parallel. Each call writes terminal state to its round's
   // coachhelm_{analyzed,failed}_at column, so subsequent cron runs skip
   // automatically.
   for (let i = 0; i < pending.length; i += CONCURRENCY) {
+    // Never begin another expensive LLM chunk once the response reserve has
+    // been consumed. The current page is ordered oldest-first, and deferred
+    // rows remain eligible, so this is a durable checkpoint rather than a
+    // terminal failure.
+    if (Date.now() - runStartedAt >= softDeadlineMs) {
+      deadlineReached = true;
+      break;
+    }
+
     const chunk = pending.slice(i, i + CONCURRENCY);
     const settled = await Promise.allSettled(
       chunk.map((round) =>
@@ -193,28 +269,45 @@ async function handleSafetyNet(): Promise<NextResponse> {
         }),
       ),
     );
+    processed += settled.length;
     for (let j = 0; j < settled.length; j++) {
       const result = settled[j]!;
       if (result.status === 'fulfilled' && result.value.success) {
         recovered++;
       } else {
-        failed++;
         const round = chunk[j]!;
         const reason = result.status === 'fulfilled'
           ? result.value.error
           : result.reason instanceof Error
             ? result.reason.message
             : String(result.reason);
-        await logServerError(
-          `cron.safetyNet.postRoundTrigger failed: ${reason ?? 'unknown failure'}`,
-          {
-            action: 'cron.coachhelm.safetyNet.postRoundTrigger',
-            featureArea: 'coachhelm',
-            playerId: round.player_id,
-            extra: { roundId: round.id },
-          },
-          'error',
-        );
+        // A rejected promise has no engine classification, so it stays a hard
+        // failure. A fulfilled `{ success: false }` carries the engine's own
+        // `code`, and this cron must reach the SAME verdict postRoundTrigger
+        // already reached for it — otherwise the identical outcome is logged
+        // twice with two different severities, which is exactly how routine
+        // states ("No active team membership for player", "No completed
+        // rounds in the last 90 days") kept reappearing in the Errors tab
+        // at 'error' moments after being logged at 'warning'/'info'.
+        const code = result.status === 'fulfilled' ? (result.value.code ?? null) : null;
+        const { severity, skipSentry } = classifySoftFailure(reason ?? 'unknown failure', code);
+        if (severity === 'error') failed++;
+        else skippedExpected++;
+
+        const message = `cron.safetyNet.postRoundTrigger failed: ${reason ?? 'unknown failure'}`;
+        const logContext = {
+          action: 'cron.coachhelm.safetyNet.postRoundTrigger',
+          featureArea: 'coachhelm',
+          playerId: round.player_id,
+          ...(skipSentry ? { skipSentry: true } : {}),
+          ...(code ? { errorCode: code } : {}),
+          extra: { roundId: round.id },
+        };
+        if (severity === 'info') {
+          await logServerEvent(message, logContext, 'info');
+        } else {
+          await logServerError(message, logContext, severity);
+        }
       }
     }
   }
@@ -222,8 +315,12 @@ async function handleSafetyNet(): Promise<NextResponse> {
   return NextResponse.json({
     success: true,
     pending: pending.length,
+    processed,
+    deferred: pending.length - processed,
+    deadlineReached,
     recovered,
     failed,
+    skippedExpected,
     concurrency: CONCURRENCY,
   });
 }

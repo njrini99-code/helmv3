@@ -27,8 +27,8 @@
 import { chromium, webkit, devices } from '@playwright/test';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
-const LOGIN_EMAIL = 'grogranl@denison.edu';
-const LOGIN_PASSWORD = 'DenisonBigRed2026!';
+const LOGIN_EMAIL = process.env.IOS_ITINERARY_TEST_EMAIL;
+const LOGIN_PASSWORD = process.env.IOS_ITINERARY_TEST_PASSWORD;
 const TEST_PREFIX = 'E2E TEST ITINERARY - DELETE ME';
 const DEPARTURE_DATE = '2027-03-15'; // YYYY-MM-DD — iOS native picker format
 const DESTINATION = 'E2E Test Destination';
@@ -90,6 +90,11 @@ async function sweepTestTrips(page, label) {
 }
 
 async function runFlow(browserType, deviceDescriptor, uaSuffix = '') {
+  if (!LOGIN_EMAIL || !LOGIN_PASSWORD) {
+    throw new Error(
+      'Missing IOS_ITINERARY_TEST_EMAIL or IOS_ITINERARY_TEST_PASSWORD; test-account credentials must come from the environment.',
+    );
+  }
   const browser = await browserType.launch({ headless: true });
   const ctx = await browser.newContext({
     ...deviceDescriptor,

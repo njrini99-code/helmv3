@@ -179,6 +179,37 @@ function seriesTables(): Record<string, Row[]> {
   };
 }
 
+const INCIDENT_ROOT_ID = 'aeb46c1d-9777-43f0-8962-df4589f83354';
+const INCIDENT_RULE = 'RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;COUNT=52';
+
+/**
+ * Same cardinality, rule, and UTC schedule as the series behind
+ * JAVASCRIPT-NEXTJS-HQ. The captured edit expressed 09:00–11:00 at UTC−07,
+ * which is exactly the stored 16:00–18:00 UTC window.
+ */
+function incidentSeriesTables(): Record<string, Row[]> {
+  const firstStart = Date.parse('2026-07-27T16:00:00+00:00');
+  const weekMs = 7 * 24 * 60 * 60 * 1_000;
+
+  return {
+    golf_coaches: [
+      { id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' },
+    ],
+    golf_events: Array.from({ length: 52 }, (_, index) => {
+      const start = new Date(firstStart + index * weekMs);
+      const end = new Date(start.getTime() + 2 * 60 * 60 * 1_000);
+      return eventRow({
+        id: index === 0 ? INCIDENT_ROOT_ID : `incident-child-${String(index).padStart(2, '0')}`,
+        title: 'Momentic Recurring 302807',
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        recurrence_rule: index === 0 ? INCIDENT_RULE : null,
+        parent_event_id: index === 0 ? null : INCIDENT_ROOT_ID,
+      });
+    }),
+  };
+}
+
 let tables: Record<string, Row[]>;
 
 function seed(userId: string, seedTables: Record<string, Row[]> = seriesTables()): void {
@@ -221,6 +252,59 @@ function spyOnUpdatePayloads(): Row[] {
     };
   }) as typeof fake.from;
   return payloads;
+}
+
+type SeriesWriteMethod = 'eq' | 'or' | 'gte' | 'select';
+
+interface SeriesWriteCall {
+  method: SeriesWriteMethod;
+  args: unknown[];
+}
+
+interface SeriesWriteTrace {
+  payload: Row;
+  calls: SeriesWriteCall[];
+}
+
+type TraceableWriteBuilder = {
+  [Method in SeriesWriteMethod]: (...args: unknown[]) => TraceableWriteBuilder;
+};
+
+/**
+ * Capture the fluent PostgREST write contract without replacing its behavior.
+ * This makes the regression assert the actual PATCH payload/filter order rather
+ * than merely observing the final in-memory rows.
+ */
+function spyOnSeriesWriteContract(): SeriesWriteTrace[] {
+  const traces: SeriesWriteTrace[] = [];
+  const origFrom = fake.from.bind(fake);
+
+  fake.from = ((table: string) => {
+    const api = origFrom(table);
+    if (table !== 'golf_events') return api;
+
+    return {
+      ...api,
+      update(payload: Row) {
+        const builder = api.update(payload) as unknown as TraceableWriteBuilder;
+        const trace: SeriesWriteTrace = { payload, calls: [] };
+        traces.push(trace);
+
+        for (const method of ['eq', 'or', 'gte', 'select'] as const) {
+          const original = builder[method].bind(builder);
+          builder[method] = (...args: unknown[]) => {
+            trace.calls.push({ method, args });
+            original(...args);
+            return builder;
+          };
+        }
+
+        return builder;
+      },
+    };
+  }) as typeof fake.from;
+
+  return traces;
 }
 
 interface FailingResult {
@@ -571,6 +655,239 @@ describe('editRecurringEvent — per-row date deltas', () => {
     expect(result).toEqual({ success: false, error: 'Not authorized' });
     expect(eventById('ev-root')?.title).toBe('Practice');
   });
+
+  // -------------------------------------------------------------------------
+  // `golf_events_end_after_start` CHECK (end_time IS NULL OR start_time IS NULL
+  // OR end_time >= start_time). Moving a 14:00–15:00 occurrence to 16:00 while
+  // leaving end_time at 15:00 is rejected outright with SQLSTATE 23514. This is
+  // an independently reproduced single-occurrence defect, not an attribution
+  // for a batched-series incident. The fake client below does not enforce check
+  // constraints, so only these payload assertions can catch it.
+  //
+  // 'thisAndFuture' and 'all' already carried the end with the start; 'this'
+  // did not, so the same drag succeeded or failed depending on which scope the
+  // coach picked.
+  // -------------------------------------------------------------------------
+  describe('end_time never lands before start_time', () => {
+    const invariant = (row: Row | undefined) => {
+      const start = Date.parse(String(row?.start_time));
+      const end = Date.parse(String(row?.end_time));
+      expect(Number.isFinite(start)).toBe(true);
+      expect(Number.isFinite(end)).toBe(true);
+      expect(end).toBeGreaterThanOrEqual(start);
+    };
+
+    it("scope 'this' carries the end forward when only the start time moves", async () => {
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { startDate: '2026-06-08', startTime: '16:00' },
+      });
+
+      expect(result.success).toBe(true);
+      const row = eventById('ev-c2');
+      invariant(row);
+      // The occurrence keeps its one-hour duration: 16:00 → 17:00.
+      expect(Date.parse(String(row?.end_time))).toBe(Date.parse('2026-06-08T17:00:00Z'));
+      // Siblings are untouched.
+      expect(eventById('ev-c3')?.start_time).toBe('2026-06-15T14:00:00+00:00');
+      expect(eventById('ev-c3')?.end_time).toBe('2026-06-15T15:00:00+00:00');
+    });
+
+    it("scope 'this' still honours an explicit end time over the carried one", async () => {
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { startDate: '2026-06-08', startTime: '16:00', endTime: '18:30' },
+      });
+
+      expect(result.success).toBe(true);
+      const row = eventById('ev-c2');
+      invariant(row);
+      expect(Date.parse(String(row?.end_time))).toBe(Date.parse('2026-06-08T18:30:00Z'));
+    });
+
+    it("scope 'this' does not touch end_time when the start does not move", async () => {
+      const payloads = spyOnUpdatePayloads();
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { title: 'Short game' },
+      });
+
+      expect(result.success).toBe(true);
+      expect(payloads.every((p) => !('end_time' in p))).toBe(true);
+      expect(eventById('ev-c2')?.end_time).toBe('2026-06-08T15:00:00+00:00');
+    });
+
+    it('holds for every scope on the same forward drag', async () => {
+      for (const scope of ['this', 'thisAndFuture', 'all'] as const) {
+        seed('u-coach');
+        const result = await editRecurringEvent({
+          eventId: 'ev-c2',
+          originalStartDate: '2026-06-08',
+          scope,
+          timezoneOffset: 0,
+          updates: { startDate: '2026-06-08', startTime: '16:00' },
+        });
+        expect(result.success, scope).toBe(true);
+        invariant(eventById('ev-c2'));
+      }
+    });
+
+    // The other half of the invariant: an end EARLIER than the start. The
+    // calendar editor renders the two times as independent inputs with no
+    // relative validation, so this reaches the action intact. Postgres answers
+    // 23514 (verified against production in a rolled-back transaction), which
+    // used to reach the coach as "Failed to update ... Please try again." —
+    // advice that can never work. The action must answer it itself, and must
+    // not write anything.
+    const backwardsWindow = { startDate: '2026-06-08', startTime: '16:00', endTime: '14:00' };
+
+    it.each(['this', 'thisAndFuture', 'all'] as const)(
+      "scope '%s' refuses an end time before the start time and writes nothing",
+      async (scope) => {
+        seed('u-coach');
+        const payloads = spyOnUpdatePayloads();
+        const result = await editRecurringEvent({
+          eventId: 'ev-c2',
+          originalStartDate: '2026-06-08',
+          scope,
+          timezoneOffset: 0,
+          updates: backwardsWindow,
+        });
+
+        expect(result).toEqual({
+          success: false,
+          error: 'End time must be after the start time. Adjust the event end as well.',
+        });
+        expect(payloads).toEqual([]);
+        for (const id of ['ev-root', 'ev-c2', 'ev-c3']) invariant(eventById(id));
+        expect(eventById('ev-c2')?.start_time).toBe('2026-06-08T14:00:00+00:00');
+        expect(eventById('ev-c2')?.end_time).toBe('2026-06-08T15:00:00+00:00');
+      },
+    );
+
+    it('refuses a backwards window measured against the STORED start when the start does not move', async () => {
+      // Only the end moves: 14:00–15:00 asked to end at 13:00. `startChanged`
+      // is false here, so the comparison has to fall back to the stored start.
+      const payloads = spyOnUpdatePayloads();
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { endTime: '13:00' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(payloads).toEqual([]);
+      invariant(eventById('ev-c2'));
+    });
+
+    it('still accepts an end exactly equal to the start (the CHECK allows it)', async () => {
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { startDate: '2026-06-08', startTime: '16:00', endTime: '16:00' },
+      });
+
+      expect(result.success).toBe(true);
+      invariant(eventById('ev-c2'));
+    });
+  });
+});
+
+// ===========================================================================
+// JAVASCRIPT-NEXTJS-HQ — exact batched-series request contract
+// ===========================================================================
+
+describe('editRecurringEvent — 52-row PostgREST series contract', () => {
+  /**
+   * This hermetic contract exercises the shipped action with the exact captured
+   * payload and a 52-row incident-shaped series. It proves timestamp
+   * normalization and the PATCH filter/payload contract in every CI run.
+   *
+   * It deliberately does not claim to reproduce the unidentified live 400:
+   * the repository's unit client cannot model PostgREST transport, RLS, or
+   * PostgreSQL failures. Release verification must still replay this edit
+   * against local/preview Supabase and inspect `describeWriteFailure` telemetry
+   * before JAVASCRIPT-NEXTJS-HQ is resolved.
+   */
+  it.each([
+    {
+      scope: 'thisAndFuture' as const,
+      expectedCalls: [
+        { method: 'eq', args: ['team_id', 'team-1'] },
+        {
+          method: 'or',
+          args: [`parent_event_id.eq.${INCIDENT_ROOT_ID},id.eq.${INCIDENT_ROOT_ID}`],
+        },
+        { method: 'gte', args: ['start_time', '2026-07-27T16:00:00+00:00'] },
+        { method: 'select', args: ['id'] },
+      ],
+    },
+    {
+      scope: 'all' as const,
+      expectedCalls: [
+        { method: 'eq', args: ['team_id', 'team-1'] },
+        {
+          method: 'or',
+          args: [`parent_event_id.eq.${INCIDENT_ROOT_ID},id.eq.${INCIDENT_ROOT_ID}`],
+        },
+        { method: 'select', args: ['id'] },
+      ],
+    },
+  ])(
+    "scope '$scope' emits the exact non-date PATCH and keeps all 52 windows valid",
+    async ({ scope, expectedCalls }) => {
+      seed('u-coach', incidentSeriesTables());
+      const traces = spyOnSeriesWriteContract();
+
+      const result = await editRecurringEvent({
+        eventId: INCIDENT_ROOT_ID,
+        originalStartDate: '2026-07-27T16:00:00+00:00',
+        scope,
+        timezoneOffset: 420,
+        updates: {
+          title: 'Momentic Recurring 302807',
+          description: undefined,
+          startDate: '2026-07-27',
+          endDate: '2026-07-27',
+          startTime: '09:00',
+          endTime: '11:00',
+          location: undefined,
+          recurrenceRule: INCIDENT_RULE,
+        },
+      });
+
+      expect(result.success).toBe(true);
+
+      const seriesPatch = traces.find((trace) => trace.payload.title !== undefined);
+      expect(seriesPatch).toEqual({
+        payload: { title: 'Momentic Recurring 302807' },
+        calls: expectedCalls,
+      });
+
+      expect(events()).toHaveLength(52);
+      for (const [index, row] of events().entries()) {
+        const expectedStart = Date.parse('2026-07-27T16:00:00Z') + index * 7 * 24 * 60 * 60 * 1_000;
+        expect(Date.parse(String(row.start_time))).toBe(expectedStart);
+        expect(Date.parse(String(row.end_time))).toBe(expectedStart + 2 * 60 * 60 * 1_000);
+        expect(Date.parse(String(row.end_time))).toBeGreaterThanOrEqual(
+          Date.parse(String(row.start_time)),
+        );
+      }
+    },
+  );
 });
 
 // ===========================================================================
@@ -762,6 +1079,29 @@ describe('createRecurringEvent', () => {
     });
 
     expect(result).toEqual({ success: false, error: 'Invalid recurrence rule' });
+    expect(events()).toHaveLength(0);
+  });
+
+  it('rejects an end time before the start time instead of building an unstorable series', async () => {
+    seed('u-coach', {
+      golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+      golf_events: [],
+    });
+
+    const result = await createRecurringEvent({
+      title: 'Lifting',
+      eventType: 'training',
+      startDate: '2026-06-01',
+      startTime: '09:00',
+      endTime: '08:00',
+      recurrenceRule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=3',
+      timezoneOffset: 0,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'End time must be after the start time. Adjust the event end as well.',
+    });
     expect(events()).toHaveLength(0);
   });
 });

@@ -23,7 +23,7 @@ import { DocumentsFairway } from '@/components/baseball/documents/DocumentsFairw
 import { fairwayScope } from '@/lib/redesign/flag';
 
 const UPLOAD_ACCEPT =
-  'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,video/mp4,video/webm,video/quicktime';
+  'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif,image/svg+xml,text/plain,text/markdown,text/csv,video/mp4,video/webm,video/quicktime,application/zip';
 
 const CATEGORIES = [
   { value: 'all', label: 'All' },

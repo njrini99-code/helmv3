@@ -61,11 +61,28 @@ export interface FairwayCoursePickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPick: (defaults: TeeRoundDefaults) => void;
+  /**
+   * May the viewer CREATE library rows (a course, or a tee set on one)?
+   * Course-library MANAGEMENT is coach-only — createCourse/createTee both sit
+   * behind requireCoachActor (actions/course-library.ts), so rendering the
+   * affordance to a player produces a guaranteed rejection.
+   *
+   * Defaults CLOSED because the highest-traffic call site is the player-only
+   * new-round flow. Coach-only callers (qualifier create/edit) opt in.
+   *
+   * Players are not losing the capability: closing the picker and typing the
+   * course name on the setup screen still grows the shared catalog, via
+   * contributeCourseFromRound — the deliberate player-open growth path that
+   * skips this same gate.
+   */
+  canManageLibrary?: boolean;
 }
 
 type Stage = 'courses' | 'tees';
 
-export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCoursePickerProps) {
+export function FairwayCoursePicker({
+  open, onOpenChange, onPick, canManageLibrary = false,
+}: FairwayCoursePickerProps) {
   const { showToast } = useToast();
   // useToast() returns a FRESH object (new showToast identity) every render, so
   // depending on `showToast` in a useCallback re-creates that callback every
@@ -317,14 +334,14 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
                           const c = [...courses, ...recent, ...team].find((x) => x.id === id);
                           if (c) void selectCourse(c);
                         }}
-                        onCreate={() => setCreateCourseOpen(true)}
+                        onCreate={canManageLibrary ? () => setCreateCourseOpen(true) : undefined}
                       />
                     : <TeesStage
                         loading={loadingTees}
                         tees={tees}
                         picking={picking}
                         onPick={pickTee}
-                        onAddTee={() => setCreateTeeOpen(true)}
+                        onAddTee={canManageLibrary ? () => setCreateTeeOpen(true) : undefined}
                       />}
                 </m.div>
               </AnimatePresence>
@@ -334,16 +351,20 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
         </DrawerContent>
       </Drawer>
 
-      {/* Grow the shared catalog from inside the flow. */}
-      <CourseFormDrawer
-        open={createCourseOpen}
-        onOpenChange={setCreateCourseOpen}
-        mode="create"
-        onSaved={(course) => { void handleCourseCreated(course); }}
-      />
+      {/* Grow the shared catalog from inside the flow. Coach-only: both drawers
+          submit into requireCoachActor-gated actions, so they stay unmounted
+          rather than merely unreachable — nothing can open them by accident. */}
+      {canManageLibrary && (
+        <CourseFormDrawer
+          open={createCourseOpen}
+          onOpenChange={setCreateCourseOpen}
+          mode="create"
+          onSaved={(course) => { void handleCourseCreated(course); }}
+        />
+      )}
 
       {/* Add the tee you're about to play to a (often freshly created) course. */}
-      {selected && (
+      {canManageLibrary && selected && (
         <TeeFormDrawer
           open={createTeeOpen}
           onOpenChange={setCreateTeeOpen}
@@ -375,7 +396,8 @@ function CoursesStage({
   query: string;
   reduceMotion: boolean;
   onSelect: (courseId: string) => void;
-  onCreate: () => void;
+  /** Undefined for a viewer who may not manage the library — see canManageLibrary. */
+  onCreate?: () => void;
 }) {
   if (loading) {
     // Shape-matched to the real browse layout (labelled shelves of featured
@@ -409,7 +431,7 @@ function CoursesStage({
   // Search mode — one results carousel across the whole library.
   if (q) {
     if (filtered.length === 0) {
-      return (
+      return onCreate ? (
         <EmptyState
           variant="subtle"
           icon={<IconFlag aria-hidden />}
@@ -422,6 +444,13 @@ function CoursesStage({
             </Button>
           }
         />
+      ) : (
+        <EmptyState
+          variant="subtle"
+          icon={<IconFlag aria-hidden />}
+          title={`No courses match “${q}”.`}
+          description="Close this and type the course name on the setup screen — it’ll be added to the library when you save the round."
+        />
       );
     }
     return (
@@ -430,7 +459,7 @@ function CoursesStage({
         reduceMotion={reduceMotion}
         onSelect={onSelect}
         regionLabel={`Search results for ${q}`}
-        withCreateTile
+        withCreateTile={!!onCreate}
         onCreate={onCreate}
       />
     );
@@ -459,7 +488,7 @@ function CoursesStage({
           reduceMotion={reduceMotion}
           onSelect={onSelect}
           regionLabel="Course library"
-          withCreateTile
+          withCreateTile={!!onCreate}
           onCreate={onCreate}
         />
       </CourseSection>
@@ -639,18 +668,24 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
   );
 }
 
-function EmptyCourses({ onCreate }: { onCreate: () => void }) {
+function EmptyCourses({ onCreate }: { onCreate?: () => void }) {
   return (
     <EmptyState
       variant="default"
       className="flex-1"
       icon={<IconFlag aria-hidden />}
       title="No courses yet"
-      description="Add the first course to the shared library — everyone on your team can play it from here."
+      description={
+        onCreate
+          ? 'Add the first course to the shared library — everyone on your team can play it from here.'
+          : 'Close this and type the course name on the setup screen — it’ll be added to the library when you save the round.'
+      }
       action={
-        <Button variant="primary" onClick={onCreate}>
-          <IconPlus size={16} aria-hidden /> Add a course
-        </Button>
+        onCreate ? (
+          <Button variant="primary" onClick={onCreate}>
+            <IconPlus size={16} aria-hidden /> Add a course
+          </Button>
+        ) : undefined
       }
     />
   );
@@ -681,7 +716,9 @@ function TeesStage({
   tees: GolfCourseTee[];
   picking: boolean;
   onPick: (tee: GolfCourseTee) => void;
-  onAddTee: () => void;
+  /** Undefined for a viewer who may not manage the library — createTee is
+   *  behind the SAME requireCoachActor gate as createCourse. */
+  onAddTee?: () => void;
 }) {
   // Scale the length bars against the longest tee AT THIS COURSE. Comparing to
   // anything else (a fixed 7,000, the longest in the library) would make the
@@ -699,11 +736,17 @@ function TeesStage({
           variant="subtle"
           icon={<IconFlag aria-hidden />}
           title="No tee sets yet"
-          description="Add the tee you played to start the round and grow the course for your team."
+          description={
+            onAddTee
+              ? 'Add the tee you played to start the round and grow the course for your team.'
+              : 'Go back and pick another course, or close this and enter your tees on the setup screen.'
+          }
           action={
-            <Button variant="primary" onClick={onAddTee}>
-              <IconPlus size={16} aria-hidden /> Add a tee set
-            </Button>
+            onAddTee ? (
+              <Button variant="primary" onClick={onAddTee}>
+                <IconPlus size={16} aria-hidden /> Add a tee set
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -724,11 +767,13 @@ function TeesStage({
               </li>
             ))}
           </ul>
-          <div className="mt-4 flex justify-center">
-            <Button variant="ghost" size="sm" onClick={onAddTee}>
-              <IconPlus size={15} aria-hidden /> Add another tee set
-            </Button>
-          </div>
+          {onAddTee && (
+            <div className="mt-4 flex justify-center">
+              <Button variant="ghost" size="sm" onClick={onAddTee}>
+                <IconPlus size={15} aria-hidden /> Add another tee set
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

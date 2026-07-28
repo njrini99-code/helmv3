@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { composePracticeRx, type PracticePlan } from '@/lib/coachhelm/v3/practice-rx/composer';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface PracticeRxActionResult {
   ok: boolean;
@@ -103,7 +104,7 @@ async function generatePracticeRxImpl(goal_id: string): Promise<PracticeRxAction
     return { ok: true, plan };
   } catch (err) {
     await logServerError(
-      `generatePracticeRx failed: ${err instanceof Error ? err.message : String(err)}`,
+      `generatePracticeRx failed: ${describeError(err)}`,
       { action: 'v3.practice-rx.generate' },
     );
     return { ok: false, error: 'Internal error' };

@@ -19,6 +19,7 @@ import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { composePracticeRx, type PracticePlan } from '@/lib/coachhelm/v3/practice-rx/composer';
 import { metricForArea } from '@/lib/coachhelm/v3/practice-rx/area-metric-map';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface TeamPracticeRxInput {
   team_id: string;
@@ -117,7 +118,7 @@ async function generateTeamPracticeRxImpl(
     };
   } catch (err) {
     await logServerError(
-      `generateTeamPracticeRx failed: ${err instanceof Error ? err.message : String(err)}`,
+      `generateTeamPracticeRx failed: ${describeError(err)}`,
       { action: 'v3.team-practice-rx.generate' },
     );
     return { ok: false, error: 'Internal error' };

@@ -60,6 +60,17 @@ const MAX_SAMPLE_IDS = 5;
 function normalizeIncidentMessagePrefix(message: string, length = MESSAGE_PREFIX_LEN): string {
   return message
     .trim()
+    // Prefixed opaque provider ids, BEFORE the lowercase fold — these are
+    // mixed-case base62, so they are neither a UUID nor long hex and used to
+    // survive every rule below. That is how one broken CoachHelm conversation
+    // arrived in the Bridge as four separate incidents: each retry echoed a
+    // different `toolu_…` id inside "Tool result is missing for tool call …",
+    // and the differing id sat inside the hashed 80-character prefix.
+    //
+    // Anchored on a known separator + a long alphanumeric run so it cannot eat
+    // ordinary snake_case words: `engine_no_team_membership` has no run of 16+
+    // alphanumerics after an underscore, and stays intact.
+    .replace(/\b([a-z]{2,12}[_-])[A-Za-z0-9]{16,}\b/g, '$1:id')
     .toLowerCase()
     // Replace UUIDs / long hex / large ints so siblings of the same root cause collapse.
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, ':uuid')
@@ -108,6 +119,12 @@ export function buildIncidentSignature(input: {
   route: string | null;
   message: string;
 }): string {
+  // Provider faults already carry a canonical provider+kind code. Group them
+  // across call sites, routes, wording, and severity so one upstream outage is
+  // one operator incident; groupIncidents will retain the worst severity.
+  if (input.errorCode?.startsWith('provider_')) {
+    return fnv1aHex(`provider::${input.errorCode}`);
+  }
   const prefix = normalizeIncidentMessagePrefix(input.message);
   const route = normalizeIncidentRoute(input.route);
   const key = `${input.severity}::${input.errorCode ?? ''}::${route}::${prefix}`;

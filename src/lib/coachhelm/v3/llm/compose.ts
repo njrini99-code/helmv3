@@ -35,6 +35,8 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateText } from 'ai';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
+import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import { checkBudget, recordSpend } from './budget';
 import { verifyCitations } from './citations';
 import type { Json } from '@/lib/types/database';
@@ -44,6 +46,7 @@ import {
   type ComposeRequest,
   type ComposeResult,
 } from './types';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Rough prompt-token estimate (4 chars per token is the standard rule
 // of thumb). Used pre-call to size the budget check; the post-call
@@ -278,6 +281,54 @@ function buildRetryPrompt(prompt: string, unmatchedTokens: string[]): string {
 }
 
 /**
+ * Report one compose() failure.
+ *
+ * Two things are normalised here. The message: the Vercel AI Gateway's
+ * out-of-credit body carries a per-team billing URL, which the incident
+ * signature hashes verbatim, so one outage arrived as several incidents. And
+ * the code: a stable `provider_*` code ties this row to the same fault the chat
+ * route reports, so an operator sees one cause rather than one row per feature.
+ *
+ * Severity stays 'warning' even for an operator-blocking fault, unlike the chat
+ * route's 'error'. That is deliberate and is the honest difference between the
+ * two: compose() has a deterministic template behind it, so the player still
+ * receives a real (if plainer) round review, whereas a failed chat turn leaves
+ * the coach with nothing. Degraded is not down.
+ */
+async function logComposeFailure(task: string, err: unknown): Promise<void> {
+  const fault = classifyProviderFault(err);
+  if (!fault) {
+    await logServerEvent(
+      `compose() LLM call failed for task=${task}: ${describeError(err)}`,
+      { action: 'v3.llm.compose' },
+      'warning',
+    );
+    return;
+  }
+
+  const throttleKey = `compose-provider:${fault.code}`;
+  if (!shouldEmit(throttleKey)) return;
+  const collapsed = drainCollapsedCount(throttleKey);
+
+  await logServerEvent(
+    `compose() fell back to the template: ${fault.summary}`,
+    {
+      action: 'v3.llm.compose',
+      errorCode: fault.code,
+      skipSentry: providerFaultSeverity(fault).skipSentry,
+      extra: {
+        task,
+        providerFaultKind: fault.kind,
+        provider: fault.provider,
+        providerMessage: describeError(err).slice(0, 500),
+        ...(collapsed > 0 ? { collapsed_count: collapsed } : {}),
+      },
+    },
+    'warning',
+  );
+}
+
+/**
  * Shared fallback path when generateText throws (rate limit, gateway
  * error, etc.). Logs a warning + a 0-or-partial-cost row and returns the
  * deterministic template, never surfacing the failure to the player.
@@ -294,11 +345,7 @@ async function fallbackFromLlmError(
     completion_tokens?: number;
   },
 ): Promise<ComposeResult> {
-  await logServerEvent(
-    `compose() LLM call failed for task=${req.task}: ${ctx.err instanceof Error ? ctx.err.message : String(ctx.err)}`,
-    { action: 'v3.llm.compose' },
-    'warning',
-  );
+  await logComposeFailure(req.task, ctx.err);
   const prompt_tokens = ctx.prompt_tokens ?? 0;
   const completion_tokens = ctx.completion_tokens ?? 0;
   const cost_usd = estimateCostUsd(ctx.model_id, prompt_tokens, completion_tokens);

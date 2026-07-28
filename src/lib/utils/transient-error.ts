@@ -17,27 +17,48 @@
  * retry on Supabase / fetch-based calls.
  *
  * Inspects (in order):
- *   - `err.name` for `AbortError` / `FetchError`
+ *   - `err.name` for `AbortError` / `TimeoutError` / `FetchError`
  *   - `err.code` and `err.cause.code` for the Node/undici codes that
  *     surface as transport errors (UND_ERR_*, ECONNRESET, ETIMEDOUT,
  *     ABORT_ERR)
- *   - `err.message` (case-insensitive) for the substrings the underlying
- *     fetch raises before it has a typed code: 'fetch failed',
+ *   - the error's message (case-insensitive) for the substrings the
+ *     underlying fetch raises before it has a typed code: 'fetch failed',
  *     'econnreset', 'etimedout', 'socket hang up', 'network',
- *     '502', '503', '504', 'gateway timeout', 'service unavailable'
+ *     '502', '503', '504', 'gateway timeout', 'service unavailable',
+ *     plus the abort/timeout phrasings below
+ *
+ * TWO SHAPES, NOT ONE. The server Supabase client sets a 10s HTTP abort
+ * (`AbortSignal.timeout` in src/lib/supabase/server.ts), so the abort it is
+ * configured to produce is this helper's single most important input — and it
+ * arrives in a shape the original implementation could not read:
+ *
+ *   1. THROWN, as a DOMException: `name` is `'TimeoutError'` (NOT
+ *      `'AbortError'` — that name belongs to an explicit
+ *      `AbortController.abort()`), message "The operation was aborted due to
+ *      timeout".
+ *   2. RETURNED, as a plain object: supabase-js catches the fetch rejection
+ *      and resolves with `{ message, details, hint: '', code: '' }` (see
+ *      postgrest-js PostgrestBuilder). It is NOT an Error, carries no `name`,
+ *      and its `code` is the empty string — so every name/code branch misses
+ *      it, and the message fallback's `String(err)` yields the useless
+ *      `'[object Object]'` rather than the message. Read `.message` off plain
+ *      objects so this shape is classified on its text.
  *
  * Server-side only. For client rendering errors, see RouteErrorBoundary.
  */
 export function isTransientFetchError(err: unknown): boolean {
   if (!err) return false;
 
-  // Name-based: AbortController/undici wrap aborts as `AbortError`,
-  // node-fetch surfaces transport failures as `FetchError`.
+  // Name-based: AbortController wraps aborts as `AbortError`,
+  // `AbortSignal.timeout` as `TimeoutError`, node-fetch surfaces transport
+  // failures as `FetchError`.
   if (typeof err === 'object') {
     const e = err as { name?: unknown; code?: unknown; cause?: unknown };
 
     if (typeof e.name === 'string') {
-      if (e.name === 'AbortError' || e.name === 'FetchError') return true;
+      if (e.name === 'AbortError' || e.name === 'TimeoutError' || e.name === 'FetchError') {
+        return true;
+      }
     }
 
     // Code-based: check both `err.code` and `err.cause.code`. undici nests
@@ -53,8 +74,7 @@ export function isTransientFetchError(err: unknown): boolean {
 
   // Message-based fallback. Many transport errors only carry the failure
   // mode in the message string (e.g. bare "TypeError: fetch failed").
-  const msg = err instanceof Error ? err.message : String(err);
-  const lower = msg.toLowerCase();
+  const lower = transportMessage(err).toLowerCase();
   return (
     lower.includes('fetch failed') ||
     lower.includes('econnreset') ||
@@ -65,8 +85,31 @@ export function isTransientFetchError(err: unknown): boolean {
     lower.includes('503') ||
     lower.includes('504') ||
     lower.includes('gateway timeout') ||
-    lower.includes('service unavailable')
+    lower.includes('service unavailable') ||
+    // Abort/timeout phrasings. `AbortSignal.timeout` → "The operation was
+    // aborted due to timeout"; `AbortController.abort()` → "This operation
+    // was aborted"; undici/DOM also use "The user aborted a request".
+    lower.includes('operation was aborted') ||
+    lower.includes('aborted due to timeout') ||
+    lower.includes('aborted a request')
   );
+}
+
+/**
+ * The message to classify on.
+ *
+ * `String(err)` is right for primitives and Errors but returns
+ * `'[object Object]'` for the plain `{ message, details, hint, code }` object
+ * supabase-js resolves with after a failed fetch — the shape that carries the
+ * 10s-abort text. Prefer an own `message` string when present.
+ */
+function transportMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object') {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return String(err);
 }
 
 function isTransientCode(code: string): boolean {

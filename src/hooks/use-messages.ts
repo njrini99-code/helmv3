@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { sendMessage as sendMessageAction, markMessagesAsRead } from '@/app/baseball/actions/messages';
 import { logError } from '@/lib/error-logging';
+import { describeError } from '@/lib/utils/describe-error';
 import type { Message } from '@/lib/types';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 
@@ -188,10 +189,23 @@ export function useConversations() {
     const conversationsData = rawData as ConversationRow[] | null;
 
     if (error) {
-      console.error('Error fetching conversations:', error);
+      const errorMessage = describeError(error);
+      const errorRecord = typeof error === 'object'
+        ? error as Record<string, unknown>
+        : {};
+      console.error('Error fetching conversations:', errorMessage);
       logError(
-        new Error((error as { message?: string })?.message || 'Failed to fetch conversations'),
-        { component: 'useMessages', action: 'fetchConversations', sport: 'baseball' },
+        new Error(errorMessage),
+        {
+          component: 'useMessages',
+          action: 'fetchConversations',
+          sport: 'baseball',
+          supabaseError: {
+            code: errorRecord.code ?? null,
+            details: errorRecord.details ?? null,
+            hint: errorRecord.hint ?? null,
+          },
+        },
         'medium'
       );
       setConversations([]);

@@ -1770,11 +1770,21 @@ async function getAdminDashboardDataImpl(): Promise<AdminDashboardData> {
       // Sessions 0 / 0 connections even with the RPC working in SQL. Always
       // unwrap the first row.
       try {
-        const admin = createAdminClient();
-        const rpc = admin.rpc.bind(admin) as unknown as (
+        // The function's SECURITY DEFINER body authorizes with auth.uid().
+        // A service-role client has no invoking admin UID and is therefore
+        // deterministically rejected even after the outer auth gate passes.
+        // Preserve the caller's JWT by using the authenticated server client.
+        const rpc = supabase.rpc.bind(supabase) as unknown as (
           fn: 'get_platform_health_stats',
         ) => Promise<{ data: PlatformHealthStatsResult[] | null; error: unknown }>;
         const res = await rpc('get_platform_health_stats');
+        if (res.error) {
+          void logServerError(
+            `[admin-data] get_platform_health_stats errored: ${describeError(res.error)}`,
+            { action: 'admin_data.getAdminDashboardData', featureArea: 'admin' },
+          );
+          return null;
+        }
         const rows = res.data ?? [];
         if (!Array.isArray(rows) || rows.length === 0) return null;
         return rows[0] ?? null;

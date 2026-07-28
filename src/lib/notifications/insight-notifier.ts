@@ -2,6 +2,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { dispatchCoachHelmNotification } from '@/lib/coachhelm/v3/notifications/dispatch';
 import type { NotificationCategory } from '@/lib/coachhelm/v3/notifications/router';
 import type { InsightEvidence, InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Wave 1B — post-write hook that decides when a newly persisted insight
@@ -126,7 +127,7 @@ export async function notifyInsightLanded(args: NotifyInsightArgs): Promise<void
   } catch (err) {
     // Catch-all — a notification failure must NEVER break the upsert caller.
     await logServerError(
-      `insight-notifier: unhandled failure: ${err instanceof Error ? err.message : String(err)}`,
+      `insight-notifier: unhandled failure: ${describeError(err)}`,
       {
         action: 'insight_notifier.notify',
         featureArea: 'coachhelm.insights',

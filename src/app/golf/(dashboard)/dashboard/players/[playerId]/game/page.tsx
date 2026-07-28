@@ -36,6 +36,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { computeCompositeRating } from '@/lib/coachhelm/composite-rating';
 import { PlayerDeepDiveTabs } from './PlayerDeepDiveTabs';
 import type { FairwayPlayerInsightProps } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
   title: 'Game Fingerprint | Helm Golf',
@@ -257,7 +258,7 @@ export default async function PlayerGamePage({
     // the failure so a real load/auth/query regression is observable, not silent.
     getThemesForCoach({ player_id: playerId }).catch((err) => {
       void logServerError(
-        `player game-deep-dive themes fetch failed (continuing without themes): ${err instanceof Error ? err.message : String(err)}`,
+        `player game-deep-dive themes fetch failed (continuing without themes): ${describeError(err)}`,
         { action: 'players-game-page.getThemesForCoach', featureArea: 'insights', playerId },
       ).catch(() => undefined);
       return null;

@@ -13,6 +13,7 @@ import {
   type CrmAutomationEvent,
   type CrmAutomationTrigger,
 } from '@/lib/crm/automations-engine';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Resend event types we track.
 // Unsubscribe handling note: Resend has NO `email.unsubscribed` / `contact.unsubscribed`
@@ -124,7 +125,7 @@ async function suppressEmail(
     }
   } catch (err) {
     await logServerError(
-      `[Resend Webhook] Failed to suppress ${reason} for ${normalized}: ${err instanceof Error ? err.message : String(err)}`,
+      `[Resend Webhook] Failed to suppress ${reason} for ${normalized}: ${describeError(err)}`,
       { action: 'route.POST', metadata: { reason, coachId } },
     );
   }
@@ -182,7 +183,7 @@ async function resolveCoachIdByEmail(
     return (exact ?? matches[0])?.id ?? null;
   } catch (err) {
     await logServerError(
-      `[Resend Webhook] Coach lookup by recipient failed for ${normalized}: ${err instanceof Error ? err.message : String(err)}`,
+      `[Resend Webhook] Coach lookup by recipient failed for ${normalized}: ${describeError(err)}`,
       { action: 'route.POST', metadata: { recipient: normalized } },
     );
     return null;
@@ -262,7 +263,7 @@ async function syncCoachLastEmailEvent(
       .eq('id', coachId);
   } catch (err) {
     await logServerError(
-      `[Resend Webhook] Failed to sync last_email_event for coach ${coachId}: ${err instanceof Error ? err.message : String(err)}`,
+      `[Resend Webhook] Failed to sync last_email_event for coach ${coachId}: ${describeError(err)}`,
       { action: 'route.POST', metadata: { coachId, eventType } },
     );
   }
@@ -301,7 +302,7 @@ export async function POST(request: Request) {
       'svix-signature': svixSignature,
     }) as ResendWebhookPayload;
   } catch (err) {
-    await logServerError(`[Resend Webhook] Signature verification failed: ${err instanceof Error ? err.message : String(err)}`, { action: 'route.POST' });
+    await logServerError(`[Resend Webhook] Signature verification failed: ${describeError(err)}`, { action: 'route.POST' });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
@@ -385,7 +386,7 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (error) {
-        await logServerError(`[Resend Webhook] Failed to store event: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
+        await logServerError(`[Resend Webhook] Failed to store event: ${describeError(error)}`, { action: 'route.POST' });
       } else {
         // ON CONFLICT DO NOTHING returns no row. That is the reliable signal
         // that this delivery was a replay and its side effects already ran.
@@ -614,7 +615,7 @@ export async function POST(request: Request) {
                 }
               } catch (actionErr) {
                 await logServerError(
-                  `[Resend Webhook] Automation action ${action.kind} failed: ${actionErr instanceof Error ? actionErr.message : String(actionErr)}`,
+                  `[Resend Webhook] Automation action ${action.kind} failed: ${describeError(actionErr)}`,
                   { action: 'route.POST', metadata: { coachId, event: event.type, action } },
                 );
               }
@@ -622,14 +623,14 @@ export async function POST(request: Request) {
           }
         } catch (autoErr) {
           await logServerError(
-            `[Resend Webhook] Automation evaluation failed: ${autoErr instanceof Error ? autoErr.message : String(autoErr)}`,
+            `[Resend Webhook] Automation evaluation failed: ${describeError(autoErr)}`,
             { action: 'route.POST', metadata: { coachId, event: event.type } },
           );
         }
       }
     }
   } catch (err) {
-    await logServerError(`[Resend Webhook] Processing error: ${err instanceof Error ? err.message : String(err)}`, { action: 'route.POST' });
+    await logServerError(`[Resend Webhook] Processing error: ${describeError(err)}`, { action: 'route.POST' });
     // Still return 200 to prevent retry storms
   }
 

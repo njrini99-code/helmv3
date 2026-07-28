@@ -24,6 +24,7 @@ import {
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -101,7 +102,7 @@ async function getPlayerStatsSummaryActionImpl(
 
     return { success: true, data: stats };
   } catch (error) {
-    await logServerError(`getPlayerStatsSummaryAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPlayerStatsSummaryAction failed: ${describeError(error)}`, {
       action: 'getPlayerStatsSummaryAction',
       featureArea: 'stats_cache',
       playerId: playerId ?? null,
@@ -164,7 +165,7 @@ async function getFullPlayerStatsActionImpl(
     const stats = await getFullPlayerStats(targetPlayerId);
     return { success: true, data: stats };
   } catch (error) {
-    await logServerError(`getFullPlayerStatsAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getFullPlayerStatsAction failed: ${describeError(error)}`, {
       action: 'getFullPlayerStatsAction',
       featureArea: 'stats_cache',
       playerId: playerId ?? null,
@@ -266,7 +267,7 @@ async function refreshStatsCacheActionImpl(
 
     return { success: true, data: undefined };
   } catch (error) {
-    await logServerError(`refreshStatsCacheAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`refreshStatsCacheAction failed: ${describeError(error)}`, {
       action: 'refreshStatsCacheAction',
       featureArea: 'stats_cache',
       playerId: playerId ?? null,
@@ -333,7 +334,7 @@ async function getTeamStatsActionImpl(): Promise<
     const statsMap = await getTeamPlayerStats(teamId);
     return { success: true, data: statsMap };
   } catch (error) {
-    await logServerError(`getTeamStatsAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getTeamStatsAction failed: ${describeError(error)}`, {
       action: 'getTeamStatsAction',
       featureArea: 'stats_cache',
       extra: {
@@ -395,7 +396,7 @@ async function getTeamTopPlayersActionImpl(
     const topPlayers = await getTeamTopPlayers(teamId, limit);
     return { success: true, data: topPlayers };
   } catch (error) {
-    await logServerError(`getTeamTopPlayersAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getTeamTopPlayersAction failed: ${describeError(error)}`, {
       action: 'getTeamTopPlayersAction',
       featureArea: 'stats_cache',
       extra: {
@@ -489,7 +490,7 @@ async function onRoundCompleteActionImpl(
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');
   } catch (error) {
-    await logServerError(`onRoundCompleteAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`onRoundCompleteAction failed: ${describeError(error)}`, {
       action: 'onRoundCompleteAction',
       featureArea: 'stats_cache',
       playerId,
@@ -532,7 +533,7 @@ async function markStatsStaleActionImpl(playerId: string): Promise<void> {
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');
   } catch (error) {
-    await logServerError(`markStatsStaleAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`markStatsStaleAction failed: ${describeError(error)}`, {
       action: 'markStatsStaleAction',
       featureArea: 'stats_cache',
       playerId,
@@ -695,7 +696,7 @@ async function getPlayerStatsDirectActionImpl(
       },
     };
   } catch (error) {
-    await logServerError(`getPlayerStatsDirectAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPlayerStatsDirectAction failed: ${describeError(error)}`, {
       action: 'getPlayerStatsDirectAction',
       featureArea: 'stats_cache',
       playerId: playerId ?? null,

@@ -16,6 +16,7 @@ import { getInsightEffectivenessSignals, type TrustSignal } from '@/lib/coachhel
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -272,7 +273,7 @@ async function getInsightEffectivenessImpl(
       },
     };
   } catch (error) {
-    await logServerError(`getInsightEffectiveness failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getInsightEffectiveness failed: ${describeError(error)}`, {
       action: 'getInsightEffectiveness',
       featureArea: 'coachhelm_analytics',
       extra: { teamId },
@@ -454,7 +455,7 @@ async function getPredictionPerformanceImpl(
       },
     };
   } catch (error) {
-    await logServerError(`getPredictionPerformance failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPredictionPerformance failed: ${describeError(error)}`, {
       action: 'getPredictionPerformance',
       featureArea: 'coachhelm_analytics',
       extra: { teamId },
@@ -644,7 +645,7 @@ async function getPatternImpactImpl(
       },
     };
   } catch (error) {
-    await logServerError(`getPatternImpact failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPatternImpact failed: ${describeError(error)}`, {
       action: 'getPatternImpact',
       featureArea: 'coachhelm_analytics',
       extra: { teamId },
@@ -825,7 +826,7 @@ async function getCoachHelmOverviewImpl(
       },
     };
   } catch (error) {
-    await logServerError(`getCoachHelmOverview failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getCoachHelmOverview failed: ${describeError(error)}`, {
       action: 'getCoachHelmOverview',
       featureArea: 'coachhelm_analytics',
       extra: { teamId },
@@ -1032,7 +1033,7 @@ async function calculateInsightEffectivenessFromInsights(
       },
     };
   } catch (error) {
-    await logServerError(`calculateInsightEffectivenessFromInsights failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`calculateInsightEffectivenessFromInsights failed: ${describeError(error)}`, {
       action: 'calculateInsightEffectivenessFromInsights',
       featureArea: 'coachhelm_analytics',
       extra: { teamId },
@@ -1201,7 +1202,7 @@ async function calculatePredictionPerformanceFromPredictions(
       },
     };
   } catch (error) {
-    await logServerError(`calculatePredictionPerformanceFromPredictions failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`calculatePredictionPerformanceFromPredictions failed: ${describeError(error)}`, {
       action: 'calculatePredictionPerformanceFromPredictions',
       featureArea: 'coachhelm_analytics',
       extra: { teamId },
@@ -1336,7 +1337,7 @@ async function getInsightTrustSignalsImpl(
     return { success: true, signals };
   } catch (error) {
     await logServerError(
-      `getInsightTrustSignals threw: ${error instanceof Error ? error.message : String(error)}`,
+      `getInsightTrustSignals threw: ${describeError(error)}`,
       { action: 'getInsightTrustSignals', featureArea: 'coachhelm_analytics' },
     );
     return { success: false, error: 'Failed to fetch insight trust signals' };

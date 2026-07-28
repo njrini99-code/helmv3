@@ -60,6 +60,7 @@ import type {
   BaseballActionInsert,
   BaseballJson,
 } from '@/lib/types/baseball-signals';
+import { describeError } from '@/lib/utils/describe-error';
 
 // -----------------------------------------------------------------------------
 // Shared result shape
@@ -523,7 +524,7 @@ async function materializeActionObject(
       } catch (exerciseErr) {
         await logServerError(
           `convertSignalToAction lift_modification session-exercise seed failed: ${
-            exerciseErr instanceof Error ? exerciseErr.message : String(exerciseErr)
+            describeError(exerciseErr)
           }`,
           { action: 'convertSignalToAction.lift_modification.sessionExercise', featureArea: 'baseball-lifting', handled: true },
         );

@@ -8,6 +8,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -151,7 +152,7 @@ export async function getResendActivityStats(
   });
 
   if (error) {
-    await logServerError(`[resend-activity] stats rpc failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getResendActivityStats' });
+    await logServerError(`[resend-activity] stats rpc failed: ${describeError(error)}`, { action: 'resend_activity.getResendActivityStats' });
     return null;
   }
 
@@ -228,7 +229,7 @@ export async function getEmailsList(
   const { data, error, count } = await query;
 
   if (error) {
-    await logServerError(`[resend-activity] emails list failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getEmailsList' });
+    await logServerError(`[resend-activity] emails list failed: ${describeError(error)}`, { action: 'resend_activity.getEmailsList' });
     return { rows: [], count: 0 };
   }
 
@@ -265,10 +266,10 @@ export async function getEmailDetail(resendMessageId: string): Promise<{
     ]);
 
     if (emailRes.error) {
-      await logServerError(`[resend-activity] email detail query failed: ${emailRes.error instanceof Error ? emailRes.error.message : String(emailRes.error)}`, { action: 'resend_activity.getEmailDetail' });
+      await logServerError(`[resend-activity] email detail query failed: ${describeError(emailRes.error)}`, { action: 'resend_activity.getEmailDetail' });
     }
     if (eventsRes.error) {
-      await logServerError(`[resend-activity] email detail events query failed: ${eventsRes.error instanceof Error ? eventsRes.error.message : String(eventsRes.error)}`, { action: 'resend_activity.getEmailDetail' });
+      await logServerError(`[resend-activity] email detail events query failed: ${describeError(eventsRes.error)}`, { action: 'resend_activity.getEmailDetail' });
     }
 
     return {
@@ -276,7 +277,7 @@ export async function getEmailDetail(resendMessageId: string): Promise<{
       events: ((eventsRes.data ?? []) as EmailEventRow[]),
     };
   } catch (err) {
-    await logServerError(`[resend-activity] email detail threw: ${err instanceof Error ? err.message : String(err)}`, { action: 'resend_activity.getEmailDetail' });
+    await logServerError(`[resend-activity] email detail threw: ${describeError(err)}`, { action: 'resend_activity.getEmailDetail' });
     throw err;
   }
 }
@@ -296,7 +297,7 @@ export async function getDomainBreakdown(
   });
 
   if (error) {
-    await logServerError(`[resend-activity] domain breakdown rpc failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getDomainBreakdown' });
+    await logServerError(`[resend-activity] domain breakdown rpc failed: ${describeError(error)}`, { action: 'resend_activity.getDomainBreakdown' });
     return [];
   }
 
@@ -318,7 +319,7 @@ export async function getRecentActivityFeed(limit = 50): Promise<EmailEventRow[]
     .limit(Math.min(limit, 200));
 
   if (error) {
-    await logServerError(`[resend-activity] feed failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getRecentActivityFeed' });
+    await logServerError(`[resend-activity] feed failed: ${describeError(error)}`, { action: 'resend_activity.getRecentActivityFeed' });
     return [];
   }
 
@@ -342,7 +343,7 @@ export async function getEmailClicks(
     .order('occurred_at', { ascending: false });
 
   if (error) {
-    await logServerError(`[resend-activity] email clicks query failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getEmailClicks' });
+    await logServerError(`[resend-activity] email clicks query failed: ${describeError(error)}`, { action: 'resend_activity.getEmailClicks' });
     return [];
   }
 
@@ -368,7 +369,7 @@ export async function getCoachLastEmailActivity(
     .in('id', coachIds);
 
   if (error) {
-    await logServerError(`[resend-activity] coach email activity query failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getCoachLastEmailActivity' });
+    await logServerError(`[resend-activity] coach email activity query failed: ${describeError(error)}`, { action: 'resend_activity.getCoachLastEmailActivity' });
     return {};
   }
 
@@ -405,7 +406,7 @@ export async function getFailedEmails(limit = 100): Promise<EmailRow[]> {
     .limit(Math.min(limit, 200));
 
   if (error) {
-    await logServerError(`[resend-activity] failed emails query failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getFailedEmails' });
+    await logServerError(`[resend-activity] failed emails query failed: ${describeError(error)}`, { action: 'resend_activity.getFailedEmails' });
     return [];
   }
 

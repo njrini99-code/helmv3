@@ -40,6 +40,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { round } from '@/lib/golf/stat-formulas';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { getStatsActionContext } from '@/lib/golf/stats-action-context';
 
 import { verifyPlayerAccess } from './stats-data';
 import type {
@@ -59,13 +60,15 @@ import type {
  * `stats-data.ts:47-59`; kept local because that helper is intentionally
  * unexported (the spec permits exporting only `verifyPlayerAccess`).
  */
-async function requireAuth() {
+async function requireAuth(playerId?: string) {
+  const shared = getStatsActionContext();
+  if (shared && (!playerId || shared.requestedPlayerId === playerId)) {
+    return { supabase: shared.supabase, user: shared.user };
+  }
+
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
-    await logServerError('[LeakMaps] Auth error: no user session', {
-      action: 'stats_leak_maps.requireAuth',
-    });
     throw new Error('Unauthorized');
   }
   return { supabase, user };
@@ -559,7 +562,7 @@ async function getPlayerLeakMapsImpl(
   playerId: string,
 ): Promise<LeakMapResult<PlayerLeakMaps>> {
   try {
-    const { supabase, user } = await requireAuth();
+    const { supabase, user } = await requireAuth(playerId);
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -592,6 +595,9 @@ const observedGetPlayerLeakMaps = withAdminObserved(
 export async function getPlayerLeakMaps(
   playerId: string,
 ): Promise<LeakMapResult<PlayerLeakMaps>> {
+  if (getStatsActionContext()?.requestedPlayerId === playerId) {
+    return getPlayerLeakMapsImpl(playerId);
+  }
   return observedGetPlayerLeakMaps(playerId);
 }
 
@@ -604,7 +610,7 @@ async function getPlayerStandingRowsImpl(
   playerId: string,
 ): Promise<LeakMapResult<PlayerStandingRow[]>> {
   try {
-    const { supabase, user } = await requireAuth();
+    const { supabase, user } = await requireAuth(playerId);
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -637,5 +643,8 @@ const observedGetPlayerStandingRows = withAdminObserved(
 export async function getPlayerStandingRows(
   playerId: string,
 ): Promise<LeakMapResult<PlayerStandingRow[]>> {
+  if (getStatsActionContext()?.requestedPlayerId === playerId) {
+    return getPlayerStandingRowsImpl(playerId);
+  }
   return observedGetPlayerStandingRows(playerId);
 }

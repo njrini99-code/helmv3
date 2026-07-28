@@ -39,6 +39,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Compute effectiveness rollups for the day-before-now and write them.
@@ -251,7 +252,7 @@ export async function rollupInsightEffectivenessForRange(
     await backfillInsightOutcomes(supabase, windowEnd);
   } catch (err) {
     await logServerError(
-      `analytics.effectiveness.outcome_backfill threw: ${err instanceof Error ? err.message : String(err)}`,
+      `analytics.effectiveness.outcome_backfill threw: ${describeError(err)}`,
       {
         action: 'analytics.effectiveness.outcome_backfill',
         featureArea: 'coachhelm_analytics',

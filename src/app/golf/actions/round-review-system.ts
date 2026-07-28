@@ -21,6 +21,7 @@ import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { generateReviewContent } from './round-review-content';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -824,7 +825,7 @@ async function getRoundReviewImpl(roundId: string): Promise<{
     return { success: true, review };
   } catch (error) {
     await logServerError(
-      `[RoundReview] getRoundReview failed: ${error instanceof Error ? error.message : String(error)}`,
+      `[RoundReview] getRoundReview failed: ${describeError(error)}`,
       { action: 'round_review_system.getRoundReview', featureArea: 'round_reviews', roundId }
     );
     return { success: false, error: 'An unexpected error occurred' };
@@ -1009,7 +1010,7 @@ async function computeAndStoreRoundReview(
           }
         }
       } catch (error) {
-        await logServerError(`[RoundReview] CoachHelm V2 enhancement failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'round_review_system.generateAndStoreRoundReview' });
+        await logServerError(`[RoundReview] CoachHelm V2 enhancement failed: ${describeError(error)}`, { action: 'round_review_system.generateAndStoreRoundReview' });
       }
     }
 
@@ -1091,7 +1092,7 @@ async function computeAndStoreRoundReview(
     return { success: true, review };
   } catch (error) {
     await logServerError(
-      `[RoundReview] generateAndStoreRoundReview failed: ${error instanceof Error ? error.message : String(error)}`,
+      `[RoundReview] generateAndStoreRoundReview failed: ${describeError(error)}`,
       { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
     );
     return { success: false, error: 'An unexpected error occurred' };
@@ -1131,7 +1132,7 @@ async function shareRoundReviewWithCoachImpl(reviewId: string): Promise<{
     return { success: true };
   } catch (error) {
     await logServerError(
-      `[RoundReview] shareRoundReviewWithCoach failed: ${error instanceof Error ? error.message : String(error)}`,
+      `[RoundReview] shareRoundReviewWithCoach failed: ${describeError(error)}`,
       { action: 'round_review_system.shareRoundReviewWithCoach', featureArea: 'round_reviews' }
     );
     return { success: false, error: 'An unexpected error occurred' };
@@ -1230,7 +1231,7 @@ async function getStatAveragesImpl(
     return { success: true, playerAvg, teamAvg };
   } catch (error) {
     await logServerError(
-      `[RoundReview] getStatAverages failed: ${error instanceof Error ? error.message : String(error)}`,
+      `[RoundReview] getStatAverages failed: ${describeError(error)}`,
       { action: 'round_review_system.getStatAverages', featureArea: 'round_reviews', playerId }
     );
     return { success: false, error: 'An unexpected error occurred' };
@@ -1283,7 +1284,7 @@ async function getPlayerStandingForReviewImpl(
     return Object.fromEntries(map) as Record<string, PlayerStanding>;
   } catch (error) {
     await logServerError(
-      `[RoundReview] getPlayerStandingForReview failed: ${error instanceof Error ? error.message : String(error)}`,
+      `[RoundReview] getPlayerStandingForReview failed: ${describeError(error)}`,
       { action: 'round_review_system.getPlayerStandingForReview', featureArea: 'round_reviews', playerId }
     );
     return {};

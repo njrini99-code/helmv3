@@ -19,6 +19,14 @@ import type { CompositeContext, HoleScore, ShortGameShot } from './types';
 
 const EMPTY_INSIGHTS: never[] = [];
 
+/**
+ * Round ids for a sample that clears the platform evidence floor
+ * (MIN_SAMPLE_N = 5). The hole-sequence rules report their distinct-round
+ * count AS `evidence.sample_n`, so a 3-round fixture composes evidence
+ * `upsertInsight` refuses — see composite-evidence-floor.test.ts.
+ */
+const FLOOR_ROUNDS = ['r1', 'r2', 'r3', 'r4', 'r5'];
+
 /** Build a full 18-hole round with a per-hole to-par delta function. */
 function round(roundId: string, toParAt: (hole: number) => number): HoleScore[] {
   return Array.from({ length: 18 }, (_, i) => {
@@ -39,8 +47,9 @@ function ctx(partial: Partial<CompositeContext>): CompositeContext {
 
 describe('P2-20 · context-only composites fire with NO Tier-1 insights', () => {
   it('closing_hole_fatigue fires off ctx alone (empty insights)', () => {
-    // 3 rounds where holes 13-18 play +1.0 to par worse than 1-12.
-    const hole_scores = ['r1', 'r2', 'r3'].flatMap((id) =>
+    // 5 rounds (the platform evidence floor, which this rule reports as
+    // sample_n) where holes 13-18 play +1.0 to par worse than 1-12.
+    const hole_scores = FLOOR_ROUNDS.flatMap((id) =>
       round(id, (hole) => (hole >= 13 ? 1 : 0)),
     );
     const match = closingHoleFatigue.detect(EMPTY_INSIGHTS, ctx({ hole_scores }));
@@ -50,18 +59,18 @@ describe('P2-20 · context-only composites fire with NO Tier-1 insights', () => 
     expect(Number(match?.signals.delta)).toBeGreaterThanOrEqual(0.5);
 
     const composed = closingHoleFatigue.compose(match!);
-    expect(composed.evidence.sample_n).toBe(3);
+    expect(composed.evidence.sample_n).toBe(FLOOR_ROUNDS.length);
     expect(composed.evidence.metric).toBe('closing_hole_delta');
   });
 
-  it('closing_hole_fatigue stays silent below the 3-round floor (honest)', () => {
+  it('closing_hole_fatigue stays silent below the sample floor (honest)', () => {
     const hole_scores = round('only', (hole) => (hole >= 13 ? 1 : 0));
     expect(closingHoleFatigue.detect(EMPTY_INSIGHTS, ctx({ hole_scores }))).toBeNull();
   });
 
   it('front_9_starter fires off ctx alone (empty insights)', () => {
-    // 3 rounds where the opening 3 holes play meaningfully over par.
-    const hole_scores = ['r1', 'r2', 'r3'].flatMap((id) =>
+    // 5 rounds where the opening 3 holes play meaningfully over par.
+    const hole_scores = FLOOR_ROUNDS.flatMap((id) =>
       round(id, (hole) => (hole <= 3 ? 2 : 0)),
     );
     const match = front9Starter.detect(EMPTY_INSIGHTS, ctx({ hole_scores }));
@@ -71,7 +80,9 @@ describe('P2-20 · context-only composites fire with NO Tier-1 insights', () => 
 
   it('doubles_after_bogey fires off ctx alone (empty insights)', () => {
     // Engineer a bogey→double cadence across 3 rounds: every odd hole a bogey
-    // immediately followed by a double on the next hole.
+    // immediately followed by a double on the next hole. This rule reports
+    // bogey OPPORTUNITIES (not rounds) as sample_n, so 3 rounds clears the
+    // evidence floor here — 27 opportunities per round-triple.
     const hole_scores = ['r1', 'r2', 'r3'].flatMap((id) =>
       round(id, (hole) => (hole % 2 === 1 ? 1 : 2)),
     );

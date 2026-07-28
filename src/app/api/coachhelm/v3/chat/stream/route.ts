@@ -38,7 +38,9 @@ import {
 import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
+import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import {
   estimateCachedCostUsd,
   estimateCostUsd,
@@ -68,6 +70,16 @@ import {
   touchConversation,
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
+// `publishableParts` also drops dangling tool calls: storing one poisons the
+// conversation permanently, because a reload rehydrates the thread from
+// `ui_parts` and sends the orphaned `tool_use` back with no matching
+// `tool_result`. Production shows the signature — one tool id rejected three
+// times in ninety seconds as the coach retried.
+import {
+  hasPersistableAssistantContent,
+  publishableParts,
+} from '@/lib/coachhelm/v3/chat/ui-parts';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const maxDuration = 120;
 
@@ -82,19 +94,6 @@ const Body = z.object({
 });
 
 /**
- * The parts of a turn that may be stored and replayed to the coach.
- *
- * Reasoning is excluded twice — once at the transport (`sendReasoning: false`)
- * and again here — because the two protect against different failures. The
- * transport flag stops it reaching the browser; this stops an SDK default
- * change quietly filling the conversation table with model deliberation that a
- * reload would then hand back to the client.
- */
-function publishableParts(parts: readonly { type: string }[]): unknown[] {
-  return parts.filter((p) => p.type !== 'reasoning');
-}
-
-/**
  * What the coach is allowed to see when a turn fails.
  *
  * An upstream error can carry provider internals or echo prompt text, neither
@@ -103,11 +102,57 @@ function publishableParts(parts: readonly { type: string }[]): unknown[] {
  * the coach can act on.
  */
 function sanitiseStreamError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  if (/quota|credit|tier|Free tier users|balance is too low/i.test(message)) {
-    return 'CoachHelm is out of model credit for this account, so it cannot answer right now. Retrying will not help until that is topped up.';
-  }
+  // One shared classifier decides this, so the coach's wording, the schedule
+  // importer's wording and the Bridge's severity cannot drift apart the way
+  // three separate regexes let them.
+  const fault = classifyProviderFault(error);
+  if (fault) return fault.summary;
   return 'Something went wrong while answering. Please try again.';
+}
+
+/**
+ * Log one failed turn.
+ *
+ * A provider/account fault is normalised before it is written: the raw text
+ * carries the provider's own billing URL and, for the incomplete-tool-call
+ * class, an opaque `toolu_…` id. Neither survives
+ * `normalizeIncidentMessagePrefix` (mixed-case base62 is not a UUID and not
+ * long hex), so every retry of one outage was landing in the Bridge as its own
+ * incident. Naming a stable `errorCode` and an id-free message is what makes
+ * them one row, and the emit throttle attaches how many were collapsed.
+ */
+function logStreamModelError(error: unknown): void {
+  const fault = classifyProviderFault(error);
+  const raw = describeError(error);
+
+  if (!fault) {
+    void logServerError(`chat/stream: model error — ${raw}`, { action: 'v3.chat.stream.model' }, 'warning');
+    return;
+  }
+
+  const throttleKey = `chat-stream-provider:${fault.code}`;
+  if (!shouldEmit(throttleKey)) return;
+  const collapsed = drainCollapsedCount(throttleKey);
+  const { severity, skipSentry } = providerFaultSeverity(fault);
+
+  void logServerError(
+    `chat/stream: ${fault.summary}`,
+    {
+      action: 'v3.chat.stream.model',
+      errorCode: fault.code,
+      skipSentry,
+      feature: 'coachhelm_chat',
+      // The provider's verbatim text stays available for whoever has to act on
+      // it — it just does not decide the grouping any more.
+      extra: {
+        providerFaultKind: fault.kind,
+        provider: fault.provider,
+        providerMessage: raw.slice(0, 500),
+        ...(collapsed > 0 ? { collapsed_count: collapsed } : {}),
+      },
+    },
+    severity,
+  );
 }
 
 const UNGROUNDED_NOTE =
@@ -260,7 +305,24 @@ export async function POST(req: NextRequest) {
         },
         // Pass the tool set so tool parts from earlier turns convert correctly —
         // without it, a resumed approval loses the call it belongs to.
-        messages: await convertToModelMessages(uiMessages, { tools }),
+        //
+        // `ignoreIncompleteToolCalls` drops any tool call left in
+        // `input-streaming`/`input-available` (see isIncompleteToolPart). The
+        // thread here is the CLIENT's `useChat` state, not the database, so a
+        // server-side persistence guard alone cannot save this request: the
+        // browser resends whatever it is holding. Without the flag, one
+        // unresolved call makes every subsequent turn in that thread fail
+        // upstream with "Tool result is missing for tool call toolu_…" —
+        // there is no matching `tool_result` block to pair it with, and the
+        // coach cannot recover except by starting a new conversation.
+        //
+        // Approval-suspended calls are untouched: the SDK filters on the two
+        // input states only, and an awaiting-coach call is
+        // `approval-requested`/`approval-responded`.
+        messages: await convertToModelMessages(uiMessages, {
+          tools,
+          ignoreIncompleteToolCalls: true,
+        }),
         tools,
         // Every mutating tool suspends for an explicit coach decision. This is
         // the gate the whole action framework rests on — a model cannot reach
@@ -271,11 +333,7 @@ export async function POST(req: NextRequest) {
           if (firstTokenMs === null) firstTokenMs = Date.now() - startedAt;
         },
         onError: ({ error }) => {
-          void logServerError(
-            `chat/stream: model error — ${error instanceof Error ? error.message : String(error)}`,
-            { action: 'v3.chat.stream.model' },
-            'warning',
-          );
+          logStreamModelError(error);
         },
       });
 
@@ -331,18 +389,45 @@ export async function POST(req: NextRequest) {
         // A turn with no prose is not necessarily empty: an action proposal is
         // a card with no text. So the test is text OR a real data part —
         // `step-start` alone does not count as an answer.
-        const hasContent =
-          text.trim().length > 0 ||
-          assistant.parts.some((p) => p.type.startsWith('data-'));
+        const hasContent = hasPersistableAssistantContent(assistant, textOf(assistant));
         if (!hasContent) return;
         const unsupported = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
         const grounded = unsupported.length === 0;
 
         if (!grounded) {
-          await logServerError(
-            `chat/stream: ${unsupported.length} unsupported numeric claim(s) for coach_id=${ctx.coach_id}`,
-            { action: 'v3.chat.stream.ungrounded' },
-            'warning',
+          // A designed guardrail FIRING is not an incident: the claim was
+          // caught and the turn was annotated + stored as 'failed' below,
+          // which is the system working. Logged at 'info' with skipSentry so
+          // it stays queryable as a hallucination-rate metric without sitting
+          // in the incident feed's default view or minting a Sentry issue —
+          // the convention stated in lib/admin/observe-action-result.ts.
+          //
+          // Count-stable message (see the staleBacklog emitter for the same
+          // rule): interpolating `unsupported.length` minted one fingerprint
+          // per distinct count, so "1 claim" and "2 claims" arrived as two
+          // unrelated warnings that could never dedupe.
+          //
+          // The claim TEXTS matter more than the count and were not recorded
+          // at all, which made the false-positive rate unmeasurable:
+          // auditNumericClaims exempts only ISO dates, clock times and
+          // integers <= 12, so "18 holes", "par 72", "2025" and "150 yards"
+          // all read as unsupported. Do NOT widen those exemptions without
+          // this telemetry first — a fabricated "72%" next to the word "par"
+          // is exactly what the check exists to catch.
+          await logServerEvent(
+            'chat/stream: assistant turn contained numeric claims not traceable to tool evidence',
+            {
+              action: 'v3.chat.stream.ungrounded',
+              featureArea: 'coachhelm',
+              skipSentry: true,
+              extra: {
+                unsupportedCount: unsupported.length,
+                claims: unsupported.slice(0, 10).map((c) => c.text),
+                conversationId: convId,
+                coachId: ctx.coach_id,
+              },
+            },
+            'info',
           );
         }
 
@@ -373,7 +458,7 @@ export async function POST(req: NextRequest) {
         await recordTurnCost({ admin, ctx, conversationId: convId, usagePromise });
       } catch (err) {
         await logServerError(
-          `chat/stream: persistence failed — ${err instanceof Error ? err.message : String(err)}`,
+          `chat/stream: persistence failed — ${describeError(err)}`,
           { action: 'v3.chat.stream.persist' },
         );
       }

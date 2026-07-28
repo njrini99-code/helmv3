@@ -4,17 +4,22 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { config } from 'dotenv';
 
-const ADMIN_EMAIL = 'admin@helmsportslabs.com';
-const ADMIN_PASSWORD = 'Helm2026!!';
+config({ path: '.env.local' });
+
+const ADMIN_EMAIL = process.env.HELM_ADMIN_SETUP_EMAIL;
+const ADMIN_PASSWORD = process.env.HELM_ADMIN_SETUP_PASSWORD;
 
 async function setupAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !serviceRoleKey) {
-    console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-    console.error('Make sure .env.local is loaded');
+  if (!url || !serviceRoleKey || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    console.error(
+      'Missing NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, HELM_ADMIN_SETUP_EMAIL, or HELM_ADMIN_SETUP_PASSWORD',
+    );
+    console.error('Set them in .env.local; admin credentials must never be committed.');
     process.exit(1);
   }
 
@@ -63,7 +68,6 @@ async function setupAdmin() {
 
     console.log('Admin user updated successfully!');
     console.log(`Email: ${ADMIN_EMAIL}`);
-    console.log(`Password: ${ADMIN_PASSWORD}`);
     return;
   }
 
@@ -103,12 +107,7 @@ async function setupAdmin() {
 
   console.log('Admin user created successfully!');
   console.log(`Email: ${ADMIN_EMAIL}`);
-  console.log(`Password: ${ADMIN_PASSWORD}`);
   console.log('\nYou can now log in at /golf/login');
 }
-
-// Load env variables and run
-import { config } from 'dotenv';
-config({ path: '.env.local' });
 
 setupAdmin().catch(console.error);

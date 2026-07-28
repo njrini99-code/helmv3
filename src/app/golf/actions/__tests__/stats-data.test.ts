@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mock Supabase with a chainable query builder
@@ -36,6 +36,18 @@ let mockCoachData: unknown = null;
 let mockMembershipData: unknown = null;
 let mockTeamMembersData: unknown[] = [];
 let mockPlayersListData: unknown[] = [];
+let mockRoundsError: unknown = null;
+const telemetryMocks = vi.hoisted(() => ({
+  getUser: vi.fn(async () => ({
+    data: { user: { id: 'user-1', email: 'player@example.com' } },
+    error: null,
+  })),
+  logServerError: vi.fn(async () => undefined),
+  verifyCanonicalPlayerAccess: vi.fn(async () => ({
+    allowed: true,
+    reason: 'self' as const,
+  })),
+}));
 
 const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_players') {
@@ -58,14 +70,17 @@ const mockFrom = vi.fn((table: string) => {
     });
   }
 
-  return createChainableMock({ data: mockRoundsData });
+  return createChainableMock({
+    data: mockRoundsData,
+    error: table === 'golf_rounds' ? mockRoundsError : null,
+  });
 });
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     from: mockFrom,
     rpc: vi.fn(async () => ({ data: 1, error: null })),
-    auth: { getUser: vi.fn(() => ({ data: { user: { id: 'user-1' } }, error: null })) },
+    auth: { getUser: telemetryMocks.getUser },
   })),
 }));
 
@@ -80,6 +95,16 @@ vi.mock('@/lib/supabase/admin', () => ({
     rpc: vi.fn(async () => ({ data: 1, error: null })),
     auth: { getUser: vi.fn(() => ({ data: { user: { id: 'user-1' } }, error: null })) },
   })),
+}));
+
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: telemetryMocks.logServerError,
+  logServerEvent: vi.fn(async () => undefined),
+  logServerException: vi.fn(async () => undefined),
+}));
+
+vi.mock('@/lib/auth/verify-player-access', () => ({
+  verifyPlayerAccess: telemetryMocks.verifyCanonicalPlayerAccess,
 }));
 
 vi.mock('@/lib/utils/golf-stats-calculator-shots', () => ({
@@ -115,10 +140,12 @@ import {
   getStatsSummary,
   getFilterOptions,
   getDetailedStats,
+  getSprayChartData,
   getTrendAnalysis,
   getCoachRosterStats,
 } from '../stats-data';
 import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
+import { runWithStatsActionContext } from '@/lib/golf/stats-action-context';
 
 import type { SummaryStatsResponse, FilterOptions } from '../stats-data-types';
 
@@ -134,6 +161,7 @@ describe('stats-data server actions', () => {
     mockMembershipData = null;
     mockTeamMembersData = [];
     mockPlayersListData = [];
+    mockRoundsError = null;
   });
 
   // ========================================================================
@@ -247,6 +275,87 @@ describe('stats-data server actions', () => {
       await getFilterOptions('player-xyz');
       expect(mockFrom).toHaveBeenCalledWith('golf_rounds');
     });
+  });
+});
+
+describe('stats bundle authenticated context', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+    mockRoundsError = null;
+  });
+
+  afterEach(() => {
+    mockRoundsError = null;
+  });
+
+  it('reuses the boundary identity instead of calling Auth again', async () => {
+    const sharedSupabase = {
+      from: mockFrom,
+      rpc: vi.fn(async () => ({ data: 1, error: null })),
+      auth: { getUser: telemetryMocks.getUser },
+    };
+
+    await runWithStatsActionContext(
+      {
+        supabase: sharedSupabase as never,
+        user: { id: 'user-1', email: 'player@example.com' } as never,
+        requestedPlayerId: 'player-test',
+        authorization: { allowed: true, reason: 'self' },
+      },
+      () => getDetailedStats('player-test'),
+    );
+
+    expect(telemetryMocks.getUser).not.toHaveBeenCalled();
+    expect(telemetryMocks.verifyCanonicalPlayerAccess).not.toHaveBeenCalled();
+  });
+
+  it('uses the canonical access helper for a standalone stats action', async () => {
+    await getDetailedStats('player-test');
+
+    expect(telemetryMocks.verifyCanonicalPlayerAccess).toHaveBeenCalledTimes(1);
+    expect(telemetryMocks.verifyCanonicalPlayerAccess).toHaveBeenCalledWith(
+      'player-test',
+      'user-1',
+      expect.anything(),
+    );
+  });
+
+  it('captures a PostgREST failure exactly once with structured fields', async () => {
+    mockRoundsError = {
+      code: '57014',
+      message: 'canceling statement due to statement timeout',
+      details: 'query exceeded statement_timeout',
+      hint: 'reduce query cost',
+    };
+    const sharedSupabase = {
+      from: mockFrom,
+      rpc: vi.fn(async () => ({ data: 1, error: null })),
+      auth: { getUser: telemetryMocks.getUser },
+    };
+
+    await runWithStatsActionContext(
+      {
+        supabase: sharedSupabase as never,
+        user: { id: 'user-1', email: 'player@example.com' } as never,
+        requestedPlayerId: 'player-test',
+        authorization: { allowed: true, reason: 'self' },
+      },
+      () => getSprayChartData('player-test', 'overall'),
+    );
+
+    expect(telemetryMocks.logServerError).toHaveBeenCalledTimes(1);
+    expect(telemetryMocks.logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('code=57014'),
+      expect.objectContaining({
+        action: 'stats_data.getSprayChartData',
+        errorCode: '57014',
+        metadata: {
+          pg_details: 'query exceeded statement_timeout',
+          pg_hint: 'reduce query cost',
+        },
+      }),
+    );
   });
 });
 

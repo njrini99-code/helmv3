@@ -19,6 +19,7 @@ import type {
   DevelopmentalPlanWithGoals,
   DevPlanWithPlayer,
 } from '@/lib/baseball/dev-plan-types';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Re-exported for backward compatibility — the canonical definitions now
 // live in the plain (non-'use server') `dev-plan-types` module so client
@@ -62,7 +63,7 @@ async function getPlayerDevPlansImpl(playerId: string): Promise<DevelopmentalPla
     .order('created_at', { ascending: false });
 
   if (error) {
-    await logServerError(`Error fetching player dev plans: ${error instanceof Error ? error.message : String(error)}`, { action: 'dev_plans.getPlayerDevPlans' });
+    await logServerError(`Error fetching player dev plans: ${describeError(error)}`, { action: 'dev_plans.getPlayerDevPlans' });
     throw error;
   }
 
@@ -98,7 +99,7 @@ async function getActiveDevPlanImpl(playerId: string): Promise<DevelopmentalPlan
     .limit(1);
 
   if (error) {
-    await logServerError(`Error fetching active dev plan: ${error instanceof Error ? error.message : String(error)}`, { action: 'dev_plans.getActiveDevPlan' });
+    await logServerError(`Error fetching active dev plan: ${describeError(error)}`, { action: 'dev_plans.getActiveDevPlan' });
     throw error;
   }
 
@@ -124,7 +125,7 @@ export async function getDevPlanForCoach(planId: string): Promise<DevPlanWithPla
     return await getDevPlanForCoachAction(planId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'dev_plans.getDevPlanForCoach', featureArea: 'baseball-dev-plans' },
     );
     mapDevPlanCoachError(error);
@@ -173,7 +174,7 @@ const getDevPlanForCoachAction = withBaseballAction(
       .single();
 
     if (fetchError) {
-      await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.getDevPlanForCoach' });
+      await logServerError(`Error fetching plan: ${describeError(fetchError)}`, { action: 'dev_plans.getDevPlanForCoach' });
       throw fetchError;
     }
 
@@ -223,7 +224,7 @@ async function assertPlayerOwnsDevPlan(
     .single();
 
   if (fetchError) {
-    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: actionName });
+    await logServerError(`Error fetching plan: ${describeError(fetchError)}`, { action: actionName });
     throw fetchError;
   }
 
@@ -252,7 +253,7 @@ async function saveDevPlanGoals(
     .eq('id', planId);
 
   if (updateError) {
-    await logServerError(`Error saving goals: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: actionName });
+    await logServerError(`Error saving goals: ${describeError(updateError)}`, { action: actionName });
     throw updateError;
   }
 
@@ -373,7 +374,7 @@ export async function completeGoal(
     await completeGoalAction(planId, goalId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'dev_plans.completeGoal', featureArea: 'baseball-dev-plans' },
     );
     mapDevPlanCoachError(error);
@@ -402,7 +403,7 @@ const completeGoalAction = withBaseballAction(
     }
 
     if (fetchError) {
-      await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.completeGoal' });
+      await logServerError(`Error fetching plan: ${describeError(fetchError)}`, { action: 'dev_plans.completeGoal' });
       throw fetchError;
     }
 
@@ -436,7 +437,7 @@ const completeGoalAction = withBaseballAction(
       .eq('id', planId);
 
     if (updateError) {
-      await logServerError(`Error completing goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.completeGoal' });
+      await logServerError(`Error completing goal: ${describeError(updateError)}`, { action: 'dev_plans.completeGoal' });
       throw updateError;
     }
 
@@ -457,7 +458,7 @@ export async function uncompleteGoal(
     await uncompleteGoalAction(planId, goalId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'dev_plans.uncompleteGoal', featureArea: 'baseball-dev-plans' },
     );
     mapDevPlanCoachError(error);
@@ -486,7 +487,7 @@ const uncompleteGoalAction = withBaseballAction(
     }
 
     if (fetchError) {
-      await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.uncompleteGoal' });
+      await logServerError(`Error fetching plan: ${describeError(fetchError)}`, { action: 'dev_plans.uncompleteGoal' });
       throw fetchError;
     }
 
@@ -520,7 +521,7 @@ const uncompleteGoalAction = withBaseballAction(
       .eq('id', planId);
 
     if (updateError) {
-      await logServerError(`Error uncompleting goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.uncompleteGoal' });
+      await logServerError(`Error uncompleting goal: ${describeError(updateError)}`, { action: 'dev_plans.uncompleteGoal' });
       throw updateError;
     }
 
@@ -607,7 +608,7 @@ async function parseGoalsAndPersistIds(
 
     if (backfillError) {
       await logServerError(
-        `Error backfilling goal ids: ${backfillError instanceof Error ? backfillError.message : String(backfillError)}`,
+        `Error backfilling goal ids: ${describeError(backfillError)}`,
         { action: 'dev_plans.parseGoalsAndPersistIds' },
       );
       // Non-fatal: the caller still gets goals with freshly-minted ids so
