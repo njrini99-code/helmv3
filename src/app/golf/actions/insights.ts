@@ -21,7 +21,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
-import { verifyInsightAccess } from '@/lib/auth/verify-player-access';
+import { verifyInsightAccess, insightAccessDenialMessage } from '@/lib/auth/verify-player-access';
 import {
   coachHelmIntelligence,
   isCoachHelmEnabledForCoach,
@@ -1223,7 +1223,7 @@ async function acknowledgeInsightImpl(insightId: string) {
     // coach row by user_id).
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // Write lifecycle_state='addressed' alongside the timestamp so the
@@ -1312,7 +1312,7 @@ async function dismissInsightImpl(insightId: string) {
     // Defensive server-side ownership check on top of RLS.
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1407,7 +1407,7 @@ async function reactivateInsightImpl(
 
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // Restore to a VISIBLE lifecycle state so the row returns to the feed; never
@@ -1485,7 +1485,7 @@ async function resolveInsightImpl(insightId: string) {
     // Defensive server-side ownership check on top of RLS.
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

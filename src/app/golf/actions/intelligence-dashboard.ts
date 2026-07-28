@@ -608,10 +608,11 @@ async function acknowledgeInsightImpl(
     // verifyInsightAccess call above proved the user staffs that team, so we
     // mirror it on the UPDATE itself and treat 0 affected rows as 404.
     const { data: { user: gateUser } } = await supabase.auth.getUser();
-    const { verifyInsightAccess: verifyInsightAccessFn } = await import('@/lib/auth/verify-player-access');
+    const { verifyInsightAccess: verifyInsightAccessFn, insightAccessDenialMessage } =
+      await import('@/lib/auth/verify-player-access');
     const teamGate = await verifyInsightAccessFn(insightId, gateUser!.id, supabase);
     if (!teamGate.allowed) {
-      return { success: false, error: teamGate.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(teamGate.reason) };
     }
 
     const { data, error } = await supabase
