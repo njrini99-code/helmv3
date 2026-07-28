@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Google OAuth Configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -59,7 +60,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json({ authUrl });
   } catch (error) {
-    await logServerError(`Google auth error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.GET' });
+    await logServerError(`Google auth error: ${describeError(error)}`, { action: 'route.GET' });
     return NextResponse.json(
       { error: 'Failed to initiate Google authentication' },
       { status: 500 }
@@ -141,13 +142,13 @@ export async function POST(request: NextRequest) {
       });
 
     if (dbError) {
-      await logServerError(`Database error storing tokens: ${dbError instanceof Error ? dbError.message : String(dbError)}`, { action: 'route.POST' });
+      await logServerError(`Database error storing tokens: ${describeError(dbError)}`, { action: 'route.POST' });
       return NextResponse.json({ error: 'Failed to store credentials' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    await logServerError(`Google auth callback error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
+    await logServerError(`Google auth callback error: ${describeError(error)}`, { action: 'route.POST' });
     return NextResponse.json(
       { error: 'Failed to complete authentication' },
       { status: 500 }
@@ -188,13 +189,13 @@ export async function DELETE(_request: NextRequest) {
       .eq('user_id', user.id);
 
     if (error) {
-      await logServerError(`Error deleting tokens: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.DELETE' });
+      await logServerError(`Error deleting tokens: ${describeError(error)}`, { action: 'route.DELETE' });
       return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    await logServerError(`Google disconnect error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.DELETE' });
+    await logServerError(`Google disconnect error: ${describeError(error)}`, { action: 'route.DELETE' });
     return NextResponse.json(
       { error: 'Failed to disconnect Google Calendar' },
       { status: 500 }

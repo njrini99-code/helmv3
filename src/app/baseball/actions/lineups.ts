@@ -11,6 +11,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const ROSTER_PATH = '/baseball/dashboard/roster';
 
@@ -121,7 +122,7 @@ export async function saveLineup(params: SaveLineupParams) {
     return await saveLineupAction(params);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_lineups.saveLineup', featureArea: 'baseball-lineups' },
     );
     return mapLineupActionError(error);
@@ -193,7 +194,7 @@ export async function updateLineup(
     return await updateLineupAction(lineupId, { name, positions });
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_lineups.updateLineup', featureArea: 'baseball-lineups' },
     );
     return mapLineupActionError(error);
@@ -236,7 +237,7 @@ export async function deleteLineup(lineupId: string) {
     return await deleteLineupAction(lineupId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_lineups.deleteLineup', featureArea: 'baseball-lineups' },
     );
     return mapLineupActionError(error);

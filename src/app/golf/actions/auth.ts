@@ -27,6 +27,7 @@ import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
+import { describeError } from '@/lib/utils/describe-error';
 
 export type LoginResult = {
   success: boolean;
@@ -356,7 +357,7 @@ async function signupActionImpl(
     }
 
     // Log unknown errors and return generic message
-    await logServerError(`[Golf Auth Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'auth.signupAction' });
+    await logServerError(`[Golf Auth Error]: ${describeError(error)}`, { action: 'auth.signupAction' });
     return {
       success: false,
       error: 'Failed to create account. Please try again.',

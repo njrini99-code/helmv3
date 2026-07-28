@@ -28,6 +28,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Standard browser PushSubscription.toJSON() shape.
 interface PushSubscriptionPayload {
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (err) {
     await logServerError(
-      `push-subscriptions POST exception: ${err instanceof Error ? err.message : String(err)}`,
+      `push-subscriptions POST exception: ${describeError(err)}`,
       { action: 'push_subscriptions.POST' },
     );
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });
@@ -160,7 +161,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     await logServerError(
-      `push-subscriptions DELETE exception: ${err instanceof Error ? err.message : String(err)}`,
+      `push-subscriptions DELETE exception: ${describeError(err)}`,
       { action: 'push_subscriptions.DELETE' },
     );
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });

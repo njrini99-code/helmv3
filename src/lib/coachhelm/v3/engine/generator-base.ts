@@ -47,6 +47,7 @@ import type {
   MetricId,
   RunResult,
 } from './types';
+import { describeError } from '@/lib/utils/describe-error';
 
 /** Severity ordering for the upgrade-only leverage-priority floor below. */
 const PRIORITY_RANK: Record<InsightPriority, number> = {
@@ -442,7 +443,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       return archived;
     } catch (err) {
       await logServerError(
-        `${this.name} stale-scope retraction threw for player=${this.playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        `${this.name} stale-scope retraction threw for player=${this.playerId}: ${describeError(err)}`,
         { action: `v3.generator.${this.name}.retract` },
       );
       return 0;
@@ -647,7 +648,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       // the round was marked fully analyzed. `status:'failed'` makes the failure
       // machine-readable so the orchestrator routes it into generatorSummary.
       await logServerError(
-        `${this.name} run() failed for player=${this.playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        `${this.name} run() failed for player=${this.playerId}: ${describeError(err)}`,
         { action: `v3.generator.${this.name}` },
       );
       return { id: null, gated: false, status: 'failed' };

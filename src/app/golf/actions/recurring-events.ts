@@ -27,6 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+import { describeError } from '@/lib/utils/describe-error';
 
 /** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
 function formatTimezoneOffset(offsetMinutes: number): string {
@@ -327,14 +328,14 @@ function deferRecurringDeleteNotify(opts: {
       for (const result of channelResults) {
         if (result.status === 'rejected') {
           await logServerError(
-            `deleteRecurringEvent cancellation fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+            `deleteRecurringEvent cancellation fan-out failed: ${describeError(result.reason)}`,
             { action: 'recurring_events.deleteRecurringEvent.notify', extra: { scope } },
           );
         }
       }
     } catch (notifyErr) {
       await logServerError(
-        `deleteRecurringEvent notify threw: ${notifyErr instanceof Error ? notifyErr.message : String(notifyErr)}`,
+        `deleteRecurringEvent notify threw: ${describeError(notifyErr)}`,
         { action: 'recurring_events.deleteRecurringEvent.notify', extra: { scope } },
       );
     }
@@ -656,7 +657,7 @@ async function createRecurringEventImpl(
       .single();
 
     if (rootError || !rootInsert?.id) {
-      await logServerError(`[createRecurringEvent Error]: ${rootError instanceof Error ? rootError.message : String(rootError)}`, { action: 'recurring_events.createRecurringEvent' });
+      await logServerError(`[createRecurringEvent Error]: ${describeError(rootError)}`, { action: 'recurring_events.createRecurringEvent' });
       return { success: false, error: 'Failed to create recurring event. Please try again.' };
     }
 
@@ -705,7 +706,7 @@ async function createRecurringEventImpl(
             },
           );
         }
-        await logServerError(`[createRecurringEvent child Error]: ${childError instanceof Error ? childError.message : String(childError)}`, { action: 'recurring_events.createRecurringEvent' });
+        await logServerError(`[createRecurringEvent child Error]: ${describeError(childError)}`, { action: 'recurring_events.createRecurringEvent' });
         return { success: false, error: 'Failed to create recurring event. Please try again.' };
       }
 
@@ -839,14 +840,14 @@ async function createRecurringEventImpl(
         for (let i = 0; i < channelResults.length; i++) {
           const result = channelResults[i];
           if (result?.status === 'rejected') {
-            await logServerError(`createRecurringEvent ${channelNames[i]} fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`, {
+            await logServerError(`createRecurringEvent ${channelNames[i]} fan-out failed: ${describeError(result.reason)}`, {
               action: 'recurring_events.createRecurringEvent.notifications',
               extra: { channel: channelNames[i], rootId },
             });
           }
         }
       } catch (notifErr) {
-        await logServerError(`createRecurringEvent notification creation failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+        await logServerError(`createRecurringEvent notification creation failed: ${describeError(notifErr)}`, {
           action: 'recurring_events.createRecurringEvent.notifications',
         });
       }
@@ -855,7 +856,7 @@ async function createRecurringEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: rootId } };
   } catch (error) {
-    await logServerError(`[createRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.createRecurringEvent' });
+    await logServerError(`[createRecurringEvent Error]: ${describeError(error)}`, { action: 'recurring_events.createRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -997,7 +998,7 @@ async function editRecurringEventImpl(
           .select('id');
 
         if (updateError) {
-          await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
+          await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
           return { success: false, error: 'Failed to edit event occurrence. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1045,7 +1046,7 @@ async function editRecurringEventImpl(
           const { data: affected, error: updateError } = await query.select('id');
 
           if (updateError) {
-            await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
+            await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
             return { success: false, error: failMessage };
           }
           if (!affected || affected.length === 0) {
@@ -1117,7 +1118,7 @@ async function editRecurringEventImpl(
           const failed = results.find((result) => result.error);
           if (failed?.error) {
             await logServerError(
-              `[editRecurringEvent perRow Error]: ${String(failed.error.message ?? failed.error)} (series update may be partially applied)`,
+              `[editRecurringEvent perRow Error]: ${describeError(failed.error)} (series update may be partially applied)`,
               {
                 action: 'recurring_events.editRecurringEvent.perRow',
                 extra: { eventId: input.eventId, rootId, scope: input.scope },
@@ -1156,7 +1157,7 @@ async function editRecurringEventImpl(
             });
           }
         } catch (notifyErr) {
-          await logServerError(`editRecurringEvent notify threw: ${notifyErr instanceof Error ? notifyErr.message : String(notifyErr)}`, {
+          await logServerError(`editRecurringEvent notify threw: ${describeError(notifyErr)}`, {
             action: 'recurring_events.editRecurringEvent.notify',
             extra: { eventId: notifyEventId, scope: notifyScope },
           });
@@ -1189,7 +1190,7 @@ async function editRecurringEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    await logServerError(`[editRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.editRecurringEvent' });
+    await logServerError(`[editRecurringEvent Error]: ${describeError(error)}`, { action: 'recurring_events.editRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1302,7 +1303,7 @@ async function deleteRecurringEventImpl(
           .select('id');
 
         if (deleteError) {
-          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+          await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event occurrence. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1383,7 +1384,7 @@ async function deleteRecurringEventImpl(
                   .select('id');
 
                 if (deleteError) {
-                  await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+                  await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
                   return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
                 }
                 affectedCount += affected?.length ?? 0;
@@ -1419,7 +1420,7 @@ async function deleteRecurringEventImpl(
             .select('id');
 
           if (deleteError) {
-            await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+            await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
             return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
           }
           if (!affected || affected.length === 0) {
@@ -1465,7 +1466,7 @@ async function deleteRecurringEventImpl(
           .select('id');
 
         if (deleteError) {
-          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+          await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1518,7 +1519,7 @@ async function deleteRecurringEventImpl(
         const { data: affected, error: deleteError } = await query.select('id');
 
         if (deleteError) {
-          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+          await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event series. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1543,7 +1544,7 @@ async function deleteRecurringEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    await logServerError(`[deleteRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.deleteRecurringEvent' });
+    await logServerError(`[deleteRecurringEvent Error]: ${describeError(error)}`, { action: 'recurring_events.deleteRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1601,7 +1602,7 @@ async function getExpandedEventsImpl(
     const { data: events, error: eventsError } = await query.order('start_time', { ascending: true });
 
     if (eventsError) {
-      await logServerError(`[getExpandedEvents Error]: ${eventsError instanceof Error ? eventsError.message : String(eventsError)}`, { action: 'recurring_events.getExpandedEvents' });
+      await logServerError(`[getExpandedEvents Error]: ${describeError(eventsError)}`, { action: 'recurring_events.getExpandedEvents' });
       return { success: false, error: 'Failed to fetch events. Please try again.' };
     }
 
@@ -1624,7 +1625,7 @@ async function getExpandedEventsImpl(
 
     return { success: true, data: expandedEvents };
   } catch (error) {
-    await logServerError(`[getExpandedEvents Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.getExpandedEvents' });
+    await logServerError(`[getExpandedEvents Error]: ${describeError(error)}`, { action: 'recurring_events.getExpandedEvents' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1724,14 +1725,14 @@ async function createAcademicExclusionImpl(input: {
       .select('id');
 
     if (insertError) {
-      await logServerError(`[createAcademicExclusion Error]: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'recurring_events.createAcademicExclusion' });
+      await logServerError(`[createAcademicExclusion Error]: ${describeError(insertError)}`, { action: 'recurring_events.createAcademicExclusion' });
       return { success: false, error: 'Failed to create academic exclusion. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { id: result?.[0]?.id || '' } };
   } catch (error) {
-    await logServerError(`[createAcademicExclusion Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.createAcademicExclusion' });
+    await logServerError(`[createAcademicExclusion Error]: ${describeError(error)}`, { action: 'recurring_events.createAcademicExclusion' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1770,14 +1771,14 @@ async function deleteAcademicExclusionImpl(id: string): Promise<ActionResult> {
       .eq('id', id);
 
     if (deleteError) {
-      await logServerError(`[deleteAcademicExclusion Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteAcademicExclusion' });
+      await logServerError(`[deleteAcademicExclusion Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteAcademicExclusion' });
       return { success: false, error: 'Failed to delete academic exclusion. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    await logServerError(`[deleteAcademicExclusion Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.deleteAcademicExclusion' });
+    await logServerError(`[deleteAcademicExclusion Error]: ${describeError(error)}`, { action: 'recurring_events.deleteAcademicExclusion' });
     return formatSafeErrorResponse(error);
   }
 }

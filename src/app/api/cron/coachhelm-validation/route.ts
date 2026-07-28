@@ -20,6 +20,7 @@ import {
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         failed++;
         await logServerError(
-          `cron.validation.validate failed: ${err instanceof Error ? err.message : String(err)}`,
+          `cron.validation.validate failed: ${describeError(err)}`,
           {
             action: 'cron.coachhelm.validation.validate',
             featureArea: 'coachhelm',

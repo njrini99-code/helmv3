@@ -11,6 +11,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const ACADEMICS_PATH = '/baseball/dashboard/academics';
 
@@ -115,7 +116,7 @@ export async function getTeamAcademics(teamId: string) {
     return await getTeamAcademicsAction(teamId);
   } catch (error) {
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(error)}`,
       { action: 'academics.getTeamAcademics', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError(error);
@@ -152,7 +153,7 @@ const getTeamAcademicsAction = withBaseballAction(
       .eq('team_id', teamId);
 
     if (membersError) {
-      await logServerError(`[Baseball Academics] Team members error: ${membersError instanceof Error ? membersError.message : String(membersError)}`, { action: 'academics.getTeamAcademics' });
+      await logServerError(`[Baseball Academics] Team members error: ${describeError(membersError)}`, { action: 'academics.getTeamAcademics' });
       return { success: false as const, error: 'Failed to load team data.' };
     }
 
@@ -258,7 +259,7 @@ export async function getPlayerClasses(playerId: string) {
     return await getPlayerClassesAction(playerId);
   } catch (error) {
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(error)}`,
       { action: 'academics.getPlayerClasses', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError<BaseballPlayerClass[]>(error);
@@ -281,7 +282,7 @@ const getPlayerClassesAction = withBaseballAction(
       .order('start_time', { ascending: true });
 
     if (error) {
-      await logServerError(`[Baseball Academics] Fetch classes error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getPlayerClasses' });
+      await logServerError(`[Baseball Academics] Fetch classes error: ${describeError(error)}`, { action: 'academics.getPlayerClasses' });
       return { success: false as const, error: 'Failed to load classes.' };
     }
 
@@ -310,7 +311,7 @@ export async function addPlayerClass(playerId: string, data: {
       return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
     }
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${err instanceof Error ? err.message : String(err)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(err)}`,
       { action: 'academics.addPlayerClass', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError<BaseballPlayerClass>(err);
@@ -362,7 +363,7 @@ const addPlayerClassAction = withBaseballAction(
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Academics] Add class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.addPlayerClass' });
+      await logServerError(`[Baseball Academics] Add class error: ${describeError(error)}`, { action: 'academics.addPlayerClass' });
       return { success: false as const, error: 'Failed to add class.' };
     }
 
@@ -428,7 +429,7 @@ export async function updatePlayerClass(classId: string, data: {
     return await updatePlayerClassAction(classId, data);
   } catch (error) {
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(error)}`,
       { action: 'academics.updatePlayerClass', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError<BaseballPlayerClass>(error);
@@ -464,7 +465,7 @@ const updatePlayerClassAction = withBaseballAction(
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Academics] Update class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.updatePlayerClass' });
+      await logServerError(`[Baseball Academics] Update class error: ${describeError(error)}`, { action: 'academics.updatePlayerClass' });
       return { success: false as const, error: 'Failed to update class.' };
     }
 
@@ -478,7 +479,7 @@ export async function deletePlayerClass(classId: string) {
     return await deletePlayerClassAction(classId);
   } catch (error) {
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(error)}`,
       { action: 'academics.deletePlayerClass', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError(error);
@@ -500,7 +501,7 @@ const deletePlayerClassAction = withBaseballAction(
       .eq('id', classId);
 
     if (error) {
-      await logServerError(`[Baseball Academics] Delete class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.deletePlayerClass' });
+      await logServerError(`[Baseball Academics] Delete class error: ${describeError(error)}`, { action: 'academics.deletePlayerClass' });
       return { success: false as const, error: 'Failed to delete class.' };
     }
 
@@ -518,7 +519,7 @@ export async function getTeamEligibility(teamId: string) {
     return await getTeamEligibilityAction(teamId);
   } catch (error) {
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(error)}`,
       { action: 'academics.getTeamEligibility', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError<BaseballAcademicEligibility[]>(error);
@@ -544,7 +545,7 @@ const getTeamEligibilityAction = withBaseballAction(
       .order('updated_at', { ascending: false });
 
     if (error) {
-      await logServerError(`[Baseball Academics] Eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getTeamEligibility' });
+      await logServerError(`[Baseball Academics] Eligibility error: ${describeError(error)}`, { action: 'academics.getTeamEligibility' });
       return { success: false as const, error: 'Failed to load eligibility data.' };
     }
 
@@ -564,7 +565,7 @@ export async function updateEligibility(id: string, data: {
     return await updateEligibilityAction(id, data);
   } catch (error) {
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(error)}`,
       { action: 'academics.updateEligibility', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError<BaseballAcademicEligibility>(error);
@@ -603,7 +604,7 @@ const updateEligibilityAction = withBaseballAction(
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Academics] Update eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.updateEligibility' });
+      await logServerError(`[Baseball Academics] Update eligibility error: ${describeError(error)}`, { action: 'academics.updateEligibility' });
       return { success: false as const, error: 'Failed to update eligibility.' };
     }
 
@@ -629,7 +630,7 @@ export async function createEligibilityRecord(playerId: string, data: {
       return { success: false as const, error: error.issues[0]?.message || 'Invalid data.' };
     }
     await logServerError(
-      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Unexpected error: ${describeError(error)}`,
       { action: 'academics.createEligibilityRecord', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError<BaseballAcademicEligibility>(error);
@@ -674,7 +675,7 @@ const createEligibilityRecordAction = withBaseballAction(
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Academics] Create eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.createEligibilityRecord' });
+      await logServerError(`[Baseball Academics] Create eligibility error: ${describeError(error)}`, { action: 'academics.createEligibilityRecord' });
       return { success: false as const, error: 'Failed to create eligibility record.' };
     }
 
@@ -710,7 +711,7 @@ export async function upsertPlayerAcademics(input: UpsertAcademicsInput): Promis
       return { success: false, error: error.issues[0]?.message || 'Invalid data.' };
     }
     await logServerError(
-      `[Baseball Academics] Upsert unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `[Baseball Academics] Upsert unexpected error: ${describeError(error)}`,
       { action: 'academics.upsertPlayerAcademics', featureArea: 'baseball-academics' },
     );
     return mapAcademicsActionError<BaseballAcademicEligibility>(error);
@@ -754,7 +755,7 @@ const upsertPlayerAcademicsAction = withBaseballAction(
 
       if (updateError) {
         await logServerError(
-          `[Baseball Academics] Upsert update error: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+          `[Baseball Academics] Upsert update error: ${describeError(updateError)}`,
           { action: 'academics.upsertPlayerAcademics' },
         );
         return { success: false, error: 'Failed to save academic data.' };
@@ -773,7 +774,7 @@ const upsertPlayerAcademicsAction = withBaseballAction(
 
       if (insertError) {
         await logServerError(
-          `[Baseball Academics] Upsert insert error: ${insertError instanceof Error ? insertError.message : String(insertError)}`,
+          `[Baseball Academics] Upsert insert error: ${describeError(insertError)}`,
           { action: 'academics.upsertPlayerAcademics' },
         );
         return { success: false, error: 'Failed to create academic record.' };

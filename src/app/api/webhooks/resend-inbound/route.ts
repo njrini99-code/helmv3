@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // Resend Inbound Email Receiving webhook
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
     }) as ResendInboundPayload;
   } catch (err) {
     await logServerError(
-      `[Resend Inbound Webhook] Signature verification failed: ${err instanceof Error ? err.message : String(err)}`,
+      `[Resend Inbound Webhook] Signature verification failed: ${describeError(err)}`,
       { action: 'route.POST' },
     );
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
@@ -214,7 +215,7 @@ export async function POST(request: Request) {
     // status='stopped', stop_reason='replied'. No application-level action needed.
   } catch (err) {
     await logServerError(
-      `[Resend Inbound Webhook] Processing error: ${err instanceof Error ? err.message : String(err)}`,
+      `[Resend Inbound Webhook] Processing error: ${describeError(err)}`,
       { action: 'route.POST' },
     );
     // Still return 200 to prevent retry storms.

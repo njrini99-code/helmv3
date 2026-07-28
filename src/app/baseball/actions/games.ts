@@ -41,6 +41,7 @@ import type {
   BaseballPitchingResult,
   BaseballHomeAway,
 } from '@/lib/types';
+import { describeError } from '@/lib/utils/describe-error';
 
 const STATS_PATHS = [
   '/baseball/dashboard/stats-center',
@@ -242,7 +243,7 @@ export async function createGame(
     return await createGameAction(teamId, input);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_games.createGame', featureArea: 'baseball-games' },
     );
     return mapGameActionError(error);
@@ -310,7 +311,7 @@ export async function updateGame(
     return await updateGameAction(gameId, input);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_games.updateGame', featureArea: 'baseball-games' },
     );
     return mapGameActionError(error);
@@ -350,7 +351,7 @@ export async function deleteGame(gameId: string): Promise<{ success: boolean; er
     return await deleteGameAction(gameId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_games.deleteGame', featureArea: 'baseball-games' },
     );
     return mapGameActionError(error);
@@ -881,7 +882,7 @@ export async function markGameCompleted(
     return await markGameCompletedAction(gameId, ourScore, opponentScore);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_games.markGameCompleted', featureArea: 'baseball-games' },
     );
     return mapGameActionError(error);
@@ -971,7 +972,7 @@ export async function saveFullBoxScore(
     return await saveFullBoxScoreAction(gameId, batting, pitching, ourScore, opponentScore);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_games.saveFullBoxScore', featureArea: 'baseball-games' },
     );
     return mapGameActionError(error);

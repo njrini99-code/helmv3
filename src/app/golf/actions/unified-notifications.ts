@@ -41,6 +41,7 @@ import {
   type RawNotificationRow,
   type UnifiedNotificationItem,
 } from './unified-notifications-model';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface ActionResult<T = void> {
   success: boolean;
@@ -136,7 +137,7 @@ async function getUnifiedNotificationsImpl(
 
     return { success: true, data: { items, unreadCount } };
   } catch (error) {
-    await logServerError(`getUnifiedNotifications failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getUnifiedNotifications failed: ${describeError(error)}`, {
       action: 'getUnifiedNotifications',
       featureArea: 'notifications',
     });
@@ -184,7 +185,7 @@ async function getNotificationsUnreadCountImpl(): Promise<ActionResult<{ unread:
 
     return { success: true, data: { unread: count ?? 0 } };
   } catch (error) {
-    await logServerError(`getNotificationsUnreadCount failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getNotificationsUnreadCount failed: ${describeError(error)}`, {
       action: 'getNotificationsUnreadCount',
       featureArea: 'notifications',
     });
@@ -235,7 +236,7 @@ async function markNotificationReadImpl(id: string, source: NotificationSource):
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    await logServerError(`markNotificationRead failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`markNotificationRead failed: ${describeError(error)}`, {
       action: 'markNotificationRead',
       featureArea: 'notifications',
       extra: { source },
@@ -286,7 +287,7 @@ async function markAllNotificationsReadImpl(): Promise<ActionResult> {
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    await logServerError(`markAllNotificationsRead failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`markAllNotificationsRead failed: ${describeError(error)}`, {
       action: 'markAllNotificationsRead',
       featureArea: 'notifications',
     });

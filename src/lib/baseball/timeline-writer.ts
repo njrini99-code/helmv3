@@ -42,6 +42,7 @@ import {
   normalizeSourceKind,
   type SourceKind,
 } from '@/lib/baseball/source-record';
+import { describeError } from '@/lib/utils/describe-error';
 
 // -----------------------------------------------------------------------------
 // Event taxonomy
@@ -207,7 +208,7 @@ export async function appendTimelineEvent(
     if (error) {
       await logServerError(
         `Failed to append timeline event (${kind}): ${
-          error instanceof Error ? error.message : String(error)
+          describeError(error)
         }`,
         { action: 'timeline-writer.appendTimelineEvent' },
       );
@@ -217,7 +218,7 @@ export async function appendTimelineEvent(
     return { ok: true, id: (data as { id: string } | null)?.id };
   } catch (err) {
     await logServerError(
-      `Timeline writer threw (${kind}): ${err instanceof Error ? err.message : String(err)}`,
+      `Timeline writer threw (${kind}): ${describeError(err)}`,
       { action: 'timeline-writer.appendTimelineEvent' },
     );
     return { ok: false, error: 'Could not record the timeline event.' };

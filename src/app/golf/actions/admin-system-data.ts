@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================
 // TYPES
@@ -222,7 +223,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
     ): UntypedRow[] {
       if (settled.status === 'rejected') {
         void logServerError(
-          `[admin-system-data] ${label} rejected: ${settled.reason instanceof Error ? settled.reason.message : String(settled.reason)}`,
+          `[admin-system-data] ${label} rejected: ${describeError(settled.reason)}`,
           { action: 'admin_system_data.getSystemTabData' },
         );
         return [];
@@ -230,7 +231,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
       const { data, error } = settled.value;
       if (error) {
         void logServerError(
-          `[admin-system-data] ${label} errored: ${error instanceof Error ? error.message : String(error)}`,
+          `[admin-system-data] ${label} errored: ${describeError(error)}`,
           { action: 'admin_system_data.getSystemTabData' },
         );
         return [];
@@ -251,7 +252,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
       const { data, error } = dbTelemetrySettled.value;
       if (error) {
         void logServerError(
-          `[admin-system-data] get_db_telemetry errored: ${error instanceof Error ? error.message : String(error)}`,
+          `[admin-system-data] get_db_telemetry errored: ${describeError(error)}`,
           { action: 'admin_system_data.getSystemTabData' },
         );
       } else {
@@ -259,7 +260,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
       }
     } else {
       void logServerError(
-        `[admin-system-data] get_db_telemetry rejected: ${dbTelemetrySettled.reason instanceof Error ? dbTelemetrySettled.reason.message : String(dbTelemetrySettled.reason)}`,
+        `[admin-system-data] get_db_telemetry rejected: ${describeError(dbTelemetrySettled.reason)}`,
         { action: 'admin_system_data.getSystemTabData' },
       );
     }
@@ -365,7 +366,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
       dbTelemetry,
     };
   } catch (error) {
-    await logServerError(`[admin-system-data] Failed to fetch system tab data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_system_data.getSystemTabData' });
+    await logServerError(`[admin-system-data] Failed to fetch system tab data: ${describeError(error)}`, { action: 'admin_system_data.getSystemTabData' });
     return emptySystemTabData();
   }
 }

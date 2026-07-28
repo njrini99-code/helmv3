@@ -16,6 +16,7 @@ import {
   BaseballUnauthorizedError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -282,7 +283,7 @@ export async function completeCoachOnboarding(
     return await completeCoachOnboardingAction(data);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'onboarding.completeCoachOnboarding', featureArea: 'baseball-onboarding' },
     );
     return mapOnboardingCoachActionError(error);
@@ -499,7 +500,7 @@ export async function completeBaseballSignup(data: {
       return await completeBaseballSignupCoachAction(data);
     } catch (error) {
       await logServerError(
-        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        `Unexpected error: ${describeError(error)}`,
         { action: 'onboarding.completeBaseballSignup', featureArea: 'baseball-onboarding' },
       );
       return mapOnboardingCoachActionError(error);

@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
+import { describeError } from '@/lib/utils/describe-error';
 
 const Body = z.object({
   player_id: z.string().uuid(),
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     await logServerError(
-      `genome/compute failed: ${err instanceof Error ? err.message : String(err)}`,
+      `genome/compute failed: ${describeError(err)}`,
       { action: 'v3.genome.compute.route' },
     );
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

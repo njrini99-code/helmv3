@@ -22,6 +22,7 @@ import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -101,7 +102,7 @@ async function getPlayerProfileStatsImpl(
       .order('round_date', { ascending: false });
 
     if (roundsError) {
-      await logServerError(`[getPlayerProfileStats] Error fetching rounds: ${roundsError instanceof Error ? roundsError.message : String(roundsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
+      await logServerError(`[getPlayerProfileStats] Error fetching rounds: ${describeError(roundsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
       return { success: false, error: 'Failed to fetch rounds', stats: null, rounds: [] };
     }
 
@@ -143,7 +144,7 @@ async function getPlayerProfileStatsImpl(
       .range(from, to), undefined, { table: 'golf_shots', action: 'getPlayerProfileStats', feature: 'my_game_profile', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     if (shotsError) {
-      await logServerError(`[getPlayerProfileStats] Error fetching shots: ${shotsError instanceof Error ? shotsError.message : String(shotsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
+      await logServerError(`[getPlayerProfileStats] Error fetching shots: ${describeError(shotsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
       return { success: false, error: 'Failed to fetch shot data', stats: null, rounds };
     }
 
@@ -266,7 +267,7 @@ async function getPlayerProfileStatsImpl(
       rounds,
     };
   } catch (error) {
-    await logServerError(`[getPlayerProfileStats] Unexpected error: ${error instanceof Error ? error.message : String(error)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
+    await logServerError(`[getPlayerProfileStats] Unexpected error: ${describeError(error)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
     return {
       success: false,
       error: 'An unexpected error occurred',

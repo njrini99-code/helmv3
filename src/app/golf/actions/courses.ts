@@ -29,6 +29,7 @@ import { revalidatePath } from 'next/cache';
 import type { CourseSetupData, GolfCourse, GolfCourseHole } from '@/lib/types/golf-course';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 /** Course-library management gate (Decision-1 option A — coach-open,
  *  player-blocked), mirroring `requireCoachActor` in course-library.ts. */
@@ -154,7 +155,7 @@ async function getCourseWithHolesImpl(courseId: string): Promise<{
 
     return { course, holes };
   } catch (err) {
-    await logServerError(`getCourseWithHoles failed: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`getCourseWithHoles failed: ${describeError(err)}`, {
       action: 'getCourseWithHoles',
       featureArea: 'courses',
       extra: { courseId },

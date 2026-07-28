@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { listConversations } from '@/lib/coachhelm/v3/chat/persistence';
+import { describeError } from '@/lib/utils/describe-error';
 
 export async function GET() {
   try {
@@ -27,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ conversations });
   } catch (err) {
     await logServerError(
-      `chat/conversations failed: ${err instanceof Error ? err.message : String(err)}`,
+      `chat/conversations failed: ${describeError(err)}`,
       { action: 'v3.chat.conversations' },
     );
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

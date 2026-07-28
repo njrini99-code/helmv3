@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // UUID format validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -313,7 +314,7 @@ async function saveRoundDraftImpl(
     };
 
   } catch (error) {
-    await logServerError(`saveRoundDraft unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`saveRoundDraft unexpected error: ${describeError(error)}`, {
       action: 'saveRoundDraft.catch',
       featureArea: 'round_draft',
       roundId: existingRoundId ?? null,
@@ -443,7 +444,7 @@ async function loadRoundDraftImpl(): Promise<ActionResult<DraftInfo | null>> {
     return { success: true, data: draftInfo };
 
   } catch (error) {
-    await logServerError(`loadRoundDraft unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`loadRoundDraft unexpected error: ${describeError(error)}`, {
       action: 'loadRoundDraft.catch',
       featureArea: 'round_draft',
       extra: {
@@ -526,7 +527,7 @@ async function clearRoundDraftImpl(roundId: string): Promise<ActionResult<void>>
     return { success: true, data: undefined };
 
   } catch (error) {
-    await logServerError(`clearRoundDraft unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`clearRoundDraft unexpected error: ${describeError(error)}`, {
       action: 'clearRoundDraft.catch',
       featureArea: 'round_draft',
       roundId,
@@ -637,7 +638,7 @@ async function checkRoundStalenessImpl(
       },
     };
   } catch (error) {
-    await logServerError(`checkRoundStaleness unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`checkRoundStaleness unexpected error: ${describeError(error)}`, {
       action: 'checkRoundStaleness.catch',
       featureArea: 'round_sync',
       roundId,

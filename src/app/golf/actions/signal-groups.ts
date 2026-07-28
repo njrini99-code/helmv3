@@ -30,6 +30,7 @@ import {
 } from '@/lib/coachhelm/signal-grouping';
 import { acknowledgeInsight, dismissInsight } from './intelligence-dashboard';
 import { markPatternAddressed, dismissPattern } from './pattern-management';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // AUTH
@@ -140,7 +141,7 @@ async function getSignalGroupsImpl(
 
     if (insightsError) {
       await logServerError(
-        `getSignalGroups insights query failed: ${insightsError instanceof Error ? insightsError.message : String(insightsError)}`,
+        `getSignalGroups insights query failed: ${describeError(insightsError)}`,
         { action: 'signal_groups.getSignalGroups', metadata: { teamId } }
       );
       return { success: false, groups: [], scannedAt: null, error: 'Failed to fetch signals' };
@@ -243,7 +244,7 @@ async function getSignalGroupsImpl(
 
     return { success: true, groups, scannedAt };
   } catch (error) {
-    await logServerError(`getSignalGroups failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getSignalGroups failed: ${describeError(error)}`, {
       action: 'signal_groups.getSignalGroups',
       metadata: { teamId },
     });

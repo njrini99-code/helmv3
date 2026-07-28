@@ -35,6 +35,7 @@ import { calcConfidence } from './types';
 import { getActiveGate, incrementGatedCount } from './gate-context';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Sentinel returned by `upsertInsight` when an active philosophy gate
@@ -353,7 +354,7 @@ async function updateExisting(
   } catch (error) {
     // notifyInsightLanded never throws, but belt-and-braces here.
     await logServerError(
-      `notifyInsightLanded threw unexpectedly: ${error instanceof Error ? error.message : String(error)}`,
+      `notifyInsightLanded threw unexpectedly: ${describeError(error)}`,
       { action: 'coachhelm.upsert.updateExisting.notifyInsightLanded', featureArea: 'coachhelm', playerId: input.player_id ?? undefined },
       'warning'
     );
@@ -479,7 +480,7 @@ async function resolvePlayerOwnership(
     return { coachId: staff?.coach_id ?? null, teamId };
   } catch (error) {
     await logServerError(
-      `resolvePlayerOwnership failed: ${error instanceof Error ? error.message : String(error)}`,
+      `resolvePlayerOwnership failed: ${describeError(error)}`,
       { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
       'warning'
     );

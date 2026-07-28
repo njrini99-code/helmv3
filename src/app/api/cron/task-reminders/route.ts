@@ -25,6 +25,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { processReminders } from '@/app/golf/actions/task-reminders';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       });
     } catch (err) {
       await logServerError(
-        `cron.taskReminders failed: ${err instanceof Error ? err.message : String(err)}`,
+        `cron.taskReminders failed: ${describeError(err)}`,
         { action: 'cron.taskReminders', featureArea: 'tasks' },
         'error',
       );

@@ -25,6 +25,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -415,7 +416,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
     return { success: true, items, truncated };
   } catch (error) {
     await logServerError(
-      `getWhatsNewForCoach failed: ${error instanceof Error ? error.message : String(error)}`,
+      `getWhatsNewForCoach failed: ${describeError(error)}`,
       {
         action: 'getWhatsNewForCoach',
         featureArea: 'whats-new',

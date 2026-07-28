@@ -21,6 +21,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/golf';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Reads auth cookies via savePartialRound → createClient(); always dynamic.
 export const dynamic = 'force-dynamic';
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     await logServerError(
-      `Beacon partial-save failed: ${error instanceof Error ? error.message : String(error)}`,
+      `Beacon partial-save failed: ${describeError(error)}`,
       {
         action: 'partialSaveBeaconRoute',
         source: 'route_handler',

@@ -13,6 +13,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const CAMPS_PATH = '/baseball/dashboard/camps';
 
@@ -93,7 +94,7 @@ export async function createCamp(
     return await createCampAction(input);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'camps.createCamp', featureArea: 'baseball-camps' },
     );
     return mapCampsActionError(error);
@@ -164,7 +165,7 @@ export async function updateCamp(
     return await updateCampAction(campId, input);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'camps.updateCamp', featureArea: 'baseball-camps' },
     );
     return mapCampsActionError(error);
@@ -240,7 +241,7 @@ export async function deleteCamp(
     return await deleteCampAction(campId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'camps.deleteCamp', featureArea: 'baseball-camps' },
     );
     return mapCampsActionError(error);
@@ -314,7 +315,7 @@ export async function checkInCampPlayer(
     return await checkInCampPlayerAction(registrationId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'camps.checkInCampPlayer', featureArea: 'baseball-camps' },
     );
     return mapCampsActionError(error);
@@ -376,7 +377,7 @@ export async function markCampNoShow(
     return await markCampNoShowAction(registrationId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'camps.markCampNoShow', featureArea: 'baseball-camps' },
     );
     return mapCampsActionError(error);

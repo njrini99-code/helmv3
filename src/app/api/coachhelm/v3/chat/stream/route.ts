@@ -68,6 +68,7 @@ import {
   touchConversation,
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const maxDuration = 120;
 
@@ -272,7 +273,7 @@ export async function POST(req: NextRequest) {
         },
         onError: ({ error }) => {
           void logServerError(
-            `chat/stream: model error — ${error instanceof Error ? error.message : String(error)}`,
+            `chat/stream: model error — ${describeError(error)}`,
             { action: 'v3.chat.stream.model' },
             'warning',
           );
@@ -373,7 +374,7 @@ export async function POST(req: NextRequest) {
         await recordTurnCost({ admin, ctx, conversationId: convId, usagePromise });
       } catch (err) {
         await logServerError(
-          `chat/stream: persistence failed — ${err instanceof Error ? err.message : String(err)}`,
+          `chat/stream: persistence failed — ${describeError(err)}`,
           { action: 'v3.chat.stream.persist' },
         );
       }

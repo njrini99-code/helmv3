@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { computeD7Retention, type RoundForRetention } from '@/lib/admin/metrics';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================
 // TYPES
@@ -331,7 +332,7 @@ async function getEnhancedBIDataImpl(): Promise<EnhancedBIData> {
       featureStickiness,
     };
   } catch (error) {
-    await logServerError(`[admin-bi-data] Failed to fetch BI data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_bi_data.getEnhancedBIData' });
+    await logServerError(`[admin-bi-data] Failed to fetch BI data: ${describeError(error)}`, { action: 'admin_bi_data.getEnhancedBIData' });
     return emptyBIData();
   }
 }

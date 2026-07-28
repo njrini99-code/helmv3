@@ -24,6 +24,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const TASKS_PATH = '/baseball/dashboard/tasks';
 const TASK_TEMPLATES_PATH = '/baseball/dashboard/tasks/templates';
@@ -190,7 +191,7 @@ const createTaskAction = withBaseballAction(
 
       if (assignError) {
         await logServerError(
-          `[createTask Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`,
+          `[createTask Assignment Error]: ${describeError(assignError)}`,
           { action: 'tasks.createTask' },
         );
       }
@@ -217,7 +218,7 @@ export async function createTask(
     return await createTaskAction(teamId, data);
   } catch (error) {
     await logServerError(
-      `[createTask Error]: ${error instanceof Error ? error.message : String(error)}`,
+      `[createTask Error]: ${describeError(error)}`,
       { action: 'tasks.createTask' },
     );
     return mapTaskActionError(error);
@@ -247,13 +248,13 @@ async function getTeamTasksImpl(
       .order('created_at', { ascending: false }) as { data: BaseballTask[] | null; error: Error | null };
 
     if (tasksError) {
-      await logServerError(`[getTeamTasks Error]: ${tasksError instanceof Error ? tasksError.message : String(tasksError)}`, { action: 'tasks.getTeamTasks' });
+      await logServerError(`[getTeamTasks Error]: ${describeError(tasksError)}`, { action: 'tasks.getTeamTasks' });
       return { success: false, error: 'Failed to fetch tasks' };
     }
 
     return { success: true, data: tasks || [] };
   } catch (error) {
-    await logServerError(`[getTeamTasks Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.getTeamTasks' });
+    await logServerError(`[getTeamTasks Error]: ${describeError(error)}`, { action: 'tasks.getTeamTasks' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -285,7 +286,7 @@ async function getPlayerTasksImpl(
       .eq('player_id', playerId) as { data: BaseballTaskAssignment[] | null; error: Error | null };
 
     if (assignmentsError) {
-      await logServerError(`[getPlayerTasks Error]: ${assignmentsError instanceof Error ? assignmentsError.message : String(assignmentsError)}`, { action: 'tasks.getPlayerTasks' });
+      await logServerError(`[getPlayerTasks Error]: ${describeError(assignmentsError)}`, { action: 'tasks.getPlayerTasks' });
       return { success: false, error: 'Failed to fetch task assignments' };
     }
 
@@ -303,7 +304,7 @@ async function getPlayerTasksImpl(
       .in('id', taskIds) as { data: BaseballTask[] | null; error: Error | null };
 
     if (tasksError) {
-      await logServerError(`[getPlayerTasks Tasks Error]: ${tasksError instanceof Error ? tasksError.message : String(tasksError)}`, { action: 'tasks.getPlayerTasks' });
+      await logServerError(`[getPlayerTasks Tasks Error]: ${describeError(tasksError)}`, { action: 'tasks.getPlayerTasks' });
       return { success: false, error: 'Failed to fetch task details' };
     }
 
@@ -338,7 +339,7 @@ async function getPlayerTasksImpl(
 
     return { success: true, data: playerTasks };
   } catch (error) {
-    await logServerError(`[getPlayerTasks Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.getPlayerTasks' });
+    await logServerError(`[getPlayerTasks Error]: ${describeError(error)}`, { action: 'tasks.getPlayerTasks' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -385,7 +386,7 @@ async function completeTaskImpl(
         .eq('id', existingAssignment.id);
 
       if (updateError) {
-        await logServerError(`[completeTask Update Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.completeTask' });
+        await logServerError(`[completeTask Update Error]: ${describeError(updateError)}`, { action: 'tasks.completeTask' });
         return { success: false, error: updateError.message };
       }
     } else {
@@ -395,7 +396,7 @@ async function completeTaskImpl(
     revalidatePath('/baseball/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    await logServerError(`[completeTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.completeTask' });
+    await logServerError(`[completeTask Error]: ${describeError(error)}`, { action: 'tasks.completeTask' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -428,14 +429,14 @@ async function uncompleteTaskImpl(
       .eq('player_id', playerId);
 
     if (updateError) {
-      await logServerError(`[uncompleteTask Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.uncompleteTask' });
+      await logServerError(`[uncompleteTask Error]: ${describeError(updateError)}`, { action: 'tasks.uncompleteTask' });
       return { success: false, error: updateError.message };
     }
 
     revalidatePath('/baseball/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    await logServerError(`[uncompleteTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.uncompleteTask' });
+    await logServerError(`[uncompleteTask Error]: ${describeError(error)}`, { action: 'tasks.uncompleteTask' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -487,7 +488,7 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
     return await deleteTaskAction(taskId);
   } catch (error) {
     await logServerError(
-      `[deleteTask Error]: ${error instanceof Error ? error.message : String(error)}`,
+      `[deleteTask Error]: ${describeError(error)}`,
       { action: 'tasks.deleteTask' },
     );
     return mapTaskActionError(error);
@@ -523,7 +524,7 @@ async function getTaskAssignmentsImpl(
       .eq('task_id', taskId) as { data: BaseballTaskAssignment[] | null; error: Error | null };
 
     if (assignmentsError) {
-      await logServerError(`[getTaskAssignments Error]: ${assignmentsError instanceof Error ? assignmentsError.message : String(assignmentsError)}`, { action: 'tasks.getTaskAssignments' });
+      await logServerError(`[getTaskAssignments Error]: ${describeError(assignmentsError)}`, { action: 'tasks.getTaskAssignments' });
       return { success: false, error: 'Failed to fetch assignments' };
     }
 
@@ -554,7 +555,7 @@ async function getTaskAssignmentsImpl(
 
     return { success: true, data: result };
   } catch (error) {
-    await logServerError(`[getTaskAssignments Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.getTaskAssignments' });
+    await logServerError(`[getTaskAssignments Error]: ${describeError(error)}`, { action: 'tasks.getTaskAssignments' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -586,14 +587,14 @@ async function setTaskReminderImpl(
       .eq('id', taskId);
 
     if (updateError) {
-      await logServerError(`[setTaskReminder Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.setTaskReminder' });
+      await logServerError(`[setTaskReminder Error]: ${describeError(updateError)}`, { action: 'tasks.setTaskReminder' });
       return { success: false, error: updateError.message };
     }
 
     revalidatePath('/baseball/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    await logServerError(`[setTaskReminder Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.setTaskReminder' });
+    await logServerError(`[setTaskReminder Error]: ${describeError(error)}`, { action: 'tasks.setTaskReminder' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -622,13 +623,13 @@ async function getTaskTemplatesImpl(
       .order('title', { ascending: true }) as { data: BaseballTaskTemplate[] | null; error: Error | null };
 
     if (templatesError) {
-      await logServerError(`[getTaskTemplates Error]: ${templatesError instanceof Error ? templatesError.message : String(templatesError)}`, { action: 'tasks.getTaskTemplates' });
+      await logServerError(`[getTaskTemplates Error]: ${describeError(templatesError)}`, { action: 'tasks.getTaskTemplates' });
       return { success: false, error: 'Failed to fetch templates' };
     }
 
     return { success: true, data: templates || [] };
   } catch (error) {
-    await logServerError(`[getTaskTemplates Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.getTaskTemplates' });
+    await logServerError(`[getTaskTemplates Error]: ${describeError(error)}`, { action: 'tasks.getTaskTemplates' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -708,7 +709,7 @@ export async function createTaskTemplate(
     return await createTaskTemplateAction(teamId, data);
   } catch (error) {
     await logServerError(
-      `[createTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      `[createTaskTemplate Error]: ${describeError(error)}`,
       { action: 'tasks.createTaskTemplate' },
     );
     return mapTaskActionError(error);
@@ -753,7 +754,7 @@ export async function deleteTaskTemplate(
     return await deleteTaskTemplateAction(templateId);
   } catch (error) {
     await logServerError(
-      `[deleteTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      `[deleteTaskTemplate Error]: ${describeError(error)}`,
       { action: 'tasks.deleteTaskTemplate' },
     );
     return mapTaskActionError(error);
@@ -828,7 +829,7 @@ export async function updateTaskTemplate(
     return await updateTaskTemplateAction(templateId, updates);
   } catch (error) {
     await logServerError(
-      `[updateTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      `[updateTaskTemplate Error]: ${describeError(error)}`,
       { action: 'tasks.updateTaskTemplate' },
     );
     return mapTaskActionError(error);
@@ -933,7 +934,7 @@ const createTaskFromTemplateAction = withBaseballAction(
 
       if (assignError) {
         await logServerError(
-          `[createTaskFromTemplate Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`,
+          `[createTaskFromTemplate Assignment Error]: ${describeError(assignError)}`,
           { action: 'tasks.createTaskFromTemplate' },
         );
       }
@@ -955,7 +956,7 @@ export async function createTaskFromTemplate(
     return await createTaskFromTemplateAction(templateId, teamId, playerIds, customTitle, customDueDate);
   } catch (error) {
     await logServerError(
-      `[createTaskFromTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      `[createTaskFromTemplate Error]: ${describeError(error)}`,
       { action: 'tasks.createTaskFromTemplate' },
     );
     return mapTaskActionError(error);
@@ -1076,7 +1077,7 @@ export async function seedDefaultTemplates(
     return await seedDefaultTemplatesAction(teamId);
   } catch (error) {
     await logServerError(
-      `[seedDefaultTemplates Error]: ${error instanceof Error ? error.message : String(error)}`,
+      `[seedDefaultTemplates Error]: ${describeError(error)}`,
       { action: 'tasks.seedDefaultTemplates' },
     );
     return mapTaskActionError(error);

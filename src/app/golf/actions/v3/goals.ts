@@ -31,6 +31,7 @@ import {
   type MetricRenderConfig,
 } from '@/lib/coachhelm/v3/standing/metric-config';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface CreateGoalInput {
   metric_id: MetricId;
@@ -177,7 +178,7 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
     return { ok: true, goal_id: data.id, warning };
   } catch (err) {
     await logServerError(
-      `createGoal exception: ${err instanceof Error ? err.message : String(err)}`,
+      `createGoal exception: ${describeError(err)}`,
       { action: 'v3.goals.create' },
     );
     return { ok: false, error: 'Unexpected error' };
@@ -288,7 +289,7 @@ async function suggestGoalTargetImpl(
     };
   } catch (err) {
     await logServerError(
-      `suggestGoalTarget exception: ${err instanceof Error ? err.message : String(err)}`,
+      `suggestGoalTarget exception: ${describeError(err)}`,
       { action: 'v3.goals.suggestTarget' },
     );
     return base;

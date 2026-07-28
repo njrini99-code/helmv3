@@ -1702,7 +1702,7 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
     personalBests,
   };
   } catch (error) {
-    await logServerError(`[Stats] getTrendAnalysis failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getTrendAnalysis' });
+    await logServerError(`[Stats] getTrendAnalysis failed: ${describeError(error)}`, { action: 'stats_data.getTrendAnalysis' });
     return emptyResponse;
   }
 }
@@ -2183,7 +2183,7 @@ async function getFilterOptionsImpl(playerId: string): Promise<FilterOptions> {
 
   return { courses, seasons, roundTypes };
   } catch (error) {
-    await logServerError(`[Stats] getFilterOptions failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getFilterOptions' });
+    await logServerError(`[Stats] getFilterOptions failed: ${describeError(error)}`, { action: 'stats_data.getFilterOptions' });
     return { courses: [], seasons: [], roundTypes: [] };
   }
 }
@@ -2308,7 +2308,7 @@ async function getCourseBreakdownImpl(playerId: string): Promise<CourseBreakdown
 
   return { courses, bestCourse, worstCourse };
   } catch (error) {
-    await logServerError(`[Stats] getCourseBreakdown failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getCourseBreakdown' });
+    await logServerError(`[Stats] getCourseBreakdown failed: ${describeError(error)}`, { action: 'stats_data.getCourseBreakdown' });
     return { courses: [], bestCourse: null, worstCourse: null };
   }
 }
@@ -2469,7 +2469,7 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
     closingHolesAverage: meanOrNull(closingToPar),
   };
   } catch (error) {
-    await logServerError(`[Stats] getWorstHoleAnalysis failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.calcAvg' });
+    await logServerError(`[Stats] getWorstHoleAnalysis failed: ${describeError(error)}`, { action: 'stats_data.calcAvg' });
     return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
   }
 }
@@ -2517,7 +2517,7 @@ async function getPlayerStrengthsWeaknessesImpl(
 
   return generateStatisticalStrengthsWeaknesses(stats);
   } catch (error) {
-    await logServerError(`[Stats] getPlayerStrengthsWeaknesses failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getPlayerStrengthsWeaknesses' });
+    await logServerError(`[Stats] getPlayerStrengthsWeaknesses failed: ${describeError(error)}`, { action: 'stats_data.getPlayerStrengthsWeaknesses' });
     return null;
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // =============================================================================
 // SECURITY / CORRECTNESS (Production-Readiness Mission W0a):
@@ -238,7 +239,7 @@ export async function DELETE() {
       warnings: cleanupErrors.length ? cleanupErrors : undefined,
     });
   } catch (error) {
-    await logServerError(`Account deletion failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.DELETE' });
+    await logServerError(`Account deletion failed: ${describeError(error)}`, { action: 'route.DELETE' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

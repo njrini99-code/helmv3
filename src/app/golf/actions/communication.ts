@@ -14,6 +14,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -122,7 +123,7 @@ async function acknowledgeAnnouncementImpl(
     revalidatePath('/golf/dashboard/announcements');
     return { success: true };
   } catch (error) {
-    await logServerError(`acknowledgeAnnouncement failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`acknowledgeAnnouncement failed: ${describeError(error)}`, {
       action: 'acknowledgeAnnouncement',
       featureArea: 'communication',
       extra: { announcementId },
@@ -249,7 +250,7 @@ async function getAnnouncementAcknowledgementsImpl(
 
     return { success: true, data: enrichedAcknowledgements };
   } catch (error) {
-    await logServerError(`getAnnouncementAcknowledgements failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getAnnouncementAcknowledgements failed: ${describeError(error)}`, {
       action: 'getAnnouncementAcknowledgements',
       featureArea: 'communication',
       extra: { announcementId },
@@ -321,7 +322,7 @@ async function hasPlayerAcknowledgedImpl(
       },
     };
   } catch (error) {
-    await logServerError(`hasPlayerAcknowledged failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`hasPlayerAcknowledged failed: ${describeError(error)}`, {
       action: 'hasPlayerAcknowledged',
       featureArea: 'communication',
       extra: { announcementId },

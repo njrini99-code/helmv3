@@ -21,6 +21,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -193,7 +194,7 @@ async function searchInsightsImpl({
     const { data: insights, error, count } = await queryBuilder;
 
     if (error) {
-      await logServerError(`[Insight Search Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.searchInsights' });
+      await logServerError(`[Insight Search Error]: ${describeError(error)}`, { action: 'insight_management.searchInsights' });
       return {
         success: false,
         insights: [],
@@ -249,7 +250,7 @@ async function searchInsightsImpl({
       totalPages,
     };
   } catch (error) {
-    await logServerError(`Unexpected error in searchInsights: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.searchInsights' });
+    await logServerError(`Unexpected error in searchInsights: ${describeError(error)}`, { action: 'insight_management.searchInsights' });
     return {
       success: false,
       insights: [],
@@ -322,7 +323,7 @@ async function bulkDismissInsightsImpl(
       .select('id');
 
     if (error) {
-      await logServerError(`[Bulk Dismiss Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.bulkDismissInsights' });
+      await logServerError(`[Bulk Dismiss Error]: ${describeError(error)}`, { action: 'insight_management.bulkDismissInsights' });
       return { success: false, affectedCount: 0, error: 'Failed to dismiss insights' };
     }
 
@@ -333,7 +334,7 @@ async function bulkDismissInsightsImpl(
 
     return { success: true, affectedCount: data?.length || 0 };
   } catch (error) {
-    await logServerError(`Unexpected error in bulkDismissInsights: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.bulkDismissInsights' });
+    await logServerError(`Unexpected error in bulkDismissInsights: ${describeError(error)}`, { action: 'insight_management.bulkDismissInsights' });
     return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
   }
 }
@@ -395,7 +396,7 @@ async function bulkAcknowledgeInsightsImpl(
       .select('id');
 
     if (error) {
-      await logServerError(`[Bulk Acknowledge Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.bulkAcknowledgeInsights' });
+      await logServerError(`[Bulk Acknowledge Error]: ${describeError(error)}`, { action: 'insight_management.bulkAcknowledgeInsights' });
       return { success: false, affectedCount: 0, error: 'Failed to acknowledge insights' };
     }
 
@@ -409,7 +410,7 @@ async function bulkAcknowledgeInsightsImpl(
 
     return { success: true, affectedCount: data?.length || 0 };
   } catch (error) {
-    await logServerError(`Unexpected error in bulkAcknowledgeInsights: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.bulkAcknowledgeInsights' });
+    await logServerError(`Unexpected error in bulkAcknowledgeInsights: ${describeError(error)}`, { action: 'insight_management.bulkAcknowledgeInsights' });
     return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
   }
 }
@@ -469,7 +470,7 @@ async function bulkResolveInsightsImpl(
       .select('id');
 
     if (error) {
-      await logServerError(`[Bulk Resolve Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.bulkResolveInsights' });
+      await logServerError(`[Bulk Resolve Error]: ${describeError(error)}`, { action: 'insight_management.bulkResolveInsights' });
       return { success: false, affectedCount: 0, error: 'Failed to resolve insights' };
     }
 
@@ -483,7 +484,7 @@ async function bulkResolveInsightsImpl(
 
     return { success: true, affectedCount: data?.length || 0 };
   } catch (error) {
-    await logServerError(`Unexpected error in bulkResolveInsights: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.bulkResolveInsights' });
+    await logServerError(`Unexpected error in bulkResolveInsights: ${describeError(error)}`, { action: 'insight_management.bulkResolveInsights' });
     return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
   }
 }
@@ -560,7 +561,7 @@ async function exportInsightsImpl(
       .in('id', insightIds);
 
     if (error) {
-      await logServerError(`[Export Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.exportInsights' });
+      await logServerError(`[Export Error]: ${describeError(error)}`, { action: 'insight_management.exportInsights' });
       return { success: false, error: 'Failed to fetch insights for export' };
     }
 
@@ -668,7 +669,7 @@ async function exportInsightsImpl(
       mimeType: 'text/csv',
     };
   } catch (error) {
-    await logServerError(`Unexpected error in exportInsights: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.exportInsights' });
+    await logServerError(`Unexpected error in exportInsights: ${describeError(error)}`, { action: 'insight_management.exportInsights' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -762,7 +763,7 @@ async function getInsightFilterOptionsImpl(
 
     return { success: true, options };
   } catch (error) {
-    await logServerError(`Error getting filter options: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.getInsightFilterOptions' });
+    await logServerError(`Error getting filter options: ${describeError(error)}`, { action: 'insight_management.getInsightFilterOptions' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -827,7 +828,7 @@ async function getInsightsStatsImpl(
     );
 
     if (error) {
-      await logServerError(`[Stats Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.getInsightsStats' });
+      await logServerError(`[Stats Error]: ${describeError(error)}`, { action: 'insight_management.getInsightsStats' });
       return { success: false, error: 'Failed to get insights stats' };
     }
 
@@ -861,7 +862,7 @@ async function getInsightsStatsImpl(
 
     return { success: true, stats };
   } catch (error) {
-    await logServerError(`Error getting insights stats: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.getInsightsStats' });
+    await logServerError(`Error getting insights stats: ${describeError(error)}`, { action: 'insight_management.getInsightsStats' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

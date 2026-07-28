@@ -15,6 +15,7 @@ import type {
   NotificationPrefs,
   PrefsByCategory,
 } from '@/lib/coachhelm/v3/notifications/router';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface PrefsActionResult {
   ok: boolean;
@@ -50,7 +51,7 @@ async function loadMyNotificationPrefsImpl(): Promise<PrefsActionResult> {
     };
   } catch (err) {
     await logServerError(
-      `loadMyNotificationPrefs failed: ${err instanceof Error ? err.message : String(err)}`,
+      `loadMyNotificationPrefs failed: ${describeError(err)}`,
       { action: 'v3.notifications.loadPrefs' },
     );
     return { ok: false, error: 'Internal error' };
@@ -119,7 +120,7 @@ async function setCategoryChannelImpl(
     };
   } catch (err) {
     await logServerError(
-      `setCategoryChannel failed: ${err instanceof Error ? err.message : String(err)}`,
+      `setCategoryChannel failed: ${describeError(err)}`,
       { action: 'v3.notifications.setChannel' },
     );
     return { ok: false, error: 'Internal error' };
@@ -192,7 +193,7 @@ async function setAllChannelsImpl(
     };
   } catch (err) {
     await logServerError(
-      `setAllChannels failed: ${err instanceof Error ? err.message : String(err)}`,
+      `setAllChannels failed: ${describeError(err)}`,
       { action: 'v3.notifications.setAllChannels' },
     );
     return { ok: false, error: 'Internal error' };
@@ -246,7 +247,7 @@ async function setQuietModeImpl(enabled: boolean): Promise<PrefsActionResult> {
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `setQuietMode failed: ${err instanceof Error ? err.message : String(err)}`,
+      `setQuietMode failed: ${describeError(err)}`,
       { action: 'v3.notifications.setQuietMode' },
     );
     return { ok: false, error: 'Internal error' };

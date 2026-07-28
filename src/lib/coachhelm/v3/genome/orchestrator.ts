@@ -25,6 +25,7 @@ import type {
   GenomeVector,
 } from './types';
 import type { Json } from '@/lib/types/database';
+import { describeError } from '@/lib/utils/describe-error';
 
 const WINDOW_DAYS = 90;
 
@@ -163,7 +164,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
       }
     } catch (err) {
       await logServerError(
-        `genome: ${dim.id} threw for ${player_id}: ${err instanceof Error ? err.message : String(err)}`,
+        `genome: ${dim.id} threw for ${player_id}: ${describeError(err)}`,
         { action: 'v3.genome.compute' },
       );
       result.errors += 1;

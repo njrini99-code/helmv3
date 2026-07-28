@@ -20,6 +20,7 @@ import {
 } from '@/lib/baseball/with-baseball-action';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
 import { computeCareerSlashLine } from '@/lib/baseball/aggregates/career-slash-line';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Shared error-message mapping for every action in this file. All exported
@@ -454,7 +455,7 @@ export async function uploadStatsCSV(
     );
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.uploadStatsCSV', featureArea: 'baseball-stats' },
     );
     return mapStatsActionError(error);
@@ -546,7 +547,7 @@ export async function resolveUnmatchedPlayers(
     return await resolveUnmatchedPlayersAction(uploadId, _mappings);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.resolveUnmatchedPlayers', featureArea: 'baseball-stats' },
     );
     return { success: false, error: statsActionErrorMessage(error) };
@@ -623,7 +624,7 @@ export async function reprocessUpload(
     return await reprocessUploadAction(uploadId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.reprocessUpload', featureArea: 'baseball-stats' },
     );
     return { success: false, error: statsActionErrorMessage(error) };
@@ -763,7 +764,7 @@ const recalculatePlayerAggregatesAction = withBaseballAction(
 
   if (aggregateError) {
     await logServerError(
-      `Failed to upsert baseball player aggregates: ${aggregateError instanceof Error ? aggregateError.message : String(aggregateError)}`,
+      `Failed to upsert baseball player aggregates: ${describeError(aggregateError)}`,
       { action: 'stats.recalculatePlayerAggregates', playerId, metadata: { teamId } },
     );
     return { success: false, error: 'Failed to recalculate player aggregates' };
@@ -784,7 +785,7 @@ export async function recalculatePlayerAggregates(
     return await recalculatePlayerAggregatesAction(playerId, teamId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.recalculatePlayerAggregates', featureArea: 'baseball-stats' },
     );
     return { success: false, error: statsActionErrorMessage(error) };
@@ -826,7 +827,7 @@ export async function recalculateTeamAggregates(teamId: string): Promise<{ succe
     return await recalculateTeamAggregatesAction(teamId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.recalculateTeamAggregates', featureArea: 'baseball-stats' },
     );
     return { success: false, error: statsActionErrorMessage(error) };
@@ -900,7 +901,7 @@ export async function getMyStats(
     return await getMyStatsAction(filters);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.getMyStats', featureArea: 'baseball-stats' },
     );
     return { data: null, error: statsActionErrorMessage(error) };
@@ -993,7 +994,7 @@ export async function getMyAggregates(): Promise<{
     return await getMyAggregatesAction();
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.getMyAggregates', featureArea: 'baseball-stats' },
     );
     return { data: null, player: null, teamName: null, error: statsActionErrorMessage(error) };
@@ -1096,7 +1097,7 @@ export async function getPlayerStats(
     return await getPlayerStatsAction(playerId, filters);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.getPlayerStats', featureArea: 'baseball-stats' },
     );
     return { data: null, error: statsActionErrorMessage(error) };
@@ -1148,7 +1149,7 @@ export async function getRecentUploads(
     return await getRecentUploadsAction(teamId, limit);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_stats.getRecentUploads', featureArea: 'baseball-stats' },
     );
     return { data: null, error: statsActionErrorMessage(error) };

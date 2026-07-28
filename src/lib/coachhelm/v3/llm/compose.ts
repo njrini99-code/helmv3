@@ -44,6 +44,7 @@ import {
   type ComposeRequest,
   type ComposeResult,
 } from './types';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Rough prompt-token estimate (4 chars per token is the standard rule
 // of thumb). Used pre-call to size the budget check; the post-call
@@ -295,7 +296,7 @@ async function fallbackFromLlmError(
   },
 ): Promise<ComposeResult> {
   await logServerEvent(
-    `compose() LLM call failed for task=${req.task}: ${ctx.err instanceof Error ? ctx.err.message : String(ctx.err)}`,
+    `compose() LLM call failed for task=${req.task}: ${describeError(ctx.err)}`,
     { action: 'v3.llm.compose' },
     'warning',
   );

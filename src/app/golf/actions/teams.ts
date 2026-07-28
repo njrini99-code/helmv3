@@ -9,6 +9,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { revalidatePath } from 'next/cache';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -271,7 +272,7 @@ async function joinGolfTeamImpl(playerId: string, teamId: string) {
     } catch (error) {
       // Don't fail the join if notification fails
       await logServerError(
-        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        `Unexpected error: ${describeError(error)}`,
         { action: 'teams.joinGolfTeam', featureArea: 'teams' },
         'warning'
       );
@@ -752,7 +753,7 @@ async function createTeamJoinRequestImpl(
     } catch (error) {
       // Don't fail the request if notification fails
       await logServerError(
-        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        `Unexpected error: ${describeError(error)}`,
         { action: 'teams.createTeamJoinRequest', featureArea: 'teams' },
         'warning'
       );
@@ -984,7 +985,7 @@ async function acceptJoinRequestImpl(
     } catch (error) {
       // Don't fail the approval if notification fails
       await logServerError(
-        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        `Unexpected error: ${describeError(error)}`,
         { action: 'teams.acceptJoinRequest', featureArea: 'teams' },
         'warning'
       );
@@ -1109,7 +1110,7 @@ async function rejectJoinRequestImpl(
     } catch (error) {
       // Don't fail the rejection if notification fails
       await logServerError(
-        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        `Unexpected error: ${describeError(error)}`,
         { action: 'teams.rejectJoinRequest', featureArea: 'teams' },
         'warning'
       );
@@ -1405,7 +1406,7 @@ async function addSecondTeamImpl(
       };
     }
     await logServerError(
-      `[addSecondTeam] Team creation failed: ${teamError instanceof Error ? teamError.message : String(teamError)}`,
+      `[addSecondTeam] Team creation failed: ${describeError(teamError)}`,
       { action: 'teams.addSecondTeam' }
     );
     return { success: false, error: 'Failed to create team. Please try again.' };
@@ -1438,7 +1439,7 @@ async function addSecondTeamImpl(
 
   if (staffError) {
     await logServerError(
-      `[addSecondTeam] Staff insert failed: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+      `[addSecondTeam] Staff insert failed: ${describeError(staffError)}`,
       { action: 'teams.addSecondTeam' }
     );
     // Rollback the team we just created

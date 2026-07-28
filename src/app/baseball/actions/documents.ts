@@ -14,6 +14,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const SIGNED_URL_TTL_SECONDS = 3600;
 const DOCUMENTS_PATH = '/baseball/dashboard/documents';
@@ -135,7 +136,7 @@ export interface BaseballDocumentVersion {
 // Error handling helper
 function handleError(error: unknown): string {
   // Fire-and-forget: logServerError handles its own errors
-  void logServerError(`Baseball document action error: ${error instanceof Error ? error.message : String(error)}`, { action: 'documents.handleError' });
+  void logServerError(`Baseball document action error: ${describeError(error)}`, { action: 'documents.handleError' });
   if (error instanceof Error) return error.message;
   return 'An unexpected error occurred';
 }
@@ -179,7 +180,7 @@ async function withFreshDocumentUrls(
         return { ...document, file_url: signedUrl };
       } catch (error) {
         void logServerError(
-          `Failed to re-sign document URL for document ${document.id}: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to re-sign document URL for document ${document.id}: ${describeError(error)}`,
           { action: 'documents.withFreshDocumentUrls' },
         );
         return document;
@@ -415,7 +416,7 @@ const createBaseballDocumentAction = withBaseballAction(
 
     if (versionError) {
       await logServerError(
-        `Failed to create version record: ${versionError instanceof Error ? versionError.message : String(versionError)}`,
+        `Failed to create version record: ${describeError(versionError)}`,
         { action: 'documents.createBaseballDocument' },
       );
     }

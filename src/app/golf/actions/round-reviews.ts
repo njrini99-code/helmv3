@@ -22,6 +22,7 @@ import type {
 import type { Json } from '@/lib/types/database';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // INTERNAL TYPES
@@ -557,7 +558,7 @@ async function generateRoundReviewImpl(
     }
 
   } catch (error) {
-    await logServerError(`generateRoundReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`generateRoundReview failed: ${describeError(error)}`, {
       action: 'generateRoundReview',
       featureArea: 'round_reviews',
     });
@@ -623,7 +624,7 @@ async function getReviewByIdImpl(reviewId: string): Promise<{
 
     return { success: true, review };
   } catch (error) {
-    await logServerError(`getReviewById failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getReviewById failed: ${describeError(error)}`, {
       action: 'getReviewById',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -682,7 +683,7 @@ async function getReviewByRoundIdImpl(roundId: string): Promise<{
 
     return { success: true, review: dbRowToReview(review as ReviewDbRow, access.callerRole ?? 'player') };
   } catch (error) {
-    await logServerError(`getReviewByRoundId failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getReviewByRoundId failed: ${describeError(error)}`, {
       action: 'getReviewByRoundId',
       featureArea: 'round_reviews',
       extra: { roundId },
@@ -823,7 +824,7 @@ async function saveCoachFeedbackImpl(
     return { success: true };
 
   } catch (error) {
-    await logServerError(`saveCoachFeedback failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`saveCoachFeedback failed: ${describeError(error)}`, {
       action: 'saveCoachFeedback',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -912,7 +913,7 @@ async function shareReviewWithPlayerImpl(
     return { success: true };
 
   } catch (error) {
-    await logServerError(`shareReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`shareReview failed: ${describeError(error)}`, {
       action: 'shareReview',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1026,7 +1027,7 @@ async function getTeamReviewsImpl(
     };
 
   } catch (error) {
-    await logServerError(`getTeamReviews failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getTeamReviews failed: ${describeError(error)}`, {
       action: 'getTeamReviews',
       featureArea: 'round_reviews',
       extra: { teamId },
@@ -1146,7 +1147,7 @@ async function getPendingCoachReviewsImpl(_coachId?: string): Promise<{
     };
 
   } catch (error) {
-    await logServerError(`getPendingCoachReviews failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPendingCoachReviews failed: ${describeError(error)}`, {
       action: 'getPendingCoachReviews',
       featureArea: 'round_reviews',
     });
@@ -1207,7 +1208,7 @@ async function getPlayerReviewHistoryImpl(playerId: string): Promise<{
       reviews: (reviews as ReviewDbRow[]).map(r => dbRowToReview(r, callerRole))
     };
   } catch (error) {
-    await logServerError(`getPlayerReviewHistory failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPlayerReviewHistory failed: ${describeError(error)}`, {
       action: 'getPlayerReviewHistory',
       featureArea: 'round_reviews',
       playerId,
@@ -1300,7 +1301,7 @@ async function markReviewAsViewedImpl(reviewId: string): Promise<{
     return { success: true };
 
   } catch (error) {
-    await logServerError(`markReviewAsViewed failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`markReviewAsViewed failed: ${describeError(error)}`, {
       action: 'markReviewAsViewed',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1378,7 +1379,7 @@ async function addPlayerFeedbackImpl(
     return { success: true };
 
   } catch (error) {
-    await logServerError(`addPlayerFeedback failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`addPlayerFeedback failed: ${describeError(error)}`, {
       action: 'addPlayerFeedback',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1432,7 +1433,7 @@ async function retryReviewGenerationImpl(reviewId: string): Promise<GenerateRevi
     return generateRoundReview(review.round_id, true);
 
   } catch (error) {
-    await logServerError(`retryReviewGeneration failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`retryReviewGeneration failed: ${describeError(error)}`, {
       action: 'retryReviewGeneration',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1500,7 +1501,7 @@ async function getReviewGenerationStatusImpl(reviewId: string): Promise<{
     };
 
   } catch (error) {
-    await logServerError(`getReviewGenerationStatus failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getReviewGenerationStatus failed: ${describeError(error)}`, {
       action: 'getReviewGenerationStatus',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1598,7 +1599,7 @@ async function annotateReviewImpl(
 
     return { success: true };
   } catch (error) {
-    await logServerError(`annotateReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`annotateReview failed: ${describeError(error)}`, {
       action: 'annotateReview',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1664,7 +1665,7 @@ async function publishReviewImpl(
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    await logServerError(`publishReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`publishReview failed: ${describeError(error)}`, {
       action: 'publishReview',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1747,7 +1748,7 @@ async function createFocusAreaFromReviewImpl(
     revalidatePath('/golf/dashboard');
     return { success: true, focusAreaId: focusArea.id };
   } catch (error) {
-    await logServerError(`createFocusAreaFromReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`createFocusAreaFromReview failed: ${describeError(error)}`, {
       action: 'createFocusAreaFromReview',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1860,7 +1861,7 @@ async function acknowledgeReviewImpl(
 
     return { success: true };
   } catch (error) {
-    await logServerError(`acknowledgeReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`acknowledgeReview failed: ${describeError(error)}`, {
       action: 'acknowledgeReview',
       featureArea: 'round_reviews',
       extra: { reviewId },
@@ -1950,7 +1951,7 @@ async function markReviewViewedByCoachImpl(
     return { success: true };
 
   } catch (error) {
-    await logServerError(`markReviewViewedByCoach failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`markReviewViewedByCoach failed: ${describeError(error)}`, {
       action: 'markReviewViewedByCoach',
       featureArea: 'round_reviews',
       extra: { reviewId },

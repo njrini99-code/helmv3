@@ -7,6 +7,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // VALIDATION SCHEMAS (Zod)
@@ -215,7 +216,7 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
       };
     }
     await logServerError(
-      `Unexpected error in createGolfTravelItinerary: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in createGolfTravelItinerary: ${describeError(error)}`,
       { action: 'travel.createGolfTravelItinerary', featureArea: 'travel' }
     );
     return formatSafeErrorResponse(error);
@@ -340,7 +341,7 @@ async function updateGolfTravelItineraryImpl(input: UpdateTravelItineraryInput) 
       };
     }
     await logServerError(
-      `Unexpected error in updateGolfTravelItinerary: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in updateGolfTravelItinerary: ${describeError(error)}`,
       { action: 'travel.updateGolfTravelItinerary', featureArea: 'travel' }
     );
     return formatSafeErrorResponse(error);
@@ -561,7 +562,7 @@ async function createTravelExpenseImpl(input: CreateExpenseInput) {
       return { success: false, error: 'Invalid expense data. Please check your inputs.' };
     }
     await logServerError(
-      `Unexpected error in createTravelExpense: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in createTravelExpense: ${describeError(error)}`,
       { action: 'travel.createTravelExpense', featureArea: 'travel' }
     );
     return formatSafeErrorResponse(error);
@@ -622,7 +623,7 @@ async function updateTravelExpenseImpl(input: UpdateExpenseInput) {
       return { success: false, error: 'Invalid expense data. Please check your inputs.' };
     }
     await logServerError(
-      `Unexpected error in updateTravelExpense: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in updateTravelExpense: ${describeError(error)}`,
       { action: 'travel.updateTravelExpense', featureArea: 'travel' }
     );
     return formatSafeErrorResponse(error);
@@ -1052,7 +1053,7 @@ async function setBudgetImpl(input: { itinerary_id: string; category: ExpenseCat
       return { success: false, error: 'Invalid budget data.' };
     }
     await logServerError(
-      `Unexpected error in setBudget: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error in setBudget: ${describeError(error)}`,
       { action: 'travel.setBudget', featureArea: 'travel' }
     );
     return formatSafeErrorResponse(error);

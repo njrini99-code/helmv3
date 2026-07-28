@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // NOTIFICATION PREFERENCES (shared across sports)
@@ -59,7 +60,7 @@ export async function updateNotificationPreferences(
       .eq('id', user.id);
 
     if (error) {
-      await logServerError(`Failed to update notification preferences: ${error instanceof Error ? error.message : String(error)}`, { action: 'notification_preferences.updateNotificationPreferences' });
+      await logServerError(`Failed to update notification preferences: ${describeError(error)}`, { action: 'notification_preferences.updateNotificationPreferences' });
       return { success: false, error: 'Failed to update notification preferences' };
     }
 
@@ -71,7 +72,7 @@ export async function updateNotificationPreferences(
     if (err instanceof z.ZodError) {
       return { success: false, error: 'Invalid notification preferences data' };
     }
-    await logServerError(`Error updating notification preferences: ${err instanceof Error ? err.message : String(err)}`, { action: 'notification_preferences.updateNotificationPreferences' });
+    await logServerError(`Error updating notification preferences: ${describeError(err)}`, { action: 'notification_preferences.updateNotificationPreferences' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -119,7 +120,7 @@ export async function getNotificationPreferences(): Promise<{
     const prefs = (data?.notification_preferences as NotificationPreferencesInput) || {};
     return { data: { ...defaultPrefs, ...prefs } };
   } catch (err) {
-    await logServerError(`Failed to fetch notification preferences: ${err instanceof Error ? err.message : String(err)}`, { action: 'notification_preferences.getNotificationPreferences' });
+    await logServerError(`Failed to fetch notification preferences: ${describeError(err)}`, { action: 'notification_preferences.getNotificationPreferences' });
     return { data: null, error: 'Failed to fetch preferences' };
   }
 }

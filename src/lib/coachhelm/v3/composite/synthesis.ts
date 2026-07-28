@@ -25,6 +25,7 @@ import { COMPOSITE_RULES } from './registry';
 import { loadRecentInsightsForPlayer } from './loader';
 import { loadCompositeContext } from './hole-sequence-loader';
 import type { CompositeMatch, CompositeRule, EvidenceInsight } from './types';
+import { describeError } from '@/lib/utils/describe-error';
 
 const COMPOSITE_PREFIX = 'composite';
 
@@ -305,7 +306,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
     insights = await loadRecentInsightsForPlayer(playerId);
   } catch (err) {
     await logServerError(
-      `synthesizeForPlayer: load failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+      `synthesizeForPlayer: load failed for ${playerId}: ${describeError(err)}`,
       { action: 'v3.composite.synthesis.load' },
     );
     result.errors += 1;
@@ -329,7 +330,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
     ctx = await loadCompositeContext(playerId);
   } catch (err) {
     await logServerError(
-      `synthesizeForPlayer: ctx load failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+      `synthesizeForPlayer: ctx load failed for ${playerId}: ${describeError(err)}`,
       { action: 'v3.composite.synthesis.ctx' },
     );
     ctx = { hole_scores: [], short_game_shots: [], flyer_lie_shots: [] };
@@ -343,7 +344,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       if (m) matches.push({ rule, match: m });
     } catch (err) {
       await logServerError(
-        `synthesizeForPlayer: rule ${rule.id} detect threw for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        `synthesizeForPlayer: rule ${rule.id} detect threw for ${playerId}: ${describeError(err)}`,
         { action: 'v3.composite.synthesis.detect' },
       );
       result.errors += 1;
@@ -501,7 +502,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       result.stale_retracted = retracted;
     } catch (err) {
       await logServerError(
-        `synthesizeForPlayer: stale-composite sweep failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        `synthesizeForPlayer: stale-composite sweep failed for ${playerId}: ${describeError(err)}`,
         { action: 'v3.composite.synthesis.sweep' },
       );
       // Sweep failure must not fail the synthesis run that emitted insights.

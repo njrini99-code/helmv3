@@ -27,6 +27,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -143,7 +144,7 @@ async function handleRosterSweep(): Promise<NextResponse> {
       if (!p.ok) {
         failed++;
         await logServerError(
-          `cron.rosterSweep.trigger rejected: ${p.err instanceof Error ? p.err.message : String(p.err)}`,
+          `cron.rosterSweep.trigger rejected: ${describeError(p.err)}`,
           {
             action: 'cron.coachhelm.rosterSweep.trigger',
             featureArea: 'coachhelm',

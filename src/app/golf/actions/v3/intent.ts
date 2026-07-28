@@ -14,6 +14,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import type { NarrativeGoal, AlertPosture } from '@/lib/coachhelm/v3/intent/types';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface SetIntentInput {
   player_id: string;
@@ -76,7 +77,7 @@ async function setIntentImpl(input: SetIntentInput): Promise<ActionResult> {
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `setIntent exception: ${err instanceof Error ? err.message : String(err)}`,
+      `setIntent exception: ${describeError(err)}`,
       { action: 'v3.intent.set' },
     );
     return { ok: false, error: 'Unexpected error' };

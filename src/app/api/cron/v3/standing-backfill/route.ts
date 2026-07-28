@@ -39,6 +39,7 @@ import {
   SHOT_REFRESH_METRIC_IDS,
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -89,7 +90,7 @@ async function handle(): Promise<NextResponse> {
     teamIds = (data ?? []).map((t) => t.id);
   } catch (err) {
     await logServerError(
-      `standing-backfill team-select exception: ${err instanceof Error ? err.message : String(err)}`,
+      `standing-backfill team-select exception: ${describeError(err)}`,
       { action: 'cron.v3.standing-backfill.team-select', source: 'cron' },
     );
     return NextResponse.json(
@@ -173,7 +174,7 @@ async function handle(): Promise<NextResponse> {
       }
     } catch (err) {
       await logServerError(
-        `standing-backfill RPC chunk ${chunksProcessed} exception: ${err instanceof Error ? err.message : String(err)}`,
+        `standing-backfill RPC chunk ${chunksProcessed} exception: ${describeError(err)}`,
         { action: 'cron.v3.standing-backfill.rpc', source: 'cron' },
       );
       return NextResponse.json(

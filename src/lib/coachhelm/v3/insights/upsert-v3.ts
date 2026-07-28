@@ -23,6 +23,7 @@ import {
 } from '@/lib/coachhelm/v2/insights/upsert';
 import type { InsightInput } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 const V3_SIGNATURE_PREFIX = 'v3:';
 
@@ -63,7 +64,7 @@ export async function upsertInsightV3(
     }
   } catch (err) {
     await logServerError(
-      `upsertInsightV3 stamp exception for ${result}: ${err instanceof Error ? err.message : String(err)}`,
+      `upsertInsightV3 stamp exception for ${result}: ${describeError(err)}`,
       { action: 'v3.insights.upsert' },
     );
   }

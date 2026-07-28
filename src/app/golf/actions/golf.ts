@@ -525,6 +525,7 @@ const announcementSchema = z.object({
 // ============================================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Helper to get team_id for a coach (since golf_coaches doesn't have team_id column).
@@ -1566,7 +1567,7 @@ async function submitGolfRoundComprehensiveImpl(
         backupPersisted = true;
       } catch (backupError) {
         await logServerError(
-          `Failed to persist round submission backup: ${backupError instanceof Error ? backupError.message : String(backupError)}`,
+          `Failed to persist round submission backup: ${describeError(backupError)}`,
           {
             action: 'submitGolfRoundComprehensive',
             roundId: existingRoundId,
@@ -1837,7 +1838,7 @@ async function submitGolfRoundComprehensiveImpl(
       try {
         await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
       } catch (err) {
-        await logServerError(`Failed to update qualifier entry stats after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+        await logServerError(`Failed to update qualifier entry stats after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.qualifierStats',
           featureArea: 'qualifiers',
           roundId: round.id,
@@ -1854,7 +1855,7 @@ async function submitGolfRoundComprehensiveImpl(
       try {
         await advanceQualifierOnRoundSubmit(supabase, data.qualifierId);
       } catch (err) {
-        await logServerError(`Failed to auto-advance qualifier status after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+        await logServerError(`Failed to auto-advance qualifier status after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.qualifierAutoAdvance',
           featureArea: 'qualifiers',
           roundId: round.id,
@@ -1905,7 +1906,7 @@ async function submitGolfRoundComprehensiveImpl(
           );
         }
       } catch (err) {
-        await logServerError(`Failed to invalidate stats cache after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+        await logServerError(`Failed to invalidate stats cache after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.invalidateStatsCache',
           featureArea: 'stats_cache',
           roundId: cacheRoundId,
@@ -1952,7 +1953,7 @@ async function submitGolfRoundComprehensiveImpl(
           return;
         } catch (err) {
           await logServerError(
-            `Failed to send coachhelm/round.submitted to Inngest, falling back to direct postRoundTrigger: ${err instanceof Error ? err.message : String(err)}`,
+            `Failed to send coachhelm/round.submitted to Inngest, falling back to direct postRoundTrigger: ${describeError(err)}`,
             {
               action: 'submitGolfRoundComprehensive.inngestSendFailed',
               featureArea: 'coachhelm',
@@ -2006,7 +2007,7 @@ async function submitGolfRoundComprehensiveImpl(
         revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
       }
     } catch (cacheErr) {
-      await logServerError(`Next cache revalidation failed after round submit: ${cacheErr instanceof Error ? cacheErr.message : String(cacheErr)}`, {
+      await logServerError(`Next cache revalidation failed after round submit: ${describeError(cacheErr)}`, {
         action: 'submitGolfRoundComprehensive.revalidatePaths',
         featureArea: 'stats_cache',
         roundId: round.id,
@@ -2028,7 +2029,7 @@ async function submitGolfRoundComprehensiveImpl(
       roundType: data.roundType,
       holesPlayed: data.holes.length,
     }).catch((err) => {
-      logServerError(`logRoundSubmitted failed: ${err instanceof Error ? err.message : String(err)}`, {
+      logServerError(`logRoundSubmitted failed: ${describeError(err)}`, {
         action: 'submitGolfRoundComprehensive.logRoundSubmitted',
         featureArea: 'rounds',
         extra: { roundId: round.id },
@@ -2069,7 +2070,7 @@ async function submitGolfRoundComprehensiveImpl(
             );
           }
         } catch (pushErr) {
-          await logServerError(`[Push] round_submitted notification failed: ${pushErr instanceof Error ? pushErr.message : String(pushErr)}`, { action: 'golf.submitGolfRoundComprehensive' });
+          await logServerError(`[Push] round_submitted notification failed: ${describeError(pushErr)}`, { action: 'golf.submitGolfRoundComprehensive' });
         }
       })();
     }
@@ -2080,7 +2081,7 @@ async function submitGolfRoundComprehensiveImpl(
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
-    await logServerError(`Round submit unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`Round submit unexpected error: ${describeError(error)}`, {
       action: 'submitGolfRoundComprehensive.catch',
       extra: {
         stack: error instanceof Error ? error.stack : undefined,
@@ -2324,7 +2325,7 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
         for (let i = 0; i < channelResults.length; i++) {
           const result = channelResults[i];
           if (result?.status === 'rejected') {
-            await logServerError(`createGolfEvent ${channelNames[i]} fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`, {
+            await logServerError(`createGolfEvent ${channelNames[i]} fan-out failed: ${describeError(result.reason)}`, {
               action: 'createGolfEvent.notificationFanOut',
               featureArea: 'events',
               extra: { channel: channelNames[i], eventId: fanOutEventId },
@@ -2332,7 +2333,7 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
           }
         }
       } catch (notifErr) {
-        await logServerError(`createGolfEvent notification creation failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+        await logServerError(`createGolfEvent notification creation failed: ${describeError(notifErr)}`, {
           action: 'createGolfEvent.notifications',
           featureArea: 'events',
         });
@@ -2855,7 +2856,7 @@ async function deleteGolfEventImpl(
           const channelResults = await Promise.allSettled([inAppPromise, emailPromise]);
           for (const result of channelResults) {
             if (result.status === 'rejected') {
-              await logServerError(`deleteGolfEvent cancellation fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`, {
+              await logServerError(`deleteGolfEvent cancellation fan-out failed: ${describeError(result.reason)}`, {
                 action: 'deleteGolfEvent.cancellationFanOut',
                 featureArea: 'events',
                 extra: { eventId },
@@ -2863,7 +2864,7 @@ async function deleteGolfEventImpl(
             }
           }
         } catch (notifErr) {
-          await logServerError(`deleteGolfEvent cancellation notify failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+          await logServerError(`deleteGolfEvent cancellation notify failed: ${describeError(notifErr)}`, {
             action: 'deleteGolfEvent.cancellationNotify',
             featureArea: 'events',
             extra: { eventId },
@@ -3090,7 +3091,7 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
           }
         }
       } catch (notifErr) {
-        await logServerError(`createGolfQualifier notification failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+        await logServerError(`createGolfQualifier notification failed: ${describeError(notifErr)}`, {
           action: 'createGolfQualifier.notifications',
           featureArea: 'qualifiers',
         });
@@ -3846,7 +3847,7 @@ async function respondToEventImpl(
     return { success: true, data: undefined };
 
   } catch (err) {
-    await logServerError(`respondToEvent failed: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`respondToEvent failed: ${describeError(err)}`, {
       action: 'respondToEvent.unexpected',
       featureArea: 'calendar',
       extra: { stack: err instanceof Error ? err.stack : undefined },
@@ -3989,7 +3990,7 @@ async function sendEventReminderToPlayersImpl(
     revalidatePath('/golf/dashboard/notifications');
     return { success: true, data: { sent: userIds.length } };
   } catch (err) {
-    await logServerError(`sendEventReminderToPlayers error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`sendEventReminderToPlayers error: ${describeError(err)}`, {
       action: 'sendEventReminderToPlayers',
       featureArea: 'calendar',
       extra: { eventId },
@@ -5529,7 +5530,7 @@ async function savePartialRoundImpl(
 
   } catch (err) {
     await logServerException(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' }, 'critical');
-    await logServerError(`Auto-save unexpected error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`Auto-save unexpected error: ${describeError(err)}`, {
       action: 'savePartialRound.catch',
       extra: { stack: err instanceof Error ? err.stack : undefined },
     }, 'critical');
@@ -5607,7 +5608,7 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
 
   } catch (error) {
     await logServerError(
-      `deleteInProgressRound failed: ${error instanceof Error ? error.message : String(error)}`,
+      `deleteInProgressRound failed: ${describeError(error)}`,
       {
         action: 'golf.deleteInProgressRound',
         featureArea: 'golf_rounds',
@@ -6834,7 +6835,7 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
           await invalidateOnRoundComplete(roundRow.player_id, revalidateRoundId);
         }
       } catch (err) {
-        void logServerError(`deleteShot stats cache invalidation failed: ${err instanceof Error ? err.message : String(err)}`, {
+        void logServerError(`deleteShot stats cache invalidation failed: ${describeError(err)}`, {
           action: 'deleteShot.invalidateStatsCache',
           featureArea: 'stats_cache',
           roundId: revalidateRoundId,
@@ -7056,7 +7057,7 @@ async function updateShotImpl(
           await invalidateOnRoundComplete(roundRow.player_id, revalidateRoundId);
         }
       } catch (err) {
-        void logServerError(`updateShot stats cache invalidation failed: ${err instanceof Error ? err.message : String(err)}`, {
+        void logServerError(`updateShot stats cache invalidation failed: ${describeError(err)}`, {
           action: 'updateShot.invalidateStatsCache',
           featureArea: 'stats_cache',
           roundId: revalidateRoundId,
@@ -7421,7 +7422,7 @@ async function getRoundShotDetailsImpl(
     };
   } catch (error) {
     await logServerError(
-      `getRoundShotDetails failed: ${error instanceof Error ? error.message : String(error)}`,
+      `getRoundShotDetails failed: ${describeError(error)}`,
       {
         action: 'golf.getRoundShotDetails',
         featureArea: 'golf_rounds',
