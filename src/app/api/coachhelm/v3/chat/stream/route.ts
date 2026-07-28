@@ -39,6 +39,8 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
+import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import {
   estimateCachedCostUsd,
   estimateCostUsd,
@@ -97,11 +99,57 @@ const Body = z.object({
  * the coach can act on.
  */
 function sanitiseStreamError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  if (/quota|credit|tier|Free tier users|balance is too low/i.test(message)) {
-    return 'CoachHelm is out of model credit for this account, so it cannot answer right now. Retrying will not help until that is topped up.';
-  }
+  // One shared classifier decides this, so the coach's wording, the schedule
+  // importer's wording and the Bridge's severity cannot drift apart the way
+  // three separate regexes let them.
+  const fault = classifyProviderFault(error);
+  if (fault) return fault.summary;
   return 'Something went wrong while answering. Please try again.';
+}
+
+/**
+ * Log one failed turn.
+ *
+ * A provider/account fault is normalised before it is written: the raw text
+ * carries the provider's own billing URL and, for the incomplete-tool-call
+ * class, an opaque `toolu_…` id. Neither survives
+ * `normalizeIncidentMessagePrefix` (mixed-case base62 is not a UUID and not
+ * long hex), so every retry of one outage was landing in the Bridge as its own
+ * incident. Naming a stable `errorCode` and an id-free message is what makes
+ * them one row, and the emit throttle attaches how many were collapsed.
+ */
+function logStreamModelError(error: unknown): void {
+  const fault = classifyProviderFault(error);
+  const raw = describeError(error);
+
+  if (!fault) {
+    void logServerError(`chat/stream: model error — ${raw}`, { action: 'v3.chat.stream.model' }, 'warning');
+    return;
+  }
+
+  const throttleKey = `chat-stream-provider:${fault.code}`;
+  if (!shouldEmit(throttleKey)) return;
+  const collapsed = drainCollapsedCount(throttleKey);
+  const { severity, skipSentry } = providerFaultSeverity(fault);
+
+  void logServerError(
+    `chat/stream: ${fault.summary}`,
+    {
+      action: 'v3.chat.stream.model',
+      errorCode: fault.code,
+      skipSentry,
+      feature: 'coachhelm_chat',
+      // The provider's verbatim text stays available for whoever has to act on
+      // it — it just does not decide the grouping any more.
+      extra: {
+        providerFaultKind: fault.kind,
+        provider: fault.provider,
+        providerMessage: raw.slice(0, 500),
+        ...(collapsed > 0 ? { collapsed_count: collapsed } : {}),
+      },
+    },
+    severity,
+  );
 }
 
 const UNGROUNDED_NOTE =
@@ -282,11 +330,7 @@ export async function POST(req: NextRequest) {
           if (firstTokenMs === null) firstTokenMs = Date.now() - startedAt;
         },
         onError: ({ error }) => {
-          void logServerError(
-            `chat/stream: model error — ${describeError(error)}`,
-            { action: 'v3.chat.stream.model' },
-            'warning',
-          );
+          logStreamModelError(error);
         },
       });
 

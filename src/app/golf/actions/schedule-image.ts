@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { logServerException } from '@/lib/server-error-logger';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import {
   extractScheduleFromImage,
   mapExtractionToParsedClasses,
@@ -99,6 +100,32 @@ async function extractClassesFromScheduleImageImpl(
 
     return { success: true, classes: mapped.classes, warnings: mapped.warnings };
   } catch (error) {
+    // "Try again in a moment" was a lie on an exhausted model account: the
+    // student's screenshot was fine, retrying could never work, and the reason
+    // it failed was a billing state nobody on this side of the screen can fix.
+    // Say so, and point at the one route that still works today.
+    const fault = classifyProviderFault(error);
+    if (fault) {
+      void logServerError(
+        `schedule image import unavailable: ${fault.summary}`,
+        {
+          action: 'schedule_image.extractClassesFromScheduleImage',
+          source: 'server_action',
+          sport: 'golf',
+          feature: 'academics_classes',
+          featureArea: 'classes',
+          errorCode: fault.code,
+          skipSentry: providerFaultSeverity(fault).skipSentry,
+          extra: { providerFaultKind: fault.kind, provider: fault.provider },
+        },
+        providerFaultSeverity(fault).severity,
+      );
+      return {
+        success: false,
+        error: `${fault.summary} Your schedule can still be added with the Paste Text option.`,
+      };
+    }
+
     void logServerException(error, {
       action: 'schedule_image.extractClassesFromScheduleImage',
       source: 'server_action',

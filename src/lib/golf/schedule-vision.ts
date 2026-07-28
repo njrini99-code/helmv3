@@ -25,6 +25,7 @@ import { detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { classifyProviderFault } from '@/lib/admin/provider-fault';
 
 /**
  * The model this runs on, and why it is not Opus.
@@ -60,12 +61,20 @@ const SCHEDULE_VISION_MODEL =
  */
 const SCHEDULE_VISION_FALLBACK_MODEL = 'anthropic/claude-sonnet-5';
 
-/** Does this error mean "the model was unreachable", not "the image was bad"? */
+/**
+ * Does this error mean "the model was unreachable", not "the image was bad"?
+ *
+ * Delegates to the shared provider-fault classifier rather than keeping a
+ * fourth private regex for the same class of upstream failure — the three that
+ * existed disagreed, which is how one exhausted account produced a different
+ * message and a different severity on every surface it touched.
+ *
+ * A rate limit is excluded on purpose: the retry here is a retry on a DIFFERENT
+ * model, which does nothing for throttling and only spends again.
+ */
 function isModelAccessError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /do not have access|not available|unknown model|model_not_found|does not exist|upgrade to paid/i.test(
-    message,
-  );
+  const fault = classifyProviderFault(error);
+  return fault !== null && fault.kind !== 'rate_limited';
 }
 
 /**

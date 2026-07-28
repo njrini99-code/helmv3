@@ -29,6 +29,7 @@ import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import { classifyProviderFault } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
@@ -1952,8 +1953,20 @@ async function submitGolfRoundComprehensiveImpl(
           });
           return;
         } catch (err) {
+          // A rotated/invalid INNGEST_EVENT_KEY is a provider-account fault, not
+          // a code defect: `isInngestConfigured()` sees the variable and reports
+          // the integration as live, so the raw text ("Inngest API Error: 404
+          // Event key not found") reads like a transient upstream blip when in
+          // fact every round submitted since the key rotated has silently lost
+          // its durability guarantee and fallen back to the non-durable
+          // `after()` path below. Naming the fault, with a stable code, is what
+          // lets that show up as one standing incident instead of one line per
+          // round submitted.
+          const fault = classifyProviderFault(err);
           await logServerError(
-            `Failed to send coachhelm/round.submitted to Inngest, falling back to direct postRoundTrigger: ${describeError(err)}`,
+            fault
+              ? `Round analysis lost its durable queue and ran inline instead: ${fault.summary}`
+              : `Failed to send coachhelm/round.submitted to Inngest, falling back to direct postRoundTrigger: ${describeError(err)}`,
             {
               action: 'submitGolfRoundComprehensive.inngestSendFailed',
               featureArea: 'coachhelm',
@@ -1961,7 +1974,17 @@ async function submitGolfRoundComprehensiveImpl(
               playerId: backgroundPlayerId,
               userId: cacheUserId,
               userEmail: cacheUserEmail,
-              extra: { stack: err instanceof Error ? err.stack : undefined },
+              ...(fault ? { errorCode: fault.code, skipSentry: true } : {}),
+              extra: {
+                stack: err instanceof Error ? err.stack : undefined,
+                ...(fault
+                  ? {
+                      providerFaultKind: fault.kind,
+                      provider: fault.provider,
+                      providerMessage: describeError(err).slice(0, 300),
+                    }
+                  : {}),
+              },
             },
             'warning',
           );
