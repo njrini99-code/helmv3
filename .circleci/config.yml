@@ -179,6 +179,8 @@ jobs:
           name: Build web bundle (for Capacitor sync)
           environment:
             NODE_OPTIONS: --max-old-space-size=8192
+            NEXT_PUBLIC_SUPABASE_URL: https://dummy-ci-build.supabase.co
+            NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-ci-build-only
           command: |
             # Capacitor needs the web bundle to exist before `cap sync`.
             # Use the prod build so we catch SSR/Server Component breakage
