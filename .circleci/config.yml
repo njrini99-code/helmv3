@@ -41,7 +41,8 @@ executors:
     resource_class: small
   ios:
     macos:
-      xcode: "15.4.0"
+      # Capacitor 8 SwiftPM binaries require Swift 6.2, shipped with Xcode 26+.
+      xcode: "26.4.1"
     resource_class: m4pro.medium
 
 # ---------------------------------------------------------------------------
