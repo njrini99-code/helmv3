@@ -113,6 +113,9 @@ node_modules
 # GolfHelm UI screenshots
 # Auth storage states (contain Supabase session cookies — never commit)
 playwright/.auth/
+/momentic/auth/*.json
+/momentic/auth/.momentic.env
+!/momentic/auth/.gitkeep
 # Local product-audit browser states use several historical layouts. Keep the
 # generated JSON out of Git even when an audit writes outside playwright/.auth/.
 /audit/**/auth/*.json
