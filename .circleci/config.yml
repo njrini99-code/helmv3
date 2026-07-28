@@ -201,6 +201,7 @@ jobs:
             xcodebuild -resolvePackageDependencies \
               -project ios/App/App.xcodeproj \
               -scheme App
+            cat ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
       - run:
           name: xcodebuild compile (no signing, simulator SDK)
           command: |
