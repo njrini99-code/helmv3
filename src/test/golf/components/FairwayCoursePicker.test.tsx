@@ -9,6 +9,12 @@
  * 2) The sectioned layout (one shelf per feed).
  * 3) Tapping a course advances to the tee stage (the "it didn't ask me to start
  *    the round" report) — a clean, reliable tap target.
+ * 4) The course-library MANAGEMENT gate (prod incident 700c9a87,
+ *    "[createCourse] Only coaches can manage the course library"): createCourse
+ *    and createTee both sit behind requireCoachActor, but this picker rendered
+ *    its create affordances unconditionally — including on the PLAYER-ONLY
+ *    new-round route, where they could never succeed. `canManageLibrary`
+ *    defaults closed; the coach-only qualifier call sites opt in.
  */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
@@ -43,7 +49,7 @@ describe('FairwayCoursePicker', () => {
   it('opens and renders the loaded library shelf without a render crash', async () => {
     render(
       <LazyMotion features={domAnimation}>
-        <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
+        <FairwayCoursePicker canManageLibrary open onOpenChange={() => {}} onPick={() => {}} />
       </LazyMotion>,
     );
 
@@ -95,9 +101,74 @@ describe('FairwayCoursePicker', () => {
     (mod.listCourses as unknown as Fn).mockResolvedValueOnce([]);
     render(
       <LazyMotion features={domAnimation}>
-        <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
+        <FairwayCoursePicker canManageLibrary open onOpenChange={() => {}} onPick={() => {}} />
       </LazyMotion>,
     );
     expect(await screen.findByText(/No courses yet/i)).toBeInTheDocument();
+  });
+
+  /**
+   * Incident 700c9a87. The action-side gate (requireCoachActor) was always
+   * correct — every one of these affordances was a button whose ONLY outcome
+   * for a player was the rejection toast. The new-round route admits players
+   * exclusively, so on its single highest-traffic surface the failure rate was
+   * 100%. Default-closed is what makes the omission safe: a new call site has
+   * to opt in deliberately.
+   */
+  describe('course-library management gate (default: player)', () => {
+    it('hides the create tile from a viewer who cannot manage the library', async () => {
+      render(
+        <LazyMotion features={domAnimation}>
+          <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
+        </LazyMotion>,
+      );
+
+      // The shelf itself still loads — only the create affordance is withheld.
+      expect(await screen.findByText('Pebble Beach')).toBeInTheDocument();
+      expect(screen.getByText('Course library')).toBeInTheDocument();
+      expect(screen.queryByText('Add a course')).not.toBeInTheDocument();
+    });
+
+    it('offers the contribute-on-save path instead of a dead button when the library is empty', async () => {
+      const mod = await import('@/app/golf/actions/course-library');
+      (mod.listCourses as unknown as Fn).mockResolvedValueOnce([]);
+      render(
+        <LazyMotion features={domAnimation}>
+          <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
+        </LazyMotion>,
+      );
+
+      expect(await screen.findByText(/No courses yet/i)).toBeInTheDocument();
+      // Players keep the capability via contributeCourseFromRound — the copy
+      // must point there rather than dead-ending.
+      expect(await screen.findByText(/type the course name on the setup screen/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Add a course/i })).not.toBeInTheDocument();
+    });
+
+    it('hides the add-tee affordance too — createTee shares the same gate', async () => {
+      render(
+        <LazyMotion features={domAnimation}>
+          <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
+        </LazyMotion>,
+      );
+
+      fireEvent.click(await screen.findByText('Pebble Beach'));
+
+      expect(await screen.findByText(/No tee sets yet/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Add a tee set/i })).not.toBeInTheDocument();
+    });
+
+    it('shows the add-tee affordance to a coach', async () => {
+      render(
+        <LazyMotion features={domAnimation}>
+          <FairwayCoursePicker canManageLibrary open onOpenChange={() => {}} onPick={() => {}} />
+        </LazyMotion>,
+      );
+
+      fireEvent.click(await screen.findByText('Pebble Beach'));
+
+      expect(await screen.findByText(/No tee sets yet/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Add a tee set/i })).toBeInTheDocument();
+    });
   });
 });

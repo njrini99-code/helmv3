@@ -528,6 +528,9 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
       {/* The SAME cloud course catalog picker the new-round flow uses. We only
           need the picked course/tee identity from the returned TeeRoundDefaults. */}
       <FairwayCoursePicker
+        // Coach-only route (qualifiers/new redirects a non-coach), so the
+        // library-management affordances are safe to show here.
+        canManageLibrary
         open={pickerRound !== null}
         onOpenChange={(open) => { if (!open) setPickerRound(null); }}
         onPick={(defaults) => {
