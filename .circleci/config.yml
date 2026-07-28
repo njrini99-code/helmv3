@@ -188,7 +188,9 @@ jobs:
             npm run build
       - run:
           name: Capacitor sync iOS
-          command: npx cap sync ios
+          command: |
+            npx cap update ios
+            npx cap sync ios
       - run:
           name: Resolve Swift packages
           command: |

@@ -76,6 +76,7 @@ echo "All referenced @capacitor plugin paths present."
 
 PHASE="cap-sync"
 echo "=== [5/6] Capacitor sync ==="
+npx cap update ios
 npx cap sync ios
 ls -la ios/App/App/capacitor.config.json
 
