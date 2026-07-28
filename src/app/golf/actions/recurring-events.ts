@@ -27,7 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
-import { describeError } from '@/lib/utils/describe-error';
+import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 
 /** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
 function formatTimezoneOffset(offsetMinutes: number): string {
@@ -998,7 +998,16 @@ async function editRecurringEventImpl(
           .select('id');
 
         if (updateError) {
-          await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
+          await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, {
+            action: 'recurring_events.editRecurringEvent',
+            featureArea: 'calendar_events',
+            extra: describeWriteFailure(updateError, {
+              scope: input.scope,
+              eventId: input.eventId,
+              rootId,
+              columns: Object.keys(updates),
+            }),
+          });
           return { success: false, error: 'Failed to edit event occurrence. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1046,7 +1055,19 @@ async function editRecurringEventImpl(
           const { data: affected, error: updateError } = await query.select('id');
 
           if (updateError) {
-            await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
+            await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, {
+              action: 'recurring_events.editRecurringEvent',
+              featureArea: 'calendar_events',
+              extra: describeWriteFailure(updateError, {
+                scope: input.scope,
+                eventId: input.eventId,
+                rootId,
+                teamId: targetEvent.team_id,
+                columns: Object.keys(literalUpdates),
+                fromStart: fromStart ?? null,
+                legacyFallback: !rootId,
+              }),
+            });
             return { success: false, error: failMessage };
           }
           if (!affected || affected.length === 0) {
@@ -1071,7 +1092,17 @@ async function editRecurringEventImpl(
         });
 
         if (matchError) {
-          await logServerError(`[editRecurringEvent fetch Error]: ${matchError.message}`, { action: 'recurring_events.editRecurringEvent' });
+          await logServerError(`[editRecurringEvent fetch Error]: ${describeError(matchError)}`, {
+            action: 'recurring_events.editRecurringEvent',
+            featureArea: 'calendar_events',
+            extra: describeWriteFailure(matchError, {
+              scope: input.scope,
+              eventId: input.eventId,
+              rootId,
+              teamId: targetEvent.team_id,
+              fromStart: fromStart ?? null,
+            }),
+          });
           return { success: false, error: failMessage };
         }
         if (!matchedRows || matchedRows.length === 0) {
@@ -1121,7 +1152,13 @@ async function editRecurringEventImpl(
               `[editRecurringEvent perRow Error]: ${describeError(failed.error)} (series update may be partially applied)`,
               {
                 action: 'recurring_events.editRecurringEvent.perRow',
-                extra: { eventId: input.eventId, rootId, scope: input.scope },
+                featureArea: 'calendar_events',
+                extra: describeWriteFailure(failed.error, {
+                  scope: input.scope,
+                  eventId: input.eventId,
+                  rootId,
+                  seriesRows: matchedRows.length,
+                }),
               },
             );
             return { success: false, error: failMessage };
@@ -1190,7 +1227,11 @@ async function editRecurringEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    await logServerError(`[editRecurringEvent Error]: ${describeError(error)}`, { action: 'recurring_events.editRecurringEvent' });
+    await logServerError(`[editRecurringEvent Error]: ${describeError(error)}`, {
+      action: 'recurring_events.editRecurringEvent',
+      featureArea: 'calendar_events',
+      extra: describeWriteFailure(error, { scope: input.scope, eventId: input.eventId, threw: true }),
+    });
     return formatSafeErrorResponse(error);
   }
 }
