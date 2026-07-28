@@ -22,7 +22,7 @@ import {
   layoutTrackLabels,
   STANDING_TRACK_SUBJECT_KEY,
 } from '@/components/fairway/modules';
-import type { RailBarRow, DivergingRow, TickerItem } from '@/components/fairway/modules';
+import type { RailBarRow, DivergingRow, TickerItem, CellChipTone } from '@/components/fairway/modules';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { TrendChip } from '@/components/fairway/charts/TrendChip';
 import { cn } from '@/lib/utils';
@@ -133,6 +133,17 @@ export function StatsBento({
 
   const bestCategory = strengths[0] ?? null;
   const worstCategory = weaknesses[0] ?? null;
+
+  // The Standing chip labels whatever the headline names, so the two are
+  // resolved together. Gating the chip on `strengths` while the headline read
+  // from `weaknesses` printed "Best" above the player's WEAKEST category —
+  // the card announced the leak as the strength.
+  const standingFocus: { chip?: { tone: CellChipTone; text: string }; headline?: { value: string } } =
+    worstCategory
+      ? { chip: { tone: 'leak', text: 'Leak' }, headline: { value: worstCategory.label } }
+      : bestCategory
+        ? { chip: { tone: 'strength', text: 'Best' }, headline: { value: bestCategory.label } }
+        : {};
 
   return (
     <Bento separated>
@@ -250,8 +261,8 @@ export function StatsBento({
       <BentoCell
         label="Standing"
         span={2}
-        chip={bestCategory ? { tone: 'strength', text: 'Best' } : undefined}
-        headline={worstCategory ? { value: worstCategory.label } : undefined}
+        chip={standingFocus.chip}
+        headline={standingFocus.headline}
         sentence={
           bestCategory && worstCategory
             ? `Strongest in ${bestCategory.label.toLowerCase()}; leaking most in ${worstCategory.label.toLowerCase()}.`
