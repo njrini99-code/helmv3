@@ -336,6 +336,7 @@ workflows:
                 - /release\/.*/
                 - /ios\/.*/
                 - /capacitor\/.*/
+                - /agent\/fix-circleci-ios-.*/
 
   # Lighthouse runs on every push (excluding the scheduled weekly).
   # The wait-for-vercel-preview script returns early with a useful
