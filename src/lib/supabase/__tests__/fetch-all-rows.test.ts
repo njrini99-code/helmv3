@@ -96,13 +96,21 @@ describe('fetchAllRows', () => {
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
   });
 
-  it('omitted rlsCtx still captures with table:"unknown" when the message matches the isRlsDenial regex fallback', async () => {
+  it('omitted rlsCtx recovers the table name Postgres named in the message', async () => {
     await expect(
       fetchAllRows<Row>(
         page([], { message: 'new row violates row-level security policy for table "x"' }),
       ),
     ).rejects.toThrow();
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
+    const [, eventCtx] = mocks.logServerEvent.mock.calls[0]!;
+    expect(eventCtx).toMatchObject({ metadata: { table: 'x' } });
+  });
+
+  it('falls back to "unknown" only when the denial names no relation', async () => {
+    await expect(
+      fetchAllRows<Row>(page([], { message: 'row-level security policy violated', code: '42501' })),
+    ).rejects.toThrow();
     const [, eventCtx] = mocks.logServerEvent.mock.calls[0]!;
     expect(eventCtx).toMatchObject({ metadata: { table: 'unknown' } });
   });
@@ -169,7 +177,7 @@ describe('fetchAllRowsResult', () => {
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
   });
 
-  it('omitted rlsCtx still captures with table:"unknown" when the message matches the isRlsDenial regex fallback', async () => {
+  it('omitted rlsCtx recovers the table name Postgres named in the message', async () => {
     const { data, error } = await fetchAllRowsResult<Row>(
       page([], { message: 'violates row-level security policy for table "y"' }),
     );
@@ -177,7 +185,9 @@ describe('fetchAllRowsResult', () => {
     expect(error).not.toBeNull();
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
     const [, eventCtx] = mocks.logServerEvent.mock.calls[0]!;
-    expect(eventCtx).toMatchObject({ metadata: { table: 'unknown' } });
+    // `RLS denial: select on unknown` is what the 2026-07-20 crm_coaches denial
+    // actually logged, and it cannot be triaged or mapped to a feature.
+    expect(eventCtx).toMatchObject({ metadata: { table: 'y' } });
   });
 
   it('omitted rlsCtx captures nothing when the error does not look like a denial', async () => {
