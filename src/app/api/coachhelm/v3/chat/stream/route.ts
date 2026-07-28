@@ -38,7 +38,7 @@ import {
 import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import {
   estimateCachedCostUsd,
   estimateCostUsd,
@@ -350,10 +350,39 @@ export async function POST(req: NextRequest) {
         const grounded = unsupported.length === 0;
 
         if (!grounded) {
-          await logServerError(
-            `chat/stream: ${unsupported.length} unsupported numeric claim(s) for coach_id=${ctx.coach_id}`,
-            { action: 'v3.chat.stream.ungrounded' },
-            'warning',
+          // A designed guardrail FIRING is not an incident: the claim was
+          // caught and the turn was annotated + stored as 'failed' below,
+          // which is the system working. Logged at 'info' with skipSentry so
+          // it stays queryable as a hallucination-rate metric without sitting
+          // in the incident feed's default view or minting a Sentry issue —
+          // the convention stated in lib/admin/observe-action-result.ts.
+          //
+          // Count-stable message (see the staleBacklog emitter for the same
+          // rule): interpolating `unsupported.length` minted one fingerprint
+          // per distinct count, so "1 claim" and "2 claims" arrived as two
+          // unrelated warnings that could never dedupe.
+          //
+          // The claim TEXTS matter more than the count and were not recorded
+          // at all, which made the false-positive rate unmeasurable:
+          // auditNumericClaims exempts only ISO dates, clock times and
+          // integers <= 12, so "18 holes", "par 72", "2025" and "150 yards"
+          // all read as unsupported. Do NOT widen those exemptions without
+          // this telemetry first — a fabricated "72%" next to the word "par"
+          // is exactly what the check exists to catch.
+          await logServerEvent(
+            'chat/stream: assistant turn contained numeric claims not traceable to tool evidence',
+            {
+              action: 'v3.chat.stream.ungrounded',
+              featureArea: 'coachhelm',
+              skipSentry: true,
+              extra: {
+                unsupportedCount: unsupported.length,
+                claims: unsupported.slice(0, 10).map((c) => c.text),
+                conversationId: convId,
+                coachId: ctx.coach_id,
+              },
+            },
+            'info',
           );
         }
 

@@ -157,16 +157,51 @@ async function handleSafetyNet(): Promise<NextResponse> {
   // string over PostgREST, which isn't guaranteed to compare the same way
   // as `Date#toISOString()`'s suffix/precision under a raw `<`.
   const staleCutoff = Date.now() - STALE_THRESHOLD_MS;
+  const staleCutoffIso = new Date(staleCutoff).toISOString();
   const staleBacklog = pending.filter((r) => new Date(r.created_at).getTime() < staleCutoff);
+
   if (staleBacklog.length > 0) {
     const oldest = staleBacklog[0]!;
+
+    // `staleBacklog` is a subset of a BATCH_LIMIT-capped page, so its length
+    // saturates at BATCH_LIMIT and cannot distinguish a 200-round backlog from
+    // a 20,000-round one — the alarm was structurally incapable of reporting
+    // the number an operator needs. Count the real thing with a HEAD query on
+    // the same predicate, so it rides the same partial index (20260517010000)
+    // and stays cheap. Best-effort: a failure here must never suppress the
+    // alarm, so fall back to the (understated) page count and say so.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: staleTotal, error: staleCountError } = await (supabase as any)
+      .from('golf_rounds')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .is('coachhelm_analyzed_at', null)
+      .is('coachhelm_failed_at', null)
+      .lte('created_at', minAgeCutoffIso)
+      .lt('created_at', staleCutoffIso);
+
     await logServerError(
-      `cron.safetyNet.staleBacklog: ${staleBacklog.length} completed round(s) have sat unanalyzed longer than the ${Math.round(STALE_THRESHOLD_MS / (24 * 60 * 60 * 1000))}-day staleness threshold`,
+      // Count-stable message: the count used to be interpolated here, and
+      // incident fingerprints hash a normalised message prefix that only
+      // redacts integers of 5+ digits (lib/admin/incident-grouping.ts). So
+      // every distinct backlog size minted a BRAND-NEW incident — "200" and
+      // "20" from two consecutive ticks of one draining backlog arrived as two
+      // unrelated warnings, neither of which could dedupe or stay resolved.
+      // The numbers live in `extra` instead; same rule the gated-insight
+      // emitter already follows (actions/insights.ts).
+      'cron.safetyNet.staleBacklog: completed round(s) have sat unanalyzed past the staleness threshold',
       {
         action: 'cron.coachhelm.safetyNet.staleBacklog',
         featureArea: 'coachhelm',
         extra: {
-          staleCount: staleBacklog.length,
+          staleCount: staleCountError ? null : staleTotal ?? null,
+          staleCountUnavailable: staleCountError ? staleCountError.message : undefined,
+          // Kept alongside the true total so a saturated page is legible as
+          // such rather than looking like the whole backlog.
+          staleInThisPage: staleBacklog.length,
+          batchLimit: BATCH_LIMIT,
+          pageSaturated: pending.length === BATCH_LIMIT,
+          thresholdDays: Math.round(STALE_THRESHOLD_MS / (24 * 60 * 60 * 1000)),
           totalPending: pending.length,
           oldestRoundId: oldest.id,
           oldestCreatedAt: oldest.created_at,

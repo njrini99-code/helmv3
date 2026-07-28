@@ -199,6 +199,71 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
     );
   });
 
+  /**
+   * Production emitted this same alarm as TWO unrelated incidents 30 minutes
+   * apart (fingerprints 45c7f4b9 "200 completed round(s)…" and bd702e2f
+   * "20 completed round(s)…") — one backlog draining, reported as two
+   * warnings that could never dedupe or stay resolved. Incident fingerprints
+   * hash a normalised message prefix that only redacts integers of 5+ digits
+   * (lib/admin/incident-grouping.ts), so every distinct count minted a new
+   * group. Separately, the count itself was `staleBacklog.length` — a subset
+   * of a BATCH_LIMIT-capped page, so it could never exceed 200 and an
+   * operator could not tell a 200-round backlog from a 20,000-round one.
+   */
+  describe('stale-backlog alarm is dedupable and reports the true backlog size', () => {
+    function staleCall() {
+      return logServerErrorMock.mock.calls.find(
+        (c) => typeof c[0] === 'string' && (c[0] as string).includes('staleBacklog'),
+      );
+    }
+
+    it('keeps the message count-stable so one draining backlog is ONE incident', async () => {
+      const stale = (n: number) =>
+        Array.from({ length: n }, (_, i) =>
+          pendingRound({
+            id: `r${i}`,
+            player_id: `p${i}`,
+            created_at: new Date(Date.now() - 45 * DAY_MS - i * 1000).toISOString(),
+          }),
+        );
+
+      seed(stale(7));
+      await callGet();
+      const firstMessage = staleCall()?.[0];
+
+      logServerErrorMock.mockClear();
+      seed(stale(3));
+      await callGet();
+      const secondMessage = staleCall()?.[0];
+
+      expect(firstMessage).toBeDefined();
+      // Different backlog sizes, byte-identical message — one fingerprint.
+      expect(secondMessage).toBe(firstMessage);
+      expect(firstMessage).not.toMatch(/\d/);
+    });
+
+    it('reports the true backlog in extra, and flags when the page was saturated', async () => {
+      seed([
+        pendingRound({ id: 'r1', player_id: 'p1', created_at: new Date(Date.now() - 45 * DAY_MS).toISOString() }),
+        pendingRound({ id: 'r2', player_id: 'p2', created_at: new Date(Date.now() - 46 * DAY_MS).toISOString() }),
+      ]);
+
+      await callGet();
+
+      expect(staleCall()?.[1]).toEqual(
+        expect.objectContaining({
+          extra: expect.objectContaining({
+            staleCount: 2,
+            staleInThisPage: 2,
+            batchLimit: 200,
+            pageSaturated: false,
+            thresholdDays: 30,
+          }),
+        }),
+      );
+    });
+  });
+
   it('does not fire the stale-backlog warning on a clean run with pending rows that are not yet stale', async () => {
     const freshCreatedAt = new Date(Date.now() - 1 * DAY_MS).toISOString();
     seed([pendingRound({ id: 'r-fresh', player_id: 'p-fresh', created_at: freshCreatedAt })]);
