@@ -177,6 +177,8 @@ jobs:
       - install-node-deps
       - run:
           name: Build web bundle (for Capacitor sync)
+          environment:
+            NODE_OPTIONS: --max-old-space-size=8192
           command: |
             # Capacitor needs the web bundle to exist before `cap sync`.
             # Use the prod build so we catch SSR/Server Component breakage
