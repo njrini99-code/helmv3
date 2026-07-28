@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
-import { ACTIVE_GOAL_SOFT_CAP } from '@/lib/coachhelm/v3/goals/types';
+import { ACTIVE_GOAL_SOFT_CAP, resolveGoalWindow } from '@/lib/coachhelm/v3/goals/types';
 import type {
   GoalCoachAssignmentMode,
   GoalOrigin,
@@ -69,6 +69,13 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
   try {
     if (!isMetricId(input.metric_id)) {
       return { ok: false, error: 'Unknown metric_id' };
+    }
+
+    // Resolve the span before touching the DB — an out-of-range window would
+    // otherwise surface as a raw `golf_goals_window_range` constraint error.
+    const goalWindow = resolveGoalWindow(input.ends_at);
+    if (!goalWindow.ok) {
+      return { ok: false, error: goalWindow.error };
     }
 
     const supabase = await createClient();
@@ -137,13 +144,11 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       metric_id: input.metric_id,
       title: input.title,
       category: input.category,
-      ends_at: input.ends_at,
-      // Span of the goal in days (started_at defaults to now() in the DB), so
-      // the card's "{window_days}-day window" sub-line is real, not "null-day".
-      window_days: Math.max(
-        1,
-        Math.round((new Date(input.ends_at).getTime() - Date.now()) / 86_400_000),
-      ),
+      // `window_days` is deliberately absent: it is GENERATED ALWAYS from
+      // `ends_at - started_at`. Both ends of that span are pinned here so the
+      // generated value is an exact integer inside the CHECK range.
+      started_at: goalWindow.window.started_at,
+      ends_at: goalWindow.window.ends_at,
       baseline_value: input.baseline_value,
       current_value: input.baseline_value, // start equal; cron updates
       target_value: input.target_value,
