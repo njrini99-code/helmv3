@@ -1,19 +1,19 @@
--- Shot-detail read isolation: putt_details / approach_miss_details.
+-- Shot-detail access isolation: putt_details / approach_miss_details.
 --
--- 20260728030000 replaced the four uncorrelated `shot_id IN (SELECT ...)`
--- SELECT policies on these two tables with a single correlated predicate
--- backed by `public.can_read_golf_shot_detail(uuid)`. That migration was a
--- PERFORMANCE fix (a production read went 4.6s -> 0.3s) but it rewrote a
--- security boundary to get there, and the old policies had no behavioral
--- test at all — only the coach-insights suite did. A future edit that
--- simplified the helper (most temptingly: dropping the shot-readability
--- conjunct, or widening the coach branch from "staffs the team" to "is in
--- the organisation") would ship green.
+-- 20260728030000 replaced every uncorrelated `shot_id IN (SELECT ...)` policy
+-- on these two tables with correlated predicates backed by two helpers:
+-- `public.can_read_golf_shot_detail(uuid)` for SELECT and
+-- `public.owns_golf_shot(uuid)` for INSERT/UPDATE/DELETE. That migration was a
+-- PERFORMANCE fix (a production read went 6.2s -> 0.6s) but it rewrote a
+-- security boundary to get there, and the old policies had no behavioral test
+-- at all — only the coach-insights suite did. A future edit that simplified
+-- either helper would ship green.
 --
 -- This is a BEHAVIORAL test. It seeds two organisations, and inside the
 -- FIRST organisation two teams with different coaching staff, so it can
--- distinguish the three cases the helper must keep apart:
+-- distinguish the cases the helpers must keep apart.
 --
+-- READ:
 --   * the player themself                    -> CAN read
 --   * a coach who staffs the player's team    -> CAN read
 --   * a coach in the same organisation who
@@ -25,12 +25,21 @@
 -- the inherited golf_shots readability check that narrows it to the staffing
 -- coach. Both conjuncts have to survive for that row to stay hidden.
 --
+-- WRITE (owner-only — strictly narrower than read):
+--   * the player themself                    -> CAN insert/update/delete
+--   * a coach who staffs the player's team    -> CANNOT, despite CAN read
+--
+-- That last pair is the point of the two-helper split. Read and write differ
+-- on exactly one actor, so a future refactor that collapsed them into one
+-- helper for tidiness would silently hand every staffing coach write access to
+-- their players' shot detail. These assertions are what makes that fail.
+--
 -- Pattern mirrors golf_coach_insights_cross_tenant_select.sql.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(9);
+SELECT plan(19);
 
 -- ============================================================================
 -- Seed as service_role (RLS bypassed for setup).
@@ -61,6 +70,9 @@ DECLARE
   v_hole      uuid := '00000000-0000-0000-0000-00000000d042';
   v_shot_putt uuid := '00000000-0000-0000-0000-00000000d043';
   v_shot_appr uuid := '00000000-0000-0000-0000-00000000d044';
+  -- Deliberately left WITHOUT a putt_details row: the write assertions need a
+  -- shot that is free to insert against, and putt_details.shot_id is UNIQUE.
+  v_shot_free uuid := '00000000-0000-0000-0000-00000000d045';
 BEGIN
   INSERT INTO auth.users (id, email, role) VALUES
     (v_userc_x, 'shotdetail-coach-x@helm.test', 'authenticated'),
@@ -132,7 +144,8 @@ BEGIN
 
   INSERT INTO public.golf_shots (id, round_id, hole_id, hole_number, shot_number, shot_type) VALUES
     (v_shot_putt, v_round, v_hole, 1, 4, 'putting'),
-    (v_shot_appr, v_round, v_hole, 1, 2, 'approach')
+    (v_shot_appr, v_round, v_hole, 1, 2, 'approach'),
+    (v_shot_free, v_round, v_hole, 1, 5, 'putting')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.putt_details (shot_id, made) VALUES
@@ -142,6 +155,36 @@ BEGIN
   INSERT INTO public.approach_miss_details (shot_id, miss_direction) VALUES
     (v_shot_appr, 'long')
   ON CONFLICT DO NOTHING;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- Row-count probes for the write assertions.
+--
+-- A blocked UPDATE/DELETE under RLS is not an error — the USING qual simply
+-- matches nothing and the statement reports zero rows. Counting those rows is
+-- the only way to tell "policy refused" from "policy allowed", and it cannot be
+-- done inline: a data-modifying CTE is illegal inside a scalar subquery, which
+-- is what pgTAP's `is(...)` takes.
+--
+-- These are SECURITY INVOKER (the default) on purpose: they must run with the
+-- caller's identity so the policies under test still apply.
+-- ----------------------------------------------------------------------------
+CREATE FUNCTION pg_temp.update_putt_rows(p_shot uuid, p_made boolean)
+RETURNS int LANGUAGE plpgsql AS $$
+DECLARE n int;
+BEGIN
+  UPDATE public.putt_details SET made = p_made WHERE shot_id = p_shot;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
+CREATE FUNCTION pg_temp.delete_putt_rows(p_shot uuid)
+RETURNS int LANGUAGE plpgsql AS $$
+DECLARE n int;
+BEGIN
+  DELETE FROM public.putt_details WHERE shot_id = p_shot;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
 END $$;
 
 -- ============================================================================
@@ -246,8 +289,109 @@ RESET role;
 RESET request.jwt.claims;
 
 -- ============================================================================
--- The helper must stay SECURITY DEFINER with a pinned search_path. Without
--- the pin, a caller-controlled search_path could shadow the tables it joins.
+-- WRITE: owner-only, and strictly narrower than read.
+--
+-- The staffing coach passes every read assertion above. Each "coach CANNOT"
+-- assertion below therefore fails the moment the write policies are pointed at
+-- the read helper — which is the single most likely way this migration gets
+-- undone by a later tidy-up.
+-- ============================================================================
+
+-- The player owns the round, so they may create detail on their own shot.
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000d014", "role": "authenticated"}';
+
+SELECT lives_ok(
+  $$INSERT INTO public.putt_details (shot_id, made)
+    VALUES ('00000000-0000-0000-0000-00000000d045', false)$$,
+  'player CAN insert putt_details on their own shot'
+);
+
+SELECT is(
+  pg_temp.update_putt_rows('00000000-0000-0000-0000-00000000d045', true),
+  1,
+  'player CAN update their own putt_details'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+-- The staffing coach: reads yes (asserted above), writes no.
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000d011", "role": "authenticated"}';
+
+-- Sanity: this actor really can see the row it is about to fail to change,
+-- so the two assertions after it are about the WRITE boundary and not about
+-- the coach simply having no visibility.
+SELECT is(
+  (SELECT count(*)::int FROM public.putt_details
+   WHERE shot_id = '00000000-0000-0000-0000-00000000d045'),
+  1,
+  'staffing coach CAN read the row it must not write'
+);
+
+SELECT throws_ok(
+  $$INSERT INTO public.putt_details (shot_id, made)
+    VALUES ('00000000-0000-0000-0000-00000000d044', false)$$,
+  '42501',
+  NULL,
+  'staffing coach CANNOT insert putt_details for their player'
+);
+
+-- No error for UPDATE/DELETE: the USING qual simply matches nothing, so the
+-- statement succeeds having touched zero rows. Asserting 0 is the only way to
+-- catch a widened qual here.
+SELECT is(
+  pg_temp.update_putt_rows('00000000-0000-0000-0000-00000000d045', false),
+  0,
+  'staffing coach CANNOT update their player putt_details'
+);
+
+SELECT is(
+  pg_temp.delete_putt_rows('00000000-0000-0000-0000-00000000d045'),
+  0,
+  'staffing coach CANNOT delete their player putt_details'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+-- Cross-org coach cannot write either.
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000d031", "role": "authenticated"}';
+
+SELECT throws_ok(
+  $$INSERT INTO public.approach_miss_details (shot_id, miss_direction)
+    VALUES ('00000000-0000-0000-0000-00000000d045', 'long')$$,
+  '42501',
+  NULL,
+  'cross-org coach CANNOT insert approach_miss_details'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+-- The owner can still remove it, so the coach's failed DELETE above was the
+-- policy and not a missing row.
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000d014", "role": "authenticated"}';
+
+SELECT is(
+  pg_temp.delete_putt_rows('00000000-0000-0000-0000-00000000d045'),
+  1,
+  'player CAN delete their own putt_details'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+-- ============================================================================
+-- Both helpers must stay SECURITY DEFINER with a pinned search_path. Without
+-- the pin, a caller-controlled search_path could shadow the tables they join.
 -- ============================================================================
 SELECT is(
   (SELECT p.prosecdef AND 'search_path=public, pg_temp' = ANY (p.proconfig)
@@ -256,6 +400,28 @@ SELECT is(
    WHERE n.nspname = 'public' AND p.proname = 'can_read_golf_shot_detail'),
   true,
   'can_read_golf_shot_detail is SECURITY DEFINER with a pinned search_path'
+);
+
+SELECT is(
+  (SELECT p.prosecdef AND 'search_path=public, pg_temp' = ANY (p.proconfig)
+   FROM pg_proc p
+   JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'owns_golf_shot'),
+  true,
+  'owns_golf_shot is SECURITY DEFINER with a pinned search_path'
+);
+
+-- Neither helper may be callable by anon: they are SECURITY DEFINER readers of
+-- the whole shot graph, so a direct anon call is an information leak even
+-- though the policies that use them are scoped TO authenticated.
+SELECT is(
+  (SELECT bool_or(has_function_privilege('anon', p.oid, 'EXECUTE'))
+   FROM pg_proc p
+   JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public'
+     AND p.proname IN ('can_read_golf_shot_detail', 'owns_golf_shot')),
+  false,
+  'neither shot-detail RLS helper is executable by anon'
 );
 
 SELECT * FROM finish();
