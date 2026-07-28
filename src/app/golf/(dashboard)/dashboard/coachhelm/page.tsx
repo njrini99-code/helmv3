@@ -12,7 +12,8 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { InlineNotice, Button, type FocusAreaCardData } from '@/components/fairway';
+import { InlineNotice, Button, FeatureUnavailable, type FocusAreaCardData } from '@/components/fairway';
+import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 import { PlayerCoachHelmHome } from '@/components/golf/coachhelm/home/PlayerCoachHelmHome';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -178,17 +179,35 @@ export default async function PlayerCoachHelmPage() {
   if (!player) {
     if (coach) {
       // A coach landing on the PLAYER CoachHelm dashboard has their own
-      // coach-facing Brief — send them straight there instead of an
-      // interstitial that just points at "the roster page". The interstitial
-      // stays as a fallback for the genuine players-only edge case: a coach
-      // record with no resolved organization yet (mid-onboarding), where the
-      // Brief route can't resolve a team either.
+      // coach-facing Brief — point them straight at it instead of an
+      // interstitial that just says "the roster page". The generic
+      // `NotPlayerState` stays for the genuine edge case: a coach record with
+      // no resolved organization yet (mid-onboarding), where the Brief route
+      // can't resolve a team either.
+      //
+      // This branch renders IN PLACE rather than `redirect()`-ing: a
+      // conditional `redirect()` out of an RSC page is what produced React
+      // #310 on this route (see stats/page.tsx for the full reasoning).
       if (coach.organization_id) {
-        redirect('/golf/dashboard/intelligence');
+        return (
+          <FeatureUnavailable
+            title="CoachHelm"
+            message="This CoachHelm dashboard is the player view. Your coach-facing Brief lives in CoachHelm AI."
+            actionHref={surfaceHref('brief')}
+            actionLabel={`Open ${surfaceName('brief')}`}
+          />
+        );
       }
       return <NotPlayerState />;
     }
-    return redirect('/golf/player');
+    return (
+      <FeatureUnavailable
+        title="CoachHelm"
+        message="No player profile is linked to this account yet. Finish player onboarding to start building your CoachHelm profile."
+        actionHref="/golf/player"
+        actionLabel="Finish onboarding"
+      />
+    );
   }
 
   // Fetch CoachHelm dashboard data, shot analytics, and the new evidence-backed
