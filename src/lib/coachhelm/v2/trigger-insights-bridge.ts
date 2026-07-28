@@ -54,23 +54,31 @@ import 'server-only';
  * in-process (same file, no export needed).
  * ========================================================================== */
 
-type TriggerPlayerInsightsFn = (
-  playerId: string,
-) => Promise<{
+/**
+ * Stable, non-message-derived classification produced by
+ * triggerPlayerInsightsAfterRoundImpl (src/app/golf/actions/insights.ts).
+ *
+ * EVERY consumer of that result must classify severity off this field rather
+ * than the user-facing message — the withAdminObserved-wrapped path via
+ * observeActionSoftFailure, postRoundTrigger, and (through the code
+ * postRoundTrigger hands back) the CoachHelm safety-net cron. Declared once
+ * here, and imported by the implementation, so a new code cannot be added on
+ * one side of the bridge and silently dropped on the other.
+ */
+export type TriggerPlayerInsightsCode =
+  | 'engine_no_recent_rounds'
+  | 'engine_session_expired'
+  | 'engine_no_team_membership';
+
+export interface TriggerPlayerInsightsResult {
   success: boolean;
   insights_created?: number;
   error?: string;
   partial?: boolean;
-  /**
-   * Stable, non-message-derived classification mirrored from
-   * triggerPlayerInsightsAfterRoundImpl (src/app/golf/actions/insights.ts) —
-   * BOTH consumers of this result (the withAdminObserved-wrapped path via
-   * observeActionSoftFailure, AND postRoundTrigger below in
-   * post-round-trigger.ts) must classify severity off this same field so
-   * they don't disagree on the same signal.
-   */
-  code?: 'engine_no_recent_rounds' | 'engine_session_expired';
-}>;
+  code?: TriggerPlayerInsightsCode;
+}
+
+type TriggerPlayerInsightsFn = (playerId: string) => Promise<TriggerPlayerInsightsResult>;
 
 let impl: TriggerPlayerInsightsFn | null = null;
 
@@ -92,13 +100,7 @@ export function __registerTriggerPlayerInsightsAfterRound(fn: TriggerPlayerInsig
  */
 export async function triggerPlayerInsightsAfterRound(
   playerId: string,
-): Promise<{
-  success: boolean;
-  insights_created?: number;
-  error?: string;
-  partial?: boolean;
-  code?: 'engine_no_recent_rounds' | 'engine_session_expired';
-}> {
+): Promise<TriggerPlayerInsightsResult> {
   if (!impl) {
     throw new Error(
       '[trigger-insights-bridge] triggerPlayerInsightsAfterRound not registered — ' +

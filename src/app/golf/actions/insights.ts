@@ -76,7 +76,10 @@ async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ al
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { __registerTriggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
+import {
+  __registerTriggerPlayerInsightsAfterRound,
+  type TriggerPlayerInsightsCode,
+} from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -3793,13 +3796,15 @@ async function triggerPlayerInsightsAfterRoundImpl(
   partial?: boolean;
   /**
    * Stable, non-message-derived classification for the observability layer
-   * (observeActionSoftFailure / severityForSoftFailure in
+   * (observeActionSoftFailure / classifySoftFailure in
    * src/lib/admin/observe-action-result.ts). Set on the `success: false`
    * outcomes below that are routine, expected states — not incidents — so
    * they're classified by this code instead of regex-matching the
-   * user-facing `error` string.
+   * user-facing `error` string. The union is declared on the bridge this
+   * function is registered against, so adding a code here cannot get out of
+   * step with what consumers on the other side of the bridge accept.
    */
-  code?: 'engine_no_recent_rounds' | 'engine_session_expired' | 'engine_no_team_membership';
+  code?: TriggerPlayerInsightsCode;
 }> {
   const startTime = Date.now();
   // P0-04: track whether any mandatory generator failed so the caller
