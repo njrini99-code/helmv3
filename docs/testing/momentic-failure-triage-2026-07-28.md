@@ -118,7 +118,37 @@ $ curl -s https://helmsportslabs.com/products | grep -c 'Page not found'
 1
 ```
 
-**Fix the tests, not the app.** Use one of these instead:
+**Fix the tests, not the app.** `scripts/fix-momentic-tests.mjs` does this
+mechanically across the whole suite — run it from the branch that carries
+`momentic/tests/`:
+
+```bash
+node scripts/fix-momentic-tests.mjs          # dry run, prints the plan
+node scripts/fix-momentic-tests.mjs --write  # apply
+```
+
+It replaces each unusable check with a browser-side read of the **rendered
+DOM**, which the flight payload cannot contaminate:
+
+```yaml
+- javascript:
+    environment: browser
+    code: |-
+      const heading = document.querySelector('h1');
+      const title = (heading?.textContent ?? '').trim();
+      if (title === '404' || /^page not found$/i.test(title)) {
+        throw new Error('Rendered the not-found page: ' + location.pathname);
+      }
+```
+
+Replacement is one-for-one rather than de-duplicated, because one of these
+checks can be the only step inside an `if.then` block and deleting it would
+leave `then:` empty. The script is idempotent and also applies fixes 2, 16 and
+the cookie half of 2 below. `checkPageDoesNotContain: "Application error"` is
+left alone — that string is a Next.js runtime message, not serialized component
+copy, and does **not** appear in a healthy page's HTML (verified: `grep -c` → 0).
+
+If you would rather hand-write the replacement, these also work:
 
 * Assert the status out of band, which is what these tests actually mean:
 
@@ -315,6 +345,23 @@ submit, or a validation message the agent did not resolve all look the same
 from the summary. Note that 15 reported "Unknown error" rather than an action
 failure, which points at the runner rather than the page.
 
+**Ruled out — label association.** The obvious suspect was that Fairway forms
+render unlabelled inputs: `FormField` documents a `control` render-prop that it
+does not implement (it renders `{children}` directly), which would leave Base
+UI's `Field.Label` with nothing to associate to and every field without an
+accessible name. That is not what happens. `src/components/fairway/forms/Input.tsx`
+renders Base UI's own `<Input>`, which consumes the surrounding `Field` context
+and wires the id/aria itself, and `TextArea` goes through `Field.Control`. The
+qualifier name field is properly labelled. Do not re-investigate this.
+
+What is left as the likely cause is scope: `/golf/dashboard/qualifiers/new`
+(`FairwayNewQualifier`) is not a flat form. It requires a name, a `min={today}`
+native date input, a per-round course assignment through the multi-stage
+`FairwayCoursePicker` (course shelf → tee), and player selection — which renders
+an `EmptyState` ("No active players on your roster") when the coach's team has
+no active `golf_team_members`. A single `act` covering all of that has many ways
+to stall.
+
 Per Momentic's own guidance on writing effective AI actions, split these into
 explicit `type`/`select`/`click` steps for the fields that are known and stable
 (title, dates) and keep `act` only for the genuinely dynamic part. That will
@@ -340,9 +387,11 @@ Same seed dependency as 10/11. Guard the extract with a precondition:
 
 ## Recommended order
 
-1. Purge every `checkPageDoesNotContain: "404"` / `"Page not found"` from the
-   suite — four failures, zero product risk, and the check is silently useless
-   everywhere else it appears.
+1. Run `node scripts/fix-momentic-tests.mjs --write` on the suite branch. That
+   clears four failures outright (the unusable `404` checks), unblocks the login
+   pair and the roster click, and removes the malformed cookie step — zero
+   product risk, and it also repairs the same useless check wherever else it
+   appears in the 54 currently-passing tests.
 2. Pin the login form selectors (`#golf-signin-email` / `#golf-signin-password`)
    and re-run 1 and 4. Two tests, and they gate the cold-login path.
 3. Re-run 6, 7, 9 and 14 against this branch to confirm the two app fixes.
