@@ -11,6 +11,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
 
@@ -156,7 +157,7 @@ async function getCoachAlerts(
 
     return { success: true, alerts };
   } catch (error) {
-    await logServerError(`getCoachAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getCoachAlerts failed: ${describeError(error)}`, {
       action: 'getCoachAlerts',
       featureArea: 'alerts',
       extra: { coachId },
@@ -253,7 +254,7 @@ async function getAlertCountsImpl(
 
     return { success: true, counts };
   } catch (error) {
-    await logServerError(`getAlertCounts failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getAlertCounts failed: ${describeError(error)}`, {
       action: 'getAlertCounts',
       featureArea: 'alerts',
       extra: { coachId },
@@ -378,7 +379,7 @@ async function generateAlertsImpl(
           success: true,
         };
       } catch (error) {
-        await logServerError(`generateAlerts player analysis failed: ${error instanceof Error ? error.message : String(error)}`, {
+        await logServerError(`generateAlerts player analysis failed: ${describeError(error)}`, {
           action: 'generateAlerts.analyzePlayer',
           featureArea: 'alerts',
           playerId: player.id,
@@ -527,7 +528,7 @@ async function generateAlertsImpl(
       generated: visibleDelta,
     };
   } catch (error) {
-    await logServerError(`generateAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`generateAlerts failed: ${describeError(error)}`, {
       action: 'generateAlerts',
       featureArea: 'alerts',
       extra: { coachId, teamId },

@@ -383,6 +383,9 @@ export function FairwayEditQualifier({
       </Form>
 
       <FairwayCoursePicker
+        // Coach-only route (qualifiers/[id]/edit redirects a non-coach), so the
+        // library-management affordances are safe to show here.
+        canManageLibrary
         open={pickerRound !== null}
         onOpenChange={(open) => {
           if (!open) setPickerRound(null);

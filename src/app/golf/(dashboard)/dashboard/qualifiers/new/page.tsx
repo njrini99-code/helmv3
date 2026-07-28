@@ -5,6 +5,7 @@ import { Metadata } from 'next';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/FairwayNewQualifier';
+import { FeatureUnavailable } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'Create Qualifier | Helm Sports',
@@ -16,7 +17,19 @@ export default async function NewQualifierPage() {
   if (!session) redirect('/golf/login');
 
   const { role, coach } = session;
-  if (role !== 'coach') redirect('/golf/dashboard/qualifiers');
+  // Renders in place rather than redirecting to /qualifiers — see
+  // stats/page.tsx for why a conditional `redirect()` out of an RSC page
+  // produced React #310 on this route.
+  if (role !== 'coach') {
+    return (
+      <FeatureUnavailable
+        title="Create Qualifier"
+        message="Only coaches create qualifiers. You can see the ones your coach has scheduled on the Qualifiers page."
+        actionHref="/golf/dashboard/qualifiers"
+        actionLabel="View Qualifiers"
+      />
+    );
+  }
 
   const supabase = await createClient();
 

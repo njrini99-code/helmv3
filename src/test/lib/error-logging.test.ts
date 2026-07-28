@@ -235,6 +235,22 @@ describe('logError → monitoring sink', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  /**
+   * CefSharp's embedded-browser bridge. instrumentation-client.ts already lists
+   * this exact pattern in Sentry's `ignoreErrors` because it originates outside
+   * our bundle, but the Bridge pipeline is a separate path and was persisting
+   * one `severity:error` row per occurrence.
+   */
+  it('does not forward the CefSharp "Object Not Found Matching Id" bridge error', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(
+      new Error('Object Not Found Matching Id:1, MethodName:update, ParamCount:4'),
+      { component: 'GlobalErrorHandler' },
+      'high',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('forwards non-stale errors to the monitoring endpoint', async () => {
     const { logError } = await import('@/lib/error-logging');
     logError(new Error('Database connection failed'), { component: 'test' }, 'high');
@@ -245,6 +261,236 @@ describe('logError → monitoring sink', () => {
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.message).toBe('Database connection failed');
     expect(body.severity).toBe('high');
+  });
+});
+
+/**
+ * Severity ceiling for self-recovering failures (capSeverityForSelfRecovering).
+ *
+ * A chunk-load failure is a tab holding asset URLs from a retired deployment.
+ * The one-shot reload recovers it and Sentry already declines to open an issue,
+ * so arriving in Helm Bridge at `severity:error` (log-error maps high → error)
+ * made a non-incident read as a live one. It must still ARRIVE — a spike means
+ * a bad deploy or a purged CDN — just as a warning.
+ */
+describe('logError → chunk-load severity ceiling', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  function bodyOf(call: unknown[]): { message: string; severity: string } {
+    return JSON.parse((call[1] as RequestInit).body as string);
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const chunkMessages = [
+    'Loading chunk 97094 failed.\n(error: https://helmv3.vercel.app/_next/static/chunks/97094-d1294ae3b5083b2e.js)',
+    'Loading CSS chunk 8351 failed.',
+    'ChunkLoadError: Loading chunk 42 failed.',
+    "Cannot read properties of undefined (reading 'call')",
+  ];
+
+  for (const message of chunkMessages) {
+    it(`caps 'high' to 'medium' for: ${message.slice(0, 40)}`, async () => {
+      const { logError } = await import('@/lib/error-logging');
+      logError(new Error(message), { component: 'GlobalErrorHandler' }, 'high');
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('medium');
+    });
+  }
+
+  it('still delivers the report — a spike of stale tabs is real signal', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Loading chunk 31172 failed.'), { component: 'RouteErrorBoundary' }, 'high');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves a genuine error at high', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Cannot read properties of undefined (reading \'id\')'), {}, 'high');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('high');
+  });
+
+  it('does not touch critical — the caller knows more than this filter', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Loading chunk 5 failed.'), {}, 'critical');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('critical');
+  });
+
+  it('does not raise a lower severity', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Loading chunk 5 failed.'), {}, 'low');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('low');
+  });
+});
+
+/**
+ * Transient network failures share the chunk-load ceiling.
+ *
+ * Production, 2026-07-23: `TypeError: Load failed` (iOS WebKit's wording for a
+ * fetch that never reached the server) from `useShotStateMachine` on
+ * /golf/dashboard/rounds/new, action "auto-save initial attempt",
+ * consecutiveFailures 0 — filed as `severity:error`. That call site sits on a
+ * recovery ladder (retries at 5s/15s/30s, then a circuit breaker with 60s
+ * probes), so the save it describes almost certainly succeeded seconds later.
+ * Same day, "A network error occurred." from Stripe.js on /products.
+ *
+ * The reports must still ARRIVE — a sustained outage produces one per retry and
+ * per probe, which is the shape worth alerting on — just not as errors.
+ */
+describe('logError → transient-network severity ceiling', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  function bodyOf(call: unknown[]): { message: string; severity: string } {
+    return JSON.parse((call[1] as RequestInit).body as string);
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  // One per engine — the message is the only signal these carry.
+  const networkMessages = [
+    'Load failed',
+    'Failed to fetch',
+    'NetworkError when attempting to fetch resource.',
+    'A network error occurred.',
+    'The network connection was lost.',
+    'net::ERR_INTERNET_DISCONNECTED',
+  ];
+
+  for (const message of networkMessages) {
+    it(`caps 'high' to 'medium' for: ${message}`, async () => {
+      const { logError } = await import('@/lib/error-logging');
+      logError(
+        new Error(message),
+        { component: 'useShotStateMachine', action: 'auto-save initial attempt' },
+        'high',
+      );
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('medium');
+    });
+  }
+
+  it('still delivers the report so a sustained outage stays visible', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Load failed'), { component: 'useShotStateMachine' }, 'high');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(bodyOf(fetchMock.mock.calls[0]!).message).toBe('Load failed');
+  });
+
+  /**
+   * An abort is OUR timeout budget expiring, not the user's connection
+   * dropping. Tiering it down would hide the signal that a budget needs
+   * revisiting — which is exactly the shot-drivers RLS bug.
+   */
+  it('leaves AbortError at high — an abort is our own budget, not the network', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('AbortError: This operation was aborted'), {}, 'high');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('high');
+  });
+
+  it('leaves a server-side failure at high — fetch resolves for any HTTP response', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Internal Server Error'), {}, 'high');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('high');
+  });
+});
+
+/**
+ * Automated clients are not users.
+ *
+ * Production, 2026-07-16: Stripe's `Stripebot/1.0` crawler hit the public
+ * /products page, Stripe.js could not reach its own API, and the unhandled
+ * rejection was filed as a `severity:error` incident against a page that was
+ * working for every human on it.
+ */
+describe('logError → automated clients', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  function stubUserAgent(userAgent: string, webdriver = false): void {
+    vi.stubGlobal('navigator', { userAgent, webdriver });
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const botAgents = [
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (Stripebot/1.0; +https://docs.stripe.com/stripebot-crawler)',
+    'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    'Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/120.0.0.0 Safari/537.36',
+    'facebookexternalhit/1.1',
+  ];
+
+  for (const ua of botAgents) {
+    it(`drops reports from: ${ua.slice(0, 45)}`, async () => {
+      stubUserAgent(ua);
+      const { logError } = await import('@/lib/error-logging');
+      logError(new Error('A network error occurred.'), { route: '/products' }, 'high');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  }
+
+  it('drops reports when navigator.webdriver is set despite a human-looking UA', async () => {
+    stubUserAgent(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+      true,
+    );
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Cannot read properties of undefined'), {}, 'high');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('still reports for a real browser', async () => {
+    stubUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HelmSportsLabsApp',
+    );
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Cannot read properties of undefined'), {}, 'high');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * "Mobile Safari" contains no automation token, and the iOS app UA above ends
+   * in `HelmSportsLabsApp`. Neither may be swept up by the bot regex — that
+   * would silently blind the Bridge to the platform most of the round-tracking
+   * traffic comes from.
+   */
+  it('does not mistake ordinary mobile browsers for crawlers', async () => {
+    for (const ua of [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    ]) {
+      vi.resetModules();
+      fetchMock = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', fetchMock);
+      stubUserAgent(ua);
+      const { logError } = await import('@/lib/error-logging');
+      logError(new Error('Cannot read properties of undefined'), {}, 'high');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    }
   });
 });
 

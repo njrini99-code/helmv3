@@ -21,7 +21,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
-import { verifyInsightAccess } from '@/lib/auth/verify-player-access';
+import { verifyInsightAccess, insightAccessDenialMessage } from '@/lib/auth/verify-player-access';
 import {
   coachHelmIntelligence,
   isCoachHelmEnabledForCoach,
@@ -48,7 +48,7 @@ import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { classifyDashboardFailure } from '@/lib/coachhelm/v2/dashboard-error-classifier';
-import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -76,8 +76,14 @@ async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ al
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { __registerTriggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
+import {
+  __registerTriggerPlayerInsightsAfterRound,
+  type TriggerPlayerInsightsCode,
+} from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import { describeError } from '@/lib/utils/describe-error';
+import { getStatsActionContext } from '@/lib/golf/stats-action-context';
+import { isMissingGolfPatternsTableError } from '@/lib/golf/stats-pattern-error';
 
 // ============================================================================
 // TYPES
@@ -254,7 +260,7 @@ async function getCoachPhilosophy(
     data = res?.data ?? null;
   } catch (philErr) {
     await logServerError(
-      `getCoachPhilosophy query failed (using defaults): ${philErr instanceof Error ? philErr.message : String(philErr)}`,
+      `getCoachPhilosophy query failed (using defaults): ${describeError(philErr)}`,
       { action: 'getCoachPhilosophy', featureArea: 'insights', extra: { coachId } },
       'warning',
     );
@@ -625,14 +631,17 @@ export async function getTopInsightsByStrokeImpact(
 async function verifyPlayerAccess(
   playerId: string
 ): Promise<{ authorized: boolean; userId?: string; coachId?: string; teamId?: string; error?: string }> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const shared = getStatsActionContext();
+  const matchingShared = shared?.requestedPlayerId === playerId ? shared : undefined;
+  const supabase = matchingShared?.supabase ?? (await createClient());
+  const user = matchingShared?.user ?? (await supabase.auth.getUser()).data.user;
   if (!user) {
     return { authorized: false, error: 'Not authenticated' };
   }
 
-  const access = await sharedVerifyPlayerAccess(playerId, user.id, supabase);
+  const access =
+    matchingShared?.authorization ??
+    (await sharedVerifyPlayerAccess(playerId, user.id, supabase));
   if (!access.allowed) {
     return { authorized: false, error: 'Not authorized to access this player' };
   }
@@ -651,18 +660,14 @@ async function verifyPlayerAccess(
 
   // Coach branch — look up coach id + team id. Prefer a team the coach staffs
   // that the player is an active member of (multi-team-safe).
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const coachId = access.coachId;
 
   let teamId: string | undefined;
-  if (coach?.id) {
+  if (coachId) {
     const { data: staffedTeam } = await supabase
       .from('golf_team_coach_staff')
       .select('team_id, golf_team_members!inner(player_id, status)')
-      .eq('coach_id', coach.id)
+      .eq('coach_id', coachId)
       .eq('golf_team_members.player_id', playerId)
       .eq('golf_team_members.status', 'active')
       .limit(1)
@@ -670,7 +675,7 @@ async function verifyPlayerAccess(
     teamId = staffedTeam?.team_id ?? undefined;
   }
 
-  return { authorized: true, userId: user.id, coachId: coach?.id, teamId };
+  return { authorized: true, userId: user.id, coachId, teamId };
 }
 
 /**
@@ -893,7 +898,7 @@ async function generateTeamInsightsImpl() {
             });
             return { player, analysis, success: true };
           } catch (err) {
-            await logServerError(`generateInsightsForTeam player analysis failed: ${err instanceof Error ? err.message : String(err)}`, {
+            await logServerError(`generateInsightsForTeam player analysis failed: ${describeError(err)}`, {
               action: 'generateInsightsForTeam.analyzePlayer',
               featureArea: 'insights',
               playerId: player.id,
@@ -1016,7 +1021,7 @@ async function generateTeamInsightsImpl() {
         }
       }
     } catch (err) {
-      await logServerError(`generateInsightsForTeam team pattern insights failed: ${err instanceof Error ? err.message : String(err)}`, {
+      await logServerError(`generateInsightsForTeam team pattern insights failed: ${describeError(err)}`, {
         action: 'generateInsightsForTeam.teamPatterns',
         featureArea: 'insights',
       });
@@ -1068,7 +1073,7 @@ async function generateTeamInsightsImpl() {
         }
         await Promise.all(inputs.map(({ input }) => upsertInsight(supabase, input)));
       } catch (insertError) {
-        await logServerError(`generateInsightsForTeam upsert failed: ${insertError instanceof Error ? insertError.message : String(insertError)}`, {
+        await logServerError(`generateInsightsForTeam upsert failed: ${describeError(insertError)}`, {
           action: 'generateInsightsForTeam.insert',
           featureArea: 'insights',
           extra: { insightCount: cleanInsights.length },
@@ -1107,7 +1112,7 @@ async function generateTeamInsightsImpl() {
       execution_time_ms: executionTime,
     };
   } catch (error) {
-    await logServerError(`generateInsightsForTeam failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`generateInsightsForTeam failed: ${describeError(error)}`, {
       action: 'generateInsightsForTeam',
       featureArea: 'insights',
     });
@@ -1183,7 +1188,7 @@ async function getActiveInsightsImpl(limit: number = 10) {
 
     return { success: true, insights: insights || [] };
   } catch (error) {
-    await logServerError(`getActiveInsights failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getActiveInsights failed: ${describeError(error)}`, {
       action: 'getActiveInsights',
       featureArea: 'insights',
     });
@@ -1219,7 +1224,7 @@ async function acknowledgeInsightImpl(insightId: string) {
     // coach row by user_id).
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // Write lifecycle_state='addressed' alongside the timestamp so the
@@ -1274,7 +1279,7 @@ async function acknowledgeInsightImpl(insightId: string) {
     revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
-    await logServerError(`acknowledgeInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`acknowledgeInsight failed: ${describeError(error)}`, {
       action: 'acknowledgeInsight',
       featureArea: 'insights',
       extra: { insightId },
@@ -1308,7 +1313,7 @@ async function dismissInsightImpl(insightId: string) {
     // Defensive server-side ownership check on top of RLS.
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1357,7 +1362,7 @@ async function dismissInsightImpl(insightId: string) {
     revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
-    await logServerError(`dismissInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`dismissInsight failed: ${describeError(error)}`, {
       action: 'dismissInsight',
       featureArea: 'insights',
       extra: { insightId },
@@ -1403,7 +1408,7 @@ async function reactivateInsightImpl(
 
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // Restore to a VISIBLE lifecycle state so the row returns to the feed; never
@@ -1444,7 +1449,7 @@ async function reactivateInsightImpl(
     revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
-    await logServerError(`reactivateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`reactivateInsight failed: ${describeError(error)}`, {
       action: 'reactivateInsight',
       featureArea: 'insights',
       extra: { insightId },
@@ -1481,7 +1486,7 @@ async function resolveInsightImpl(insightId: string) {
     // Defensive server-side ownership check on top of RLS.
     const access = await verifyInsightAccess(insightId, user.id, supabase);
     if (!access.allowed) {
-      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1529,7 +1534,7 @@ async function resolveInsightImpl(insightId: string) {
     revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
-    await logServerError(`resolveInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`resolveInsight failed: ${describeError(error)}`, {
       action: 'resolveInsight',
       featureArea: 'insights',
       extra: { insightId },
@@ -1618,7 +1623,7 @@ async function rateInsightImpl(
       });
     } catch (err) {
       // Non-critical - don't fail the operation
-      await logServerError(`rateInsight interaction recording failed: ${err instanceof Error ? err.message : String(err)}`, {
+      await logServerError(`rateInsight interaction recording failed: ${describeError(err)}`, {
         action: 'rateInsight.recordInteraction',
         featureArea: 'insights',
         extra: { insightId },
@@ -1627,7 +1632,7 @@ async function rateInsightImpl(
 
     return { success: true };
   } catch (error) {
-    await logServerError(`rateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`rateInsight failed: ${describeError(error)}`, {
       action: 'rateInsight',
       featureArea: 'insights',
       extra: { insightId },
@@ -1693,7 +1698,7 @@ async function getPlayerFocusAreasImpl(playerId: string) {
 
     return { success: true, focus_areas: focusAreas || [] };
   } catch (error) {
-    await logServerError(`getPlayerFocusAreas failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPlayerFocusAreas failed: ${describeError(error)}`, {
       action: 'getPlayerFocusAreas',
       featureArea: 'insights',
       playerId,
@@ -1765,7 +1770,7 @@ async function analyzePlayerImpl(
 
     return { success: true, analysis };
   } catch (error) {
-    await logServerError(`analyzePlayer failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`analyzePlayer failed: ${describeError(error)}`, {
       action: 'analyzePlayer',
       featureArea: 'insights',
       playerId,
@@ -1844,7 +1849,7 @@ async function generatePlayerInsightImpl(playerId: string): Promise<{
       prediction: analysis.predictions[0],
     };
   } catch (error) {
-    await logServerError(`generatePlayerInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`generatePlayerInsight failed: ${describeError(error)}`, {
       action: 'generatePlayerInsight',
       featureArea: 'insights',
       playerId,
@@ -2186,7 +2191,7 @@ async function generateTeamInsightImpl(): Promise<{
       status = await isCoachHelmEnabledForCoach(coach.id);
     } catch (gateErr) {
       await logServerError(
-        `generateTeamInsight.isCoachHelmEnabledForCoach failed: ${gateErr instanceof Error ? gateErr.message : String(gateErr)}`,
+        `generateTeamInsight.isCoachHelmEnabledForCoach failed: ${describeError(gateErr)}`,
         {
           action: 'generateTeamInsight.engineGateCheck',
           featureArea: 'insights',
@@ -2273,7 +2278,7 @@ async function generateTeamInsightImpl(): Promise<{
 
             return { player, playerName, analysis, success: true };
           } catch (playerError) {
-            await logServerError(`generateTeamInsight player analysis failed: ${playerError instanceof Error ? playerError.message : String(playerError)}`, {
+            await logServerError(`generateTeamInsight player analysis failed: ${describeError(playerError)}`, {
               action: 'generateTeamInsight.analyzePlayer',
               featureArea: 'insights',
               playerId: player.id,
@@ -2356,7 +2361,7 @@ async function generateTeamInsightImpl(): Promise<{
       }
     } catch (statErr) {
       await logServerError(
-        `generateTeamInsight.buildStatInsightsForTeam failed: ${statErr instanceof Error ? statErr.message : String(statErr)}`,
+        `generateTeamInsight.buildStatInsightsForTeam failed: ${describeError(statErr)}`,
         { action: 'generateTeamInsight.buildStatInsightsForTeam', featureArea: 'insights' },
       );
     }
@@ -2373,7 +2378,7 @@ async function generateTeamInsightImpl(): Promise<{
       }
     } catch (patternsErr) {
       await logServerError(
-        `generateTeamInsight.generateTeamPatterns failed: ${patternsErr instanceof Error ? patternsErr.message : String(patternsErr)}`,
+        `generateTeamInsight.generateTeamPatterns failed: ${describeError(patternsErr)}`,
         { action: 'generateTeamInsight.generateTeamPatterns', featureArea: 'insights' },
       );
     }
@@ -2396,7 +2401,7 @@ async function generateTeamInsightImpl(): Promise<{
       }
     } catch (forecastsErr) {
       await logServerError(
-        `generateTeamInsight.generateTeamForecasts failed: ${forecastsErr instanceof Error ? forecastsErr.message : String(forecastsErr)}`,
+        `generateTeamInsight.generateTeamForecasts failed: ${describeError(forecastsErr)}`,
         { action: 'generateTeamInsight.generateTeamForecasts', featureArea: 'insights' },
       );
     }
@@ -2414,7 +2419,7 @@ async function generateTeamInsightImpl(): Promise<{
       }
     } catch (alertsErr) {
       await logServerError(
-        `generateTeamInsight.generateAlerts failed: ${alertsErr instanceof Error ? alertsErr.message : String(alertsErr)}`,
+        `generateTeamInsight.generateAlerts failed: ${describeError(alertsErr)}`,
         { action: 'generateTeamInsight.generateAlerts', featureArea: 'insights' },
       );
     }
@@ -2438,7 +2443,7 @@ async function generateTeamInsightImpl(): Promise<{
       }
     } catch (logExc) {
       await logServerError(
-        `generateTeamInsight.logGeneration failed: ${logExc instanceof Error ? logExc.message : String(logExc)}`,
+        `generateTeamInsight.logGeneration failed: ${describeError(logExc)}`,
         { action: 'generateTeamInsight.logGeneration', featureArea: 'insights' },
       );
     }
@@ -2450,7 +2455,7 @@ async function generateTeamInsightImpl(): Promise<{
       insightGroups = groupAndDeduplicateInsights(allInsights, players.length);
     } catch (groupErr) {
       await logServerError(
-        `generateTeamInsight.groupAndDeduplicateInsights failed: ${groupErr instanceof Error ? groupErr.message : String(groupErr)}`,
+        `generateTeamInsight.groupAndDeduplicateInsights failed: ${describeError(groupErr)}`,
         { action: 'generateTeamInsight.groupAndDeduplicateInsights', featureArea: 'insights' },
       );
       insightGroups = [];
@@ -2557,7 +2562,7 @@ async function generatePracticeRecommendationsImpl(playerId: string): Promise<{
       focusAreas,
     };
   } catch (error) {
-    await logServerError(`generatePracticeRecommendations failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`generatePracticeRecommendations failed: ${describeError(error)}`, {
       action: 'generatePracticeRecommendations',
       featureArea: 'insights',
     });
@@ -2633,7 +2638,7 @@ async function generateTournamentPrepImpl(playerId: string): Promise<{
       recommendations: analysis.recommendations,
     };
   } catch (error) {
-    await logServerError(`generateTournamentPrep failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`generateTournamentPrep failed: ${describeError(error)}`, {
       action: 'generateTournamentPrep',
       featureArea: 'insights',
     });
@@ -2660,12 +2665,35 @@ export async function generateTournamentPrep(playerId: string): Promise<{
 // GET PLAYER PATTERNS
 // ============================================================================
 
+async function observePlayerPatternsFailure(error: unknown, playerId: string): Promise<void> {
+  const record =
+    error && typeof error === 'object'
+      ? (error as { code?: unknown; details?: unknown; hint?: unknown; status?: unknown })
+      : null;
+  const exception = error instanceof Error ? error : new Error(describeError(error));
+  await logServerException(exception, {
+    action: 'getPlayerPatterns',
+    featureArea: 'insights',
+    feature: 'coachhelm_ai_engine',
+    sport: 'golf',
+    playerId,
+    errorCode: typeof record?.code === 'string' ? record.code : undefined,
+    statusCode: typeof record?.status === 'number' ? record.status : undefined,
+    metadata: {
+      ...(typeof record?.details === 'string' ? { pg_details: record.details } : {}),
+      ...(typeof record?.hint === 'string' ? { pg_hint: record.hint } : {}),
+    },
+  });
+}
+
 async function getPlayerPatternsImpl(playerId: string): Promise<{
   success: boolean;
   patterns?: MinedPattern[];
   error?: string;
 }> {
-  const supabase = await createClient();
+  const shared = getStatsActionContext();
+  const supabase =
+    shared?.requestedPlayerId === playerId ? shared.supabase : await createClient();
 
   try {
     // Verify user has access to this player
@@ -2691,9 +2719,12 @@ async function getPlayerPatternsImpl(playerId: string): Promise<{
       .order('stroke_impact', { ascending: false })
       .limit(10);
 
-    if (error) {
-      // Table might not exist yet
+    if (isMissingGolfPatternsTableError(error)) {
       return { success: true, patterns: [] };
+    }
+    if (error) {
+      await observePlayerPatternsFailure(error, playerId);
+      return { success: false, error: 'Failed to load player patterns' };
     }
 
     // Transform to MinedPattern type
@@ -2721,18 +2752,21 @@ async function getPlayerPatternsImpl(playerId: string): Promise<{
 
     return { success: true, patterns: transformedPatterns };
   } catch (error) {
-    await logServerError(`getPlayerPatterns failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'getPlayerPatterns',
-      featureArea: 'insights',
-      playerId,
-    });
+    await observePlayerPatternsFailure(error, playerId);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
 const observedGetPlayerPatterns = withAdminObserved(
   'getPlayerPatterns',
-  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  {
+    sport: 'golf',
+    feature: 'coachhelm_ai_engine',
+    // The implementation records real query/transform failures once with
+    // PostgREST details. Keep the wrapper for thrown gaps and the global
+    // server-action coverage contract, but do not duplicate returned failures.
+    observeSoftFailures: false,
+  },
   getPlayerPatternsImpl,
 );
 export async function getPlayerPatterns(playerId: string): Promise<{
@@ -2784,7 +2818,7 @@ async function generateRoundReviewImpl(
 
     return { success: true, review };
   } catch (error) {
-    await logServerError(`generateRoundReview (insights) failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`generateRoundReview (insights) failed: ${describeError(error)}`, {
       action: 'generateRoundReview',
       featureArea: 'insights',
     });
@@ -2831,7 +2865,7 @@ async function recordInteractionImpl(
 
     return { success: true };
   } catch (error) {
-    await logServerError(`recordCoachHelmInteraction failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`recordCoachHelmInteraction failed: ${describeError(error)}`, {
       action: 'recordCoachHelmInteraction',
       featureArea: 'insights',
     });
@@ -2877,7 +2911,7 @@ async function getCoachHelmStatusImpl(
       disabledReason: status.disabledReason,
     };
   } catch (error) {
-    await logServerError(`getCoachHelmStatus failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getCoachHelmStatus failed: ${describeError(error)}`, {
       action: 'getCoachHelmStatus',
       featureArea: 'insights',
     });
@@ -3063,7 +3097,7 @@ async function getPlayerCoachHelmDashboardImpl(
 
     return { success: true, data: dashboardData };
   } catch (error) {
-    await logServerError(`getPlayerCoachHelmDashboard failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`getPlayerCoachHelmDashboard failed: ${describeError(error)}`, {
       action: 'getPlayerCoachHelmDashboard',
       featureArea: 'insights',
     });
@@ -3638,7 +3672,7 @@ async function acknowledgeComposedInsightImpl(
       });
     } catch (err) {
       // Non-critical, don't fail the operation
-      await logServerError(`acknowledgeComposedInsight interaction recording failed: ${err instanceof Error ? err.message : String(err)}`, {
+      await logServerError(`acknowledgeComposedInsight interaction recording failed: ${describeError(err)}`, {
         action: 'acknowledgeComposedInsight.recordInteraction',
         featureArea: 'insights',
       }, 'warning');
@@ -3647,7 +3681,7 @@ async function acknowledgeComposedInsightImpl(
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    await logServerError(`acknowledgeComposedInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`acknowledgeComposedInsight failed: ${describeError(error)}`, {
       action: 'acknowledgeComposedInsight',
       featureArea: 'insights',
     });
@@ -3744,7 +3778,7 @@ async function dismissComposedInsightImpl(
       });
     } catch (err) {
       // Non-critical, don't fail the operation
-      await logServerError(`dismissComposedInsight interaction recording failed: ${err instanceof Error ? err.message : String(err)}`, {
+      await logServerError(`dismissComposedInsight interaction recording failed: ${describeError(err)}`, {
         action: 'dismissComposedInsight.recordInteraction',
         featureArea: 'insights',
       }, 'warning');
@@ -3753,7 +3787,7 @@ async function dismissComposedInsightImpl(
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    await logServerError(`dismissComposedInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`dismissComposedInsight failed: ${describeError(error)}`, {
       action: 'dismissComposedInsight',
       featureArea: 'insights',
     });
@@ -3792,13 +3826,15 @@ async function triggerPlayerInsightsAfterRoundImpl(
   partial?: boolean;
   /**
    * Stable, non-message-derived classification for the observability layer
-   * (observeActionSoftFailure / severityForSoftFailure in
-   * src/lib/admin/observe-action-result.ts). Set on the two `success: false`
+   * (observeActionSoftFailure / classifySoftFailure in
+   * src/lib/admin/observe-action-result.ts). Set on the `success: false`
    * outcomes below that are routine, expected states — not incidents — so
    * they're classified by this code instead of regex-matching the
-   * user-facing `error` string.
+   * user-facing `error` string. The union is declared on the bridge this
+   * function is registered against, so adding a code here cannot get out of
+   * step with what consumers on the other side of the bridge accept.
    */
-  code?: 'engine_no_recent_rounds' | 'engine_session_expired';
+  code?: TriggerPlayerInsightsCode;
 }> {
   const startTime = Date.now();
   // P0-04: track whether any mandatory generator failed so the caller
@@ -3818,7 +3854,21 @@ async function triggerPlayerInsightsAfterRoundImpl(
       .single();
 
     if (!membership?.team_id) {
-      return { success: false, error: 'No active team membership for player' };
+      // Not a defect. CoachHelm is a coach-owned layer: it needs a roster to
+      // resolve the team's organisation, its coach, and that coach's
+      // philosophy. A player who has never joined a team — or who left / was
+      // removed, which hard-deletes the golf_team_members row (see
+      // removePlayerFromTeam in src/app/golf/actions/roster.ts and
+      // handleLeaveTeam in JoinTeamSection.tsx) — has nothing to resolve
+      // against, so there is no work to retry and nothing for an operator to
+      // repair in code. Coded so every consumer classifies it identically
+      // (see the `code` field's doc comment above); without it this landed in
+      // the Errors tab at 'error' from three separate call sites.
+      return {
+        success: false,
+        error: 'No active team membership for player',
+        code: 'engine_no_team_membership',
+      };
     }
 
     const teamId = membership.team_id;
@@ -4214,7 +4264,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
             });
           }
         } catch (pushErr) {
-          await logServerError(`[Push] coachhelm_insight notification failed: ${pushErr instanceof Error ? pushErr.message : String(pushErr)}`, { action: 'insights.triggerPlayerInsightsAfterRound' });
+          await logServerError(`[Push] coachhelm_insight notification failed: ${describeError(pushErr)}`, { action: 'insights.triggerPlayerInsightsAfterRound' });
         }
       })();
     }
@@ -4237,7 +4287,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
     return { success: true, insights_created: newInsights.length, partial: hadGeneratorFailures };
   } catch (error) {
     await logServerError(
-      `CoachHelm post-round trigger failed: ${error instanceof Error ? error.message : String(error)}`,
+      `CoachHelm post-round trigger failed: ${describeError(error)}`,
       {
         action: 'triggerPlayerInsightsAfterRound',
         extra: {

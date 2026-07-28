@@ -558,7 +558,48 @@ export async function updateSession(request: NextRequest) {
   const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||
                            pathname.startsWith('/golf/dashboard') ||
                            pathname.startsWith('/lifting/dashboard');
-  const isProtectedRoute = isDashboardRoute;
+
+  /**
+   * The SPORT-SCOPED admin sub-apps. `evaluateAdminGate` above covers only
+   * `/admin` and `/admin/*` (isAdminPath), so before this, an unauthenticated
+   * request to `/golf/admin/crm` was SERVED — 200, no bounce — leaving the
+   * route's own layout as the only gate. One expired session on 2026-07-20
+   * therefore produced ten incident rows across four classes in four seconds:
+   *
+   *   23:58:03  error    client        An error occurred in the Server
+   *                                    Components render …            (n=2)
+   *   23:58:06  error    server_action Unauthorized                    (n=4)
+   *   23:58:06  warning  rls_denial    select on crm_coaches
+   *   23:58:06  error    client        unhandledrejection, same render error
+   *
+   * The render error is the layout's own `redirect('/golf/login')`: reproduced
+   * locally, `src/app/golf/admin/loading.tsx` opens a Suspense boundary, so the
+   * shell has already flushed by the time the layout's async auth check
+   * resolves. An HTTP redirect is impossible after the flush, so React reports
+   * "Switched to client rendering because the server rendering errored" — and
+   * our error boundary files that as an incident. The four `Unauthorized`s and
+   * the RLS denial are the client page (it is `'use client'`) then calling
+   * server actions and Supabase with no session.
+   *
+   * Bouncing here fixes all four classes at once, because none of that code
+   * runs. This is deliberately the `!user` check ONLY — NOT `evaluateAdminGate`,
+   * whose SUPER_ADMIN_USER_IDS allowlist is a stricter policy than these
+   * sub-apps use (`golf/admin` authorizes on `users.role === 'admin'`), so
+   * routing them through it would lock out legitimate admins. Per-page
+   * `requireAdmin`/`requireSuperAdmin` and RLS remain the real gates; this only
+   * stops an ANONYMOUS request reaching a render that cannot succeed.
+   */
+  const isSportAdminRoute =
+    pathname.startsWith('/golf/admin') || pathname.startsWith('/baseball/admin');
+
+  const baseballPlayerSegment = pathname.split('/').filter(Boolean)[2];
+  const isPrivateBaseballPlayerRoute =
+    pathname.startsWith('/baseball/player/') &&
+    baseballPlayerSegment !== undefined &&
+    PRIVATE_BASEBALL_PLAYER_APP_SEGMENTS.has(baseballPlayerSegment);
+
+  const isProtectedRoute =
+    isDashboardRoute || isSportAdminRoute || isPrivateBaseballPlayerRoute;
 
   // ── Idle-timeout enforcement (work-session re-auth) ───────────────────────
   // A user who has been away longer than the idle window must sign in again,

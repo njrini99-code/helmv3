@@ -11,6 +11,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 const ROSTER_PATH = '/baseball/dashboard/roster';
 
@@ -121,7 +122,7 @@ export async function saveLineup(params: SaveLineupParams) {
     return await saveLineupAction(params);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_lineups.saveLineup', featureArea: 'baseball-lineups' },
     );
     return mapLineupActionError(error);
@@ -151,31 +152,35 @@ const updateLineupAction = withBaseballAction(
     const validationError = validateLineupPositions(positions);
     if (validationError) return { success: false, error: validationError };
 
-    const { error: updateError } = await supabase
-      .from('baseball_team_lineups')
-      .update({ name })
-      .eq('id', lineupId);
-
-    if (updateError) throw updateError;
-
-    const { error: deleteError } = await supabase
-      .from('baseball_lineup_positions')
-      .delete()
-      .eq('lineup_id', lineupId);
-
-    if (deleteError) throw deleteError;
-
     const positionsData = positions.map((pos) => ({
-      lineup_id: lineupId,
       batting_order: pos.order,
       player_id: pos.playerId,
     }));
 
-    const { error: insertError } = await supabase
-      .from('baseball_lineup_positions')
-      .insert(positionsData);
+    // The database RPC row-locks the lineup and replaces its name + positions
+    // in one transaction. Keeping these as separate DELETE/INSERT requests
+    // loses the existing lineup whenever the second request fails.
+    const { data: replacement, error: replacementError } = await supabase.rpc(
+      'baseball_replace_lineup_positions',
+      {
+        p_lineup_id: lineupId,
+        p_name: name,
+        p_positions: positionsData,
+      },
+    );
 
-    if (insertError) throw insertError;
+    if (replacementError) throw replacementError;
+
+    const outcome = replacement as { ok?: boolean; reason?: string } | null;
+    if (!outcome?.ok) {
+      if (outcome?.reason === 'not_found') {
+        return { success: false, error: 'Lineup not found' };
+      }
+      if (outcome?.reason === 'forbidden') {
+        return { success: false, error: 'You do not have permission to manage lineups' };
+      }
+      throw new Error('Could not replace lineup positions');
+    }
 
     revalidatePath(ROSTER_PATH);
     return { success: true as const };
@@ -193,7 +198,7 @@ export async function updateLineup(
     return await updateLineupAction(lineupId, { name, positions });
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_lineups.updateLineup', featureArea: 'baseball-lineups' },
     );
     return mapLineupActionError(error);
@@ -236,7 +241,7 @@ export async function deleteLineup(lineupId: string) {
     return await deleteLineupAction(lineupId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'baseball_lineups.deleteLineup', featureArea: 'baseball-lineups' },
     );
     return mapLineupActionError(error);

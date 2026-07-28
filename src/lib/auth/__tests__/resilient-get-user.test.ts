@@ -51,11 +51,12 @@ function authClient(overrides: {
 }
 
 describe('isTransientAuthError', () => {
-  it('classifies 429, 5xx, and retryable fetch errors as transient', () => {
+  it('classifies 429, 5xx, retryable fetch errors, and deadline timeouts as transient', () => {
     expect(isTransientAuthError({ status: 429 })).toBe(true);
     expect(isTransientAuthError({ status: 500 })).toBe(true);
     expect(isTransientAuthError({ status: 503 })).toBe(true);
     expect(isTransientAuthError({ name: 'AuthRetryableFetchError' })).toBe(true);
+    expect(isTransientAuthError({ name: 'TimeoutError' })).toBe(true);
   });
 
   it('classifies real auth rejections and absence of error as NOT transient', () => {
@@ -135,6 +136,34 @@ describe('getUserResilient', () => {
     expect(result).toEqual({ user: USER, degraded: true });
     expect(getUser).toHaveBeenCalledTimes(1);
     expect(getSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a thrown middleware deadline timeout as transient and falls back locally', async () => {
+    const timeout = Object.assign(new Error('The operation timed out'), { name: 'TimeoutError' });
+    const getUser = vi.fn().mockRejectedValue(timeout);
+    const getSession = vi
+      .fn()
+      .mockResolvedValue({ data: { session: { user: USER, access_token: plausibleJwt() } } });
+    const client = authClient({ getUser, getSession });
+
+    const result = await getUserResilient(client, { retryTransient: false });
+
+    expect(result).toEqual({ user: USER, degraded: true });
+    expect(getUser).toHaveBeenCalledTimes(1);
+    expect(getSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a thrown stale refresh token as a normal logged-out session', async () => {
+    const getUser = vi
+      .fn()
+      .mockRejectedValue(new Error('Invalid Refresh Token: Refresh Token Not Found'));
+    const client = authClient({ getUser });
+
+    const result = await getUserResilient(client, { retryTransient: false });
+
+    expect(result).toEqual({ user: null, degraded: false });
+    expect(getUser).toHaveBeenCalledTimes(1);
+    expect(client.auth.getSession).not.toHaveBeenCalled();
   });
 
   it.each([

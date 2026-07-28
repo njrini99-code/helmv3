@@ -11,6 +11,7 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface PhilosophySettings {
   coachId: string;
@@ -62,7 +63,7 @@ export async function savePhilosophySettings(
     return await savePhilosophySettingsAction(settings);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'philosophy.savePhilosophySettings', featureArea: 'baseball-philosophy' },
     );
     return mapPhilosophyActionError(error);
@@ -104,7 +105,7 @@ const savePhilosophySettingsAction = withBaseballAction(
       });
 
     if (upsertError) {
-      await logServerError(`Failed to save philosophy: ${upsertError instanceof Error ? upsertError.message : String(upsertError)}`, { action: 'philosophy.savePhilosophySettings' });
+      await logServerError(`Failed to save philosophy: ${describeError(upsertError)}`, { action: 'philosophy.savePhilosophySettings' });
       return { success: false, error: 'Failed to save settings' };
     }
 

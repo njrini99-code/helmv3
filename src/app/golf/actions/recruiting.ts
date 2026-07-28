@@ -18,6 +18,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 export type RecruitStatus = 'recruiting' | 'watched' | 'offered' | 'committed';
 
@@ -150,7 +151,7 @@ async function getRecruitsImpl(): Promise<ActionResult<Recruit[]>> {
 
     return { success: true, data: (data ?? []) as Recruit[] };
   } catch (err) {
-    await logServerError(`getRecruits error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`getRecruits error: ${describeError(err)}`, {
       action: 'recruiting.getRecruits',
       featureArea: 'recruiting',
     });
@@ -211,7 +212,7 @@ async function createRecruitImpl(input: RecruitInput): Promise<ActionResult<{ id
     revalidatePath('/golf/dashboard/recruiting');
     return { success: true, data: { id: data.id } };
   } catch (err) {
-    await logServerError(`createRecruit error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`createRecruit error: ${describeError(err)}`, {
       action: 'recruiting.createRecruit',
       featureArea: 'recruiting',
     });
@@ -272,7 +273,7 @@ async function updateRecruitImpl(
     revalidatePath('/golf/dashboard/recruiting');
     return { success: true };
   } catch (err) {
-    await logServerError(`updateRecruit error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`updateRecruit error: ${describeError(err)}`, {
       action: 'recruiting.updateRecruit',
       featureArea: 'recruiting',
       extra: { id },
@@ -342,7 +343,7 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
     revalidatePath('/golf/dashboard/recruiting');
     return { success: true };
   } catch (err) {
-    await logServerError(`deleteRecruit error: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`deleteRecruit error: ${describeError(err)}`, {
       action: 'recruiting.deleteRecruit',
       featureArea: 'recruiting',
       extra: { id },

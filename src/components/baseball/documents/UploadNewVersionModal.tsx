@@ -158,7 +158,7 @@ export function UploadNewVersionModal({
               type="file"
               onChange={handleFileSelect}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,video/mp4,video/webm,video/quicktime"
+              accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif,image/svg+xml,text/plain,text/markdown,text/csv,video/mp4,video/webm,video/quicktime,application/zip"
             />
 
             {selectedFile ? (

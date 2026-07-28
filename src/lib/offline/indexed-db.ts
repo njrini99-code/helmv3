@@ -71,12 +71,31 @@ const DATA_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 let dbInstance: IDBDatabase | null = null;
 
+function isClosingConnectionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.name === 'InvalidStateError'
+    || /(?:connection|database).*(?:closed|closing)|(?:closed|closing).*(?:connection|database)/i.test(error.message);
+}
+
+function resetDatabase(expected?: IDBDatabase): void {
+  if (expected && dbInstance !== expected) return;
+  dbInstance = null;
+}
+
 /**
  * Open or create the IndexedDB database
  */
 export async function openDatabase(): Promise<IDBDatabase> {
   if (dbInstance) {
-    return dbInstance;
+    try {
+      // `objectStoreNames` is still readable after close(); transaction
+      // creation is the reliable synchronous liveness probe.
+      dbInstance.transaction(SYNC_QUEUE_STORE, 'readonly');
+      return dbInstance;
+    } catch (error) {
+      if (!isClosingConnectionError(error)) throw error;
+      resetDatabase(dbInstance);
+    }
   }
 
   return new Promise((resolve, reject) => {
@@ -92,8 +111,13 @@ export async function openDatabase(): Promise<IDBDatabase> {
     };
 
     request.onsuccess = () => {
-      dbInstance = request.result;
-      resolve(dbInstance);
+      const opened = request.result;
+      dbInstance = opened;
+      opened.onversionchange = () => {
+        opened.close();
+        resetDatabase(opened);
+      };
+      resolve(opened);
     };
 
     request.onupgradeneeded = (event) => {
@@ -125,6 +149,22 @@ export async function openDatabase(): Promise<IDBDatabase> {
       }
     };
   });
+}
+
+async function openTransaction(
+  stores: string | string[],
+  mode: IDBTransactionMode,
+): Promise<IDBTransaction> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const db = await openDatabase();
+    try {
+      return db.transaction(stores, mode);
+    } catch (error) {
+      if (attempt > 0 || !isClosingConnectionError(error)) throw error;
+      resetDatabase(db);
+    }
+  }
+  throw new Error('Failed to open IndexedDB transaction');
 }
 
 
@@ -386,10 +426,9 @@ export async function getPendingRounds(): Promise<OfflineRound[]> {
  * pending badge and drained by the global reconnect sync.
  */
 export async function getPendingRoundCount(): Promise<number> {
-  const db = await openDatabase();
+  const transaction = await openTransaction(ROUNDS_STORE, 'readonly');
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
     const store = transaction.objectStore(ROUNDS_STORE);
     const index = store.index('syncStatus');
     const request = index.count('pending');

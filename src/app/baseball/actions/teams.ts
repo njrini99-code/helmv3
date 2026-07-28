@@ -15,6 +15,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { requireBaseballCapability } from '@/lib/baseball/capabilities';
 import type { Database } from '@/lib/types/database';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Extracts a human-readable message from an unknown thrown/returned error.
@@ -320,7 +321,7 @@ async function joinTeamImpl(playerId: string, teamId: string) {
 
   if (teamError || !team) {
     await logServerError(
-      `Error resolving team for join policy check: ${teamError instanceof Error ? teamError.message : String(teamError)}`,
+      `Error resolving team for join policy check: ${describeError(teamError)}`,
       { action: 'teams.joinTeam' },
     );
     return {
@@ -377,7 +378,7 @@ async function joinTeamImpl(playerId: string, teamId: string) {
     });
 
   if (error) {
-    await logServerError(`Error joining team: ${error instanceof Error ? error.message : String(error)}`, { action: 'teams.joinTeam' });
+    await logServerError(`Error joining team: ${describeError(error)}`, { action: 'teams.joinTeam' });
     return {
       success: false,
       error: 'Failed to join team. Please try again.',
@@ -707,7 +708,7 @@ async function persistUniqueJoinCode(
     }
 
     await logServerError(
-      `Failed to persist join code: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+      `Failed to persist join code: ${describeError(updateError)}`,
       { action: 'teams.persistUniqueJoinCode' },
     );
     return { error: 'Failed to generate invite code. Please try again.' };
@@ -1030,7 +1031,7 @@ export const createTeam = withBaseballAction(
           continue;
         }
         await logServerError(
-          `Failed to create team: ${teamError instanceof Error ? teamError.message : String(teamError)}`,
+          `Failed to create team: ${describeError(teamError)}`,
           { action: 'teams.createTeam' },
         );
         return { success: false, error: 'Failed to create team. Please try again.' };
@@ -1059,7 +1060,7 @@ export const createTeam = withBaseballAction(
 
       if (staffError) {
         await logServerError(
-          `Failed to create staff row for new team ${team.id}: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+          `Failed to create staff row for new team ${team.id}: ${describeError(staffError)}`,
           { action: 'teams.createTeam' },
         );
         // Compensating delete: the team row is brand new and has no other
@@ -1128,7 +1129,7 @@ export const updateTeam = withBaseballAction(
 
     if (error || !team) {
       await logServerError(
-        `Failed to update team ${validated.team_id}: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to update team ${validated.team_id}: ${describeError(error)}`,
         { action: 'teams.updateTeam' },
       );
       return { success: false, error: 'Failed to update team. Please try again.' };
@@ -1181,7 +1182,7 @@ export const deleteTeam = withBaseballAction(
 
     if (staffError) {
       await logServerError(
-        `Failed to verify primary-coach status before delete: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+        `Failed to verify primary-coach status before delete: ${describeError(staffError)}`,
         { action: 'teams.deleteTeam' },
       );
       return { success: false, error: 'Unable to verify permissions right now. Please try again.' };
@@ -1199,7 +1200,7 @@ export const deleteTeam = withBaseballAction(
 
     if (membersError) {
       await logServerError(
-        `Failed to check roster before delete: ${membersError instanceof Error ? membersError.message : String(membersError)}`,
+        `Failed to check roster before delete: ${describeError(membersError)}`,
         { action: 'teams.deleteTeam' },
       );
       return { success: false, error: 'Unable to verify the roster right now. Please try again.' };
@@ -1262,7 +1263,7 @@ export const deleteTeam = withBaseballAction(
     const historyCheckFailure = historyChecks.find((c) => c.error);
     if (historyCheckFailure) {
       await logServerError(
-        `Failed to check team history before delete: ${historyCheckFailure.error instanceof Error ? historyCheckFailure.error.message : String(historyCheckFailure.error)}`,
+        `Failed to check team history before delete: ${describeError(historyCheckFailure.error)}`,
         { action: 'teams.deleteTeam' },
       );
       return { success: false, error: 'Unable to verify team history right now. Please try again.' };
@@ -1286,7 +1287,7 @@ export const deleteTeam = withBaseballAction(
 
     if (deleteError) {
       await logServerError(
-        `Failed to delete team ${teamId}: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`,
+        `Failed to delete team ${teamId}: ${describeError(deleteError)}`,
         { action: 'teams.deleteTeam' },
       );
       return { success: false, error: 'Failed to delete team. Please try again.' };
@@ -1341,7 +1342,7 @@ export const leaveTeamAsCoach = withBaseballAction(
 
     if (staffError) {
       await logServerError(
-        `Failed to look up staff row before leave: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+        `Failed to look up staff row before leave: ${describeError(staffError)}`,
         { action: 'teams.leaveTeamAsCoach' },
       );
       return { success: false, error: 'Unable to verify your membership right now. Please try again.' };
@@ -1366,7 +1367,7 @@ export const leaveTeamAsCoach = withBaseballAction(
 
     if (deleteError) {
       await logServerError(
-        `Failed to leave team ${teamId}: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`,
+        `Failed to leave team ${teamId}: ${describeError(deleteError)}`,
         { action: 'teams.leaveTeamAsCoach' },
       );
       return { success: false, error: 'Failed to leave team. Please try again.' };
@@ -1434,7 +1435,7 @@ export const createTeamInvitation = withBaseballAction(
       }
 
       await logServerError(
-        `Failed to create team invitation for team ${teamId}: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to create team invitation for team ${teamId}: ${describeError(error)}`,
         { action: 'teams.createTeamInvitation' },
       );
       return { success: false, error: 'Failed to generate invite. Please try again.' };
@@ -1481,7 +1482,7 @@ export const revokeTeamInvitation = withBaseballAction(
 
     if (updateError) {
       await logServerError(
-        `Failed to revoke invitation ${invitationId}: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+        `Failed to revoke invitation ${invitationId}: ${describeError(updateError)}`,
         { action: 'teams.revokeTeamInvitation' },
       );
       return { success: false, error: 'Failed to revoke invite. Please try again.' };

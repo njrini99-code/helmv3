@@ -72,6 +72,7 @@ import type {
   ShotPattern,
   ReasoningResult,
 } from './types';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface RoundReviewShotRow {
   hole_number: number;
@@ -274,7 +275,7 @@ class CoachHelmIntelligence {
       // single transient failure (e.g. a cold-start network blip).
       this.calibrationBootstrapped = false;
       await logServerError(
-        `ensureCalibrationBootstrapped failed: ${error instanceof Error ? error.message : String(error)}`,
+        `ensureCalibrationBootstrapped failed: ${describeError(error)}`,
         { action: 'orchestrator.ensureCalibrationBootstrapped', featureArea: 'coachhelm' },
         'warning',
       );
@@ -458,10 +459,10 @@ class CoachHelmIntelligence {
     // can read this round's freshly-written insights. Failure-isolated.
     const compositeSummary = await synthesizeForPlayer(playerId).catch((err) => {
       void logServerError(
-        `composite synthesis failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        `composite synthesis failed for ${playerId}: ${describeError(err)}`,
         { action: 'analyzePlayer.composite' },
       );
-      return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1 };
+      return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
     });
     void compositeSummary;
 
@@ -1060,7 +1061,7 @@ class CoachHelmIntelligence {
     } catch (error) {
       console.error('[CoachHelm] Error generating team pattern insights:', error);
       await logServerError(
-        `CoachHelm orchestrator failed generating team pattern insights: ${error instanceof Error ? error.message : String(error)}`,
+        `CoachHelm orchestrator failed generating team pattern insights: ${describeError(error)}`,
         { action: 'coachhelm.orchestrator.generateTeamPatternInsights', featureArea: 'coachhelm' }
       );
     }
@@ -1935,7 +1936,7 @@ class CoachHelmIntelligence {
     } catch (error) {
       console.error('[CoachHelm] Error fetching player stats:', error);
       await logServerError(
-        `CoachHelm orchestrator failed fetching player stats: ${error instanceof Error ? error.message : String(error)}`,
+        `CoachHelm orchestrator failed fetching player stats: ${describeError(error)}`,
         { action: 'coachhelm.orchestrator.fetchPlayerStats', featureArea: 'coachhelm', playerId }
       );
       this._statsCache.set(playerId, undefined);
@@ -1985,7 +1986,7 @@ class CoachHelmIntelligence {
     } catch (error) {
       console.error('[CoachHelm] Error generating correlation insights:', error);
       await logServerError(
-        `CoachHelm orchestrator failed generating correlation insights: ${error instanceof Error ? error.message : String(error)}`,
+        `CoachHelm orchestrator failed generating correlation insights: ${describeError(error)}`,
         { action: 'coachhelm.orchestrator.generateCorrelationInsights', featureArea: 'coachhelm', playerId }
       );
     }

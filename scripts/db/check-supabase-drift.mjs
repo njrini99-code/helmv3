@@ -143,7 +143,7 @@ const CHECKS = [
     },
   },
   {
-    name: '#728: recalculate_baseball_season_stats has no b.so reference',
+    name: '#728/#887: recalculate_baseball_season_stats matches the canonical alias contract',
     async run(sql) {
       const rows = await sql`
         select pg_get_functiondef(p.oid) as def
@@ -151,10 +151,27 @@ const CHECKS = [
         where n.nspname = 'public' and p.proname = 'recalculate_baseball_season_stats'
       `;
       if (rows.length === 0) return { ok: false, detail: 'function does not exist' };
-      const hasBso = rows.some((r) => /\bb\.so\b/.test(r.def));
-      return hasBso
-        ? { ok: false, detail: 'live function body still references b.so' }
-        : { ok: true, detail: 'no b.so reference in live body' };
+      const executable = stripLineComments(rows[0].def);
+      const requiredFragments = [
+        'FROM baseball_box_score_batting bsb',
+        'COALESCE(SUM(bsb.h), 0)',
+        'FROM baseball_box_score_pitching bsp',
+        'COALESCE(SUM(bsp.h), 0)',
+      ];
+      const missing = requiredFragments.filter((fragment) => !executable.includes(fragment));
+      const staleAliasReferences = [...executable.matchAll(/\bb\.(?:so|hits)\b/g)].map(
+        (match) => match[0],
+      );
+      const problems = [
+        ...missing.map((fragment) => `missing canonical fragment: ${fragment}`),
+        ...staleAliasReferences.map((reference) => `stale alias reference: ${reference}`),
+      ];
+      return problems.length === 0
+        ? {
+            ok: true,
+            detail: 'canonical bsb/bsp aliases and hit aggregations are present; no stale b.so/b.hits references',
+          }
+        : { ok: false, detail: problems.join('; ') };
     },
   },
   {

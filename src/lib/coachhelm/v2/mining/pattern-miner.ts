@@ -12,6 +12,7 @@ import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 import type {
   MinedPattern,
   PatternCondition,
@@ -966,10 +967,11 @@ export class PatternMiner {
   /**
    * Saves patterns to database.
    *
-   * Task B14 — partial-success persistence: the prior loop threw on the
-   * first failure and aborted the rest. Switch to \`Promise.allSettled\`
-   * so the engine writes every pattern it can; failures are captured via
-   * \`logServerError\` so the admin dashboard still surfaces the issue.
+   * Task B14 — partial-success persistence: a failed row does not prevent the
+   * remaining fresh rows from being attempted. Upserts run sequentially in
+   * deterministic id order so concurrent miners acquire row locks in the same
+   * order. If any row fails, stale-pattern supersede is skipped: retiring old
+   * rows after only part of the fresh set landed would create a false absence.
    *
    * 2026-05-24 Wave 8 — lifecycle_state preservation + auto-promotion.
    * Prior behavior: \`onConflict: 'id'\` overwrites — re-upserts blew away
@@ -994,7 +996,7 @@ export class PatternMiner {
 
     // 1. Batch-fetch existing lifecycle_state for every id we're about to
     //    upsert, so we can preserve coach-set values.
-    const ids = patterns.map((p) => p.id);
+    const ids = patterns.map((p) => p.id).sort();
     type ExistingRow = { id: string; lifecycle_state: string | null };
     const { data: existingRows } = await (supabase as unknown as {
       from: (t: string) => {
@@ -1017,22 +1019,24 @@ export class PatternMiner {
     const AUTO_PROMOTE_MIN_AGE_MS = 14 * 24 * 60 * 60 * 1000;
     const cutoff = Date.now() - AUTO_PROMOTE_MIN_AGE_MS;
 
-    const rows = patterns.map((p) => {
-      const existing = existingByPatternId.get(p.id);
-      let resolvedState: string;
-      if (existing && PRESERVED_STATES.has(existing)) {
-        resolvedState = existing;
-      } else if (
-        (p.lifecycleState ?? 'detected') === 'detected' &&
-        p.occurrenceCount >= AUTO_PROMOTE_MIN_OCCURRENCES &&
-        new Date(p.firstDetected).getTime() < cutoff
-      ) {
-        resolvedState = 'confirmed';
-      } else {
-        resolvedState = p.lifecycleState ?? 'detected';
-      }
-      return { ...this.toRow(p), lifecycle_state: resolvedState };
-    });
+    const rows = [...patterns]
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+      .map((p) => {
+        const existing = existingByPatternId.get(p.id);
+        let resolvedState: string;
+        if (existing && PRESERVED_STATES.has(existing)) {
+          resolvedState = existing;
+        } else if (
+          (p.lifecycleState ?? 'detected') === 'detected' &&
+          p.occurrenceCount >= AUTO_PROMOTE_MIN_OCCURRENCES &&
+          new Date(p.firstDetected).getTime() < cutoff
+        ) {
+          resolvedState = 'confirmed';
+        } else {
+          resolvedState = p.lifecycleState ?? 'detected';
+        }
+        return { ...this.toRow(p), lifecycle_state: resolvedState };
+      });
 
     const fromFn = (supabase as unknown as {
       from: (t: string) => {
@@ -1043,27 +1047,30 @@ export class PatternMiner {
       };
     }).from;
 
-    const results = await Promise.allSettled(
-      rows.map((row) =>
-        fromFn.call(supabase, 'golf_patterns_v2').upsert(row, { onConflict: 'id' }),
-      ),
-    );
-
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        await logServerError('pattern-miner.savePatterns rejected', {
-          action: 'pattern-miner.savePatterns',
-          featureArea: 'coachhelm.mining',
-          metadata: { reason: String(result.reason) },
-        });
-      } else if (result.value.error) {
+    let upsertFailed = false;
+    for (const row of rows) {
+      try {
+        const { error } = await fromFn
+          .call(supabase, 'golf_patterns_v2')
+          .upsert(row, { onConflict: 'id' });
+        if (!error) continue;
+        upsertFailed = true;
         await logServerError('pattern-miner.savePatterns db error', {
           action: 'pattern-miner.savePatterns',
           featureArea: 'coachhelm.mining',
-          metadata: { dbError: result.value.error as unknown },
+          metadata: { dbError: error as unknown },
+        });
+      } catch (reason) {
+        upsertFailed = true;
+        await logServerError('pattern-miner.savePatterns rejected', {
+          action: 'pattern-miner.savePatterns',
+          featureArea: 'coachhelm.mining',
+          metadata: { reason: String(reason) },
         });
       }
     }
+
+    if (upsertFailed) return;
 
     // 2. Soft-supersede stale patterns (the recurring "old stuff" bug). Every
     //    mine covers a rolling 90-day window; a pattern that NO LONGER
@@ -1073,7 +1080,7 @@ export class PatternMiner {
     //    THIS run's player(s), never touching coach-set lifecycle states. This
     //    is a non-destructive supersede (NO delete), safe in this sync path, and
     //    idempotent: re-mining the same window converges (deterministic ids).
-    const playerIds = [...new Set(patterns.map((p) => p.playerId).filter(Boolean))];
+    const playerIds = [...new Set(patterns.map((p) => p.playerId).filter(Boolean))].sort();
     if (ids.length > 0 && playerIds.length > 0) {
       const idList = `(${ids.map((id) => `"${id}"`).join(',')})`;
       // Multi-row UPDATE racing a concurrent mine's upserts/supersede over the
@@ -1082,7 +1089,10 @@ export class PatternMiner {
       // concurrently). Postgres aborts one victim wholesale and the supersede
       // is idempotent (deterministic ids, converges on re-run), so a short
       // retry absorbs it instead of surfacing a transient as an error.
-      let supersedeError: { code?: string } | null = null;
+      // Widened past `{ code }` so the logging below can read the message and
+      // details supabase-js actually attaches, rather than reporting a
+      // Postgres error by its code alone.
+      let supersedeError: { code?: string; message?: string; details?: string | null } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) {
           // Jitter decorrelates retries from the concurrent miner we
@@ -1102,11 +1112,30 @@ export class PatternMiner {
         if (!error || error.code !== '40P01') break;
       }
       if (supersedeError) {
-        await logServerError('pattern-miner.savePatterns supersede stale', {
-          action: 'pattern-miner.savePatterns',
-          featureArea: 'coachhelm.mining',
-          metadata: { dbError: supersedeError as unknown },
-        });
+        // Name the cause in the message. `dbError` alone meant the incident read
+        // "pattern-miner.savePatterns supersede stale" with no indication of
+        // whether the three retries above lost to a deadlock, an RLS denial or a
+        // timeout — and `describeError` is what stops a Postgres-shaped error
+        // (which is not an `Error`) from rendering as '[object Object]'.
+        //
+        // A deadlock here is contention, not a defect: the retry loop is the
+        // designed response, the newly-mined patterns are already committed, and
+        // the only casualty is that a superseded pattern stays visible until the
+        // next run. That is a 'warning'. Anything else is a real failure.
+        const deadlocked = supersedeError.code === '40P01';
+        await logServerError(
+          `pattern-miner.savePatterns supersede stale: ${describeError(supersedeError)}`,
+          {
+            action: 'pattern-miner.savePatterns',
+            featureArea: 'coachhelm.mining',
+            extra: describeWriteFailure(supersedeError, {
+              playerCount: playerIds.length,
+              retries: 3,
+              deadlocked,
+            }),
+          },
+          deadlocked ? 'warning' : 'error',
+        );
       }
     }
   }

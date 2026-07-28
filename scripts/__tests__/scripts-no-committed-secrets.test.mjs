@@ -30,10 +30,8 @@ const GENERIC_PASSWORD_ALLOWLIST = new Set([
   'scripts/seed-baseball-lifting-demo.ts::BaseballDemo2026',
   'scripts/gen-appstore-screenshots.mjs::Demo2026',
   'scripts/seed-baseball-roster.mjs::HelmSeed2026!!',
-  'scripts/verify-ios-itinerary-create.mjs::DenisonBigRed2026!',
   'scripts/seed-baseball-demo.ts::BaseballDemo2026',
   'scripts/seed-baseball-demo-program.ts::BaseballDemo2026',
-  'scripts/setup-admin.ts::Helm2026!!',
 ]);
 const SECRET_FIXTURE_ALLOWLIST = new Set([
   'scripts/__tests__/check-required-env.test.mjs::prod-url-fixture',

@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -44,7 +45,7 @@ export async function getPrivatePlayerIds(supabase: Supabase): Promise<Set<strin
 
   if (error) {
     await logServerError(
-      `Error fetching private player settings: ${error instanceof Error ? error.message : String(error)}`,
+      `Error fetching private player settings: ${describeError(error)}`,
       { action: 'player-visibility.getPrivatePlayerIds' },
     );
     // Fail open here (matches getCoachRosterPlayerIds' pattern below): this

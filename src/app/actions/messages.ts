@@ -17,6 +17,7 @@ import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 type Sport = 'baseball' | 'golf';
 
@@ -485,7 +486,7 @@ export async function markMessagesAsRead({
     .eq('user_id', user.id);
 
   if (participantError) {
-    await logServerError(`[Messages] Failed to update last_read_at: ${participantError instanceof Error ? participantError.message : String(participantError)}`, { action: 'messages.markMessagesAsRead' });
+    await logServerError(`[Messages] Failed to update last_read_at: ${describeError(participantError)}`, { action: 'messages.markMessagesAsRead' });
     maybeCaptureRlsDenial(participantError, {
       table: participantsTable,
       verb: 'update',
@@ -535,7 +536,7 @@ export async function markMessagesAsRead({
   }
 
   if (messagesError) {
-    await logServerError(`[Messages] Failed to mark messages as read: ${messagesError instanceof Error ? messagesError.message : String(messagesError)}`, { action: 'messages.markMessagesAsRead' });
+    await logServerError(`[Messages] Failed to mark messages as read: ${describeError(messagesError)}`, { action: 'messages.markMessagesAsRead' });
     maybeCaptureRlsDenial(messagesError, {
       table: sport === 'golf' ? 'golf_messages' : 'baseball_messages',
       verb: 'update',
@@ -771,7 +772,7 @@ async function createGolfTeamBroadcastImpl({
             );
 
           if (syncError) {
-            await logServerError(`[Broadcast] Failed to sync participants on reuse: ${syncError instanceof Error ? syncError.message : String(syncError)}`, { action: 'messages.createGolfTeamBroadcast' });
+            await logServerError(`[Broadcast] Failed to sync participants on reuse: ${describeError(syncError)}`, { action: 'messages.createGolfTeamBroadcast' });
             throw new Error(`Failed to update broadcast recipients: ${syncError.message}`);
           }
         }
@@ -795,7 +796,7 @@ async function createGolfTeamBroadcastImpl({
       .single();
 
     if (convError || !newConversation) {
-      await logServerError(`[Broadcast] Conversation create error: ${convError instanceof Error ? convError.message : String(convError)}`, { action: 'messages.createGolfTeamBroadcast' });
+      await logServerError(`[Broadcast] Conversation create error: ${describeError(convError)}`, { action: 'messages.createGolfTeamBroadcast' });
       throw new Error(`Failed to create broadcast: ${convError?.message || 'Unknown error'}`);
     }
 
@@ -816,7 +817,7 @@ async function createGolfTeamBroadcastImpl({
       .insert(participantInserts);
 
     if (participantsError) {
-      await logServerError(`[Broadcast] Failed to add participants: ${participantsError instanceof Error ? participantsError.message : String(participantsError)}`, { action: 'messages.createGolfTeamBroadcast' });
+      await logServerError(`[Broadcast] Failed to add participants: ${describeError(participantsError)}`, { action: 'messages.createGolfTeamBroadcast' });
       throw new Error(`Failed to add participants: ${participantsError.message}`);
     }
 
@@ -1026,7 +1027,7 @@ export async function updateMessage({
       .eq('sender_id', user.id); // Extra safety check
 
     if (updateError) {
-      await logServerError(`[Messages] Failed to update message: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'messages.updateMessage' });
+      await logServerError(`[Messages] Failed to update message: ${describeError(updateError)}`, { action: 'messages.updateMessage' });
       throw new Error('Failed to update message');
     }
 
@@ -1101,7 +1102,7 @@ export async function deleteMessage({
       .eq('sender_id', user.id); // Extra safety check
 
     if (deleteError) {
-      await logServerError(`[Messages] Failed to delete message: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'messages.deleteMessage' });
+      await logServerError(`[Messages] Failed to delete message: ${describeError(deleteError)}`, { action: 'messages.deleteMessage' });
       throw new Error('Failed to delete message');
     }
 
@@ -1163,7 +1164,7 @@ async function getGolfPlayerUserIdImpl(playerId: string): Promise<string | null>
     .single();
 
   if (error || !player) {
-    await logServerError(`[getGolfPlayerUserId] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'messages.getGolfPlayerUserId' });
+    await logServerError(`[getGolfPlayerUserId] Error: ${describeError(error)}`, { action: 'messages.getGolfPlayerUserId' });
     return null;
   }
 

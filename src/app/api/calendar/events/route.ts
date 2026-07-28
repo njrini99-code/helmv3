@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { CalendarEvent } from '@/lib/types/calendar';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * GET /api/calendar/events
@@ -179,7 +180,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data as unknown as CalendarEvent[]);
   } catch (error) {
-    await logServerError(`Calendar events GET unexpected failure: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`Calendar events GET unexpected failure: ${describeError(error)}`, {
       action: 'calendarEventsApi.get',
       source: 'route_handler',
       featureArea: 'calendar',
@@ -323,7 +324,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data as unknown as CalendarEvent, { status: 201 });
   } catch (error) {
-    await logServerError(`Calendar events POST unexpected failure: ${error instanceof Error ? error.message : String(error)}`, {
+    await logServerError(`Calendar events POST unexpected failure: ${describeError(error)}`, {
       action: 'calendarEventsApi.post',
       source: 'route_handler',
       featureArea: 'calendar',

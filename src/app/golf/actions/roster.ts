@@ -6,6 +6,7 @@ import { CACHE_TAGS } from '@/lib/cache/tags';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -94,7 +95,7 @@ async function removePlayerFromTeamImpl(playerId: string): Promise<RosterActionR
     .eq('team_id', teamId);
 
   if (deleteError) {
-    await logServerError(`Failed to remove player from team: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'roster.removePlayerFromTeam' });
+    await logServerError(`Failed to remove player from team: ${describeError(deleteError)}`, { action: 'roster.removePlayerFromTeam' });
     return { success: false, error: 'Failed to remove player. Please try again.' };
   }
 
@@ -168,7 +169,7 @@ async function getTeamPlayersImpl(): Promise<{
     .eq('team_id', teamId);
 
   if (membersError) {
-    await logServerError(`Failed to fetch team members: ${membersError instanceof Error ? membersError.message : String(membersError)}`, { action: 'roster.getTeamPlayers' });
+    await logServerError(`Failed to fetch team members: ${describeError(membersError)}`, { action: 'roster.getTeamPlayers' });
     return { success: false, error: 'Failed to load roster' };
   }
 
@@ -185,7 +186,7 @@ async function getTeamPlayersImpl(): Promise<{
     .order('last_name', { ascending: true });
 
   if (playersError) {
-    await logServerError(`Failed to fetch team players: ${playersError instanceof Error ? playersError.message : String(playersError)}`, { action: 'roster.getTeamPlayers' });
+    await logServerError(`Failed to fetch team players: ${describeError(playersError)}`, { action: 'roster.getTeamPlayers' });
     return { success: false, error: 'Failed to load roster' };
   }
 

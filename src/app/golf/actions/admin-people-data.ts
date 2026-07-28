@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================
 // TYPES
@@ -190,7 +191,7 @@ async function getPeopleTabDataImpl(): Promise<PeopleTabData> {
       lifecycleBreakdown,
     };
   } catch (error) {
-    await logServerError(`[admin-people-data] Failed to fetch people tab data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_people_data.getPeopleTabData' });
+    await logServerError(`[admin-people-data] Failed to fetch people tab data: ${describeError(error)}`, { action: 'admin_people_data.getPeopleTabData' });
     return emptyPeopleTabData();
   }
 }

@@ -25,6 +25,7 @@ import { COMPOSITE_RULES } from './registry';
 import { loadRecentInsightsForPlayer } from './loader';
 import { loadCompositeContext } from './hole-sequence-loader';
 import type { CompositeMatch, CompositeRule, EvidenceInsight } from './types';
+import { describeError } from '@/lib/utils/describe-error';
 
 const COMPOSITE_PREFIX = 'composite';
 
@@ -283,6 +284,13 @@ export interface SynthesisResult {
   rule_suppressed: number;
   rule_emitted: number;
   errors: number;
+  /**
+   * Sample-floor refusals (`InsightEvidenceRefusal`). Counted SEPARATELY from
+   * `errors` because a refusal is control flow by design — "not enough
+   * evidence to publish yet" — whereas `errors` means an infra failure that
+   * must block the stale sweep below.
+   */
+  refusals: number;
   /** Stale composite rows archived by the post-run scope sweep (regrade LIFE-P2). */
   stale_retracted?: number;
 }
@@ -298,6 +306,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
     rule_suppressed: 0,
     rule_emitted: 0,
     errors: 0,
+    refusals: 0,
   };
 
   let insights;
@@ -305,7 +314,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
     insights = await loadRecentInsightsForPlayer(playerId);
   } catch (err) {
     await logServerError(
-      `synthesizeForPlayer: load failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+      `synthesizeForPlayer: load failed for ${playerId}: ${describeError(err)}`,
       { action: 'v3.composite.synthesis.load' },
     );
     result.errors += 1;
@@ -329,7 +338,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
     ctx = await loadCompositeContext(playerId);
   } catch (err) {
     await logServerError(
-      `synthesizeForPlayer: ctx load failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+      `synthesizeForPlayer: ctx load failed for ${playerId}: ${describeError(err)}`,
       { action: 'v3.composite.synthesis.ctx' },
     );
     ctx = { hole_scores: [], short_game_shots: [], flyer_lie_shots: [] };
@@ -343,7 +352,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       if (m) matches.push({ rule, match: m });
     } catch (err) {
       await logServerError(
-        `synthesizeForPlayer: rule ${rule.id} detect threw for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        `synthesizeForPlayer: rule ${rule.id} detect threw for ${playerId}: ${describeError(err)}`,
         { action: 'v3.composite.synthesis.detect' },
       );
       result.errors += 1;
@@ -436,21 +445,24 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         // Rule 1's sample-floor refusal is control flow BY DESIGN (insufficient
         // evidence → don't publish), not an infra failure. Route it to the
         // background-job event log at 'warning' with Sentry suppressed so it
-        // stops paging as a prod incident — but it still counts toward
-        // result.errors below, same as any other compose/upsert failure, so
-        // the sweep's error-gated stale-retraction skip (see below) is unchanged.
+        // stops paging as a prod incident, and count it under `refusals` —
+        // NOT `errors`. Counting it as an error made the sweep's `errors === 0`
+        // gate below treat "this rule had too little evidence" as "infra is
+        // broken, archive nothing", so a single under-evidenced rule silently
+        // disabled stale-composite retraction for that player on every run.
         await logServerEvent(
           message,
           { action: 'v3.composite.synthesis.upsert', source: 'background_job', skipSentry: true },
           'warning',
         );
+        result.refusals += 1;
       } else {
         await logServerError(
           message,
           { action: 'v3.composite.synthesis.upsert' },
         );
+        result.errors += 1;
       }
-      result.errors += 1;
     }
   }
 
@@ -460,8 +472,11 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
   // dequalified rule's row had NO retirement path at all — the exact gap
   // BaseGenerator.signatureScope closed for the 9 generator families. Mirror
   // that sweep across the whole per-player `v3:composite:` space, but ONLY on
-  // a fully clean run (errors === 0): a rule that threw is an infra failure,
-  // not dequalification, and must not archive anything (NEW-P1 contract).
+  // a run with no INFRA failures (errors === 0): a rule that threw for an
+  // infra reason may simply have failed to re-emit a signature it still owns,
+  // so archiving would retract a live insight (NEW-P1 contract). A sample-floor
+  // refusal is not that case — the rule deliberately declined to publish, which
+  // IS dequalification — so `refusals` is excluded from this gate.
   if (result.errors === 0) {
     try {
       const nowIso = new Date().toISOString();
@@ -501,7 +516,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       result.stale_retracted = retracted;
     } catch (err) {
       await logServerError(
-        `synthesizeForPlayer: stale-composite sweep failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        `synthesizeForPlayer: stale-composite sweep failed for ${playerId}: ${describeError(err)}`,
         { action: 'v3.composite.synthesis.sweep' },
       );
       // Sweep failure must not fail the synthesis run that emitted insights.

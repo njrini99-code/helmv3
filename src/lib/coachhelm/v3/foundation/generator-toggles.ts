@@ -18,6 +18,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /** Keys recognized in the preferences blob. Add new keys here when a
  *  new generator wants opt-out behavior. */
@@ -70,7 +71,7 @@ export async function isGeneratorEnabledForPlayer(
     return prefs[key] !== false;
   } catch (err) {
     await logServerError(
-      `isGeneratorEnabledForPlayer(${key}) lookup failed for player=${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+      `isGeneratorEnabledForPlayer(${key}) lookup failed for player=${playerId}: ${describeError(err)}`,
       { action: 'v3.toggles.isGeneratorEnabledForPlayer' },
     );
     // Fail open — a toggle lookup failure must not silently suppress

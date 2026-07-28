@@ -5,7 +5,6 @@ import { FairwayDashboardShell } from './FairwayDashboardShell';
 import { resolveCoachActiveTeamId, getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { getActiveTeamCookie } from '@/app/golf/actions/team-switcher';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
-import { ThemeScript } from '@/components/golf/theme/ThemeScript';
 import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
@@ -197,11 +196,9 @@ export default async function GolfDashboardLayout({
   //    hamburger drawer) — the legacy GolfDashboardShell fork was removed.
   return (
     <>
-      {/* No-FOUC theme boot: sets the .dark class on <html> before first paint
-          so dark-mode users never flash the light theme. */}
-      <ThemeScript />
       <FairwayDashboardShell userData={userData}>
-        {/* Keeps the theme hydrated + OS-followed on every dashboard page. */}
+        {/* Keeps the root-head theme boot hydrated + OS-followed at runtime,
+            including when the dashboard is entered by soft navigation. */}
         <ThemeApplier />
         {children}
       </FairwayDashboardShell>

@@ -34,6 +34,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { Database } from '@/lib/types/database';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -333,7 +334,7 @@ async function markAttendanceImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (err) {
-    await logServerError(`markAttendance failed: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`markAttendance failed: ${describeError(err)}`, {
       action: 'markAttendance',
       featureArea: 'attendance',
       playerId,
@@ -490,7 +491,7 @@ async function bulkCheckInImpl(
       data: { successCount, failureCount },
     };
   } catch (err) {
-    await logServerError(`bulkCheckIn failed: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`bulkCheckIn failed: ${describeError(err)}`, {
       action: 'bulkCheckIn',
       featureArea: 'attendance',
       extra: { eventId, playerCount: playerIds.length },
@@ -684,7 +685,7 @@ async function getAttendanceReportImpl(
       },
     };
   } catch (err) {
-    await logServerError(`getAttendanceReport failed: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`getAttendanceReport failed: ${describeError(err)}`, {
       action: 'getAttendanceReport',
       featureArea: 'attendance',
       extra: { eventId },
@@ -884,7 +885,7 @@ async function getPlayerAttendanceStatsImpl(
       },
     };
   } catch (err) {
-    await logServerError(`getPlayerAttendanceStats failed: ${err instanceof Error ? err.message : String(err)}`, {
+    await logServerError(`getPlayerAttendanceStats failed: ${describeError(err)}`, {
       action: 'getPlayerAttendanceStats',
       featureArea: 'attendance',
       playerId: playerId ?? null,

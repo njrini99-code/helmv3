@@ -9,6 +9,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import type { CohortGender } from './cohort-baselines';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface PlayerCohort {
   gender: CohortGender;
@@ -39,7 +40,7 @@ export async function loadPlayerCohort(playerId: string): Promise<PlayerCohort> 
     return { gender, level: null };
   } catch (err) {
     await logServerError(
-      `loadPlayerCohort failed for player=${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+      `loadPlayerCohort failed for player=${playerId}: ${describeError(err)}`,
       { action: 'v3.counterfactual.loadPlayerCohort' },
     );
     return DEFAULT_COHORT;

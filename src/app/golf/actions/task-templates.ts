@@ -12,6 +12,7 @@ import type {
 } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Database record type for golf_task_templates (not in generated types)
 interface DbTaskTemplate {
@@ -106,14 +107,14 @@ async function createTemplateImpl(
       .single() as { data: DbTaskTemplate | null; error: Error | null };
 
     if (error || !template) {
-      await logServerError(`Error creating template: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.createTemplate' });
+      await logServerError(`Error creating template: ${describeError(error)}`, { action: 'task_templates.createTemplate' });
       return { data: null, error: 'Failed to create template' };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { data: mapDbToTaskTemplate(template) };
   } catch (error) {
-    await logServerError(`Error in createTemplate: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.createTemplate' });
+    await logServerError(`Error in createTemplate: ${describeError(error)}`, { action: 'task_templates.createTemplate' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -172,14 +173,14 @@ async function updateTemplateImpl(
       .single() as { data: DbTaskTemplate | null; error: Error | null };
 
     if (error || !template) {
-      await logServerError(`Error updating template: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.updateTemplate' });
+      await logServerError(`Error updating template: ${describeError(error)}`, { action: 'task_templates.updateTemplate' });
       return { data: null, error: 'Failed to update template' };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { data: mapDbToTaskTemplate(template) };
   } catch (error) {
-    await logServerError(`Error in updateTemplate: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.updateTemplate' });
+    await logServerError(`Error in updateTemplate: ${describeError(error)}`, { action: 'task_templates.updateTemplate' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -214,14 +215,14 @@ async function deleteTemplateImpl(
       .eq('id', id);
 
     if (error) {
-      await logServerError(`Error deleting template: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.deleteTemplate' });
+      await logServerError(`Error deleting template: ${describeError(error)}`, { action: 'task_templates.deleteTemplate' });
       return { success: false, error: 'Failed to delete template' };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    await logServerError(`Error in deleteTemplate: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.deleteTemplate' });
+    await logServerError(`Error in deleteTemplate: ${describeError(error)}`, { action: 'task_templates.deleteTemplate' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -279,13 +280,13 @@ async function getTeamTemplatesImpl(
       .order('title', { ascending: true }) as { data: DbTaskTemplate[] | null; error: Error | null };
 
     if (error) {
-      await logServerError(`Error fetching templates: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.getTeamTemplates' });
+      await logServerError(`Error fetching templates: ${describeError(error)}`, { action: 'task_templates.getTeamTemplates' });
       return { data: null, error: 'Failed to fetch templates' };
     }
 
     return { data: templates?.map(mapDbToTaskTemplate) ?? [] };
   } catch (error) {
-    await logServerError(`Error in getTeamTemplates: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.getTeamTemplates' });
+    await logServerError(`Error in getTeamTemplates: ${describeError(error)}`, { action: 'task_templates.getTeamTemplates' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -321,13 +322,13 @@ async function getTemplateImpl(
       .single() as { data: DbTaskTemplate | null; error: Error | null };
 
     if (error || !template) {
-      await logServerError(`Error fetching template: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.getTemplate' });
+      await logServerError(`Error fetching template: ${describeError(error)}`, { action: 'task_templates.getTemplate' });
       return { data: null, error: 'Template not found' };
     }
 
     return { data: mapDbToTaskTemplate(template) };
   } catch (error) {
-    await logServerError(`Error in getTemplate: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.getTemplate' });
+    await logServerError(`Error in getTemplate: ${describeError(error)}`, { action: 'task_templates.getTemplate' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -418,14 +419,14 @@ async function createTaskFromTemplateImpl(
       .select();
 
     if (createError) {
-      await logServerError(`Error creating tasks from template: ${createError instanceof Error ? createError.message : String(createError)}`, { action: 'task_templates.createTaskFromTemplate' });
+      await logServerError(`Error creating tasks from template: ${describeError(createError)}`, { action: 'task_templates.createTaskFromTemplate' });
       return { data: null, error: 'Failed to create tasks' };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { data: tasks as GolfTask[] };
   } catch (error) {
-    await logServerError(`Error in createTaskFromTemplate: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.createTaskFromTemplate' });
+    await logServerError(`Error in createTaskFromTemplate: ${describeError(error)}`, { action: 'task_templates.createTaskFromTemplate' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -481,14 +482,14 @@ async function duplicateTemplateImpl(
       .single() as { data: DbTaskTemplate | null; error: Error | null };
 
     if (createError || !duplicate) {
-      await logServerError(`Error duplicating template: ${createError instanceof Error ? createError.message : String(createError)}`, { action: 'task_templates.duplicateTemplate' });
+      await logServerError(`Error duplicating template: ${describeError(createError)}`, { action: 'task_templates.duplicateTemplate' });
       return { data: null, error: 'Failed to duplicate template' };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { data: mapDbToTaskTemplate(duplicate) };
   } catch (error) {
-    await logServerError(`Error in duplicateTemplate: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.duplicateTemplate' });
+    await logServerError(`Error in duplicateTemplate: ${describeError(error)}`, { action: 'task_templates.duplicateTemplate' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -545,14 +546,14 @@ async function seedDefaultTemplatesImpl(
       .select() as { data: DbTaskTemplate[] | null; error: Error | null };
 
     if (error) {
-      await logServerError(`Error seeding templates: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.seedDefaultTemplates' });
+      await logServerError(`Error seeding templates: ${describeError(error)}`, { action: 'task_templates.seedDefaultTemplates' });
       return { success: false, count: 0, error: 'Failed to seed templates' };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { success: true, count: data?.length || 0 };
   } catch (error) {
-    await logServerError(`Error in seedDefaultTemplates: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.seedDefaultTemplates' });
+    await logServerError(`Error in seedDefaultTemplates: ${describeError(error)}`, { action: 'task_templates.seedDefaultTemplates' });
     return { success: false, count: 0, error: 'An unexpected error occurred' };
   }
 }
@@ -589,13 +590,13 @@ async function getTemplatesByCategoryImpl(
       .order('title', { ascending: true }) as { data: DbTaskTemplate[] | null; error: Error | null };
 
     if (error) {
-      await logServerError(`Error fetching templates by category: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.getTemplatesByCategory' });
+      await logServerError(`Error fetching templates by category: ${describeError(error)}`, { action: 'task_templates.getTemplatesByCategory' });
       return { data: null, error: 'Failed to fetch templates' };
     }
 
     return { data: templates?.map(mapDbToTaskTemplate) ?? [] };
   } catch (error) {
-    await logServerError(`Error in getTemplatesByCategory: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.getTemplatesByCategory' });
+    await logServerError(`Error in getTemplatesByCategory: ${describeError(error)}`, { action: 'task_templates.getTemplatesByCategory' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -633,13 +634,13 @@ async function searchTemplatesImpl(
       .limit(10) as { data: DbTaskTemplate[] | null; error: Error | null };
 
     if (error) {
-      await logServerError(`Error searching templates: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.searchTemplates' });
+      await logServerError(`Error searching templates: ${describeError(error)}`, { action: 'task_templates.searchTemplates' });
       return { data: null, error: 'Failed to search templates' };
     }
 
     return { data: templates?.map(mapDbToTaskTemplate) ?? [] };
   } catch (error) {
-    await logServerError(`Error in searchTemplates: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.searchTemplates' });
+    await logServerError(`Error in searchTemplates: ${describeError(error)}`, { action: 'task_templates.searchTemplates' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -730,7 +731,7 @@ async function processRecurringTemplatesImpl(): Promise<{
 
     return results;
   } catch (error) {
-    await logServerError(`Error in processRecurringTemplates: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_templates.processRecurringTemplates' });
+    await logServerError(`Error in processRecurringTemplates: ${describeError(error)}`, { action: 'task_templates.processRecurringTemplates' });
     results.errors.push('Failed to process recurring templates');
     return results;
   }

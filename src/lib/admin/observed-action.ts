@@ -1,6 +1,9 @@
 import { logServerException } from '@/lib/server-error-logger';
 import { shouldEmit, drainCollapsedCount } from '@/lib/admin/emit-throttle';
-import { observeActionSoftFailure } from '@/lib/admin/observe-action-result';
+import {
+  extractActionSoftFailure,
+  observeActionSoftFailure,
+} from '@/lib/admin/observe-action-result';
 import { createClient } from '@/lib/supabase/server';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
@@ -66,6 +69,12 @@ export function withAdminObserved<Args extends unknown[], R>(
     feature?: FeatureKey;
     featureArea?: string;
     /**
+     * Set false when the wrapped implementation already records its returned
+     * failure with richer domain-specific context. Thrown exceptions remain
+     * covered by this wrapper either way.
+     */
+    observeSoftFailures?: boolean;
+    /**
      * Derive extra identity/subject context from the ORIGINAL call
      * arguments at error time — e.g. `([roundId]) => ({ roundId })`. This
      * is how a caller that already knows its subject (the round-recap
@@ -82,27 +91,32 @@ export function withAdminObserved<Args extends unknown[], R>(
   return async (...args: Args): Promise<R> => {
     try {
       const result = await fn(...args);
-      const observedUser = await resolveObservedUser();
-      let extraContext: ObservedActionContext = {};
-      try {
-        extraContext = opts.contextFrom?.(args) ?? {};
-      } catch {
-        extraContext = {};
+      // A successful action with no soft-failure envelope has nothing to
+      // observe. Avoid a second GoTrue network request solely to enrich a
+      // telemetry event that will never be emitted.
+      if (opts.observeSoftFailures !== false && extractActionSoftFailure(result)) {
+        const observedUser = await resolveObservedUser();
+        let extraContext: ObservedActionContext = {};
+        try {
+          extraContext = opts.contextFrom?.(args) ?? {};
+        } catch {
+          extraContext = {};
+        }
+        observeActionSoftFailure(result, {
+          action: name,
+          source: 'server_action',
+          feature: opts.feature ?? null,
+          featureArea: opts.featureArea ?? opts.feature ?? null,
+          sport: opts.sport,
+          userId: observedUser.userId,
+          userEmail: observedUser.userEmail,
+          roundId: extraContext.roundId ?? null,
+          playerId: extraContext.playerId ?? null,
+          teamId: extraContext.teamId ?? null,
+          route: extraContext.route ?? null,
+          handled: true,
+        });
       }
-      observeActionSoftFailure(result, {
-        action: name,
-        source: 'server_action',
-        feature: opts.feature ?? null,
-        featureArea: opts.featureArea ?? opts.feature ?? null,
-        sport: opts.sport,
-        userId: observedUser.userId,
-        userEmail: observedUser.userEmail,
-        roundId: extraContext.roundId ?? null,
-        playerId: extraContext.playerId ?? null,
-        teamId: extraContext.teamId ?? null,
-        route: extraContext.route ?? null,
-        handled: true,
-      });
       return result;
     } catch (err) {
       if (!isNextControlFlowError(err) && !isAdminAuthControlFlowError(err)) {

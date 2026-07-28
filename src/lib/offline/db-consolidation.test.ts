@@ -106,6 +106,8 @@ class FakeTransaction {
 
 class FakeDB {
   stores = new Map<string, FakeObjectStore>();
+  transactionCalls = 0;
+  failOnTransactionCall: number | null = null;
   objectStoreNames = {
     contains: (n: string) => this.stores.has(n),
     get length() {
@@ -113,7 +115,7 @@ class FakeDB {
     },
   };
   onversionchange: (() => void) | null = null;
-  onerror: (() => void) | null = null;
+  onerror: ((event: unknown) => void) | null = null;
   createObjectStore(name: string, opts: { keyPath: string }) {
     const store = new FakeObjectStore(opts.keyPath);
     this.stores.set(name, store);
@@ -126,6 +128,12 @@ class FakeDB {
     return store;
   }
   transaction(_names: string | string[], _mode?: string) {
+    this.transactionCalls++;
+    if (this.transactionCalls === this.failOnTransactionCall) {
+      const error = new Error('The database connection is closing');
+      error.name = 'InvalidStateError';
+      throw error;
+    }
     return new FakeTransaction(this);
   }
   close() {}
@@ -210,6 +218,56 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     await v1.saveOfflineRound({ id: 'r1', playerId: '', draftData: {} });
     await v1.saveOfflineRound({ id: 'r2', playerId: '', draftData: {} });
     expect(await v1.getPendingRoundCount()).toBe(2);
+  });
+
+  it('v1 reopens once when versionchange closes the cached DB between open and transaction setup', async () => {
+    const v1 = await import('./indexed-db');
+    await v1.saveOfflineRound({ id: 'r-closing', playerId: '', draftData: {} });
+
+    const db = databases.get('golfhelm_offline')!;
+    db.transactionCalls = 0;
+    // First call is openDatabase's liveness probe; second is the real
+    // getPendingRoundCount transaction, reproducing the browser race.
+    db.failOnTransactionCall = 2;
+
+    await expect(v1.getPendingRoundCount()).resolves.toBe(1);
+    expect(db.transactionCalls).toBeGreaterThanOrEqual(3);
+  });
+
+  it('v2 pending reads reopen once when the cached DB starts closing after open', async () => {
+    const shotStorage = await import('./shot-storage');
+    await expect(shotStorage.getPendingShots()).resolves.toEqual([]);
+
+    const db = databases.get('golfhelm_offline_v2')!;
+    db.transactionCalls = 0;
+    // Cached-connection probe succeeds, then transaction setup races close().
+    db.failOnTransactionCall = 2;
+
+    await expect(shotStorage.getPendingShots()).resolves.toEqual([]);
+    expect(db.transactionCalls).toBeGreaterThanOrEqual(3);
+  });
+
+  it('logs an IndexedDB request error instead of the opaque Event wrapper', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const shotStorage = await import('./shot-storage');
+    await expect(shotStorage.getPendingShots()).resolves.toEqual([]);
+
+    const db = databases.get('golfhelm_offline_v2')!;
+    const requestError = new DOMException(
+      'The transaction was aborted, so the request cannot be fulfilled.',
+      'AbortError',
+    );
+    const databaseEvent = {
+      target: { error: requestError },
+      currentTarget: db,
+      isTrusted: true,
+      type: 'error',
+    };
+
+    db.onerror?.(databaseEvent as never);
+
+    expect(consoleError).toHaveBeenCalledWith('Database error:', requestError);
+    expect(consoleError).not.toHaveBeenCalledWith('Database error:', databaseEvent);
   });
 
   it('markOfflineRoundSynced is non-destructive: row retained, status synced, dequeued (no longer pending)', async () => {

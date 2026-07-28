@@ -908,13 +908,33 @@ export class ShotPatternMiner {
 
     if (rows.length === 0) return;
 
-    // Wrapped with retry-on-deadlock: this upsert races the
-    // coachhelm-safety-net / coachhelm-validation / coachhelm-calibration /
-    // coachhelm-roster-sweep crons (and any other analyzePlayer caller with
-    // persistPatterns left at its default true) writing the same
-    // `golf_patterns_v2` rows. See `upsertWithDeadlockRetry` above.
+    // SORTED BY THE CONFLICT KEY, AND THAT IS THE POINT — not tidiness.
+    //
+    // `INSERT … ON CONFLICT DO UPDATE` takes its row locks in the order the
+    // values appear in the statement. Until this sort, that order was pattern-
+    // DETECTION order, which differs per caller: the player dashboard, the
+    // safety-net cron, the validation cron and the calibration cron each mine a
+    // different window of the same player's shots, so they emit an overlapping
+    // set of deterministic ids in different sequences. Two of them landing
+    // together locked the shared rows in opposite orders — a lock cycle, which
+    // Postgres resolves by killing one with 40P01. That surfaced as
+    // `getPlayerCoachHelmDashboard failed: Failed to save CoachHelm shot
+    // patterns: deadlock detected` (n=3, 2026-06-29 → 07-22): a coach opened
+    // the dashboard and CoachHelm returned an error because a cron happened to
+    // be writing at that moment.
+    //
+    // Measured on a local Postgres with two writers over the same 40 ids
+    // (tmp-deadlock-repro): opposing orders deadlocked 7 of 16 statements;
+    // sorted, 0 of 16. A shared, total lock order means concurrent writers
+    // QUEUE instead of cycling, so there is nothing left to retry.
+    //
+    // `upsertWithDeadlockRetry` stays as the belt to this braces: it also
+    // covers collisions with the supersede UPDATE in pattern-miner.ts, whose
+    // lock order comes from its index scan rather than from a row list.
+    const orderedRows = [...rows].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+
     const { error } = await upsertWithDeadlockRetry(() =>
-      table.upsert(rows, { onConflict: 'id' }),
+      table.upsert(orderedRows, { onConflict: 'id' }),
     );
 
     if (error) {

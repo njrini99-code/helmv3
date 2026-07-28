@@ -114,10 +114,22 @@ function playerName(player?: JoinRequestData['player']): string {
   return `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
 }
 
-/** Time-ago string (verbatim logic from the legacy formatDate). */
-function formatDate(dateStr: string): string {
+/**
+ * Time-ago string (verbatim logic from the legacy formatDate), but the "now"
+ * it measures against is passed in rather than read during render.
+ *
+ * React #418 (confirmed Helm Bridge incident, roster_management, 2026-07-21):
+ * this is a 'use client' component, so it renders on the server too. A bare
+ * `new Date()` read during render resolves to a different instant on the
+ * server than on the client's first pass, so "3m ago" vs "4m ago" is a
+ * guaranteed text mismatch. Callers pass `null` until they've mounted, which
+ * degrades to the absolute short date on both the server AND the client's
+ * first render — then the relative label swaps in from an effect, which is a
+ * normal update rather than a hydration disagreement.
+ */
+function formatDate(dateStr: string, now: Date | null): string {
   const date = new Date(dateStr);
-  const now = new Date();
+  if (!now) return formatShortDate(date);
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
@@ -270,6 +282,12 @@ function RequestRow({
   // the inline accordion and inside the auto-popup ModalShell without stacking.
   const [confirming, setConfirming] = React.useState(false);
 
+  // Client-only clock for the relative "requested" label — see formatDate.
+  const [now, setNow] = React.useState<Date | null>(null);
+  React.useEffect(() => {
+    setNow(new Date());
+  }, []);
+
   const declineConfirm = (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <span className="font-fw-sans text-caption text-text-secondary">
@@ -335,9 +353,11 @@ function RequestRow({
                   </span>
                 </span>
               ) : null}
-              <span className="inline-flex items-center gap-1 text-text-tertiary">
+              <span className="inline-flex items-center gap-1 text-text-tertiary" suppressHydrationWarning>
                 <IconClock size={13} aria-hidden />
-                {layout === 'modal' ? `Requested ${formatDate(request.created_at)}` : formatDate(request.created_at)}
+                {layout === 'modal'
+                  ? `Requested ${formatDate(request.created_at, now)}`
+                  : formatDate(request.created_at, now)}
               </span>
             </div>
 

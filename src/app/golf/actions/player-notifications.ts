@@ -15,6 +15,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -222,7 +223,7 @@ async function getPlayerNotificationCountsImpl(
     };
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'player_notifications.getPlayerNotificationCounts', featureArea: 'notifications' }
     );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch notification counts' };
@@ -288,7 +289,7 @@ async function markAnnouncementsSeenImpl(): Promise<ActionResult> {
     return { success: true };
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'player_notifications.markAnnouncementsSeen', featureArea: 'notifications' }
     );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to mark announcements seen' };
@@ -348,7 +349,7 @@ async function markTravelSeenImpl(): Promise<ActionResult> {
     return { success: true };
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'player_notifications.markTravelSeen', featureArea: 'notifications' }
     );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to mark travel seen' };
@@ -399,7 +400,7 @@ async function getPlayerHubAnnouncementsImpl(
     return { success: true, data: rows };
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'player_notifications.getPlayerHubAnnouncements', featureArea: 'notifications' }
     );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch hub announcements' };

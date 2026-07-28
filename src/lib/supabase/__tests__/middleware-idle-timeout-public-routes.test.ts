@@ -128,6 +128,33 @@ describe('updateSession — idle-timeout fires on all authenticated surfaces exc
     expect(res.headers.get('location')).toBeNull();
   });
 
+  it('redirects anonymous visitors away from every private Baseball player-app route', async () => {
+    for (const pathname of [
+      '/baseball/player/today',
+      '/baseball/player/practice',
+      '/baseball/player/timeline',
+      '/baseball/player/passport',
+    ]) {
+      mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+      const res = await updateSession(buildRequest(pathname));
+      const location = res.headers.get('location');
+
+      expect(location).not.toBeNull();
+      const url = new URL(location!);
+      expect(url.pathname).toBe('/baseball/login');
+      expect(url.searchParams.get('returnTo')).toBe(pathname);
+    }
+  });
+
+  it('does not redirect an anonymous visitor from a public Baseball player profile', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    const res = await updateSession(buildRequest('/baseball/player/some-public-player-id'));
+
+    expect(res.headers.get('location')).toBeNull();
+  });
+
   it('still idle-bounces a stale session off /baseball/player/today — the private player app, NOT the public profile route (#872 regression)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     mockSignOut.mockResolvedValue({ error: null });

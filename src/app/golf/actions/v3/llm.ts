@@ -23,6 +23,7 @@ import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
 import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface LlmRoundReviewActionResult {
   ok: boolean;
@@ -132,7 +133,7 @@ async function generateLlmRoundReviewImpl(
     };
   } catch (err) {
     await logServerError(
-      `generateLlmRoundReview failed: ${err instanceof Error ? err.message : String(err)}`,
+      `generateLlmRoundReview failed: ${describeError(err)}`,
       { action: 'v3.llm.generateLlmRoundReview' },
     );
     return { ok: false, error: 'Internal error' };
@@ -239,7 +240,7 @@ async function generateHeroNarrativeImpl(
     };
   } catch (err) {
     await logServerError(
-      `generateHeroNarrative failed: ${err instanceof Error ? err.message : String(err)}`,
+      `generateHeroNarrative failed: ${describeError(err)}`,
       { action: 'v3.llm.generateHeroNarrative' },
     );
     return { ok: false, error: 'Internal error' };

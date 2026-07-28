@@ -10,6 +10,7 @@ import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -202,7 +203,7 @@ async function createFocusAreaImpl(
   });
 
   if (error) {
-    await logServerError(`Failed to create focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.createFocusArea' });
+    await logServerError(`Failed to create focus area: ${describeError(error)}`, { action: 'development.createFocusArea' });
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
@@ -232,7 +233,7 @@ async function createFocusAreaImpl(
       }
     }
   } catch (notifErr) {
-    await logServerError(`[createFocusArea] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'development.createFocusArea' });
+    await logServerError(`[createFocusArea] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'development.createFocusArea' });
   }
 
   revalidatePath('/golf/dashboard/development');
@@ -313,7 +314,7 @@ async function createPlayerFocusAreaImpl(
 
   if (error) {
     await logServerError(
-      `Failed to create player focus area: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to create player focus area: ${describeError(error)}`,
       { action: 'development.createPlayerFocusArea' },
     );
     return { success: false, error: 'Failed to create focus area. Please try again.' };
@@ -366,7 +367,7 @@ async function acceptFocusAreaImpl(
 
   if (error) {
     await logServerError(
-      `Failed to accept focus area: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to accept focus area: ${describeError(error)}`,
       { action: 'development.acceptFocusArea' },
     );
     return { success: false, error: 'Failed to accept. Please try again.' };
@@ -421,7 +422,7 @@ async function declineFocusAreaImpl(
 
   if (error) {
     await logServerError(
-      `Failed to decline focus area: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to decline focus area: ${describeError(error)}`,
       { action: 'development.declineFocusArea' },
     );
     return { success: false, error: 'Failed to decline. Please try again.' };
@@ -504,7 +505,7 @@ async function updateFocusAreaImpl(
     .select('id');
 
   if (error) {
-    await logServerError(`Failed to update focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.updateFocusArea' });
+    await logServerError(`Failed to update focus area: ${describeError(error)}`, { action: 'development.updateFocusArea' });
     return { success: false, error: 'Failed to update focus area. Please try again.' };
   }
 
@@ -567,7 +568,7 @@ async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult>
     .eq('coach_id', coach.id);
 
   if (error) {
-    await logServerError(`Failed to delete focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.deleteFocusArea' });
+    await logServerError(`Failed to delete focus area: ${describeError(error)}`, { action: 'development.deleteFocusArea' });
     return { success: false, error: 'Failed to delete focus area. Please try again.' };
   }
 
@@ -686,7 +687,7 @@ async function updateFocusAreaProgressImpl(
     .select('id');
 
   if (error) {
-    await logServerError(`Failed to update focus area progress: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.updateFocusAreaProgress' });
+    await logServerError(`Failed to update focus area progress: ${describeError(error)}`, { action: 'development.updateFocusAreaProgress' });
     return { success: false, error: 'Failed to update progress. Please try again.' };
   }
 
@@ -772,7 +773,7 @@ async function completeFocusAreaImpl(
     .select('id');
 
   if (error) {
-    await logServerError(`Failed to complete focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.completeFocusArea' });
+    await logServerError(`Failed to complete focus area: ${describeError(error)}`, { action: 'development.completeFocusArea' });
     return { success: false, error: 'Failed to mark complete. Please try again.' };
   }
 
@@ -850,7 +851,7 @@ async function reactivateFocusAreaImpl(
     .select('id');
 
   if (error) {
-    await logServerError(`Failed to reactivate focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.reactivateFocusArea' });
+    await logServerError(`Failed to reactivate focus area: ${describeError(error)}`, { action: 'development.reactivateFocusArea' });
     return { success: false, error: 'Failed to reopen. Please try again.' };
   }
 
@@ -987,7 +988,7 @@ async function createFocusAreaFromReviewImpl(
 
   if (error || !row) {
     await logServerError(
-      `Failed to create focus area from review: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to create focus area from review: ${describeError(error)}`,
       { action: 'development.createFocusAreaFromReview' }
     );
     return { success: false, error: 'Failed to create focus area. Please try again.' };
@@ -1083,7 +1084,7 @@ async function createFocusAreaFromInsightV2Impl(
 
   if (error || !row) {
     await logServerError(
-      `Failed to create focus area from insight (v2): ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to create focus area from insight (v2): ${describeError(error)}`,
       { action: 'development.createFocusAreaFromInsightV2' }
     );
     return { success: false, error: 'Failed to create focus area. Please try again.' };
@@ -1313,7 +1314,7 @@ async function createFocusAreaFromInsightImpl(
     .single();
 
   if (insertError) {
-    await logServerError(`Failed to create focus area from insight: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'development.createFocusAreaFromInsight' });
+    await logServerError(`Failed to create focus area from insight: ${describeError(insertError)}`, { action: 'development.createFocusAreaFromInsight' });
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
@@ -1455,7 +1456,7 @@ async function recordFocusAreaOutcomeImpl(
     .select('id');
 
   if (faError) {
-    await logServerError(`Failed to complete focus area on outcome: ${faError instanceof Error ? faError.message : String(faError)}`, { action: 'development.recordFocusAreaOutcome' });
+    await logServerError(`Failed to complete focus area on outcome: ${describeError(faError)}`, { action: 'development.recordFocusAreaOutcome' });
     return { success: false, error: 'Failed to record outcome. Please try again.' };
   }
 
@@ -1490,7 +1491,7 @@ async function recordFocusAreaOutcomeImpl(
     .eq('id', focusArea.from_insight_id);
 
   if (insightError) {
-    await logServerError(`Failed to credit insight outcome: ${insightError instanceof Error ? insightError.message : String(insightError)}`, { action: 'development.recordFocusAreaOutcome' });
+    await logServerError(`Failed to credit insight outcome: ${describeError(insightError)}`, { action: 'development.recordFocusAreaOutcome' });
     // The focus area is already completed; surface the partial failure honestly.
     return { success: false, error: 'Outcome saved on the focus area, but crediting the source insight failed. Please try again.' };
   }

@@ -27,6 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 
 /** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
 function formatTimezoneOffset(offsetMinutes: number): string {
@@ -122,6 +123,18 @@ interface EditRecurringEventInput {
     recurrenceRule?: string;
   };
 }
+
+/**
+ * Shown when the requested window ends before it starts. `golf_events` carries
+ * `CHECK (end_time IS NULL OR start_time IS NULL OR end_time >= start_time)`, so
+ * such a window is not storable — the create and edit paths both refuse it up
+ * front rather than letting it surface as a 23514 behind "Please try again."
+ *
+ * Word-for-word the message `updateGolfEvent` already returns for the same
+ * SQLSTATE (golf.ts), so a coach reads one sentence whichever scope they pick.
+ */
+const END_BEFORE_START_ERROR =
+  'End time must be after the start time. Adjust the event end as well.';
 
 // ============================================================================
 // HELPER: Series row utilities (scoped edit/delete + root promotion)
@@ -327,14 +340,14 @@ function deferRecurringDeleteNotify(opts: {
       for (const result of channelResults) {
         if (result.status === 'rejected') {
           await logServerError(
-            `deleteRecurringEvent cancellation fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+            `deleteRecurringEvent cancellation fan-out failed: ${describeError(result.reason)}`,
             { action: 'recurring_events.deleteRecurringEvent.notify', extra: { scope } },
           );
         }
       }
     } catch (notifyErr) {
       await logServerError(
-        `deleteRecurringEvent notify threw: ${notifyErr instanceof Error ? notifyErr.message : String(notifyErr)}`,
+        `deleteRecurringEvent notify threw: ${describeError(notifyErr)}`,
         { action: 'recurring_events.deleteRecurringEvent.notify', extra: { scope } },
       );
     }
@@ -631,6 +644,20 @@ async function createRecurringEventImpl(
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
 
     const rootDate = occurrenceDates[0]!;
+
+    // Same invariant the edit path guards (see END_BEFORE_START_ERROR): every
+    // occurrence gets its start and end from the same date, so an end earlier
+    // than the start is rejected by `golf_events_end_after_start` on the very
+    // first insert and the coach only ever sees "Failed to create recurring
+    // event. Please try again." Say what is actually wrong instead.
+    if (input.startTime && input.endTime) {
+      const rootStartMs = Date.parse(`${rootDate}T${input.startTime}${tz}`);
+      const rootEndMs = Date.parse(`${rootDate}T${input.endTime}${tz}`);
+      if (Number.isFinite(rootStartMs) && Number.isFinite(rootEndMs) && rootEndMs < rootStartMs) {
+        return { success: false, error: END_BEFORE_START_ERROR };
+      }
+    }
+
     const rootRow = {
       title: input.title,
       description: input.description || null,
@@ -656,7 +683,7 @@ async function createRecurringEventImpl(
       .single();
 
     if (rootError || !rootInsert?.id) {
-      await logServerError(`[createRecurringEvent Error]: ${rootError instanceof Error ? rootError.message : String(rootError)}`, { action: 'recurring_events.createRecurringEvent' });
+      await logServerError(`[createRecurringEvent Error]: ${describeError(rootError)}`, { action: 'recurring_events.createRecurringEvent' });
       return { success: false, error: 'Failed to create recurring event. Please try again.' };
     }
 
@@ -705,7 +732,7 @@ async function createRecurringEventImpl(
             },
           );
         }
-        await logServerError(`[createRecurringEvent child Error]: ${childError instanceof Error ? childError.message : String(childError)}`, { action: 'recurring_events.createRecurringEvent' });
+        await logServerError(`[createRecurringEvent child Error]: ${describeError(childError)}`, { action: 'recurring_events.createRecurringEvent' });
         return { success: false, error: 'Failed to create recurring event. Please try again.' };
       }
 
@@ -839,14 +866,14 @@ async function createRecurringEventImpl(
         for (let i = 0; i < channelResults.length; i++) {
           const result = channelResults[i];
           if (result?.status === 'rejected') {
-            await logServerError(`createRecurringEvent ${channelNames[i]} fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`, {
+            await logServerError(`createRecurringEvent ${channelNames[i]} fan-out failed: ${describeError(result.reason)}`, {
               action: 'recurring_events.createRecurringEvent.notifications',
               extra: { channel: channelNames[i], rootId },
             });
           }
         }
       } catch (notifErr) {
-        await logServerError(`createRecurringEvent notification creation failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+        await logServerError(`createRecurringEvent notification creation failed: ${describeError(notifErr)}`, {
           action: 'recurring_events.createRecurringEvent.notifications',
         });
       }
@@ -855,7 +882,7 @@ async function createRecurringEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: rootId } };
   } catch (error) {
-    await logServerError(`[createRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.createRecurringEvent' });
+    await logServerError(`[createRecurringEvent Error]: ${describeError(error)}`, { action: 'recurring_events.createRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -971,6 +998,33 @@ async function editRecurringEventImpl(
     const startDeltaMs =
       startChanged && newStartMs !== null && Number.isFinite(oldStartMs) ? newStartMs - oldStartMs : 0;
 
+    // ANSWER AN IMPOSSIBLE WINDOW HERE, not with a Postgres error. The other
+    // half of the same invariant the scope-'this' carry below protects:
+    // `golf_events_end_after_start` requires `end_time >= start_time`, and
+    // nothing between the calendar form and this action checks it —
+    // FairwayEventEditor renders start/end as two independent `<input
+    // type="time">`s with no relative validation. Pulling a 16:00–18:00
+    // practice's end back to 14:00 therefore reached Postgres as
+    //   23514 golf_events_end_after_start
+    // (verified against production inside a rolled-back transaction) and came
+    // back to the coach as "Failed to update ... Please try again." — advice
+    // that can never work, because the retry sends the same window.
+    //
+    // Every scope needs this one check: 'this' writes `newEndMs` literally,
+    // and the series scopes derive `newDurationMs` from it, which goes NEGATIVE
+    // for a backwards window and drags every occurrence's end before its own
+    // start. Comparing against the effective start (the new one when the start
+    // moved, otherwise the stored one) covers both.
+    const effectiveStartMs = startChanged && newStartMs !== null ? newStartMs : oldStartMs;
+    if (
+      newEndMs !== null &&
+      Number.isFinite(newEndMs) &&
+      Number.isFinite(effectiveStartMs) &&
+      newEndMs < effectiveStartMs
+    ) {
+      return { success: false, error: END_BEFORE_START_ERROR };
+    }
+
     // Ids of rows actually touched by a MEANINGFUL change for 'thisAndFuture'/
     // 'all' (2026-07-10 calendar-travel audit, P1). Populated only inside
     // those two scope branches below — stays empty for 'this' (that single-
@@ -985,7 +1039,32 @@ async function editRecurringEventImpl(
         // but unchanged date fields are still omitted.
         const updates: Record<string, unknown> = { ...literalUpdates };
         if (startChanged && newStartMs !== null) updates.start_time = new Date(newStartMs).toISOString();
-        if (endChanged && newEndMs !== null) updates.end_time = new Date(newEndMs).toISOString();
+        if (endChanged && newEndMs !== null) {
+          updates.end_time = new Date(newEndMs).toISOString();
+        } else if (startChanged && oldEndMs !== null && Number.isFinite(oldEndMs)) {
+          // CARRY THE END WITH THE START. Moving a 10:00–11:00 practice to 14:00
+          // used to write start_time alone and leave end_time at 11:00, which
+          // Postgres rejects outright: `golf_events_end_after_start` requires
+          // `end_time >= start_time`, so that request deterministically fails
+          // with SQLSTATE 23514. This is a real, independently reproduced
+          // single-occurrence defect; do not conflate it with failures from the
+          // batched series branch below, whose PostgREST error must be diagnosed
+          // from `describeWriteFailure` telemetry.
+          //
+          // The occurrence keeps its duration, which is what 'thisAndFuture'
+          // already did in this same situation (see `startDeltaMs` below). The
+          // two scopes disagreeing was the whole defect — a coach dragging one
+          // practice later succeeded or failed depending on which radio button
+          // was selected.
+          //
+          // `Math.max` is a no-op whenever the row has a start to measure from:
+          // shifting both ends by one delta preserves `end >= start`, which the
+          // constraint already guarantees of the stored row. It only bites for a
+          // row that has an end but NO start — there `startDeltaMs` is 0, so the
+          // untouched old end could still land before the new start.
+          const shiftedEndMs = oldEndMs + startDeltaMs;
+          updates.end_time = new Date(Math.max(shiftedEndMs, newStartMs!)).toISOString();
+        }
         if (Object.keys(updates).length === 0) break; // nothing changed — no-op success
 
         // 2026-05-17: audit Q-NEW-7. .select('id') so we can count
@@ -997,7 +1076,16 @@ async function editRecurringEventImpl(
           .select('id');
 
         if (updateError) {
-          await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
+          await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, {
+            action: 'recurring_events.editRecurringEvent',
+            featureArea: 'calendar_events',
+            extra: describeWriteFailure(updateError, {
+              scope: input.scope,
+              eventId: input.eventId,
+              rootId,
+              columns: Object.keys(updates),
+            }),
+          });
           return { success: false, error: 'Failed to edit event occurrence. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1045,7 +1133,19 @@ async function editRecurringEventImpl(
           const { data: affected, error: updateError } = await query.select('id');
 
           if (updateError) {
-            await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
+            await logServerError(`[editRecurringEvent Error]: ${describeError(updateError)}`, {
+              action: 'recurring_events.editRecurringEvent',
+              featureArea: 'calendar_events',
+              extra: describeWriteFailure(updateError, {
+                scope: input.scope,
+                eventId: input.eventId,
+                rootId,
+                teamId: targetEvent.team_id,
+                columns: Object.keys(literalUpdates),
+                fromStart: fromStart ?? null,
+                legacyFallback: !rootId,
+              }),
+            });
             return { success: false, error: failMessage };
           }
           if (!affected || affected.length === 0) {
@@ -1070,7 +1170,17 @@ async function editRecurringEventImpl(
         });
 
         if (matchError) {
-          await logServerError(`[editRecurringEvent fetch Error]: ${matchError.message}`, { action: 'recurring_events.editRecurringEvent' });
+          await logServerError(`[editRecurringEvent fetch Error]: ${describeError(matchError)}`, {
+            action: 'recurring_events.editRecurringEvent',
+            featureArea: 'calendar_events',
+            extra: describeWriteFailure(matchError, {
+              scope: input.scope,
+              eventId: input.eventId,
+              rootId,
+              teamId: targetEvent.team_id,
+              fromStart: fromStart ?? null,
+            }),
+          });
           return { success: false, error: failMessage };
         }
         if (!matchedRows || matchedRows.length === 0) {
@@ -1117,10 +1227,16 @@ async function editRecurringEventImpl(
           const failed = results.find((result) => result.error);
           if (failed?.error) {
             await logServerError(
-              `[editRecurringEvent perRow Error]: ${String(failed.error.message ?? failed.error)} (series update may be partially applied)`,
+              `[editRecurringEvent perRow Error]: ${describeError(failed.error)} (series update may be partially applied)`,
               {
                 action: 'recurring_events.editRecurringEvent.perRow',
-                extra: { eventId: input.eventId, rootId, scope: input.scope },
+                featureArea: 'calendar_events',
+                extra: describeWriteFailure(failed.error, {
+                  scope: input.scope,
+                  eventId: input.eventId,
+                  rootId,
+                  seriesRows: matchedRows.length,
+                }),
               },
             );
             return { success: false, error: failMessage };
@@ -1156,7 +1272,7 @@ async function editRecurringEventImpl(
             });
           }
         } catch (notifyErr) {
-          await logServerError(`editRecurringEvent notify threw: ${notifyErr instanceof Error ? notifyErr.message : String(notifyErr)}`, {
+          await logServerError(`editRecurringEvent notify threw: ${describeError(notifyErr)}`, {
             action: 'recurring_events.editRecurringEvent.notify',
             extra: { eventId: notifyEventId, scope: notifyScope },
           });
@@ -1189,7 +1305,11 @@ async function editRecurringEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    await logServerError(`[editRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.editRecurringEvent' });
+    await logServerError(`[editRecurringEvent Error]: ${describeError(error)}`, {
+      action: 'recurring_events.editRecurringEvent',
+      featureArea: 'calendar_events',
+      extra: describeWriteFailure(error, { scope: input.scope, eventId: input.eventId, threw: true }),
+    });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1302,7 +1422,7 @@ async function deleteRecurringEventImpl(
           .select('id');
 
         if (deleteError) {
-          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+          await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event occurrence. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1383,7 +1503,7 @@ async function deleteRecurringEventImpl(
                   .select('id');
 
                 if (deleteError) {
-                  await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+                  await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
                   return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
                 }
                 affectedCount += affected?.length ?? 0;
@@ -1419,7 +1539,7 @@ async function deleteRecurringEventImpl(
             .select('id');
 
           if (deleteError) {
-            await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+            await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
             return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
           }
           if (!affected || affected.length === 0) {
@@ -1465,7 +1585,7 @@ async function deleteRecurringEventImpl(
           .select('id');
 
         if (deleteError) {
-          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+          await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1518,7 +1638,7 @@ async function deleteRecurringEventImpl(
         const { data: affected, error: deleteError } = await query.select('id');
 
         if (deleteError) {
-          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+          await logServerError(`[deleteRecurringEvent Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event series. Please try again.' };
         }
         if (!affected || affected.length === 0) {
@@ -1543,7 +1663,7 @@ async function deleteRecurringEventImpl(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    await logServerError(`[deleteRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.deleteRecurringEvent' });
+    await logServerError(`[deleteRecurringEvent Error]: ${describeError(error)}`, { action: 'recurring_events.deleteRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1601,7 +1721,7 @@ async function getExpandedEventsImpl(
     const { data: events, error: eventsError } = await query.order('start_time', { ascending: true });
 
     if (eventsError) {
-      await logServerError(`[getExpandedEvents Error]: ${eventsError instanceof Error ? eventsError.message : String(eventsError)}`, { action: 'recurring_events.getExpandedEvents' });
+      await logServerError(`[getExpandedEvents Error]: ${describeError(eventsError)}`, { action: 'recurring_events.getExpandedEvents' });
       return { success: false, error: 'Failed to fetch events. Please try again.' };
     }
 
@@ -1624,7 +1744,7 @@ async function getExpandedEventsImpl(
 
     return { success: true, data: expandedEvents };
   } catch (error) {
-    await logServerError(`[getExpandedEvents Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.getExpandedEvents' });
+    await logServerError(`[getExpandedEvents Error]: ${describeError(error)}`, { action: 'recurring_events.getExpandedEvents' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1724,14 +1844,14 @@ async function createAcademicExclusionImpl(input: {
       .select('id');
 
     if (insertError) {
-      await logServerError(`[createAcademicExclusion Error]: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'recurring_events.createAcademicExclusion' });
+      await logServerError(`[createAcademicExclusion Error]: ${describeError(insertError)}`, { action: 'recurring_events.createAcademicExclusion' });
       return { success: false, error: 'Failed to create academic exclusion. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { id: result?.[0]?.id || '' } };
   } catch (error) {
-    await logServerError(`[createAcademicExclusion Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.createAcademicExclusion' });
+    await logServerError(`[createAcademicExclusion Error]: ${describeError(error)}`, { action: 'recurring_events.createAcademicExclusion' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -1770,14 +1890,14 @@ async function deleteAcademicExclusionImpl(id: string): Promise<ActionResult> {
       .eq('id', id);
 
     if (deleteError) {
-      await logServerError(`[deleteAcademicExclusion Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteAcademicExclusion' });
+      await logServerError(`[deleteAcademicExclusion Error]: ${describeError(deleteError)}`, { action: 'recurring_events.deleteAcademicExclusion' });
       return { success: false, error: 'Failed to delete academic exclusion. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    await logServerError(`[deleteAcademicExclusion Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.deleteAcademicExclusion' });
+    await logServerError(`[deleteAcademicExclusion Error]: ${describeError(error)}`, { action: 'recurring_events.deleteAcademicExclusion' });
     return formatSafeErrorResponse(error);
   }
 }

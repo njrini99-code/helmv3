@@ -14,6 +14,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -71,7 +72,7 @@ async function handle(): Promise<NextResponse> {
     } catch (err) {
       errors += 1;
       await logServerError(
-        `genome-backfill exception for ${pid}: ${err instanceof Error ? err.message : String(err)}`,
+        `genome-backfill exception for ${pid}: ${describeError(err)}`,
         { action: 'cron.v3.genome-backfill', source: 'cron' },
       );
     }

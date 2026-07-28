@@ -206,12 +206,12 @@ export function GolfSignInForm() {
         aria-busy={isLoading}
         className="
           w-full min-h-[50px] py-3
-          bg-primary-600
+          bg-primary-700
           font-semibold text-body text-white tracking-[-0.01em]
           rounded-xl
-          shadow-lg shadow-primary-600/25
+          shadow-lg shadow-primary-700/25
           transition-all duration-200 ease-ios
-          hover:bg-primary-700 hover:shadow-primary-600/30
+          hover:bg-primary-800 hover:shadow-primary-700/30
           active:scale-[0.97] active:duration-75
           disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
           flex items-center justify-center gap-2

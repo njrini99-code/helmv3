@@ -21,6 +21,7 @@ import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * JSON-serialisable shape v2 generators can merge into `evidence.standing`.
@@ -72,7 +73,7 @@ export async function loadStandingForInsightEvidence(
   } catch (err) {
     // Don't let standing failures kill the insight write.
     await logServerError(
-      `standing-injection failed for ${playerId}/${metricId}: ${err instanceof Error ? err.message : String(err)}`,
+      `standing-injection failed for ${playerId}/${metricId}: ${describeError(err)}`,
       { action: 'v2.insights.standing-injection' },
     );
     return null;

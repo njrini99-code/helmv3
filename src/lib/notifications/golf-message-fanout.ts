@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Fan out "new message" notifications (email + push + in-app bell) to every
@@ -150,6 +151,6 @@ export async function notifyGolfMessageRecipients(
     }
   } catch (notifErr) {
     // Never block message delivery on notification failure
-    await logServerError(`[notifyGolfMessageRecipients] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'notifications.notifyGolfMessageRecipients' });
+    await logServerError(`[notifyGolfMessageRecipients] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'notifications.notifyGolfMessageRecipients' });
   }
 }

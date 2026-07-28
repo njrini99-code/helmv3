@@ -164,6 +164,52 @@ describe('postRoundTrigger', () => {
       );
     });
 
+    it('code: engine_no_team_membership logs at warning + skipSentry — an un-rostered player is a roster state, not an incident', async () => {
+      const admin = createFakeSupabase({
+        tables: { golf_rounds: [{ id: 'r9', player_id: 'p1', coachhelm_analyzed_at: null }] },
+      });
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: 'No active team membership for player',
+        code: 'engine_no_team_membership',
+      });
+
+      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r9' });
+
+      expect(mocks.logServerError).toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger engine failed'),
+        expect.objectContaining({ skipSentry: true, errorCode: 'engine_no_team_membership' }),
+        'warning',
+      );
+    });
+
+    it('hands the engine code back to the caller so the safety-net cron can reach the same verdict', async () => {
+      const admin = createFakeSupabase({
+        tables: { golf_rounds: [{ id: 'r10', player_id: 'p1', coachhelm_analyzed_at: null }] },
+      });
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: 'No active team membership for player',
+        code: 'engine_no_team_membership',
+      });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r10' });
+
+      expect(result).toMatchObject({ success: false, code: 'engine_no_team_membership' });
+    });
+
+    it('omits `code` entirely when the engine did not classify the failure', async () => {
+      const admin = createFakeSupabase({
+        tables: { golf_rounds: [{ id: 'r11', player_id: 'p1', coachhelm_analyzed_at: null }] },
+      });
+      mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r11' });
+
+      expect(result.success).toBe(false);
+      expect(result.code).toBeUndefined();
+    });
+
     it('regression guard: an unrecognized code/message still logs at default error severity with no skipSentry', async () => {
       const admin = createFakeSupabase({
         tables: { golf_rounds: [{ id: 'r8', player_id: 'p1', coachhelm_analyzed_at: null }] },

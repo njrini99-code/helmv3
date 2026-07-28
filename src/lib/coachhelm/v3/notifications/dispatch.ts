@@ -37,6 +37,7 @@ import {
   type PrefsByCategory,
   type RoutingDecision,
 } from './router';
+import { describeError } from '@/lib/utils/describe-error';
 
 type DbNotificationType = Database['public']['Enums']['notification_type'];
 
@@ -134,7 +135,7 @@ async function tryClaimDailySlot(playerId: string, key: string): Promise<boolean
     return res === 'OK';
   } catch (err) {
     await logServerError(
-      `coachhelm dispatch: throttle check failed: ${err instanceof Error ? err.message : String(err)}`,
+      `coachhelm dispatch: throttle check failed: ${describeError(err)}`,
       { action: 'v3.notifications.dispatch.throttle', handled: true },
       'warning',
     );
@@ -216,7 +217,7 @@ async function createInAppReceipt(args: {
     return true;
   } catch (err) {
     await logServerError(
-      `coachhelm dispatch: in-app receipt threw: ${err instanceof Error ? err.message : String(err)}`,
+      `coachhelm dispatch: in-app receipt threw: ${describeError(err)}`,
       { action: 'v3.notifications.dispatch.in_app', handled: true },
     );
     return false;
@@ -298,7 +299,7 @@ export async function dispatchCoachHelmNotification(args: DispatchArgs): Promise
   } catch (err) {
     // A notification failure must NEVER break the engine caller.
     await logServerError(
-      `coachhelm dispatch: unhandled failure: ${err instanceof Error ? err.message : String(err)}`,
+      `coachhelm dispatch: unhandled failure: ${describeError(err)}`,
       { action: 'v3.notifications.dispatch', handled: true },
       'warning',
     );

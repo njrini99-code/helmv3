@@ -85,7 +85,10 @@ function normalizeSport(raw: string | null): TriageItem['sport'] {
 export const AUTH_NOISE_MESSAGE_PATTERNS: readonly RegExp[] = [
   /you must be signed in/i,
   /no active baseball team/i,
-  /^\s*(?:unauthorized|not authenticated)\s*$/i,
+  // Trailing punctuation is tolerated: `insight-delivery.ts` returns
+  // "Not authenticated." with a period, which the bare `$` anchor missed, so
+  // one emitter's wording decided whether its event reached the incident feed.
+  /^\s*(?:unauthorized|not authenticated)[.!]?\s*$/i,
 ];
 
 /** ILIKE patterns mirroring AUTH_NOISE_MESSAGE_PATTERNS, for PostgREST queries. */
@@ -93,7 +96,9 @@ export const AUTH_NOISE_ILIKE_PATTERNS: readonly string[] = [
   '%you must be signed in%',
   '%no active baseball team%',
   'Unauthorized',
+  'Unauthorized.',
   'Not authenticated',
+  'Not authenticated.',
 ];
 
 /**

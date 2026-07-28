@@ -15,6 +15,7 @@ import {
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
 import { z } from 'zod';
+import { describeError } from '@/lib/utils/describe-error';
 
 const ALLOWED_ORG_TYPES = new Set(['college', 'juco']);
 
@@ -61,7 +62,7 @@ export async function addToInterests(
     return await addToInterestsAction(organizationId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'interests.addToInterests', featureArea: 'baseball-interests' },
     );
     return mapInterestActionError(error);
@@ -147,7 +148,7 @@ export async function removeFromInterests(
     return await removeFromInterestsAction(organizationId);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'interests.removeFromInterests', featureArea: 'baseball-interests' },
     );
     return mapInterestActionError(error);
@@ -206,7 +207,7 @@ export async function updateInterestStatus(
     return await updateInterestStatusAction(interestId, status);
   } catch (error) {
     await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error: ${describeError(error)}`,
       { action: 'interests.updateInterestStatus', featureArea: 'baseball-interests' },
     );
     return mapInterestActionError(error);

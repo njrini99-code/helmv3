@@ -9,6 +9,7 @@ import {
   formatIdListForNotIn,
   getCoachRosterPlayerIds,
 } from '@/lib/baseball/player-visibility';
+import { describeError } from '@/lib/utils/describe-error';
 
 // Coach type for discoverability filtering
 export type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
@@ -252,7 +253,7 @@ async function getDiscoverPlayersImpl(
     .range(offset, offset + perPage - 1);
 
   if (error) {
-    await logServerError(`Error fetching players: ${error instanceof Error ? error.message : String(error)}`, { action: 'discover.getDiscoverPlayers' });
+    await logServerError(`Error fetching players: ${describeError(error)}`, { action: 'discover.getDiscoverPlayers' });
     return { players: [], count: 0, pages: 0 };
   }
 
@@ -393,7 +394,7 @@ async function getDiscoverTeamsImpl(
     .range(offset, offset + perPage - 1);
 
   if (error) {
-    await logServerError(`Error fetching teams: ${error instanceof Error ? error.message : String(error)}`, { action: 'discover.getDiscoverTeams' });
+    await logServerError(`Error fetching teams: ${describeError(error)}`, { action: 'discover.getDiscoverTeams' });
     return { teams: [], count: 0, pages: 0 };
   }
 

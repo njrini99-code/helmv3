@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Stripe webhook receiver.
@@ -93,7 +94,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     void invoice.id;
   } catch (err) {
     await logServerError(
-      `[Stripe Webhook] Handler error on ${event.type}: ${err instanceof Error ? err.message : String(err)}`,
+      `[Stripe Webhook] Handler error on ${event.type}: ${describeError(err)}`,
       { action: 'route.POST', route: '/api/webhooks/stripe' },
     );
     // 500 → Stripe retries with backoff. Only fail on genuinely retryable errors.

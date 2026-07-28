@@ -46,24 +46,45 @@ import { describeError } from '@/lib/utils/describe-error';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { __registerGetDetailedStatsAsAdmin } from '@/lib/golf/detailed-stats-admin-bridge';
+import { getStatsActionContext } from '@/lib/golf/stats-action-context';
+import { verifyPlayerAccess as verifyCanonicalPlayerAccess } from '@/lib/auth/verify-player-access';
 
 
 // ============================================================================
 // AUTH GUARD
 // ============================================================================
 
-async function requireAuth() {
+async function requireAuth(playerId?: string) {
+  const shared = getStatsActionContext();
+  if (shared && (!playerId || shared.requestedPlayerId === playerId)) {
+    return { supabase: shared.supabase, user: shared.user };
+  }
+
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) {
-    await logServerError(`[Stats] Auth error: ${error.message}`, { action: 'stats_data.requireAuth' });
     throw new Error('Unauthorized');
   }
   if (!user) {
-    await logServerError('[Stats] No user session found', { action: 'stats_data.requireAuth' });
     throw new Error('Unauthorized');
   }
   return { supabase, user };
+}
+
+function statsErrorContext(action: string, error: unknown) {
+  const record =
+    error && typeof error === 'object'
+      ? (error as { code?: unknown; details?: unknown; hint?: unknown; status?: unknown })
+      : null;
+  return {
+    action,
+    errorCode: typeof record?.code === 'string' ? record.code : undefined,
+    statusCode: typeof record?.status === 'number' ? record.status : undefined,
+    metadata: {
+      ...(typeof record?.details === 'string' ? { pg_details: record.details } : {}),
+      ...(typeof record?.hint === 'string' ? { pg_hint: record.hint } : {}),
+    },
+  };
 }
 
 /**
@@ -75,37 +96,8 @@ async function verifyPlayerAccessImpl(
   userId: string,
   playerId: string
 ): Promise<boolean> {
-  // Check if user IS the player
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, user_id')
-    .eq('id', playerId)
-    .single();
-
-  if (player?.user_id === userId) return true;
-
-  // Check if user is a coach on the player's team
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('organization_id')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (coach?.organization_id && player) {
-    const { data: membership } = await supabase
-      .from('golf_team_members')
-      .select('team_id, team:golf_teams(organization_id)')
-      .eq('player_id', playerId)
-      .eq('status', 'active')
-      .limit(1)
-      .maybeSingle();
-
-    if (membership?.team && (membership.team as { organization_id: string }).organization_id === coach.organization_id) {
-      return true;
-    }
-  }
-
-  return false;
+  const access = await verifyCanonicalPlayerAccess(playerId, userId, supabase);
+  return access.allowed;
 }
 
 const observedVerifyPlayerAccess = withAdminObserved(
@@ -119,6 +111,15 @@ export async function verifyPlayerAccess(
   userId: string,
   playerId: string
 ): Promise<boolean> {
+  const shared = getStatsActionContext();
+  if (
+    shared &&
+    shared.supabase === supabase &&
+    shared.user.id === userId &&
+    shared.requestedPlayerId === playerId
+  ) {
+    return shared.authorization.allowed;
+  }
   return observedVerifyPlayerAccess(supabase, userId, playerId);
 }
 
@@ -948,7 +949,10 @@ async function queryDetailedStatsWithClient(
 
   const { data: fetchedRounds, error: roundsError } = await query;
   if (roundsError) {
-    await logServerError(`[Stats] Rounds query error: ${describeError(roundsError)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
+    await logServerError(
+      `[Stats] Rounds query error: ${describeError(roundsError)}`,
+      statsErrorContext('stats_data.queryDetailedStatsWithClient', roundsError),
+    );
     return calculateStatsFromShots([], [], []);
   }
 
@@ -1155,7 +1159,7 @@ async function getDetailedStatsImpl(
   filter?: StatsFilter
 ): Promise<GolfStats> {
   try {
-    const { supabase, user } = await requireAuth();
+    const { supabase, user } = await requireAuth(playerId);
 
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return calculateStatsFromShots([], [], []);
@@ -1174,7 +1178,10 @@ async function getDetailedStatsImpl(
     const trusted = createAdminClient() as unknown as Awaited<ReturnType<typeof createClient>>;
     return queryDetailedStatsWithClient(trusted, playerId, roundId, filter);
   } catch (outerError) {
-    await logServerError(`[Stats] getDetailedStats failed: ${describeError(outerError)}`, { action: 'stats_data.getDetailedStats' });
+    await logServerError(
+      `[Stats] getDetailedStats failed: ${describeError(outerError)}`,
+      statsErrorContext('stats_data.getDetailedStats', outerError),
+    );
     return serializeDetailedStats(calculateStatsFromShots([], [], []));
   }
 }
@@ -1190,6 +1197,9 @@ export async function getDetailedStats(
   roundId?: string | 'overall',
   filter?: StatsFilter
 ): Promise<GolfStats> {
+  if (getStatsActionContext()?.requestedPlayerId === playerId) {
+    return getDetailedStatsImpl(playerId, roundId, filter);
+  }
   return observedGetDetailedStats(playerId, roundId, filter);
 }
 
@@ -1279,7 +1289,7 @@ async function getSprayChartDataImpl(
   });
 
   try {
-    const { supabase, user } = await requireAuth();
+    const { supabase, user } = await requireAuth(playerId);
 
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return emptyResponse();
@@ -1307,7 +1317,10 @@ async function getSprayChartDataImpl(
 
     const { data: fetchedRounds, error: roundsError } = await query;
     if (roundsError) {
-      await logServerError(`[Stats] Spray rounds query error: ${describeError(roundsError)}`, { action: 'stats_data.getSprayChartData' });
+      await logServerError(
+        `[Stats] Spray rounds query error: ${describeError(roundsError)}`,
+        statsErrorContext('stats_data.getSprayChartData', roundsError),
+      );
       return emptyResponse();
     }
 
@@ -1495,7 +1508,10 @@ async function getSprayChartDataImpl(
     // `String(error)` collapsed to the useless "[object Object]" in
     // telemetry — describeError() renders `code=... msg=... details=...`
     // instead. Degrades the same way either way: empty response, no throw.
-    await logServerError(`[Stats] getSprayChartData failed: ${describeError(error)}`, { action: 'stats_data.getSprayChartData' });
+    await logServerError(
+      `[Stats] getSprayChartData failed: ${describeError(error)}`,
+      statsErrorContext('stats_data.getSprayChartData', error),
+    );
     return emptyResponse();
   }
 }
@@ -1511,6 +1527,9 @@ export async function getSprayChartData(
   roundId?: string | 'overall',
   filter?: StatsFilter
 ): Promise<SprayChartResponse> {
+  if (getStatsActionContext()?.requestedPlayerId === playerId) {
+    return getSprayChartDataImpl(playerId, roundId, filter);
+  }
   return observedGetSprayChartData(playerId, roundId, filter);
 }
 
@@ -1537,7 +1556,7 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
     personalBests: { bestScore: null, bestToPar: null, bestGir: null, lowestPutts: null },
   };
   try {
-  const { supabase, user } = await requireAuth();
+  const { supabase, user } = await requireAuth(playerId);
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
     return {
@@ -1702,7 +1721,10 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
     personalBests,
   };
   } catch (error) {
-    await logServerError(`[Stats] getTrendAnalysis failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getTrendAnalysis' });
+    await logServerError(
+      `[Stats] getTrendAnalysis failed: ${describeError(error)}`,
+      statsErrorContext('stats_data.getTrendAnalysis', error),
+    );
     return emptyResponse;
   }
 }
@@ -1798,6 +1820,9 @@ const observedGetTrendAnalysis = withAdminObserved(
 );
 
 export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisResponse> {
+  if (getStatsActionContext()?.requestedPlayerId === playerId) {
+    return getTrendAnalysisImpl(playerId);
+  }
   return observedGetTrendAnalysis(playerId);
 }
 
@@ -2183,7 +2208,7 @@ async function getFilterOptionsImpl(playerId: string): Promise<FilterOptions> {
 
   return { courses, seasons, roundTypes };
   } catch (error) {
-    await logServerError(`[Stats] getFilterOptions failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getFilterOptions' });
+    await logServerError(`[Stats] getFilterOptions failed: ${describeError(error)}`, { action: 'stats_data.getFilterOptions' });
     return { courses: [], seasons: [], roundTypes: [] };
   }
 }
@@ -2308,7 +2333,7 @@ async function getCourseBreakdownImpl(playerId: string): Promise<CourseBreakdown
 
   return { courses, bestCourse, worstCourse };
   } catch (error) {
-    await logServerError(`[Stats] getCourseBreakdown failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getCourseBreakdown' });
+    await logServerError(`[Stats] getCourseBreakdown failed: ${describeError(error)}`, { action: 'stats_data.getCourseBreakdown' });
     return { courses: [], bestCourse: null, worstCourse: null };
   }
 }
@@ -2334,7 +2359,7 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
  */
 async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResponse> {
   try {
-  const { supabase, user } = await requireAuth();
+  const { supabase, user } = await requireAuth(playerId);
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
     return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
@@ -2469,7 +2494,10 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
     closingHolesAverage: meanOrNull(closingToPar),
   };
   } catch (error) {
-    await logServerError(`[Stats] getWorstHoleAnalysis failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.calcAvg' });
+    await logServerError(
+      `[Stats] getWorstHoleAnalysis failed: ${describeError(error)}`,
+      statsErrorContext('stats_data.getWorstHoleAnalysis', error),
+    );
     return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
   }
 }
@@ -2481,6 +2509,9 @@ const observedGetWorstHoleAnalysis = withAdminObserved(
 );
 
 export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleResponse> {
+  if (getStatsActionContext()?.requestedPlayerId === playerId) {
+    return getWorstHoleAnalysisImpl(playerId);
+  }
   return observedGetWorstHoleAnalysis(playerId);
 }
 
@@ -2503,7 +2534,7 @@ async function getPlayerStrengthsWeaknessesImpl(
   weaknesses: StatisticalStrengthWeakness[];
 } | null> {
   try {
-  const { supabase, user } = await requireAuth();
+  const { supabase, user } = await requireAuth(playerId);
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
     return null;
@@ -2517,7 +2548,10 @@ async function getPlayerStrengthsWeaknessesImpl(
 
   return generateStatisticalStrengthsWeaknesses(stats);
   } catch (error) {
-    await logServerError(`[Stats] getPlayerStrengthsWeaknesses failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getPlayerStrengthsWeaknesses' });
+    await logServerError(
+      `[Stats] getPlayerStrengthsWeaknesses failed: ${describeError(error)}`,
+      statsErrorContext('stats_data.getPlayerStrengthsWeaknesses', error),
+    );
     return null;
   }
 }
@@ -2535,6 +2569,9 @@ export async function getPlayerStrengthsWeaknesses(
   strengths: StatisticalStrengthWeakness[];
   weaknesses: StatisticalStrengthWeakness[];
 } | null> {
+  if (getStatsActionContext()?.requestedPlayerId === playerId) {
+    return getPlayerStrengthsWeaknessesImpl(playerId, filter);
+  }
   return observedGetPlayerStrengthsWeaknesses(playerId, filter);
 }
 

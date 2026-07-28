@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
         calendarName = calendar.summary || 'Primary Calendar';
       }
     } catch (e) {
-      await logServerError(`Failed to fetch calendar info: ${e instanceof Error ? e.message : String(e)}`, { action: 'route.GET' });
+      await logServerError(`Failed to fetch calendar info: ${describeError(e)}`, { action: 'route.GET' });
     }
 
     // Store tokens
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
       });
 
     if (dbError) {
-      await logServerError(`Database error: ${dbError instanceof Error ? dbError.message : String(dbError)}`, { action: 'route.GET' });
+      await logServerError(`Database error: ${describeError(dbError)}`, { action: 'route.GET' });
       redirectUrl.searchParams.set('gcal_error', 'database_error');
       return NextResponse.redirect(redirectUrl);
     }
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
-    await logServerError(`Callback error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.GET' });
+    await logServerError(`Callback error: ${describeError(error)}`, { action: 'route.GET' });
     redirectUrl.searchParams.set('gcal_error', 'unknown_error');
     return NextResponse.redirect(redirectUrl);
   }

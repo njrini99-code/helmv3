@@ -35,6 +35,7 @@ import { calcConfidence } from './types';
 import { getActiveGate, incrementGatedCount } from './gate-context';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Sentinel returned by `upsertInsight` when an active philosophy gate
@@ -80,7 +81,14 @@ export function isEvidenceRefusal(err: unknown): err is InsightEvidenceRefusal {
 
 const MOVEMENT_THRESHOLD = 0.05; // 5%
 const MATURATION_MOVEMENTS = 3;
-const MIN_SAMPLE_N = 5;
+/**
+ * Platform evidence floor (see docs/architecture/coachhelm-evidence-contract.md).
+ * Exported because it is a floor GENERATORS must respect, not just one this
+ * module rejects against: a rule whose own detect() gate sits below it fires,
+ * composes, and is refused on every run — it can never publish. Rules import
+ * this rather than restating `5`, so moving the floor moves their gates too.
+ */
+export const MIN_SAMPLE_N = 5;
 const TENTATIVE_CONFIDENCE_FLOOR = 0.4;
 
 type JsonRecord = Record<string, unknown>;
@@ -353,7 +361,7 @@ async function updateExisting(
   } catch (error) {
     // notifyInsightLanded never throws, but belt-and-braces here.
     await logServerError(
-      `notifyInsightLanded threw unexpectedly: ${error instanceof Error ? error.message : String(error)}`,
+      `notifyInsightLanded threw unexpectedly: ${describeError(error)}`,
       { action: 'coachhelm.upsert.updateExisting.notifyInsightLanded', featureArea: 'coachhelm', playerId: input.player_id ?? undefined },
       'warning'
     );
@@ -479,7 +487,7 @@ async function resolvePlayerOwnership(
     return { coachId: staff?.coach_id ?? null, teamId };
   } catch (error) {
     await logServerError(
-      `resolvePlayerOwnership failed: ${error instanceof Error ? error.message : String(error)}`,
+      `resolvePlayerOwnership failed: ${describeError(error)}`,
       { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
       'warning'
     );

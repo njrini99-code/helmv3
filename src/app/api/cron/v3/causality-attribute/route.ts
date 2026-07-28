@@ -22,6 +22,7 @@ import {
   VISIBLE_LIFECYCLE_STATES,
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -323,7 +324,7 @@ async function handle(): Promise<NextResponse> {
       summary.attributed += 1;
     } catch (err) {
       await logServerError(
-        `causality compute ${c.id}: ${err instanceof Error ? err.message : String(err)}`,
+        `causality compute ${c.id}: ${describeError(err)}`,
         { action: 'cron.v3.causality.compute' },
       );
       summary.errors += 1;

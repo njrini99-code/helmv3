@@ -36,6 +36,7 @@ import 'server-only';
 
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -111,7 +112,7 @@ export async function appendGroupAudit(
     if (error) {
       await logServerError(
         `Failed to append Lift Lab group audit: ${
-          error instanceof Error ? error.message : String(error)
+          describeError(error)
         }`,
         { action: 'group-audit-writer.appendGroupAudit' },
       );
@@ -120,7 +121,7 @@ export async function appendGroupAudit(
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `Lift Lab group audit writer threw: ${err instanceof Error ? err.message : String(err)}`,
+      `Lift Lab group audit writer threw: ${describeError(err)}`,
       { action: 'group-audit-writer.appendGroupAudit' },
     );
     return { ok: false };

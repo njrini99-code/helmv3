@@ -50,6 +50,7 @@ import {
   applyInsightVisibility,
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { recordInsightExposure } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -500,7 +501,7 @@ async function getInsightsForPlayerImpl(
     supabase = supabaseOverride ?? (await createClient());
   } catch (err) {
     await logServerError(
-      `getInsightsForPlayer client init failed: ${err instanceof Error ? err.message : String(err)}`,
+      `getInsightsForPlayer client init failed: ${describeError(err)}`,
       { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
     );
     return [];
@@ -568,14 +569,14 @@ async function getInsightsForPlayerImpl(
         error = result.error;
       } catch (retryErr) {
         await logServerError(
-          `getInsightsForPlayer fetch failed: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          `getInsightsForPlayer fetch failed: ${describeError(retryErr)}`,
           { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
         );
         return [];
       }
     } else {
       await logServerError(
-        `getInsightsForPlayer failed: ${err instanceof Error ? err.message : String(err)}`,
+        `getInsightsForPlayer failed: ${describeError(err)}`,
         { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
       );
       return [];
@@ -896,7 +897,7 @@ async function getTopInsightsForPlayersImpl(
     supabase = supabaseOverride ?? (await createClient());
   } catch (err) {
     await logServerError(
-      `getTopInsightsForPlayers client init failed: ${err instanceof Error ? err.message : String(err)}`,
+      `getTopInsightsForPlayers client init failed: ${describeError(err)}`,
       { action: 'insight-delivery.getTopInsightsForPlayers', featureArea: 'insights' },
     );
     return out;
@@ -940,14 +941,14 @@ async function getTopInsightsForPlayersImpl(
         error = result.error;
       } catch (retryErr) {
         await logServerError(
-          `getTopInsightsForPlayers fetch failed: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          `getTopInsightsForPlayers fetch failed: ${describeError(retryErr)}`,
           { action: 'insight-delivery.getTopInsightsForPlayers', featureArea: 'insights' },
         );
         return out;
       }
     } else {
       await logServerError(
-        `getTopInsightsForPlayers failed: ${err instanceof Error ? err.message : String(err)}`,
+        `getTopInsightsForPlayers failed: ${describeError(err)}`,
         { action: 'insight-delivery.getTopInsightsForPlayers', featureArea: 'insights' },
       );
       return out;
@@ -1202,7 +1203,7 @@ async function fetchShotDriversByCategory(
     // Sentry-escalated exception (skipSentry: true — this is expected
     // degradation, not an incident to page on).
     void logServerError(
-      `fetchShotDriversByCategory failed (continuing without shot drivers): ${err instanceof Error ? err.message : String(err)}`,
+      `fetchShotDriversByCategory failed (continuing without shot drivers): ${describeError(err)}`,
       { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId, skipSentry: true },
       'warning',
     ).catch(() => undefined);
@@ -1254,7 +1255,7 @@ async function fetchSgTrendsByCategory(
     // Best-effort — themes render without trends, so a handled failure is a
     // warning, not a paging error.
     void logServerError(
-      `fetchSgTrendsByCategory failed (continuing without trends): ${err instanceof Error ? err.message : String(err)}`,
+      `fetchSgTrendsByCategory failed (continuing without trends): ${describeError(err)}`,
       { action: 'insight-delivery.fetchSgTrendsByCategory', featureArea: 'insights', playerId },
       'warning',
     ).catch(() => undefined);
@@ -1336,7 +1337,7 @@ async function assembleForPlayer(
     // Best-effort — themes render without SG, so a handled failure is a
     // warning, not a paging error.
     void logServerError(
-      `assembleForPlayer SG fetch failed (continuing): ${sgErr instanceof Error ? sgErr.message : String(sgErr)}`,
+      `assembleForPlayer SG fetch failed (continuing): ${describeError(sgErr)}`,
       { action: 'insight-delivery.assembleForPlayer', featureArea: 'insights', playerId },
       'warning',
     ).catch(() => undefined);
@@ -1429,7 +1430,7 @@ async function getThemesForPlayerImpl(
     return { success: true, data };
   } catch (err) {
     await logServerError(
-      `getThemesForPlayer failed: ${err instanceof Error ? err.message : String(err)}`,
+      `getThemesForPlayer failed: ${describeError(err)}`,
       { action: 'insight-delivery.getThemesForPlayer', featureArea: 'insights', playerId },
     );
     return { success: false, error: 'Failed to assemble themes' };
@@ -1473,7 +1474,7 @@ async function getThemesForCoachImpl(
     return { success: true, data };
   } catch (err) {
     await logServerError(
-      `getThemesForCoach failed: ${err instanceof Error ? err.message : String(err)}`,
+      `getThemesForCoach failed: ${describeError(err)}`,
       { action: 'insight-delivery.getThemesForCoach', featureArea: 'insights', extra: { playerId } },
     );
     return { success: false, error: 'Failed to assemble themes' };

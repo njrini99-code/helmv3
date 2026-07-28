@@ -26,6 +26,7 @@ import { buildWeeklyRecapHtml } from '@/lib/coachhelm/v3/recap/template';
 import { sendEmail } from '@/lib/coachhelm/v3/foundation/email';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * ISO week start (Monday), UTC, as `YYYY-MM-DD` — the dedupe period key.
@@ -177,7 +178,7 @@ async function handle(): Promise<NextResponse> {
     } catch (err) {
       summary.errors += 1;
       await logServerError(
-        `weekly-coach-email failure ${team_id}: ${err instanceof Error ? err.message : String(err)}`,
+        `weekly-coach-email failure ${team_id}: ${describeError(err)}`,
         { action: 'cron.v3.weekly-coach-email', source: 'cron' },
       );
     }

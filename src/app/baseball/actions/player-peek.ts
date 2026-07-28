@@ -8,6 +8,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { getCoachRosterPlayerIds } from '@/lib/baseball/player-visibility';
 import { assertCoachCanRecruitPlayer } from '@/lib/baseball/recruitability';
 import type { CoachType } from '@/app/baseball/actions/discover';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface PlayerPeekData {
   id: string;
@@ -192,7 +193,7 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
       });
     if (engagementError) {
       await logServerError(
-        `Failed to record profile_view engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+        `Failed to record profile_view engagement event: ${describeError(engagementError)}`,
         { action: 'player_peek.getPlayerPeekData.engagementEvent' },
       );
     }
@@ -223,7 +224,7 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
         }
       }
     } catch (notifErr) {
-      await logServerError(`[playerPeek] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'player_peek.getPlayerPeekData' });
+      await logServerError(`[playerPeek] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'player_peek.getPlayerPeekData' });
     }
 
     return {
@@ -260,7 +261,7 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
       },
     };
   } catch (error) {
-    await logServerError(`Error fetching player peek data: ${error instanceof Error ? error.message : String(error)}`, { action: 'player_peek.getPlayerPeekData' });
+    await logServerError(`Error fetching player peek data: ${describeError(error)}`, { action: 'player_peek.getPlayerPeekData' });
     return { success: false, error: 'Failed to load player data' };
   }
 }

@@ -93,9 +93,10 @@ const nextConfig = {
     // document uploads pass the File as an action arg (see
     // src/app/golf/actions/recruit-documents.ts, MAX_FILE_BYTES = 25 MB), so a
     // 2 MB cap would reject 2–25 MB files *before* the action runs — making the
-    // advertised 25 MB limit a lie. Keep this in sync with that cap.
+    // advertised 25 MB limit a lie. Keep a small margin above that cap for the
+    // multipart/action envelope.
     serverActions: {
-      bodySizeLimit: '25mb',
+      bodySizeLimit: '26mb',
     },
     // Optimize package imports
     optimizePackageImports: [

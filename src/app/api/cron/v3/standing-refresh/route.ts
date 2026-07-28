@@ -32,6 +32,7 @@ import {
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -147,7 +148,7 @@ async function handle(): Promise<NextResponse> {
     }
   } catch (err) {
     await logServerError(
-      `standing-refresh team-select exception: ${err instanceof Error ? err.message : String(err)}`,
+      `standing-refresh team-select exception: ${describeError(err)}`,
       { action: 'cron.v3.standing-refresh.team-select' },
     );
     return NextResponse.json(
@@ -228,7 +229,7 @@ async function handle(): Promise<NextResponse> {
     }
   } catch (err) {
     await logServerError(
-      `standing-refresh cache-presweep exception: ${err instanceof Error ? err.message : String(err)}`,
+      `standing-refresh cache-presweep exception: ${describeError(err)}`,
       { action: 'cron.v3.standing-refresh.cache-presweep' },
     );
   }
@@ -307,7 +308,7 @@ async function handle(): Promise<NextResponse> {
     }
   } catch (err) {
     await logServerError(
-      `standing-refresh RPC exception: ${err instanceof Error ? err.message : String(err)}`,
+      `standing-refresh RPC exception: ${describeError(err)}`,
       { action: 'cron.v3.standing-refresh.rpc' },
     );
     return NextResponse.json({
@@ -345,7 +346,7 @@ async function handle(): Promise<NextResponse> {
     }
   } catch (err) {
     await logServerError(
-      `standing-refresh prune exception: ${err instanceof Error ? err.message : String(err)}`,
+      `standing-refresh prune exception: ${describeError(err)}`,
       { action: 'cron.v3.standing-refresh.prune' },
     );
   }
@@ -373,7 +374,7 @@ async function handle(): Promise<NextResponse> {
     focusAreasProgressed = focusSummary.updated;
   } catch (err) {
     await logServerError(
-      `standing-refresh goal-progress: ${err instanceof Error ? err.message : String(err)}`,
+      `standing-refresh goal-progress: ${describeError(err)}`,
       { action: 'cron.v3.standing-refresh.goal-progress' },
     );
   }

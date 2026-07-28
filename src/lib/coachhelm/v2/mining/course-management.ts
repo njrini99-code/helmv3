@@ -26,6 +26,7 @@ import {
   loadStandingForInsightEvidence,
   mergeStandingIntoEvidence,
 } from '../insights/standing-injection';
+import { describeError } from '@/lib/utils/describe-error';
 
 type Supabase = SupabaseClient<Database>;
 
@@ -267,7 +268,7 @@ export async function generateWorstHolesInsights(playerId: string): Promise<void
       featureArea: 'coachhelm/v2/mining/course-management',
       source: 'background_job',
       playerId,
-      metadata: { error: err instanceof Error ? err.message : String(err) },
+      metadata: { error: describeError(err) },
     });
     return;
   }
@@ -284,7 +285,7 @@ export async function generateWorstHolesInsights(playerId: string): Promise<void
       featureArea: 'coachhelm/v2/mining/course-management',
       source: 'background_job',
       playerId,
-      metadata: { error: err instanceof Error ? err.message : String(err) },
+      metadata: { error: describeError(err) },
     });
     return;
   }
@@ -410,7 +411,7 @@ export async function generateWorstHolesInsights(playerId: string): Promise<void
         playerId,
         metadata: {
           course_id: courseId,
-          error: err instanceof Error ? err.message : String(err),
+          error: describeError(err),
         },
       });
     }
@@ -480,7 +481,7 @@ export async function generateWarmupHoleInsight(playerId: string): Promise<void>
       featureArea: 'coachhelm/v2/mining/course-management',
       source: 'background_job',
       playerId,
-      metadata: { error: err instanceof Error ? err.message : String(err) },
+      metadata: { error: describeError(err) },
     });
     return;
   }
@@ -497,7 +498,7 @@ export async function generateWarmupHoleInsight(playerId: string): Promise<void>
       featureArea: 'coachhelm/v2/mining/course-management',
       source: 'background_job',
       playerId,
-      metadata: { error: err instanceof Error ? err.message : String(err) },
+      metadata: { error: describeError(err) },
     });
     return;
   }
@@ -585,7 +586,7 @@ export async function generateWarmupHoleInsight(playerId: string): Promise<void>
       featureArea: 'coachhelm/v2/mining/course-management',
       source: 'background_job',
       playerId,
-      metadata: { error: err instanceof Error ? err.message : String(err) },
+      metadata: { error: describeError(err) },
     });
   }
 }

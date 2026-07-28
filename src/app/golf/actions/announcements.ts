@@ -25,6 +25,7 @@ import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // CONSTANTS
@@ -321,7 +322,7 @@ async function createEnrichedAnnouncementImpl(input: {
       }
     } catch (notifErr) {
       // Never block announcement creation on notification failure
-      await logServerError(`[createAnnouncement] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'announcements.createEnrichedAnnouncement' });
+      await logServerError(`[createAnnouncement] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'announcements.createEnrichedAnnouncement' });
     }
 
     // Reconcile the persisted delivery flags with what actually dispatched

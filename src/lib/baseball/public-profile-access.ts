@@ -113,6 +113,23 @@ export async function resolvePublicProfileAccess(
     return { allowed: false, reason: 'coaches_only', displayName: null };
   }
 
+  // Anonymous SELECT was intentionally revoked from baseball_team_members.
+  // Reuse the existing anon-safe SECURITY DEFINER stats RPC as the public
+  // program gate: it returns a non-null envelope even when the player has no
+  // season rows, and only after re-enforcing recruiting/profile/program
+  // visibility inside Postgres. This avoids turning a denied membership read
+  // into a public-profile 404 while keeping the base table private.
+  if (!viewerUserId) {
+    const { data: publicEnvelope, error: publicGateError } = await supabase.rpc(
+      'get_baseball_public_player_stats',
+      { p_player_id: playerId },
+    );
+    if (publicGateError || publicEnvelope === null) {
+      return { allowed: false, reason: 'program_disabled', displayName: null };
+    }
+    return { allowed: true, reason: 'public', displayName };
+  }
+
   const { data: member } = await supabase
     .from('baseball_team_members')
     .select('team_id')

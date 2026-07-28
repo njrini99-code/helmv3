@@ -28,6 +28,14 @@ import type {
 // Fixture helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Round ids for a sample that clears the platform evidence floor
+ * (MIN_SAMPLE_N = 5). The hole-sequence rules report their distinct-round
+ * count AS `evidence.sample_n`, so a 3-round fixture composes evidence
+ * `upsertInsight` refuses — see composite-evidence-floor.test.ts.
+ */
+const FLOOR_ROUNDS = ['r1', 'r2', 'r3', 'r4', 'r5'];
+
 function makeInsight(over: {
   type: string;
   signature: string;
@@ -202,8 +210,8 @@ describe('short_approach_proximity_gap', () => {
 describe('closing_hole_fatigue', () => {
   it('fires when holes 13-18 avg ≥0.5 strokes/hole worse than 1-12', () => {
     const ctx = emptyCtx();
-    // 3 rounds, opening 12 holes avg +0.2/hole, closing 6 holes avg +1.2/hole → delta = +1.0
-    for (const rid of ['r1', 'r2', 'r3']) {
+    // 5 rounds, opening 12 holes even, closing 6 holes +1/hole → delta = +1.0
+    for (const rid of FLOOR_ROUNDS) {
       for (let h = 1; h <= 12; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 4)); // even
       for (let h = 13; h <= 18; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 5)); // +1
     }
@@ -214,7 +222,7 @@ describe('closing_hole_fatigue', () => {
     expect(c.title).toContain('Closing 6 holes');
   });
 
-  it('does NOT fire below 3-round minimum', () => {
+  it('does NOT fire below the sample floor', () => {
     const ctx = emptyCtx();
     for (let h = 1; h <= 18; h++) ctx.hole_scores.push(holeScore('r1', h, 4, 6));
     expect(closingHoleFatigue.detect([], ctx)).toBeNull();
@@ -222,7 +230,7 @@ describe('closing_hole_fatigue', () => {
 
   it('does NOT fire when closing holes are equally clean', () => {
     const ctx = emptyCtx();
-    for (const rid of ['r1', 'r2', 'r3']) {
+    for (const rid of FLOOR_ROUNDS) {
       for (let h = 1; h <= 18; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 4));
     }
     expect(closingHoleFatigue.detect([], ctx)).toBeNull();
@@ -236,7 +244,7 @@ describe('closing_hole_fatigue', () => {
 describe('front_9_starter', () => {
   it('fires when holes 1-3 avg ≥0.5 strokes/hole worse than 4-18', () => {
     const ctx = emptyCtx();
-    for (const rid of ['r1', 'r2', 'r3']) {
+    for (const rid of FLOOR_ROUNDS) {
       for (let h = 1; h <= 3; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 6)); // double
       for (let h = 4; h <= 18; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 4));
     }
@@ -247,7 +255,7 @@ describe('front_9_starter', () => {
 
   it('does NOT fire when opening 3 are clean', () => {
     const ctx = emptyCtx();
-    for (const rid of ['r1', 'r2', 'r3']) {
+    for (const rid of FLOOR_ROUNDS) {
       for (let h = 1; h <= 18; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 4));
     }
     expect(front9Starter.detect([], ctx)).toBeNull();
@@ -255,7 +263,7 @@ describe('front_9_starter', () => {
 
   it('f9s-1: cross-suppresses when a warmup_hole insight already surfaced the opening tax', () => {
     const ctx = emptyCtx();
-    for (const rid of ['r1', 'r2', 'r3']) {
+    for (const rid of FLOOR_ROUNDS) {
       for (let h = 1; h <= 3; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 6)); // double
       for (let h = 4; h <= 18; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 4));
     }
