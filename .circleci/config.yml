@@ -42,7 +42,7 @@ executors:
   ios:
     macos:
       xcode: "15.4.0"
-    resource_class: macos.m1.medium.gen1
+    resource_class: m4pro.medium
 
 # ---------------------------------------------------------------------------
 # Reusable commands
@@ -177,6 +177,8 @@ jobs:
       - install-node-deps
       - run:
           name: Build web bundle (for Capacitor sync)
+          environment:
+            NODE_OPTIONS: --max-old-space-size=8192
           command: |
             # Capacitor needs the web bundle to exist before `cap sync`.
             # Use the prod build so we catch SSR/Server Component breakage
