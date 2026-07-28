@@ -14,6 +14,7 @@ import {
   extractActionSoftFailure,
   isExpectedSoftFailureMessage,
   isExpectedEmptyStateCode,
+  isUserInputRejection,
   observeActionSoftFailure,
 } from '@/lib/admin/observe-action-result';
 import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
@@ -60,6 +61,60 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('Invalid email or password (4 attempts remaining)')).toBe(true);
     expect(isExpectedSoftFailureMessage('Too many login attempts. Please try again in 10 minutes.')).toBe(true);
     expect(isExpectedSoftFailureMessage('Could not complete the calendar action. Please try again.')).toBe(false);
+  });
+
+  // Two identical outcomes reached the Bridge at two different severities
+  // purely because of punctuation and synonym drift between emitters:
+  // `Not authenticated.` (insight-delivery.ts) and `Not authorized` (~30 golf
+  // insight actions) missed the anchored patterns and were filed as hard
+  // errors next to their correctly-tiered 'warning' twins.
+  it('tiers denial wording consistently across punctuation and synonyms', () => {
+    for (const message of [
+      'Not authenticated',
+      'Not authenticated.',
+      'Unauthorized',
+      'Unauthorized.',
+      'Not authorized',
+      'Not authorised',
+      'Forbidden',
+    ]) {
+      expect(isExpectedSoftFailureMessage(message)).toBe(true);
+    }
+  });
+
+  it('treats a correct response to user input as info, not an incident', () => {
+    for (const message of [
+      'Invalid email or password',
+      'Invalid email or password (2 attempts remaining)',
+      'Too many login attempts. Please try again in 10 seconds.',
+      'Account is locked',
+      "This isn't available in the live demo",
+      'Please select a course',
+    ]) {
+      expect(isUserInputRejection(message)).toBe(true);
+    }
+
+    // An access denial is NOT user input — it stays a warning-tier soft failure
+    // so an operator can still see who was denied what.
+    for (const message of ['Unauthorized', 'Forbidden', 'Not authorized']) {
+      expect(isUserInputRejection(message)).toBe(false);
+      expect(isExpectedSoftFailureMessage(message)).toBe(true);
+    }
+  });
+
+  it('logs a mistyped password at info, not as a warning-tier incident', () => {
+    observeActionSoftFailure(
+      { success: false, error: 'Invalid email or password (2 attempts remaining)' },
+      { action: 'loginAction', sport: 'golf', source: 'server_action' },
+    );
+
+    expect(mocks.logServerError).not.toHaveBeenCalled();
+    expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
+    const infoCall = mocks.logServerEvent.mock.calls[0] as
+      | [string, Record<string, unknown> | undefined, 'info']
+      | undefined;
+    expect(infoCall?.[2]).toBe('info');
+    expect(infoCall?.[1]).toMatchObject({ skipSentry: true });
   });
 
   it('classifies the engine_session_expired code as expected regardless of message wording', () => {

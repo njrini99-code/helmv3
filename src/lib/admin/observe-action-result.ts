@@ -9,19 +9,46 @@ export type ActionSoftFailureContext = NonNullable<Parameters<typeof logServerEr
   action: string;
 };
 
-/** User-facing control flow — logged as handled warnings, hidden from Sentry. */
+/**
+ * Access denials and missing-context states — logged as handled warnings,
+ * hidden from Sentry. These are still real soft *failures*: somebody wanted
+ * something and didn't get it, and an operator may care who.
+ *
+ * Anchors tolerate trailing punctuation. `Not authenticated.` (one period,
+ * from `insight-delivery.ts`) used to miss `/^not authenticated$/i` and land
+ * in the Bridge at 'error' next to its own identical, correctly-tiered
+ * 'warning' sibling — the same outcome filed as two different incidents.
+ */
 const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
-  /^not authenticated$/i,
-  /^unauthorized$/i,
-  /^forbidden$/i,
+  /^not authenticated[.!]?$/i,
+  /^unauthorized[.!]?$/i,
+  // `Not authorized` is the wording ~30 golf insight actions use for the exact
+  // denial `Forbidden` describes below; without the synonym it was the only
+  // access denial in the codebase tiered as a hard 'error'.
+  /^not authori[sz]ed[.!]?$/i,
+  /^forbidden[.!]?$/i,
   /^you must be signed in/i,
-  /^invalid email or password/i,
-  /^too many login attempts/i,
-  /^account (?:is )?locked/i,
   /^coach or team not found$/i,
   /^player profile not found$/i,
   /^only coaches can/i,
   /^you do not have permission/i,
+];
+
+/**
+ * Correct platform responses to what the visitor typed or clicked: a wrong
+ * password, a tripped rate limiter, a failed field validation, a demo-mode
+ * guard. Nothing failed — the platform did precisely its job — so these sit
+ * at 'info' with the empty states rather than at 'warning' with the denials.
+ *
+ * They were the single largest source of Bridge incidents that no operator
+ * could ever act on (`Invalid email or password` alone, n=18): the incident
+ * feed's default view excludes only 'info', so every mistyped password was a
+ * warning-tier incident competing with real regressions for attention.
+ */
+const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
+  /^invalid email or password/i,
+  /^too many login attempts/i,
+  /^account (?:is )?locked/i,
   /^this isn't available in the live demo/i,
   /^choose a valid/i,
   /^please (enter|select|provide)/i,
@@ -105,7 +132,14 @@ export function extractActionSoftFailure(
 export function isExpectedSoftFailureMessage(message: string, code?: string | null): boolean {
   if (code && EXPECTED_SOFT_FAILURE_CODES.has(code)) return true;
   if (isExpectedAuthNoise(message)) return true;
+  if (isUserInputRejection(message)) return true;
   return EXPECTED_SOFT_FAILURE_PATTERNS.some((pattern) => pattern.test(message.trim()));
+}
+
+/** True when the message is a correct response to user input, not a failure. */
+export function isUserInputRejection(message: string): boolean {
+  const text = message.trim();
+  return USER_INPUT_REJECTION_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 /** True for a stable `code` marking a routine empty-state, not a failure. */
@@ -117,6 +151,7 @@ type SoftFailureSeverity = 'info' | 'warning' | 'error';
 
 function severityForSoftFailure(message: string, code: string | null): SoftFailureSeverity {
   if (isExpectedEmptyStateCode(code)) return 'info';
+  if (isUserInputRejection(message)) return 'info';
   return isExpectedSoftFailureMessage(message, code) ? 'warning' : 'error';
 }
 
