@@ -462,7 +462,7 @@ class CoachHelmIntelligence {
         `composite synthesis failed for ${playerId}: ${describeError(err)}`,
         { action: 'analyzePlayer.composite' },
       );
-      return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1 };
+      return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
     });
     void compositeSummary;
 

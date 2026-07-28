@@ -81,7 +81,14 @@ export function isEvidenceRefusal(err: unknown): err is InsightEvidenceRefusal {
 
 const MOVEMENT_THRESHOLD = 0.05; // 5%
 const MATURATION_MOVEMENTS = 3;
-const MIN_SAMPLE_N = 5;
+/**
+ * Platform evidence floor (see docs/architecture/coachhelm-evidence-contract.md).
+ * Exported because it is a floor GENERATORS must respect, not just one this
+ * module rejects against: a rule whose own detect() gate sits below it fires,
+ * composes, and is refused on every run — it can never publish. Rules import
+ * this rather than restating `5`, so moving the floor moves their gates too.
+ */
+export const MIN_SAMPLE_N = 5;
 const TENTATIVE_CONFIDENCE_FLOOR = 0.4;
 
 type JsonRecord = Record<string, unknown>;
