@@ -235,6 +235,22 @@ describe('logError → monitoring sink', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  /**
+   * CefSharp's embedded-browser bridge. instrumentation-client.ts already lists
+   * this exact pattern in Sentry's `ignoreErrors` because it originates outside
+   * our bundle, but the Bridge pipeline is a separate path and was persisting
+   * one `severity:error` row per occurrence.
+   */
+  it('does not forward the CefSharp "Object Not Found Matching Id" bridge error', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(
+      new Error('Object Not Found Matching Id:1, MethodName:update, ParamCount:4'),
+      { component: 'GlobalErrorHandler' },
+      'high',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('forwards non-stale errors to the monitoring endpoint', async () => {
     const { logError } = await import('@/lib/error-logging');
     logError(new Error('Database connection failed'), { component: 'test' }, 'high');
@@ -245,6 +261,74 @@ describe('logError → monitoring sink', () => {
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.message).toBe('Database connection failed');
     expect(body.severity).toBe('high');
+  });
+});
+
+/**
+ * Severity ceiling for self-recovering failures (capSeverityForSelfRecovering).
+ *
+ * A chunk-load failure is a tab holding asset URLs from a retired deployment.
+ * The one-shot reload recovers it and Sentry already declines to open an issue,
+ * so arriving in Helm Bridge at `severity:error` (log-error maps high → error)
+ * made a non-incident read as a live one. It must still ARRIVE — a spike means
+ * a bad deploy or a purged CDN — just as a warning.
+ */
+describe('logError → chunk-load severity ceiling', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  function bodyOf(call: unknown[]): { message: string; severity: string } {
+    return JSON.parse((call[1] as RequestInit).body as string);
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const chunkMessages = [
+    'Loading chunk 97094 failed.\n(error: https://helmv3.vercel.app/_next/static/chunks/97094-d1294ae3b5083b2e.js)',
+    'Loading CSS chunk 8351 failed.',
+    'ChunkLoadError: Loading chunk 42 failed.',
+    "Cannot read properties of undefined (reading 'call')",
+  ];
+
+  for (const message of chunkMessages) {
+    it(`caps 'high' to 'medium' for: ${message.slice(0, 40)}`, async () => {
+      const { logError } = await import('@/lib/error-logging');
+      logError(new Error(message), { component: 'GlobalErrorHandler' }, 'high');
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('medium');
+    });
+  }
+
+  it('still delivers the report — a spike of stale tabs is real signal', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Loading chunk 31172 failed.'), { component: 'RouteErrorBoundary' }, 'high');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves a genuine error at high', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Cannot read properties of undefined (reading \'id\')'), {}, 'high');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('high');
+  });
+
+  it('does not touch critical — the caller knows more than this filter', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Loading chunk 5 failed.'), {}, 'critical');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('critical');
+  });
+
+  it('does not raise a lower severity', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('Loading chunk 5 failed.'), {}, 'low');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('low');
   });
 });
 

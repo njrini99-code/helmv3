@@ -210,7 +210,12 @@ export function RouteErrorBoundary({
       // Downgrade to 'medium' (warning) so they stay discoverable without
       // polluting the error feed — but ONLY for pure client transience. A real
       // HTTP 5xx (isServer5xx) stays at 'high' so a backend outage still pages,
-      // and chunk-load / unknown errors keep 'high' too.
+      // and unknown errors keep 'high' too.
+      //
+      // Chunk-load is ALSO not an incident (stale assets after a deploy, with a
+      // one-shot reload that recovers it), but it is capped centrally in
+      // logError rather than here — the global window handlers hit the same
+      // class and must reach the same tier. See capSeverityForSelfRecovering.
     }, (isTransient || isGenericLoad) && !isServer5xx ? 'medium' : 'high');
   }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, isServer5xx, retryCount]);
 

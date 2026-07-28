@@ -188,6 +188,47 @@ function isResizeObserverLoopNoise(message: string): boolean {
 }
 
 /**
+ * CefSharp's JavaScript bridge emits `Object Not Found Matching Id:1,
+ * MethodName:update, ParamCount:4` when an embedded-browser host tears down a
+ * bound object before a queued callback runs. It originates OUTSIDE our bundle
+ * — there is no Helm frame to fix, no stack, and no user impact — which is why
+ * instrumentation-client.ts already lists this exact pattern in Sentry's
+ * `ignoreErrors`. Same asymmetry as the ResizeObserver case above: that filter
+ * only guards Sentry's automatic capture, so without this the Bridge pipeline
+ * still persists one `severity:error` row per occurrence.
+ */
+function isEmbeddedBrowserBridgeNoise(message: string): boolean {
+  return /Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/.test(message);
+}
+
+/**
+ * Ceiling on the severity of failures that carry their own recovery path.
+ *
+ * A chunk-load failure means the tab is holding asset URLs from a deployment
+ * that no longer exists. It is not a defect: the `beforeInteractive` recovery
+ * script plus `ChunkLoadErrorHandler` reload the tab once per session and the
+ * user lands on the new build. Sentry already declines to open an issue for it
+ * (`instrumentation-client.ts` `ignoreErrors`, "Stale deployment assets are
+ * already handled by the global one-shot ChunkLoadError recovery"), so leaving
+ * the Bridge at `severity:error` meant one class read as a live incident in
+ * Helm Bridge while being deliberately ignored one layer over — the same
+ * inconsistency `RouteErrorBoundary` already resolved for transient-network
+ * failures by tiering them to 'medium'.
+ *
+ * Capped rather than dropped: an individual stale tab is noise, but a SPIKE of
+ * them is a real signal (a bad deploy, a purged CDN), so the rows must keep
+ * arriving — just as warnings, not as errors. `critical` is left untouched; a
+ * caller that has escalated that far knows something this filter does not.
+ */
+function capSeverityForSelfRecovering(
+  message: string,
+  severity: ErrorLogEntry['severity'],
+): ErrorLogEntry['severity'] {
+  if (severity !== 'high') return severity;
+  return isChunkLoadErrorMessage(message) ? 'medium' : severity;
+}
+
+/**
  * Client-side report de-duplication.
  *
  * A single flaky tab — e.g. a backgrounded `/golf/dashboard/rounds/new` on a
@@ -233,7 +274,7 @@ function shouldThrottleClientReport(
 export function logError(
   error: Error,
   context?: ErrorContext,
-  severity: ErrorLogEntry['severity'] = 'medium'
+  requestedSeverity: ErrorLogEntry['severity'] = 'medium'
 ): void {
   // Stale-server-action errors are deployment artifacts, not bugs. Downgrade
   // to a single per-session warning instead of paging error tracking 18 times
@@ -247,10 +288,13 @@ export function logError(
   }
 
   // Benign browser noise — filter before Sentry AND before the Bridge write,
-  // not just from Sentry's ignoreErrors. See isResizeObserverLoopNoise above.
-  if (isResizeObserverLoopNoise(error.message)) {
+  // not just from Sentry's ignoreErrors. See isResizeObserverLoopNoise and
+  // isEmbeddedBrowserBridgeNoise above.
+  if (isResizeObserverLoopNoise(error.message) || isEmbeddedBrowserBridgeNoise(error.message)) {
     return;
   }
+
+  const severity = capSeverityForSelfRecovering(error.message, requestedSeverity);
 
   const enrichedContext = enrichErrorContext(error, context);
   const logEntry: ErrorLogEntry = {
@@ -489,8 +533,14 @@ function isHydrationErrorMessage(message: string): boolean {
   );
 }
 
-function classifyGlobalErrorKind(message: string): 'chunk_load' | 'hydration' | undefined {
-  if (isChunkLoadErrorMessage(message)) return 'chunk_load';
+/**
+ * Kebab-case to match `RouteErrorBoundary`'s five `errorKind` values
+ * ('chunk-load', 'stale-server-action', 'transient-network', …). The two paths
+ * previously disagreed — 'chunk_load' here vs 'chunk-load' there — which split
+ * one failure class across two keys in every telemetry grouping.
+ */
+function classifyGlobalErrorKind(message: string): 'chunk-load' | 'hydration' | undefined {
+  if (isChunkLoadErrorMessage(message)) return 'chunk-load';
   if (isHydrationErrorMessage(message)) return 'hydration';
   return undefined;
 }
