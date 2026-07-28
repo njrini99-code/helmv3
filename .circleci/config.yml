@@ -190,16 +190,20 @@ jobs:
           name: Capacitor sync iOS
           command: npx cap sync ios
       - run:
-          name: CocoaPods install
+          name: Resolve Swift packages
           command: |
-            cd ios/App
-            pod install --repo-update
+            defaults write com.apple.dt.Xcode IDEPackageOnlyUseVersionsFromResolvedFile -bool NO || true
+            defaults write com.apple.dt.Xcode IDEDisableAutomaticPackageResolution -bool NO || true
+            rm -f ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+            xcodebuild -resolvePackageDependencies \
+              -project ios/App/App.xcodeproj \
+              -scheme App
       - run:
           name: xcodebuild compile (no signing, simulator SDK)
           command: |
             cd ios/App
             xcodebuild \
-              -workspace App.xcworkspace \
+              -project App.xcodeproj \
               -scheme App \
               -configuration Debug \
               -sdk iphonesimulator \
