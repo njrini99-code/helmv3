@@ -124,6 +124,14 @@ interface EditRecurringEventInput {
   };
 }
 
+/**
+ * Shown when the requested window ends before it starts. `golf_events` carries
+ * `CHECK (end_time IS NULL OR start_time IS NULL OR end_time >= start_time)`, so
+ * such a window is not storable — the create and edit paths both refuse it up
+ * front rather than letting it surface as a 23514 behind "Please try again."
+ */
+const END_BEFORE_START_ERROR = 'The end time must be after the start time.';
+
 // ============================================================================
 // HELPER: Series row utilities (scoped edit/delete + root promotion)
 // ============================================================================
@@ -632,6 +640,20 @@ async function createRecurringEventImpl(
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
 
     const rootDate = occurrenceDates[0]!;
+
+    // Same invariant the edit path guards (see END_BEFORE_START_ERROR): every
+    // occurrence gets its start and end from the same date, so an end earlier
+    // than the start is rejected by `golf_events_end_after_start` on the very
+    // first insert and the coach only ever sees "Failed to create recurring
+    // event. Please try again." Say what is actually wrong instead.
+    if (input.startTime && input.endTime) {
+      const rootStartMs = Date.parse(`${rootDate}T${input.startTime}${tz}`);
+      const rootEndMs = Date.parse(`${rootDate}T${input.endTime}${tz}`);
+      if (Number.isFinite(rootStartMs) && Number.isFinite(rootEndMs) && rootEndMs < rootStartMs) {
+        return { success: false, error: END_BEFORE_START_ERROR };
+      }
+    }
+
     const rootRow = {
       title: input.title,
       description: input.description || null,
@@ -971,6 +993,33 @@ async function editRecurringEventImpl(
     const endChanged = newEndMs !== null && Number.isFinite(newEndMs) && newEndMs !== oldEndMs;
     const startDeltaMs =
       startChanged && newStartMs !== null && Number.isFinite(oldStartMs) ? newStartMs - oldStartMs : 0;
+
+    // ANSWER AN IMPOSSIBLE WINDOW HERE, not with a Postgres error. The other
+    // half of the same invariant the scope-'this' carry below protects:
+    // `golf_events_end_after_start` requires `end_time >= start_time`, and
+    // nothing between the calendar form and this action checks it —
+    // FairwayEventEditor renders start/end as two independent `<input
+    // type="time">`s with no relative validation. Pulling a 16:00–18:00
+    // practice's end back to 14:00 therefore reached Postgres as
+    //   23514 golf_events_end_after_start
+    // (verified against production inside a rolled-back transaction) and came
+    // back to the coach as "Failed to update ... Please try again." — advice
+    // that can never work, because the retry sends the same window.
+    //
+    // Every scope needs this one check: 'this' writes `newEndMs` literally,
+    // and the series scopes derive `newDurationMs` from it, which goes NEGATIVE
+    // for a backwards window and drags every occurrence's end before its own
+    // start. Comparing against the effective start (the new one when the start
+    // moved, otherwise the stored one) covers both.
+    const effectiveStartMs = startChanged && newStartMs !== null ? newStartMs : oldStartMs;
+    if (
+      newEndMs !== null &&
+      Number.isFinite(newEndMs) &&
+      Number.isFinite(effectiveStartMs) &&
+      newEndMs < effectiveStartMs
+    ) {
+      return { success: false, error: END_BEFORE_START_ERROR };
+    }
 
     // Ids of rows actually touched by a MEANINGFUL change for 'thisAndFuture'/
     // 'all' (2026-07-10 calendar-travel audit, P1). Populated only inside

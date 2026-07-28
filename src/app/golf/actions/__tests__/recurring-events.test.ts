@@ -656,6 +656,69 @@ describe('editRecurringEvent — per-row date deltas', () => {
         invariant(eventById('ev-c2'));
       }
     });
+
+    // The other half of the invariant: an end EARLIER than the start. The
+    // calendar editor renders the two times as independent inputs with no
+    // relative validation, so this reaches the action intact. Postgres answers
+    // 23514 (verified against production in a rolled-back transaction), which
+    // used to reach the coach as "Failed to update ... Please try again." —
+    // advice that can never work. The action must answer it itself, and must
+    // not write anything.
+    const backwardsWindow = { startDate: '2026-06-08', startTime: '16:00', endTime: '14:00' };
+
+    it.each(['this', 'thisAndFuture', 'all'] as const)(
+      "scope '%s' refuses an end time before the start time and writes nothing",
+      async (scope) => {
+        seed('u-coach');
+        const payloads = spyOnUpdatePayloads();
+        const result = await editRecurringEvent({
+          eventId: 'ev-c2',
+          originalStartDate: '2026-06-08',
+          scope,
+          timezoneOffset: 0,
+          updates: backwardsWindow,
+        });
+
+        expect(result).toEqual({
+          success: false,
+          error: 'The end time must be after the start time.',
+        });
+        expect(payloads).toEqual([]);
+        for (const id of ['ev-root', 'ev-c2', 'ev-c3']) invariant(eventById(id));
+        expect(eventById('ev-c2')?.start_time).toBe('2026-06-08T14:00:00+00:00');
+        expect(eventById('ev-c2')?.end_time).toBe('2026-06-08T15:00:00+00:00');
+      },
+    );
+
+    it('refuses a backwards window measured against the STORED start when the start does not move', async () => {
+      // Only the end moves: 14:00–15:00 asked to end at 13:00. `startChanged`
+      // is false here, so the comparison has to fall back to the stored start.
+      const payloads = spyOnUpdatePayloads();
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { endTime: '13:00' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(payloads).toEqual([]);
+      invariant(eventById('ev-c2'));
+    });
+
+    it('still accepts an end exactly equal to the start (the CHECK allows it)', async () => {
+      const result = await editRecurringEvent({
+        eventId: 'ev-c2',
+        originalStartDate: '2026-06-08',
+        scope: 'this',
+        timezoneOffset: 0,
+        updates: { startDate: '2026-06-08', startTime: '16:00', endTime: '16:00' },
+      });
+
+      expect(result.success).toBe(true);
+      invariant(eventById('ev-c2'));
+    });
   });
 });
 
@@ -848,6 +911,29 @@ describe('createRecurringEvent', () => {
     });
 
     expect(result).toEqual({ success: false, error: 'Invalid recurrence rule' });
+    expect(events()).toHaveLength(0);
+  });
+
+  it('rejects an end time before the start time instead of building an unstorable series', async () => {
+    seed('u-coach', {
+      golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+      golf_events: [],
+    });
+
+    const result = await createRecurringEvent({
+      title: 'Lifting',
+      eventType: 'training',
+      startDate: '2026-06-01',
+      startTime: '09:00',
+      endTime: '08:00',
+      recurrenceRule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=3',
+      timezoneOffset: 0,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'The end time must be after the start time.',
+    });
     expect(events()).toHaveLength(0);
   });
 });
