@@ -129,8 +129,12 @@ interface EditRecurringEventInput {
  * `CHECK (end_time IS NULL OR start_time IS NULL OR end_time >= start_time)`, so
  * such a window is not storable — the create and edit paths both refuse it up
  * front rather than letting it surface as a 23514 behind "Please try again."
+ *
+ * Word-for-word the message `updateGolfEvent` already returns for the same
+ * SQLSTATE (golf.ts), so a coach reads one sentence whichever scope they pick.
  */
-const END_BEFORE_START_ERROR = 'The end time must be after the start time.';
+const END_BEFORE_START_ERROR =
+  'End time must be after the start time. Adjust the event end as well.';
 
 // ============================================================================
 // HELPER: Series row utilities (scoped edit/delete + root promotion)

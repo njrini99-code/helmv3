@@ -681,7 +681,7 @@ describe('editRecurringEvent — per-row date deltas', () => {
 
         expect(result).toEqual({
           success: false,
-          error: 'The end time must be after the start time.',
+          error: 'End time must be after the start time. Adjust the event end as well.',
         });
         expect(payloads).toEqual([]);
         for (const id of ['ev-root', 'ev-c2', 'ev-c3']) invariant(eventById(id));
@@ -932,7 +932,7 @@ describe('createRecurringEvent', () => {
 
     expect(result).toEqual({
       success: false,
-      error: 'The end time must be after the start time.',
+      error: 'End time must be after the start time. Adjust the event end as well.',
     });
     expect(events()).toHaveLength(0);
   });
