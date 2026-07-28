@@ -53,7 +53,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
-import { logServerError } from '@/lib/server-error-logger';
+import { classifySoftFailure } from '@/lib/admin/observe-action-result';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 
@@ -177,6 +178,12 @@ async function handleSafetyNet(): Promise<NextResponse> {
 
   let recovered = 0;
   let failed = 0;
+  // Outcomes the engine itself classified as routine (an un-rostered player,
+  // a player with no rounds in the lookback). They are terminal — the trigger
+  // stamped coachhelm_failed_at, so they leave the eligibility query and are
+  // never retried — but they are not cron failures, and counting them as such
+  // made every tick that touched one report `failed > 0` forever.
+  let skippedExpected = 0;
 
   // Chunked Promise.allSettled — runs CONCURRENCY postRoundTrigger calls
   // in parallel. Each call writes terminal state to its round's
@@ -198,23 +205,39 @@ async function handleSafetyNet(): Promise<NextResponse> {
       if (result.status === 'fulfilled' && result.value.success) {
         recovered++;
       } else {
-        failed++;
         const round = chunk[j]!;
         const reason = result.status === 'fulfilled'
           ? result.value.error
           : result.reason instanceof Error
             ? result.reason.message
             : String(result.reason);
-        await logServerError(
-          `cron.safetyNet.postRoundTrigger failed: ${reason ?? 'unknown failure'}`,
-          {
-            action: 'cron.coachhelm.safetyNet.postRoundTrigger',
-            featureArea: 'coachhelm',
-            playerId: round.player_id,
-            extra: { roundId: round.id },
-          },
-          'error',
-        );
+        // A rejected promise has no engine classification, so it stays a hard
+        // failure. A fulfilled `{ success: false }` carries the engine's own
+        // `code`, and this cron must reach the SAME verdict postRoundTrigger
+        // already reached for it — otherwise the identical outcome is logged
+        // twice with two different severities, which is exactly how routine
+        // states ("No active team membership for player", "No completed
+        // rounds in the last 90 days") kept reappearing in the Errors tab
+        // at 'error' moments after being logged at 'warning'/'info'.
+        const code = result.status === 'fulfilled' ? (result.value.code ?? null) : null;
+        const { severity, skipSentry } = classifySoftFailure(reason ?? 'unknown failure', code);
+        if (severity === 'error') failed++;
+        else skippedExpected++;
+
+        const message = `cron.safetyNet.postRoundTrigger failed: ${reason ?? 'unknown failure'}`;
+        const logContext = {
+          action: 'cron.coachhelm.safetyNet.postRoundTrigger',
+          featureArea: 'coachhelm',
+          playerId: round.player_id,
+          ...(skipSentry ? { skipSentry: true } : {}),
+          ...(code ? { errorCode: code } : {}),
+          extra: { roundId: round.id },
+        };
+        if (severity === 'info') {
+          await logServerEvent(message, logContext, 'info');
+        } else {
+          await logServerError(message, logContext, severity);
+        }
       }
     }
   }
@@ -224,6 +247,7 @@ async function handleSafetyNet(): Promise<NextResponse> {
     pending: pending.length,
     recovered,
     failed,
+    skippedExpected,
     concurrency: CONCURRENCY,
   });
 }

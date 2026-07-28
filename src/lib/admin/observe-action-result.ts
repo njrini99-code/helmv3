@@ -42,6 +42,16 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   // spawned the background work has completed). Same class as the
   // "not authenticated" patterns above, just engine-side.
   'engine_session_expired',
+  // The player isn't on a roster, so the CoachHelm engine has no team →
+  // organisation → coach → philosophy chain to run against. A routine roster
+  // state (never joined, left, or was removed — removal hard-deletes the
+  // golf_team_members row), not a defect: there is no retry that would
+  // succeed and no code for an operator to repair. Kept at 'warning' rather
+  // than moved into EXPECTED_EMPTY_STATE_CODES because it is still a real
+  // soft *failure* — that player's insights genuinely will not generate —
+  // whereas the empty-state codes describe an outcome that was never a
+  // failure at all.
+  'engine_no_team_membership',
 ]);
 
 /*
@@ -108,6 +118,28 @@ type SoftFailureSeverity = 'info' | 'warning' | 'error';
 function severityForSoftFailure(message: string, code: string | null): SoftFailureSeverity {
   if (isExpectedEmptyStateCode(code)) return 'info';
   return isExpectedSoftFailureMessage(message, code) ? 'warning' : 'error';
+}
+
+/**
+ * The shared verdict for one soft-failure outcome, for consumers OUTSIDE this
+ * module's own `observeActionSoftFailure` path.
+ *
+ * A single engine outcome is observed by several independent consumers — the
+ * withAdminObserved wrapper below, `postRoundTrigger`, and the CoachHelm
+ * safety-net cron. They must all reach the SAME severity for the same
+ * `code`, or one routine outcome is logged as 'info' by one consumer and as
+ * a live 'error' (plus a Sentry capture) by the next, which is how expected
+ * roster/empty states kept surfacing as incidents. Exported from here — not
+ * from any one consumer — so no consumer has to depend on another, and so
+ * adding a code to the sets above updates every verdict at once.
+ */
+export function classifySoftFailure(
+  message: string,
+  code: string | null,
+): { severity: SoftFailureSeverity; skipSentry: boolean } {
+  const severity = severityForSoftFailure(message, code);
+  // 'info' and 'warning' are both routine — never worth a Sentry capture.
+  return { severity, skipSentry: severity !== 'error' };
 }
 
 /**

@@ -3794,12 +3794,12 @@ async function triggerPlayerInsightsAfterRoundImpl(
   /**
    * Stable, non-message-derived classification for the observability layer
    * (observeActionSoftFailure / severityForSoftFailure in
-   * src/lib/admin/observe-action-result.ts). Set on the two `success: false`
+   * src/lib/admin/observe-action-result.ts). Set on the `success: false`
    * outcomes below that are routine, expected states — not incidents — so
    * they're classified by this code instead of regex-matching the
    * user-facing `error` string.
    */
-  code?: 'engine_no_recent_rounds' | 'engine_session_expired';
+  code?: 'engine_no_recent_rounds' | 'engine_session_expired' | 'engine_no_team_membership';
 }> {
   const startTime = Date.now();
   // P0-04: track whether any mandatory generator failed so the caller
@@ -3819,7 +3819,21 @@ async function triggerPlayerInsightsAfterRoundImpl(
       .single();
 
     if (!membership?.team_id) {
-      return { success: false, error: 'No active team membership for player' };
+      // Not a defect. CoachHelm is a coach-owned layer: it needs a roster to
+      // resolve the team's organisation, its coach, and that coach's
+      // philosophy. A player who has never joined a team — or who left / was
+      // removed, which hard-deletes the golf_team_members row (see
+      // removePlayerFromTeam in src/app/golf/actions/roster.ts and
+      // handleLeaveTeam in JoinTeamSection.tsx) — has nothing to resolve
+      // against, so there is no work to retry and nothing for an operator to
+      // repair in code. Coded so every consumer classifies it identically
+      // (see the `code` field's doc comment above); without it this landed in
+      // the Errors tab at 'error' from three separate call sites.
+      return {
+        success: false,
+        error: 'No active team membership for player',
+        code: 'engine_no_team_membership',
+      };
     }
 
     const teamId = membership.team_id;

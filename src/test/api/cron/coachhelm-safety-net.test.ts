@@ -46,8 +46,10 @@ vi.mock('@/lib/coachhelm/v2/post-round-trigger', () => ({
 }));
 
 const logServerErrorMock = vi.fn(async (..._args: unknown[]) => undefined);
+const logServerEventMock = vi.fn(async (..._args: unknown[]) => undefined);
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: (...args: unknown[]) => logServerErrorMock(...args),
+  logServerEvent: (...args: unknown[]) => logServerEventMock(...args),
   logServerException: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -91,6 +93,7 @@ beforeEach(() => {
   postRoundTriggerMock.mockReset();
   postRoundTriggerMock.mockResolvedValue({ success: true });
   logServerErrorMock.mockClear();
+  logServerEventMock.mockClear();
   process.env.CRON_SECRET = 'cs';
   delete process.env.COACHHELM_SAFETY_NET_STALE_THRESHOLD_MS;
 });
@@ -245,6 +248,87 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
     const body = (await res.json()) as { recovered: number; failed: number };
     expect(body.recovered).toBe(0);
     expect(body.failed).toBe(1);
+  });
+
+  // The cron is the THIRD consumer of one engine outcome, after
+  // triggerPlayerInsightsAfterRound (which classifies it) and postRoundTrigger
+  // (which logs it at the classified severity). It used to log at a hardcoded
+  // 'error', so every routine outcome appeared in the Errors tab moments after
+  // the same outcome had been logged as 'info'/'warning' — visible in
+  // production as two groups with identical counts ("No completed rounds in
+  // the last 90 days" at info n=6 from postRoundTrigger.engineFailure, and at
+  // error n=6 from cron.coachhelm.safetyNet.postRoundTrigger).
+  describe('engine-classified outcomes are not re-logged as cron errors', () => {
+    function seedOnePending() {
+      seed([
+        pendingRound({
+          id: 'r1',
+          player_id: 'p1',
+          created_at: new Date(Date.now() - OLD_ENOUGH_MS).toISOString(),
+        }),
+      ]);
+    }
+
+    it('logs an engine_no_team_membership outcome at warning + skipSentry and counts it as skipped, not failed', async () => {
+      seedOnePending();
+      postRoundTriggerMock.mockResolvedValueOnce({
+        success: false,
+        error: 'No active team membership for player',
+        code: 'engine_no_team_membership',
+      });
+
+      const res = await callGet();
+      const body = (await res.json()) as { failed: number; skippedExpected: number };
+      expect(body.failed).toBe(0);
+      expect(body.skippedExpected).toBe(1);
+
+      expect(logServerErrorMock).toHaveBeenCalledWith(
+        expect.stringContaining('cron.safetyNet.postRoundTrigger failed'),
+        expect.objectContaining({ skipSentry: true, errorCode: 'engine_no_team_membership' }),
+        'warning',
+      );
+    });
+
+    it('routes an engine_no_recent_rounds outcome to logServerEvent at info, never logServerError', async () => {
+      seedOnePending();
+      postRoundTriggerMock.mockResolvedValueOnce({
+        success: false,
+        error:
+          'No completed rounds in the last 90 days yet — insights will populate after the next round',
+        code: 'engine_no_recent_rounds',
+      });
+
+      const res = await callGet();
+      const body = (await res.json()) as { failed: number; skippedExpected: number };
+      expect(body.failed).toBe(0);
+      expect(body.skippedExpected).toBe(1);
+
+      expect(logServerEventMock).toHaveBeenCalledWith(
+        expect.stringContaining('cron.safetyNet.postRoundTrigger failed'),
+        expect.objectContaining({ skipSentry: true, errorCode: 'engine_no_recent_rounds' }),
+        'info',
+      );
+      expect(logServerErrorMock).not.toHaveBeenCalledWith(
+        expect.stringContaining('cron.safetyNet.postRoundTrigger failed'),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it('a rejected call has no engine classification, so it stays a hard error', async () => {
+      seedOnePending();
+      postRoundTriggerMock.mockRejectedValueOnce(new Error('engine_boom'));
+
+      const res = await callGet();
+      const body = (await res.json()) as { failed: number; skippedExpected: number };
+      expect(body.failed).toBe(1);
+      expect(body.skippedExpected).toBe(0);
+      expect(logServerErrorMock).toHaveBeenCalledWith(
+        expect.stringContaining('cron.safetyNet.postRoundTrigger failed'),
+        expect.objectContaining({ action: 'cron.coachhelm.safetyNet.postRoundTrigger' }),
+        'error',
+      );
+    });
   });
 
   it('excludes a completed, unanalyzed round created within the MIN_AGE_MS floor (still inside its first Inngest retry window)', async () => {
