@@ -68,6 +68,12 @@ import {
   touchConversation,
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
+// `publishableParts` also drops dangling tool calls: storing one poisons the
+// conversation permanently, because a reload rehydrates the thread from
+// `ui_parts` and sends the orphaned `tool_use` back with no matching
+// `tool_result`. Production shows the signature — one tool id rejected three
+// times in ninety seconds as the coach retried.
+import { publishableParts } from '@/lib/coachhelm/v3/chat/ui-parts';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const maxDuration = 120;
@@ -81,19 +87,6 @@ const Body = z.object({
   messages: z.array(z.unknown()).min(1),
   client_turn_id: z.string().min(1).max(128),
 });
-
-/**
- * The parts of a turn that may be stored and replayed to the coach.
- *
- * Reasoning is excluded twice — once at the transport (`sendReasoning: false`)
- * and again here — because the two protect against different failures. The
- * transport flag stops it reaching the browser; this stops an SDK default
- * change quietly filling the conversation table with model deliberation that a
- * reload would then hand back to the client.
- */
-function publishableParts(parts: readonly { type: string }[]): unknown[] {
-  return parts.filter((p) => p.type !== 'reasoning');
-}
 
 /**
  * What the coach is allowed to see when a turn fails.
@@ -261,7 +254,24 @@ export async function POST(req: NextRequest) {
         },
         // Pass the tool set so tool parts from earlier turns convert correctly —
         // without it, a resumed approval loses the call it belongs to.
-        messages: await convertToModelMessages(uiMessages, { tools }),
+        //
+        // `ignoreIncompleteToolCalls` drops any tool call left in
+        // `input-streaming`/`input-available` (see isIncompleteToolPart). The
+        // thread here is the CLIENT's `useChat` state, not the database, so a
+        // server-side persistence guard alone cannot save this request: the
+        // browser resends whatever it is holding. Without the flag, one
+        // unresolved call makes every subsequent turn in that thread fail
+        // upstream with "Tool result is missing for tool call toolu_…" —
+        // there is no matching `tool_result` block to pair it with, and the
+        // coach cannot recover except by starting a new conversation.
+        //
+        // Approval-suspended calls are untouched: the SDK filters on the two
+        // input states only, and an awaiting-coach call is
+        // `approval-requested`/`approval-responded`.
+        messages: await convertToModelMessages(uiMessages, {
+          tools,
+          ignoreIncompleteToolCalls: true,
+        }),
         tools,
         // Every mutating tool suspends for an explicit coach decision. This is
         // the gate the whole action framework rests on — a model cannot reach
