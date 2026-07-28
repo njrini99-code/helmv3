@@ -12,6 +12,7 @@ import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 import type {
   MinedPattern,
   PatternCondition,
@@ -1082,7 +1083,10 @@ export class PatternMiner {
       // concurrently). Postgres aborts one victim wholesale and the supersede
       // is idempotent (deterministic ids, converges on re-run), so a short
       // retry absorbs it instead of surfacing a transient as an error.
-      let supersedeError: { code?: string } | null = null;
+      // Widened past `{ code }` so the logging below can read the message and
+      // details supabase-js actually attaches, rather than reporting a
+      // Postgres error by its code alone.
+      let supersedeError: { code?: string; message?: string; details?: string | null } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) {
           // Jitter decorrelates retries from the concurrent miner we
@@ -1102,11 +1106,30 @@ export class PatternMiner {
         if (!error || error.code !== '40P01') break;
       }
       if (supersedeError) {
-        await logServerError('pattern-miner.savePatterns supersede stale', {
-          action: 'pattern-miner.savePatterns',
-          featureArea: 'coachhelm.mining',
-          metadata: { dbError: supersedeError as unknown },
-        });
+        // Name the cause in the message. `dbError` alone meant the incident read
+        // "pattern-miner.savePatterns supersede stale" with no indication of
+        // whether the three retries above lost to a deadlock, an RLS denial or a
+        // timeout — and `describeError` is what stops a Postgres-shaped error
+        // (which is not an `Error`) from rendering as '[object Object]'.
+        //
+        // A deadlock here is contention, not a defect: the retry loop is the
+        // designed response, the newly-mined patterns are already committed, and
+        // the only casualty is that a superseded pattern stays visible until the
+        // next run. That is a 'warning'. Anything else is a real failure.
+        const deadlocked = supersedeError.code === '40P01';
+        await logServerError(
+          `pattern-miner.savePatterns supersede stale: ${describeError(supersedeError)}`,
+          {
+            action: 'pattern-miner.savePatterns',
+            featureArea: 'coachhelm.mining',
+            extra: describeWriteFailure(supersedeError, {
+              playerCount: playerIds.length,
+              retries: 3,
+              deadlocked,
+            }),
+          },
+          deadlocked ? 'warning' : 'error',
+        );
       }
     }
   }

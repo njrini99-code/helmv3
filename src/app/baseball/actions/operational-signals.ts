@@ -45,6 +45,8 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { normalizeConfidence } from '@/lib/baseball/source-record';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 import {
   runOperationalRuleEngine,
   normalizedNameKey,
@@ -849,7 +851,25 @@ export const runOperationalSignalDetection = withBaseballAction(
         .upsert(rows, { onConflict: 'team_id,dedupe_key', ignoreDuplicates: false });
       // Surface the failure instead of silently reporting success — a swallowed
       // upsert error here is exactly why the Signal Inbox sat empty in prod.
+      //
+      // But surfacing it to the COACH is only half the job: `upsertErr` used to
+      // be dropped on the floor here, so the three production incidents (last
+      // 2026-07-11) carried nothing but this sentence. An operator could not
+      // tell a constraint violation from an RLS denial from a statement
+      // timeout, and no repro was possible. Log the cause; the returned copy
+      // stays deliberately generic (it is user-facing) and count-free, so all
+      // occurrences still collapse into one incident group.
       if (upsertErr) {
+        await logServerError(
+          `runOperationalSignalDetection: signal upsert failed: ${describeError(upsertErr)}`,
+          {
+            action: 'runOperationalSignalDetection',
+            source: 'server_action',
+            sport: 'baseball',
+            featureArea: 'signals',
+            extra: describeWriteFailure(upsertErr, { teamId, rowCount: rows.length }),
+          },
+        );
         return { success: false, error: 'Could not save operational signals.' };
       }
       emitted = rows.length;

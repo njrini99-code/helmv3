@@ -90,9 +90,17 @@ describe('observe-action-result', () => {
       'Account is locked',
       "This isn't available in the live demo",
       'Please select a course',
+      // Every wording the four duplicate-signup call sites use.
+      'An account with this email already exists. Please sign in instead.',
+      'An account with this email already exists. Please sign in to continue your setup.',
+      'An account with this email already exists. Please sign in instead, or use a different email.',
     ]) {
       expect(isUserInputRejection(message)).toBe(true);
     }
+
+    // Not every "already exists" is a signup: a duplicate the coach can act on
+    // is a real conflict and must stay visible.
+    expect(isUserInputRejection('A qualifier with this name already exists')).toBe(false);
 
     // An access denial is NOT user input — it stays a warning-tier soft failure
     // so an operator can still see who was denied what.

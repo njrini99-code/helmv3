@@ -52,6 +52,12 @@ const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
   /^this isn't available in the live demo/i,
   /^choose a valid/i,
   /^please (enter|select|provide)/i,
+  // Signing up on an address that already has an account. The platform did the
+  // right thing and told the visitor where to go; there is nothing to fix. Four
+  // call sites word the tail differently ("Please sign in instead." on both
+  // sports' auth actions, "…to continue your setup." during onboarding), so
+  // match only the invariant head.
+  /^an account with this email already exists/i,
 ];
 
 /**

@@ -55,7 +55,8 @@ import {
   sweepActionOutcomes,
   type OutcomeSweepClient,
 } from '@/lib/baseball/coachhelm/outcome-sweep';
-import { logServerException } from '@/lib/server-error-logger';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 
 const POSTGAME_PATH = '/baseball/dashboard/postgame';
 const PRACTICE_PATH = '/baseball/dashboard/practice';
@@ -168,6 +169,27 @@ export const generatePostgameReview = withBaseballAction(
       .select('id')
       .single();
     if (reviewErr || !reviewRow) {
+      // `reviewErr` used to be discarded, so the production incident
+      // (2026-07-11) said only "Could not save the postgame review." — no
+      // Postgres code, no constraint name, nothing to act on. The coach-facing
+      // string is unchanged (and stays id- and count-free so occurrences group
+      // into one incident); the cause now travels with it.
+      await logServerError(
+        `generatePostgameReview: review upsert failed: ${describeError(reviewErr)}`,
+        {
+          action: 'generatePostgameReview',
+          source: 'server_action',
+          sport: 'baseball',
+          featureArea: 'postgame',
+          extra: describeWriteFailure(reviewErr, {
+            teamId,
+            gameId,
+            // A resolved upsert with no error AND no row is a different fault
+            // (an RLS-filtered RETURNING) than a rejected write. Distinguish.
+            missingRow: !reviewErr && !reviewRow,
+          }),
+        },
+      );
       return { success: false, error: 'Could not save the postgame review.' };
     }
     const reviewId = reviewRow.id as string;
