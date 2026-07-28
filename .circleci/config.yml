@@ -41,7 +41,8 @@ executors:
     resource_class: small
   ios:
     macos:
-      xcode: "15.4.0"
+      # Capacitor 8 SwiftPM binaries require Swift 6.2, shipped with Xcode 26+.
+      xcode: "26.4.1"
     resource_class: m4pro.medium
 
 # ---------------------------------------------------------------------------
@@ -188,18 +189,25 @@ jobs:
             npm run build
       - run:
           name: Capacitor sync iOS
-          command: npx cap sync ios
-      - run:
-          name: CocoaPods install
           command: |
-            cd ios/App
-            pod install --repo-update
+            npx cap update ios
+            npx cap sync ios
+      - run:
+          name: Resolve Swift packages
+          command: |
+            defaults write com.apple.dt.Xcode IDEPackageOnlyUseVersionsFromResolvedFile -bool NO || true
+            defaults write com.apple.dt.Xcode IDEDisableAutomaticPackageResolution -bool NO || true
+            rm -f ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+            xcodebuild -resolvePackageDependencies \
+              -project ios/App/App.xcodeproj \
+              -scheme App
+            cat ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
       - run:
           name: xcodebuild compile (no signing, simulator SDK)
           command: |
             cd ios/App
             xcodebuild \
-              -workspace App.xcworkspace \
+              -project App.xcodeproj \
               -scheme App \
               -configuration Debug \
               -sdk iphonesimulator \
@@ -332,6 +340,7 @@ workflows:
                 - /release\/.*/
                 - /ios\/.*/
                 - /capacitor\/.*/
+                - /agent\/fix-circleci-ios-.*/
 
   # Lighthouse runs on every push (excluding the scheduled weekly).
   # The wait-for-vercel-preview script returns early with a useful
