@@ -202,6 +202,39 @@ function isEmbeddedBrowserBridgeNoise(message: string): boolean {
 }
 
 /**
+ * A fetch that never reached the server.
+ *
+ * Every engine words this differently, and the message is all we get — the
+ * `TypeError` carries no status and no useful stack:
+ *
+ *   Safari / iOS WKWebView ... "Load failed"
+ *   Chrome / Edge ............ "Failed to fetch"
+ *   Firefox .................. "NetworkError when attempting to fetch resource."
+ *   Stripe.js ................ "A network error occurred."
+ *   WebKit, mid-request ...... "The network connection was lost."
+ *
+ * All five are the transport layer, not the application: a 500 from our own API
+ * does NOT land here, because `fetch` resolves for any HTTP response it
+ * actually received. That is what makes the class safe to tier down.
+ *
+ * Deliberately NOT matched: `AbortError`. Aborts are our own timeouts firing
+ * (`AbortSignal.timeout`), which is a budget we chose and may need to revisit —
+ * a different question from the user's connection dropping.
+ */
+function isTransientNetworkErrorMessage(message: string): boolean {
+  const msg = message.toLowerCase();
+  return (
+    msg.includes('load failed') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror when attempting to fetch') ||
+    msg.includes('a network error occurred') ||
+    msg.includes('network connection was lost') ||
+    msg.includes('internet connection appears to be offline') ||
+    msg.includes('net::err_')
+  );
+}
+
+/**
  * Ceiling on the severity of failures that carry their own recovery path.
  *
  * A chunk-load failure means the tab is holding asset URLs from a deployment
@@ -215,17 +248,61 @@ function isEmbeddedBrowserBridgeNoise(message: string): boolean {
  * inconsistency `RouteErrorBoundary` already resolved for transient-network
  * failures by tiering them to 'medium'.
  *
- * Capped rather than dropped: an individual stale tab is noise, but a SPIKE of
- * them is a real signal (a bad deploy, a purged CDN), so the rows must keep
- * arriving — just as warnings, not as errors. `critical` is left untouched; a
- * caller that has escalated that far knows something this filter does not.
+ * Transient network failures belong in the same bucket, and this is where the
+ * Bridge disagreed with the code that reports them. `useShotStateMachine`
+ * auto-save calls `logError(..., 'high')` from all three of its failure sites,
+ * but those sites sit ON a recovery ladder: the initial attempt retries at 5s,
+ * 15s and 30s, then a circuit breaker takes over with 60s cooldown probes, and
+ * any success resets the whole thing. So one dropped request mid-round — a
+ * phone on a golf course, `Load failed` from iOS WebKit — was filed as a
+ * `severity:error` incident describing a save that the very next tick almost
+ * certainly completed. The report is still worth having; calling it an error is
+ * not.
+ *
+ * Capped rather than dropped, in both cases: one stale tab or one dropped
+ * request is noise, but a SPIKE is a real signal (a bad deploy, a purged CDN,
+ * an API that is actually down), so the rows must keep arriving — just as
+ * warnings, not as errors. A sustained auto-save outage still produces a
+ * warning per retry and per probe, which is the shape worth alerting on.
+ *
+ * `critical` is left untouched; a caller that has escalated that far knows
+ * something this filter does not.
  */
 function capSeverityForSelfRecovering(
   message: string,
   severity: ErrorLogEntry['severity'],
 ): ErrorLogEntry['severity'] {
   if (severity !== 'high') return severity;
-  return isChunkLoadErrorMessage(message) ? 'medium' : severity;
+  return isChunkLoadErrorMessage(message) || isTransientNetworkErrorMessage(message)
+    ? 'medium'
+    : severity;
+}
+
+/**
+ * Automated clients: crawlers, link previewers, uptime probes, headless agents.
+ *
+ * A crawler is not a user, so a failure it hits is not a user-facing defect —
+ * and it reaches pages no user flow does, with no cookies, no consent state and
+ * frequently with JavaScript features disabled. Production example: Stripe's
+ * `Stripebot/1.0` fetched the public `/products` page, Stripe.js could not
+ * reach its own API, and the resulting unhandled rejection ("A network error
+ * occurred.") was filed as a `severity:error` incident against a marketing
+ * page that was working perfectly for every human on it.
+ *
+ * Matched on the conventional self-identifying tokens rather than a vendor
+ * list, so a new crawler is covered without an edit. `HeadlessChrome` is
+ * included because that is what Lighthouse CI and the synthetic checks in
+ * `.circleci/config.yml` report, and their failures are CI's to surface.
+ */
+const AUTOMATED_CLIENT_UA = /bot|crawl|spider|slurp|headlesschrome|phantomjs|puppeteer|playwright|lighthouse|pingdom|uptimerobot|semrush|ahrefs|bingpreview|facebookexternalhit|preview/i;
+
+function isAutomatedClient(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  // `navigator.webdriver` is the spec-mandated automation flag; Playwright and
+  // Selenium set it even when the UA is spoofed to look like a real browser.
+  if ((navigator as Navigator & { webdriver?: boolean }).webdriver === true) return true;
+  return typeof ua === 'string' && AUTOMATED_CLIENT_UA.test(ua);
 }
 
 /**
@@ -291,6 +368,13 @@ export function logError(
   // not just from Sentry's ignoreErrors. See isResizeObserverLoopNoise and
   // isEmbeddedBrowserBridgeNoise above.
   if (isResizeObserverLoopNoise(error.message) || isEmbeddedBrowserBridgeNoise(error.message)) {
+    return;
+  }
+
+  // Nobody is looking at the screen. See isAutomatedClient above: a crawler's
+  // failure is not a user's failure, and it is reported against pages and
+  // states no user flow reaches.
+  if (isAutomatedClient()) {
     return;
   }
 
