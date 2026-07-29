@@ -41,6 +41,16 @@ both times, and deferred as out of scope), and what *else* in the baseline is
 anyone). The second question is one grep. It should have been the first thing
 run, and that is the most portable lesson in this report.
 
+**A fifth is confirmed and deliberately left alone.** `baseball_coaches_select`
+is `USING (auth.uid() = user_id OR get_my_coach_id() IS NOT NULL)` — the `OR`
+makes the first clause irrelevant to anyone holding a coach row, so any coach
+reads every coach's email and phone. It is not in the migration pair for two
+reasons: `20260701014000` explicitly reserved the scope of coach-sees-all as a
+product decision, and 75 call sites read that table directly. Fixing it means
+auditing all 75, which is not a 4am change. Severity is real but below #1–#4:
+it needs a coach account and exposes contact details that are usually on a
+public athletics staff page. `DATABASE_STATUS.md` §5 states the decision needed.
+
 **2. Nothing in this run touched a database.** No migration was applied, no
 `supabase db push`, no `psql`. The only writes were to files and to git.
 

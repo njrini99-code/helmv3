@@ -10,10 +10,10 @@ acting._
 
 _The **fix**, unlike the findings, is verified by execution: CI on PR
 [#1092](https://github.com/njrini99-code/helmv3/pull/1092) applies both
-migrations to a fresh Postgres and runs the pgTAP suites — `Result: PASS`,
-34/34 (tenant isolation) + 19/19 (invitation codes) + 9/9 (Lift Lab sync).
-The tenant-isolation suite failed three times first, on defects no amount of
-reading found. See "The SQL HAS now been executed" below._
+migrations to a fresh Postgres and runs the pgTAP suites — all green:
+34/34 (tenant isolation) + 19/19 (invitation codes) + 9/9 (player percentiles)
++ 9/9 (Lift Lab sync). The tenant-isolation suite failed three times first, on
+defects no amount of reading found. See "The SQL HAS now been executed" below._
 
 ---
 
@@ -25,11 +25,12 @@ reading found. See "The SQL HAS now been executed" below._
 | 2 | `baseball_teams` join_code world-readable | **CONFIRMED.** Same fix. |
 | 3 | `baseball_team_invitations` — every live invite code readable | **CONFIRMED.** Fix authored (`2c2c939cf`), not applied. Seen and deferred by two earlier migrations. |
 | 4 | `baseball_player_percentiles` — every player's academic/athletic ranking readable | **CONFIRMED.** Fix authored (`2855a0646`), not applied. Never previously noticed. |
+| 5 | `baseball_coaches` — every coach's email + phone, readable by any coach | **CONFIRMED, NOT FIXED.** Needs a product decision + a 75-call-site audit. `20260701014000` explicitly reserved it. See §5. |
 | — | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See the retraction section. |
 
 ---
 
-## 🔴 P0 — FOUR LIVE CROSS-TENANT DATA EXPOSURES
+## 🔴 P0 — FOUR LIVE CROSS-TENANT DATA EXPOSURES (+ a fifth, needing a decision)
 
 The most serious findings of the entire run. All four were introduced in the
 `20260527000000_prod_public_baseline.sql` baseline and **no subsequent
@@ -52,9 +53,13 @@ was in the recon report. #3 came from asking what else used the same
 `.eq('code', …)` shape as the join_code leak; #4 from sweeping the baseline
 for *every* `FOR SELECT … USING (true)` on a baseball table rather than
 stopping at the two that had been reported. The second sweep is thirty
-seconds of grep and it is the one that should have been run first. If a fifth
-exists it is in a policy whose predicate is neither `true` nor missing —
-which is where the next sweep should look.
+seconds of grep and it is the one that should have been run first.
+
+That sweep ended by predicting where a fifth would be: *"in a policy whose
+predicate is neither `true` nor missing."* Running that sweep found one —
+**#5 below**, `baseball_coaches`, where `OR get_my_coach_id() IS NOT NULL`
+reads as scoped but asserts only that the caller is *a* coach. It is left
+unfixed on purpose; see its section for why, and challenge that call.
 
 ### 1. `baseball_players` — every program's roster PII is readable by any logged-in user
 
@@ -151,9 +156,12 @@ CREATE POLICY "Anyone can view percentiles"
 ```
 
 Five baseball SELECT policies shipped as `USING (true)` in the baseline.
-`baseball_coaches_select_all` was later replaced by `20260701014000` and
-`baseball_team_coach_staff_select` by `20260624000050`; #1 and #2 above are
-the other two. **Nothing had ever replaced this one.**
+`baseball_team_coach_staff_select` was properly replaced by `20260624000050`
+(`is_baseball_team_staff(team_id) OR coach_id = get_my_coach_id()` — verified,
+genuinely scoped); `baseball_coaches_select_all` was **dropped** by
+`20260701014000`, which is not the same thing — its sibling policy survives and
+is #5 below. #1 and #2 above are the other two. **Nothing had ever touched this
+one.**
 
 The policy name reads like league-wide benchmark curves, which would
 legitimately be public. The table is not that — `player_id uuid NOT NULL`, one
@@ -172,7 +180,58 @@ pgTAP assertions. Blast radius is near zero: the only readers are
 `recruiting-philosophy.ts`'s two lookups, both of which pass player ids they
 already hold, and both sit behind the recruiting sunset.
 
-⚠️ **Known, deliberate gap:** this policy does not mirror
+### 5. `baseball_coaches` — every coach's email + phone, readable by any coach
+
+_Found 2026-07-29 04:40, by following the question the section above ends with:
+"if a fifth exists it is behind a predicate that is neither `true` nor
+missing." It is. **NOT FIXED — needs a product decision. See below.**_
+
+`baseball_coaches_select_all` (`USING (true)`) *was* dropped, by
+`20260701014000_baseball_coaches_narrow_select.sql`. But that migration only
+dropped it; the baseline's other SELECT policy was retained and is still live:
+
+```sql
+-- supabase/migrations/20260527000000_prod_public_baseline.sql:17827
+CREATE POLICY "baseball_coaches_select" ON "public"."baseball_coaches"
+  FOR SELECT TO "authenticated"
+  USING ((("auth"."uid"() = "user_id") OR ("public"."get_my_coach_id"() IS NOT NULL)));
+```
+
+`get_my_coach_id() IS NOT NULL` asks *"am I a coach at all"* — it never ties
+the row being read to the reader's team or organization. So **any coach can
+read every coach row in the database**, including `email` and `phone`.
+
+This is the shape the earlier sweep could not see: the predicate mentions
+`auth.uid()` and `user_id`, so it looks scoped, and only reads as unscoped once
+you notice the `OR` makes the first half irrelevant to anyone holding a coach
+row. A targeted re-sweep for "asserts a role, never scopes it" across every
+baseball SELECT policy returns **this one and nothing else**, so the class is
+contained.
+
+**Why it is not fixed here, and this is a judgment call worth challenging:**
+
+1. `20260701014000` explicitly reserved it: *"Tightening coach-sees-all further
+   (recruiting cross-program visibility) is a separate product decision and
+   intentionally NOT done here."* Overturning a predecessor's stated decision
+   unattended is not the same as fixing a bug they missed.
+2. **75 call sites** read `baseball_coaches` directly (vs 52 using the
+   `baseball_coaches_public` view). Each would need auditing for whether it
+   reads own-org or cross-org coaches. That is not a 4am change.
+3. Severity is genuinely lower than #1–#4: it requires a coach account, and it
+   exposes professional contact details that are typically on an athletics
+   department's public staff page — not a player's GPA.
+
+**The decision needed:** with recruiting sunset, is there any surface that
+still requires a coach to see coaches outside their own organization? If no,
+the fix is one policy swap to `is_baseball_team_staff`-style scoping plus
+repointing whichever of the 75 call sites genuinely need cross-org identity at
+the existing `baseball_coaches_public` view. If yes, the policy should at
+minimum stop exposing `email`/`phone` — a column-level grant or a narrowed
+view, not a row-level fix.
+
+---
+
+⚠️ **Known, deliberate gap** (on #4's policy): it does not mirror
 `baseball_players_select`'s recruiting-discoverability clause, because that
 helper takes `player_type`/`recruiting_activated` as arguments and a
 percentiles row carries neither — supplying them would need the inline

@@ -25,6 +25,17 @@ table instead of stopping at what had been flagged — thirty seconds of grep
 that should have run first, and that turned up a policy named "Anyone can view
 percentiles" sitting on a per-player table nothing had touched since May.
 
+**A fifth exists and is deliberately NOT fixed.** `baseball_coaches_select` is
+`USING (auth.uid() = user_id OR get_my_coach_id() IS NOT NULL)` — the second
+clause asks only "am I a coach", never scoping to team or org, so **any coach
+reads every coach's email and phone**. It is not in the migration pair because
+`20260701014000` explicitly reserved it as a product decision, and because 75
+call sites read that table directly (52 already use the
+`baseball_coaches_public` view) — each needs auditing before the policy moves.
+The question to answer: with recruiting sunset, does any surface still need a
+coach to see coaches outside their own organization? Details in
+`DATABASE_STATUS.md` §5.
+
 The third is named "Anyone can view active invitations by code" and never
 checks the code. One authenticated account could enumerate every live invite
 code in the database and join any team. It was seen twice before and left:
