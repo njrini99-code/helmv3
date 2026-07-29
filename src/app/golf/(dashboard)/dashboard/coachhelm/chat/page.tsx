@@ -18,8 +18,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persistence';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
-import { CoachContextError, resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
-import { getProgramPulse, generalOpeners, coverageLine } from '@/lib/coachhelm/v3/chat/program-pulse';
+import { CoachContextError } from '@/lib/coachhelm/v3/chat/context';
+import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
+import { generalOpeners, coverageLine } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { InlineNotice, Button } from '@/components/fairway';
 import { surfaceName } from '@/lib/golf/surface-registry';
@@ -66,7 +67,11 @@ export default async function AskCoachHelmPage({ searchParams }: PageProps) {
 
   let ctx;
   try {
-    ctx = await resolveCoachChatContext(sb);
+    // Request-cached — the dashboard layout already resolved this exact context
+    // for the CoachHelm drawer on this render. Same six serial round trips
+    // otherwise. `getCoachChatContext` still throws CoachContextError, so the
+    // redirect below is unchanged.
+    ctx = await getCoachChatContext();
   } catch (err) {
     if (err instanceof CoachContextError) redirect('/golf/dashboard');
     throw err;
@@ -76,9 +81,10 @@ export default async function AskCoachHelmPage({ searchParams }: PageProps) {
 
   const [conversations, pulse] = await Promise.all([
     listConversations(sb),
-    // A pulse failure must not take the conversation surface down with it —
-    // the coach can still ask questions without the suggestions.
-    getProgramPulse(sb, ctx).catch(() => null),
+    // Request-cached alongside the layout's drawer fetch. Already returns null
+    // on failure: a pulse failure must not take the conversation surface down
+    // with it — the coach can still ask questions without the suggestions.
+    getCoachProgramPulse(),
   ]);
 
   const conversationId = requestedId ?? null;

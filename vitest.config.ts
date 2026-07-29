@@ -93,6 +93,13 @@ export default defineConfig({
             // this P0 fix. Only the #516 secrets guard is promoted to vitest
             // here, since it previously never ran under any mechanism at all.
             'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
+            // Named explicitly for the same reason as the line above (no
+            // `scripts/**` glob — the legacy `node --test` files must not be
+            // swept in). This one guards the transient-retry wrapper that sits
+            // in front of `Seed BaseballHelm CI accounts`, the step whose
+            // unretried Supabase call took main and every open PR red on
+            // 2026-07-29. A regression here is a repo-wide merge freeze.
+            'scripts/lib/__tests__/retrying-fetch.test.ts',
             // The demo-seed guards. Same rationale as the secrets guard above:
             // they were written for `node --test` and so ran under nothing, and
             // what they protect — a script that creates auth users and deletes

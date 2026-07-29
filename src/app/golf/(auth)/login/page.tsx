@@ -101,7 +101,16 @@ function LoginContent() {
           Skip to login form
         </a>
 
-        {/* Back to the marketing home — the login is otherwise a dead-end. */}
+        {/*
+         * Back to the marketing home — the login is otherwise a dead-end.
+         *
+         * Native-only exception: proxy.ts treats "/" as a marketing route for
+         * the HelmSportsLabsApp user agent (App Store Guideline 3.1.1) and
+         * 307s it straight back here. Rendering the control in the native
+         * shell gives the user a button that visibly does nothing — so it is
+         * hidden there rather than looping them.
+         */}
+        {!isNative && (
         <Link
           href="/"
           aria-label="Back to home"
@@ -123,6 +132,7 @@ function LoginContent() {
           </svg>
           Home
         </Link>
+        )}
 
         {/*
          * Exactly one scene renders per viewport — avoids paying paint, memory
