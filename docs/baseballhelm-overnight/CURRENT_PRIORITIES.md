@@ -173,6 +173,9 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | Seven E2E specs still drove sunset routes; 46 tests now skip, 1 repointed, 2 silent-pass assertions gated | `a694f24d7` |
 | Settings hid a "Recruiting / exposure" toggle that no longer changes anything | `8cfecf50c` |
 | **A guard against the next inbound link** into a disabled module — the class that produced 5 of tonight's fixes | `60d719507` |
+| The E2E seed planted the same recruiting player + camp on every push to `main` | `93531a145` |
+| **"One flag flip restores recruiting" — measured.** 54 tests in 7 files fail; `restore` now names them all so nobody deletes the sunset's own coverage | `e1a04eb5e` |
+| BaseballHelm demo gate's env vars (incl. the kill-switch) documented in `.env.example` | `894cd261c` |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).

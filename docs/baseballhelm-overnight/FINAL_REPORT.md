@@ -153,14 +153,19 @@ Each has tests, and the tests assert behaviour rather than existence.
 - **No hardcoded baseball link points at a route that does not exist.** 283
   routes resolved against 2,739 files: zero dead links, proven by a probe that
   makes the sweep fail on demand rather than by trusting a green run.
-- **The demo seed stopped writing a recruiting board into production.** Every
-  reseed created 3 fictional organizations and teams, 8 `baseball_players` with
-  emails, GPAs and measurables — each `recruiting_activated = true`, which is
-  the flag that makes a player publicly NAMED rather than masked to initials —
-  and 8 watchlist rows for a pipeline no coach can open. The verifier that runs
-  immediately afterwards already asserted "the demo must not carry a recruiting
-  board"; the seed and its own verifier were contradicting each other inside a
-  single `npm run seed:baseball:demo`.
+- **Both seeds stopped writing recruiting players into production.** The demo
+  seed created, on every reseed, 3 fictional organizations and teams, 8
+  `baseball_players` with emails, GPAs and measurables — each
+  `recruiting_activated = true`, the flag that makes a player publicly NAMED
+  rather than masked to initials — and 8 watchlist rows for a pipeline no coach
+  can open. The verifier that runs immediately afterwards already asserted "the
+  demo must not carry a recruiting board", so the seed and its own verifier
+  were contradicting each other inside one `npm run seed:baseball:demo`.
+
+  The **E2E** seed had the same shape and runs on every push to `main`: a
+  "Jordan Hayes" player row with the same flag, a watchlist entry, and an "E2E
+  Prospect Camp" — for two specs that now skip. A fixture nothing reads stops
+  being distinguishable from real data.
 - **Two rule-engine rules stopped nagging players about recruiting.** They gate
   on the player's opt-in, which was sufficient until the sunset — a player who
   activated *before* it still carries `recruiting_activated = true`, so both
@@ -199,6 +204,12 @@ tomorrow is waste:
 
 - **No empty `catch {}` in any baseball source file.** One textual hit, inside
   a comment describing a suppression that was already removed.
+- **No unscoped `DELETE` or `TRUNCATE` in any baseball seed.** Five seed
+  scripts, two `.delete()` calls total, both narrow and both documented at the
+  call site: `login_attempts` filtered to the two demo emails (lockout carried
+  over from a failed CI run), and `baseball_camp_registrations` filtered to
+  `(camp_id, player_id)` so the register/unregister spec starts clean. Checked
+  because `.env.local` points at production and the rule was explicit.
 - **`loading.tsx` coverage.** Every live baseball dashboard and player route
   has one, except `operations` and `stats`, which inherit the dashboard-level
   fallback.
