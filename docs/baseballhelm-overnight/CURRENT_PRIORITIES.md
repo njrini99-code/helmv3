@@ -38,20 +38,34 @@ _Updated 2026-07-29 09:50 EDT. Worked strictly in order. A priority marked
 > ("Merge what needs to be merged I give authorization", later "Merge don't
 > deploy").
 >
-> **`main` is still NOT DEPLOYED, and that is deliberate.** `main` does not
-> auto-deploy (`vercel.json` → `git.deploymentEnabled {"*": false}`), and the
-> owner's instruction was explicitly *"Merge don't deploy"*. Production remains
-> on `dpl_B9mv3SVZ` / `bd1e625d4` (#1092, 14:30Z). **So the offline.html fix,
-> the middleware hotfix, the mobile hamburger fix and the Bridge fixes are
-> merged but NOT live.** A deploy is a separate, owner-initiated step
-> (Redeploy/Promote in Vercel, or `vercel --prod`).
+> ✅ **DEPLOYED 2026-07-29 18:37:10Z — this fix is now LIVE.** The owner asked
+> for a single deploy carrying everything ("make one deploy so all fixes will be
+> on one deploy").
 >
-> ⚠️ **Note the ordering hazard this creates.** The database now runs ahead of
-> the deployed application: migrations A, B and 300 are applied to production
-> while production serves `bd1e625d4`. That is safe here — verified by
-> exercising every affected flow against the deployed commit's call sites — but
-> it is the inverse of the intended sequence, and it means a *rollback* of the
-> deployment would not roll back the policies.
+> Production is `dpl_GGoaQYjxpJgf2uL3q8ySK7nPLN5U`, commit `b18c2a174`, state
+> READY, aliased to helmsportslabs.com. `/api/health` returns
+> `{"status":"healthy","database":"ok"}` in ~100ms and reports its own
+> `deploymentId`, which is how the cutover was confirmed rather than assumed.
+>
+> Shipped in it: **#1094** (offline.html on full LTE), **#1095** (golf dashboard
+> blocked on a closed chat drawer), **#1096** (iOS Capacitor), **#1097** (CI seed
+> retry), **#1098** (middleware auth fallback taking the whole site down),
+> **#1099** (mobile hamburger, Bridge detail, Bridge read gate), **#1101**
+> (`describeError`), **#1102** (this record + regenerated types).
+>
+> ⚠️ **Deployed from a clean detached worktree at `b18c2a174`, NOT from the
+> shared working tree.** The shared tree carries another session's uncommitted
+> files; `vercel --prod` uploads the local directory, so deploying from there
+> would have shipped their in-progress work. Worth remembering — this is the one
+> deploy mechanism where the shared-tree hazard below reaches production.
+>
+> `main` still does not auto-deploy (`vercel.json` →
+> `git.deploymentEnabled {"*": false}`), so a future deploy remains an explicit
+> `vercel --prod` from a clean tree at main's tip.
+>
+> **The database-ahead-of-app inversion is now resolved** — while it lasted, the
+> migrations were applied against a production serving `bd1e625d4`, verified by
+> exercising every affected flow against that commit's own call sites.
 >
 > ### ⚠️ SHARED-TREE HAZARD
 >
@@ -91,10 +105,44 @@ coach's email and phone. It has no authored fix because tightening it is a
 product decision plus a 75-call-site audit, not a policy swap. It is now the
 only unclosed P0 in this document.
 
-**Caveat worth carrying:** every measurement was a row count at the data layer.
-No browser walked these screens, and production carries little traffic right
-now. The residual risk is a rendering bug in the app, not a policy that denies
-too much.
+### Post-deploy verification — what was and was NOT confirmed
+
+Confirmed against live production after the 18:37Z cutover:
+
+| Check | Result |
+|---|---|
+| deployed SHA | `b18c2a174` = main's tip ✓ |
+| `/api/health` | `healthy`, `database: ok`, ~100ms ✓ |
+| `/`, `/baseball`, `/golf/login`, `/baseball/login` | all HTTP 200 ✓ |
+| Vercel runtime errors, 1h window spanning the deploy | **none** ✓ |
+| postgres ERRORs | 6, all my own probes (deliberate `Forbidden` + `permission denied` tests, and enum typos) ✓ |
+
+**NOT confirmed, and the reasons are mechanical rather than excuses:**
+
+- **The mobile hamburger was not visually re-verified in production.** Three
+  independent blockers: Chrome refuses to resize its window below ~500px;
+  Playwright's MCP browser profile is locked by another session; and the site
+  correctly refuses to be framed (X-Frame-Options), which kills the iframe
+  workaround. It is covered by 5 passing unit tests asserting the lock lands on
+  `documentElement` (not `body`) and that the Lenis scroller is stopped and
+  restarted, and the fix is confirmed deployed by SHA.
+
+- **Join-by-code was not exercised end-to-end through the UI.** A logged-out
+  visitor cannot resolve a code by design — `resolve_baseball_team_by_join_code`
+  has anon EXECUTE revoked — so the page requires sign-in, and entering
+  credentials is out of scope. The resolver is verified at the database layer
+  (returns 1 row for an authenticated non-member).
+
+  ⚠️ **A curl of `/baseball/join/<code>` appears to render "not found" for both
+  valid AND invalid codes. That is a FALSE SIGNAL** — `not found` / `notFound`
+  are framework identifiers present in the JS chunks of every response, not page
+  content. The valid and invalid responses do differ (62041 vs 62065 bytes).
+  Anyone repeating this check should not read that string as breakage.
+
+**Residual risk** is therefore a rendering or call-shape bug in the app, not a
+policy that denies too much — the policies themselves have been executed as real
+users. Production also carries little traffic right now, so "no errors since
+deploying" is weak evidence, not strong.
 
 ---
 
