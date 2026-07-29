@@ -102,7 +102,7 @@ CREATE POLICY "baseball_players_select" ON public.baseball_players
     -- EXISTS over baseball_team_members.
     --
     -- ⚠️ SECOND RECURSION CYCLE, also found only by executing this. The inline
-    -- subquery is not SECURITY DEFINER, so it is filtered by
+    -- subquery is not a definer function, so it is filtered by
     -- baseball_team_members_select — which itself contains
     -- `EXISTS (SELECT 1 FROM baseball_players bp JOIN ...)`
     -- (20260527000000_prod_public_baseline.sql:18350-18353). That re-enters
