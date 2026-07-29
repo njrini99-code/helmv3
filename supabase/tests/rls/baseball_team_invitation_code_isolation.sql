@@ -44,7 +44,14 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(18);
+-- 4 (resolver invariants) + 4 (policy shape) + 1 (anon) + 4 (table reads)
+-- + 6 (resolver behaviour) = 19. Counted per group rather than eyeballed:
+-- the first push of this file planned 18, all 18 subtests passed, and the
+-- suite still failed with "Bad plan" — which under the runner's
+-- `set -euo pipefail` loop aborted every ALPHABETICALLY LATER suite
+-- (baseball_tenant_isolation among them) before it ran. A miscounted plan is
+-- not a cosmetic error here; it silently drops coverage.
+SELECT plan(19);
 
 -- ============================================================================
 -- GROUP 1 — resolver invariants. Mirrors the invariant block every sibling
