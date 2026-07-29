@@ -26,6 +26,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { logServerEvent } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -58,7 +59,11 @@ export async function GET(req: NextRequest) {
   return recordJobRun('integrity-check', async () => {
     const admin = createAdminClient();
     const { data, error } = await admin.rpc('run_integrity_checks');
-    if (error) throw new Error(`run_integrity_checks failed: ${error.message}`);
+    // describeError, not `error.message`: when Supabase is unreachable the
+    // "message" is a ~6KB Cloudflare 522 HTML page whose Ray ID, client IP and
+    // timestamp are unique per occurrence — so every outage minute minted a new
+    // incident group instead of one row with a count.
+    if (error) throw new Error(`run_integrity_checks failed: ${describeError(error)}`);
 
     const raw: unknown = data;
     const checks: CheckResult[] = Array.isArray(raw) ? raw.filter(isCheckResult) : [];
