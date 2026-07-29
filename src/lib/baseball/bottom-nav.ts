@@ -30,6 +30,7 @@
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 import { getProgramVariant } from './program-type-variants';
 import { BASEBALL_MESSAGES_NAV } from './nav-registry';
+import { isNavKeyDisabled } from './product-modules';
 
 export interface BaseballBottomNavContext {
   role: 'coach' | 'player';
@@ -98,10 +99,42 @@ export function getBaseballBottomNavKeys(
   const variant = getProgramVariant(ctx.programType);
 
   if (ctx.role === 'player') {
-    const differentiator = variant.playerBottomNavRows[0] ?? 'player-stats-hub';
+    const differentiator = resolveDifferentiator(
+      variant.playerBottomNavRows[0],
+      'player-stats-hub',
+    );
     return [...PLAYER_UNIVERSAL_KEYS, differentiator, BASEBALL_MESSAGES_NAV.id];
   }
 
-  const differentiator = variant.coachBottomNavHubs[0] ?? 'stats-performance';
+  const differentiator = resolveDifferentiator(
+    variant.coachBottomNavHubs[0],
+    'stats-performance',
+  );
   return [...COACH_UNIVERSAL_KEYS, differentiator, BASEBALL_MESSAGES_NAV.id];
+}
+
+/**
+ * Slot 3 for a mode, with the product-module gate applied.
+ *
+ * `program-type-variants.ts` declares each mode's INTENT ("transfer exposure is
+ * why JUCO mode exists"), and that declaration is deliberately left intact
+ * through the recruiting sunset so it is still correct the day the module comes
+ * back. But a key naming a disabled module resolves to nothing in the shell
+ * (`byNavKey.get(key)` → undefined → dropped by `.filter(Boolean)`), which
+ * would silently render a 3-tab bottom bar and violate MOBILE_DOCTRINE Rule 10
+ * ("4 destinations + More"). So the gate is applied HERE, at read time, and
+ * falls back to the same always-visible, capability-free key this function
+ * already used when a mode declared no differentiator at all — the same key
+ * COACH_FAILCLOSED_KEYS / PLAYER_FAILCLOSED_KEYS use. Losing a differentiator
+ * costs the mode its distinctiveness; losing a tab costs it a doctrine
+ * violation, and the second is worse.
+ *
+ * Affects exactly three bars today: JUCO coach, and JUCO + high-school player.
+ * They fall back to Stats. If a better non-recruiting differentiator is chosen
+ * for those modes, set it in program-type-variants.ts — this fallback then
+ * stops firing on its own.
+ */
+function resolveDifferentiator(declared: string | undefined, fallback: string): string {
+  if (!declared || isNavKeyDisabled(declared)) return fallback;
+  return declared;
 }

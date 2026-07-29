@@ -143,6 +143,35 @@ export function isHubDisabled(hub: string | null | undefined): boolean {
 }
 
 /**
+ * NAV KEYS owned by each module — distinct from `MODULE_HUBS` above.
+ *
+ * A hub name groups routes for sub-navigation. A nav KEY is what the shell
+ * resolves to a concrete rendered item (`byNavKey.get(key)` in
+ * BaseballFairwayShell.tsx): bottom-nav differentiator slots
+ * (program-type-variants.ts `coachBottomNavHubs` / `playerBottomNavRows`) and
+ * player rail-row ids. They overlap but are not the same namespace — the
+ * player rail names its recruiting row `player-recruiting-hub`, which is not a
+ * hub name any registry uses.
+ *
+ * This exists because an unresolvable key does not fail loudly: the shell
+ * drops it (`.filter(Boolean)`), silently rendering a 3-tab bottom bar where
+ * the doctrine requires 4. Callers consult `isNavKeyDisabled` and substitute
+ * their own declared fallback rather than emitting a key that will vanish.
+ */
+export const MODULE_NAV_KEYS: Readonly<Record<ProductModuleId, readonly string[]>> = {
+  recruiting: ['recruiting', 'coach-recruiting', 'player-recruiting', 'player-recruiting-hub'],
+} as const;
+
+/** True when `key` names a nav item belonging to a currently-disabled module. */
+export function isNavKeyDisabled(key: string | null | undefined): boolean {
+  if (!key) return false;
+  for (const id of PRODUCT_MODULE_IDS) {
+    if (!isModuleEnabled(id) && MODULE_NAV_KEYS[id]?.includes(key)) return true;
+  }
+  return false;
+}
+
+/**
  * Route prefixes owned by each module.
  *
  * Used by the server route guards and by tests proving a disabled module is

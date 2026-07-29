@@ -3,10 +3,12 @@ import {
   PRODUCT_MODULES,
   PRODUCT_MODULE_IDS,
   MODULE_HUBS,
+  MODULE_NAV_KEYS,
   MODULE_ROUTE_PREFIXES,
   isModuleEnabled,
   isRecruitingEnabled,
   isHubDisabled,
+  isNavKeyDisabled,
   moduleForPathname,
   isPathnameModuleDisabled,
   disabledModuleIds,
@@ -67,6 +69,44 @@ describe('hub gating', () => {
     expect(isHubDisabled(null)).toBe(false);
     expect(isHubDisabled(undefined)).toBe(false);
     expect(isHubDisabled('')).toBe(false);
+  });
+});
+
+describe('nav-key gating', () => {
+  it('disables the bottom-nav / rail-row keys that name a recruiting surface', () => {
+    // 'player-recruiting-hub' is the one that MODULE_HUBS alone does not cover:
+    // it is a player rail-row id, not a hub name, and it is exactly the key
+    // that silently shrank the HS/JUCO player bottom bar from 4 tabs to 3.
+    for (const key of [
+      'recruiting',
+      'coach-recruiting',
+      'player-recruiting',
+      'player-recruiting-hub',
+    ]) {
+      expect(isNavKeyDisabled(key), key).toBe(true);
+    }
+  });
+
+  it('leaves the fallback keys the bottom bar substitutes in enabled', () => {
+    // If either of these were ever caught by a module, the fallback would
+    // itself vanish and the bar would break in a harder-to-find way.
+    for (const key of ['stats-performance', 'player-stats-hub', 'dashboard', 'team', 'messages']) {
+      expect(isNavKeyDisabled(key), key).toBe(false);
+    }
+  });
+
+  it('tolerates null/undefined/empty without throwing', () => {
+    expect(isNavKeyDisabled(null)).toBe(false);
+    expect(isNavKeyDisabled(undefined)).toBe(false);
+    expect(isNavKeyDisabled('')).toBe(false);
+  });
+
+  it('covers every hub name in MODULE_HUBS — nav keys are a superset', () => {
+    for (const id of PRODUCT_MODULE_IDS) {
+      for (const hub of MODULE_HUBS[id]) {
+        expect(MODULE_NAV_KEYS[id], `${id}/${hub}`).toContain(hub);
+      }
+    }
   });
 });
 
