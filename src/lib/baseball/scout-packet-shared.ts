@@ -85,7 +85,22 @@ export interface ScoutPacketContactRules {
 
 export interface ScoutPacketModel {
   ok: boolean;
-  reason: null | 'not_found' | 'expired' | 'revoked' | 'not_exposed' | 'error';
+  /**
+   * `module_disabled` is distinct from `revoked` on purpose. Revoked means the
+   * program turned this specific link off — a statement about their intent
+   * that would be false while recruiting is sunset product-wide
+   * (src/lib/baseball/product-modules.ts). Telling a college coach the program
+   * revoked their link when the program did nothing invites a phone call about
+   * a decision nobody made.
+   */
+  reason:
+    | null
+    | 'not_found'
+    | 'expired'
+    | 'revoked'
+    | 'not_exposed'
+    | 'module_disabled'
+    | 'error';
   playerId: string | null;
   teamId: string | null;
   programName: string | null;

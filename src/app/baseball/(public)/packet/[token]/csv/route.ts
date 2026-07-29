@@ -34,6 +34,10 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<Respo
   // A CSV download isn't a packet "view" — don't bump view_count/last_viewed_at.
   const model = await resolveScoutPacketByToken(token ?? '', { trackView: false });
   const csv = scoutPacketToCsv(model);
+  // 404 only for a token that names nothing. Every other failure — expired,
+  // revoked, not exposed, and (recruiting sunset) module_disabled — is a real
+  // resource the caller may not have, so 403. The body in all cases is the
+  // one-row "Unavailable" CSV scoutPacketToCsv emits for !ok, never a packet.
   const status = model.ok ? 200 : model.reason === 'not_found' ? 404 : 403;
   return new Response(csv, {
     status,

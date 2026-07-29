@@ -66,6 +66,13 @@ const REASON_COPY: Record<string, { title: string; body: string }> = {
     title: 'This packet isn’t shared right now',
     body: 'The player’s passport isn’t set to a public/scout state. Contact the program for access.',
   },
+  // Recruiting is sunset product-wide (src/lib/baseball/product-modules.ts).
+  // Deliberately does not blame the program — they did not revoke anything —
+  // and does not promise a return date we have not committed to.
+  module_disabled: {
+    title: 'Scout packets are unavailable',
+    body: 'BaseballHelm isn’t serving scout packets at the moment. This isn’t something the program turned off — contact them directly and they can share this player’s information another way.',
+  },
   error: {
     title: 'We couldn’t load this packet',
     body: 'Something went wrong on our end. Please try again in a moment.',
