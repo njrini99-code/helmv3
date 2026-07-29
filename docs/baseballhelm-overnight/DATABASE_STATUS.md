@@ -341,6 +341,26 @@ rather than fixes.
 
 ---
 
+## Sweeps run, and what each found — including the clean ones
+
+Recorded so the next audit starts where this one stopped instead of repeating
+it. **A negative result is only useful if it is written down**, and four of
+these six came back clean.
+
+| Sweep | Scope | Result |
+|---|---|---|
+| `FOR SELECT … USING (true)` | **all** tables | 5 on baseball (#1, #2, #4 + 2 already fixed by earlier migrations), 13 non-baseball. Of the 13, all but one are shared reference data (course library, drills, PGA standards, metrics, `organizations` — institutional info only). The exception is `golf_coaches` → see the cross-product section below. |
+| Column compared to itself in a policy | **all** tables | **Contained to `baseball_messages`** (3 policies). No golf equivalent, no other table. Nobody needs to re-run this. |
+| Role asserted but never scoped (e.g. `OR get_my_coach_id() IS NOT NULL`) | baseball | Exactly one: `baseball_coaches_select` → #5. |
+| Permissive **write** policy (`WITH CHECK (true)` / `USING (true)` on INSERT/UPDATE/DELETE/ALL) | baseball | Exactly one: `baseball_notifications_insert` → below. The rest of the write surface is clean. |
+| Table created without `ENABLE ROW LEVEL SECURITY` | baseball | **Zero.** 98 baseball tables created, all with RLS enabled. |
+| `SECURITY DEFINER` without a pinned `search_path` | baseball | **Zero outstanding.** Three existed in the baseline (`get_my_baseball_conversation_ids`, `is_baseball_team_member_v2`, one non-baseball); all were already repaired by `20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql`, which does a real `ALTER FUNCTION … SET search_path`. Checked rather than assumed. |
+
+The two sweeps that found the most (`USING (true)` and self-comparison) are
+each about thirty seconds of grep.
+
+---
+
 ## 🟡 `baseball_notifications` — any authenticated user can write a notification to anyone
 
 _Found 2026-07-29 05:45 by sweeping baseball tables for permissive **write**
