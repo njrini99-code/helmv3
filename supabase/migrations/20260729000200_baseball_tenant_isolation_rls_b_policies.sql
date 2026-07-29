@@ -269,7 +269,73 @@ CREATE POLICY "baseball_player_percentiles_select" ON public.baseball_player_per
   USING (public.can_view_baseball_player(player_id));
 
 -- ----------------------------------------------------------------------------
--- SECTION 5 — defense in depth: anon has no matching policy on any of these
+-- SECTION 5 — baseball_messages: a typo that opens every private conversation
+-- ----------------------------------------------------------------------------
+-- The most severe finding in this file, and the only one that is a WRITE hole
+-- as well as a read hole. Three policies in the baseline share one typo:
+--
+--     -- 20260527000000_prod_public_baseline.sql:17377
+--     CREATE POLICY "Users can view baseball messages" ON public.baseball_messages
+--       FOR SELECT TO authenticated
+--       USING (EXISTS (
+--         SELECT 1 FROM public.baseball_conversation_participants cp
+--         WHERE cp.conversation_id = cp.conversation_id     -- <<<< HERE
+--           AND cp.user_id = auth.uid()));
+--
+-- `cp.conversation_id = cp.conversation_id` compares a column to ITSELF. It is
+-- true for every row. The correlation that was meant to be there —
+-- `cp.conversation_id = baseball_messages.conversation_id` — is simply absent,
+-- so the predicate collapses to "does the caller participate in ANY
+-- conversation at all". Answer yes once, and you can read EVERY private
+-- message in the database: every coach-to-player DM in every program.
+--
+-- WHY THE CORRECT POLICY DOES NOT SAVE IT. `baseball_messages_select`
+-- (line 18055) is the same rule written correctly, and it is live right
+-- alongside this one. That does not help: multiple PERMISSIVE policies for the
+-- same command are combined with OR, so the broadest one wins outright. A
+-- correct policy sitting next to a broken one is not a mitigation, and this is
+-- the trap that makes the bug survive a read-through — the file contains the
+-- right answer twenty lines below the wrong one.
+--
+-- THE SAME TYPO APPEARS THREE TIMES, and the two write cases are worse than
+-- the read:
+--
+--   "Users can send baseball messages"              (INSERT, :17346)
+--       WITH CHECK keeps sender_id = auth.uid(), so the sender cannot be
+--       forged — but the conversation can be ANY conversation. A rival
+--       program's coach can post into another program's private coach/player
+--       thread, under their own name, and it will render as a normal message.
+--   "Users can update baseball message read status" (UPDATE, :17352)
+--       No correlation and no WITH CHECK of its own, so it exposes UPDATE on
+--       every message row in the database.
+--   "Users can view baseball messages"              (SELECT, :17377)
+--
+-- Nothing has ever dropped any of them; grep across every later migration
+-- returns only the baseline definition. Live since 2026-05-27.
+--
+-- THE FIX IS THREE DROPS AND NOTHING ELSE. Each broken policy has a
+-- correctly-correlated counterpart already in place and already live:
+--
+--   Users can send baseball messages              -> baseball_messages_insert
+--   Users can update baseball message read status -> baseball_messages_update
+--                                                 +  baseball_messages_update_read
+--   Users can view baseball messages              -> baseball_messages_select
+--
+-- Verified by reading all four: the survivors carry the identical intent, the
+-- identical sender_id check where applicable, and the correlation the broken
+-- ones are missing. So dropping a permissive policy here can only REMOVE the
+-- unintended access — it cannot take away anything a legitimate participant
+-- could do, because the correct sibling already permits it.
+--
+-- Consequently this section, alone in this file, needs NO companion app
+-- change and is safe under both the old and new application code. If the rest
+-- of this migration has to be held for review, this part does not.
+DROP POLICY IF EXISTS "Users can view baseball messages" ON public.baseball_messages;
+DROP POLICY IF EXISTS "Users can send baseball messages" ON public.baseball_messages;
+DROP POLICY IF EXISTS "Users can update baseball message read status" ON public.baseball_messages;
+
+-- ----------------------------------------------------------------------------
+-- SECTION 6 — defense in depth: anon has no matching policy on any of these
 -- tables today (before or after this migration — RLS-enabled-with-no-matching-
 -- policy already denies anon all rows), so this REVOKE is a no-op on live
 -- behavior. It closes the blanket `GRANT ALL ... TO anon` (including
