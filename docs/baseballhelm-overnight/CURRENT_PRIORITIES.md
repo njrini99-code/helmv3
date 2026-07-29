@@ -77,10 +77,9 @@ Discover/Compare and roster "Add existing player" all return **empty results,
 not errors**, so the symptom is "the product quietly stopped working."
 
 **✅ The SQL is verified by execution.** CI on PR #1092 applies both migrations
-to a fresh Postgres and runs the pgTAP suites — passing: **34/34** tenant
-isolation, **19/19** invitation codes, **9/9** player percentiles, **9/9** Lift
-Lab sync identity. Two more suites (`baseball_messages` ×12, team-scoped tables
-×10) are in their first CI run.
+to a fresh Postgres and runs **six** pgTAP suites, **all passing**: 34/34
+tenant isolation, 19/19 invitation codes, 12/12 messages, 10/10 team-scoped
+tables, 9/9 player percentiles, 9/9 Lift Lab sync identity — 93 assertions.
 
 The tenant-isolation suite failed three times before it passed: two independent
 recursion cycles that would have made *every* query against `baseball_players`

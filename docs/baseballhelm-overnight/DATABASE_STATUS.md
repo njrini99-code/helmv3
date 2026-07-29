@@ -8,12 +8,23 @@ the ops note at the bottom). Migration source is authoritative for what was
 applied but cannot rule out an out-of-band hotfix, so re-verify live before
 acting._
 
-_The **fix**, unlike the findings, is verified by execution: CI on PR
+_The **fixes**, unlike the findings, are verified by execution: CI on PR
 [#1092](https://github.com/njrini99-code/helmv3/pull/1092) applies both
-migrations to a fresh Postgres and runs the pgTAP suites — all green:
-34/34 (tenant isolation) + 19/19 (invitation codes) + 9/9 (player percentiles)
-+ 9/9 (Lift Lab sync). The tenant-isolation suite failed three times first, on
-defects no amount of reading found. See "The SQL HAS now been executed" below._
+migrations to a fresh Postgres and runs six pgTAP suites — **all green**:_
+
+| Suite | Assertions |
+|---|---|
+| `baseball_tenant_isolation` | 34/34 |
+| `baseball_team_invitation_code_isolation` | 19/19 |
+| `baseball_messages_conversation_isolation` | 12/12 |
+| `baseball_team_scoped_tables_isolation` | 10/10 |
+| `baseball_player_percentiles_isolation` | 9/9 |
+| `helm_lifting_sync_identity_refresh` | 9/9 |
+
+_Four of these needed more than one CI run to get there — two RLS recursion
+cycles, five anon-callable functions, a miscounted plan, and a fixture using
+auth user ids where coach ids were required. None of those was visible to
+reading. See "The SQL HAS now been executed" below._
 
 ---
 

@@ -40,8 +40,8 @@ resume protocol looks for. Corrected, and worth not repeating.)_
 | `npx tsc --noEmit` | 0 errors | **0 errors** |
 | `npx eslint` on changed files | clean | **clean** |
 | `vitest --project unit` | 843 files / 7,964 passed | **861 files / 8,181 passed, 13 skipped, exit 0** |
-| pgTAP (CI, fresh Postgres) | n/a | **all green** — 34/34 tenant isolation, 19/19 invitation codes, 9/9 player percentiles, 9/9 Lift Lab sync |
-| `Supabase lint + RLS tests` (CI) | n/a | **pass** on `2855a0646` |
+| pgTAP (CI, fresh Postgres) | n/a | **6 suites, 93 assertions, all green** — 34 tenant isolation, 19 invitation codes, 12 messages, 10 team-scoped tables, 9 player percentiles, 9 Lift Lab sync |
+| `Supabase lint + RLS tests` (CI) | n/a | **pass** on `5bb3e8400` |
 
 The suite grew rather than shrank, and no baseline test was flipped to
 accommodate a change. **Green stayed green** — which is the point of having
