@@ -138,6 +138,13 @@ Each has tests, and the tests assert behaviour rather than existence.
   policy was called "Anyone can view percentiles", which is what you would
   name a table of league benchmark curves; it sat on a per-player table
   holding `percentile_gpa` and `composite_academic`.
+- **The vitest projects select the files they claim to.** A root-level
+  `include` was being *merged* into every project (`extends: true` merges
+  arrays, it does not replace them), so `integration`, `rls` and `business`
+  each matched ~870 files instead of 5, 0 and 7. CI's "Business contracts"
+  job was therefore re-running the whole unit suite under a name that
+  promised seven contract files. The config's own comment claimed the
+  opposite, which is probably why nobody looked.
 - **Three bottom bars stopped rendering 3 tabs instead of 4.**
 - **The public player profile withholds at the server**, not just at the
   renderer.

@@ -136,6 +136,9 @@ and surfaced only by executing something:
   in JSX (found by asserting the serialized payload, not the DOM).
 - A seed "production guard" that **allowlisted** production (found by running
   it).
+- Three vitest projects selecting ~870 files each instead of 5, 0 and 7 —
+  found by *counting* what they select, after the config's own comment
+  asserted the opposite of what the tool does.
 
 It cuts both ways: recon reported a P0 that did not exist. It was retracted in
 place and pinned by a test rather than quietly deleted.
