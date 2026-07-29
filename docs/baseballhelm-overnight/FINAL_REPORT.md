@@ -138,6 +138,35 @@ Each has tests, and the tests assert behaviour rather than existence.
   shown "Your recruiting calendar is empty" under a **Browse prospects** button
   pointing into a blocked route. Gated at read time, so the recruiting
   narrative returns unedited when the module does.
+- **The player's first screen after login no longer advertises a redirect.**
+  Four surfaces — Today, Profile, Passport, and a player's own public profile —
+  carried a green **Activate Recruiting** button. The one on the public profile
+  is *kept*, not hidden: it discloses that the page is private to the viewer,
+  which stays true and matters more under the sunset; only its explanation and
+  its dead CTA changed.
+- **The front door stopped selling the module we removed.** `/baseball`'s
+  `<title>`, both social cards, the H1, the hero and an entire feature section
+  pitched the recruiting pipeline. Replaced — not stripped — with practice,
+  readiness and attendance, every claim of which is backed by shipped tables.
+  One flag flip restores the original wording byte for byte.
+- **No hardcoded baseball link points at a route that does not exist.** 283
+  routes resolved against 2,739 files: zero dead links, proven by a probe that
+  makes the sweep fail on demand rather than by trusting a green run.
+
+## Verified, and the answer was "already fine"
+
+Recorded because a checked-and-clean result is evidence, and re-checking it
+tomorrow is waste:
+
+- **No empty `catch {}` in any baseball source file.** One textual hit, inside
+  a comment describing a suppression that was already removed.
+- **`loading.tsx` coverage.** Every live baseball dashboard and player route
+  has one, except `operations` and `stats`, which inherit the dashboard-level
+  fallback.
+- **`/watchlist` and `/analytics` were never open.** Both call
+  `requireRecruiting*Route`. They are absent from `MODULE_ROUTE_PREFIXES` on
+  purpose, and adding them would duplicate an existing control — the test that
+  checks this now asserts "the door is shut" rather than naming one lock.
 - **Roster status changes propagate to Lift Lab.** A cut player stayed
   `is_active` forever; nothing was going to converge, because the sync RPC is
   `ON CONFLICT DO NOTHING` and could add an athlete but never deactivate one.

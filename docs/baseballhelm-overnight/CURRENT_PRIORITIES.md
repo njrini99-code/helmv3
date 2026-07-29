@@ -157,6 +157,12 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | Select's clear button was nested inside its trigger button (invalid HTML, hydration-crash class) + a repo-wide parser guard | `394d3d875` |
 | Calendar's no-team empty state sold recruiting to a college coach, with a **"Browse prospects"** CTA into a sunset-blocked route | `70ea55143` |
 | **`/dashboard/activate` — the route that TURNS RECRUITING ON — was reachable by direct URL**; missing from `MODULE_ROUTE_PREFIXES` despite the middleware's comment claiming otherwise | `5f63a686a` |
+| The player's **first screen after login** sold recruiting under a button that now redirects — 4 surfaces incl. `/player/today` | `20990857d` |
+| **The public landing page still led with recruiting** — `<title>`, H1, hero, and a whole feature section, on the page a buyer reads first | `a6ee7f611` |
+| "Recruiting Active" KPI removed from the live showcase-org dashboard — a number nobody can move | `7415d3fb3` |
+| Public program page stopped addressing its readers as "recruits" (incl. the meta description that IS the search result) | `d68eeaac0` |
+| **Zero dead baseball links, proven** — 283 routes × 2,739 files, with a probe test showing the sweep can fail | `c0e90b958` |
+| The nav sweep and the route sweep now check **each other** — the seam `/activate` hid in | `3192ac28f` |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).
@@ -197,8 +203,21 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 - **A sweep is only as complete as the inventory it iterates.**
   `recruiting-sunset-doors.test.ts` walks `MODULE_ROUTE_PREFIXES` across every
   role × program type and passed all night — while `/activate` sat outside that
-  list, unguarded. The inventory now has its own assertion rather than being
-  trusted by the thing that reads it.
+  list, unguarded. The inventory now has its own assertion, and the nav sweep
+  and route sweep cross-check each other rather than each being separately
+  complete on its own axis.
+- **Closing a route is half the job; the other half is what pointed at it.**
+  Gating `/activate` did not remove the four player surfaces selling it, the
+  calendar button linking to `/discover`, or the landing page's pipeline
+  section. Every module gate should be followed by a sweep for inbound links
+  and inbound *copy* — the copy is the part no route test can see.
+- **The sunset is a positioning decision, so the positioning surfaces are in
+  scope.** `/baseball` — the page a buyer reads before anything else — still
+  led with "Recruiting & Team Management" and sold the pipeline. The registry's
+  own stated reason for the sunset is that recruiting "diluted the pitch", and
+  this page *is* the pitch. Replaced (not merely stripped) with practice +
+  readiness + attendance, all of which ship. **Worth a founder's eye in the
+  morning** — it is one flag flip to revert, and the copy lives in one file.
 
 ---
 
