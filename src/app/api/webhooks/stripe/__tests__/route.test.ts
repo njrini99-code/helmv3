@@ -106,8 +106,8 @@ describe('POST /api/webhooks/stripe', () => {
       tax: 1000, // summed across total_taxes, not the first entry
     });
     // Unix seconds -> ISO, because the columns are timestamptz.
-    expect(upserts[0].paid_at).toBe(new Date(1_700_003_600 * 1000).toISOString());
-    expect(upserts[0].finalized_at).toBe(new Date(1_700_000_000 * 1000).toISOString());
+    expect(upserts[0]!.paid_at).toBe(new Date(1_700_003_600 * 1000).toISOString());
+    expect(upserts[0]!.finalized_at).toBe(new Date(1_700_000_000 * 1000).toISOString());
   });
 
   describe('out-of-order delivery', () => {
@@ -128,7 +128,7 @@ describe('POST /api/webhooks/stripe', () => {
       await post('invoice.voided', invoice({ status: 'void' }));
 
       expect(upserts).toHaveLength(1);
-      expect(upserts[0].status).toBe('void');
+      expect(upserts[0]!.status).toBe('void');
     });
 
     it('allows normal forward progress (open -> paid)', async () => {
@@ -136,7 +136,7 @@ describe('POST /api/webhooks/stripe', () => {
 
       await post('invoice.paid', invoice({ status: 'paid' }));
 
-      expect(upserts[0].status).toBe('paid');
+      expect(upserts[0]!.status).toBe('paid');
     });
 
     it('treats uncollectible as terminal too', async () => {
