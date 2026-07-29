@@ -9,25 +9,33 @@ answered separately.
 
 ---
 
-## 🔴 One blocker outranks everything
+## ✅ The blocker that outranked everything is CLEARED
 
-**Two live cross-tenant data exposures.** Any authenticated user on any team
-reads every other program's roster PII (email, phone, GPA, SAT/ACT) and every
-team's secret `join_code`.
+**Applied to production 2026-07-29 ~17:45Z**, on the owner's explicit
+instruction. Any authenticated user on any team could read every other
+program's roster PII (email, phone, GPA, SAT/ACT) and every team's secret
+`join_code`. They no longer can — measured, as three real users:
 
-This is not "an incomplete product." A demo of a product that leaks every other
-program's player data to the person you are demoing to is a liability, and it
-is the one finding that is **worse to ship than to delay**. BaseballHelm is
-sold on the promise that a program's roster is theirs.
+- a non-member player: teams `13 → 1`, join codes `13 → 1`, players `35 → 1`,
+  own row preserved
+- a coach with an 8-player roster: players `35 → 16`, own roster `8 → 8`
+- the owner's account: players `35 → 22`, own roster `14 → 14`
 
-The fix is written, reviewed, and committed as files. **It has not been applied
-to anything.** Apply it in three steps — see `DATABASE_STATUS.md` for the full
-reasoning and `CURRENT_PRIORITIES.md` for the checklist.
+Cross-org visibility does not reach zero because the recruiting backstop admits
+players who **opted in** (9 of 35; all 26 college players excluded) — the
+consent model, not a residual leak.
 
-**Do this first:** read CI on PR #1092. Its `supabase` job builds a fresh local
-stack from all migrations and runs the pgTAP suites. That is the first time
-this SQL will have been executed by any Postgres — everything else about it so
-far is static review.
+Join-by-code, the roster email search and the anon-facing public view were each
+exercised through the exact RPC the app calls, after applying. See
+`DATABASE_STATUS.md` for the full before/after and PR **#1102** for the record.
+
+**Still open — the only unclosed P0:** `baseball_coaches`. Any coach reads every
+coach's email and phone. No authored fix; it needs a product decision plus a
+75-call-site audit.
+
+**Caveat:** every measurement is a row count at the data layer. No browser
+walked these screens, so the residual risk is a rendering bug in the app rather
+than a policy denying too much.
 
 ---
 
@@ -66,9 +74,10 @@ visible from another.
 
 | Blocker | Status |
 |---|---|
-| Cross-tenant leak | Fix written, **not applied**. This is the whole answer. |
+| Cross-tenant leak | ✅ **CLOSED in production 2026-07-29.** Five of six exposures fixed and verified by execution. |
+| `baseball_coaches` email/phone readable by any coach | 🔴 **STILL OPEN.** The sixth. Needs a product decision + 75-call-site audit, not a policy swap. |
 | RLS test coverage | 35% of `baseball_*` tables have zero pgTAP coverage — messaging, tasks, travel, announcements, invitations, dev plans. A hole in any of them would not be caught. |
-| `helm_lifting_athletes.user_id` staleness | Write-once at seed time, never re-synced, **verified stale in production**. Any player synced before their account is linked permanently fails the athlete-self gate at `/lifting/dashboard`. |
+| `helm_lifting_athletes.user_id` staleness | ✅ **FIXED AND REPAIRED.** `20260729000300` applied, and the repair run: 21 of 22 athletes were unlinked and locked out of `/lifting/dashboard`; now 0, with `is_active` untouched and every link matching its source player across 22 distinct accounts. |
 
 Everything else on the open list is quality, not correctness.
 

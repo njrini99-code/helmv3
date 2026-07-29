@@ -33,16 +33,25 @@ _Updated 2026-07-29 09:50 EDT. Worked strictly in order. A priority marked
 > rejection into a full-page "No Connection" — no retry, no `navigator.onLine`
 > check, and a "Try Again" that re-entered the same handler.
 >
-> Fixed in `#1094`, **merged to `main`**, and **NOT YET DEPLOYED**. `main` does
-> not auto-deploy (`vercel.json` → `git.deploymentEnabled {"*": false}`), so
-> production still runs the 2026-07-28 17:59 build. Also queued and unmerged:
-> **#1098** (an unguarded `getSession()` in the middleware auth fallback let the
-> dead database take down marketing and login too) and **#1097** (the unretried
-> CI seed froze every merge). Those two are the reason a dead database should
-> not become a dead website — worth shipping even though the DB is back.
+> Fixed in `#1094`. **UPDATE 2026-07-29 evening: #1094, #1097, #1098, #1099 and
+> #1101 are all now merged to `main`** — the owner gave merge authorization
+> ("Merge what needs to be merged I give authorization", later "Merge don't
+> deploy").
 >
-> **I could not merge or deploy** — the permission classifier denies both to
-> autonomous execution. That boundary was not worked around.
+> **`main` is still NOT DEPLOYED, and that is deliberate.** `main` does not
+> auto-deploy (`vercel.json` → `git.deploymentEnabled {"*": false}`), and the
+> owner's instruction was explicitly *"Merge don't deploy"*. Production remains
+> on `dpl_B9mv3SVZ` / `bd1e625d4` (#1092, 14:30Z). **So the offline.html fix,
+> the middleware hotfix, the mobile hamburger fix and the Bridge fixes are
+> merged but NOT live.** A deploy is a separate, owner-initiated step
+> (Redeploy/Promote in Vercel, or `vercel --prod`).
+>
+> ⚠️ **Note the ordering hazard this creates.** The database now runs ahead of
+> the deployed application: migrations A, B and 300 are applied to production
+> while production serves `bd1e625d4`. That is safe here — verified by
+> exercising every affected flow against the deployed commit's call sites — but
+> it is the inverse of the intended sequence, and it means a *rollback* of the
+> deployment would not roll back the policies.
 >
 > ### ⚠️ SHARED-TREE HAZARD
 >
@@ -54,13 +63,42 @@ _Updated 2026-07-29 09:50 EDT. Worked strictly in order. A priority marked
 > `hooks/use-sequenced-navigation.ts`. Nothing of theirs was touched; all my
 > work since 08:30 runs in an isolated `git worktree` for exactly this reason.
 
-_The two blocked items below are **no longer blocked on database
-reachability**. They are blocked on the standing rule that this session never
-applies a migration — a human decision, not a connectivity problem._
+---
+
+## ✅ RESOLVED 2026-07-29 ~17:45Z — the #1 item is DONE
+
+**The owner gave the instruction ("fix all code and database fixes" → "Go do
+it"), and five of the six exposures below are now closed in production.** The
+section that follows is kept as the record of what they were; the table's
+"what leaks" column is now past tense for every row except `baseball_coaches`.
+
+| Applied | What it closed |
+|---|---|
+| `20260729000100` (A) | the seven definer helpers the policies and app need |
+| `20260729000200` (B) | `baseball_players`, `baseball_teams`, `baseball_team_invitations`, `baseball_player_percentiles`, `baseball_messages`, `baseball_notifications` |
+| `20260729000300` | Lift Lab identity sync — plus the repair itself was run: 21 of 22 athletes were locked out of `/lifting/dashboard`, now 0 |
+
+Verified by executing the policies as three real users via role impersonation
+(`SET LOCAL ROLE authenticated` + `request.jwt.claims` in a rolled-back
+transaction) — a technique I had wrongly recorded as unavailable, and which is
+the reason this could be applied with evidence instead of hope. Join-by-code,
+the roster email search, and the anon-facing public view were each exercised
+through the exact RPC the app calls. Full before/after tables in
+`DATABASE_STATUS.md`; PR **#1102**.
+
+**What is still open: finding #5, `baseball_coaches`.** Any coach reads every
+coach's email and phone. It has no authored fix because tightening it is a
+product decision plus a 75-call-site audit, not a policy swap. It is now the
+only unclosed P0 in this document.
+
+**Caveat worth carrying:** every measurement was a row count at the data layer.
+No browser walked these screens, and production carries little traffic right
+now. The residual risk is a rendering bug in the app, not a policy that denies
+too much.
 
 ---
 
-## 🔴 THE #1 ITEM FOR THE MORNING (human decision required)
+## 🔴 (HISTORICAL) THE #1 ITEM FOR THE MORNING — now resolved, see above
 
 **Six live cross-tenant read exposures, plus one write hole.** Five of the six
 are the same mistake — an over-broad SELECT policy on a table whose rows belong
