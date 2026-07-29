@@ -1,6 +1,6 @@
 # DATABASE STATUS
 
-_Updated 2026-07-29 04:35 EDT._
+_Updated 2026-07-29 05:05 EDT._
 
 _Findings are verified from **migration source**; live `pg_policies` state is
 still unconfirmed (Supabase's Postgres connections timed out all night — see
@@ -26,40 +26,53 @@ defects no amount of reading found. See "The SQL HAS now been executed" below._
 | 3 | `baseball_team_invitations` — every live invite code readable | **CONFIRMED.** Fix authored (`2c2c939cf`), not applied. Seen and deferred by two earlier migrations. |
 | 4 | `baseball_player_percentiles` — every player's academic/athletic ranking readable | **CONFIRMED.** Fix authored (`2855a0646`), not applied. Never previously noticed. |
 | 5 | `baseball_coaches` — every coach's email + phone, readable by any coach | **CONFIRMED, NOT FIXED.** Needs a product decision + a 75-call-site audit. `20260701014000` explicitly reserved it. See §5. |
+| **6** | **`baseball_messages` — every private conversation in the database, READ AND WRITE** | **CONFIRMED. The most severe finding of the run.** Fix authored (`e1011f50b`), not applied. See §6. |
 | — | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See the retraction section. |
+
+> **#6 is the one to read first.** It is the only finding that is a write hole
+> as well as a read hole, it exposes private coach↔player communications rather
+> than profile data, and its fix is three `DROP POLICY` statements that need no
+> companion app change — so it can be applied independently of everything else
+> in this document.
 
 ---
 
-## 🔴 P0 — FOUR LIVE CROSS-TENANT DATA EXPOSURES (+ a fifth, needing a decision)
+## 🔴 P0 — SIX LIVE CROSS-TENANT EXPOSURES (five fixed in files, one needing a decision)
 
-The most serious findings of the entire run. All four were introduced in the
-`20260527000000_prod_public_baseline.sql` baseline and **no subsequent
-migration replaces any of them** (verified: grepping `baseball_players_select`
-and `baseball_teams_select` across every later migration returns nothing; the
-invitation policy is explicitly recorded as left in place — see #3; and
-nothing anywhere references the percentiles policy — see #4).
+The most serious findings of the entire run. **All six were introduced in the
+`20260527000000_prod_public_baseline.sql` baseline** — not one was added by
+later work — and no subsequent migration replaces any of them (verified per
+finding, by grepping each policy name across every later migration).
 
-They are one mistake made four times: **an over-broad SELECT policy on a
-table whose rows belong to somebody.** Three are the sharper variant — a
-secret stored in a column, guarded by a predicate that cannot see the query
-filtering on it. RLS evaluates per row and never sees the WHERE-clause
-literal, so "you may read this row if you already know its code" is not
-expressible as a policy; every attempt collapses into "you may read this
-row". The fix in each case is the same shape: the secret becomes an
-*argument* to a definer-rights function that compares it server-side.
+Five are one mistake repeated: **an over-broad SELECT policy on a table whose
+rows belong to somebody.** Three of those are the sharper variant — a secret
+stored in a column, guarded by a predicate that cannot see the query filtering
+on it. RLS evaluates per row and never sees the WHERE-clause literal, so "you
+may read this row if you already know its code" is not expressible as a policy;
+every attempt collapses into "you may read this row". The fix in each case is
+the same shape: the secret becomes an *argument* to a definer-rights function
+that compares it server-side.
 
-**How #3 and #4 were found matters more than the individual bugs.** Neither
-was in the recon report. #3 came from asking what else used the same
-`.eq('code', …)` shape as the join_code leak; #4 from sweeping the baseline
-for *every* `FOR SELECT … USING (true)` on a baseball table rather than
-stopping at the two that had been reported. The second sweep is thirty
-seconds of grep and it is the one that should have been run first.
+**#6 is a different animal** — not an over-broad rule but a *typo*
+(`cp.conversation_id = cp.conversation_id`) that silently turns a correct rule
+into `true`. It is the most severe of the six, and the only one that opens
+writes as well as reads.
 
-That sweep ended by predicting where a fifth would be: *"in a policy whose
-predicate is neither `true` nor missing."* Running that sweep found one —
-**#5 below**, `baseball_coaches`, where `OR get_my_coach_id() IS NOT NULL`
-reads as scoped but asserts only that the caller is *a* coach. It is left
-unfixed on purpose; see its section for why, and challenge that call.
+**How each was found is more transferable than the individual bugs.** Recon
+reported only #1 and #2. The rest came from asking progressively narrower
+questions, and each question was suggested by the previous answer:
+
+| # | The question that found it |
+|---|---|
+| 3 | "What *else* uses the same `.eq('code', …)` shape as the join_code leak?" |
+| 4 | "What *else* in the baseline is `FOR SELECT … USING (true)`?" — thirty seconds of grep, and it should have been the first thing run |
+| 5 | "If a fifth exists, it is behind a predicate that is neither `true` nor missing" — a prediction written down at the end of the #4 sweep, then actually executed |
+| 6 | "Before writing tests for the uncovered tables, read their policies" — the audit was meant to produce *coverage*, and produced the worst finding of the run |
+
+The pattern: **every one of these was found by re-asking the previous question
+one level wider.** None required new information — only refusing to stop at the
+first answer. #5 is left unfixed on purpose; see its section, and challenge
+that call.
 
 ### 1. `baseball_players` — every program's roster PII is readable by any logged-in user
 
@@ -239,6 +252,76 @@ subquery that caused the recursion cycles. When recruiting returns, a coach
 browsing a *discoverable* player will see the player and not their
 percentiles. Fail-closed, and recorded as step (6) of
 `PRODUCT_MODULES.recruiting.restore`.
+
+---
+
+### 6. `baseball_messages` — every private conversation, read AND write
+
+_Found 2026-07-29 05:00, by auditing the policies of the previously-uncovered
+tables **before** writing their tests. **The most severe finding of the run.**_
+
+```sql
+-- supabase/migrations/20260527000000_prod_public_baseline.sql:17377
+CREATE POLICY "Users can view baseball messages" ON public.baseball_messages
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM public.baseball_conversation_participants cp
+    WHERE cp.conversation_id = cp.conversation_id     -- <<<< compares a column to ITSELF
+      AND cp.user_id = auth.uid()));
+```
+
+`cp.conversation_id = cp.conversation_id` is true for every row. The intended
+correlation — `cp.conversation_id = baseball_messages.conversation_id` — is
+simply absent, so the predicate collapses to **"does the caller participate in
+*any* conversation at all"**. Answer yes once, and you can read every private
+message in the database: every coach↔player DM in every program.
+
+**Why it survived two months and several audits.** `baseball_messages_select`
+(line 18055) is the same rule written **correctly**, live at the same time,
+twenty lines below. That is not a mitigation — multiple PERMISSIVE policies for
+one command are combined with **OR**, so the broadest one wins outright — but
+it reads like one. Anyone skimming the file finds the correct policy and stops.
+
+**The same typo appears three times, and the write cases are worse:**
+
+| Policy | Command | Effect |
+|---|---|---|
+| `Users can send baseball messages` | INSERT | `sender_id = auth.uid()` still holds, so the sender cannot be forged — but the **conversation is unconstrained**. A rival program's coach can post into another program's private coach/player thread, under their own name, rendering as a normal message. |
+| `Users can update baseball message read status` | UPDATE | No correlation and no `WITH CHECK` of its own — UPDATE on every message row in the database. |
+| `Users can view baseball messages` | SELECT | The read half. |
+
+Nothing has ever dropped any of them; grep across every later migration returns
+only the baseline definition.
+
+**Fixed in `e1011f50b`. The fix is three `DROP POLICY` statements and no
+`CREATE`.** Each broken policy has a correctly-correlated counterpart already
+live — `baseball_messages_insert`, `_select`, `_update`, `_update_read`. All
+four were read to confirm the survivors carry identical intent, the identical
+`sender_id` check where applicable, and the correlation the broken ones lack.
+Dropping a permissive policy can only *remove* unintended access; it cannot
+take away anything a real participant could do, because the correct sibling
+already permits it.
+
+**➜ This section can be applied on its own.** It needs no companion app change
+and is safe under both old and new application code. If the rest of the
+migration pair has to wait for review, this part does not — and given it is a
+live write hole into private communications, it probably shouldn't.
+
+12 pgTAP assertions. The behavioural half carries the weight: the structural
+assertions would also pass if someone had "fixed" the typo by dropping the
+*wrong* three policies, so the suite proves a real participant kept read AND
+write access while an outsider lost both. A generic guard asserts that no
+`baseball_messages` policy may compare a column to itself, so the typo cannot
+return under a different name.
+
+**The four sibling tables audited alongside it came out clean** —
+`baseball_conversations`, `baseball_conversation_participants`,
+`baseball_tasks`, `baseball_travel_itineraries`, `baseball_announcements` and
+`baseball_developmental_plans` all correlate properly. They now have
+regression coverage (`baseball_team_scoped_tables_isolation.sql`, `4e0b96ccb`)
+rather than fixes.
+
+---
 
 ### ~~3. Staff-invite accept RPC has no email-ownership check~~ — **FALSE. Retracted 2026-07-29 01:20.**
 

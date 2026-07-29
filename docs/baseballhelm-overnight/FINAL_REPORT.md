@@ -16,12 +16,28 @@ stated next to it rather than in a footnote.
 
 ## Read this first
 
-**1. Four live cross-tenant data exposures are still open in production.** Any
+**0. Every private message in the database is readable — and writable — by any
+authenticated user who is in a single conversation.** Three baseline policies
+on `baseball_messages` compare `cp.conversation_id` to *itself*, which is
+always true, so the predicate means "does the caller participate in any
+conversation at all". One conversation anywhere buys every coach↔player DM in
+every program, plus the ability to post into any thread under your own name.
+It survived two months because the same rule written *correctly* sits twenty
+lines below it — and permissive policies OR together, so the correct one never
+mattered.
+
+**The fix is three `DROP POLICY` statements, no `CREATE`, no app change**, and
+it is safe under both old and new code because every dropped policy already has
+a correctly-correlated twin. It does not need to wait for the rest of the
+sequence. If one thing gets applied in the morning, apply this.
+
+**1. Five further cross-tenant exposures are open in production.** Any
 authenticated user on any team can read every other program's roster PII —
 email, phone, GPA, SAT/ACT — every team's secret `join_code`, every live
 invitation `code`, and every player's academic and athletic percentile
-ranking. Live since 2026-05-27. The fix is written, executed in CI, and
-**applied to nothing**. Applying it is the first thing to do, and it is a
+ranking; and any coach can read every coach's email and phone. Live since
+2026-05-27. The fixes are written, executed in CI, and **applied to nothing**
+(the coach one is deliberately unfixed — it needs a product decision). It is a
 three-step sequence: `DATABASE_STATUS.md` has the reasoning,
 `CURRENT_PRIORITIES.md` has the checklist.
 
@@ -40,6 +56,14 @@ both times, and deferred as out of scope), and what *else* in the baseline is
 `FOR SELECT … USING (true)` (→ `baseball_player_percentiles`, never noticed by
 anyone). The second question is one grep. It should have been the first thing
 run, and that is the most portable lesson in this report.
+
+**A sixth was found last, and is the worst.** `baseball_messages` — see item 0
+above. It came from a task that was supposed to produce *coverage*, not fixes:
+auditing the policies of the tables that had no pgTAP suite, before writing
+their tests. Six other tables were audited in the same pass and came out clean.
+The generalisable part is that every one of these six findings came from
+re-asking the previous question one level wider — none needed new information,
+only a refusal to stop at the first answer.
 
 **A fifth is confirmed and deliberately left alone.** `baseball_coaches_select`
 is `USING (auth.uid() = user_id OR get_my_coach_id() IS NOT NULL)` — the `OR`
@@ -177,7 +201,7 @@ Each has tests, and the tests assert behaviour rather than existence.
 | **CI seeds PRODUCTION on every PR — confirmed from CI's own log** | `seed:baseball:ci` creates auth users, force-resets two passwords and deletes `login_attempts` rows in the production project. It has always done this. The strengthened guard makes it say so out loud now: `⚠ SEEDING PRODUCTION (qmnssrrolpinvwjjnufo) — allowed only because --allow-prod was passed`. Surfaced, not changed — flipping a working deployment behaviour unattended is not mine to do — but it should almost certainly target a local stack instead. |
 | **Production Supabase was intermittently failing all night** | REST and auth answered 401 in ~0.1s while direct Postgres connections timed out on every attempt from 00:30 to 03:00 EDT. CI's seed step hit a **Cloudflare 522** from `qmnssrrolpinvwjjnufo.supabase.co` at 06:03 UTC and again at 07:46, both ending `createUser failed for demo-coach@baseballhelmdemo.com`. Reads as connection-pool exhaustion or compute pressure rather than a hard outage. It is why live `pg_policies` could not be confirmed, and it is the sole reason the `BaseballHelm authenticated smoke` check is red on #1092 — it was red before any of this work and the cause is unrelated to the diff. |
 | **`public_profile_mode` semantics are unsettled** | DDL default is `'private'` (`20260624000091:23`); a 2026-07-09 live read recorded `'unlisted'`. If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. One query settles it. |
-| **~34% of `baseball_*` tables have no pgTAP RLS coverage** | Messaging, tasks, travel, announcements, dev plans. Invitations came off this list tonight — and the first test written against that table found a two-month-old P0 that two prior migrations had noticed and skipped. That is the argument for finishing the list, and it is not hypothetical. |
+| **The pgTAP RLS coverage gap is now closed for the tables that had none** | Messaging, tasks, travel, announcements and developmental plans all have suites as of this run. Writing them found two P0s: the invitation-code leak (twice noticed and twice deferred by prior migrations) and the `baseball_messages` typo (never noticed by anyone). Two for five tables is not a coincidence — an untested policy is an unverified claim, and this codebase now has the evidence to say so rather than the intuition. |
 | **`helm_lifting_athletes.user_id` is stale in production** | Write-once at seed time, never re-synced. Any player synced before their account was linked permanently fails the athlete-self gate at `/lifting/dashboard`. |
 
 ---

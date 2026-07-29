@@ -1,22 +1,39 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 04:20 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 05:10 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
 
 ---
 
 ## 🔴 THE #1 ITEM FOR THE MORNING (human decision required)
 
-**Four live cross-tenant data exposures**, all the same mistake: an over-broad
-SELECT policy on a table whose rows belong to somebody. All live in prod since
-the 2026-05-27 baseline, all verified from migration source.
+**Six live cross-tenant exposures.** Five are the same mistake — an over-broad
+SELECT policy on a table whose rows belong to somebody. The sixth is a typo
+that turns a correct rule into `true`, and it is the worst of them. All live in
+prod since the 2026-05-27 baseline, all verified from migration source. A
+seventh (`baseball_coaches`) is confirmed but deliberately left for a product
+decision — see below.
 
 | Table | Policy | What leaks |
 |---|---|---|
+| **`baseball_messages`** | **`cp.conversation_id = cp.conversation_id`** | **Every private coach↔player message in the database — and INSERT into any conversation. Read the row below.** |
 | `baseball_players` | `USING (true)` | Every program's roster PII — email, phone, GPA, SAT/ACT |
 | `baseball_teams` | `USING (true)` | Every team's secret `join_code` |
 | `baseball_team_invitations` | `USING (is_active = true)` | Every live invitation `code`, with its `team_id` |
 | `baseball_player_percentiles` | `USING (true)` | Every player's academic + athletic percentile ranking |
+
+**`baseball_messages` is the one to act on first, and it is also the easiest.**
+Three baseline policies compare `cp.conversation_id` to *itself* — always true —
+so the predicate means "does the caller participate in any conversation at
+all". One conversation anywhere buys every private message everywhere, plus the
+ability to post into any thread under your own name. It survived because
+`baseball_messages_select` is the same rule written *correctly*, twenty lines
+below; permissive policies OR together, so the correct one never mattered.
+
+The fix is **three `DROP POLICY` statements, no `CREATE`, no app change** — each
+broken policy already has a correctly-correlated twin. It is safe under old and
+new code alike, so it does **not** need to wait for the rest of the sequence
+below. If only one thing gets applied in the morning, apply this.
 
 **Only two of these were reported by recon.** #3 came from asking what else
 used the same `.eq('code', …)` shape as the join_code leak. #4 came from
@@ -126,6 +143,9 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | RLS recursion ×2, anon grants, pgTAP write-guard — **CI now PASSES 34/34** | `59037eb9…a61a9b0f` |
 | Lift Lab account links repair on re-sync (was write-once, permanently stale) | `30f343e2a` and its migration |
 | **Cross-tenant invitation-code exposure closed** — the third `USING`-can't-see-the-query leak, seen and skipped by two earlier migrations | `2c2c939cf` |
+| **Fourth exposure closed** — `baseball_player_percentiles` was `USING (true)` on a per-player table holding GPA/academic percentiles | `2855a0646` |
+| **Every private conversation was readable AND writable by any user in any one conversation** — a self-comparison typo in three baseline policies | `e1011f50b` |
+| pgTAP coverage closed for the last five untested tables (tasks, travel, announcements, dev plans + messaging) | `4e0b96ccb` |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).
@@ -136,7 +156,7 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 
 | Priority | Item | Note |
 |---|---|---|
-| P1 | 34% of `baseball_*` tables have zero pgTAP RLS coverage | Messaging, tasks, travel, announcements, dev plans. Invitations came off this list with `2c2c939cf`; the others are still uncovered, and a hole in any of them would not be caught. The invitation leak is the argument for finishing this — it sat in plain sight for two months in a table nothing tested. |
+| ~~P1~~ **DONE** | ~~34% of `baseball_*` tables have zero pgTAP RLS coverage~~ | Closed. Invitations (`2c2c939cf`), messaging (`e1011f50b`), and tasks/travel/announcements/dev-plans (`4e0b96ccb`) all have suites now. Writing them found **two P0s** — the invitation-code leak and the `baseball_messages` typo. Two findings across five previously-untested tables is the evidence for the claim that an untested policy is an unverified claim. |
 | P1 | **CI seeds PRODUCTION on every PR** | `seed:baseball:ci` creates auth users and deletes `login_attempts` rows in the production project. Now explicit (`--allow-prod` in package.json) rather than hidden behind a constant named "demo" — but it should probably target a local stack instead. Needs a decision. |
 | P1 | `public_profile_mode` DDL default is `'private'`; a 2026-07-09 live read recorded `'unlisted'` | If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. `select public_profile_mode, count(*) from baseball_teams group by 1`. |
 | P2 | The `integration` vitest project (5 files) runs in no CI workflow | Includes `coach-onboarding-staff-row` and `player-access-action-gate` — the auth/access tests that matter most. The `rls` project has zero files; pgTAP covers RLS and DOES run. |
