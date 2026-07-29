@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ExternalLink, CheckCheck } from 'lucide-react';
 import { Button, StatusPill } from '@/components/fairway';
 import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
+import { INCIDENT_CLASS_LABEL } from '@/lib/admin/incident-classification';
 import { resolveTriageEvents } from '@/app/admin/actions/triage';
 import { SportBadge } from './SportBadge';
 import { PanelAllClear } from './PanelStates';
@@ -128,6 +129,30 @@ export function TriageQueue({
               <LocalTime iso={item.lastSeen} />
               {item.substatus === 'regressed' ? ' · REGRESSED' : ''}
             </p>
+            {/* Kind axis. Only shown when it is NOT a plain actionable defect —
+                labelling every ordinary bug "Defect" would be pure chrome. The
+                cases worth calling out are the ones that change what an
+                operator does: non-actionable noise, and a degraded message. */}
+            {!item.actionable || item.hasDegradedMessage ? (
+              <p className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                {!item.actionable ? (
+                  <span
+                    className="rounded bg-warm-100 px-1.5 py-0.5 text-eyebrow uppercase text-warm-600"
+                    title={item.klassReason}
+                  >
+                    {INCIDENT_CLASS_LABEL[item.klass]}
+                  </span>
+                ) : null}
+                {item.hasDegradedMessage ? (
+                  <span
+                    className="rounded bg-warm-100 px-1.5 py-0.5 text-eyebrow uppercase text-warm-600"
+                    title="The message was stringified on capture (e.g. [object Object]) — the real cause was lost. Fix the call site to use describeError()."
+                  >
+                    message lost
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
             {detailLine(item) ? (
               <p className="break-words font-fw-mono text-caption leading-4 text-warm-500 [overflow-wrap:anywhere]">
                 {detailLine(item)}

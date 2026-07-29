@@ -7,6 +7,7 @@ import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
+import { getRequestId } from '@/lib/admin/request-context';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -161,7 +162,18 @@ function inferSport(message: string, context: RoundErrorContext): NonNullable<Ro
   return null;
 }
 
-function enrichTraceContext(message: string, context: RoundErrorContext): RoundErrorContext {
+function enrichTraceContext(message: string, rawContext: RoundErrorContext): RoundErrorContext {
+  // Default requestId from the ambient correlation scope opened by
+  // withAdminObserved. Done HERE, centrally, because the per-call-site
+  // approach is the one that demonstrably failed: the field existed for
+  // months and not one of ~60 call sites ever passed it. An explicitly
+  // supplied requestId always wins.
+  const ambientRequestId = getRequestId();
+  const context: RoundErrorContext =
+    rawContext.requestId || !ambientRequestId
+      ? rawContext
+      : { ...rawContext, requestId: ambientRequestId };
+
   const sport = inferSport(message, context);
   if (!sport) return context;
   const probe = `${context.route ?? ''} ${context.url ?? ''} ${context.action ?? ''} ${message}`;
@@ -219,6 +231,66 @@ async function retryTransientBridgeWrite(
   return await write();
 }
 
+/** Max `error.cause` levels walked. Bounded so a pathological (or cyclic)
+ *  chain can never turn one log write into an unbounded string build. */
+const MAX_CAUSE_DEPTH = 5;
+const STACK_BUDGET = 8000;
+
+/**
+ * Serialises `error.stack` PLUS its `error.cause` chain into the single
+ * `stack` string persisted to error_logs.stack / admin_events.stack_trace.
+ *
+ * Why: `new Error('save failed', { cause: pgError })` is the standard V8
+ * wrapping idiom, but `Error.prototype.stack` does NOT include the cause —
+ * so the Bridge's own tables (the ones /admin/errors actually reads) were
+ * keeping only the wrapper's stack and silently dropping the root cause.
+ * Sentry chains `.cause` natively, which is exactly why this was invisible:
+ * Sentry had the real cause and the Bridge did not.
+ *
+ * Cycle-safe (a `cause` that points back at an ancestor stops the walk) and
+ * budget-bounded — never returns more than STACK_BUDGET characters.
+ */
+function buildStackWithCauseChain(error: unknown): string | null {
+  const root = error instanceof Error ? error : null;
+  if (!root) return null;
+
+  const parts: string[] = [root.stack ?? `${root.name}: ${root.message}`];
+  const seen = new Set<unknown>([root]);
+
+  let current: unknown = (root as { cause?: unknown }).cause;
+  for (let depth = 0; depth < MAX_CAUSE_DEPTH && current != null; depth++) {
+    if (seen.has(current)) {
+      parts.push('Caused by: [circular cause reference]');
+      break;
+    }
+    seen.add(current);
+
+    if (current instanceof Error) {
+      parts.push(`Caused by: ${current.stack ?? `${current.name}: ${current.message}`}`);
+      current = (current as { cause?: unknown }).cause;
+      continue;
+    }
+
+    // Supabase/Postgres reject with plain objects ({ code, message, details,
+    // hint }), not Error instances — that shape is the single most valuable
+    // cause in this codebase, so serialise it rather than skipping it.
+    if (typeof current === 'object') {
+      let rendered: string;
+      try {
+        rendered = JSON.stringify(current);
+      } catch {
+        rendered = '[unserialisable cause]';
+      }
+      parts.push(`Caused by: ${rendered}`);
+    } else {
+      parts.push(`Caused by: ${String(current)}`);
+    }
+    break;
+  }
+
+  return parts.join('\n').slice(0, STACK_BUDGET);
+}
+
 async function writeAdminTables(
   message: string,
   error: Error | null,
@@ -230,7 +302,7 @@ async function writeAdminTables(
   const normalizedContext = normalizeContext(enriched);
   const url = buildUrl(enriched);
   const title = buildAdminTitle(message, enriched, severity);
-  const stack = error?.stack?.slice(0, 8000) ?? null;
+  const stack = buildStackWithCauseChain(error);
   const timestamp = new Date().toISOString();
   const errorLogId = crypto.randomUUID();
   const adminEventId = crypto.randomUUID();

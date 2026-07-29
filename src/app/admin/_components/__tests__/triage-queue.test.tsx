@@ -24,6 +24,8 @@ const appItem: TriageItem = {
   firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T02:00:00Z',
   permalink: null, eventIds: ['e1', 'e2', 'e3'], substatus: null,
   source: 'server_action', feature: 'rounds', actionName: 'savePartialRound', route: '/api/golf/rounds',
+  klass: 'defect', actionable: true, klassReason: 'Unexpected failure (severity-derived)',
+  hasDegradedMessage: false,
   report: '# Incident report: savePartialRound failed',
 };
 const sentryItem: TriageItem = {
@@ -32,6 +34,8 @@ const sentryItem: TriageItem = {
   firstSeen: '2026-06-30T00:00:00Z', lastSeen: '2026-07-01T01:00:00Z',
   permalink: 'https://sentry.io/x', eventIds: [], substatus: 'regressed',
   source: 'sentry', feature: null, actionName: null, route: 'rounds',
+  klass: 'defect', actionable: true, klassReason: 'Unexpected failure (severity-derived)',
+  hasDegradedMessage: false,
   report: '# Incident report: TypeError in rounds',
 };
 

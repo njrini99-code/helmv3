@@ -45,6 +45,7 @@ vi.mock('next/cache', () => ({
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => {}),
   logServerException: vi.fn(async () => {}),
+  logServerEvent: vi.fn(async () => {}),
 }));
 
 vi.mock('@/lib/coachhelm/v2/post-round-trigger', () => ({
@@ -172,5 +173,112 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
     if (result.success) {
       expect(result.data.roundId).toBe('round-same');
     }
+  });
+});
+
+/**
+ * Regression test for the savePartialRound duplicate-error-logging bug —
+ * a single Postgres failure was previously written to admin_events 3-4
+ * times (paired logServerException + logServerError in the impl, PLUS
+ * maybeCaptureRlsDenial for RLS denials, PLUS withAdminObserved's own
+ * generic soft-failure observer on the returned `{ success: false }`).
+ * The fix: drop the redundant logServerException call, gate the generic
+ * logServerError behind `!maybeCaptureRlsDenial(...)` (which now returns
+ * a boolean instead of void), and pass `observeSoftFailures: false` to
+ * the withAdminObserved wrapper so it never re-observes a failure the
+ * impl already recorded itself.
+ *
+ * Mirrors the `failUpdates`/`makeFailingBuilder` monkey-patch idiom from
+ * recurring-events.test.ts, generalized to inject a full Postgrest-shaped
+ * error object (with `.code`) so both the non-RLS and RLS-denial branches
+ * can be exercised.
+ */
+describe('savePartialRound — single admin_events row per failure (no duplicate logging)', () => {
+  function failUpdate(client: FakeSupabase, table: string, error: { code?: string; message: string }) {
+    const origFrom = client.from.bind(client);
+    client.from = ((t: string) => {
+      const api = origFrom(t);
+      if (t !== table) return api;
+      return {
+        ...api,
+        update: () => {
+          const result = { data: null, error };
+          const builder: Record<string, unknown> = {};
+          builder.eq = () => builder;
+          builder.select = () => builder;
+          builder.maybeSingle = async () => result;
+          builder.single = async () => result;
+          builder.then = (
+            onfulfilled?: (v: unknown) => unknown,
+            onrejected?: (reason: unknown) => unknown,
+          ) => Promise.resolve(result).then(onfulfilled, onrejected);
+          return builder;
+        },
+      };
+    }) as typeof client.from;
+  }
+
+  function seedExistingRound() {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-same',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Same Course',
+      round_date: '2026-07-10',
+      status: 'in_progress',
+      qualifier_id: null,
+      qualifier_round_number: null,
+      updated_at: '2026-07-10T10:00:00Z',
+    });
+    seedAs('u-p1', tables);
+    return tables;
+  }
+
+  it('a non-RLS update failure logs exactly ONE admin_events row (logServerError only)', async () => {
+    seedExistingRound();
+    failUpdate(fake, 'golf_rounds', { code: '23505', message: 'duplicate key value violates unique constraint' });
+
+    const result = await savePartialRound({
+      courseName: 'Same Course',
+      courseId: COURSE_A,
+      roundType: 'practice',
+      roundDate: '2026-07-10',
+      currentHole: 2,
+      holesToPlay: 18,
+      holes: [],
+    });
+
+    expect(result.success).toBe(false);
+
+    const { logServerError, logServerException, logServerEvent } = await import('@/lib/server-error-logger');
+    expect(logServerError).toHaveBeenCalledTimes(1);
+    expect(logServerException).not.toHaveBeenCalled();
+    expect(logServerEvent).not.toHaveBeenCalled();
+  });
+
+  it('an RLS-denied update logs exactly ONE admin_events row (via maybeCaptureRlsDenial only)', async () => {
+    seedExistingRound();
+    failUpdate(fake, 'golf_rounds', { code: '42501', message: 'permission denied for table golf_rounds' });
+
+    const result = await savePartialRound({
+      courseName: 'Same Course',
+      courseId: COURSE_A,
+      roundType: 'practice',
+      roundDate: '2026-07-10',
+      currentHole: 2,
+      holesToPlay: 18,
+      holes: [],
+    });
+
+    expect(result.success).toBe(false);
+
+    const { logServerError, logServerException, logServerEvent } = await import('@/lib/server-error-logger');
+    // maybeCaptureRlsDenial owns this failure — the generic path must not
+    // ALSO log it (that was the source of the double-write).
+    expect(logServerEvent).toHaveBeenCalledTimes(1);
+    expect(logServerError).not.toHaveBeenCalled();
+    expect(logServerException).not.toHaveBeenCalled();
   });
 });
