@@ -20,10 +20,48 @@ import { FairwayPlayerDashboard, type PlayerDashboardData } from '@/components/f
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
+import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
+import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 
 export const dynamic = 'force-dynamic';
 
 const VALID_RANGES = new Set(['7d', '30d', '90d', 'season', 'all']);
+
+/**
+ * Resolve the dashboard opener's greeting phrase and date label ONCE, here on
+ * the server, in the team's own timezone.
+ *
+ * FairwayCoachDashboard used to derive the greeting in a `useEffect` seeded
+ * with a time-neutral "Welcome back", because deriving it during SSR was
+ * assumed to mean pinning it to the server clock. It does not: the payload
+ * already carries the team's timezone (`golf_team_settings.timezone`, defaulted
+ * to America/New_York by dashboard-data.ts, so it is always a real zone), which
+ * is the same value the client effect was reaching for. Resolving it here makes
+ * the <h1> correct in the first painted byte instead of rewriting the largest
+ * text on the page a beat after it lands.
+ */
+function resolveOpener(timezone: string): { greeting: string; todayLabel: string } {
+    let greeting = 'Welcome back';
+    try {
+        greeting = getGreeting(timeOfDayForHour(getCurrentDecimalHourInTz(timezone)));
+    } catch {
+        /* unknown zone — the time-neutral phrase is never wrong */
+    }
+
+    let todayLabel = '';
+    try {
+        todayLabel = new Intl.DateTimeFormat('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            timeZone: timezone,
+        }).format(new Date());
+    } catch {
+        /* unknown zone — the opener falls back to its static eyebrow */
+    }
+
+    return { greeting, todayLabel };
+}
 
 /**
  * A session can pass the top-of-page check yet expire before the data fetch
@@ -54,6 +92,9 @@ function renderCoachDashboard(props: {
     // reflow of everything below the banner.
     joinRequests?: JoinRequestData[];
 }) {
+    // Opener text resolved server-side in the team's timezone (see
+    // resolveOpener) so the greeting never rewrites itself after hydration.
+    const opener = props.enhancedData ? resolveOpener(props.enhancedData.timezone) : undefined;
     return (
         <div className={fairwayScope('min-h-full')}>
             <FairwayCoachDashboard
@@ -61,6 +102,8 @@ function renderCoachDashboard(props: {
                 enhancedData={props.enhancedData ?? undefined}
                 dateRange={props.dateRange}
                 joinRequests={props.joinRequests}
+                greeting={opener?.greeting}
+                todayLabel={opener?.todayLabel || undefined}
             />
         </div>
     );
@@ -82,6 +125,9 @@ function renderPlayerDashboard(props: {
                 data={props.data}
                 enhancedData={props.enhancedData ?? undefined}
                 hubData={props.hubData ?? undefined}
+                greeting={
+                    props.enhancedData ? resolveOpener(props.enhancedData.timezone).greeting : undefined
+                }
             />
         </div>
     );
