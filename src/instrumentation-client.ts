@@ -1,4 +1,19 @@
 import * as Sentry from '@sentry/nextjs';
+import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
+
+/**
+ * True when this event came from `captureConsoleIntegration` rather than an
+ * explicit capture call. Sentry tags console captures both ways depending on
+ * version/path — `event.logger === 'console'` and/or a
+ * `mechanism.type === 'console'` on the exception — so check both rather
+ * than betting on one.
+ */
+function isConsoleOriginEvent(event: Sentry.ErrorEvent): boolean {
+  if (event.logger === 'console') return true;
+  return Boolean(
+    event.exception?.values?.some((value) => value.mechanism?.type === 'console'),
+  );
+}
 
 const isDev = process.env.NODE_ENV === 'development';
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
@@ -54,7 +69,24 @@ Sentry.init({
   // link tokens or OAuth codes — across BOTH event.request.url and the
   // duplicated event.contexts.location written by error-logging.ts.
   // Replay already masks DOM text.
-  beforeSend(event) {
+  beforeSend(event, hint) {
+    // Drop the console-origin ECHO of an error the Bridge pipeline already
+    // captured. React's default onCaughtError console.error's every error a
+    // boundary catches, and captureConsoleIntegration({levels:['error']})
+    // above turns that into a SECOND Sentry issue for the same crash — one
+    // from error-logging.ts's own captureException, one from the console.
+    //
+    // Scoped strictly to console-origin events on purpose: the deliberate
+    // captureException is never console-origin, so it survives regardless of
+    // whether React logs before or after the boundary's handler runs. That
+    // ordering is not something this file should have to depend on.
+    //
+    // Only ever suppresses a strict duplicate — an error nothing bridge-logged
+    // still reaches Sentry through the console path exactly as before.
+    if (isConsoleOriginEvent(event) && isAlreadyBridgeLogged(hint?.originalException)) {
+      return null;
+    }
+
     if (event.request) {
       delete event.request.cookies;
       if (event.request.headers) {

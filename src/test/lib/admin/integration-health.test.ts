@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // vi.mock is hoisted above every const in this file, so the spy must be
 // created inside vi.hoisted() for the factory to be able to close over it.
-const { logServerEvent } = vi.hoisted(() => ({ logServerEvent: vi.fn(async () => {}) }));
+const { logServerEvent } = vi.hoisted(() => ({
+  // Typed with logServerEvent's real 3-arg shape so `.mock.calls[0][2]`
+  // (the severity) is indexable rather than a zero-length tuple.
+  logServerEvent: vi.fn(
+    async (_message: string, _context: Record<string, unknown>, _severity?: string) => {},
+  ),
+}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerEvent }));
 
 import {

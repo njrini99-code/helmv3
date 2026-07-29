@@ -4,6 +4,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
+import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 
 const SEVERITY_TO_SENTRY_LEVEL: Record<'low' | 'medium' | 'high' | 'critical', Sentry.SeverityLevel> = {
   low: 'info',
@@ -353,6 +354,22 @@ export function logError(
   context?: ErrorContext,
   requestedSeverity: ErrorLogEntry['severity'] = 'medium'
 ): void {
+  // Claim this error for the Bridge pipeline BEFORE anything else runs.
+  //
+  // Every class/effect boundary that funnels through here (PanelBoundary,
+  // RouteErrorBoundary, CompactRouteErrorBoundary — ~140 route error.tsx
+  // files) produced TWO Sentry issues per crash: one from the
+  // Sentry.captureException below, and a second when React's default
+  // onCaughtError console.error's the same object into
+  // captureConsoleIntegration. instrumentation-client.ts's beforeSend reads
+  // this marker to drop that console-origin echo. Marking here rather than at
+  // each call site means the dedup covers every current and future caller.
+  //
+  // Marking is deliberately unconditional and FIRST — even for the
+  // early-return paths below — because React still console.error's an error
+  // this function chose not to report, and that echo is exactly as duplicative.
+  markBridgeLogged(error);
+
   // Stale-server-action errors are deployment artifacts, not bugs. Downgrade
   // to a single per-session warning instead of paging error tracking 18 times
   // for one user with an open tab.
