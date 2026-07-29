@@ -31,6 +31,7 @@
 import { gsap } from '@/lib/motion/gsap/register';
 import { DUR, EASE, STAGGER, SCRUB, DIST } from '@/lib/motion/gsap/tokens';
 import { maskedLines, prepareDraw } from '@/lib/motion/gsap/primitives';
+import { markAllAnimReady } from '@/lib/motion/anim-gate';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 /** Stable hooks the component stamps; no brittle class selectors. */
@@ -61,10 +62,17 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
   const arc = (q(HERO.arc) as unknown as SVGPathElement[]).find(rendered);
   const ball = arc?.ownerSVGElement?.querySelector<SVGGElement>(HERO.ball) ?? undefined;
 
+  // The first-paint entrance gate (lib/motion/anim-gate.ts) is hiding the four
+  // arrival targets right now so the server's settled hero cannot be painted and
+  // then torn back down in front of the reader. Whichever branch runs below, it
+  // is this scene that owns their visibility from here on.
+  const gated = [headline, sub, actions, plate];
+
   // ── Reduced motion: everything settled, nothing scrubbed, arc fully drawn ──
   if (reduced) {
     if (arc) gsap.set(arc, { strokeDasharray: 'none', strokeDashoffset: 0, opacity: 1 });
     if (ball) gsap.set(ball, { opacity: 1 });
+    markAllAnimReady(gated);
     return;
   }
 
@@ -99,6 +107,13 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
     gsap.set(plate, { scale: 1.04, opacity: 0 });
     enter.to(plate, { scale: 1, opacity: 1, duration: DUR.long }, 0.06);
   }
+
+  // Headline split behind its masks, sub/actions/plate at opacity 0 — every
+  // arrival target now carries its own hidden state, so the CSS gate can let go.
+  // Released here rather than at the top of the scene: releasing before the
+  // gsap.set calls above would expose one settled frame, which is the entire
+  // bug this gate exists to prevent.
+  markAllAnimReady(gated);
 
   // ── 2. The tee shot ───────────────────────────────────────────────────────
   if (!arc) return revertSplit;

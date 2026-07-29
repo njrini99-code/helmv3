@@ -76,9 +76,25 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
         preserveAspectRatio="xMinYMin slice"
         fill="none"
       >
+        {/* THE PORTRAIT ARC MUST START BELOW THE COPY.
+            The previous path began at (300, 70) — near the top of the frame —
+            and descended left across the whole hero. In one column the copy is
+            the whole width, so that line ran straight THROUGH it: measured at
+            402px it crossed the headline at (355, 155) and the body paragraph
+            at (319, 287), cutting between "angle" and "of" and through
+            "— where". A graphite hairline crossing running text is exactly the
+            "reads as a rendering artifact" failure this file already records
+            for the desktop frame, only worse, because here it lands on words.
+
+            There is no clear column to route around: below `md` the text spans
+            edge to edge. So the arc starts where the text ENDS — at the top
+            right of the photograph — and sweeps down across it. The tee shot
+            now launches out of the copy and onto the course, which is the same
+            gesture the landscape frame makes, stated in the form a single
+            column can actually hold. */}
         <path
           data-hero="arc"
-          d="M 300 70 C 268 214, 214 344, 148 462 S 54 620, 14 700"
+          d="M 332 336 C 300 424, 250 516, 180 588 S 72 668, 6 700"
           stroke="oklch(0.44 0.02 70 / 0.34)"
           strokeWidth="1.5"
           strokeLinecap="round"
@@ -133,7 +149,26 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
           >
             The operating system for college golf — where every round, shot, and stat resolves into your next coaching decision.
           </p>
-          <div data-hero="actions" className="mt-[34px] flex flex-wrap items-center gap-[22px]">
+          {/* STACKED BELOW `sm`, NOT WRAPPED.
+              `flex-wrap` + a 22px gap put these two on a knife edge: the button
+              and the link together need ~378px, and a phone offers 350 at 390px
+              wide and 362 at 402px. So the row rendered on ONE line on an
+              iPhone 14 Pro and wrapped to TWO on a 390px phone — measured 48px
+              tall vs 100px — which is the same "renders differently on every
+              device" class of bug as the stat tiles below.
+
+              The row returns at `lg`, NOT at `sm`. From 768px the hero grid
+              splits into two columns, which leaves the copy column only ~334px
+              wide — narrower than a phone — so a row restored at `sm` wrapped
+              again on iPad portrait (measured 100px there too). The column
+              first clears the ~378px the row needs at around 900px, so `lg` is
+              the first breakpoint where a row is honestly safe. Below it the
+              two actions stack, which is deterministic at every width and gives
+              both a full-width tap target. */}
+          <div
+            data-hero="actions"
+            className="mt-[34px] flex flex-col items-start gap-4 lg:flex-row lg:flex-wrap lg:items-center lg:gap-[22px]"
+          >
             <Button
               variant="primary"
               size="lg"

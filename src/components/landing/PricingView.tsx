@@ -155,7 +155,12 @@ export function PricingView() {
             Pricing
             <span className="inline-block h-px w-[22px] bg-accent-500" />
           </Reveal>
-          <Reveal as="p" delay={60} className="mt-7 [text-wrap:balance]">
+          {/* <h1>, not <p>: this page had NO heading of any level, so the
+              document outline was empty and the 80px statement was two bare
+              <span>s. Tailwind's preflight resets heading font-size and weight
+              to `inherit`, so the two spans below still own every visual
+              property and this renders pixel-identically. */}
+          <Reveal as="h1" delay={60} className="mt-7 [text-wrap:balance]">
             <span
               className="block text-[clamp(2.6rem,6vw,5rem)] leading-[1.02] tracking-[-0.028em] text-text-primary"
               style={{ fontWeight: 640 }}
