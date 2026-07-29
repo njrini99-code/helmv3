@@ -1,6 +1,6 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 05:35 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 05:45 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
 
 ---
@@ -152,6 +152,9 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | **Fourth exposure closed** — `baseball_player_percentiles` was `USING (true)` on a per-player table holding GPA/academic percentiles | `2855a0646` |
 | **Every private conversation was readable AND writable by any user in any one conversation** — a self-comparison typo in three baseline policies | `e1011f50b` |
 | pgTAP coverage closed for the last five untested tables (tasks, travel, announcements, dev plans + messaging) | `4e0b96ccb` |
+| Notification spoofing closed — `can_notify_baseball_user()`, after verifying the only two insert paths | `bcbba306b` |
+| vitest projects selected ~870 files each instead of 5/0/7; "Business contracts" was re-running the whole suite | `0ae11337b` |
+| Select's clear button was nested inside its trigger button (invalid HTML, hydration-crash class) + a repo-wide parser guard | `394d3d875` |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).

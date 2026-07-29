@@ -96,6 +96,7 @@ is worth more than any individual fix:
 | **Running the seed script** | Its "production guard" *allowlisted* production, plus two bypasses (`<prodref>.example.invalid` was trusted on a first-label substring; any `.local` host on the LAN was trusted as loopback). |
 | **Counting what a config selects** | Three vitest projects matched ~870 files each instead of 5, 0 and 7 — `extends: true` merges array options rather than replacing them. CI's "Business contracts" job was re-running the entire unit suite under a name promising seven contract files. The config's own comment asserted the opposite of what the tool does, which is what preserved it. |
 | **Executing the pgTAP** | A fixture that passed auth user ids where `baseball_coaches.id` was required. Zero of ten assertions ran. Worth noting because a fixture error and a policy regression look identical from outside — only the error text distinguishes them. |
+| **Parsing the JSX instead of grepping it** | A regex check for nested interactive elements reported 27 violations; **all 27 were false positives** (`<button onClick={() => x} />` contains a `>`, so a `[^>]*/>` self-close pattern never matches and every later button looks nested), and the **two real ones were not among them**. The lesson is not "regex is bad" — it is that a checker reporting a number nobody verifies is worse than no checker, which is why the guard now asserts it reports non-zero on a known-bad fixture. |
 
 The corollary, recorded because it cuts the other way: recon reported a P0 that
 **did not exist** (the staff-invite RPC missing an email-ownership check — it
@@ -146,6 +147,13 @@ Each has tests, and the tests assert behaviour rather than existence.
   job was therefore re-running the whole unit suite under a name that
   promised seven contract files. The config's own comment claimed the
   opposite, which is probably why nobody looked.
+- **The select's clear button is no longer nested inside its trigger button.**
+  Interactive content inside a `<button>` is invalid HTML; browsers *split*
+  the outer button while parsing, so server-rendered markup reparses into a
+  different tree than React expects and hydration mismatches. CLAUDE.md
+  records this as a known crash class — and nothing executed the rule, so it
+  drifted back in. There is now a parser-based guard over every `.tsx` in the
+  repo; it currently reports zero across baseball, golf, fairway and lifting.
 - **Three bottom bars stopped rendering 3 tabs instead of 4.**
 - **The public player profile withholds at the server**, not just at the
   renderer.
