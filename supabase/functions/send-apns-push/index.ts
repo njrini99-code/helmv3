@@ -11,7 +11,40 @@ interface PushRequest {
   title: string;
   body: string;
   data?: Record<string, unknown>;
+  /**
+   * Absolute unread count to paint on the app icon. Omit to leave the badge
+   * untouched; pass 0 to clear it. (Previously defaulted to 1, which pinned
+   * every user's badge to "1" no matter how many unread items they had.)
+   */
   badge?: number;
+  /** Optional subtitle — iOS renders it between title and body. */
+  subtitle?: string;
+  /**
+   * Registered category id. Drives the actionable buttons the user gets on a
+   * long-press / pull-down. Must match a category registered on the client.
+   */
+  category?: string;
+  /**
+   * Groups related notifications into one stack in Notification Center.
+   * Use a stable per-conversation / per-team id (e.g. `team:<id>`).
+   */
+  threadId?: string;
+  /**
+   * iOS 15+ delivery treatment. `time-sensitive` breaks through Focus modes
+   * and requires the Time Sensitive Notifications entitlement; `passive`
+   * delivers silently to the list without waking the screen.
+   */
+  interruptionLevel?: "passive" | "active" | "time-sensitive";
+  /** 0..1 — orders this notification within its summary group. */
+  relevanceScore?: number;
+  /**
+   * APNs coalescing id. A later push with the same collapseId REPLACES an
+   * undelivered earlier one instead of stacking — right for "3 new messages"
+   * style counters, wrong for distinct events.
+   */
+  collapseId?: string;
+  /** Seconds APNs should keep retrying while the device is unreachable. */
+  ttlSeconds?: number;
 }
 
 /**
@@ -72,7 +105,10 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { deviceToken, platform, title, body, data, badge } = await req.json() as PushRequest;
+    const {
+      deviceToken, platform, title, body, data, badge, subtitle,
+      category, threadId, interruptionLevel, relevanceScore, collapseId, ttlSeconds,
+    } = await req.json() as PushRequest;
 
     if (!deviceToken || !title) {
       return new Response(
@@ -97,15 +133,35 @@ Deno.serve(async (req: Request) => {
 
     const jwt = await generateAPNsJWT();
 
+    const level = interruptionLevel ?? "active";
+
     const apnsPayload = {
       aps: {
-        alert: { title, body },
-        sound: "default",
-        badge: badge ?? 1,
+        alert: subtitle ? { title, subtitle, body } : { title, body },
+        // A passive notification should land in the list without a sound —
+        // sounding it defeats the point of the quieter delivery level.
+        ...(level === "passive" ? {} : { sound: "default" }),
+        // Only include the badge key when the caller actually specified one.
+        // Sending a value unconditionally overwrites the real unread count.
+        ...(badge !== undefined ? { badge } : {}),
+        ...(category ? { category } : {}),
+        ...(threadId ? { "thread-id": threadId } : {}),
+        "interruption-level": level,
+        ...(relevanceScore !== undefined ? { "relevance-score": relevanceScore } : {}),
         "mutable-content": 1,
       },
       ...data,
     };
+
+    // A passive push doesn't warrant waking the device — Apple explicitly asks
+    // for priority 5 there, and throttles senders that mark everything urgent.
+    const priority = level === "passive" ? "5" : "10";
+
+    // APNs interprets `apns-expiration: 0` as "deliver once, right now, and
+    // discard on failure". That silently dropped EVERY notification sent while
+    // a phone was off, asleep past its buffer, or out of signal. An absolute
+    // unix deadline makes APNs retry until it succeeds or the window closes.
+    const expiration = Math.floor(Date.now() / 1000) + (ttlSeconds ?? 86_400);
 
     const response = await fetch(`${apnsHost}/3/device/${deviceToken}`, {
       method: "POST",
@@ -113,8 +169,9 @@ Deno.serve(async (req: Request) => {
         "Authorization": `Bearer ${jwt}`,
         "apns-topic": bundleId,
         "apns-push-type": "alert",
-        "apns-priority": "10",
-        "apns-expiration": "0",
+        "apns-priority": priority,
+        "apns-expiration": String(expiration),
+        ...(collapseId ? { "apns-collapse-id": collapseId.slice(0, 64) } : {}),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(apnsPayload),

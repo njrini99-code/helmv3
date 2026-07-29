@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { useNotifications, type Notification } from '@/hooks/useNotifications';
 import { useRouter } from 'next/navigation';
 import { triggerHaptic } from '@/lib/utils/capacitor';
-import { clearPushBadge } from '@/lib/utils/push-registration';
+import { clearDeliveredNotifications } from '@/lib/utils/push-registration';
 import { Button } from '@/components/ui/button';
 
 // ============================================================================
@@ -128,8 +128,11 @@ export function NotificationCenter() {
   const handleMarkAllRead = useCallback(async () => {
     void triggerHaptic('light');
     await markAllAsRead();
-    // Sync iOS app icon badge + clear delivered notifications
-    await clearPushBadge();
+    // Empties Notification Center. NOTE: this does not reset the red number on
+    // the app icon — no installed plugin can write the badge (see
+    // clearDeliveredNotifications). That has to come from an APNs push
+    // carrying `badge: 0`.
+    await clearDeliveredNotifications();
   }, [markAllAsRead]);
 
   const handleToggle = useCallback(() => {
