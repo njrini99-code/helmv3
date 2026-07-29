@@ -27,7 +27,9 @@ import {
 } from '@/lib/coachhelm/v3/causality/attribute';
 import {
   METRIC_SOURCE,
+  METRIC_SOURCE_ALIASES,
   lookupMetricSource,
+  __INSIGHT_CATEGORY_METRIC_PREFIXES,
   type MetricSourceDef,
 } from '@/lib/coachhelm/v3/causality/metric-sources';
 import {
@@ -1061,5 +1063,102 @@ describe('P0-01: improvement direction for lower-is-better metrics', () => {
     expect(
       nextWeight({ weight: 1.0, sample_n: 0 }, worse.row.lift).weight,
     ).toBeLessThan(1.0);
+  });
+});
+
+/**
+ * Insight-category metric ids — the remaining volume behind the causality cron's
+ * highest-count Sentry warning (JAVASCRIPT-NEXTJS-2K: handled, 0 users, never
+ * crashed, but ~2K events of noise drowning real drift).
+ *
+ * The fixture below is not invented. It is every distinct
+ * `golf_coach_insights.evidence->>'metric'` in production as of 2026-07-29,
+ * ordered by row count. Before the insight-category prefixes, 42 of these 49
+ * resolved and 7 did not — and those 7 were the whole warning volume.
+ *
+ * Keeping the real fixture here means the next person can re-run the same query
+ * and diff it, instead of trusting a hand-written list.
+ */
+const PRODUCTION_EMITTED_METRIC_IDS = [
+  'approach_proximity_50_125ft', 'sg_ott', 'approach_proximity_175_plus_ft',
+  'approach_proximity_125_175ft', 'putt_miss_bias_left_pct', 'scrambling_pct_sand',
+  'scoring_par_5', 'scoring_par_4', 'penalty_rate_per_round', 'big_number_rate',
+  'scoring_par_3', 'putts_made_3_5ft_pct', 'putts_made_10_15ft_pct',
+  'putts_made_5_10ft_pct', 'putts_made_15_25ft_pct', 'putts_made_25_plus_ft_pct',
+  'pattern_detected_scoring', 'opening_hole_delta', 'bubble_player_putting',
+  'practice_tournament_delta', 'three_putt_chain', 'approach_severity_<150',
+  'bubble_player_approach', 'short_side_proximity', 'approach_severity_150_175',
+  'approach_severity_175_200', 'putt_miss_bias_right_pct', 'approach_severity_200+',
+  'pattern_detected_putting', 'recurring_weakness_putting', 'putt_make_rate_15_20ft',
+  'pattern_detected_tee', 'approach_direction_<150_left', 'putt_make_rate_10_15ft',
+  'scrambling_fairway', 'scoring_decline_putting', 'approach_direction_175_200_right',
+  'putt_make_rate_0_3ft', 'approach_miss_lie_175_200_fairway',
+  'tee_strategy_driver_vs_layback', 'scrambling_rough', 'approach_direction_200+_right',
+  'approach_direction_150_175_left', 'approach_miss_lie_150_175_fairway',
+  'putt_make_rate_3_6ft', 'approach_miss_lie_<150_rough',
+  'approach_direction_150_175_right', 'compound_mistake_rate', 'putt_make_rate_6_10ft',
+] as const;
+
+describe('lookupMetricSource — insight-category ids (Sentry 2K closure)', () => {
+  it('resolves EVERY metric id production actually emits', () => {
+    const unresolved = PRODUCTION_EMITTED_METRIC_IDS.filter((id) => !lookupMetricSource(id));
+    // A non-empty list here is exactly what the cron logs as "unknown metric".
+    expect(unresolved).toEqual([]);
+  });
+
+  it('classifies the seven insight-category ids as intentional-null, not as metrics', () => {
+    // These are `<insight_type>_<focus_area>` pairs from determineInsightType —
+    // there is no column behind them, so a causal-lift number is meaningless.
+    for (const id of [
+      'pattern_detected_scoring', 'pattern_detected_putting', 'pattern_detected_tee',
+      'bubble_player_putting', 'bubble_player_approach',
+      'recurring_weakness_putting', 'scoring_decline_putting',
+    ]) {
+      const source = lookupMetricSource(id);
+      expect(source, id).not.toBeNull();
+      expect(source!.kind, id).toBe('intentional-null');
+    }
+  });
+
+  it('uses a reason distinct from the shot-level-graduation family', () => {
+    // v2-mining ids are waiting on shot-level data and will one day become
+    // attributable. Insight categories never will. Monitoring must tell them apart.
+    const category = lookupMetricSource('bubble_player_putting');
+    const shotLevel = lookupMetricSource('approach_severity_150_175');
+    expect(category).toMatchObject({ kind: 'intentional-null', reason: 'insight-category-not-a-metric' });
+    expect(shotLevel).toMatchObject({ kind: 'intentional-null' });
+    expect((category as { reason: string }).reason)
+      .not.toBe((shotLevel as { reason: string }).reason);
+  });
+
+  it('matches the FAMILY so a new focus area cannot reopen the issue', () => {
+    // The observed set was 7, but the shape is categories x focus areas. Any new
+    // pairing must resolve without another registry edit.
+    for (const unseen of [
+      'bubble_player_tee', 'plateau_approach', 'surge_player_scoring',
+      'team_trend_putting', 'roster_recommendation_short_game', 'streak_driving',
+    ]) {
+      expect(lookupMetricSource(unseen), unseen).toMatchObject({
+        kind: 'intentional-null',
+        reason: 'insight-category-not-a-metric',
+      });
+    }
+  });
+
+  it('never shadows a real metric id', () => {
+    // Prefix matching runs AFTER the canonical registry and the alias table, so
+    // this cannot happen today — but a future canonical id named e.g.
+    // `streak_length` would be silently swallowed if the ordering ever changed.
+    const realIds = [...Object.keys(METRIC_SOURCE), ...Object.keys(METRIC_SOURCE_ALIASES)];
+    const shadowed = realIds.filter((id) =>
+      __INSIGHT_CATEGORY_METRIC_PREFIXES.some((p) => id.startsWith(p)),
+    );
+    expect(shadowed).toEqual([]);
+  });
+
+  it('still returns null for genuinely unknown ids — real drift must stay visible', () => {
+    // The whole point of silencing the categories is so THIS keeps meaning something.
+    expect(lookupMetricSource('totally_made_up_metric')).toBeNull();
+    expect(lookupMetricSource('')).toBeNull();
   });
 });
