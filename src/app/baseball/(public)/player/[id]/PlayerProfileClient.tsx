@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
@@ -26,7 +26,6 @@ import {
   IconUser,
   IconChevronRight,
   IconPlay,
-  IconMoreVertical,
 } from '@/components/icons';
 import Image from 'next/image';
 import { formatHeight, cn } from '@/lib/utils';
@@ -177,6 +176,22 @@ interface PlayerProfileClientProps {
 
 type TabType = 'overview' | 'videos' | 'stats' | 'teams' | 'achievements';
 
+const TAB_ORDER: readonly TabType[] = ['overview', 'videos', 'stats', 'teams', 'achievements'];
+
+/**
+ * Second-person-free subject for every empty-state sentence on this page.
+ *
+ * This profile is read by parents, summer coaches and college staff who may
+ * not know the athlete — "No data" or "This player hasn't…" tells them nothing
+ * about WHOSE page is empty. Naming the athlete makes each empty state a
+ * specific, honest statement instead of a generic shrug. Falls back to a
+ * neutral noun when the record has no name at all (a legitimate state: the
+ * masthead renders "Unknown Player" for the same row).
+ */
+function subjectName(first: string | null, last: string | null): string {
+  return (first || last || '').trim() || 'This player';
+}
+
 // The hero's absolute-positioned back/action controls sit at the very top of
 // the viewport with nothing above them — on notch/Dynamic Island devices a
 // bare `top-4` clips under the status bar. `max()` keeps the same 1rem gap
@@ -214,7 +229,11 @@ export function PlayerProfileClient({
   const [isInWatchlist, setIsInWatchlist] = useState(initialIsInWatchlist);
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [heroActionsMenuOpen, setHeroActionsMenuOpen] = useState(false);
+  // Roving-tabindex focus targets for the tab strip (WAI-ARIA `tabs` pattern):
+  // only the selected tab is in the page tab-order, and Arrow/Home/End move
+  // focus between them. Fairway's <Segmented> gives this for free but CANNOT
+  // be used on this route — see the note above the tab strip below.
+  const tabRefs = useRef<Partial<Record<TabType, HTMLButtonElement | null>>>({});
 
   const settings = player.player_settings || {};
   const showVideos = settings.show_videos !== false;
@@ -225,6 +244,8 @@ export function PlayerProfileClient({
   const showSocial = settings.show_social_links !== false;
 
   const fullName = `${player.first_name || ''} ${player.last_name || ''}`.trim();
+  const displayName = subjectName(player.first_name, player.last_name);
+  const videoCount = player.videos?.length ?? 0;
   const recruitingInterests = (player.recruiting_interests || [])
     .filter(ri => ri.organization)
     .slice(0, 5);
@@ -262,7 +283,12 @@ export function PlayerProfileClient({
       return;
     }
     if (isCoachViewing) {
-      router.push('/baseball/dashboard/discover');
+      // Command Center, not Discover. Discover is a recruiting route and
+      // recruiting is sunset (product-modules.ts), so
+      // requireRecruitingCoachRoute now bounces every coach off /discover to
+      // /command-center — sending them there first only costs a round trip
+      // and flashes a route they can no longer use.
+      router.push('/baseball/dashboard/command-center');
     } else if (isSelfViewing) {
       router.push('/baseball/player/today');
     } else {
@@ -272,11 +298,36 @@ export function PlayerProfileClient({
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: IconUser },
-    { id: 'videos' as const, label: 'Videos', icon: IconVideo, count: player.videos?.length || 0 },
+    // The count is itself protected data: publishing "Videos 7" next to a tab
+    // that then says "video is private" discloses exactly what the player
+    // asked us to withhold. Omit the badge entirely when show_videos is off —
+    // an absent count reveals nothing, a zero would be a lie.
+    { id: 'videos' as const, label: 'Videos', icon: IconVideo, count: showVideos ? videoCount : undefined },
     { id: 'stats' as const, label: 'Stats & Metrics', icon: IconActivity },
     { id: 'teams' as const, label: 'Team History', icon: IconUsers, count: teamHistory.length },
     { id: 'achievements' as const, label: 'Awards', icon: IconTrophy, count: player.player_achievements?.length || 0 },
   ];
+
+  // Arrow/Home/End roving focus for the tab strip. Selection follows focus,
+  // which is the correct WAI-ARIA behavior for tabs whose panels are already
+  // rendered client-side (no fetch cost per tab change).
+  const handleTabKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>, current: TabType) => {
+    const index = TAB_ORDER.indexOf(current);
+    // `undefined`, not `null` — TAB_ORDER is indexed under
+    // noUncheckedIndexedAccess, which types every lookup as `TabType | undefined`.
+    let next: TabType | undefined;
+    if (event.key === 'ArrowRight') next = TAB_ORDER[(index + 1) % TAB_ORDER.length];
+    else if (event.key === 'ArrowLeft') next = TAB_ORDER[(index - 1 + TAB_ORDER.length) % TAB_ORDER.length];
+    else if (event.key === 'Home') next = TAB_ORDER[0];
+    else if (event.key === 'End') next = TAB_ORDER[TAB_ORDER.length - 1];
+    if (!next) return;
+    event.preventDefault();
+    setActiveTab(next);
+    // .focus() also scrolls the newly-focused tab into view inside the
+    // horizontally-scrolling strip, so keyboard users never focus an
+    // off-screen tab.
+    tabRefs.current[next]?.focus();
+  }, []);
 
   const hometown = player.city && player.state ? `${player.city}, ${player.state}` : null;
 
@@ -336,23 +387,36 @@ export function PlayerProfileClient({
             </button>
           </div>
 
-          {/* Actions on header — one primary CTA (Watchlist) always visible;
-              Message stays a full CTA at md+ and collapses into an overflow
-              menu on phones so the hero never shows two competing coach
-              actions at once (#482). Below md, Watchlist itself also drops to
-              an icon-only 44px control (aria-labelled) — at 320px the back
-              button (left-4) and a full "Add to Watchlist" label pill
-              (right-4) still overlapped by ~28px even after Message moved to
-              the overflow menu, since the label pill alone runs ~184px wide
-              against a ~280px right-side budget. Icon-only shrinks it to
-              ~56px, clearing the back button at every target width. */}
+          {/* Actions on header — exactly ONE coach CTA (Watchlist).
+              There used to be a second "Message" CTA at md+ plus a phone-only
+              overflow menu holding a duplicate of it. Neither had an onClick
+              or an href: the desktop pill was inert and the menu item only
+              closed its own menu. There is no compose-to-player route to point
+              them at (/baseball/dashboard/messages has no recipient deeplink),
+              so they were removed rather than wired to a dead end — an
+              affordance that does nothing on the product's most-shared page is
+              worse than an absent one. Removing them also retires the whole
+              overflow-menu apparatus (state, blur-dismiss, Escape handling).
+
+              Below md, Watchlist stays icon-only (aria-labelled): at 320px the
+              back button (left-4) and a full "Add to Watchlist" label pill
+              (right-4) overlapped by ~28px, since the label pill alone runs
+              ~184px wide against a ~280px right-side budget. Icon-only shrinks
+              it to ~56px, clearing the back button at every target width. */}
           {isCoachViewing && (
             <div className="absolute right-4 z-10 flex items-center gap-2" style={HERO_SAFE_TOP_STYLE}>
               <Button
                 variant={isInWatchlist ? 'secondary' : 'primary'}
                 onClick={handleToggleWatchlist}
                 disabled={isPending}
-                aria-label={isInWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                aria-busy={isPending}
+                aria-label={
+                  isPending
+                    ? 'Updating watchlist'
+                    : isInWatchlist
+                      ? 'In Watchlist'
+                      : 'Add to Watchlist'
+                }
                 className={cn(
                   "shadow-lg px-3 md:px-5",
                   isInWatchlist
@@ -361,7 +425,11 @@ export function PlayerProfileClient({
                 )}
               >
                 {isPending ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full md:mr-2" />
+                  // motion-reduce:animate-none — the ring still reads as a
+                  // distinct "busy" glyph when it isn't spinning, and the
+                  // aria-label + aria-busy above carry the state for anyone
+                  // who can't see it at all.
+                  <div className="animate-spin motion-reduce:animate-none h-4 w-4 border-2 border-current border-t-transparent rounded-full md:mr-2" />
                 ) : isInWatchlist ? (
                   <IconStarFilled size={16} className="md:mr-2 text-pursuit" />
                 ) : (
@@ -369,63 +437,6 @@ export function PlayerProfileClient({
                 )}
                 <span className="hidden md:inline">{isInWatchlist ? 'In Watchlist' : 'Add to Watchlist'}</span>
               </Button>
-              <Button
-                variant="secondary"
-                className="hidden md:inline-flex bg-black/50 text-white hover:bg-black/70 transition-colors"
-              >
-                <IconMail size={16} className="mr-2" />
-                Message
-              </Button>
-
-              {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- onBlur only auto-dismisses when focus leaves the subtree; the actual interactive controls are the native <button>s below, each with their own role/keyboard support */}
-              <div
-                className="relative md:hidden"
-                onBlur={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                    setHeroActionsMenuOpen(false);
-                  }
-                }}
-              >
-                {/* eslint-disable-next-line helm/no-raw-button -- compact icon-only overflow trigger over the dark hero, not a full <Button> pill (#482) */}
-                <button
-                  type="button"
-                  aria-haspopup="menu"
-                  aria-expanded={heroActionsMenuOpen}
-                  aria-label="More profile actions"
-                  onClick={() => setHeroActionsMenuOpen((open) => !open)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setHeroActionsMenuOpen(false);
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/50 text-white transition-colors hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-                >
-                  <IconMoreVertical size={18} />
-                </button>
-
-                {heroActionsMenuOpen && (
-                  <div
-                    role="menu"
-                    tabIndex={-1}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') setHeroActionsMenuOpen(false);
-                    }}
-                    className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] py-1 shadow-xl"
-                  >
-                    {/* eslint-disable-next-line helm/no-raw-button -- menu item row, not a <Button> pill (#482) */}
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => setHeroActionsMenuOpen(false)}
-                      className={pressableClass({
-                        ink: 'pursuit',
-                        className: 'flex w-full items-center gap-2 px-4 py-2.5 text-left font-annual text-body-sm text-text-primary',
-                      })}
-                    >
-                      <IconMail size={16} className="text-text-tertiary" />
-                      Message
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -472,11 +483,19 @@ export function PlayerProfileClient({
                     accentRule
                   />
 
-                  {/* Quick stats */}
-                  <div className="flex flex-wrap items-end gap-6 md:gap-10">
+                  {/* Quick stats. gap-y is smaller than gap-x on purpose: at
+                      320px the passport's inner width is ~240px, so this row
+                      wraps to two lines and needs vertical rhythm that doesn't
+                      look like a gap in the layout. */}
+                  <div className="flex flex-wrap items-end gap-x-6 gap-y-4 md:gap-10">
                     <RuledStatLine label="Views" value={profileViewCount} ink="pursuit" size="row" />
                     <RuledStatLine label="Watchlists" value={watchlistCount} ink="pursuit" size="row" />
-                    <RuledStatLine label="Videos" value={player.videos?.length || 0} ink="pursuit" size="row" />
+                    {/* Same disclosure rule as the Videos tab badge: a video
+                        count is protected by show_videos, so it is omitted
+                        (not zeroed) when the player has video set to private. */}
+                    {showVideos && (
+                      <RuledStatLine label="Videos" value={videoCount} ink="pursuit" size="row" />
+                    )}
                   </div>
                 </div>
 
@@ -533,8 +552,27 @@ export function PlayerProfileClient({
 
             <HairlineRule ink="hairline" className="my-6" />
 
-            {/* Tabs */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Player sections">
+            {/* Tabs.
+                NOT Fairway's <Segmented>, deliberately. The `(public)` route
+                group mounts <LazyMotion strict> (PublicMotionScope.tsx) so
+                signed-out visitors get the Living Annual entrance animations;
+                `strict` makes framer-motion THROW on any descendant that
+                renders a full `motion.*` component. segmented.tsx renders
+                <motion.span> for its sliding pill, so dropping it in here
+                would crash the product's most-shared page for every visitor
+                who does not have prefers-reduced-motion on. The strip below is
+                built from Living Annual atoms (InkBadge + pressableClass) and
+                implements the same WAI-ARIA `tabs` keyboard contract Segmented
+                would have provided (roving tabindex + Arrow/Home/End).
+
+                min-w-0 lets the strip scroll horizontally inside the passport
+                card instead of widening it and pushing the whole page into a
+                horizontal scroll on narrow phones. */}
+            <div
+              className="flex min-w-0 gap-1.5 overflow-x-auto pb-1"
+              role="tablist"
+              aria-label="Player sections"
+            >
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -543,13 +581,21 @@ export function PlayerProfileClient({
                   <button
                     type="button"
                     key={tab.id}
+                    ref={(node) => {
+                      tabRefs.current[tab.id] = node;
+                    }}
                     role="tab"
                     aria-selected={isActive}
                     aria-controls={`pp-panel-${tab.id}`}
                     id={`pp-tab-${tab.id}`}
+                    tabIndex={isActive ? 0 : -1}
                     onClick={() => setActiveTab(tab.id)}
+                    onKeyDown={(e) => handleTabKeyDown(e, tab.id)}
                     className={cn(
-                      'flex items-center gap-1.5 whitespace-nowrap rounded-fw-lg px-3 py-2',
+                      'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-fw-lg px-3 py-2',
+                      // Coarse pointers get the WCAG 2.2 AA (2.5.8) 44px target;
+                      // this strip is tapped far more often than it is clicked.
+                      '[@media(pointer:coarse)]:min-h-[44px]',
                       pressableClass({ ink: 'pursuit' })
                     )}
                   >
@@ -591,10 +637,23 @@ export function PlayerProfileClient({
       )}
 
       {/* Tab Content */}
-      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8" role="tabpanel" id={`pp-panel-${activeTab}`} aria-labelledby={`pp-tab-${activeTab}`}>
+      <div
+        className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8"
+        role="tabpanel"
+        id={`pp-panel-${activeTab}`}
+        aria-labelledby={`pp-tab-${activeTab}`}
+        // Focusable so a keyboard user leaving the tab strip lands in the
+        // panel they just selected rather than skipping past it. Panels vary
+        // between "has links" (Team History) and "has none" (Stats), so this
+        // is unconditional instead of content-dependent.
+        tabIndex={0}
+      >
         {activeTab === 'overview' && (
           <OverviewTab
             player={player}
+            displayName={displayName}
+            showStats={showStats}
+            showVideos={showVideos}
             showDreamSchools={showDreamSchools}
             showContactEmail={showContactEmail}
             showPhone={showPhone}
@@ -607,34 +666,34 @@ export function PlayerProfileClient({
 
         {activeTab === 'videos' && (
           showVideos ? (
-            <VideosTab videos={player.videos || []} />
+            <VideosTab videos={player.videos || []} displayName={displayName} />
           ) : (
             <EditorsLetter
               ink="pursuit"
-              title="Videos are private."
-              body="This player has kept video visibility off on their public profile."
+              title="Video is set to private"
+              body={`${displayName} has turned video off for their public profile. Everything else on this page is still visible.`}
             />
           )
         )}
 
         {activeTab === 'stats' && (
           showStats ? (
-            <StatsTab player={player} />
+            <StatsTab player={player} displayName={displayName} />
           ) : (
             <EditorsLetter
               ink="pursuit"
-              title="Stats are private."
-              body="This player has kept stats & metrics visibility off on their public profile."
+              title="Measurables are set to private"
+              body={`${displayName} has turned off height, weight, velocities and academics for their public profile. Everything else on this page is still visible.`}
             />
           )
         )}
 
         {activeTab === 'teams' && (
-          <TeamsTab teamHistory={teamHistory} />
+          <TeamsTab teamHistory={teamHistory} displayName={displayName} />
         )}
 
         {activeTab === 'achievements' && (
-          <AchievementsTab achievements={player.player_achievements || []} />
+          <AchievementsTab achievements={player.player_achievements || []} displayName={displayName} />
         )}
       </div>
     </div>
@@ -644,6 +703,9 @@ export function PlayerProfileClient({
 // Overview Tab Component
 function OverviewTab({
   player,
+  displayName,
+  showStats,
+  showVideos,
   showDreamSchools,
   showContactEmail,
   showPhone,
@@ -653,6 +715,11 @@ function OverviewTab({
   watchlistCount,
 }: {
   player: PlayerData;
+  displayName: string;
+  /** baseball_player_settings.show_stats — gates the measurable stack below. */
+  showStats: boolean;
+  /** baseball_player_settings.show_videos — gates the featured-video preview. */
+  showVideos: boolean;
   showDreamSchools: boolean;
   showContactEmail: boolean;
   showPhone: boolean;
@@ -705,6 +772,47 @@ function OverviewTab({
     { label: 'ACT', value: player.act_score != null ? player.act_score.toString() : '', ghost: player.act_score == null },
   ];
 
+  // VISIBILITY GATES. show_stats / show_videos were previously enforced only on
+  // the Stats and Videos TABS — Overview rendered the same measurables (height,
+  // weight, velocities, GPA/SAT/ACT) and the same video thumbnails regardless,
+  // so a player who set either to private still had that data published on the
+  // tab this page opens on. Gate them here at the source; see the tab strip for
+  // the matching count suppression.
+  const featuredVideos = showVideos ? (player.videos ?? []).slice(0, 2) : [];
+  // Nothing to read at all: no bio, measurables withheld or unrecorded, no
+  // playable video. Say so once, plainly, instead of leaving a column of
+  // headers over empty space.
+  const hasRecordedMeasurable = measurables.some((m) => !m.ghost);
+  const mainColumnIsEmpty =
+    !player.about_me && featuredVideos.length === 0 && (!showStats || !hasRecordedMeasurable);
+
+  // WITHHELD is not the same fact as NOT RECORDED, and the page must never
+  // claim the wrong one.
+  //
+  // The first version of this copy branched on `showStats` alone, so a player
+  // who set their VIDEO to private got a public page asserting "nothing is
+  // hidden, there just isn't anything on the record so far" — a statement
+  // about their privacy choices that was false, on their own profile, to
+  // anyone who visited. Both flags decide it now.
+  //
+  // Note the asymmetry with the server: page.tsx redacts withheld fields
+  // before they are serialized, so this component cannot tell "private" from
+  // "absent" by looking at the data. It has to be told, which is exactly why
+  // the settings are still threaded through after the redaction.
+  const somethingIsWithheld = !showStats || !showVideos;
+  const emptyColumnExplanation = (() => {
+    if (!showStats && !showVideos) {
+      return `${displayName} has set both their measurables and their video to private, so there's nothing to read on this tab. Team history and awards are still on the tabs above.`;
+    }
+    if (!showStats) {
+      return `${displayName} has set their measurables to private, and hasn't published any video yet. Team history and awards are still on the tabs above.`;
+    }
+    if (!showVideos) {
+      return `${displayName} has set their video to private, and hasn't recorded a height, weight, velocity or test score yet. As each one is added it appears here.`;
+    }
+    return `${displayName} hasn't recorded a height, weight, velocity, test score or video yet. As each one is added it appears here — nothing is hidden, there just isn't anything on the record so far.`;
+  })();
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main Content */}
@@ -719,42 +827,77 @@ function OverviewTab({
           </PaperCard>
         )}
 
-        {/* Physical & Metrics */}
-        <PaperCard className="p-6">
-          <div className="mb-5 flex items-center gap-2">
-            <IconActivity size={18} className="text-pursuit" />
-            <Eyebrow ink="pursuit">Physical &amp; Metrics</Eyebrow>
-          </div>
-          <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-4">
-            {measurables.map((m, i) => (
-              <Reveal key={m.label} staggerIndex={Math.min(i, 8)}>
-                <RuledStatLine
-                  label={m.label}
-                  value={m.ghost ? '' : m.value}
-                  unit={m.unit}
-                  ghost={m.ghost}
-                  ink="pursuit"
-                  size="row"
-                />
-              </Reveal>
-            ))}
-          </div>
-        </PaperCard>
+        {mainColumnIsEmpty && (
+          <EditorsLetter
+            ink="pursuit"
+            title={
+              somethingIsWithheld
+                ? 'Parts of this profile are private'
+                : 'This profile is still being filled in'
+            }
+            body={emptyColumnExplanation}
+          />
+        )}
+
+        {/* Physical & Metrics.
+            When stats are visible but nothing is recorded AND the column is
+            not otherwise empty (a bio or a video carries it), this section
+            used to vanish with no notice at all — a sixth empty state nobody
+            wrote copy for. Say it instead of showing a gap. */}
+        {showStats && !hasRecordedMeasurable && !mainColumnIsEmpty && (
+          <PaperCard className="p-6">
+            <div className="mb-3 flex items-center gap-2">
+              <IconActivity size={18} className="text-pursuit" />
+              <Eyebrow ink="pursuit">Physical &amp; Metrics</Eyebrow>
+            </div>
+            <p className="font-annual text-body text-text-secondary">
+              No height, weight, velocity or test score has been recorded yet. Each one appears
+              here as it is added.
+            </p>
+          </PaperCard>
+        )}
+
+        {showStats && hasRecordedMeasurable && (
+          <PaperCard className="p-6">
+            <div className="mb-5 flex items-center gap-2">
+              <IconActivity size={18} className="text-pursuit" />
+              <Eyebrow ink="pursuit">Physical &amp; Metrics</Eyebrow>
+            </div>
+            {/* Two columns from 320px up, not one: these values are short
+                (6'2", 185, 6.8, 1280) and a ten-row single-column stack of
+                40px numerals pushed the rest of the profile a full screen
+                down on a phone — the device this link is opened on most. */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-4">
+              {measurables.map((m, i) => (
+                <Reveal key={m.label} staggerIndex={Math.min(i, 8)}>
+                  <RuledStatLine
+                    label={m.label}
+                    value={m.ghost ? '' : m.value}
+                    unit={m.unit}
+                    ghost={m.ghost}
+                    ink="pursuit"
+                    size="row"
+                  />
+                </Reveal>
+              ))}
+            </div>
+          </PaperCard>
+        )}
 
         {/* Featured Videos Preview */}
-        {player.videos && player.videos.length > 0 && (
+        {featuredVideos.length > 0 && (
           <PaperCard className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex min-w-0 items-center gap-2">
                 <IconVideo size={18} className="text-pursuit" />
                 <Eyebrow ink="pursuit">Featured Videos</Eyebrow>
               </div>
-              <span className="font-annual text-body-sm font-medium text-pursuit">
+              <span className="shrink-0 font-annual text-body-sm font-medium text-pursuit">
                 {player.videos.length} total
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {player.videos.slice(0, 2).map((video) => (
+              {featuredVideos.map((video) => (
                 <VideoCard key={video.id} video={video} />
               ))}
             </div>
@@ -935,13 +1078,13 @@ function OverviewTab({
 }
 
 // Videos Tab Component
-function VideosTab({ videos }: { videos: PlayerVideo[] }) {
+function VideosTab({ videos, displayName }: { videos: PlayerVideo[]; displayName: string }) {
   if (videos.length === 0) {
     return (
       <EditorsLetter
         ink="pursuit"
-        title="No videos yet."
-        body="This player hasn't uploaded any videos."
+        title="No video on file yet"
+        body={`${displayName} hasn't posted any game film, bullpen or batting-practice video to this profile. When they do, it plays right here — no download, no third-party link.`}
       />
     );
   }
@@ -956,107 +1099,131 @@ function VideosTab({ videos }: { videos: PlayerVideo[] }) {
 }
 
 // Stats Tab Component
-function StatsTab({ player }: { player: PlayerData }) {
+function StatsTab({ player, displayName }: { player: PlayerData; displayName: string }) {
+  // A profile with nothing recorded renders as a wall of em-dashes. The ghost
+  // rows are the kit's deliberate "waiting to be filled" treatment (see the
+  // Living Annual empty-state doctrine) and they stay — but on their own they
+  // read as a broken page rather than a new one, so when EVERY measurable is
+  // absent we say what is actually going on first, then let the rows show what
+  // will fill in.
+  const hasAnyMeasurable =
+    (player.height_feet != null && player.height_inches != null) ||
+    player.weight_lbs != null ||
+    Boolean(player.bats) ||
+    Boolean(player.throws) ||
+    player.pitch_velo != null ||
+    player.exit_velo != null ||
+    player.sixty_time != null ||
+    player.gpa != null ||
+    player.sat_score != null ||
+    player.act_score != null;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Physical Stats */}
-      <PaperCard className="p-6">
-        <div className="mb-6 flex items-center gap-2">
-          <IconActivity size={20} className="text-pursuit" />
-          <Eyebrow ink="pursuit">Physical Profile</Eyebrow>
-        </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-          <RuledStatLine
-            label="Height"
-            value={player.height_feet && player.height_inches != null ? formatHeight(player.height_feet, player.height_inches) : ''}
-            ghost={!(player.height_feet && player.height_inches != null)}
-            ink="pursuit"
-            size="row"
-          />
-          <RuledStatLine label="Weight" value={player.weight_lbs ? String(player.weight_lbs) : ''} unit={player.weight_lbs ? 'LBS' : undefined} ghost={!player.weight_lbs} ink="pursuit" size="row" />
-          <RuledStatLine label="Bats" value={player.bats ?? ''} ghost={!player.bats} ink="pursuit" size="row" />
-          <RuledStatLine label="Throws" value={player.throws ?? ''} ghost={!player.throws} ink="pursuit" size="row" />
-        </div>
-      </PaperCard>
+    <div className="space-y-6">
+      {!hasAnyMeasurable && (
+        <EditorsLetter
+          ink="pursuit"
+          title="No measurables recorded yet"
+          body={`${displayName} hasn't logged a height, weight, velocity or test score. Each line below fills in as they're recorded — nothing here is being withheld.`}
+        />
+      )}
 
-      {/* Performance Metrics */}
-      <PaperCard className="p-6">
-        <div className="mb-6 flex items-center gap-2">
-          <IconTarget size={20} className="text-pursuit" />
-          <Eyebrow ink="pursuit">Performance Metrics</Eyebrow>
-        </div>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          <RuledStatLine
-            label="Pitch Velocity"
-            value={player.pitch_velo != null ? String(player.pitch_velo) : ''}
-            unit={player.pitch_velo != null ? 'MPH' : undefined}
-            ghost={player.pitch_velo == null}
-            ink="pursuit"
-            size="row"
-          />
-          <RuledStatLine
-            label="Exit Velocity"
-            value={player.exit_velo != null ? String(player.exit_velo) : ''}
-            unit={player.exit_velo != null ? 'MPH' : undefined}
-            ghost={player.exit_velo == null}
-            ink="pursuit"
-            size="row"
-          />
-          <RuledStatLine
-            label="60-Yard Dash"
-            value={player.sixty_time != null ? String(player.sixty_time) : ''}
-            unit={player.sixty_time != null ? 'SEC' : undefined}
-            ghost={player.sixty_time == null}
-            ink="pursuit"
-            size="row"
-          />
-        </div>
-      </PaperCard>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Physical Stats */}
+        <PaperCard className="p-6">
+          <div className="mb-6 flex items-center gap-2">
+            <IconActivity size={20} className="text-pursuit" />
+            <Eyebrow ink="pursuit">Physical Profile</Eyebrow>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:gap-x-8">
+            <RuledStatLine
+              label="Height"
+              value={player.height_feet && player.height_inches != null ? formatHeight(player.height_feet, player.height_inches) : ''}
+              ghost={!(player.height_feet && player.height_inches != null)}
+              ink="pursuit"
+              size="row"
+            />
+            <RuledStatLine label="Weight" value={player.weight_lbs ? String(player.weight_lbs) : ''} unit={player.weight_lbs ? 'LBS' : undefined} ghost={!player.weight_lbs} ink="pursuit" size="row" />
+            <RuledStatLine label="Bats" value={player.bats ?? ''} ghost={!player.bats} ink="pursuit" size="row" />
+            <RuledStatLine label="Throws" value={player.throws ?? ''} ghost={!player.throws} ink="pursuit" size="row" />
+          </div>
+        </PaperCard>
 
-      {/* Academics */}
-      <PaperCard className="p-6">
-        <div className="mb-6 flex items-center gap-2">
-          <IconSchool size={20} className="text-pursuit" />
-          <Eyebrow ink="pursuit">Academics</Eyebrow>
-        </div>
-        <div className="grid grid-cols-3 gap-x-6 gap-y-5">
-          <RuledStatLine label="GPA" value={player.gpa != null ? player.gpa.toFixed(2) : ''} ghost={player.gpa == null} ink="pursuit" size="row" />
-          <RuledStatLine label="SAT Score" value={player.sat_score != null ? player.sat_score.toString() : ''} ghost={player.sat_score == null} ink="pursuit" size="row" />
-          <RuledStatLine label="ACT Score" value={player.act_score != null ? player.act_score.toString() : ''} ghost={player.act_score == null} ink="pursuit" size="row" />
-        </div>
-      </PaperCard>
+        {/* Performance Metrics */}
+        <PaperCard className="p-6">
+          <div className="mb-6 flex items-center gap-2">
+            <IconTarget size={20} className="text-pursuit" />
+            <Eyebrow ink="pursuit">Performance Metrics</Eyebrow>
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <RuledStatLine
+              label="Pitch Velocity"
+              value={player.pitch_velo != null ? String(player.pitch_velo) : ''}
+              unit={player.pitch_velo != null ? 'MPH' : undefined}
+              ghost={player.pitch_velo == null}
+              ink="pursuit"
+              size="row"
+            />
+            <RuledStatLine
+              label="Exit Velocity"
+              value={player.exit_velo != null ? String(player.exit_velo) : ''}
+              unit={player.exit_velo != null ? 'MPH' : undefined}
+              ghost={player.exit_velo == null}
+              ink="pursuit"
+              size="row"
+            />
+            <RuledStatLine
+              label="60-Yard Dash"
+              value={player.sixty_time != null ? String(player.sixty_time) : ''}
+              unit={player.sixty_time != null ? 'SEC' : undefined}
+              ghost={player.sixty_time == null}
+              ink="pursuit"
+              size="row"
+            />
+          </div>
+        </PaperCard>
 
-      {/* Player Info */}
-      <PaperCard className="p-6">
-        <div className="mb-6 flex items-center gap-2">
-          <IconUser size={20} className="text-pursuit" />
-          <Eyebrow ink="pursuit">Player Info</Eyebrow>
-        </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-          <RuledStatLine label="Position" value={player.primary_position ?? ''} ghost={!player.primary_position} ink="pursuit" size="row" />
-          <RuledStatLine label="Secondary" value={player.secondary_position ?? ''} ghost={!player.secondary_position} ink="pursuit" size="row" />
-          <RuledStatLine label="Class" value={player.grad_year?.toString() ?? ''} ghost={player.grad_year == null} ink="pursuit" size="row" />
-          <RuledStatLine
-            label="Location"
-            value={player.city && player.state ? `${player.city}, ${player.state}` : ''}
-            ghost={!(player.city && player.state)}
-            ink="pursuit"
-            size="row"
-          />
-        </div>
-      </PaperCard>
+        {/* Academics */}
+        <PaperCard className="p-6">
+          <div className="mb-6 flex items-center gap-2">
+            <IconSchool size={20} className="text-pursuit" />
+            <Eyebrow ink="pursuit">Academics</Eyebrow>
+          </div>
+          {/* Two columns on phones, three from sm. "SAT SCORE" / "ACT SCORE"
+              are the longest labels on this page and wrapped to two lines in a
+              ~74px track at 320px, leaving the three rows visibly unequal. */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+            <RuledStatLine label="GPA" value={player.gpa != null ? player.gpa.toFixed(2) : ''} ghost={player.gpa == null} ink="pursuit" size="row" />
+            <RuledStatLine label="SAT Score" value={player.sat_score != null ? player.sat_score.toString() : ''} ghost={player.sat_score == null} ink="pursuit" size="row" />
+            <RuledStatLine label="ACT Score" value={player.act_score != null ? player.act_score.toString() : ''} ghost={player.act_score == null} ink="pursuit" size="row" />
+          </div>
+        </PaperCard>
+        {/* There was a fourth "Player Info" card here (position / secondary /
+            class / location). It was removed for two reasons, not one:
+            1. Every one of those four values already renders in the passport
+               masthead's <Eyebrow> dateline, which is pinned above the tab strip
+               and therefore visible on this very tab.
+            2. RuledStatLine sets its value at `text-ink`
+               (clamp(2.5rem, 5vw, 4.5rem) — 40px on a phone), which is right for
+               a measurable and wrong for free text. "Los Angeles, CA" at 40px is
+               ~330px wide in a ~110px grid track, and because a flex/grid item
+               will not shrink below the min-content width of unbreakable text it
+               overflowed the card and gave the whole document a horizontal
+               scrollbar on every phone. Deleting the duplicate fixes the bug
+               rather than papering over it. */}
+      </div>
     </div>
   );
 }
 
 // Teams Tab Component
-function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
+function TeamsTab({ teamHistory, displayName }: { teamHistory: TeamMembership[]; displayName: string }) {
   if (teamHistory.length === 0) {
     return (
       <EditorsLetter
         ink="pursuit"
-        title="No team history."
-        body="This player hasn't added any team history."
+        title="No team history on file"
+        body={`${displayName} hasn't been added to a roster in Helm yet, so there's no club, jersey number or set of dates to show. Team history appears here automatically once a coach adds them.`}
       />
     );
   }
@@ -1143,13 +1310,13 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
 }
 
 // Achievements Tab Component
-function AchievementsTab({ achievements }: { achievements: PlayerAchievement[] }) {
+function AchievementsTab({ achievements, displayName }: { achievements: PlayerAchievement[]; displayName: string }) {
   if (achievements.length === 0) {
     return (
       <EditorsLetter
         ink="pursuit"
-        title="No awards yet."
-        body="This player hasn't added any awards or achievements."
+        title="No awards listed yet"
+        body={`${displayName} hasn't added any all-conference, all-state or tournament honors to this profile. An empty list here doesn't mean there aren't any — it means none have been entered.`}
       />
     );
   }
