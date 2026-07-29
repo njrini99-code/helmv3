@@ -12,6 +12,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { requireRecruitingCoachRoute } from '@/lib/baseball/server-route-guards';
 import { getScoutPacketPreview } from '@/app/baseball/actions/scout-packet';
 import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
 import { ScoutPacketView } from '@/components/baseball/passport/ScoutPacketView';
@@ -28,6 +29,11 @@ interface PageProps {
 export default async function CoachScoutPacketPreviewPage({ params }: PageProps) {
   const { id } = await params;
   if (!id) notFound();
+
+  // PRODUCT-MODULE gate, first — see the sibling manage page for why this route
+  // escaped every prefix, capability and middleware list. Without it, "preview
+  // as a scout" still assembled and rendered a live packet after the sunset.
+  await requireRecruitingCoachRoute();
 
   const context = await getActiveBaseballContext();
   if (!context) redirect('/baseball/dashboard/command-center');

@@ -49,6 +49,7 @@ import type {
   PassportReadModel,
 } from '@/lib/baseball/read-models/player-passport';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { PassportVisibilityControls } from '@/components/baseball/passport';
 import type { PassportVisibilityState } from '@/lib/types/baseball-passport';
 import { Button } from '@/components/fairway';
@@ -414,7 +415,11 @@ export default async function CoachPlayerPassportPage({ params }: PageProps) {
         title={fullName}
         ink="team"
         actions={
-          canShare ? (
+          // `&& isRecruitingEnabled()` — the passport itself survives the
+          // recruiting sunset (it is a roster-evaluation surface), but the scout
+          // packet it links to does not. Gated rather than deleted so the
+          // documented restoration path in product-modules.ts stays one flag.
+          canShare && isRecruitingEnabled() ? (
             <Button asChild variant="primary" size="md" leftIcon={<IconShieldCheck size={15} />}>
               <Link href={`/baseball/dashboard/players/${id}/scout-packet`}>
                 {exposed ? 'Scout packet' : 'Share as packet'}

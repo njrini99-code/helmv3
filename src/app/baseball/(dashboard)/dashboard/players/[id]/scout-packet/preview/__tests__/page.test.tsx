@@ -19,6 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getActiveBaseballContext: vi.fn(),
   getScoutPacketPreview: vi.fn(),
+  requireRecruitingCoachRoute: vi.fn(),
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
@@ -30,6 +31,14 @@ const mocks = vi.hoisted(() => ({
 vi.mock('next/navigation', () => ({
   redirect: mocks.redirect,
   notFound: mocks.notFound,
+}));
+
+// The page now opens with the recruiting module gate. Mocked so the assertions
+// below keep exercising the session-expiry logic they were written for — still
+// correct, and what the documented restore path needs when the flag flips. The
+// gate's own behaviour is asserted separately at the bottom of this file.
+vi.mock('@/lib/baseball/server-route-guards', () => ({
+  requireRecruitingCoachRoute: mocks.requireRecruitingCoachRoute,
 }));
 
 vi.mock('@/lib/baseball/active-context', () => ({
@@ -75,6 +84,8 @@ const COACH_CONTEXT = {
 describe('CoachScoutPacketPreviewPage — BaseballUnauthorizedError redirects instead of raw-throwing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Module OPEN by default — see the mock note above.
+    mocks.requireRecruitingCoachRoute.mockResolvedValue({});
     mocks.getActiveBaseballContext.mockResolvedValue(COACH_CONTEXT);
   });
 
@@ -104,5 +115,21 @@ describe('CoachScoutPacketPreviewPage — BaseballUnauthorizedError redirects in
     });
     expect(element).toBeTruthy();
     expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  // This route sat outside MODULE_ROUTE_PREFIXES (no static prefix can describe
+  // /players/[id]/scout-packet without also matching the live roster subtree),
+  // outside the middleware's RECRUITING_ROUTES and STAFF_CAPABILITY_ROUTES, and
+  // carried no guard of its own — so "preview as a scout" kept assembling and
+  // rendering a real packet straight through the sunset.
+  it('consults the recruiting module gate BEFORE assembling a packet', async () => {
+    mocks.requireRecruitingCoachRoute.mockRejectedValue(
+      new Error('REDIRECT:/baseball/dashboard/command-center'),
+    );
+
+    await expect(
+      CoachScoutPacketPreviewPage({ params: Promise.resolve({ id: 'player-1' }) }),
+    ).rejects.toThrow('REDIRECT:/baseball/dashboard/command-center');
+    expect(mocks.getScoutPacketPreview).not.toHaveBeenCalled();
   });
 });

@@ -44,7 +44,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
-import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import {
+  withBaseballAction,
+  BaseballModuleDisabledError,
+} from '@/lib/baseball/with-baseball-action';
 import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { getAppUrl } from '@/lib/utils/env';
 import {
@@ -59,6 +62,30 @@ import type {
 // -----------------------------------------------------------------------------
 // Helpers
 // -----------------------------------------------------------------------------
+
+/**
+ * Module gate for every STAFF-facing scout-packet path.
+ *
+ * `resolveScoutPacketByToken` (the public share-link resolver) already refuses
+ * while recruiting is sunset, but the six staff actions in this file did not —
+ * so the manage surface kept minting live share links for a withdrawn module.
+ *
+ * The `requiredCapability: 'can_export_reports'` on each action does NOT cover
+ * this. A capability answers "may this coach export?"; it cannot answer "does
+ * the product ship exporting?", and a head coach holds every capability
+ * unconditionally (see the three-gates rationale at the top of
+ * product-modules.ts). That is the whole reason the module registry exists.
+ *
+ * Gating the DATA layer and not just the routes is deliberate: these are server
+ * actions reachable from any client bundle, so a page-level redirect is a sign,
+ * not a door. One helper so the gate cannot drift apart per-action.
+ */
+function assertRecruitingShipped(): void {
+  if (isRecruitingEnabled()) return;
+  throw new BaseballModuleDisabledError(
+    'Scout packets are not part of BaseballHelm right now.',
+  );
+}
 
 /** A URL-safe opaque token (~32 bytes of entropy, base64url). */
 function generateToken(): string {
@@ -131,6 +158,7 @@ export const mintScoutPacketLink = withBaseballAction(
     ctx,
     input: { playerId: string; recipientLabel?: string | null; expiresInDays?: number | null },
   ): Promise<PassportShareLinkView> => {
+    assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
     const playerId = input.playerId?.trim();
     if (!playerId) throw new Error('A player is required to mint a scout packet link.');
@@ -193,6 +221,7 @@ export const listScoutPacketLinks = withBaseballAction(
   'listScoutPacketLinks',
   { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
   async (ctx, playerId: string): Promise<PassportShareLinkView[]> => {
+    assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
     if (!playerId?.trim()) return [];
     const supabase = await createClient();
@@ -213,6 +242,7 @@ export const revokeScoutPacketLink = withBaseballAction(
   'revokeScoutPacketLink',
   { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
   async (ctx, linkId: string): Promise<{ success: true }> => {
+    assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
     if (!linkId?.trim()) throw new Error('A link id is required.');
     const supabase = await createClient();
@@ -233,6 +263,7 @@ export const relabelScoutPacketLink = withBaseballAction(
   'relabelScoutPacketLink',
   { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
   async (ctx, input: { linkId: string; recipientLabel: string | null }): Promise<{ success: true }> => {
+    assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
     if (!input.linkId?.trim()) throw new Error('A link id is required.');
     const label = (input.recipientLabel ?? '').trim().slice(0, 160) || null;
@@ -277,6 +308,7 @@ export const getScoutPacketRoster = withBaseballAction(
   'getScoutPacketRoster',
   { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
   async (ctx): Promise<ScoutPacketRoster> => {
+    assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
     const supabase = await createClient();
 
@@ -368,6 +400,7 @@ export const getScoutPacketPreview = withBaseballAction(
   'getScoutPacketPreview',
   { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
   async (ctx, playerId: string): Promise<ScoutPacketModel> => {
+    assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
     const supabase = await createClient();
     return assembleScoutPacket(supabase, { playerId, teamId });

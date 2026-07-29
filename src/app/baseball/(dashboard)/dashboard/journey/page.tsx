@@ -17,6 +17,15 @@ import JourneyClient from './JourneyClient';
 export default async function JourneyPage() {
   const { isCollegePlayer } = await requireRecruitingPlayerRoute();
 
+  // UNREACHABLE while recruiting is sunset (product-modules.ts): the guard above
+  // carries the module gate and redirects every player before this returns, so
+  // nothing below renders today. Kept, not deleted — it is correct code that the
+  // documented restore path needs the moment the flag flips, and the college-
+  // player rule it encodes ("recruiting status: Never") is a permanent product
+  // rule, not a property of the sunset.
+  //
+  // The live player-story surface is /baseball/player/timeline. Do not re-link
+  // Journey from a player screen expecting it to render.
   if (isCollegePlayer) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
