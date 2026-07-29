@@ -84,9 +84,28 @@ export const PRODUCT_MODULES: Readonly<Record<ProductModuleId, ProductModule>> =
       'server route guards in server-route-guards.ts still match the intended ' +
       'program types; (3) recruiting tables still satisfy current RLS — they ' +
       'were not exercised while disabled, so policy drift is likely; ' +
-      '(4) recruiting seed data exists, since the demo seeds stopped producing ' +
-      'it; (5) re-enable the recruiting nav tests that assert it is hidden ' +
-      '(they will correctly fail once it is visible again); ' +
+      '(4) recruiting seed data exists — scripts/seed-baseball-demo-program.ts ' +
+      'Section C (3 feeder orgs, 8 recruits, 8 watchlist rows) and its ' +
+      'stale-outreach coach insight are BOTH gated on this flag, so they come ' +
+      'back automatically; re-run `npm run seed:baseball:demo`; ' +
+      '(5) EXPECT 54 UNIT TESTS TO FAIL, IN 7 FILES, AND DO NOT DELETE THEM. ' +
+      'This was measured on 2026-07-29 by actually flipping the flag and running ' +
+      'the full suite, because "one line brings it back" had been asserted in ' +
+      'four documents and verified by nobody. Every failure is a test asserting ' +
+      'recruiting is currently HIDDEN — they are the proof the sunset works and ' +
+      'they are supposed to go red the moment it does not. The files, with ' +
+      'failure counts at the time of measuring: ' +
+      'recruiting-sunset-doors.test.ts (36), bottom-nav.test.ts (8), ' +
+      'product-modules.test.ts (4), recruiting-activate-door.test.ts (3), ' +
+      'operational-rule-engine.test.ts (1 — the rule-engine module gate), ' +
+      'src/test/routes/no-inbound-links-to-disabled-modules.test.ts (1 — its ' +
+      'own non-vacuity probe), and ' +
+      'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts (1 — it ' +
+      'says so in its own assertion message: "this guard assumes the sunset is ' +
+      'still in force"). Typecheck stays clean at 0 errors either way. ' +
+      'The E2E specs gated in e2e/helpers/product-modules.ts un-skip themselves ' +
+      'with the flag — 46 tests across 5 files — and have not run against a ' +
+      'live app since the sunset, so budget time for them; ' +
       '(6) baseball_player_percentiles is now gated on can_view_baseball_player ' +
       '(migration 20260729000200 SECTION 4, closing a baseline USING(true) that ' +
       'exposed every player\'s academic/athletic ranking). That policy ' +
