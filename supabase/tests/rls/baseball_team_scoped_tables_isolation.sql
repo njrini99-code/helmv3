@@ -92,25 +92,34 @@ BEGIN
 
   -- One row per table for EACH program. Program A's rows prove access is
   -- preserved; Program B's are what must stay invisible to A.
+  --
+  -- NOTE on the creator columns: baseball_tasks.created_by_id,
+  -- baseball_travel_itineraries.created_by and
+  -- baseball_announcements.created_by_id all FK to baseball_coaches.id — NOT
+  -- to auth.users. The first version of this fixture passed auth user ids and
+  -- CI rejected it outright ("violates foreign key constraint
+  -- baseball_tasks_created_by_id_fkey"). Recorded because the two id families
+  -- are both uuids and both plausible at a glance, so the mistake is silent
+  -- until something executes it.
   INSERT INTO public.baseball_tasks (id, team_id, title, status, created_by_id) VALUES
     ('00000000-0000-0000-0000-000000110501', '00000000-0000-0000-0000-000000110103',
-     'Team A task', 'pending', '00000000-0000-0000-0000-000000110101'),
+     'Team A task', 'pending', '00000000-0000-0000-0000-000000110102'),
     ('00000000-0000-0000-0000-000000110502', '00000000-0000-0000-0000-000000110203',
-     'Team B task', 'pending', '00000000-0000-0000-0000-000000110201')
+     'Team B task', 'pending', '00000000-0000-0000-0000-000000110202')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.baseball_travel_itineraries (id, team_id, event_name, created_by) VALUES
     ('00000000-0000-0000-0000-000000110601', '00000000-0000-0000-0000-000000110103',
-     'Team A road trip', '00000000-0000-0000-0000-000000110101'),
+     'Team A road trip', '00000000-0000-0000-0000-000000110102'),
     ('00000000-0000-0000-0000-000000110602', '00000000-0000-0000-0000-000000110203',
-     'Team B road trip', '00000000-0000-0000-0000-000000110201')
+     'Team B road trip', '00000000-0000-0000-0000-000000110202')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.baseball_announcements (id, team_id, title, content, urgency, created_by_id) VALUES
     ('00000000-0000-0000-0000-000000110701', '00000000-0000-0000-0000-000000110103',
-     'Team A notice', 'A body', 'normal', '00000000-0000-0000-0000-000000110101'),
+     'Team A notice', 'A body', 'normal', '00000000-0000-0000-0000-000000110102'),
     ('00000000-0000-0000-0000-000000110702', '00000000-0000-0000-0000-000000110203',
-     'Team B notice', 'B body', 'normal', '00000000-0000-0000-0000-000000110201')
+     'Team B notice', 'B body', 'normal', '00000000-0000-0000-0000-000000110202')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.baseball_developmental_plans (id, coach_id, player_id, team_id, title) VALUES
