@@ -151,19 +151,23 @@ reason this section exists.
 
 | # | Finding | Status |
 |---|---|---|
-| 1 | `baseball_players` roster PII readable by any authenticated user | **CONFIRMED.** Fix authored, not applied — see below. |
-| 2 | `baseball_teams` join_code world-readable | **CONFIRMED.** Same fix. |
-| 3 | `baseball_team_invitations` — every live invite code readable | **CONFIRMED.** Fix authored (`2c2c939cf`), not applied. Seen and deferred by two earlier migrations. |
-| 4 | `baseball_player_percentiles` — every player's academic/athletic ranking readable | **CONFIRMED.** Fix authored (`2855a0646`), not applied. Never previously noticed. |
-| 5 | `baseball_coaches` — every coach's email + phone, readable by any coach | **CONFIRMED, NOT FIXED.** Needs a product decision + a 75-call-site audit. `20260701014000` explicitly reserved it. See §5. |
-| **6** | **`baseball_messages` — every private conversation in the database, READ AND WRITE** | **CONFIRMED. The most severe finding of the run.** Fix authored (`e1011f50b`), not applied. See §6. |
+| 1 | `baseball_players` roster PII readable by any authenticated user | ✅ **CLOSED IN PRODUCTION 2026-07-29 ~17:45Z.** Cross-org player visibility 35 → 16 for a coach, 35 → 1 for a player. |
+| 2 | `baseball_teams` join_code world-readable | ✅ **CLOSED.** Same migration. Join codes visible to a non-member: 13 → 1. |
+| 3 | `baseball_team_invitations` — every live invite code readable | ✅ **CLOSED** (`2c2c939cf`). Gated to `can_manage_roster`. Table is empty in production today, so this is a fix ahead of the exposure rather than after it. |
+| 4 | `baseball_player_percentiles` — every player's academic/athletic ranking readable | ✅ **CLOSED** (`2855a0646`). Also empty in production today. |
+| 5 | `baseball_coaches` — every coach's email + phone, readable by any coach | ⚠️ **STILL OPEN — CONFIRMED, NOT FIXED.** Needs a product decision + a 75-call-site audit. `20260701014000` explicitly reserved it. See §5. **This is now the only unclosed P0 in this document.** |
+| **6** | **`baseball_messages` — every private conversation in the database, READ AND WRITE** | ✅ **CLOSED** (`e1011f50b`). The three self-comparing policies are gone; only the four correctly-correlated ones remain. See §6. |
 | — | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See the retraction section. |
 
-> **#6 is the one to read first.** It is the only finding that is a write hole
-> as well as a read hole, it exposes private coach↔player communications rather
-> than profile data, and its fix is three `DROP POLICY` statements that need no
-> companion app change — so it can be applied independently of everything else
-> in this document.
+> **Five of the six are now closed in production.** They were applied on the
+> owner's explicit instruction on 2026-07-29, after the preconditions were
+> satisfied by execution rather than by reading — see
+> "§ DECISION … APPLIED 2026-07-29" below for the before/after measurements
+> taken as three real users.
+>
+> **#5 is the one left.** Unlike the others it has no authored fix, because
+> tightening it is a product decision (which coaches may see which coaches'
+> contact details) attached to a 75-call-site audit, not a policy swap.
 
 ---
 
@@ -645,9 +649,62 @@ A pgTAP behavioural test would be stronger.
 
 ---
 
-## DECISION: written tonight as a 3-step sequence, NOT applied
+## DECISION: written as a 3-step sequence — ✅ APPLIED 2026-07-29 ~17:45Z
 
-**Written and committed as files (`9c4ad335e`). Applied to nothing.**
+> **This section's original heading was "NOT applied", and the reasoning below
+> for deferring it was correct at the time.** It has since been applied, with
+> the owner awake and giving the instruction explicitly. The deferral reasoning
+> is kept verbatim underneath because it is the argument that has to be made
+> again next time, not a mistake to erase.
+>
+> **What made it safe was satisfying the file's own precondition rather than
+> waiving it.** The precondition read: *"Verify by EXERCISING each flow, not by
+> reading the diff."* I had recorded that I could not satisfy it. That was
+> wrong — Postgres lets you assume the `authenticated` role and set
+> `request.jwt.claims` inside a transaction, which runs the policies exactly as
+> a named real user would, and a `ROLLBACK` makes it free. That technique is the
+> single most useful thing to carry out of this work:
+>
+> ```sql
+> BEGIN;
+>   SET LOCAL ROLE authenticated;
+>   SET LOCAL request.jwt.claims = '{"sub":"<user-uuid>","role":"authenticated"}';
+>   -- every query here is filtered by RLS as that user
+> ROLLBACK;
+> ```
+>
+> Measured before and after, as three real users:
+>
+> | | player (non-member) | coach, 8-player roster | owner, 14-player roster |
+> |---|---|---|---|
+> | teams visible | 13 → **1** | 13 → **1** | 13 → **1** |
+> | join codes visible | 13 → **1** | 13 → **1** | 13 → **1** |
+> | players visible | 35 → **1** | 35 → **16** | 35 → **22** |
+> | own roster / self row | 1 → **1** ✓ | 8 → **8** ✓ | 14 → **14** ✓ |
+> | messages visible | 9 → 9 ✓ | 9 → 9 ✓ | 73 → 73 ✓ |
+> | `resolve_…by_join_code` | 1 → **1** ✓ | 1 → 1 ✓ | 1 → 1 ✓ |
+> | `get_…join_context` | 1 → **1** ✓ | — | — |
+> | public profile view | 13 → 13 ✓ | 13 → 13 ✓ | 13 → 13 ✓ |
+>
+> Cross-org player visibility does not fall to zero because the recruiting
+> backstop admits players who have **opted in** (`recruiting_activated = true` —
+> 9 of 35; all 26 college players correctly excluded). That is the consent model
+> working, not the leak persisting.
+>
+> **Step 2 was already deployed before step 1 was applied** — production is
+> `dpl_B9mv3SVZ` / commit `bd1e625d4` (#1092), which contains all eight
+> repointed RPC call sites. So the intended order was inverted in practice, and
+> `/baseball/join/[code]` had been logging `invitation code resolver failed (is
+> migration 20260729000100 applied?)` in the meantime. Sequencing a pair like
+> this only helps if the deploy is also held.
+>
+> Also verified after applying: `anon` holds **zero** privileges on all five
+> tables; the anon-facing `baseball_teams_public_profile` still returns all 13
+> rows and still carries no `join_code`; and no RLS-denial or recursion error
+> appears in the postgres log (the six ERRORs in the window are all my own
+> probe typos plus one deliberate `Forbidden` test).
+
+**Written and committed as files (`9c4ad335e`).**
 
 The fix ships as a sequenced pair rather than one migration, because the
 tightened policies break three flows that legitimately read across tenants
@@ -730,8 +787,35 @@ it is now pinned rather than remembered.
 - ~~Live `pg_policies` remains unconfirmed~~ — **confirmed 2026-07-29 10:40
   EDT against production.** All six exposures are live and match migration
   source. See § Live verification.
-- Verify step 2 is **deployed**, not merely merged. A merged-but-undeployed
-  change looks identical in `git` and fails identically to no change at all.
+- ~~Verify step 2 is **deployed**, not merely merged.~~ — **confirmed by SHA:
+  production is `dpl_B9mv3SVZ` / `bd1e625d4`, and all eight repointed call
+  sites are present in that commit.** A merged-but-undeployed change looks
+  identical in `git` and fails identically to no change at all, so this was
+  checked against the deployment record rather than the branch.
+- ~~CI proves the SQL against a **fresh** database, not production's actual
+  state.~~ — **now also proven against production**, by role impersonation
+  before and after applying. See the table above.
+
+All three flows the migration header warns about — the ones that fail as
+**empty results rather than errors** — were exercised through the exact RPC the
+app calls, as a real user, after applying:
+
+| Flow | Call | Result |
+|---|---|---|
+| Join by code | `resolve_baseball_team_by_join_code('DEMOHS1')` as a non-member | **1 row** ✓ |
+| Join by code (rest of chain) | `get_baseball_team_join_context(team)` as a non-member | **1 row** ✓ |
+| Roster "Add existing player" | `find_baseball_player_by_email_for_roster(team, <full cross-org email>)` | **1 row** ✓ |
+| — same, enumeration attempt | …`(team, 'sm')` | **0 rows** ✓ (the leak: an unscoped ILIKE over name *and* email used to return strangers' addresses) |
+| — same, wrong address | …`(team, 'nobody@example.invalid')` | **0 rows** ✓ |
+| Cross-org team browse | `baseball_teams_public_profile` as `anon` | **13 rows**, no `join_code` column ✓ |
+
+**What is still genuinely unverified:** every measurement is a *count* taken at
+the data layer. Counts prove the policies admit and deny the right rows for the
+identities probed; they do not prove the UI renders correctly on top of them. No
+browser walked these screens. Production also carries little live traffic right
+now, so "no errors in the log since applying" is weak evidence, not strong. The
+remaining risk is therefore a rendering or call-shape bug in the app, not a
+policy that denies too much — the policies themselves have been executed.
 
 ---
 

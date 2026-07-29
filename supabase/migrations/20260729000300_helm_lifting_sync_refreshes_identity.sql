@@ -71,7 +71,29 @@
 -- changes, no data is deleted. It is idempotent and re-runnable, and reverting
 -- is the DO NOTHING form quoted in the rollback below.
 --
--- ⚠️ NOT APPLIED BY THIS FILE.
+-- ✅ APPLIED TO PRODUCTION 2026-07-29, on the owner's explicit instruction —
+-- and the repair itself was then RUN, because applying this file only makes the
+-- fix possible; a coach clicking "Sync Athletes" is what performs it.
+--
+-- Measured before: 22 baseball athletes, of which 21 had user_id IS NULL and
+-- is_active — every one of them unable to open /lifting/dashboard, permanently,
+-- because DO NOTHING meant the only mechanism that could supply the id refused
+-- to. All 21 mapped to a baseball_players row with a real user_id and were
+-- still on the synced team, so the repair was reachable rather than merely
+-- plausible.
+--
+-- Behaviour verified in a rolled-back transaction BEFORE writing anything: a
+-- deliberately deactivated athlete was still inactive after a sync (is_active
+-- is not resurrected) while unlinked fell 13 -> 0 on that team. A structural
+-- check confirms zero `is_active =` assignments in the body — the word appears
+-- only in the comment explaining its absence, which a naive substring check
+-- does match, so it was re-checked with a regex.
+--
+-- Then run for real, as each org's own lifting coach: Rini University 14 rows,
+-- Demo University 8 rows. After: 22 athletes, 0 unlinked, 22 active (unchanged
+-- — no activation was flipped), and every athlete's user_id equals its source
+-- player's user_id across 22 distinct accounts, so no two athletes were linked
+-- to the same person.
 --
 -- ROLLBACK: re-apply 20260625000030_helm_lifting_accept_invite_rpc.sql's
 -- definition of this function verbatim (the only difference is the two
