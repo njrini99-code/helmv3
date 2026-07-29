@@ -1,6 +1,6 @@
 # DATABASE STATUS
 
-_Updated 2026-07-29 03:10 EDT._
+_Updated 2026-07-29 04:35 EDT._
 
 _Findings are verified from **migration source**; live `pg_policies` state is
 still unconfirmed (Supabase's Postgres connections timed out all night — see
@@ -8,40 +8,53 @@ the ops note at the bottom). Migration source is authoritative for what was
 applied but cannot rule out an out-of-band hotfix, so re-verify live before
 acting._
 
-_The **fix**, unlike the findings, is now verified by execution: CI on PR
+_The **fix**, unlike the findings, is verified by execution: CI on PR
 [#1092](https://github.com/njrini99-code/helmv3/pull/1092) applies both
-migrations to a fresh Postgres and runs the pgTAP suite — `Result: PASS`,
-34/34. It failed three times first, on defects no amount of reading found.
-See "The SQL HAS now been executed" below._
+migrations to a fresh Postgres and runs the pgTAP suites — `Result: PASS`,
+34/34 (tenant isolation) + 19/19 (invitation codes) + 9/9 (Lift Lab sync).
+The tenant-isolation suite failed three times first, on defects no amount of
+reading found. See "The SQL HAS now been executed" below._
 
 ---
 
-## Status of the three P0s in this document
+## Status of the P0s in this document
 
 | # | Finding | Status |
 |---|---|---|
 | 1 | `baseball_players` roster PII readable by any authenticated user | **CONFIRMED.** Fix authored, not applied — see below. |
 | 2 | `baseball_teams` join_code world-readable | **CONFIRMED.** Same fix. |
-| 3 | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See §3. |
+| 3 | `baseball_team_invitations` — every live invite code readable | **CONFIRMED.** Fix authored (`2c2c939cf`), not applied. Seen and deferred by two earlier migrations. |
+| 4 | `baseball_player_percentiles` — every player's academic/athletic ranking readable | **CONFIRMED.** Fix authored (`2855a0646`), not applied. Never previously noticed. |
+| — | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See the retraction section. |
 
 ---
 
-## 🔴 P0 — THREE LIVE CROSS-TENANT DATA EXPOSURES
+## 🔴 P0 — FOUR LIVE CROSS-TENANT DATA EXPOSURES
 
-The most serious findings of the entire run. All three were introduced in the
+The most serious findings of the entire run. All four were introduced in the
 `20260527000000_prod_public_baseline.sql` baseline and **no subsequent
 migration replaces any of them** (verified: grepping `baseball_players_select`
 and `baseball_teams_select` across every later migration returns nothing; the
-invitation policy is explicitly recorded as left in place — see #3).
+invitation policy is explicitly recorded as left in place — see #3; and
+nothing anywhere references the percentiles policy — see #4).
 
-They are one mistake made three times: **a secret stored in a column, guarded
-by a policy that cannot see the query filtering on it.** RLS evaluates a
-predicate per row; it never sees the WHERE-clause literal. So "you may read
-this row if you already know its code" is not expressible as a policy, and
-every attempt to write it as one collapses into "you may read this row" —
-which is what all three did. The fix in each case is the same shape: the
-secret becomes an *argument* to a definer-rights function that compares it
-server-side.
+They are one mistake made four times: **an over-broad SELECT policy on a
+table whose rows belong to somebody.** Three are the sharper variant — a
+secret stored in a column, guarded by a predicate that cannot see the query
+filtering on it. RLS evaluates per row and never sees the WHERE-clause
+literal, so "you may read this row if you already know its code" is not
+expressible as a policy; every attempt collapses into "you may read this
+row". The fix in each case is the same shape: the secret becomes an
+*argument* to a definer-rights function that compares it server-side.
+
+**How #3 and #4 were found matters more than the individual bugs.** Neither
+was in the recon report. #3 came from asking what else used the same
+`.eq('code', …)` shape as the join_code leak; #4 from sweeping the baseline
+for *every* `FOR SELECT … USING (true)` on a baseball table rather than
+stopping at the two that had been reported. The second sweep is thirty
+seconds of grep and it is the one that should have been run first. If a fifth
+exists it is in a policy whose predicate is neither `true` nor missing —
+which is where the next sweep should look.
 
 ### 1. `baseball_players` — every program's roster PII is readable by any logged-in user
 
@@ -121,9 +134,52 @@ matches the writes.
 
 **Fixed in `2c2c939cf`**, folded into the same two migration files rather
 than a new pair, so the apply sequence stays three steps instead of five.
-18 pgTAP assertions; the load-bearing ones are negative (a coach cannot read
-another program's invitation; a rostered non-staff player sees zero while two
-are active).
+19 pgTAP assertions, **passing in CI**; the load-bearing ones are negative (a
+coach cannot read another program's invitation; a rostered non-staff player
+sees zero while two are active).
+
+### 4. `baseball_player_percentiles` — every player's academic/athletic ranking
+
+_Found 2026-07-29 04:15, by sweeping the baseline for the whole family instead
+of stopping at what had been reported._
+
+```sql
+-- supabase/migrations/20260527000000_prod_public_baseline.sql:16710
+CREATE POLICY "Anyone can view percentiles"
+  ON "public"."baseball_player_percentiles"
+  FOR SELECT TO "authenticated" USING (true);
+```
+
+Five baseball SELECT policies shipped as `USING (true)` in the baseline.
+`baseball_coaches_select_all` was later replaced by `20260701014000` and
+`baseball_team_coach_staff_select` by `20260624000050`; #1 and #2 above are
+the other two. **Nothing had ever replaced this one.**
+
+The policy name reads like league-wide benchmark curves, which would
+legitimately be public. The table is not that — `player_id uuid NOT NULL`, one
+row per player, holding `percentile_gpa`, `composite_academic`,
+`composite_athletic`, exit velocity, pitch velocity and sixty time. So every
+authenticated user could pull every player in the database, ranked
+academically and athletically.
+
+Derived rather than raw (a percentile, not the GPA) — the only reason this
+ranks below #1 rather than beside it.
+
+**Fixed in `2855a0646`** (migration B SECTION 4), gated on
+`can_view_baseball_player(player_id)` — the same helper `baseball_players_select`
+uses, so a percentile is visible exactly when the player row behind it is. 9
+pgTAP assertions. Blast radius is near zero: the only readers are
+`recruiting-philosophy.ts`'s two lookups, both of which pass player ids they
+already hold, and both sit behind the recruiting sunset.
+
+⚠️ **Known, deliberate gap:** this policy does not mirror
+`baseball_players_select`'s recruiting-discoverability clause, because that
+helper takes `player_type`/`recruiting_activated` as arguments and a
+percentiles row carries neither — supplying them would need the inline
+subquery that caused the recursion cycles. When recruiting returns, a coach
+browsing a *discoverable* player will see the player and not their
+percentiles. Fail-closed, and recorded as step (6) of
+`PRODUCT_MODULES.recruiting.restore`.
 
 ### ~~3. Staff-invite accept RPC has no email-ownership check~~ — **FALSE. Retracted 2026-07-29 01:20.**
 

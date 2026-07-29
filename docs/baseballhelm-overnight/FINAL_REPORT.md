@@ -16,22 +16,30 @@ stated next to it rather than in a footnote.
 
 ## Read this first
 
-**1. Three live cross-tenant data exposures are still open in production.** Any
+**1. Four live cross-tenant data exposures are still open in production.** Any
 authenticated user on any team can read every other program's roster PII —
-email, phone, GPA, SAT/ACT — every team's secret `join_code`, and every live
-invitation `code`. Live since 2026-05-27. The fix is written, executed in CI,
-and **applied to nothing**. Applying it is the first thing to do, and it is a
+email, phone, GPA, SAT/ACT — every team's secret `join_code`, every live
+invitation `code`, and every player's academic and athletic percentile
+ranking. Live since 2026-05-27. The fix is written, executed in CI, and
+**applied to nothing**. Applying it is the first thing to do, and it is a
 three-step sequence: `DATABASE_STATUS.md` has the reasoning,
 `CURRENT_PRIORITIES.md` has the checklist.
 
-All three are one mistake repeated: a secret in a column, guarded by a policy
-that cannot see the query filtering on it. RLS never sees a WHERE-clause
-literal, so "you may read this row if you already know its code" always
-degrades to "you may read this row". The third — `baseball_team_invitations`,
-policy literally named *"Anyone can view active invitations by code"*, which
-checks no code — had been noticed **twice** by earlier migrations
-(`20260701000000:173`, `20260708141000:86`), described accurately, and left
-open both times as out of scope.
+All four are one mistake repeated: an over-broad SELECT policy on a table
+whose rows belong to somebody. Three are the sharper form — a secret in a
+column guarded by a predicate that cannot see the query filtering on it. RLS
+never sees a WHERE-clause literal, so "you may read this row if you already
+know its code" always degrades to "you may read this row".
+
+**Recon reported two of the four.** The other two came from asking narrower
+questions afterwards: what *else* uses the same `.eq('code', …)` shape
+(→ `baseball_team_invitations`, whose policy is literally named *"Anyone can
+view active invitations by code"* and checks no code — noticed **twice**
+before, at `20260701000000:173` and `20260708141000:86`, described accurately
+both times, and deferred as out of scope), and what *else* in the baseline is
+`FOR SELECT … USING (true)` (→ `baseball_player_percentiles`, never noticed by
+anyone). The second question is one grep. It should have been the first thing
+run, and that is the most portable lesson in this report.
 
 **2. Nothing in this run touched a database.** No migration was applied, no
 `supabase db push`, no `psql`. The only writes were to files and to git.
@@ -92,6 +100,10 @@ Each has tests, and the tests assert behaviour rather than existence.
   indistinguishable from a fake one — the old policy filtered `is_active`
   itself, so the code's own error branches were unreachable and a player with
   a real-but-switched-off link was told it was invalid.
+- **Player percentile rankings are no longer public to every account.** The
+  policy was called "Anyone can view percentiles", which is what you would
+  name a table of league benchmark curves; it sat on a per-player table
+  holding `percentile_gpa` and `composite_academic`.
 - **Three bottom bars stopped rendering 3 tabs instead of 4.**
 - **The public player profile withholds at the server**, not just at the
   renderer.
@@ -104,10 +116,11 @@ Each has tests, and the tests assert behaviour rather than existence.
 ## Production-usable, but not proven
 
 - **The RLS migrations.** CI applies both to a fresh Postgres and passes
-  34/34 pgTAP assertions, plus 9/9 for the Lift Lab sync and 18 more for the
-  invitation fix. That proves they are correct against a database built from
-  migrations — **not** against production's actual state, which may have
-  drifted and could not be read overnight (see the ops note below).
+  34/34 pgTAP assertions for tenant isolation, 19/19 for invitation codes and
+  9/9 for the Lift Lab sync, with 9 more for player percentiles. That proves
+  they are correct against a database built from migrations — **not** against
+  production's actual state, which may have drifted and could not be read
+  overnight (see the ops note below).
 - **The companion app changes.** They work under both the old and new policies
   by construction, but the second half of that is only exercised once migration
   B is applied somewhere.

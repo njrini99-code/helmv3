@@ -7,16 +7,23 @@ _Updated 2026-07-29 04:20 EDT. Worked strictly in order. A priority marked
 
 ## 🔴 THE #1 ITEM FOR THE MORNING (human decision required)
 
-**Three live cross-tenant data exposures**, all the same mistake: a secret
-stored in a column, guarded by a policy that cannot see the query filtering on
-it. All live in prod since the 2026-05-27 baseline, all verified from migration
-source.
+**Four live cross-tenant data exposures**, all the same mistake: an over-broad
+SELECT policy on a table whose rows belong to somebody. All live in prod since
+the 2026-05-27 baseline, all verified from migration source.
 
 | Table | Policy | What leaks |
 |---|---|---|
 | `baseball_players` | `USING (true)` | Every program's roster PII — email, phone, GPA, SAT/ACT |
 | `baseball_teams` | `USING (true)` | Every team's secret `join_code` |
 | `baseball_team_invitations` | `USING (is_active = true)` | Every live invitation `code`, with its `team_id` |
+| `baseball_player_percentiles` | `USING (true)` | Every player's academic + athletic percentile ranking |
+
+**Only two of these were reported by recon.** #3 came from asking what else
+used the same `.eq('code', …)` shape as the join_code leak. #4 came from
+sweeping the baseline for *every* `FOR SELECT … USING (true)` on a baseball
+table instead of stopping at what had been flagged — thirty seconds of grep
+that should have run first, and that turned up a policy named "Anyone can view
+percentiles" sitting on a per-player table nothing had touched since May.
 
 The third is named "Anyone can view active invitations by code" and never
 checks the code. One authenticated account could enumerate every live invite
@@ -35,7 +42,7 @@ single step can take production down:
 |---|---|---|
 | 1 | `20260729000100_..._a_additive.sql` | **None.** Creates six functions, grants EXECUTE. No policy, no revoke, no ALTER. |
 | 2 | *(deploy the companion app changes)* | Works under both old and new policies. |
-| 3 | `20260729000200_..._b_policies.sql` | Swaps the three policies. **This is the one that closes the leaks and the one that can break things.** |
+| 3 | `20260729000200_..._b_policies.sql` | Swaps the four policies. **This is the one that closes the leaks and the one that can break things.** |
 
 The invitation fix was folded into these two files rather than added as a new
 pair, deliberately: a separate A′/B′ would have made the apply sequence five
