@@ -8,6 +8,16 @@ out an out-of-band hotfix. Re-verify against the live DB before acting._
 
 ---
 
+## Status of the three P0s in this document
+
+| # | Finding | Status |
+|---|---|---|
+| 1 | `baseball_players` roster PII readable by any authenticated user | **CONFIRMED.** Fix authored, not applied — see below. |
+| 2 | `baseball_teams` join_code world-readable | **CONFIRMED.** Same fix. |
+| 3 | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See §3. |
+
+---
+
 ## 🔴 P0 — TWO LIVE CROSS-TENANT DATA EXPOSURES
 
 The most serious findings of the entire run. Both were introduced in the
@@ -48,18 +58,75 @@ CREATE POLICY "baseball_teams_select" ON "public"."baseball_teams"
 authenticated user, it defeats the invitation model entirely: anyone with an
 account can enumerate codes and join any program.
 
-### 3. Staff-invite accept RPC has no email-ownership check
+### ~~3. Staff-invite accept RPC has no email-ownership check~~ — **FALSE. Retracted 2026-07-29 01:20.**
 
-`supabase/migrations/20260624000081_baseball_staff_roles_scope_audit.sql:268` —
-any authenticated user holding a leaked invite token can join any team **as
-staff**. Combined with open self-signup, the blast radius is large.
+**This finding was wrong.** The check is present and always has been. Verified
+by reading both migrations that define the function:
+
+```sql
+-- 20260624000062:106 and 20260624000081:312 (identical in both)
+SELECT lower(u.email) INTO v_email FROM auth.users u WHERE u.id = v_uid;
+...
+IF v_email IS NULL OR lower(v_invite.email) <> v_email THEN
+  RETURN jsonb_build_object('ok', false, 'reason', 'wrong_email');
+END IF;
+```
+
+It is enforced at **three** independent layers, not one:
+
+1. **RLS** — `baseball_staff_invitations`' `invitee_select` policy limits an
+   authenticated user to invites addressed to their own email.
+2. **App** — `acceptStaffInviteImpl` (`src/app/baseball/actions/staff.ts:385`)
+   re-checks before calling the RPC, so the UI can render the specific "sent to
+   a different address" message rather than a generic failure.
+3. **RPC** — re-checked inside the `SECURITY DEFINER` body. This is the layer
+   that actually matters: a client calling `supabase.rpc()` directly skips 1
+   and 2 entirely.
+
+Recorded as a retraction rather than deleted, because a P0 that turns out not
+to exist is itself worth knowing — it says the recon pass produced at least one
+false positive at the highest severity, so other findings in this document
+deserve the same "read the source" treatment before anyone acts on them.
+
+Pinned so the correction is durable and the check cannot be quietly removed:
+`src/app/baseball/actions/__tests__/staff-invite-email-ownership.test.ts`
+(9 assertions, including one that fails if a NEW migration redefines the
+function — a later `CREATE OR REPLACE` that copied the body without the check
+is exactly how this class of regression happens).
+
+**Limitation, stated:** those assertions read the migration source, so they
+prove the shipped SQL contains the check, not that the deployed function does.
+A pgTAP behavioural test would be stronger.
 
 ---
 
-## DECISION: prepared tonight, NOT applied unattended
+## DECISION: written tonight as a 3-step sequence, NOT applied
 
-**These fixes are being written and tested, but will not be applied to
-production while the owner is asleep.** Reasoning, recorded so it can be
+**Written and committed as files (`9c4ad335e`). Applied to nothing.**
+
+The fix ships as a sequenced pair rather than one migration, because the
+tightened policies break three flows that legitimately read across tenants
+today — join-by-code, recruiting Discover/Compare, and roster "Add existing
+player" — and all three fail as **empty results, not errors**. Applied alone,
+the symptom would be "the product quietly stopped working", which is harder to
+diagnose than a crash.
+
+| Step | File | Blast radius |
+|---|---|---|
+| 1 | `20260729000100_..._a_additive.sql` | **None.** Three `CREATE FUNCTION`s + `GRANT EXECUTE`. No policy, no revoke, no `ALTER`. Cannot change the result of any existing query. |
+| 2 | *(deploy companion app changes)* | Works under both old and new policies. |
+| 3 | `20260729000200_..._b_policies.sql` | Swaps the two policies, revokes the leftover blanket `GRANT ALL TO anon`. **The leak closes here.** |
+
+Migration A also adds `find_baseball_player_by_email_for_roster()` beyond the
+original scope, because `roster.ts`'s "Add existing player" runs an unscoped
+ILIKE over name *and* email across every player row. Typing `sm` returns
+strangers' email addresses from every program — the leak shipped as a feature,
+and the one call site the policy cannot be tightened around (gating on
+`can_manage_roster` admits every coach, since every coach holds it on their own
+team). The replacement is an exact, case-insensitive email match supplied as an
+argument: a coach can confirm an address they already hold, never enumerate.
+
+**Not applied while the owner is asleep.** Reasoning, recorded so it can be
 challenged:
 
 - This is the **shared Golf + Baseball production database** with live users. A
@@ -75,6 +142,25 @@ challenged:
 
 **This is the #1 item for the morning**, called out at the top of
 `RELEASE_READINESS.md`. A decision deferred deliberately, not an item missed.
+
+### What has NOT been verified about this SQL
+
+Stated plainly because it changes what "reviewed" has to mean in the morning:
+
+- **The SQL has never been executed.** No Postgres has parsed it. plpgsql
+  syntax errors, function-overload ambiguity, and RLS evaluation-order
+  surprises are all unverified beyond static review. Run
+  `supabase/tests/rls/baseball_tenant_isolation.sql` through pgTAP against a
+  real database as the *first* correctness gate, not the last.
+- That pgTAP suite asserts the **post-step-3** state. Running it after step 1
+  only will fail the policy-behaviour groups — a correct failure, not a broken
+  test.
+- **Live `pg_policies` state is unconfirmed.** The Supabase MCP connection
+  timed out three consecutive times during verification, so everything here is
+  read from migration source. That is authoritative for what was *applied*, but
+  cannot rule out an out-of-band hotfix. Re-verify against the live DB first.
+- Verify step 2 is **deployed**, not merely merged. A merged-but-undeployed
+  change looks identical in `git` and fails identically to no change at all.
 
 ---
 
