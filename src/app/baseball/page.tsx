@@ -18,15 +18,20 @@ import {
   GradeStamp,
 } from '@/components/baseball/living-annual';
 import { BaseballMarketingMotionScope } from '@/components/baseball/marketing/BaseballMarketingMotionScope';
+import { resolveBaseballLandingCopy } from '@/lib/baseball/marketing/landing-copy';
 
-const HERO_DESCRIPTION =
-  "BaseballHelm brings the roster, the stat sheet, and the prospect pipeline into one system — built for college, JUCO, high school, and showcase programs, not adapted from someone else's spreadsheet.";
+// Resolved through the product-module registry — while recruiting is sunset,
+// the front door must not lead with it. See landing-copy.ts for the full
+// reasoning and for the original wording, which is preserved there rather than
+// deleted and returns unchanged when the module does.
+const COPY = resolveBaseballLandingCopy();
+const HERO_DESCRIPTION = COPY.heroDescription;
 
 export const metadata: Metadata = {
-  title: 'BaseballHelm — Recruiting & Team Management for College Baseball',
+  title: COPY.metaTitle,
   description: HERO_DESCRIPTION,
   openGraph: {
-    title: 'BaseballHelm — Recruiting & Team Management for College Baseball',
+    title: COPY.metaTitle,
     description: HERO_DESCRIPTION,
     type: 'website',
     url: '/baseball',
@@ -41,7 +46,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BaseballHelm — Recruiting & Team Management for College Baseball',
+    title: COPY.metaTitle,
     description: HERO_DESCRIPTION,
     images: ['/baseball-aerial.webp'],
   },
@@ -89,7 +94,7 @@ export default async function BaseballLandingPage() {
             ink="team"
             eyebrowItems={['THE PRESSBOX', 'TEAM OPS']}
             heading="One roster. One record book."
-            body="Rosters, positions, class years, and status live in one place your whole staff can see — not a spreadsheet six people are editing at once. Add a player once; every surface, from the lineup card to the recruiting file, reads from the same record."
+            body={COPY.rosterBody}
             visual={<RosterVisual />}
           />
 
@@ -102,20 +107,37 @@ export default async function BaseballLandingPage() {
             visual={<StatsVisual />}
           />
 
-          <FeatureSection
-            ink="pursuit"
-            eyebrowItems={['THE WAR ROOM', 'PIPELINE']}
-            heading="From first contact to commitment — tracked."
-            body="Move a prospect from Watchlist to Committed on one board, with 20-80 grades, aging bars, and the full contact history riding along. Nothing falls through a group chat again."
-            visual={<PipelineVisual />}
-          />
+          {/* Third section: the pipeline pitch while recruiting ships, and the
+              practice/readiness pitch while it does not. Exactly one renders —
+              see landing-copy.ts. The alternative, simply dropping the
+              recruiting section, leaves three where there were four and reads
+              like a page with something cut out of it. */}
+          {COPY.showPipelineSection && (
+            <FeatureSection
+              ink="pursuit"
+              eyebrowItems={['THE WAR ROOM', 'PIPELINE']}
+              heading="From first contact to commitment — tracked."
+              body="Move a prospect from Watchlist to Committed on one board, with 20-80 grades, aging bars, and the full contact history riding along. Nothing falls through a group chat again."
+              visual={<PipelineVisual />}
+            />
+          )}
+
+          {COPY.showPracticeSection && (
+            <FeatureSection
+              ink="pursuit"
+              eyebrowItems={['THE DAILY CONTRACT', 'PRACTICE & READINESS']}
+              heading="Every day has a plan — and a record of what happened."
+              body="Publish a practice and every player sees their part of it before they arrive, with their lift for the day attached. Readiness check-ins and attendance land against the same day, so what was planned and what actually happened live in one place."
+              visual={<PracticeVisual />}
+            />
+          )}
 
           <FeatureSection
             ink="team"
             reverse
             eyebrowItems={['THE PASSPORT', 'PLAYER DEVELOPMENT']}
             heading="Every player writes their own record."
-            body="Measurables, video, and development notes fill in as the season happens — a living file a player owns, and a coach or scout can trust, not a static PDF from three years ago."
+            body={COPY.passportBody}
             visual={<PassportVisual />}
           />
 
@@ -247,6 +269,32 @@ function PipelineVisual() {
           Standard 20-80 scouting grades travel with every prospect file.
         </p>
       </div>
+    </PaperCard>
+  );
+}
+
+/** Attendance statuses as `baseball_practice_attendance.status` actually stores them. */
+const ATTENDANCE_STATES = ['Present', 'Limited', 'Absent', 'Excused'];
+
+function PracticeVisual() {
+  return (
+    <PaperCard registrationTick className="p-6 sm:p-8">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4">
+        {ATTENDANCE_STATES.map((state) => (
+          <div key={state} className="flex flex-col gap-2">
+            <Eyebrow ink="pursuit">{state}</Eyebrow>
+            <HairlineRule ink="pursuit" weight={2} />
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <RuledStatLine label="READINESS" value="" ghost />
+        <RuledStatLine label="LIFT" value="" ghost />
+        <RuledStatLine label="PRACTICE" value="" ghost />
+      </div>
+      <p className="mt-6 text-body-sm text-text-tertiary">
+        One day, one record — planned, checked in, and accounted for.
+      </p>
     </PaperCard>
   );
 }

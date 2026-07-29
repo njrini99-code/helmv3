@@ -664,10 +664,21 @@ export function LiftingSettingsClient({
         teamNameSnapshot: selectedTeam.name,
       });
       if (result.success) {
-        setAssignSuccess(`${selectedTeam.name} assigned successfully.`);
+        // assignLiftingTeam seeds the new team's athletes as a best-effort
+        // follow-up. Report which of the three outcomes actually happened —
+        // "assigned successfully" alone left a coach staring at an empty
+        // athlete roster with no idea whether that was a bug or an empty team.
+        const seeded = result.seededAthleteCount;
+        const detail =
+          seeded === null || seeded === undefined
+            ? ' Athletes could not be synced yet — use Sync on the assignment below.'
+            : seeded > 0
+              ? ` ${seeded} athlete${seeded === 1 ? '' : 's'} added to Lift Lab.`
+              : ' No new athletes to add — that roster is empty or already synced.';
+        setAssignSuccess(`${selectedTeam.name} assigned.${detail}`);
         setSelectedTeam(null);
         router.refresh();
-        setTimeout(() => setAssignSuccess(null), 3000);
+        setTimeout(() => setAssignSuccess(null), 6000);
       } else {
         setAssignError(result.error ?? 'Could not assign team. Please try again.');
       }
@@ -682,12 +693,25 @@ export function LiftingSettingsClient({
       const result = await syncOrgAthletes({
         orgId: coachRow.organization_id,
         sport,
+        // This button lives on ONE assignment row, so scope the sync to that
+        // team. Passing sport alone re-synced every team in the sport, and
+        // then reported the org-wide athlete total as if this row had produced
+        // it.
+        teamId,
       });
       setSyncingTeamId(null);
       if (result.success) {
-        setSyncSuccess(`Synced ${result.athleteCount ?? 0} athletes.`);
+        // `athleteCount` is the org-wide total, not this sync's work —
+        // reporting it as "Synced N athletes" overstated every no-op.
+        // `syncedCount` is what this call actually inserted.
+        const added = result.syncedCount ?? 0;
+        setSyncSuccess(
+          added > 0
+            ? `Added ${added} athlete${added === 1 ? '' : 's'}. ${result.athleteCount ?? 0} total in Lift Lab.`
+            : `Already up to date — ${result.athleteCount ?? 0} athlete${(result.athleteCount ?? 0) === 1 ? '' : 's'} in Lift Lab.`,
+        );
         router.refresh();
-        setTimeout(() => setSyncSuccess(null), 3000);
+        setTimeout(() => setSyncSuccess(null), 5000);
       } else {
         setSyncError(result.error ?? 'Could not sync athletes. Please try again.');
       }

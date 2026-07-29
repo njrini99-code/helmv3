@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { ProgramTabs } from '@/components/baseball/program/ProgramTabs';
 import { ProgramRoster } from '@/components/baseball/program/ProgramRoster';
 import { resolveRecruitingViewerAccess } from '@/lib/baseball/recruiting-viewer-access';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -43,7 +44,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${org.name} Baseball | Helm`,
-    description: `View ${org.name}'s baseball program profile, staff, and recruiting information.`,
+    // This string is the search result and the link preview — the first thing
+    // anyone reads about the program, often before the page loads. It must not
+    // promise recruiting information while the module is sunset.
+    description: isRecruitingEnabled()
+      ? `View ${org.name}'s baseball program profile, staff, and recruiting information.`
+      : `View ${org.name}'s baseball program profile, staff, and teams.`,
   };
 }
 

@@ -271,6 +271,18 @@ export function Select({
     onChange?.('');
   };
 
+  /**
+   * `!disabled` is load-bearing, not tidying.
+   *
+   * The clear control used to render INSIDE the trigger <button>. Browsers
+   * suppress pointer events on the entire subtree of a disabled button, so a
+   * disabled select's clear affordance was unclickable for free. Now that the
+   * control is a sibling of the trigger (it has to be — interactive content
+   * cannot nest inside a button), nothing suppresses it, and a disabled select
+   * would have become clearable. This restores the previous behaviour.
+   */
+  const showClear = Boolean(clearable && value && !disabled);
+
   return (
     <div className={cn('w-full', widthSizingClasses(className))} ref={containerRef}>
       {label && (
@@ -300,6 +312,9 @@ export function Select({
               ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
               : 'border-warm-200 hover:border-warm-300',
             isOpen && !error && 'ring-2 ring-primary-500/30 border-primary-500',
+            // Reserve room for the clear control, which is a SIBLING of this
+            // button rather than a child — see the note below it.
+            showClear && 'pr-11',
             className
           )}
         >
@@ -311,18 +326,6 @@ export function Select({
             {selectedOption?.label || placeholder}
           </span>
           <div className="flex items-center gap-1">
-            {clearable && value && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="w-5 h-5 rounded-full flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors cursor-pointer bg-transparent border-0 p-0"
-                aria-label="Clear selection"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
             <IconChevronDown
               size={16}
               className={cn(
@@ -332,6 +335,33 @@ export function Select({
             />
           </div>
         </button>
+
+        {/*
+          The clear control is a SIBLING of the trigger, not a child of it.
+          It used to be rendered inside the trigger <button>, which is invalid
+          HTML — interactive content may not nest inside a <button>. That is
+          not a lint nitpick: during SSR the browser's parser SPLITS the outer
+          button when it meets the inner one, so the DOM it builds differs from
+          the tree React expects, and hydration mismatches (#418/#425).
+          Positioned absolutely over the trigger's right edge, just inside the
+          chevron, with `pr-11` above reserving the space so long labels do not
+          run underneath it.
+
+          `stopPropagation` is still required: the control sits visually on top
+          of the trigger, and without it a click would also toggle the dropdown.
+        */}
+        {showClear && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-9 top-1/2 z-[1] -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors cursor-pointer bg-transparent border-0 p-0"
+            aria-label="Clear selection"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
 
         {/* Dropdown — portaled to document.body so it always escapes any
             overflow-hidden/transformed ancestor (e.g. a settings-page card)
@@ -536,6 +566,9 @@ export function MultiSelect({
     onChange?.([]);
   };
 
+  /** Sibling-not-child, and `!disabled` for the same reasons as Select above. */
+  const showClearAll = value.length > 0 && !disabled;
+
   return (
     <div className={cn('w-full', widthSizingClasses(className))} ref={containerRef}>
       {label && (
@@ -564,6 +597,7 @@ export function MultiSelect({
               ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
               : 'border-warm-200 hover:border-warm-300',
             isOpen && !error && 'ring-2 ring-primary-500/30 border-primary-500',
+            showClearAll && 'pr-11',
             className
           )}
         >
@@ -574,18 +608,6 @@ export function MultiSelect({
             {displayText()}
           </span>
           <div className="flex items-center gap-1">
-            {value.length > 0 && (
-              <button
-                type="button"
-                onClick={handleClearAll}
-                className="w-5 h-5 rounded-full flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors cursor-pointer bg-transparent border-0 p-0"
-                aria-label="Clear all selections"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
             <IconChevronDown
               size={16}
               className={cn(
@@ -595,6 +617,20 @@ export function MultiSelect({
             />
           </div>
         </button>
+
+        {/* Sibling, not child — see the note on Select's clear control above. */}
+        {showClearAll && (
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="absolute right-9 top-1/2 z-[1] -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors cursor-pointer bg-transparent border-0 p-0"
+            aria-label="Clear all selections"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
 
         {/* Dropdown — portaled to document.body (see the matching comment
             in Select above). */}

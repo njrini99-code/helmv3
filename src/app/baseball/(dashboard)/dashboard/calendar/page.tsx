@@ -7,6 +7,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
 import { resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import { computeUpcomingEventsSummary } from '@/lib/baseball/calendar/upcoming-events';
+import { resolveCalendarEmptyState } from '@/lib/baseball/calendar/empty-state';
 
 export const metadata: Metadata = {
   title: 'Calendar | Helm Sports',
@@ -253,13 +254,20 @@ export default async function BaseballCalendarPage() {
   //    state (they're pure recruiters — no team is expected); every other
   //    no-team case (non-college coach, or a player with no team) gets a
   //    distinct "no team assigned" state instead of falling through to the
-  //    generic calendar shell with nothing to show. ──────────────────────────
+  //    generic calendar shell with nothing to show.
+  //
+  //    Routed through resolveCalendarEmptyState so the recruiting sunset is
+  //    applied at read time: while the module is off, a college coach with no
+  //    team gets the generic state rather than a recruiting narrative whose
+  //    "Browse prospects" CTA points at a blocked route. The intent above is
+  //    left intact — it is correct again the day recruiting returns. ─────────
 
   if (!teamId) {
+    const { recruitingEmpty, noTeamEmpty } = resolveCalendarEmptyState(isCollegeCoach);
     return (
       <CalendarFairway
-        recruitingEmpty={isCollegeCoach}
-        noTeamEmpty={!isCollegeCoach}
+        recruitingEmpty={recruitingEmpty}
+        noTeamEmpty={noTeamEmpty}
         events={events}
         teamMembers={teamMembers}
         teamId={teamId}

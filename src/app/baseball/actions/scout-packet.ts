@@ -45,6 +45,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { getAppUrl } from '@/lib/utils/env';
 import {
   assembleScoutPacket,
@@ -412,6 +413,19 @@ async function resolveScoutPacketByTokenImpl(
     recipientLabel: null,
     generatedAt,
   });
+
+  // Product-module gate, checked BEFORE the token is resolved so no packet is
+  // ever assembled while recruiting is sunset (product-modules.ts). This is
+  // the one recruiting surface reachable with NO session at all — a share link
+  // in a college coach's inbox — so the nav gate, the route guards and the
+  // middleware gate all miss it. Left open, a sunset module would still be
+  // serving a player's measurables, video and season line to anyone holding an
+  // old URL.
+  //
+  // Failing here rather than at the page also covers the CSV route
+  // (/baseball/packet/<token>/csv), which calls this same resolver: one gate,
+  // not two that can drift.
+  if (!isRecruitingEnabled()) return fail('module_disabled');
 
   const clean = (token ?? '').trim();
   if (!clean || clean.length > 256) return fail('not_found');

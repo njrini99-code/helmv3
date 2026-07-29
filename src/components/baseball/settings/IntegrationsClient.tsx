@@ -14,25 +14,44 @@
 // import, 4 direct API) and explicitly marks level-4 as pilot-gated/inert. No
 // credential fields are ever shown or sent.
 //
-// Palette: cream/green GolfHelm look reused verbatim. No navy/amber/new palette.
 // No golf vocabulary. Writes re-validate can_manage_settings SERVER-SIDE.
 //
-// 90+ bar improvements over original:
-//  - Edit existing integrations (inline expand — not just add)
-//  - Status toggle: available ↔ disabled (without editing everything)
-//  - framer-motion list entry + form expand with useReducedMotion guard
+// DESIGN MIGRATION (settings unification)
+// ---------------------------------------
+// This screen was the loudest holdout in the settings tree: a hand-rolled
+// `border-b border-warm-200/60` title bar where its sibling (Import Sources)
+// already wore a `SectionMasthead`, legacy `Card variant="glass"` panels, the
+// generic `@/components/ui/empty-state` EmptyState, and status/level pills
+// painted in `primary-*` and `warm-*`. Navigating Imports → Integrations
+// visibly changed design system mid-flow.
+//
+// It now composes from `SettingsChrome` + the Living Annual kit, exactly like
+// Import Sources: `SettingsShell` masthead, `SettingsSection` for the add form,
+// `PaperCard` rows, `SettingsNotice` for policy/capability context,
+// `EditorsLetter` for the empty state, and `InkBadge` for status stamps.
+//
+// PRESENTATION-ONLY: `upsertIntegration` payloads, the level-4 inert rule, the
+// `canManage` gate, every toast string, and all ARIA wiring are untouched.
 // =============================================================================
 
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
-import { IconLink, IconPlus, IconLock, IconPencil } from '@/components/icons';
+import { IconPlus, IconLock, IconPencil } from '@/components/icons';
 import { upsertIntegration } from '@/app/baseball/actions/program-settings';
+import {
+  EditorsLetter,
+  InkBadge,
+  PaperCard,
+} from '@/components/baseball/living-annual';
+import {
+  SettingsNotice,
+  SettingsSection,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
 import type {
   BaseballIntegrationConfig,
   BaseballIntegrationStatus,
@@ -51,13 +70,17 @@ const LEVELS: { value: 1 | 2 | 3 | 4; label: string; hint: string }[] = [
   { value: 4, label: 'Level 4 — Direct API', hint: 'Inert until pilot evidence + explicit vendor permission.' },
 ];
 
-const STATUS_TONE: Record<BaseballIntegrationStatus, string> = {
-  available: 'bg-warm-100 text-warm-600 border-warm-300',
-  configured: 'bg-primary-50 text-primary-700 border-primary-200',
-  // Ink system, not raw amber — "pending pilot" is a warning/caution status
-  // (doctrine: warning -> pursuit soft), inert until pilot evidence lands.
-  pending_pilot: 'bg-pursuit/10 text-pursuit border-pursuit/30',
-  disabled: 'bg-warm-100 text-warm-500 border-warm-300',
+/**
+ * Status stamps in the two-ink lane rather than `primary-*` / `warm-*` pills.
+ * `pending_pilot` stays clay (doctrine: caution -> pursuit, never amber) and
+ * `configured` is the only green — a configured adapter is the good state, and
+ * green is what carries "good" everywhere else in the product.
+ */
+const STATUS_TONE: Record<BaseballIntegrationStatus, 'team' | 'pursuit' | 'neutral'> = {
+  available: 'neutral',
+  configured: 'team',
+  pending_pilot: 'pursuit',
+  disabled: 'neutral',
 };
 
 const STATUS_LABEL: Record<BaseballIntegrationStatus, string> = {
@@ -66,6 +89,13 @@ const STATUS_LABEL: Record<BaseballIntegrationStatus, string> = {
   pending_pilot: 'Pending pilot',
   disabled: 'Disabled',
 };
+
+/** Selected vs unselected chrome for the level + status radio groups. */
+const OPTION_BASE =
+  'rounded-fw-sm border px-3 py-2 text-left text-sm font-medium transition-colors duration-200';
+const OPTION_SELECTED = 'border-grade-plus bg-grade-plus/10 text-text-primary';
+const OPTION_IDLE =
+  'border-[color:var(--hairline)] bg-[var(--paper-canvas)] text-text-secondary hover:border-grade-plus/40';
 
 interface DraftIntegration {
   provider_key: string;
@@ -121,8 +151,8 @@ function IntegrationFormBody({
   const levelHint = LEVELS.find((l) => l.value === draft.integration_level)?.hint;
 
   return (
-    <CardContent className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           label="Provider key"
           value={draft.provider_key}
@@ -137,11 +167,11 @@ function IntegrationFormBody({
         />
       </div>
       <div>
-        <span id="integration-level-label" className="block text-sm font-medium text-warm-700 mb-2">
+        <span id="integration-level-label" className="mb-2 block text-sm font-medium text-text-primary">
           Connection level
         </span>
         <div
-          className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
           role="radiogroup"
           aria-labelledby="integration-level-label"
         >
@@ -155,10 +185,8 @@ function IntegrationFormBody({
               aria-checked={draft.integration_level === l.value}
               onClick={() => setField('integration_level', l.value)}
               className={cn(
-                'text-left rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
-                draft.integration_level === l.value
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-200',
+                OPTION_BASE,
+                draft.integration_level === l.value ? OPTION_SELECTED : OPTION_IDLE,
               )}
             >
               {l.label}
@@ -166,10 +194,10 @@ function IntegrationFormBody({
           ))}
         </div>
         {levelHint && (
-          <p className="text-xs leading-relaxed text-warm-500 mt-2">{levelHint}</p>
+          <p className="mt-2 text-xs leading-relaxed text-text-tertiary">{levelHint}</p>
         )}
         {draft.integration_level === 4 && (
-          <p className="text-xs leading-relaxed text-pursuit mt-1">
+          <p className="mt-1 text-xs leading-relaxed text-[color:var(--notice-error-ink)]">
             Level 4 is saved as pending-pilot and stays inert until pilot
             evidence and explicit vendor permission are in place.
           </p>
@@ -177,7 +205,9 @@ function IntegrationFormBody({
       </div>
       {/* Status picker in edit mode */}
       <div>
-        <span id="integration-status-label" className="block text-sm font-medium text-warm-700 mb-2">Status</span>
+        <span id="integration-status-label" className="mb-2 block text-sm font-medium text-text-primary">
+          Status
+        </span>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="integration-status-label">
           {STATUSES.map((s) => (
             <Button
@@ -189,10 +219,8 @@ function IntegrationFormBody({
               aria-checked={draft.status === s.value}
               onClick={() => setField('status', s.value)}
               className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                draft.status === s.value
-                  ? STATUS_TONE[s.value]
-                  : 'border-warm-200 bg-cream-50 text-warm-500 hover:border-warm-300',
+                'rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-200',
+                draft.status === s.value ? OPTION_SELECTED : OPTION_IDLE,
               )}
             >
               {s.label}
@@ -212,7 +240,7 @@ function IntegrationFormBody({
           {saveLabel}
         </Button>
       </div>
-    </CardContent>
+    </div>
   );
 }
 
@@ -308,212 +336,202 @@ export function IntegrationsClient({ teamName, canManage, integrations }: Props)
   };
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Integrations</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{`${teamName} • adapter contracts`}</p>
-        </div>
-        {canManage && !showForm && (
+    <SettingsShell
+      title="Integrations"
+      lede={`${teamName} • adapter contracts`}
+      actions={
+        canManage && !showForm ? (
           <Button onClick={() => setShowForm(true)} disabled={isPending}>
             <IconPlus size={16} className="mr-1.5" />
             Add integration
           </Button>
-        )}
-      </div>
+        ) : undefined
+      }
+    >
+      <SettingsNotice>
+        Helm does not call vendor APIs directly. These are connection{' '}
+        <span className="font-medium text-text-primary">contracts</span> only — no
+        credentials are ever stored here. Direct-API (level 4) connections stay
+        pending until a pilot proves them out.
+      </SettingsNotice>
 
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-        <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600">
-          Helm does not call vendor APIs directly. These are connection{' '}
-          <span className="font-medium text-warm-800">contracts</span> only — no
-          credentials are ever stored here. Direct-API (level 4) connections stay
-          pending until a pilot proves them out.
-        </div>
+      {!canManage && (
+        <SettingsNotice icon={<IconLock size={16} />}>
+          You can view integrations but only staff with the manage-settings
+          capability can change them.
+        </SettingsNotice>
+      )}
 
-        {!canManage && (
-          <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600 flex items-center gap-2">
-            <IconLock size={16} className="text-warm-400 shrink-0" />
-            You can view integrations but only staff with the manage-settings
-            capability can change them.
-          </div>
-        )}
-
-        {/* Add new integration form */}
-        <AnimatePresence>
-          {canManage && showForm && (
-            <motion.div
-              initial={reduceMotion ? {} : { opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? {} : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
-            >
-              <Card variant="glass">
-                <CardHeader>
-                  <h2 className="font-semibold text-warm-900">New integration</h2>
-                  <p className="text-sm leading-relaxed text-warm-500">
-                    Pick a connection level. No credential fields — contract config only.
-                  </p>
-                </CardHeader>
-                <IntegrationFormBody
-                  draft={draft}
-                  setDraft={setDraft}
-                  isPending={isPending}
-                  onSave={handleSave}
-                  onCancel={() => {
-                    setShowForm(false);
-                    setDraft(EMPTY_DRAFT);
-                  }}
-                  saveLabel="Save integration"
-                />
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {integrations.length === 0 && !showForm ? (
-          <EmptyState
-            variant="card"
-            glass
-            icon={<IconLink size={40} />}
-            title="No integrations configured"
-            description={
-              canManage
-                ? 'Add a connection contract for a stat or device source. Start with an import template (level 1) — direct API is pilot-gated.'
-                : 'No integrations have been configured for this program yet.'
-            }
-            action={
-              canManage
-                ? { label: 'Add integration', onClick: () => setShowForm(true) }
-                : undefined
-            }
-          />
-        ) : (
+      {/* Add new integration form */}
+      <AnimatePresence>
+        {canManage && showForm && (
           <motion.div
-            className="space-y-3"
-            variants={listVariants}
-            initial="hidden"
-            animate="show"
+            initial={reduceMotion ? {} : { opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? {} : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
           >
-            {integrations.map((i) => (
-              <motion.div key={i.id} variants={itemVariants}>
-                <Card variant="glass">
-                  <CardContent className="p-5">
-                    <AnimatePresence>
-                      {editingId === i.id ? (
-                        <motion.div
-                          key="edit"
-                          initial={reduceMotion ? {} : { opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={reduceMotion ? {} : { opacity: 0 }}
-                          transition={{ duration: 0.14 }}
-                        >
-                          <div className="mb-3">
-                            <h3 className="font-semibold text-warm-900">Edit {i.display_name}</h3>
-                          </div>
-                          <IntegrationFormBody
-                            draft={editDraft}
-                            setDraft={setEditDraft}
-                            isPending={isPending}
-                            onSave={() => handleSaveEdit(i.id)}
-                            onCancel={() => setEditingId(null)}
-                            saveLabel="Save changes"
-                          />
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="view"
-                          initial={reduceMotion ? {} : { opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={reduceMotion ? {} : { opacity: 0 }}
-                          transition={{ duration: 0.12 }}
-                          className="flex items-start justify-between gap-4"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-semibold text-warm-900">{i.display_name}</h3>
-                              <span
-                                className={cn(
-                                  'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
-                                  STATUS_TONE[i.status],
-                                )}
-                              >
-                                {STATUS_LABEL[i.status]}
-                              </span>
-                            </div>
-                            <p className="text-sm leading-relaxed text-warm-500 mt-1">
-                              {i.provider_key}
-                            </p>
-                            <p className="text-xs text-warm-500 mt-2">
-                              {LEVELS.find((l) => l.value === i.integration_level)?.label}
-                            </p>
-                            {i.last_synced_at && (
-                              <p className="text-xs text-warm-400 mt-1">
-                                Last sync: {new Date(i.last_synced_at).toLocaleString()}
-                                {i.last_sync_status ? ` · ${i.last_sync_status}` : ''}
-                              </p>
-                            )}
-                          </div>
-                          {canManage && (
-                            <div className="flex items-center gap-1 shrink-0">
-                              {/* Status toggle: enabled / disabled */}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleToggleStatus(i)}
-                                disabled={isPending || i.integration_level === 4}
-                                aria-pressed={i.status !== 'disabled'}
-                                aria-label={
-                                  i.status === 'disabled'
-                                    ? `Enable ${i.display_name}`
-                                    : `Disable ${i.display_name}`
-                                }
-                                title={
-                                  i.integration_level === 4
-                                    ? 'Level 4 is pilot-gated — status is managed via the pilot process'
-                                    : i.status === 'disabled'
-                                      ? 'Enable integration'
-                                      : 'Disable integration'
-                                }
-                                className={cn(
-                                  'rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
-                                  i.status !== 'disabled'
-                                    ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200'
-                                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200 border border-warm-300',
-                                  (isPending || i.integration_level === 4) &&
-                                    'cursor-not-allowed opacity-50',
-                                )}
-                              >
-                                {i.status === 'disabled' ? 'Disabled' : 'Active'}
-                              </Button>
-                              {/* Edit */}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => handleEdit(i)}
-                                disabled={isPending}
-                                aria-label={`Edit ${i.display_name}`}
-                                className={cn(
-                                  'rounded-lg p-2 text-warm-400 transition-colors',
-                                  'hover:bg-warm-100 hover:text-warm-700',
-                                  isPending && 'cursor-not-allowed opacity-50',
-                                )}
-                              >
-                                <IconPencil size={16} />
-                              </Button>
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+            <SettingsSection
+              title="New integration"
+              subtitle="Pick a connection level. No credential fields — contract config only."
+              bodySpacing="none"
+            >
+              <IntegrationFormBody
+                draft={draft}
+                setDraft={setDraft}
+                isPending={isPending}
+                onSave={handleSave}
+                onCancel={() => {
+                  setShowForm(false);
+                  setDraft(EMPTY_DRAFT);
+                }}
+                saveLabel="Save integration"
+              />
+            </SettingsSection>
           </motion.div>
         )}
-      </div>
-    </>
+      </AnimatePresence>
+
+      {integrations.length === 0 && !showForm ? (
+        <EditorsLetter
+          ink="team"
+          title="No integrations configured."
+          body={
+            canManage
+              ? 'Add a connection contract for a stat or device source. Start with an import template (level 1) — direct API is pilot-gated.'
+              : 'No integrations have been configured for this program yet.'
+          }
+          action={
+            canManage ? (
+              <Button size="sm" onClick={() => setShowForm(true)}>
+                Add integration
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <motion.div
+          className="space-y-3"
+          variants={listVariants}
+          initial="hidden"
+          animate="show"
+        >
+          {integrations.map((i) => (
+            <motion.div key={i.id} variants={itemVariants}>
+              <PaperCard className="p-5">
+                <AnimatePresence>
+                  {editingId === i.id ? (
+                    <motion.div
+                      key="edit"
+                      initial={reduceMotion ? {} : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={reduceMotion ? {} : { opacity: 0 }}
+                      transition={{ duration: 0.14 }}
+                    >
+                      <div className="mb-3">
+                        <h3 className="font-annual text-body font-semibold text-text-primary">
+                          Edit {i.display_name}
+                        </h3>
+                      </div>
+                      <IntegrationFormBody
+                        draft={editDraft}
+                        setDraft={setEditDraft}
+                        isPending={isPending}
+                        onSave={() => handleSaveEdit(i.id)}
+                        onCancel={() => setEditingId(null)}
+                        saveLabel="Save changes"
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="view"
+                      initial={reduceMotion ? {} : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={reduceMotion ? {} : { opacity: 0 }}
+                      transition={{ duration: 0.12 }}
+                      className="flex items-start justify-between gap-4"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-annual text-body font-semibold text-text-primary">
+                            {i.display_name}
+                          </h3>
+                          <InkBadge
+                            label={STATUS_LABEL[i.status]}
+                            tone={STATUS_TONE[i.status]}
+                            variant="solid"
+                          />
+                        </div>
+                        <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                          {i.provider_key}
+                        </p>
+                        <p className="mt-2 text-xs text-text-tertiary">
+                          {LEVELS.find((l) => l.value === i.integration_level)?.label}
+                        </p>
+                        {i.last_synced_at && (
+                          <p className="mt-1 text-xs text-text-tertiary">
+                            Last sync: {new Date(i.last_synced_at).toLocaleString()}
+                            {i.last_sync_status ? ` · ${i.last_sync_status}` : ''}
+                          </p>
+                        )}
+                      </div>
+                      {canManage && (
+                        <div className="flex shrink-0 items-center gap-1">
+                          {/* Status toggle: enabled / disabled */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleStatus(i)}
+                            disabled={isPending || i.integration_level === 4}
+                            aria-pressed={i.status !== 'disabled'}
+                            aria-label={
+                              i.status === 'disabled'
+                                ? `Enable ${i.display_name}`
+                                : `Disable ${i.display_name}`
+                            }
+                            title={
+                              i.integration_level === 4
+                                ? 'Level 4 is pilot-gated — status is managed via the pilot process'
+                                : i.status === 'disabled'
+                                  ? 'Enable integration'
+                                  : 'Disable integration'
+                            }
+                            className={cn(
+                              'rounded-fw-sm border px-2.5 py-1.5 text-xs font-medium transition-colors duration-200',
+                              i.status !== 'disabled' ? OPTION_SELECTED : OPTION_IDLE,
+                              (isPending || i.integration_level === 4) &&
+                                'cursor-not-allowed opacity-50',
+                            )}
+                          >
+                            {i.status === 'disabled' ? 'Disabled' : 'Active'}
+                          </Button>
+                          {/* Edit */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleEdit(i)}
+                            disabled={isPending}
+                            aria-label={`Edit ${i.display_name}`}
+                            className={cn(
+                              'rounded-fw-sm p-2 text-text-tertiary transition-colors duration-200',
+                              'hover:bg-grade-plus/10 hover:text-grade-plus',
+                              isPending && 'cursor-not-allowed opacity-50',
+                            )}
+                          >
+                            <IconPencil size={16} />
+                          </Button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </PaperCard>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
+    </SettingsShell>
   );
 }

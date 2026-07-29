@@ -6,6 +6,7 @@ import { test, expect } from '@playwright/test';
 // rendered the Rini demo team's empty pipeline and every assertion failed.
 import { loginAsFixtureCoach } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
+import { RECRUITING_ENABLED, RECRUITING_SUNSET_REASON } from './helpers/product-modules';
 
 /**
  * Baseball Pipeline E2E Tests
@@ -44,6 +45,7 @@ const SEEDED_NOTE_FRAGMENT = 'Seeded E2E pipeline candidate';
 const STAGES = ['watchlist', 'high_priority', 'offer_extended', 'committed', 'uninterested'] as const;
 
 test.describe('Baseball Pipeline - College Coach Flow', () => {
+  test.skip(!RECRUITING_ENABLED, RECRUITING_SUNSET_REASON);
   test.skip(!SEEDED, 'no seeded baseball pipeline fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
   // Tests below mutate the single shared candidate's pipeline stage / notes —
   // run them one at a time so they can't race each other under fullyParallel.
@@ -147,6 +149,7 @@ test.describe('Baseball Pipeline - College Coach Flow', () => {
 });
 
 test.describe('Baseball Pipeline - Keyboard Navigation', () => {
+  test.skip(!RECRUITING_ENABLED, RECRUITING_SUNSET_REASON);
   test.skip(!SEEDED, 'no seeded baseball pipeline fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
   test.beforeEach(async ({ page }) => {

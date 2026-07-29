@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { PageLoading } from '@/components/ui/loading';
 import { IconUsers, IconVideo, IconCalendar, IconEye, IconLayers, IconSearch } from '@/components/icons';
 import { getFullName, formatRelativeTime } from '@/lib/utils';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { useTeams } from '@/hooks/use-teams';
 
 interface OrgRosterEntry {
@@ -172,16 +173,30 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
     );
   });
 
+  const showRecruitingStat = isRecruitingEnabled();
+
   if (loading) {
     return <PageLoading />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+      {/* "Recruiting Active" counts players with recruiting_activated. While
+          the module is sunset nobody can activate — /dashboard/activate
+          redirects — so the number can only sit still or decay, and a KPI that
+          cannot move is worse than one that is absent: it invites a showcase
+          director to go looking for the feature behind it. The column count
+          moves with it so the row stays even rather than leaving a hole. */}
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
+          showRecruitingStat ? 'xl:grid-cols-5' : 'xl:grid-cols-4'
+        }`}
+      >
         <StatCard label="Teams" value={stats.teamCount} icon={IconLayers} />
         <StatCard label="Players" value={stats.playerCount} icon={IconUsers} />
-        <StatCard label="Recruiting Active" value={stats.activeRecruiting} icon={IconEye} />
+        {showRecruitingStat && (
+          <StatCard label="Recruiting Active" value={stats.activeRecruiting} icon={IconEye} />
+        )}
         <StatCard label="Videos" value={stats.videoCount} icon={IconVideo} />
         <StatCard label="Upcoming Events" value={stats.upcomingEvents} icon={IconCalendar} />
       </div>

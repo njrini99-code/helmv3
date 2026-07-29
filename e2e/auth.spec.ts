@@ -176,12 +176,19 @@ test.describe('Authentication', () => {
       // Login
       await loginAsCoach(page);
 
-      // Try to access various protected routes
-      await page.goto('/baseball/dashboard/discover');
-      expect(page.url()).toContain('/discover');
+      // Try to access various protected routes.
+      //
+      // These were /discover and /watchlist, which the recruiting sunset now
+      // redirects — so the assertions failed for a reason that had nothing to
+      // do with authentication, the thing this spec exists to test. Swapped
+      // for two live team-operations surfaces rather than skipped: the claim
+      // ("a signed-in coach reaches protected routes") is route-agnostic, so
+      // it should be made against routes the product actually ships.
+      await page.goto('/baseball/dashboard/roster');
+      expect(page.url()).toContain('/roster');
 
-      await page.goto('/baseball/dashboard/watchlist');
-      expect(page.url()).toContain('/watchlist');
+      await page.goto('/baseball/dashboard/calendar');
+      expect(page.url()).toContain('/calendar');
 
       // Should not redirect to login
       expect(page.url()).not.toContain('/login');

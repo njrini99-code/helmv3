@@ -200,14 +200,73 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
     .select('*', { count: 'exact', head: true })
     .eq('player_id', player.id);
 
-  // Combine player data with separately fetched data
+  // ---------------------------------------------------------------------
+  // REDACT BEFORE SERIALIZING — not just before rendering.
+  //
+  // PlayerProfileClient is a 'use client' component, so everything handed to
+  // it is serialized into the RSC flight payload and shipped inside the HTML
+  // of this page — which is PUBLIC and unauthenticated. Gating a field in JSX
+  // keeps it out of the DOM; it does not keep it out of `curl`.
+  //
+  // The query above is `select('*')` plus a join that pulls every video's
+  // `url`. Spreading that straight into the prop published a player's GPA,
+  // SAT/ACT, email, phone and private video URLs to anyone who viewed source,
+  // regardless of what their privacy settings said. The settings were being
+  // honoured by the renderer and ignored by the transport.
+  //
+  // So the same flags the client reads are applied HERE, and the withheld
+  // fields never leave the server. The client keeps its own gates: they now
+  // decide layout and copy ("withheld" vs "not recorded"), which is a
+  // presentation question, rather than being the only thing standing between
+  // a private field and the public internet.
+  //
+  // `isSelfViewing` is the one bypass, and it is the same one
+  // resolvePublicProfileAccess already grants: a player looking at their own
+  // profile sees their own data.
+  const settings = (playerSettings ?? {}) as Record<string, unknown>;
+  const isSelf = access.reason === 'self';
+  const allow = (key: string, defaultVisible: boolean): boolean =>
+    isSelf || (settings[key] === undefined ? defaultVisible : settings[key] !== false);
+  // Contact fields are opt-IN (=== true), matching the client's own reading.
+  const allowOptIn = (key: string): boolean => isSelf || settings[key] === true;
+
+  const showVideos = allow('show_videos', true);
+  const showStats = allow('show_stats', true);
+  const showDreamSchools = allow('show_dream_schools', true);
+  const showSocial = allow('show_social_links', true);
+
+  /** Academic + physical measurables, gated by show_stats. */
+  const STAT_FIELDS = [
+    'gpa', 'sat_score', 'act_score', 'ncaa_eligibility_id',
+    'height_inches', 'weight_lbs', 'exit_velo', 'pitch_velo',
+    'sixty_time', 'inf_velo', 'of_velo', 'catcher_pop_time',
+  ] as const;
+  const CONTACT_FIELDS = { email: 'show_contact_email', phone: 'show_phone' } as const;
+  const SOCIAL_FIELDS = ['twitter_handle', 'instagram_handle', 'hudl_url', 'video_url'] as const;
+
+  const redacted: Record<string, unknown> = { ...player };
+  // The raw Supabase relation keys are re-exposed below under the names the
+  // client expects. Leaving the originals in the spread would ship every video
+  // URL a second time under `baseball_videos`, defeating the gate three lines
+  // down — which is exactly what happened until a payload test caught it.
+  delete redacted.baseball_videos;
+  delete redacted.baseball_team_members;
+  if (!showStats) for (const f of STAT_FIELDS) redacted[f] = null;
+  for (const [field, flag] of Object.entries(CONTACT_FIELDS)) {
+    if (!allowOptIn(flag)) redacted[field] = null;
+  }
+  if (!showSocial) for (const f of SOCIAL_FIELDS) redacted[f] = null;
+
   // Map Supabase relation keys to the interface keys expected by PlayerProfileClient
   const playerData = {
-    ...player,
-    videos: player.baseball_videos ?? [],
+    ...redacted,
+    // An empty array, not a list with the urls stripped: the client counts
+    // `videos.length` for a tab badge, and a count of hidden videos is itself
+    // a disclosure the player did not consent to.
+    videos: showVideos ? (player.baseball_videos ?? []) : [],
     team_members: player.baseball_team_members ?? [],
     player_settings: playerSettings,
-    recruiting_interests: recruitingInterests || [],
+    recruiting_interests: showDreamSchools ? (recruitingInterests || []) : [],
   } as unknown as Parameters<typeof PlayerProfileClient>[0]['player'];
 
   return (

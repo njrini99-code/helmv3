@@ -85,15 +85,32 @@ async function getDiscoverableTeamPlayerIds(
 
   const orgIds = orgs.map((o) => o.id);
 
-  // Step 2: teams belonging to those orgs
+  // Step 2: teams belonging to those orgs.
+  //
+  // Read through public.baseball_teams_public_profile, not the base table.
+  // Discover is deliberately cross-tenant, but baseball_teams' SELECT policy
+  // scopes rows to teams the caller staffs or plays for — against the base
+  // table this step would resolve to the coach's own program and silently
+  // zero out Discover. The view is security_invoker = false (evaluated as its
+  // owner), exposes only non-sensitive identity columns, and never join_code.
+  //
+  // It also excludes programs with public_profile_mode = 'private'. That is
+  // the intended discovery semantic, not an accident: a program that turned
+  // its public profile off has opted out of being surfaced to other programs,
+  // and its players' own recruiting_activated flag still governs whether they
+  // appear via any other route.
   const { data: teams, error: teamErr } = await supabase
-    .from('baseball_teams')
+    .from('baseball_teams_public_profile')
     .select('id')
     .in('organization_id', orgIds);
 
   if (teamErr || !teams?.length) return [];
 
-  const teamIds = teams.map((t) => t.id);
+  // The view's generated column types are nullable (every column of a view is),
+  // so narrow before feeding the ids back into a filter.
+  const teamIds = teams.map((t) => t.id).filter((id): id is string => Boolean(id));
+
+  if (teamIds.length === 0) return [];
 
   // Step 3: members of those teams → unique player IDs
   const { data: members, error: memberErr } = await supabase
@@ -457,17 +474,24 @@ async function getDiscoverTeamsImpl(
 
   // 2. Get players linked via team_members → teams → organizations (for ALL org types)
   if (allOrgIds.length > 0) {
-    // First get teams for these organizations
+    // First get teams for these organizations. Same reason as
+    // getDiscoverableTeamPlayerIds above: this is a cross-org read, so it goes
+    // through the anon-safe public-profile view rather than baseball_teams,
+    // whose SELECT policy only admits the caller's own teams. Rosters and
+    // head-coach names below still come from the base tables, which have their
+    // own (unchanged) policies.
     const { data: teamsData } = await supabase
-      .from('baseball_teams')
+      .from('baseball_teams_public_profile')
       .select('id, organization_id')
       .in('organization_id', allOrgIds);
 
     if (teamsData && teamsData.length > 0) {
-      const teamIds = teamsData.map((t) => t.id);
+      const teamIds = teamsData
+        .map((t) => t.id)
+        .filter((id): id is string => Boolean(id));
       const teamToOrgMap: Record<string, string> = {};
       teamsData.forEach((t) => {
-        if (t.organization_id) {
+        if (t.id && t.organization_id) {
           teamToOrgMap[t.id] = t.organization_id;
         }
       });

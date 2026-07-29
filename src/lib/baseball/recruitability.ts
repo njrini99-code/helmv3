@@ -32,14 +32,28 @@ async function getDiscoverableTeamPlayerIds(supabase: Supabase): Promise<Set<str
   if (!orgs?.length) return new Set();
 
   const orgIds = orgs.map((o) => o.id);
+
+  // Cross-org read: goes through public.baseball_teams_public_profile, not the
+  // base table. baseball_teams' SELECT policy admits only teams the caller
+  // staffs or plays for, so reading it here would shrink "discoverable" down to
+  // the coach's own roster and deny every legitimate recruit. The view is
+  // security_invoker = false, carries no join_code, and excludes programs whose
+  // public_profile_mode is 'private' — a program that opted out of a public
+  // profile is not a recruiting-discovery target, and this gate must agree with
+  // Discover's own definition of discoverable or the two disagree on the same
+  // player.
   const { data: teams } = await supabase
-    .from('baseball_teams')
+    .from('baseball_teams_public_profile')
     .select('id')
     .in('organization_id', orgIds);
 
   if (!teams?.length) return new Set();
 
-  const teamIds = teams.map((t) => t.id);
+  // View columns are nullable in the generated types; narrow before filtering.
+  const teamIds = teams.map((t) => t.id).filter((id): id is string => Boolean(id));
+
+  if (teamIds.length === 0) return new Set();
+
   const { data: members } = await supabase
     .from('baseball_team_members')
     .select('player_id')

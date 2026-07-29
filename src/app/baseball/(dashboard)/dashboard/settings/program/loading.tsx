@@ -1,68 +1,24 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { SettingsLeafSkeleton } from '@/components/baseball/settings/SettingsLeafSkeleton';
 
-// Static title-bar skeleton, NOT the live <Header> — Header calls
-// useNotifications() unconditionally (before its own redesign-mode branch),
-// opening a realtime Supabase subscription on every route-transition mount
-// of this skeleton for a screen about to render its own header anyway.
-// Shape-matches Header's redesign-mode title bar so there's no layout shift
-// when the real page mounts, mirroring golf's tasks/loading.tsx convention.
+/**
+ * Route-level loading skeleton for Program Settings.
+ *
+ * Previously a bespoke skeleton built from `Card variant="glass"` and
+ * `border-warm-100` — the LEGACY design system — standing in for a page that
+ * had already migrated to the Living Annual kit. The skeleton and the page it
+ * represented were visibly different surfaces, which is the flash this pass
+ * exists to remove.
+ *
+ * It now renders the same `SettingsLeafSkeleton` as every other settings route.
+ * Program Settings is the tallest form in the tree (identity, access, AI,
+ * notifications, retention…), so it opens with four section blocks rather than
+ * the default three.
+ *
+ * Still deliberately NOT the live `<Header>`: Header calls useNotifications()
+ * unconditionally, which would open a realtime Supabase subscription on every
+ * route-transition mount of a skeleton for a screen about to render its own
+ * header anyway.
+ */
 export default function Loading() {
-  return (
-    <>
-      <div className="px-4 pt-6 pb-1 sm:px-6 lg:px-8" role="status" aria-busy="true" aria-live="polite">
-        <span className="sr-only">Loading Program Settings…</span>
-        <Skeleton className="h-8 w-56 rounded-lg" />
-        <Skeleton className="mt-2 h-4 w-80 rounded-lg" />
-      </div>
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-        {/* Program Type section */}
-        <Card variant="glass">
-          <CardContent className="p-6 space-y-4">
-            <Skeleton className="h-5 w-40 rounded-lg" />
-            <Skeleton className="h-4 w-72 rounded-lg" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-16 rounded-xl" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Program Identity section */}
-        <Card variant="glass">
-          <CardContent className="p-6 space-y-4">
-            <Skeleton className="h-5 w-36 rounded-lg" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Skeleton className="h-12 rounded-xl" />
-              <Skeleton className="h-12 rounded-xl" />
-              <Skeleton className="h-12 rounded-xl" />
-              <Skeleton className="h-12 rounded-xl" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Settings toggles section */}
-        <Card variant="glass">
-          <CardContent className="p-6 space-y-4">
-            <Skeleton className="h-5 w-44 rounded-lg" />
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
-                <div className="space-y-1.5">
-                  <Skeleton className="h-4 w-48 rounded-lg" />
-                  <Skeleton className="h-3 w-72 rounded-lg" />
-                </div>
-                <Skeleton className="h-6 w-10 rounded-full flex-shrink-0" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Save button area */}
-        <div className="flex justify-end">
-          <Skeleton className="h-10 w-32 rounded-xl" />
-        </div>
-      </div>
-    </>
-  );
+  return <SettingsLeafSkeleton label="Loading Program Settings…" sections={4} />;
 }

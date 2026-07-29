@@ -66,6 +66,14 @@ import {
   type BaseballNavEntry,
 } from '@/lib/baseball/nav-registry';
 import { getBaseballBottomNavKeys } from '@/lib/baseball/bottom-nav';
+// Product-module gate (recruiting sunset, 2026-07-29 — see
+// src/lib/baseball/product-modules.ts). Checked here IN ADDITION to the
+// per-entry registry filter (nav-registry.ts's isBaseballNavEntryVisible)
+// because the player Recruiting/exposure hub row and the coach Recruiting
+// hub grouping below are SYNTHESIZED by this shell (not individual registry
+// entries pulled straight from getVisibleBaseballNav), so they never passed
+// through that filter in the first place.
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import {
   COACH_HUB_ORDER,
   COACH_HUB_DEFS,
@@ -266,16 +274,24 @@ function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): N
     BASEBALL_MESSAGES_NAV.id,
     toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]),
   );
-  itemsById.set(
-    PLAYER_HUB_ROW_IDS.recruiting,
-    playerHubToNavItem({
-      label: getBaseballTerminology(ctx).exposureNoun,
-      href: HUB_LANDING.playerRecruiting,
-      icon: HUB_ICONS.recruiting as unknown as NavItem['icon'],
-      tabs: PLAYER_RECRUITING_TABS,
-      navKey: PLAYER_HUB_ROW_IDS.recruiting,
-    }),
-  );
+  // Product-module gate: recruiting is sunset for the commercial release
+  // (product-modules.ts). This row is built here directly (not sourced from
+  // getVisibleBaseballNav), so it must consult the module gate itself — the
+  // registry-level `isBaseballNavEntryVisible` gate never runs for it.
+  // Without this check the player sidebar/More-sheet kept showing
+  // Recruiting/exposure after every other recruiting surface was hidden.
+  if (isRecruitingEnabled()) {
+    itemsById.set(
+      PLAYER_HUB_ROW_IDS.recruiting,
+      playerHubToNavItem({
+        label: getBaseballTerminology(ctx).exposureNoun,
+        href: HUB_LANDING.playerRecruiting,
+        icon: HUB_ICONS.recruiting as unknown as NavItem['icon'],
+        tabs: PLAYER_RECRUITING_TABS,
+        navKey: PLAYER_HUB_ROW_IDS.recruiting,
+      }),
+    );
+  }
 
   const primary = PLAYER_RAIL_PRIMARY_IDS.map((id) => itemsById.get(id)).filter(
     (item): item is NavItem => Boolean(item),
@@ -300,7 +316,18 @@ function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): Na
     // shows the hub. Academics is capability/module gated instead, so it is
     // handled by the tab filters and server route guard rather than hard-coded
     // to one program type here.
-    if (hubId === 'recruiting' && !(ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType))) {
+    //
+    // Product-module gate FIRST: recruiting is sunset for the commercial
+    // release (product-modules.ts) — checked ahead of (and independent of)
+    // the program-type check, so a recruiting-ELIGIBLE program type (e.g. a
+    // college coach) still never sees the hub while the module is disabled.
+    // This hub grouping is synthesized here, not sourced from
+    // getVisibleBaseballNav, so it never passed through the registry's own
+    // isBaseballNavEntryVisible module gate.
+    if (
+      hubId === 'recruiting' &&
+      (!isRecruitingEnabled() || !(ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType)))
+    ) {
       continue;
     }
 

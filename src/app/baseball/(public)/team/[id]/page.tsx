@@ -11,6 +11,7 @@ import { Metadata } from 'next';
 import Image from 'next/image';
 import { HelmMark } from '@/components/brand/HelmMark';
 import { resolveRecruitingViewerAccess } from '@/lib/baseball/recruiting-viewer-access';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { cn } from '@/lib/utils';
 import {
   PaperCard,
@@ -172,10 +173,13 @@ export default async function TeamProfilePage({ params }: PageProps) {
     // ------------------------------------------------------------
     interface FullTeamData extends TeamCore {
       logo_url: string | null;
-      join_code: string | null;
       organization: TeamOrganization | null;
     }
 
+    // `join_code` was in this projection and read by nothing — the mapping
+    // below takes only id/name/team_type/description plus the org join. It is
+    // the team's membership secret, so selecting it into a page payload was a
+    // gratuitous exposure with no consumer. Removed.
     const { data: teamData, error: teamError } = await supabase
       .from('baseball_teams')
       .select(`
@@ -184,7 +188,6 @@ export default async function TeamProfilePage({ params }: PageProps) {
         team_type,
         description,
         logo_url,
-        join_code,
         organization:organizations (
           id,
           name,
@@ -204,16 +207,51 @@ export default async function TeamProfilePage({ params }: PageProps) {
     const fullTeam = teamData as unknown as FullTeamData | null;
 
     if (teamError || !fullTeam) {
-      notFound();
-    }
+      // Fall back to the anon-safe view rather than 404ing.
+      //
+      // Once baseball_teams_select is tenant-scoped (migration
+      // 20260729000200) this base-table read returns nothing for a signed-in
+      // coach viewing a program they do not staff — which is most of them, and
+      // is the normal case for a shared link. Without this fallback, being
+      // LOGGED IN would turn a page that works for the public into a 404: the
+      // one visitor guaranteed to have an account gets the worst experience.
+      //
+      // The view is the same source the anon branch uses, so the page degrades
+      // to exactly the public rendering rather than to an error.
+      const { data: publicTeam } = await fromUntyped(supabase, 'baseball_teams_public_profile')
+        .select('id, name, team_type, description, organization_id')
+        .eq('id', id)
+        .maybeSingle();
 
-    team = {
-      id: fullTeam.id,
-      name: fullTeam.name,
-      team_type: fullTeam.team_type,
-      description: fullTeam.description,
-    };
-    org = fullTeam.organization;
+      if (!publicTeam) {
+        notFound();
+      }
+
+      team = {
+        id: publicTeam.id,
+        name: publicTeam.name,
+        team_type: publicTeam.team_type,
+        description: publicTeam.description,
+      };
+
+      if (publicTeam.organization_id) {
+        const { data: publicOrg } = await fromUntyped(supabase, 'organizations_public_profile')
+          .select(
+            'logo_url, description, division, conference, website_url, location_city, location_state',
+          )
+          .eq('id', publicTeam.organization_id)
+          .maybeSingle();
+        org = publicOrg ?? null;
+      }
+    } else {
+      team = {
+        id: fullTeam.id,
+        name: fullTeam.name,
+        team_type: fullTeam.team_type,
+        description: fullTeam.description,
+      };
+      org = fullTeam.organization;
+    }
   }
 
   type OrgFacility = {
@@ -715,13 +753,25 @@ export default async function TeamProfilePage({ params }: PageProps) {
               <PaperCard className="p-6">
                 <Eyebrow as="h3" ink="muted" className="mb-4">Roster Legend</Eyebrow>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <InkBadge label="Verified" tone="team" />
-                    <span className="text-xs text-text-tertiary">Recruiting active</span>
-                  </div>
+                  {/* The "Verified / Recruiting active" row explains a state no
+                      player can be in while the module is sunset — activation
+                      redirects — so it would sit in the legend describing a
+                      badge that never appears above it. Masking itself is
+                      untouched: every public name stays initials-only, which is
+                      the correct default and not something to relax for a demo. */}
+                  {isRecruitingEnabled() && (
+                    <div className="flex items-center gap-3">
+                      <InkBadge label="Verified" tone="team" />
+                      <span className="text-xs text-text-tertiary">Recruiting active</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-text-tertiary">J.S****</span>
-                    <span className="text-xs text-text-tertiary">Privacy protected</span>
+                    <span className="text-xs text-text-tertiary">
+                      {isRecruitingEnabled()
+                        ? 'Privacy protected'
+                        : 'Names are private on public pages'}
+                    </span>
                   </div>
                 </div>
               </PaperCard>

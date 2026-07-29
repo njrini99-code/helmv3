@@ -28,6 +28,10 @@ import type { ComponentType, SVGProps } from 'react';
 import type { BaseballCapability } from './capabilities';
 import type { ActiveBaseballRole } from './active-context-shared';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
+// Value import (not type-only): the module gate runs at call time. Safe here —
+// product-modules.ts is pure/isomorphic with no Supabase, React or env reads,
+// matching this registry's own purity contract.
+import { isHubDisabled, isModuleEnabled, type ProductModuleId } from './product-modules';
 import {
   getProgramVariant,
   orderCoachNav,
@@ -174,6 +178,20 @@ export type BaseballNavIcon = ComponentType<
 export interface BaseballNavEntry {
   /** Stable id (React key, test anchor, telemetry). */
   id: BaseballNavId;
+  /**
+   * Owning PRODUCT MODULE, when this entry belongs to one. Orthogonal to
+   * `hub`: a hub is the coach-sidebar grouping (and nav-manifest asserts no
+   * player entry declares one), whereas a module is a product-level ship
+   * switch that applies to coach and player surfaces alike.
+   *
+   * Coach recruiting entries are already caught by `hub: 'recruiting'`; this
+   * field exists for the PLAYER-side recruiting surfaces (My Analytics, My
+   * Journey, Colleges, Activate Recruiting), which legitimately carry no hub
+   * and would otherwise stay visible while every coach sibling disappeared.
+   *
+   * See src/lib/baseball/product-modules.ts.
+   */
+  module?: ProductModuleId;
   /** Human label rendered in the sidebar + mobile nav. */
   label: string;
   /**
@@ -989,6 +1007,12 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'player',
     requiredCapability: null,
     section: 'primary',
+    // Recruiting-owned: profile-VIEW analytics (who looked at me), not
+    // performance analytics. Tagged via `module` rather than `hub` because
+    // hubs are a COACH grouping concept — nav-manifest asserts no player entry
+    // declares one. Without this tag it stayed visible while every coach-side
+    // sibling was hidden, exactly the asymmetry the sunset must not ship.
+    module: 'recruiting',
   },
 
   // --- Player-only surfaces --------------------------------------------------
@@ -1016,6 +1040,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'player',
     requiredCapability: null,
     section: 'primary',
+    module: 'recruiting',
   },
   {
     id: 'colleges',
@@ -1027,6 +1052,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'player',
     requiredCapability: null,
     section: 'primary',
+    module: 'recruiting',
   },
   {
     id: 'player-lift',
@@ -1062,6 +1088,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'player',
     requiredCapability: null,
     section: 'secondary',
+    module: 'recruiting',
   },
 ] as const;
 
@@ -1121,6 +1148,15 @@ export function isBaseballNavEntryVisible(
   entry: BaseballNavEntry,
   ctx: BaseballNavContext,
 ): boolean {
+  // 0. PRODUCT-MODULE gate — the outermost check, deliberately ahead of role,
+  //    capability and program type. A module the product does not currently
+  //    ship is invisible to EVERYONE: a primary head coach holds every
+  //    capability, and our demo program is a college program (which recruits),
+  //    so neither of the gates below can express "we do not ship this right
+  //    now". See src/lib/baseball/product-modules.ts.
+  if (isHubDisabled(entry.hub)) return false;
+  if (entry.module && !isModuleEnabled(entry.module)) return false;
+
   // 1. Role gate.
   if (entry.role !== 'both' && entry.role !== ctx.role) return false;
 

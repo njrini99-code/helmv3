@@ -1,4 +1,39 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Recruiting sunset (src/lib/baseball/product-modules.ts)
+//
+// Recruiting is DISABLED for the commercial release, so every recruiting
+// pathname now falls through to `null` (no sub-nav strip) exactly like any
+// other unowned route. The module is *preserved*, not deleted — so rather than
+// deleting the pre-sunset assertions we keep them and run them against a
+// mock-enabled module. That gives the restoration path real coverage: if
+// someone flips `PRODUCT_MODULES.recruiting.enabled` back to `true`, these
+// tests prove the hub resolution still works.
+//
+// `withRecruitingEnabled()` is the only thing that flips the flag; the default
+// (module OFF) is what production actually runs.
+// ---------------------------------------------------------------------------
+const moduleFlags = vi.hoisted(() => ({ recruitingEnabled: false }));
+
+vi.mock('@/lib/baseball/product-modules', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/baseball/product-modules')>();
+  return { ...actual, isRecruitingEnabled: () => moduleFlags.recruitingEnabled };
+});
+
+function withRecruitingEnabled<T>(fn: () => T): T {
+  moduleFlags.recruitingEnabled = true;
+  try {
+    return fn();
+  } finally {
+    moduleFlags.recruitingEnabled = false;
+  }
+}
+
+afterEach(() => {
+  moduleFlags.recruitingEnabled = false;
+});
+
 import {
   filterHubTabsByCapabilities,
   resolveActiveHub,
@@ -134,12 +169,26 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     expect(hub?.tabs.some((t) => t.id === 'settings-imports')).toBe(false);
   });
 
-  it('activates the player recruiting hub on exposure routes', () => {
+  it('does NOT activate the player recruiting hub on exposure routes while the module is sunset', () => {
+    // Post-sunset: /analytics is an unowned route for every player, so there
+    // is no hub and no sub-nav strip. (The route itself is independently
+    // closed by requireRecruitingPlayerRoute.)
     const hub = resolveActiveHub({
       pathname: '/baseball/dashboard/analytics',
       role: 'player',
       programType: 'high_school',
     });
+    expect(hub).toBeNull();
+  });
+
+  it('activates the player recruiting hub on exposure routes when the module is re-enabled (restoration path)', () => {
+    const hub = withRecruitingEnabled(() =>
+      resolveActiveHub({
+        pathname: '/baseball/dashboard/analytics',
+        role: 'player',
+        programType: 'high_school',
+      }),
+    );
     expect(hub?.id).toBe('recruiting');
   });
 
@@ -183,32 +232,62 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     expect(COACH_ACADEMICS_TABS.map((t) => t.id)).toEqual(['academics']);
   });
 
-  it('resolves Recruiting>Scouting folds (Watchlist/Compare/Saved Comparisons/Scout Packets/Camps) into the Recruiting hub, Scouting subtab', () => {
-    for (const pathname of [
-      '/baseball/dashboard/watchlist',
-      '/baseball/dashboard/compare',
-      '/baseball/dashboard/comparisons',
-      '/baseball/dashboard/scout-packets',
-      '/baseball/dashboard/camps',
-    ]) {
+  const COACH_RECRUITING_SCOUTING_PATHS = [
+    '/baseball/dashboard/watchlist',
+    '/baseball/dashboard/compare',
+    '/baseball/dashboard/comparisons',
+    '/baseball/dashboard/scout-packets',
+    '/baseball/dashboard/camps',
+  ];
+
+  it('resolves no hub for Recruiting>Scouting folds while the module is sunset — even for a recruiting-eligible program', () => {
+    // The program type (showcase) and capabilities below WOULD have satisfied
+    // the pre-sunset gate. The module flag is the outer gate: it wins.
+    for (const pathname of COACH_RECRUITING_SCOUTING_PATHS) {
       const hub = resolveActiveHub({
         pathname,
         role: 'coach',
         programType: 'showcase',
         capabilities: { can_manage_roster: true, can_export_reports: true },
       });
-      expect(hub?.id, `${pathname} should resolve to the recruiting hub`).toBe('recruiting');
-      expect(hub?.tabs.some((t) => t.id === 'scouting')).toBe(true);
+      expect(hub, `${pathname} should resolve to no hub while recruiting is sunset`).toBeNull();
     }
   });
 
-  it('resolves /dashboard/college-interest into the Recruiting hub, Pipeline subtab', () => {
+  it('resolves Recruiting>Scouting folds (Watchlist/Compare/Saved Comparisons/Scout Packets/Camps) into the Recruiting hub, Scouting subtab when re-enabled (restoration path)', () => {
+    withRecruitingEnabled(() => {
+      for (const pathname of COACH_RECRUITING_SCOUTING_PATHS) {
+        const hub = resolveActiveHub({
+          pathname,
+          role: 'coach',
+          programType: 'showcase',
+          capabilities: { can_manage_roster: true, can_export_reports: true },
+        });
+        expect(hub?.id, `${pathname} should resolve to the recruiting hub`).toBe('recruiting');
+        expect(hub?.tabs.some((t) => t.id === 'scouting')).toBe(true);
+      }
+    });
+  });
+
+  it('resolves no hub for /dashboard/college-interest while the module is sunset', () => {
     const hub = resolveActiveHub({
       pathname: '/baseball/dashboard/college-interest',
       role: 'coach',
       programType: 'college',
       capabilities: {},
     });
+    expect(hub).toBeNull();
+  });
+
+  it('resolves /dashboard/college-interest into the Recruiting hub, Pipeline subtab when re-enabled (restoration path)', () => {
+    const hub = withRecruitingEnabled(() =>
+      resolveActiveHub({
+        pathname: '/baseball/dashboard/college-interest',
+        role: 'coach',
+        programType: 'college',
+        capabilities: {},
+      }),
+    );
     expect(hub?.id).toBe('recruiting');
     expect(hub?.tabs.some((t) => t.id === 'pipeline')).toBe(true);
   });

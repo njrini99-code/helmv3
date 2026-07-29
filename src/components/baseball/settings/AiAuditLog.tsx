@@ -54,11 +54,11 @@ const DISPOSITION_STYLE: Record<
   BaseballAiAuditDisposition,
   { label: string; cls: string }
 > = {
-  approved: { label: 'Approved', cls: 'bg-primary-50 text-primary-700 border-primary-200' },
+  approved: { label: 'Approved', cls: 'border-grade-plus/30 bg-grade-plus/10 text-grade-plus' },
   // Ink system, not raw amber — "pending" is a warning/caution status
   // (doctrine: warning -> pursuit soft), needs-approval, not an error.
   pending: { label: 'Pending', cls: 'bg-pursuit/10 text-pursuit border-pursuit/30' },
-  withheld: { label: 'Withheld', cls: 'bg-warm-100 text-warm-600 border-warm-200' },
+  withheld: { label: 'Withheld', cls: 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary' },
 };
 
 function sourceRefCount(refs: unknown): number {
@@ -104,7 +104,7 @@ function AuditRowItem({
   if (row.guardrail_academic) guardrails.push('academic');
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-warm-200 bg-cream-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span
@@ -115,20 +115,20 @@ function AuditRowItem({
           >
             {disp.label}
           </span>
-          <span className="truncate text-sm font-medium text-warm-900">
+          <span className="truncate text-sm font-medium text-text-primary">
             {row.generator ?? 'AI output'}
           </span>
-          <span className="text-xs text-warm-400">{formatWhen(row.generated_at)}</span>
+          <span className="text-xs text-text-tertiary">{formatWhen(row.generated_at)}</span>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-warm-500">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-tertiary">
           <span>Confidence {confidencePct(row.confidence)}</span>
           <span>{sourceRefCount(row.source_refs)} sources</span>
           <span className="capitalize">{row.visibility.replace('_', ' ')}</span>
           {row.withheld_reason && row.disposition !== 'approved' && (
-            <span className="text-warm-600">{WITHHELD_LABEL[row.withheld_reason]}</span>
+            <span className="text-text-secondary">{WITHHELD_LABEL[row.withheld_reason]}</span>
           )}
           {guardrails.length > 0 && (
-            <span className="text-warm-600">
+            <span className="text-text-secondary">
               Redacted: {guardrails.join(' + ')}
             </span>
           )}
@@ -238,9 +238,9 @@ export function AiAuditLog({ teamId, canManage }: { teamId: string; canManage: b
   const recent = rows ?? [];
 
   return (
-    <div className="rounded-xl border border-warm-200 bg-cream-50 p-3">
+    <div className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-warm-900">AI audit log</h3>
+        <h3 className="font-annual text-sm font-semibold text-text-primary">AI audit log</h3>
         {rows !== null && (
           <Button variant="ghost" size="sm" onClick={load}>
             Refresh
@@ -252,7 +252,7 @@ export function AiAuditLog({ teamId, canManage }: { teamId: string; canManage: b
       {rows === null && !error && (
         <div className="space-y-2" aria-busy="true" aria-label="Loading AI audit log">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="rounded-lg border border-warm-200 bg-cream-50 p-3 flex items-center gap-3">
+            <div key={i} className="flex items-center gap-3 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-3">
               <Skeleton className="h-5 w-16 rounded-md" />
               <Skeleton className="h-4 flex-1 rounded-md" />
               <Skeleton className="h-4 w-24 rounded-md" />
@@ -263,8 +263,8 @@ export function AiAuditLog({ teamId, canManage }: { teamId: string; canManage: b
 
       {/* Error state */}
       {error && (
-        <div className="rounded-lg border border-warm-200 bg-cream-50 p-4 text-center">
-          <p className="text-sm text-warm-600">Could not load the AI audit log.</p>
+        <div className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-4 text-center">
+          <p className="text-sm text-text-secondary">Could not load the AI audit log.</p>
           <Button variant="ghost" size="sm" onClick={load} className="mt-2">
             Try again
           </Button>
@@ -273,9 +273,9 @@ export function AiAuditLog({ teamId, canManage }: { teamId: string; canManage: b
 
       {/* Empty state */}
       {rows !== null && !error && recent.length === 0 && (
-        <div className="rounded-lg border border-dashed border-warm-200 bg-cream-50 p-4 text-center">
-          <p className="text-sm text-warm-600">No AI activity yet.</p>
-          <p className="mt-0.5 text-xs text-warm-500">
+        <div className="rounded-fw-md border border-dashed border-[color:var(--hairline)] bg-[var(--paper)] p-4 text-center">
+          <p className="text-sm text-text-secondary">No AI activity yet.</p>
+          <p className="mt-0.5 text-xs text-text-tertiary">
             When CoachHelm generates signals, each one is logged here with its
             governance outcome.
           </p>
@@ -317,7 +317,7 @@ export function AiAuditLog({ teamId, canManage }: { teamId: string; canManage: b
       {rows !== null && !error && recent.length > 0 && (
         <div>
           {pending.length > 0 && (
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-warm-500">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
               Recent activity
             </p>
           )}

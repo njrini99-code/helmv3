@@ -1,4 +1,33 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Recruiting sunset (src/lib/baseball/product-modules.ts)
+//
+// While the module is disabled, requireRecruiting*Route redirects EVERY caller
+// regardless of coach_type / program_type / player_type — the module flag is
+// the outermost gate. The pre-sunset behaviour (the type gates themselves) is
+// preserved, not deleted: those assertions now run under a mock-enabled
+// module so the restoration path stays covered.
+// ---------------------------------------------------------------------------
+const moduleFlags = vi.hoisted(() => ({ recruitingEnabled: false }));
+
+vi.mock('@/lib/baseball/product-modules', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/baseball/product-modules')>();
+  return { ...actual, isRecruitingEnabled: () => moduleFlags.recruitingEnabled };
+});
+
+async function withRecruitingEnabled<T>(fn: () => Promise<T>): Promise<T> {
+  moduleFlags.recruitingEnabled = true;
+  try {
+    return await fn();
+  } finally {
+    moduleFlags.recruitingEnabled = false;
+  }
+}
+
+afterEach(() => {
+  moduleFlags.recruitingEnabled = false;
+});
 
 const mocks = vi.hoisted(() => ({
   getSessionProfile: vi.fn(),
@@ -112,7 +141,22 @@ describe('requireRecruitingPlayerRoute (player recruiting-hub gate)', () => {
     ).rejects.toThrow('REDIRECT:/baseball/dashboard/command-center');
   });
 
-  it('flags isCollegePlayer=true for a college player, WITHOUT redirecting (caller renders the honest state)', async () => {
+  it('redirects EVERY player away while the recruiting module is sunset, not just college players', async () => {
+    for (const player_type of ['college', 'high_school', 'juco', 'showcase']) {
+      mocks.getSessionProfile.mockResolvedValue({
+        userId: 'u1',
+        role: 'player',
+        coach: null,
+        player: { id: 'p1', player_type },
+      });
+
+      await expect(requireRecruitingPlayerRoute(), player_type).rejects.toThrow(
+        'REDIRECT:/baseball/player/today',
+      );
+    }
+  });
+
+  it('flags isCollegePlayer=true for a college player, WITHOUT redirecting (caller renders the honest state) — restoration path', async () => {
     const session = {
       userId: 'u1',
       role: 'player',
@@ -121,27 +165,31 @@ describe('requireRecruitingPlayerRoute (player recruiting-hub gate)', () => {
     };
     mocks.getSessionProfile.mockResolvedValue(session);
 
-    await expect(requireRecruitingPlayerRoute()).resolves.toEqual({
-      session,
-      isCollegePlayer: true,
+    await withRecruitingEnabled(async () => {
+      await expect(requireRecruitingPlayerRoute()).resolves.toEqual({
+        session,
+        isCollegePlayer: true,
+      });
     });
   });
 
-  it('flags isCollegePlayer=false for high_school/juco/showcase players', async () => {
-    for (const player_type of ['high_school', 'juco', 'showcase']) {
-      const session = {
-        userId: 'u1',
-        role: 'player',
-        coach: null,
-        player: { id: 'p1', player_type },
-      };
-      mocks.getSessionProfile.mockResolvedValue(session);
+  it('flags isCollegePlayer=false for high_school/juco/showcase players — restoration path', async () => {
+    await withRecruitingEnabled(async () => {
+      for (const player_type of ['high_school', 'juco', 'showcase']) {
+        const session = {
+          userId: 'u1',
+          role: 'player',
+          coach: null,
+          player: { id: 'p1', player_type },
+        };
+        mocks.getSessionProfile.mockResolvedValue(session);
 
-      await expect(requireRecruitingPlayerRoute()).resolves.toEqual({
-        session,
-        isCollegePlayer: false,
-      });
-    }
+        await expect(requireRecruitingPlayerRoute()).resolves.toEqual({
+          session,
+          isCollegePlayer: false,
+        });
+      }
+    });
   });
 });
 
@@ -151,7 +199,7 @@ describe('getActiveProgramType team_type fallback (Discover redirect-guard fix)'
     mocks.getActiveBaseballContext.mockResolvedValue({ activeTeamId: 'team-1' });
   });
 
-  it('requireRecruitingCoachRoute allows a college coach when program_type is unset but team_type is set (the exact "left unset" scenario documented in nav-context.ts)', async () => {
+  it('requireRecruitingCoachRoute redirects a college coach while the module is sunset, even though the program-type gate would pass', async () => {
     const session = {
       userId: 'u1',
       role: 'coach',
@@ -163,7 +211,26 @@ describe('getActiveProgramType team_type fallback (Discover redirect-guard fix)'
       fakeSupabaseClient({ program_type: null, team_type: 'college' }),
     );
 
-    await expect(requireRecruitingCoachRoute()).resolves.toEqual(session);
+    await expect(requireRecruitingCoachRoute()).rejects.toThrow(
+      'REDIRECT:/baseball/dashboard/command-center',
+    );
+  });
+
+  it('requireRecruitingCoachRoute allows a college coach when program_type is unset but team_type is set (the exact "left unset" scenario documented in nav-context.ts) — restoration path', async () => {
+    const session = {
+      userId: 'u1',
+      role: 'coach',
+      coach: { id: 'c1', coach_type: 'college' },
+      player: null,
+    };
+    mocks.getSessionProfile.mockResolvedValue(session);
+    mocks.createClient.mockResolvedValue(
+      fakeSupabaseClient({ program_type: null, team_type: 'college' }),
+    );
+
+    await withRecruitingEnabled(async () => {
+      await expect(requireRecruitingCoachRoute()).resolves.toEqual(session);
+    });
   });
 
   it('requireShowcaseOrgRoute falls back to team_type so a coach whose coach_type alone would NOT satisfy the gate is still let through via the resolved program type', async () => {

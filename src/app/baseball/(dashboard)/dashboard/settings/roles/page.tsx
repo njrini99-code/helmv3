@@ -9,18 +9,29 @@
 // the staff surface (linked below) — this page makes the role taxonomy visible.
 // Auth + active-team + viewer caps resolve inside getRoleTemplates
 // (withBaseballAction). COACH route.
+//
+// The masthead had already migrated to the Living Annual kit, but the body was
+// still legacy `Card variant="glass" | "interactive"` painted in `warm-*` /
+// `cream-*` / `primary-*` — so the top half and the bottom half of one page were
+// two different design systems. Both halves now compose from `SettingsChrome`,
+// the same recipe the hub and Program Settings render.
+//
+// PRESENTATION-ONLY: the data read, the `viewerCanInviteStaff` gate, and both
+// destination hrefs are untouched.
 // =============================================================================
 
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { getRoleTemplates } from '@/app/baseball/actions/roles-permissions';
 import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
 import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { IconUsers, IconChevronRight, IconShield } from '@/components/icons';
-import { SectionMasthead } from '@/components/baseball/living-annual';
+import { IconUsers, IconShield } from '@/components/icons';
+import {
+  SettingsNavCard,
+  SettingsSection,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
 
 export const metadata = {
   title: 'Roles | Helm Baseball',
@@ -55,92 +66,47 @@ export default async function RolesPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      {/* Shared LA masthead — same component + eyebrow grammar as Settings and
-          Program Settings (ui-migration-map settings row). */}
-      <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Roles" ink="team">
-        <p className="font-annual text-body-sm text-text-secondary">
-          {`Role templates for ${data.programLabel} programs`}
-        </p>
-      </SectionMasthead>
-
-      <div className="space-y-6">
-        <Card variant="glass">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <span className="text-warm-600">
-                <IconUsers size={20} />
+    <SettingsShell
+      title="Roles"
+      lede={`Role templates for ${data.programLabel} programs`}
+    >
+      <SettingsSection
+        icon={<IconUsers size={18} />}
+        title="Role templates"
+        subtitle={`These roles fit a ${data.programLabel.toLowerCase()} program. Roles are templates — actual access is governed by capabilities, which are enforced on the server.`}
+        bodySpacing="none"
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {data.roleTemplates.map((role) => (
+            <div
+              key={role}
+              className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-4 py-3"
+            >
+              <span className="font-annual text-body font-medium text-text-primary">
+                {titleize(role)}
               </span>
-              <div>
-                <h2 className="font-semibold text-warm-900">Role templates</h2>
-                <p className="text-sm leading-relaxed text-warm-500">
-                  These roles fit a {data.programLabel.toLowerCase()} program. Roles
-                  are templates — actual access is governed by capabilities, which
-                  are enforced on the server.
-                </p>
-              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {data.roleTemplates.map((role) => (
-                <div
-                  key={role}
-                  className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3"
-                >
-                  <span className="font-medium text-warm-900">{titleize(role)}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
+      </SettingsSection>
 
-        {/* Capabilities reference */}
-        <Link href="/baseball/dashboard/settings/permissions">
-          <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                    <IconShield size={24} className="text-primary-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-warm-900 mb-1">Capabilities</h3>
-                    <p className="text-sm leading-relaxed text-warm-500">
-                      See exactly what each capability group controls.
-                    </p>
-                  </div>
-                </div>
-                <IconChevronRight size={20} className="text-warm-400" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* Capabilities reference */}
+      <SettingsNavCard
+        href="/baseball/dashboard/settings/permissions"
+        label="Capabilities"
+        description="See exactly what each capability group controls."
+        icon={<IconShield size={20} />}
+      />
 
-        {/* Assignment lives on the staff surface */}
-        {data.viewerCanInviteStaff && (
-          <Link href="/baseball/dashboard/settings/staff">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                      <IconUsers size={24} className="text-primary-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-warm-900 mb-1">Assign staff roles</h3>
-                      <p className="text-sm leading-relaxed text-warm-500">
-                        Invite staff and grant capabilities on the Staff settings page.
-                      </p>
-                    </div>
-                  </div>
-                  <IconChevronRight size={20} className="text-warm-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-      </div>
-    </div>
+      {/* Assignment lives on the staff surface */}
+      {data.viewerCanInviteStaff && (
+        <SettingsNavCard
+          href="/baseball/dashboard/settings/staff"
+          label="Assign staff roles"
+          description="Invite staff and grant capabilities on the Staff settings page."
+          icon={<IconUsers size={20} />}
+        />
+      )}
+    </SettingsShell>
   );
 }

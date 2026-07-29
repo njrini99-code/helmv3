@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { loginAsCoach } from './helpers/auth';
 import { waitForPageLoad, waitForElement } from './helpers/common';
+import { RECRUITING_ENABLED, RECRUITING_SUNSET_REASON } from './helpers/product-modules';
 
 test.describe('Watchlist Management', () => {
+  test.skip(!RECRUITING_ENABLED, RECRUITING_SUNSET_REASON);
   test.beforeEach(async ({ page }) => {
     // Login as coach
     await loginAsCoach(page);

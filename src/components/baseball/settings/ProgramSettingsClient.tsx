@@ -61,14 +61,26 @@ import {
   listProgramVariants,
 } from '@/lib/baseball/program-type-variants';
 import { AiAuditLog } from '@/components/baseball/settings/AiAuditLog';
+// Eyebrow + HairlineRule are still used directly for the sub-headings NESTED
+// inside section bodies (brand, notification-type groups) — SettingsSection
+// owns the section-level header, not these.
 import {
   SectionMasthead,
-  PaperCard,
-  HairlineRule,
-  Eyebrow,
   EditorsLetter,
-  Reveal,
+  Eyebrow,
+  HairlineRule,
 } from '@/components/baseball/living-annual';
+// `SectionCard` and `Field` used to be defined privately in this file. They are
+// now the settings-wide recipes (SettingsChrome.tsx) that the hub, Roles,
+// Permissions and every other settings screen also render, aliased back to
+// their local names so no call site below changed. Keeping a private copy is
+// how the tree drifted into three design systems in the first place.
+import {
+  SettingsSection as SectionCard,
+  SettingsField as Field,
+  SettingsNotice,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
 import type {
   BaseballProgramType,
   BaseballProgramSettings,
@@ -76,6 +88,7 @@ import type {
   BaseballNotificationType,
 } from '@/lib/types/baseball-settings';
 import { BASEBALL_NOTIFICATION_TYPES } from '@/lib/types/baseball-settings';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import type {
   BaseballProgramIdentityUpdate,
   BaseballPublicProfileMode,
@@ -119,92 +132,10 @@ function ToggleRow({
   );
 }
 
-// -----------------------------------------------------------------------------
-// Labelled text/select field. The label/hint chrome uses the kit's ink-primary
-// / ink-tertiary text tokens; the control passed as `children` (Input/Select)
-// is a form primitive and is never touched here.
-// -----------------------------------------------------------------------------
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium text-text-primary">{label}</span>
-      {hint && <span className="block text-xs text-text-tertiary mb-1.5">{hint}</span>}
-      {!hint && <span className="block mb-1.5" />}
-      {children}
-    </label>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// SectionCard — refactored ONCE onto the Living Annual kit. Every one of the
-// page's ten sections composes from this: a PaperCard body, an icon badge in
-// team ink, an Eyebrow + serif title, a green HairlineRule, and a mount-based
-// Reveal settle (capped stagger — see below).
-// -----------------------------------------------------------------------------
-
-function SectionCard({
-  icon,
-  eyebrow,
-  title,
-  subtitle,
-  children,
-  anchorId,
-  index = 0,
-}: {
-  icon: React.ReactNode;
-  eyebrow?: string;
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  /**
-   * Optional stable anchor so the dedicated spec routes that fold into this
-   * page (player-access, guardian-access, showcase-profile, ai,
-   * notifications, data-retention) can deep-link via `#anchor`. Lives on the
-   * OUTER wrapper — not `PaperCard`, which doesn't forward `id` — so the
-   * browser's native fragment scroll still lands here; `scroll-mt-24` keeps
-   * the section clear of the sticky masthead on jump.
-   */
-  anchorId?: string;
-  index?: number;
-}) {
-  // Reveal on MOUNT (the kit's <Reveal>, never `whileInView`): a settings form
-  // is one tall document, and gating each card behind viewport-intersection
-  // left every section below the fold stuck at opacity:0 until scrolled to —
-  // the dashboard's inner-scroll shell breaks IntersectionObserver against the
-  // document viewport (see Reveal.tsx). Stagger is capped at 3 steps (~180ms
-  // max) so a ten-section form still settles briskly rather than crawling.
-  return (
-    <div id={anchorId} className={anchorId ? 'scroll-mt-24' : undefined}>
-      <Reveal staggerIndex={Math.min(index, 3)}>
-        <PaperCard className="p-6">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-fw-md border border-[color:var(--hairline)] bg-grade-plus/10 text-grade-plus">
-              {icon}
-            </span>
-            <div className="min-w-0">
-              {eyebrow && <Eyebrow className="mb-1">{eyebrow}</Eyebrow>}
-              <h2 className="font-annual text-h3 font-semibold text-text-primary">{title}</h2>
-              {subtitle && (
-                <p className="mt-1 text-sm leading-relaxed text-text-secondary">{subtitle}</p>
-              )}
-            </div>
-          </div>
-          <HairlineRule ink="team" className="my-4" />
-          <div className="space-y-3">{children}</div>
-        </PaperCard>
-      </Reveal>
-    </div>
-  );
-}
+// `Field` and `SectionCard` now live in SettingsChrome.tsx (imported above as
+// aliases). Their bodies moved verbatim — same PaperCard, same team-ink badge,
+// same Eyebrow + HairlineRule, same mount-based <Reveal> with the capped
+// 3-step stagger and the same `anchorId`/`scroll-mt-24` deep-link contract.
 
 // -----------------------------------------------------------------------------
 // Main
@@ -338,30 +269,25 @@ export function ProgramSettingsClient({ data }: Props) {
 
   return (
     <LazyMotion features={loadFeatures}>
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <SectionMasthead
-          eyebrow="THE PRESSBOX · SETTINGS"
-          title="Program Settings"
-          ink="team"
-          actions={
-            canEdit ? (
-              <Button onClick={handleSave} isLoading={isPending} disabled={!hasUnsaved}>
-                {hasUnsaved ? 'Save Changes' : 'Saved'}
-              </Button>
-            ) : undefined
-          }
-        >
-          <p className="text-sm text-text-secondary">
-            {data.teamName} · {data.variant.label} mode
-          </p>
-        </SectionMasthead>
-
+      <SettingsShell
+        title="Program Settings"
+        lede={`${data.teamName} · ${data.variant.label} mode`}
+        actions={
+          canEdit ? (
+            <Button onClick={handleSave} isLoading={isPending} disabled={!hasUnsaved}>
+              {hasUnsaved ? 'Save Changes' : 'Saved'}
+            </Button>
+          ) : undefined
+        }
+      >
         {!canEdit && (
-          <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-4 text-sm text-text-secondary">
-            <IconLock size={16} className="shrink-0 text-text-tertiary" />
+          // The read-only capability gate reads as the SAME strip on every
+          // settings screen now (Imports, Integrations, Team, Season all had
+          // their own hand-rolled version of this sentence in a different box).
+          <SettingsNotice icon={<IconLock size={16} />}>
             You can view these settings but only staff with the manage-settings
             capability can change them.
-          </div>
+          </SettingsNotice>
         )}
 
         {/* --- PROGRAM IDENTITY ---------------------------------------------- */}
@@ -618,13 +544,25 @@ export function ProgramSettingsClient({ data }: Props) {
             disabled={!canEdit}
             onChange={(v) => patch('travel_module_enabled', v)}
           />
-          <ToggleRow
-            label="Recruiting / exposure"
-            description={term.exposureNoun}
-            checked={settings.recruiting_exposure_enabled}
-            disabled={!canEdit}
-            onChange={(v) => patch('recruiting_exposure_enabled', v)}
-          />
+          {/* Recruiting / exposure. Hidden while the module is sunset — the
+              toggle would still write recruiting_exposure_enabled, but every
+              surface that reads it (player-access-policy.ts) belongs to
+              recruiting, so flipping it changes nothing anyone can see. A
+              control that does nothing is worse than an absent one: on a
+              settings page it reads as broken, and it is exactly the kind of
+              thing a coach files a ticket about.
+
+              The stored value is untouched, so a program's existing choice
+              survives and comes back with the module. */}
+          {isRecruitingEnabled() && (
+            <ToggleRow
+              label="Recruiting / exposure"
+              description={term.exposureNoun}
+              checked={settings.recruiting_exposure_enabled}
+              disabled={!canEdit}
+              onChange={(v) => patch('recruiting_exposure_enabled', v)}
+            />
+          )}
           <ToggleRow
             label="Public player profiles"
             checked={settings.public_profiles_enabled}
@@ -820,7 +758,13 @@ export function ProgramSettingsClient({ data }: Props) {
                   value={settings.ai_confidence_threshold}
                   disabled={!canEdit || !settings.ai_enabled}
                   onChange={(e) => patch('ai_confidence_threshold', Number(e.target.value))}
-                  className="flex-1 cursor-pointer accent-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-70"
+                  // The only control left on this page still painting itself
+                  // with the legacy `accent-primary-600` on a white ring-offset,
+                  // while its focus ring already read team ink — so the thumb
+                  // and its own ring disagreed. Both now read `grade-plus` over
+                  // paper, matching the identical range rows on Coaching
+                  // Philosophy.
+                  className="flex-1 cursor-pointer accent-grade-plus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--paper)] disabled:cursor-not-allowed disabled:opacity-70"
                   aria-label="AI confidence threshold"
                   aria-valuetext={`${Math.round(settings.ai_confidence_threshold * 100)} percent`}
                 />
@@ -1177,7 +1121,7 @@ export function ProgramSettingsClient({ data }: Props) {
             </Button>
           </div>
         )}
-      </div>
+      </SettingsShell>
     </LazyMotion>
   );
 }

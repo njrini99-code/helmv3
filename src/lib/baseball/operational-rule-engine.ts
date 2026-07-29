@@ -52,6 +52,7 @@ import type {
   BaseballSignalSourceRef,
 } from '@/lib/types/baseball-signals';
 import type { SourceLayer } from './read-models/legacy-stat-adapters';
+import { isRecruitingEnabled } from './product-modules';
 
 // -----------------------------------------------------------------------------
 // Rule identity — the 8 deterministic categories from V5 System 1 that the AI
@@ -1080,6 +1081,28 @@ export function runOperationalRuleEngine(
   const byRule: Record<string, number> = {};
 
   for (const rule of rules) {
+    // PRODUCT-MODULE GATE — the outermost one, checked before the rule runs.
+    //
+    // Two rules (profile_incomplete, missing_video) already gate on the
+    // player's recruiting opt-in, which was the right and only gate while the
+    // module shipped. It is not sufficient now: a player who activated BEFORE
+    // the sunset still carries recruiting_activated = true, so both rules keep
+    // firing and keep telling them to finish a recruiting profile because
+    // "incomplete profiles surface lower to recruiters" — advice about a module
+    // they cannot reach, arriving as a task in their inbox.
+    //
+    // Keyed on ownerRole rather than category deliberately: missing_video is
+    // owned by recruiting but filed under category 'video_evidence', so a
+    // category check would gate one rule and miss the other. Keying on the
+    // owner also means a future recruiting rule is covered the day it is added
+    // — the inventory does not have to be maintained twice.
+    //
+    // Skipped rules are omitted from `byRule` rather than reported as 0. Zero
+    // would claim the rule ran and found nothing, which is a different fact.
+    if (rule.ownerRole === 'recruiting' && !isRecruitingEnabled()) {
+      continue;
+    }
+
     let emitted: RuleSignal[] = [];
     try {
       emitted = rule.evaluate(facts, cfg);

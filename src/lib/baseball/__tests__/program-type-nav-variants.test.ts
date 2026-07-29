@@ -31,6 +31,7 @@ import {
   type BaseballCapabilityMap,
 } from '../capabilities';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
+import { isHubDisabled } from '@/lib/baseball/product-modules';
 
 function allCaps(value: boolean): BaseballCapabilityMap {
   return BASEBALL_CAPABILITY_KEYS.reduce((acc, key) => {
@@ -105,8 +106,18 @@ describe('program-type variant engine — live runtime behavior', () => {
     // programType (isBaseballNavEntryVisible's program-type gate), so the
     // "declaration order" baseline must exclude them too, or this test would
     // expect a route the real visibility filter never shows.
+    // Entries belonging to a DISABLED product module (recruiting, sunset
+    // 2026-07-29) are likewise never visible — isBaseballNavEntryVisible's
+    // module gate runs ahead of role/capability/program-type. This test asserts
+    // ORDERING, so the baseline must apply the same visibility rules the real
+    // filter does; otherwise it would demand a route the product no longer
+    // ships. See src/lib/baseball/product-modules.ts.
     const registryOrder = BASEBALL_NAV_REGISTRY.filter(
-      (e) => e.section === 'primary' && e.role !== 'player' && !e.allowedProgramTypes?.length,
+      (e) =>
+        e.section === 'primary' &&
+        e.role !== 'player' &&
+        !e.allowedProgramTypes?.length &&
+        !isHubDisabled(e.hub),
     ).map((e) => e.id);
     expect(neutral).toEqual(registryOrder);
   });

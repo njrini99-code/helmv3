@@ -62,6 +62,7 @@ import {
   PASSPORT_FIELD_BASE,
   PASSPORT_VISIBILITY_RANK,
 } from '@/lib/baseball/passport-fields';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import type {
   PassportVisibilityState,
   PassportFieldVisibility,
@@ -235,6 +236,24 @@ export function PassportVisibilityControls({
     initialFieldVisibility ?? {},
   );
 
+  // The two exposure tiles below are the SECOND way to set
+  // baseball_players.recruiting_activated = true — choosing one of them IS the
+  // activation decision (see passport-settings.ts, where the two systems were
+  // deliberately merged so "Exposure is ON" would be true end to end). Closing
+  // /dashboard/activate did nothing to this path, and this page is live.
+  //
+  // The server now refuses those two states outright while the module is off.
+  // Withholding the tiles keeps the UI and the server saying the same thing:
+  // offering a choice that is guaranteed to fail is worse than not offering it,
+  // and "Scout packet" additionally promises an export whose share route
+  // (/baseball/packet/[token]) the sunset already closed.
+  const recruitingEnabled = isRecruitingEnabled();
+  const visibleStateOptions = recruitingEnabled
+    ? STATE_OPTIONS
+    : STATE_OPTIONS.filter(
+        (opt) => opt.value !== 'public_profile' && opt.value !== 'scout_packet',
+      );
+
   const exposureEnabled = state === 'public_profile' || state === 'scout_packet';
   // The SERVER-CONFIRMED equivalent of exposureEnabled — gates the live "Copy
   // link"/"Open" affordances, which point at a real public route. Deriving
@@ -360,8 +379,14 @@ export function PassportVisibilityControls({
       {/* 1. EXPOSURE — the primary decision */}
       <section className="mt-6">
         <h3 className="mb-3 text-sm font-semibold text-warm-700">Exposure</h3>
+        {!recruitingEnabled && (
+          <p className="mb-3 text-sm leading-relaxed text-warm-500">
+            Public profile and scout-packet exposure aren&apos;t available right now. Your
+            passport stays inside your program.
+          </p>
+        )}
         <div className="grid gap-2.5 sm:grid-cols-2">
-          {STATE_OPTIONS.map((opt) => {
+          {visibleStateOptions.map((opt) => {
             const active = state === opt.value;
             return (
               // eslint-disable-next-line helm/no-raw-button -- segmented exposure-state selector tile, not the ripple/haptic Button primitive

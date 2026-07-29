@@ -46,6 +46,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import { requirePlayerAccess, PlayerAccessError } from '@/lib/baseball/player-access';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import {
   PASSPORT_FIELD_KEYS,
   clampOverrideToBase,
@@ -229,6 +230,33 @@ export const updatePassportVisibility = withBaseballAction(
       input.visibilityState === 'public_profile' || input.visibilityState === 'scout_packet';
 
     if (wantsPublicExposure) {
+      // PRODUCT-MODULE GATE, and it must REJECT rather than half-apply.
+      //
+      // This is the second way to set recruiting_activated = true, and unlike
+      // /dashboard/activate it is reachable through normal UI today:
+      // /baseball/player/passport is a live route, and choosing "Public
+      // profile" or "Scout packet" here IS the activation decision (see the
+      // comment block above — the two systems were deliberately merged so the
+      // UI's "Exposure is ON" claim would be true end to end). Closing the
+      // /activate route did nothing to this path.
+      //
+      // Gating only the activation write would recreate exactly the bug that
+      // merge was written to kill: visibility_state saved as public_profile,
+      // recruiting_activated still false, and the player told exposure is ON
+      // while the public page cannot see them. So the request is refused
+      // outright, with a message that says what is actually true.
+      //
+      // 'staff_only' and 'player_visible' are unaffected — they are internal
+      // states with no recruiting meaning, and they are the only two the
+      // Passport UI offers while the module is off.
+      if (!isRecruitingEnabled()) {
+        return {
+          success: false,
+          error:
+            'Public profile and scout packet exposure are unavailable right now. Your passport can be set to staff-only or visible to you.',
+        };
+      }
+
       const { data: subjectRow } = await fromUntyped(supabase, 'baseball_players')
         .select('recruiting_activated, player_type')
         .eq('id', auth.targetPlayerId)

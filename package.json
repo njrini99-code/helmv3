@@ -16,7 +16,7 @@
     "seed:baseball:demo": "tsx -r dotenv/config scripts/seed-baseball-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-lifting-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-demo-program.ts --confirm && tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts",
     "coachhelm:refresh": "bash scripts/coachhelm-refresh-all.sh",
     "coachhelm:regen": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/regen-coachhelm-from-corrected-stats.ts",
-    "seed:baseball:ci": "tsx scripts/seed-baseball-demo.ts --confirm",
+    "seed:baseball:ci": "tsx scripts/seed-baseball-demo.ts --confirm --allow-prod",
     "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
     "build": "next build --webpack",
     "start": "next start",

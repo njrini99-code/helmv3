@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-shared';
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
+// Pure/isomorphic (no node deps) — safe on the edge runtime this file targets.
+import { isPathnameModuleDisabled } from '@/lib/baseball/product-modules';
 import { evaluateAdminGate, isAdminPath } from '@/lib/admin/super-admin-shared';
 import {
   DEMO_SESSION_IDLE_TIMEOUT_MS,
@@ -389,6 +391,21 @@ async function checkRouteAuthorization(
     normalizeProgramType(team?.program_type) ?? normalizeProgramType(team?.team_type);
 
   if (requiredCapability && !staffHasCapability(staffRow, requiredCapability)) {
+    return {
+      authorized: false,
+      redirectTo: COACH_HOME,
+    };
+  }
+
+  // PRODUCT-MODULE gate (recruiting sunset 2026-07-29). Checked BEFORE the
+  // program-type gate below and driven off the central registry rather than
+  // the local RECRUITING_ROUTES list, which is incomplete — it omits
+  // /colleges, /journey, /scouting, /analytics and /activate, all of which are
+  // recruiting surfaces. Hiding a nav link is not closing a door: a buyer
+  // typing a URL must not reach a withdrawn module.
+  //
+  // Scoped by pathname, so golf/admin/lifting routes are unaffected.
+  if (isPathnameModuleDisabled(pathname)) {
     return {
       authorized: false,
       redirectTo: COACH_HOME,

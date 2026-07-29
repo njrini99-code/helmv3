@@ -14,7 +14,8 @@ Companion docs:
 - `scripts/seed-baseball-lifting-demo.ts` — Phase 2 (Helm Lifting Lab).
 - `scripts/seed-baseball-surfaces-demo.ts` — Phase 3 (this contract).
 - `scripts/seed-baseball-demo-program.ts` — Phase 4 (season + risks +
-  recruiting board; #912).
+  recruiting board; #912). **The recruiting board no longer seeds** — see
+  "Recruiting board (sunset)" below.
 
 ## Seed run order
 
@@ -28,7 +29,7 @@ dependency has run at least once.
 | 1 | `scripts/seed-baseball-demo.ts` | — | Org, team, coach + 8-player roster, calendar, practice plan, lift assignments (Lite), readiness, coach insights, timeline events, one `baseball_import_runs` row. |
 | 2 | `scripts/seed-baseball-lifting-demo.ts` | Phase 1 | Helm Lifting Lab: lifting-coach identity, programs/weeks/days/sections/prescriptions, sessions, set results, readiness check-ins. |
 | 3 | `scripts/seed-baseball-surfaces-demo.ts` | Phase 1 (player/coach ids only — does **not** depend on Phase 2) | Every table this contract documents below. |
-| 4 | `scripts/seed-baseball-demo-program.ts` | Phase 1 (roster + coach ids only — independent of Phases 2/3) | A believable, already-completed season (games + box scores + derived season stats), open risk flags, a recruiting board (3 fictional feeder programs + 8 recruits across all 4 active pipeline stages), a rolling lifting-session history, and more upcoming calendar events/practices. |
+| 4 | `scripts/seed-baseball-demo-program.ts` | Phase 1 (roster + coach ids only — independent of Phases 2/3) | A believable, already-completed season (games + box scores + derived season stats), open risk flags, a rolling lifting-session history, and more upcoming calendar events/practices. (A recruiting board too — **only while the module is enabled**; see below.) |
 
 Run them in order for a from-scratch demo team. Re-running any phase alone
 is always safe (idempotent upserts) — it just won't create anything the
@@ -44,7 +45,7 @@ DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-lif
 # 3. Messaging / video / tasks / strength groups / dev plans / seasons / imports / stats
 DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts --confirm
 
-# 4. Season (games + box scores) / risk flags / recruiting board / lifting history / calendar
+# 4. Season (games + box scores) / risk flags / lifting history / calendar
 DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo-program.ts --confirm
 
 # Verify coverage (any time, read-only, no --confirm flag needed)
@@ -135,8 +136,8 @@ named "Demo University Baseball") and its 8-player roster.
 | `baseball_player_aggregates` | `player_id`, `team_id` | 1 row per player (8 total), computed from the seeded `baseball_player_stats` rows so career/game/practice averages are internally consistent | `/baseball/dashboard/stats`, player profile |
 | `baseball_games` (Phase-4 addition) | `team_id` | 20 completed games (17 official + 3 scrimmage) spanning a full Feb–May season, deterministically simulated so scores tie exactly to the box-score lines below | `/baseball/dashboard/stats/games` |
 | `baseball_box_score_batting` / `baseball_box_score_pitching` (Phase-4 addition) | `game_id`, `player_id`, `team_id` | Per-game lines for the roster's 6 hitters + 2 pitchers across all 20 games; `baseball_player_season_stats` is then derived via `recalculate_baseball_season_stats` (never hand-authored) | `/baseball/dashboard/stats`, `/baseball/dashboard/stats/games/[gameId]` |
-| `baseball_coach_insights` (Phase-4 addition) | `team_id`, `coach_id` | 3 additional `status='active'` risk flags (a pitcher workload flag, a batting cold-streak flag, a stale-recruiting-outreach flag) | `/baseball/dashboard/command-center` |
-| `baseball_watchlists` (Phase-4 addition) | `coach_id`, `player_id` | 8 recruits across all 4 active pipeline stages (`watchlist`/`high_priority`/`offer_extended`/`committed`) | `/baseball/dashboard/pipeline`, `/baseball/dashboard/watchlist` |
+| `baseball_coach_insights` (Phase-4 addition) | `team_id`, `coach_id` | **2** `status='active'` risk flags (a pitcher workload flag, a batting cold-streak flag). A third — stale recruiting outreach — is filtered out while recruiting is sunset. | `/baseball/dashboard/command-center` |
+| `baseball_watchlists` (Phase-4 addition) | `coach_id`, `player_id` | **Not seeded while recruiting is sunset.** With the module on: 8 recruits across all 4 active pipeline stages (`watchlist`/`high_priority`/`offer_extended`/`committed`) | `/baseball/dashboard/pipeline`, `/baseball/dashboard/watchlist` |
 | `baseball_lift_results` (Phase-4 addition) | `team_id`, `player_id` | 8 additional sessions per player (64 total), alternating squat/bench across the last ~8 weeks | `/baseball/dashboard/performance` |
 | `baseball_events` / `baseball_practices` (Phase-4 addition) | `team_id` | 7 more upcoming events (practices, a team meeting, a fall exhibition) + 2 more published practices with blocks | `/baseball/dashboard/calendar`, `/baseball/dashboard/practice` |
 
@@ -163,3 +164,27 @@ status, actual row count for the demo team, and PASS/FAIL. Exits non-zero
 only if a table marked **required** above has zero rows for the demo team;
 intentionally-empty surfaces are printed as informational and never fail
 the run.
+
+---
+
+## Recruiting board (sunset)
+
+Phase 4's Section C — 3 fictional feeder `organizations` + `baseball_teams`,
+8 recruit `baseball_players` (all `recruiting_activated = true`), their
+`baseball_team_members` rows, and 8 `baseball_watchlists` entries — is gated
+on `isRecruitingEnabled()` and **does not run today**. The stale-outreach
+`baseball_coach_insights` row that cited it is filtered out by the same gate.
+
+It was not always gated, and the gap mattered: `recruiting_activated = true`
+is the flag that makes a player publicly NAMED on a team page rather than
+masked to initials, so every reseed was creating publicly-identified minors
+for a module the product does not ship — none of it reachable or removable
+through the UI. `verify-baseball-demo-coverage.ts` had already listed
+`baseball_watchlists` under `INTENTIONALLY_EMPTY` with the reason "the demo
+must not carry a recruiting board", so the seed and its own verifier were
+contradicting each other inside a single `npm run seed:baseball:demo`.
+
+Flip `PRODUCT_MODULES.recruiting.enabled` and the board returns unchanged;
+the verifier flips with it (its `INTENTIONALLY_EMPTY` reason string reads
+"recruiting is enabled — this entry is stale, move it back into
+SURFACE_COVERAGE").

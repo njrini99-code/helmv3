@@ -45,7 +45,7 @@ import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { InviteModal } from '@/components/coach/InviteModal';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { RosterBoardMember } from '@/components/baseball/roster';
-import type { AssignablePlayerResult } from '@/app/baseball/actions/roster';
+import type { AssignablePlayerResult, AssignablePlayerLookup } from '@/app/baseball/actions/roster';
 import {
   RosterRowMenu,
   PendingMemberActions,
@@ -430,7 +430,20 @@ export interface RosterFairwayProps {
     jerseyNumber: number | null;
     position: string | null;
   }) => Promise<RosterActionOutcome>;
-  onSearchPlayers: (query: string) => Promise<{ success: boolean; data?: AssignablePlayerResult[]; error?: string }>;
+  // Mirrors searchAssignablePlayers' full return shape. This component only
+  // forwards the value, but the narrower type it used to declare meant the
+  // fields AssignPlayerModal actually reads (`lookup`, `exactEmailMatchId`,
+  // `alreadyOnRoster`) travelled through a type that said they did not exist —
+  // so nothing type-checked the action↔modal contract end to end. They flow at
+  // runtime either way; this makes the compiler agree.
+  onSearchPlayers: (query: string) => Promise<{
+    success: boolean;
+    data?: AssignablePlayerResult[];
+    lookup?: AssignablePlayerLookup;
+    exactEmailMatchId?: string | null;
+    alreadyOnRoster?: number;
+    error?: string;
+  }>;
   showAssignModal: boolean;
   onOpenAssignModal: () => void;
   onCloseAssignModal: () => void;

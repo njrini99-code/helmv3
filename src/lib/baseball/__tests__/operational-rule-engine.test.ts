@@ -6,12 +6,13 @@
 //   - severity escalates with urgency but a rule NEVER inflates an inferred fact
 //     (duplicate-by-name) past 'warning' or above confidence 1.0;
 //   - rules degrade to nothing on empty/missing facts (no fabricated alerts);
-//   - recruiting rules are gated on the opt-in flag (no nagging college players);
+//   - recruiting rules are gated on the opt-in flag (no nagging college players)
+//     AND on the product module, since a pre-sunset opt-in outlives the sunset;
 //   - dedupe keys are stable per (rule, subject) so a re-run UPSERTs not clones;
 //   - the evaluator isolates a throwing rule + sorts deterministically.
 // =============================================================================
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {
   runOperationalRuleEngine,
@@ -280,8 +281,14 @@ describe('recruiting rules are opt-in gated', () => {
     expect(signals.filter((x) => ['profile_incomplete', 'missing_video'].includes(x.ruleId))).toHaveLength(0);
   });
 
-  it('fires profile_incomplete + missing_video for a recruiting-active player below the floor', () => {
-    const { signals } = runOperationalRuleEngine(
+  it('does NOT fire for a recruiting-active player while the module is sunset', () => {
+    // The opt-in gate is no longer sufficient on its own. A player who
+    // activated BEFORE the sunset still carries recruiting_activated = true, so
+    // without the module gate both rules keep firing and keep telling them to
+    // finish a recruiting profile because "incomplete profiles surface lower to
+    // recruiters" — advice about a module they cannot reach, delivered as a
+    // task in their inbox.
+    const { signals, byRule } = runOperationalRuleEngine(
       emptyFacts({
         players: [
           mkPlayer({
@@ -294,8 +301,60 @@ describe('recruiting rules are opt-in gated', () => {
         ],
       }),
     );
+
+    expect(signals.filter((x) => ['profile_incomplete', 'missing_video'].includes(x.ruleId))).toHaveLength(0);
+
+    // Omitted from byRule, not reported as 0 — "did not run" and "ran and found
+    // nothing" are different facts, and a stats consumer should be able to tell
+    // them apart.
+    expect(byRule).not.toHaveProperty('profile_incomplete');
+    expect(byRule).not.toHaveProperty('missing_video');
+
+    // Non-recruiting rules in the same sweep are untouched — the gate is scoped
+    // to ownerRole 'recruiting', not applied to the whole run.
+    expect(Object.keys(byRule).length).toBeGreaterThan(0);
+  });
+});
+
+describe('recruiting rules — restoration path', () => {
+  // The pre-sunset behaviour is asserted here rather than deleted, so
+  // re-enabling the module is verified rather than hoped for. This mock DOES
+  // take effect (unlike the one in recruiting-activate-door.test.ts) because
+  // the engine calls isRecruitingEnabled through an IMPORT of another module,
+  // which is exactly what vi.mock replaces — not through its own internal
+  // binding.
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('fires profile_incomplete + missing_video for a recruiting-active player below the floor', async () => {
+    vi.doMock('@/lib/baseball/product-modules', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@/lib/baseball/product-modules')>();
+      return { ...actual, isRecruitingEnabled: () => true };
+    });
+
+    const { runOperationalRuleEngine: run } = await import(
+      '@/lib/baseball/operational-rule-engine'
+    );
+
+    const { signals } = run(
+      emptyFacts({
+        players: [
+          mkPlayer({
+            id: 'rec',
+            recruitingActive: true,
+            hasVideo: false,
+            profileFieldsPresent: 1,
+            profileFieldsTotal: 5,
+          }),
+        ],
+      }),
+    );
+
     expect(signals.find((x) => x.ruleId === 'profile_incomplete')!.visibility).toBe('player_only');
     expect(signals.find((x) => x.ruleId === 'missing_video')).toBeDefined();
+
+    vi.doUnmock('@/lib/baseball/product-modules');
   });
 });
 

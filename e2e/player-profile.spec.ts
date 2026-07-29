@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { loginAsCoach } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
+import { RECRUITING_ENABLED, RECRUITING_SUNSET_REASON } from './helpers/product-modules';
 
 test.describe('Player Profile', () => {
+  test.skip(!RECRUITING_ENABLED, RECRUITING_SUNSET_REASON);
   test.beforeEach(async ({ page }) => {
     await loginAsCoach(page);
     await waitForPageLoad(page);

@@ -199,7 +199,10 @@ describe('Discover P0 privacy — profile_visibility filtering', () => {
               in: vi.fn(async () => ({ data: [{ id: 'org-1' }], error: null })),
             })),
           };
-        case 'baseball_teams':
+        // The cross-org team browse reads the anon-safe public-profile VIEW,
+        // not the base table — the base table's SELECT policy is tenant-scoped
+        // by 20260729000200 and would return only the coach's own teams.
+        case 'baseball_teams_public_profile':
           return {
             select: vi.fn(() => ({
               in: vi.fn(async () => ({ data: [{ id: 'team-1' }], error: null })),

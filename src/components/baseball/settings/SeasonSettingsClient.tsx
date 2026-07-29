@@ -11,23 +11,46 @@
 // season-specific module toggles (roster / schedule / stats / practice-templates
 // / lift-groups / performance-baselines / player-status).
 //
-// Reuses GolfHelm UI primitives verbatim (Card / Button / Header / EmptyState).
-// cream/green tokens, gap-6, editorial type. Capability-gated writes only; no
-// golf vocabulary.
+// Capability-gated writes only; no golf vocabulary.
+//
+// DESIGN MIGRATION (settings unification)
+// ---------------------------------------
+// This screen rendered a hand-rolled `border-b border-warm-200/60` title bar
+// (no masthead at all, unlike every sibling settings route), legacy
+// `Card variant="glass"` panels, the generic `@/components/ui/empty-state`
+// EmptyState, and `primary-*` phase pills — three vocabularies away from the
+// Program Settings screen a coach reaches it from. It now composes from
+// `SettingsChrome` + the Living Annual kit like the rest of the tree.
+//
+// PRESENTATION-ONLY: createSeason / updateSeason / setCurrentSeason /
+// archiveSeason payloads, the optimistic-update-then-rollback pattern, the
+// first-season-becomes-current rule, and every disabled/`canEdit` gate are
+// untouched.
 // =============================================================================
 
 import { useState, useTransition } from 'react';
 import { LazyMotion, m, useReducedMotion } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
-import { IconCheck, IconLock, IconClock } from '@/components/icons';
+import { IconCheck, IconLock, IconCalendar } from '@/components/icons';
+import { EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
+import {
+  SettingsNotice,
+  SettingsSection,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
+
+/** Selected vs unselected chrome for the phase radio groups. */
+const PHASE_BASE =
+  'rounded-fw-sm border px-3 py-1.5 text-sm font-medium transition-colors duration-200';
+const PHASE_SELECTED = 'border-grade-plus bg-grade-plus/10 text-text-primary';
+const PHASE_IDLE =
+  'border-[color:var(--hairline)] bg-[var(--paper-canvas)] text-text-secondary hover:border-grade-plus/40';
 
 import {
   BASEBALL_SEASON_PHASES,
@@ -168,76 +191,61 @@ export function SeasonSettingsClient({ data }: Props) {
 
   return (
     <LazyMotion features={loadFeatures}>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Season Settings</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Phases, the current season, and what each season runs.</p>
-        </div>
-      </div>
-
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <SettingsShell
+        title="Season Settings"
+        lede="Phases, the current season, and what each season runs."
+      >
         {!canEdit && (
-          <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600 flex items-center gap-2">
-            <IconLock size={16} className="text-warm-400 shrink-0" />
+          <SettingsNotice icon={<IconLock size={16} />}>
             You can view seasons but only staff with the manage-settings capability
             can change them.
-          </div>
+          </SettingsNotice>
         )}
 
         {/* Create */}
         {canEdit && (
-          <Card variant="glass">
-            <CardHeader>
-              <h2 className="font-semibold text-warm-900">Add a season</h2>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                label="Season name"
-                placeholder="e.g. Fall 2026"
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-              />
-              <div>
-                <p id="new-season-phase-label" className="font-medium text-warm-900 mb-2 text-sm">Phase</p>
-                <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="new-season-phase-label">
-                  {BASEBALL_SEASON_PHASES.map((phase) => (
-                    <Button
-                      key={phase}
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      role="radio"
-                      aria-checked={newPhase === phase}
-                      onClick={() => setNewPhase(phase)}
-                      className={cn(
-                        'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
-                        newPhase === phase
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-200',
-                      )}
-                    >
-                      {BASEBALL_SEASON_PHASE_LABELS[phase]}
-                    </Button>
-                  ))}
-                </div>
+          <SettingsSection icon={<IconCalendar size={18} />} title="Add a season">
+            <Input
+              label="Season name"
+              placeholder="e.g. Fall 2026"
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+            />
+            <div>
+              <p id="new-season-phase-label" className="mb-2 text-sm font-medium text-text-primary">
+                Phase
+              </p>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="new-season-phase-label">
+                {BASEBALL_SEASON_PHASES.map((phase) => (
+                  <Button
+                    key={phase}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    role="radio"
+                    aria-checked={newPhase === phase}
+                    onClick={() => setNewPhase(phase)}
+                    className={cn(PHASE_BASE, newPhase === phase ? PHASE_SELECTED : PHASE_IDLE)}
+                  >
+                    {BASEBALL_SEASON_PHASE_LABELS[phase]}
+                  </Button>
+                ))}
               </div>
-              <div className="flex justify-end">
-                <Button onClick={handleCreate} isLoading={isPending} disabled={!newLabel.trim()}>
-                  Add season
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleCreate} isLoading={isPending} disabled={!newLabel.trim()}>
+                Add season
+              </Button>
+            </div>
+          </SettingsSection>
         )}
 
         {/* List */}
         {seasons.length === 0 ? (
-          <EmptyState
-            variant="card"
-            glass
-            icon={<IconClock size={40} />}
-            title="No seasons yet"
-            description={
+          <EditorsLetter
+            ink="team"
+            title="No seasons yet."
+            body={
               canEdit
                 ? 'Add your first season above to start scoping rosters, schedules, and stats by season.'
                 : 'Your coaching staff has not set up a season yet.'
@@ -251,29 +259,28 @@ export function SeasonSettingsClient({ data }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.18, delay: reduceMotion ? 0 : Math.min(i * 0.04, 0.2) }}
             >
-            <Card variant="glass">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-warm-900">{season.label}</h3>
-                      {season.is_current && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
-                          <IconCheck size={12} /> Current
-                        </span>
-                      )}
-                      {season.status === 'archived' && (
-                        <span className="rounded-full bg-warm-100 px-2 py-0.5 text-xs font-medium text-warm-500">
-                          Archived
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-warm-500">
-                      {BASEBALL_SEASON_PHASE_LABELS[season.phase]}
-                    </p>
-                  </div>
-                  {canEdit && season.status !== 'archived' && (
-                    <div className="flex gap-2 shrink-0">
+              <SettingsSection
+                title={season.label}
+                subtitle={BASEBALL_SEASON_PHASE_LABELS[season.phase]}
+                badge={
+                  <>
+                    {/* The check glyph stays alongside the stamp: "current" is
+                        load-bearing state and the doctrine forbids color as the
+                        only channel, so ink + glyph + word all carry it. */}
+                    {season.is_current && (
+                      <span className="inline-flex items-center gap-1">
+                        <IconCheck size={12} className="text-grade-plus" />
+                        <InkBadge label="Current" tone="team" variant="solid" />
+                      </span>
+                    )}
+                    {season.status === 'archived' && (
+                      <InkBadge label="Archived" tone="neutral" />
+                    )}
+                  </>
+                }
+                actions={
+                  canEdit && season.status !== 'archived' ? (
+                    <div className="flex gap-2">
                       {!season.is_current && (
                         <Button
                           variant="secondary"
@@ -293,14 +300,13 @@ export function SeasonSettingsClient({ data }: Props) {
                         Archive
                       </Button>
                     </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
+                  ) : undefined
+                }
+              >
                 {/* Phase picker */}
                 {canEdit && season.status !== 'archived' && (
                   <div>
-                    <p className="font-medium text-warm-900 mb-2 text-sm">Phase</p>
+                    <p className="mb-2 text-sm font-medium text-text-primary">Phase</p>
                     <div
                       className="flex flex-wrap gap-2"
                       role="radiogroup"
@@ -317,10 +323,8 @@ export function SeasonSettingsClient({ data }: Props) {
                           disabled={isPending}
                           onClick={() => handlePhase(season.id, phase)}
                           className={cn(
-                            'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
-                            season.phase === phase
-                              ? 'border-primary-500 bg-primary-50 text-primary-700'
-                              : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-200',
+                            PHASE_BASE,
+                            season.phase === phase ? PHASE_SELECTED : PHASE_IDLE,
                             isPending && 'opacity-70',
                           )}
                         >
@@ -333,7 +337,7 @@ export function SeasonSettingsClient({ data }: Props) {
 
                 {/* Season-specific module toggles */}
                 <div>
-                  <p className="font-medium text-warm-900 mb-2 text-sm">
+                  <p className="mb-2 text-sm font-medium text-text-primary">
                     What this season runs
                   </p>
                   <div className="space-y-2">
@@ -349,12 +353,11 @@ export function SeasonSettingsClient({ data }: Props) {
                     ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </SettingsSection>
             </m.div>
           ))
         )}
-      </div>
+      </SettingsShell>
     </LazyMotion>
   );
 }

@@ -10,6 +10,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { IconGlobe, IconChevronRight } from '@/components/icons';
 import { Player } from '@/lib/types';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { showRecruitingActivationPrompt } from '@/lib/baseball/recruiting-activation';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { Button } from '@/components/fairway';
 import { SectionMasthead, EditorsLetter, Reveal, pressableClass } from '@/components/baseball/living-annual';
 
@@ -64,7 +66,15 @@ export default function ProfilePage() {
       <div className="mx-auto w-full max-w-[820px] space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <Reveal>
           <SectionMasthead
-            eyebrow={isCollegePlayer ? 'THE PASSPORT · EDIT PROFILE' : 'RECRUITING FILE · EDIT PROFILE'}
+            // "RECRUITING FILE" names the page after a module the product is
+            // not currently selling, on a screen every player visits. College
+            // players already read "THE PASSPORT"; under the sunset everyone
+            // does, which is also what the rest of the player surface calls it.
+            eyebrow={
+              isCollegePlayer || !isRecruitingEnabled()
+                ? 'THE PASSPORT · EDIT PROFILE'
+                : 'RECRUITING FILE · EDIT PROFILE'
+            }
             title="Edit Profile"
             ink="team"
             actions={
@@ -87,8 +97,16 @@ export default function ProfilePage() {
             nav entry (player-activate) has no persistent rail slot by design
             (command palette / direct URL only, see hub-definitions.ts), so
             Today/Passport/Profile — the surfaces every eligible player
-            actually visits — carry the one-time nudge instead. */}
-        {!isCollegePlayer && player.recruiting_activated !== true && (
+            actually visits — carry the one-time nudge instead.
+            Gated at read time by the recruiting module; the eligibility rule
+            below is left exactly as written because it is still right when the
+            module returns. Note it differs from Today/Passport on purpose: a
+            null `recruiting_activated` here means "not activated yet" and
+            SHOULD prompt, where a null activation object there means "not
+            fetched" and must not. */}
+        {showRecruitingActivationPrompt(
+          !isCollegePlayer && player.recruiting_activated !== true,
+        ) && (
           <EditorsLetter
             ink="team"
             live

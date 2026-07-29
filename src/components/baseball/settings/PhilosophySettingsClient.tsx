@@ -3,18 +3,27 @@
 // =============================================================================
 // src/components/baseball/settings/PhilosophySettingsClient.tsx
 //
-// Coaching-philosophy editor. Premium pass: aligned to the Helm settings system
-// (shared Header / Card-glass surfaces, cream/green palette, editorial type
-// rhythm), reduced-motion-safe entrance motion, accessible range + ranking
-// controls, and a friendly save affordance. Business logic + data flow are
-// unchanged — same server action, same fields, same swap-ranking behavior.
+// Coaching-philosophy editor: reduced-motion-safe entrance motion, accessible
+// range + ranking controls, and a friendly save affordance.
+//
+// DESIGN MIGRATION (settings unification)
+// ---------------------------------------
+// The masthead had already migrated to the Living Annual kit, but the body was
+// still legacy `Card variant="glass"` panels with a PRIVATE `SectionHeader`
+// recipe painted in `primary-*` / `warm-*` — a near-copy of Program Settings'
+// section header that had drifted (different badge radius, different eyebrow
+// size, no hairline rule). That private recipe is gone; sections now render
+// through the shared `SettingsSection`, so this screen and Program Settings are
+// literally the same component.
+//
+// Business logic + data flow are unchanged — same server action, same fields,
+// same swap-ranking behavior, same hit-slop treatment on the reorder chevrons.
 // =============================================================================
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LazyMotion, m, useReducedMotion } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
@@ -30,7 +39,17 @@ import {
 } from '@/components/icons';
 import { savePhilosophySettings } from '@/app/baseball/actions/philosophy';
 import type { BaseballCoachPhilosophy } from '@/lib/types';
-import { SectionMasthead } from '@/components/baseball/living-annual';
+import { PaperCard } from '@/components/baseball/living-annual';
+import {
+  SettingsNotice,
+  SettingsSection,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
+
+/** Selected vs unselected chrome for the alert-sensitivity radio group. */
+const LEVEL_SELECTED = 'border-grade-plus bg-grade-plus/10';
+const LEVEL_IDLE =
+  'border-[color:var(--hairline)] bg-[var(--paper-canvas)] hover:border-grade-plus/40';
 
 const SETTINGS_PATH = '/baseball/dashboard/settings';
 
@@ -56,40 +75,6 @@ const SENSITIVITY_COPY: Record<AlertSensitivity, string> = {
   balanced: 'Important changes',
   aggressive: 'All notable changes',
 };
-
-// -----------------------------------------------------------------------------
-// Small, palette-true section header — reuses the Program Settings rhythm so the
-// philosophy surface reads as part of the same settings system.
-// -----------------------------------------------------------------------------
-
-function SectionHeader({
-  icon,
-  eyebrow,
-  title,
-  subtitle,
-}: {
-  icon: React.ReactNode;
-  eyebrow: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <CardHeader>
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary-200 bg-primary-50 text-primary-600">
-          {icon}
-        </span>
-        <div className="min-w-0">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-warm-400">
-            {eyebrow}
-          </p>
-          <h2 className="font-semibold text-warm-900">{title}</h2>
-          <p className="text-sm leading-relaxed text-warm-500">{subtitle}</p>
-        </div>
-      </div>
-    </CardHeader>
-  );
-}
 
 // -----------------------------------------------------------------------------
 // Accessible labelled range row — value rendered with tabular-nums so the
@@ -120,10 +105,10 @@ function RangeRow({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label htmlFor={id} className="text-sm font-medium text-warm-700">
+        <label htmlFor={id} className="text-sm font-medium text-text-primary">
           {label}
         </label>
-        <span className="text-sm font-semibold tabular-nums text-warm-900">{valueText}</span>
+        <span className="text-sm font-semibold tabular-nums text-text-primary">{valueText}</span>
       </div>
       <input
         id={id}
@@ -133,10 +118,10 @@ function RangeRow({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-2 cursor-pointer appearance-none rounded-lg bg-warm-200 accent-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[color:var(--hairline)] accent-grade-plus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--paper)]"
         aria-valuetext={valueText}
       />
-      <p className="text-xs leading-relaxed text-warm-500 mt-1.5">{help}</p>
+      <p className="mt-1.5 text-xs leading-relaxed text-text-secondary">{help}</p>
     </div>
   );
 }
@@ -227,38 +212,35 @@ export function PhilosophySettingsClient({
     (priorities[a.key] ?? 0) - (priorities[b.key] ?? 0)
   );
 
-  const sectionVariants = {
-    hidden: { opacity: 0, y: reduceMotion ? 0 : 8 },
-    show: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.18, delay: reduceMotion ? 0 : i * 0.05 },
-    }),
-  };
+  // NOTE: this screen deliberately has NO local mount variants.
+  //
+  // Each section below is a shared `SettingsSection`, which brings the kit's
+  // own `<Reveal>` (fade + 6px rise + blur, 0.4s, staggered). Wrapping those in
+  // a second `<m.div variants={...} initial="hidden" animate="show">` — as this
+  // file did before the sections were shared — played two compounding
+  // entrances on every card, and broke the kit's "one signature move per view"
+  // rule in a way that reads as jank rather than as a bug.
+  //
+  // `reduceMotion` is still read below for the drag/reorder affordances, which
+  // Reveal does not cover.
 
   return (
     <LazyMotion features={loadFeatures}>
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <SectionMasthead
-          eyebrow="THE PRESSBOX · SETTINGS"
-          title="Coaching Philosophy"
-          ink="team"
-          actions={
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<IconArrowLeft size={16} />}
-              aria-label="Back to settings"
-              onClick={() => router.push(SETTINGS_PATH)}
-            >
-              Settings
-            </Button>
-          }
-        >
-          <p className="font-annual text-body-sm text-text-secondary">{`${coachName} • how AI insights are tuned`}</p>
-        </SectionMasthead>
-
-        <div className="space-y-6">
+      <SettingsShell
+        title="Coaching Philosophy"
+        lede={`${coachName} • how AI insights are tuned`}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<IconArrowLeft size={16} />}
+            aria-label="Back to settings"
+            onClick={() => router.push(SETTINGS_PATH)}
+          >
+            Settings
+          </Button>
+        }
+      >
         {/* Welcome message for new users */}
         {isNew && (
           <m.div
@@ -266,84 +248,74 @@ export function PhilosophySettingsClient({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <Card variant="glass" className="border-primary-200 bg-primary-50/50">
-              <CardContent className="flex items-start gap-4 p-6">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary-200 bg-primary-100 text-primary-600">
+            <PaperCard className="p-6">
+              <div className="flex items-start gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-md border border-[color:var(--hairline)] bg-grade-plus/10 text-grade-plus">
                   <IconSparkles size={20} />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-warm-900">Welcome, {coachName}</h3>
-                  <p className="text-sm leading-relaxed text-warm-600 mt-1">
+                  <h3 className="font-annual text-h3 font-semibold text-text-primary">
+                    Welcome, {coachName}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-text-secondary">
                     Set up your coaching philosophy to personalize AI-powered insights.
                     The system learns your priorities and surfaces what matters most to your
                     program.
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </PaperCard>
           </m.div>
         )}
 
         {/* Alert Sensitivity */}
-        <m.div custom={0} variants={sectionVariants} initial="hidden" animate="show">
-          <Card variant="glass">
-            <SectionHeader
-              icon={<IconActivity size={18} />}
-              eyebrow="Cadence"
-              title="Alert Sensitivity"
-              subtitle="How often should we notify you?"
-            />
-            <CardContent>
-              <div
-                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-                role="radiogroup"
-                aria-label="Alert sensitivity"
-              >
-                {(['conservative', 'balanced', 'aggressive'] as const).map((level) => {
-                  const active = alertSensitivity === level;
-                  return (
-                    <Button
-                      variant="ghost"
-                      key={level}
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => setAlertSensitivity(level)}
-                      className={cn(
-                        'h-auto flex-col items-start p-4 rounded-xl border transition-all',
-                        active
-                          ? 'border-primary-500 bg-primary-50/70 ring-1 ring-primary-200'
-                          : 'border-warm-200 bg-cream-50 hover:border-primary-200',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'font-medium capitalize',
-                          active ? 'text-primary-700' : 'text-warm-700',
-                        )}
-                      >
-                        {level}
-                      </span>
-                      <span className="text-xs leading-relaxed text-warm-500 mt-1">
-                        {SENSITIVITY_COPY[level]}
-                      </span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </m.div>
+        <SettingsSection
+            icon={<IconActivity size={18} />}
+            eyebrow="Cadence"
+            title="Alert Sensitivity"
+            subtitle="How often should we notify you?"
+            bodySpacing="none"
+          >
+            <div
+              className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+              role="radiogroup"
+              aria-label="Alert sensitivity"
+            >
+              {(['conservative', 'balanced', 'aggressive'] as const).map((level) => {
+                const active = alertSensitivity === level;
+                return (
+                  <Button
+                    variant="ghost"
+                    key={level}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setAlertSensitivity(level)}
+                    className={cn(
+                      'h-auto flex-col items-start rounded-fw-md border p-4 transition-colors duration-200',
+                      active ? LEVEL_SELECTED : LEVEL_IDLE,
+                    )}
+                  >
+                    <span className="font-annual font-medium capitalize text-text-primary">
+                      {level}
+                    </span>
+                    <span className="mt-1 text-xs leading-relaxed text-text-secondary">
+                      {SENSITIVITY_COPY[level]}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+        </SettingsSection>
 
         {/* Threshold Settings */}
-        <m.div custom={1} variants={sectionVariants} initial="hidden" animate="show">
-          <Card variant="glass">
-            <SectionHeader
-              icon={<IconTarget size={18} />}
-              eyebrow="Tuning"
-              title="Alert Thresholds"
-              subtitle="Fine-tune when alerts trigger"
-            />
-            <CardContent className="space-y-6">
+        <SettingsSection
+            icon={<IconTarget size={18} />}
+            eyebrow="Tuning"
+            title="Alert Thresholds"
+            subtitle="Fine-tune when alerts trigger"
+            bodySpacing="none"
+          >
+            <div className="space-y-6">
               <RangeRow
                 id="psc-decline-threshold"
                 label="Decline alert threshold"
@@ -377,35 +349,32 @@ export function PhilosophySettingsClient({
                 value={bubbleZoneRange}
                 onChange={setBubbleZoneRange}
               />
-            </CardContent>
-          </Card>
-        </m.div>
+            </div>
+        </SettingsSection>
 
         {/* Priority Rankings */}
-        <m.div custom={2} variants={sectionVariants} initial="hidden" animate="show">
-          <Card variant="glass">
-            <SectionHeader
-              icon={<IconSparkles size={18} />}
-              eyebrow="Emphasis"
-              title="Development Priorities"
-              subtitle="Rank what matters most to your program"
-            />
-            <CardContent>
-              <ol className="space-y-2">
+        <SettingsSection
+            icon={<IconSparkles size={18} />}
+            eyebrow="Emphasis"
+            title="Development Priorities"
+            subtitle="Rank what matters most to your program"
+            bodySpacing="none"
+          >
+            <ol className="space-y-2">
                 {sortedPriorities.map((priority, index) => (
                   <li
                     key={priority.key}
-                    className="flex items-center gap-3 rounded-xl border border-warm-200 bg-warm-50 p-3"
+                    className="flex items-center gap-3 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3"
                   >
                     <span
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold tabular-nums text-primary-700"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-sm font-semibold tabular-nums text-grade-plus"
                       aria-hidden
                     >
                       {index + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-warm-900">{priority.label}</p>
-                      <p className="text-xs leading-relaxed text-warm-500">{priority.description}</p>
+                      <p className="font-annual font-medium text-text-primary">{priority.label}</p>
+                      <p className="text-xs leading-relaxed text-text-secondary">{priority.description}</p>
                     </div>
                     {/* gap-3 (12px), not gap-1: each chevron below keeps its
                         compact 32px (h-8/w-8) visual but reaches the 44px
@@ -424,7 +393,7 @@ export function PhilosophySettingsClient({
                         onClick={() => handlePriorityChange(priority.key, 'up')}
                         disabled={index === 0}
                         aria-label={`Move ${priority.label} up`}
-                        className="relative flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-400 transition-colors hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-fw-sm p-0 text-text-tertiary transition-colors hover:bg-grade-plus/10 hover:text-grade-plus active:bg-grade-plus/20 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/45 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
                       >
                         <IconChevronUp size={16} />
                       </button>
@@ -434,30 +403,25 @@ export function PhilosophySettingsClient({
                         onClick={() => handlePriorityChange(priority.key, 'down')}
                         disabled={index === sortedPriorities.length - 1}
                         aria-label={`Move ${priority.label} down`}
-                        className="relative flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-400 transition-colors hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-fw-sm p-0 text-text-tertiary transition-colors hover:bg-grade-plus/10 hover:text-grade-plus active:bg-grade-plus/20 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/45 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
                       >
                         <IconChevronDown size={16} />
                       </button>
                     </div>
                   </li>
                 ))}
-              </ol>
-            </CardContent>
-          </Card>
-        </m.div>
+            </ol>
+        </SettingsSection>
 
         {/* Info Box */}
-        <div className="flex items-start gap-3 rounded-xl border border-warm-200 bg-warm-50 p-4">
-          <IconInfo size={20} className="shrink-0 text-primary-600 mt-0.5" />
-          <div className="text-sm text-warm-600">
-            <p className="font-medium text-warm-900">How this works</p>
-            <p className="mt-1 leading-relaxed">
-              Your philosophy settings customize the AI insights engine. Higher priorities
-              get weighted more heavily in analysis, and thresholds determine when alerts
-              are triggered. Changes apply to future insight generation.
-            </p>
-          </div>
-        </div>
+        <SettingsNotice icon={<IconInfo size={18} />}>
+          <p className="font-medium text-text-primary">How this works</p>
+          <p className="mt-1 leading-relaxed">
+            Your philosophy settings customize the AI insights engine. Higher priorities
+            get weighted more heavily in analysis, and thresholds determine when alerts
+            are triggered. Changes apply to future insight generation.
+          </p>
+        </SettingsNotice>
 
         {/* Save Button */}
         <div className="flex justify-end gap-3">
@@ -472,8 +436,7 @@ export function PhilosophySettingsClient({
             {saving ? 'Saving…' : saved ? 'Saved' : 'Save Philosophy'}
           </Button>
         </div>
-        </div>
-      </div>
+      </SettingsShell>
     </LazyMotion>
   );
 }

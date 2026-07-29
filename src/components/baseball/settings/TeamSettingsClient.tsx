@@ -17,13 +17,16 @@
 
 import { useState, useTransition } from 'react';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconCheck, IconLink } from '@/components/icons';
-import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
+import { EditorsLetter } from '@/components/baseball/living-annual';
+import {
+  SettingsSection,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
 
 import {
   BASEBALL_INVITE_POLICIES,
@@ -126,135 +129,104 @@ export function TeamSettingsClient({ data }: Props) {
 
   if (!canEdit) {
     return (
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Team Settings" ink="team">
-          <p className="font-annual text-body-sm text-text-secondary">Coach access required</p>
-        </SectionMasthead>
+      <SettingsShell title="Team Settings" lede="Coach access required">
         <EditorsLetter
           ink="team"
           title="Team settings are staff-controlled."
           body="Join policy and the team code are managed by your coaching staff."
         />
-      </div>
+      </SettingsShell>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Team Settings" ink="team">
-        <p className="font-annual text-body-sm text-text-secondary">{`${settings.teamName} • how members join`}</p>
-      </SectionMasthead>
+    <SettingsShell
+      title="Team Settings"
+      lede={`${settings.teamName} • how members join`}
+    >
+      {/* Join code */}
+      <SettingsSection
+        icon={<IconLink size={18} />}
+        title="Join Code"
+        subtitle="Players use this code to find your team. Regenerating invalidates the old code."
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <code className="rounded-fw-sm border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-4 py-2 font-mono text-lg tracking-widest text-text-primary">
+            {settings.joinCode ?? '— — — —'}
+          </code>
+          {settings.joinCode && (
+            <Button variant="secondary" size="sm" onClick={copyCode}>
+              Copy
+            </Button>
+          )}
+          <Button
+            variant={settings.joinCode ? 'secondary' : 'primary'}
+            size="sm"
+            onClick={handleGenerate}
+            isLoading={isPending}
+          >
+            {settings.joinCode ? 'Regenerate' : 'Create code'}
+          </Button>
+        </div>
+        {settings.invite_policy === 'closed' && (
+          <p className="text-sm leading-relaxed text-text-secondary">
+            The roster is currently closed — the code will not let anyone join
+            until you change the join policy.
+          </p>
+        )}
+      </SettingsSection>
 
-      <div className="space-y-6">
-        {/* Join code */}
-        <Card variant="glass">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <span className="text-warm-600">
-                <IconLink size={20} />
-              </span>
-              <div>
-                <h2 className="font-semibold text-warm-900">Join Code</h2>
-                <p className="text-sm leading-relaxed text-warm-500">
-                  Players use this code to find your team. Regenerating invalidates
-                  the old code.
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <code className="rounded-lg border border-warm-200 bg-cream-50 px-4 py-2 font-mono text-lg tracking-widest text-warm-900">
-                {settings.joinCode ?? '— — — —'}
-              </code>
-              {settings.joinCode && (
-                <Button variant="secondary" size="sm" onClick={copyCode}>
-                  Copy
-                </Button>
-              )}
+      {/* Invite policy */}
+      <SettingsSection
+        icon={<IconUsers size={18} />}
+        title="Invite Policy"
+        subtitle="Controls how a valid code turns into a roster member."
+      >
+        <div
+          className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+          role="radiogroup"
+          aria-label="Invite policy"
+        >
+          {BASEBALL_INVITE_POLICIES.map((policy) => {
+            const active = settings.invite_policy === policy;
+            const copy = POLICY_COPY[policy];
+            return (
               <Button
-                variant={settings.joinCode ? 'secondary' : 'primary'}
-                size="sm"
-                onClick={handleGenerate}
-                isLoading={isPending}
+                key={policy}
+                type="button"
+                variant="ghost"
+                role="radio"
+                aria-checked={active}
+                disabled={isPending}
+                onClick={() => setPolicy(policy)}
+                className={cn(
+                  'h-auto flex-col items-start justify-start rounded-fw-md border p-4 text-left transition-colors duration-200',
+                  active
+                    ? 'border-grade-plus bg-grade-plus/10'
+                    : 'border-[color:var(--hairline)] bg-[var(--paper-canvas)] hover:border-grade-plus/40',
+                  isPending && 'cursor-not-allowed opacity-70',
+                )}
               >
-                {settings.joinCode ? 'Regenerate' : 'Create code'}
-              </Button>
-            </div>
-            {settings.invite_policy === 'closed' && (
-              <p className="text-sm text-warm-500">
-                The roster is currently closed — the code will not let anyone join
-                until you change the join policy.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Invite policy */}
-        <Card variant="glass">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <span className="text-warm-600">
-                <IconUsers size={20} />
-              </span>
-              <div>
-                <h2 className="font-semibold text-warm-900">Invite Policy</h2>
-                <p className="text-sm leading-relaxed text-warm-500">
-                  Controls how a valid code turns into a roster member.
+                <div className="mb-1 flex w-full items-center justify-between">
+                  <span className="font-annual font-semibold text-text-primary">{copy.label}</span>
+                  {active && <IconCheck size={16} className="shrink-0 text-grade-plus" />}
+                </div>
+                <p className="text-xs leading-relaxed text-text-secondary">
+                  {copy.description}
                 </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-              role="radiogroup"
-              aria-label="Invite policy"
-            >
-              {BASEBALL_INVITE_POLICIES.map((policy) => {
-                const active = settings.invite_policy === policy;
-                const copy = POLICY_COPY[policy];
-                return (
-                  <Button
-                    key={policy}
-                    type="button"
-                    variant="ghost"
-                    role="radio"
-                    aria-checked={active}
-                    disabled={isPending}
-                    onClick={() => setPolicy(policy)}
-                    className={cn(
-                      'h-auto text-left rounded-xl border p-4 transition-all flex-col items-start justify-start',
-                      active
-                        ? 'border-primary-500 bg-primary-50/70 ring-1 ring-primary-200'
-                        : 'border-warm-200 bg-cream-50 hover:border-primary-200',
-                      isPending && 'cursor-not-allowed opacity-70',
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-1 w-full">
-                      <span className="font-semibold text-warm-900">{copy.label}</span>
-                      {active && (
-                        <IconCheck size={16} className="text-primary-600 shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-xs leading-relaxed text-warm-500">
-                      {copy.description}
-                    </p>
-                  </Button>
-                );
-              })}
-            </div>
+              </Button>
+            );
+          })}
+        </div>
 
-            <Checkbox
-              label="Require coach approval"
-              description="New members land in a pending state until a coach approves them — even when self-join is on."
-              checked={settings.require_coach_approval}
-              onChange={(e) => setCoachApproval(e.target.checked)}
-              disabled={isPending}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+        <Checkbox
+          label="Require coach approval"
+          description="New members land in a pending state until a coach approves them — even when self-join is on."
+          checked={settings.require_coach_approval}
+          onChange={(e) => setCoachApproval(e.target.checked)}
+          disabled={isPending}
+        />
+      </SettingsSection>
+    </SettingsShell>
   );
 }

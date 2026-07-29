@@ -11,6 +11,7 @@ import { validatePassword } from '@/lib/auth/password-validation';
 import type { User } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
 import { CommonSchemas } from '@/lib/validation/server-action-validator';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -514,7 +515,28 @@ export async function completeBaseballSignup(data: {
     const fullName = user.user_metadata?.full_name || userEmail.split('@')[0] || 'Player';
     const [firstName, ...lastParts] = fullName.split(' ');
 
-    const recruitingActivated = playerType !== 'college';
+    // Recruiting activation at signup.
+    //
+    // SUNSET GATE (the part that is unambiguous): while the recruiting module
+    // is off, nothing may create a player already opted into it. The row would
+    // carry recruiting_activated = true — the flag that makes a player publicly
+    // NAMED rather than masked to initials — for a module they cannot see, and
+    // the only surface that could turn it off redirects.
+    //
+    // ⚠ THE UNDERLYING BEHAVIOUR IS ALSO SUSPECT, AND IS NOT CHANGED HERE.
+    // With recruiting ON, this line activates EVERY new non-college player
+    // automatically. The player-onboarding upsert further down this same file
+    // sets `recruiting_activated: false` under the comment "Privacy-first:
+    // NEVER auto-activate recruiting at onboarding", and CLAUDE.md describes
+    // the model as opt-in ("Players must opt-in to recruiting"). Two paths in
+    // one file disagree, and a player who signs up but does not finish
+    // onboarding sits activated in the gap between them.
+    //
+    // Resolving that is a product decision about the recruiting-on case, so it
+    // is escalated rather than made at 07:00 unattended — see
+    // docs/baseballhelm-overnight/CURRENT_PRIORITIES.md. The module gate below
+    // is correct either way and changes nothing while recruiting ships.
+    const recruitingActivated = playerType !== 'college' && isRecruitingEnabled();
     CommonSchemas.recruitingPlayerState.parse({
       player_type: playerType,
       recruiting_activated: recruitingActivated,
