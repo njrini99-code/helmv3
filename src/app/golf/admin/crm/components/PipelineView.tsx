@@ -249,7 +249,7 @@ export function PipelineView({
             <div key={i} className="h-11 flex-1 rounded-full bg-surface-sunken/70 skeleton-shimmer" />
           ))}
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="min-w-0 flex flex-col gap-2">
               <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] h-14 skeleton-shimmer" />
@@ -323,7 +323,7 @@ export function PipelineView({
       </div>
 
       {/* Kanban Columns — CSS grid, no horizontal scroll */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {pipelineStages.map((stage) => {
           const columnCoaches = coachesByStage[stage.id] || [];
           const isDropping = dropTarget === stage.id;

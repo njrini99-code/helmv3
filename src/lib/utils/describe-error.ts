@@ -14,13 +14,71 @@
  *   3. Plain object → `JSON.stringify` (with a circular-safe fallback)
  *   4. Anything else → `String(x)`
  */
+/**
+ * A gateway that fails before reaching the origin answers with an HTML PAGE, not
+ * JSON — and the whole page lands in `error.message`.
+ *
+ * Found 2026-07-29 in the Vercel runtime errors. Two cron routes each threw a
+ * multi-kilobyte Cloudflare 522 document as their error text:
+ *
+ *   Error: run_integrity_checks failed: <!DOCTYPE html> … <title>supabase.co |
+ *   522: Connection timed out</title> … Cloudflare Ray ID: a22a42d3dbe0d4c1 …
+ *   Your IP: 35.175.113.239 … 2026-07-29 07:03:17 UTC …
+ *
+ * Two separate harms, and the second is the expensive one:
+ *
+ *   1. The useful fact — "Supabase was unreachable" — is buried in ~6KB of
+ *      Cloudflare markup, so triage reads as noise.
+ *   2. That markup carries a UNIQUE Ray ID, a unique client IP and a
+ *      to-the-second timestamp per occurrence. `admin_events` fingerprints hash
+ *      the message, so every single 522 mints a NEW incident group. A one-hour
+ *      outage becomes dozens of unrelated-looking one-off incidents instead of
+ *      one row with a count — which is precisely how the 9.4-hour database wedge
+ *      on 2026-07-29 stayed invisible as a single event.
+ *
+ * So this collapses any HTML error body to one STABLE line. Stability is the
+ * requirement, not brevity: the output must be byte-identical across
+ * occurrences of the same upstream failure, which means no Ray ID, no IP and no
+ * timestamp may survive.
+ */
+function collapseHtmlErrorBody(text: string): string | null {
+  const head = text.slice(0, 2000);
+  const looksLikeHtml = /^\s*<(?:!doctype\s+html|html[\s>])/i.test(text) || /<html[\s>]/i.test(head);
+  if (!looksLikeHtml) return null;
+
+  // `<title>` carries the whole story on every gateway error page worth naming:
+  // "supabase.co | 522: Connection timed out", "502 Bad Gateway", "Attention
+  // Required! | Cloudflare".
+  const title = /<title[^>]*>([\s\S]{0,200}?)<\/title>/i.exec(text)?.[1]?.replace(/\s+/g, ' ').trim();
+
+  // Status code from the title, or from Cloudflare's own error-code label.
+  const status =
+    /\b(4\d{2}|5\d{2})\b/.exec(title ?? '')?.[1] ??
+    /Error code\s*(\d{3})/i.exec(head)?.[1] ??
+    null;
+
+  const detail = title && title.length > 0 ? title : 'no <title>';
+  return status
+    ? `upstream returned an HTML error page (HTTP ${status}): ${detail}`
+    : `upstream returned an HTML error page: ${detail}`;
+}
+
 export function describeError(err: unknown): string {
   if (err == null) return 'unknown';
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
+  if (err instanceof Error) return collapseHtmlErrorBody(err.message) ?? err.message;
+  if (typeof err === 'string') return collapseHtmlErrorBody(err) ?? err;
   if (typeof err !== 'object') return String(err);
 
   const e = err as Record<string, unknown>;
+
+  // Same collapse for the Supabase/transport shape, where the HTML arrives as
+  // `.message` on a plain object rather than on an Error.
+  if (typeof e.message === 'string') {
+    const collapsed = collapseHtmlErrorBody(e.message);
+    if (collapsed) {
+      return e.code ? `code=${e.code} msg=${collapsed}` : collapsed;
+    }
+  }
 
   // Supabase / node-postgres shape — these are the plain objects that were
   // producing `[object Object]` in telemetry. We collapse them into a single

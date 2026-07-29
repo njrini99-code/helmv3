@@ -14,6 +14,7 @@
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
+import { describeError } from '@/lib/utils/describe-error';
 
 export interface ResolveCriteria {
   /** Match against admin_events.metadata ->> 'metric' (LIKE pattern). */
@@ -62,7 +63,10 @@ export async function archiveIncidentsByCriteria(
 
   const { data, error } = await query;
   if (error) {
-    throw new Error(`archiveIncidentsByCriteria: load failed: ${error.message}`);
+    // See the integrity-check route: a transport failure puts an entire
+    // Cloudflare error page in `.message`, and this string is what the incident
+    // fingerprint hashes. describeError collapses it to one stable line.
+    throw new Error(`archiveIncidentsByCriteria: load failed: ${describeError(error)}`);
   }
 
   const candidates = (data ?? []).filter((row) => {
