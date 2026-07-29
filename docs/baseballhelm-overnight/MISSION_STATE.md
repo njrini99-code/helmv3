@@ -107,11 +107,19 @@ integrated or explicitly rejected. Work is now serial in this session.
 
 ## Next actions
 
-1. **Human decision, first thing:** review and apply the RLS migration pair.
-   Three live cross-tenant exposures, a 3-step sequence; `CURRENT_PRIORITIES.md`
-   has the checklist and `DATABASE_STATUS.md` the reasoning.
-   `db-migration-reviewer` is mandated by CLAUDE.md for this shared production
-   database.
+0. **Apply the `baseball_messages` fix.** Migration B SECTION 5, three
+   `DROP POLICY` statements, no companion app change, safe under old and new
+   code. It closes a live read *and write* hole into every private
+   coach↔player conversation in the database. It is the only part of this work
+   with no deploy ordering, so it does not need to wait for the rest.
+1. **Human decision:** review and apply the rest of the RLS migration pair.
+   Five further exposures, a 3-step sequence; `CURRENT_PRIORITIES.md` has the
+   checklist and `DATABASE_STATUS.md` the reasoning. `db-migration-reviewer`
+   is mandated by CLAUDE.md for this shared production database.
+1b. **Two findings are deliberately unfixed and need a decision, not a patch:**
+   `baseball_coaches` (75 call sites), `golf_coaches` (live product, needs a
+   public view built first), and `baseball_notifications` (the obvious fix
+   breaks practice-publish). Each has its analysis written out.
 2. Decide whether CI should keep seeding **production** on every PR. It always
    has; the hardened guard now says so out loud instead of hiding it behind a
    constant named "demo". Surfaced deliberately rather than changed unattended.
