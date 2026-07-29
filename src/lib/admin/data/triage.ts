@@ -149,6 +149,12 @@ export function mergeTriage(input: {
    *  Only set when the caller actually scoped its Sentry fetch by that tag;
    *  omitted/undefined fields render as unknown, never a guess. */
   sentryTagHint?: { sport?: TriageItem['sport'] | null; feature?: string | null };
+  /**
+   * fingerprint → most recent `resolved_at`, from queryPriorResolutions().
+   * Optional so every existing caller and test keeps working unchanged; when
+   * absent, regression detection simply does not fire (the prior behaviour).
+   */
+  priorResolutions?: Map<string, string>;
 }): TriageItem[] {
   const hintSport = input.sentryTagHint?.sport ?? null;
   const hintFeature = input.sentryTagHint?.feature ?? null;
@@ -237,6 +243,16 @@ export function mergeTriage(input: {
       source: last.source,
     });
 
+    // REGRESSION: this fingerprint was resolved, and has fired again SINCE
+    // that resolution. Compared against the bucket's firstSeen (its earliest
+    // unresolved occurrence) rather than lastSeen — using lastSeen would flag
+    // an incident that has simply been open and ongoing across a stale
+    // resolution timestamp, which is not a regression at all.
+    const priorResolvedAt = input.priorResolutions?.get(fp);
+    const regressed =
+      priorResolvedAt !== undefined &&
+      first.created_at > priorResolvedAt;
+
     items.push({
       key: `app:${fp}`,
       origin: 'app',
@@ -249,7 +265,7 @@ export function mergeTriage(input: {
       lastSeen: last.created_at,
       permalink: null,
       eventIds: sorted.map((r) => r.id),
-      substatus: null,
+      substatus: regressed ? 'regressed' : null,
       source: last.source ?? null,
       feature: last.feature ?? null,
       actionName,

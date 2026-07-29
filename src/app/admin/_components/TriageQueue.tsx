@@ -127,8 +127,18 @@ export function TriageQueue({
             <p className="font-fw-mono text-xs tabular-nums text-warm-500">
               {affectedUsersLabel(item)} · {item.occurrences} events · last{' '}
               <LocalTime iso={item.lastSeen} />
-              {item.substatus === 'regressed' ? ' · REGRESSED' : ''}
             </p>
+            {/* REGRESSED is the single highest-signal thing on a triage row —
+                it means a fix did not hold — so it gets a real badge rather
+                than the inline mono text it used to share with the counts.
+                Now reachable for app-origin rows too, not just Sentry. */}
+            {item.substatus === 'regressed' ? (
+              <p className="pt-0.5">
+                <StatusPill tone="danger" dot size="sm">
+                  Regressed — resolved, then fired again
+                </StatusPill>
+              </p>
+            ) : null}
             {/* Kind axis. Only shown when it is NOT a plain actionable defect —
                 labelling every ordinary bug "Defect" would be pure chrome. The
                 cases worth calling out are the ones that change what an
