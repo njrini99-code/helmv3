@@ -145,7 +145,17 @@ export function CalendarFairway({
               this is the recruiting-specific narrative (camp/official-visit
               windows), so it stays a bespoke EditorsLetter like the other
               Batch A surfaces' non-preset states (e.g. TasksFairway/
-              AnnouncementsFairway "no team selected"). */}
+              AnnouncementsFairway "no team selected").
+
+              MODULE GATE: this branch renders only when `recruitingEmpty` is
+              true, and that prop is computed by `resolveCalendarEmptyState`
+              (src/lib/baseball/calendar/empty-state.ts), which returns false
+              for everyone while the recruiting module is sunset. Without that
+              gate the "Browse prospects" link below points at a route the
+              middleware redirects — which is exactly what a college coach with
+              no team saw on their first login. The gate is named here rather
+              than left implicit because this component only receives the
+              decision; it does not make it. */}
           <EditorsLetter
             ink="pursuit"
             title="Your recruiting calendar is empty"
