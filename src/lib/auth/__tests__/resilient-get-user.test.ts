@@ -193,6 +193,42 @@ describe('getUserResilient', () => {
 
     expect(result).toEqual({ user: null, degraded: false });
   });
+
+  it('does not rethrow when the degraded fallback itself throws (2026-07-29 outage)', async () => {
+    // getSession() is documented as a local cookie read, but supabase-js
+    // attempts a token REFRESH when the stored token has expired — a network
+    // call to the auth server we already know is unreachable. So the LAST line
+    // of the degraded fallback could throw the very error the fallback exists
+    // to absorb.
+    //
+    // This is not a local failure: middleware runs in front of every request,
+    // so an escaping error takes the whole site down, marketing pages and the
+    // login screen included. On 2026-07-29 that produced 292
+    // `AuthRetryableFetchError` errors on /middleware over nine hours and
+    // helmsportslabs.com stopped serving anything.
+    const getUser = vi
+      .fn()
+      .mockResolvedValue({ data: { user: null }, error: { name: 'AuthRetryableFetchError' } });
+    const getSession = vi.fn().mockRejectedValue(
+      Object.assign(new Error('The operation was aborted due to timeout'), {
+        name: 'AuthRetryableFetchError',
+      }),
+    );
+    const client = authClient({ getUser, getSession });
+
+    await expect(getUserResilient(client)).resolves.toEqual({ user: null, degraded: false });
+    expect(getSession).toHaveBeenCalled();
+  });
+
+  it('does not rethrow when the fallback throws a plain non-auth error either', async () => {
+    const getUser = vi
+      .fn()
+      .mockResolvedValue({ data: { user: null }, error: { name: 'AuthRetryableFetchError' } });
+    const getSession = vi.fn().mockRejectedValue(new TypeError('fetch failed'));
+    const client = authClient({ getUser, getSession });
+
+    await expect(getUserResilient(client)).resolves.toEqual({ user: null, degraded: false });
+  });
 });
 
 describe('signInWithPasswordResilient', () => {
