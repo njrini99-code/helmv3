@@ -8,6 +8,11 @@ import {
   buildFilteredIncidentsReport,
 } from '@/lib/admin/data/errors';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
+import {
+  INCIDENT_CLASS_ORDER,
+  INCIDENT_CLASS_LABEL,
+  INCIDENT_CLASS_DESCRIPTION,
+} from '@/lib/admin/incident-classification';
 import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import { TriageQueue } from '../_components/TriageQueue';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
@@ -21,11 +26,14 @@ import { ErrorsFilterChips } from './ErrorsFilterChips';
 
 export const dynamic = 'force-dynamic';
 
-const CHIP_SETS: Array<{ param: 'sport' | 'severity' | 'source' | 'window'; values: string[] }> = [
+const CHIP_SETS: Array<{ param: 'sport' | 'severity' | 'source' | 'window' | 'kind'; values: string[] }> = [
   { param: 'sport', values: ['golf', 'baseball', 'shared'] },
   { param: 'severity', values: ['critical', 'error', 'warning', 'info'] },
   { param: 'source', values: ['server_action', 'rls_denial', 'auth', 'cron', 'client'] },
   { param: 'window', values: ['24', '168'] },
+  // Kind axis. No chip for 'defect' — that IS the unfiltered default view, so
+  // a "defect" chip would read as a narrowing that changes nothing.
+  { param: 'kind', values: ['all', 'telemetry', 'empty_state', 'access', 'integration', 'degradation', 'integrity_ok'] },
 ];
 
 // Sentry's raw issue `level` string → the same trio (dot + tone + label)
@@ -163,6 +171,14 @@ export default async function ErrorsPage({
     // for this window/filter set. Compute once here so the traceability strip's
     // render guard and its metrics agree on the same population.
     const appIncidents = tab.incidents.filter((incident) => incident.origin === 'app');
+    // What the default kind filter is holding back. Stated explicitly and
+    // broken down by class — a filter that silently hides most of the feed is
+    // worse than no filter, because the operator cannot tell the queue is
+    // being curated at all.
+    const suppressedBreakdown = INCIDENT_CLASS_ORDER
+      .filter((k) => k !== 'defect' && (tab.kindCounts.byClass[k] ?? 0) > 0)
+      .map((k) => ({ klass: k, count: tab.kindCounts.byClass[k] ?? 0 }));
+    const showSuppressedNotice = !filters.kind && tab.kindCounts.suppressed > 0;
     const showWiderWindowHint =
       tab.incidents.length === 0 &&
       filters.windowHours < 168 &&
@@ -179,6 +195,33 @@ export default async function ErrorsPage({
 
     return (
       <div className="space-y-6">
+        {showSuppressedNotice ? (
+          <Surface padding="sm">
+            <p className="text-body-sm text-warm-800">
+              Showing{' '}
+              <span className="font-fw-mono tabular-nums">{tab.kindCounts.actionable}</span>{' '}
+              actionable {tab.kindCounts.actionable === 1 ? 'incident' : 'incidents'}.{' '}
+              <span className="font-fw-mono tabular-nums">{tab.kindCounts.suppressed}</span> held
+              back as not-a-bug:{' '}
+              {suppressedBreakdown.map((entry, i) => (
+                <span key={entry.klass}>
+                  {i > 0 ? ', ' : ''}
+                  <Link
+                    href={hrefWithOverrides(current, { kind: entry.klass })}
+                    className="text-accent-700 underline"
+                    title={INCIDENT_CLASS_DESCRIPTION[entry.klass]}
+                  >
+                    {entry.count} {INCIDENT_CLASS_LABEL[entry.klass].toLowerCase()}
+                  </Link>
+                </span>
+              ))}
+              .{' '}
+              <Link href={hrefWithOverrides(current, { kind: 'all' })} className="text-accent-700 underline">
+                Show everything
+              </Link>
+            </p>
+          </Surface>
+        ) : null}
         {showWiderWindowHint ? (
           <Surface padding="sm" className="border border-warning/30 bg-warning/5">
             <p className="text-body-sm text-warm-800">

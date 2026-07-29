@@ -86,6 +86,48 @@ jobs:
       - name: Check feature knowledge registry
         run: npm run knowledge:check
 
+  # Helm Bridge integration env drift.
+  #
+  # Runs in --drift mode, which is a no-op while NONE of these secrets are
+  # provisioned (CI's situation today) and becomes a hard failure the moment
+  # SOME are set and a sibling goes missing. That asymmetry is the point: a
+  # partially-configured Bridge degrades SILENTLY — blank panels, and edge
+  # errors that never reach admin_events because INTERNAL_LOG_KEY is unset —
+  # so a rotated or dropped var otherwise surfaces only during a real
+  # incident, which is the worst possible time to discover it.
+  #
+  # Wiring the secrets into this repo later needs no change here: the job
+  # starts enforcing on its own as soon as any one of them exists.
+  bridge-env:
+    name: Bridge env drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check Helm Bridge integration env
+        env:
+          SENTRY_READ_TOKEN: ${{ secrets.SENTRY_READ_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          INTERNAL_LOG_KEY: ${{ secrets.INTERNAL_LOG_KEY }}
+        run: node scripts/check-helm-bridge-env.mjs --drift
+
   typecheck:
     name: TypeScript
     runs-on: ubuntu-latest

@@ -5,6 +5,7 @@ import {
   observeActionSoftFailure,
 } from '@/lib/admin/observe-action-result';
 import { createClient } from '@/lib/supabase/server';
+import { runWithRequestContext } from '@/lib/admin/request-context';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 /**
@@ -89,6 +90,12 @@ export function withAdminObserved<Args extends unknown[], R>(
   fn: (...args: Args) => Promise<R>,
 ): (...args: Args) => Promise<R> {
   return async (...args: Args): Promise<R> => {
+    // One correlation scope per invocation. Opening it HERE — rather than at
+    // each logging call site — is what makes requestId actually get populated:
+    // every logServer* call beneath this frame inherits the id with no call
+    // site changes, so several log lines from one action finally share a key.
+    // Nested wrapped actions reuse the outer scope (see runWithRequestContext).
+    return runWithRequestContext({ action: name }, async () => {
     try {
       const result = await fn(...args);
       // A successful action with no soft-failure envelope has nothing to
@@ -153,5 +160,6 @@ export function withAdminObserved<Args extends unknown[], R>(
       }
       throw err;
     }
+    });
   };
 }

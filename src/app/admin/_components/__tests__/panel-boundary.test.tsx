@@ -3,12 +3,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { PanelBoundary } from '@/app/admin/_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from '@/app/admin/_components/PanelStates';
+import { logError } from '@/lib/error-logging';
 
 const mockRefresh = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: mockRefresh, push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  usePathname: () => '/admin',
 }));
+
+vi.mock('@/lib/error-logging', () => ({
+  logError: vi.fn(),
+}));
+
+const mockLogError = vi.mocked(logError);
 
 // `ReactElement` (not the global `JSX.Element`): React 19's @types/react no
 // longer expose a global `JSX` namespace (it's `React.JSX` now).
@@ -74,6 +82,67 @@ describe('PanelBoundary', () => {
       </PanelBoundary>,
     );
     expect(screen.getByText('healthy content')).toBeInTheDocument();
+  });
+
+  it('reports the crash through the shared client error-logging pipeline, attributed to this panel', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockLogError.mockClear();
+
+    render(
+      <PanelBoundary title="Live posture">
+        <Bomb />
+      </PanelBoundary>,
+    );
+
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const call = mockLogError.mock.calls[0];
+    if (!call) throw new Error('logError was not called');
+    const [reportedError, context, severity] = call;
+    expect(reportedError).toBeInstanceOf(Error);
+    expect((reportedError as Error).message).toBe('panel exploded');
+    expect(context).toMatchObject({
+      panelTitle: 'Live posture',
+      route: '/admin',
+      boundary: 'panel',
+      feature: 'admin_dashboard',
+    });
+    expect(severity).toBe('medium');
+
+    // The fallback must still render — reporting is a side effect, not a
+    // replacement for the existing degrade-gracefully behavior.
+    expect(screen.getByText(/Live posture/)).toBeInTheDocument();
+    expect(screen.getByText(/temporarily unavailable/i)).toBeInTheDocument();
+    spy.mockRestore();
+  });
+
+  it('does not report when children render healthily', () => {
+    mockLogError.mockClear();
+    render(
+      <PanelBoundary title="Errors">
+        <p>healthy content</p>
+      </PanelBoundary>,
+    );
+    expect(mockLogError).not.toHaveBeenCalled();
+  });
+
+  it('never throws out of the reporting path, even if the logger itself fails', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockLogError.mockClear();
+    mockLogError.mockImplementationOnce(() => {
+      throw new Error('logging pipeline unavailable');
+    });
+
+    expect(() =>
+      render(
+        <PanelBoundary title="Errors">
+          <Bomb />
+        </PanelBoundary>,
+      ),
+    ).not.toThrow();
+
+    // The fallback still renders even though the reporter itself blew up.
+    expect(screen.getByText(/temporarily unavailable/i)).toBeInTheDocument();
+    spy.mockRestore();
   });
 });
 

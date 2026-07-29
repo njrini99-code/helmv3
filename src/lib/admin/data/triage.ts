@@ -12,6 +12,7 @@ import {
   extractCollapsedCount,
   extractRoute,
 } from '@/lib/admin/incident-report';
+import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
 
 export type TriageSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -53,6 +54,19 @@ export interface TriageItem {
   feature: string | null;
   actionName: string | null;
   route: string | null;
+  /**
+   * Derived KIND axis, orthogonal to severity — see
+   * @/lib/admin/incident-classification. Computed at read time (no column,
+   * no migration), so it applies retroactively to every historical row and a
+   * rule change takes effect immediately.
+   */
+  klass: IncidentClass;
+  /** `classification.actionable` — the Errors tab's default filter. */
+  actionable: boolean;
+  /** Operator-readable explanation of why it landed in `klass`. */
+  klassReason: string;
+  /** The message lost its content on capture (e.g. "[object Object]"). */
+  hasDegradedMessage: boolean;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
   report: string;
 }
@@ -135,14 +149,28 @@ export function mergeTriage(input: {
    *  Only set when the caller actually scoped its Sentry fetch by that tag;
    *  omitted/undefined fields render as unknown, never a guess. */
   sentryTagHint?: { sport?: TriageItem['sport'] | null; feature?: string | null };
+  /**
+   * fingerprint → most recent `resolved_at`, from queryPriorResolutions().
+   * Optional so every existing caller and test keeps working unchanged; when
+   * absent, regression detection simply does not fire (the prior behaviour).
+   */
+  priorResolutions?: Map<string, string>;
 }): TriageItem[] {
   const hintSport = input.sentryTagHint?.sport ?? null;
   const hintFeature = input.sentryTagHint?.feature ?? null;
-  const items: TriageItem[] = input.sentryIssues.map((issue) => ({
+  const items: TriageItem[] = input.sentryIssues.map((issue) => {
+    const severity = SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error';
+    const classification = classifyIncident({
+      title: issue.title,
+      message: issue.culprit,
+      severity,
+      source: 'sentry',
+    });
+    return {
     key: `sentry:${issue.id}`,
     origin: 'sentry' as const,
     title: issue.title,
-    severity: SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error',
+    severity,
     sport: hintSport,
     occurrences: issue.count,
     affectedUsers: issue.userCount,
@@ -155,6 +183,10 @@ export function mergeTriage(input: {
     feature: hintFeature,
     actionName: null,
     route: issue.culprit,
+    klass: classification.klass,
+    actionable: classification.actionable,
+    klassReason: classification.reason,
+    hasDegradedMessage: classification.hasDegradedMessage,
     report: buildIncidentReport({
       title: issue.title,
       message: issue.culprit ?? issue.title,
@@ -168,8 +200,12 @@ export function mergeTriage(input: {
       firstSeen: issue.firstSeen,
       lastSeen: issue.lastSeen,
       sentryUrl: issue.permalink,
+      incidentClass: classification.klass,
+      incidentClassReason: classification.reason,
+      hasDegradedMessage: classification.hasDegradedMessage,
     }),
-  }));
+    };
+  });
 
   const buckets = new Map<string, { rows: AppTriageEventRow[]; users: Set<string> }>();
   for (const row of input.appEvents) {
@@ -200,6 +236,23 @@ export function mergeTriage(input: {
     const stackTrace = mostRecentFirst.map((r) => r.stack_trace).find((s) => !!s) ?? null;
     const collapsedCount = bucket.rows.reduce((sum, r) => sum + extractCollapsedCount(r.metadata), 0);
 
+    const classification = classifyIncident({
+      title: last.title,
+      message: last.message,
+      severity: worst,
+      source: last.source,
+    });
+
+    // REGRESSION: this fingerprint was resolved, and has fired again SINCE
+    // that resolution. Compared against the bucket's firstSeen (its earliest
+    // unresolved occurrence) rather than lastSeen — using lastSeen would flag
+    // an incident that has simply been open and ongoing across a stale
+    // resolution timestamp, which is not a regression at all.
+    const priorResolvedAt = input.priorResolutions?.get(fp);
+    const regressed =
+      priorResolvedAt !== undefined &&
+      first.created_at > priorResolvedAt;
+
     items.push({
       key: `app:${fp}`,
       origin: 'app',
@@ -212,11 +265,15 @@ export function mergeTriage(input: {
       lastSeen: last.created_at,
       permalink: null,
       eventIds: sorted.map((r) => r.id),
-      substatus: null,
+      substatus: regressed ? 'regressed' : null,
       source: last.source ?? null,
       feature: last.feature ?? null,
       actionName,
       route,
+      klass: classification.klass,
+      actionable: classification.actionable,
+      klassReason: classification.reason,
+      hasDegradedMessage: classification.hasDegradedMessage,
       report: buildIncidentReport({
         title: last.title,
         message: last.message,
@@ -237,6 +294,9 @@ export function mergeTriage(input: {
           route: r.url ?? extractRoute(r.metadata),
           userId: r.user_id,
         })),
+        incidentClass: classification.klass,
+        incidentClassReason: classification.reason,
+        hasDegradedMessage: classification.hasDegradedMessage,
       }),
     });
   }

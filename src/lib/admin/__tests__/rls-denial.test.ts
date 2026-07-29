@@ -29,10 +29,11 @@ describe('maybeCaptureRlsDenial', () => {
   beforeEach(() => mocks.logServerEvent.mockClear());
 
   it('emits a warning event with source=rls_denial for a denial', () => {
-    maybeCaptureRlsDenial(
+    const captured = maybeCaptureRlsDenial(
       { code: '42501', message: 'permission denied for table golf_rounds' },
       { table: 'golf_rounds', verb: 'update', action: 'saveRound', userId: 'u1', sport: 'golf' },
     );
+    expect(captured).toBe(true);
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
     const [message, ctx, severity] = mocks.logServerEvent.mock.calls[0]!;
     expect(message).toContain('RLS denial');
@@ -42,6 +43,20 @@ describe('maybeCaptureRlsDenial', () => {
   it('does nothing for non-denials', () => {
     maybeCaptureRlsDenial({ code: '23505', message: 'dup' }, { table: 't', verb: 'insert', action: 'x' });
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
+  });
+
+  it('returns true when it captures a denial, false otherwise — callers gate their own generic logging on this', () => {
+    const capturedDenial = maybeCaptureRlsDenial(
+      { code: '42501', message: 'permission denied for table golf_rounds' },
+      { table: 'golf_rounds', verb: 'update', action: 'saveRound' },
+    );
+    expect(capturedDenial).toBe(true);
+
+    const capturedNonDenial = maybeCaptureRlsDenial(
+      { code: '23505', message: 'dup' },
+      { table: 't', verb: 'insert', action: 'x' },
+    );
+    expect(capturedNonDenial).toBe(false);
   });
   it('never throws even if the logger rejects', () => {
     mocks.logServerEvent.mockRejectedValueOnce(new Error('logger down'));
