@@ -53,11 +53,27 @@ export default defineConfig({
   },
   test: {
     ...sharedTestConfig,
-    // Root-level include/exclude is the shared fallback when no project filter
-    // is given. The per-project blocks below override these for named runs.
-    include: [
-      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-    ],
+    // NO root-level `include`. Every project below defines its own, and
+    // `extends: true` MERGES array options rather than replacing them — so a
+    // root-level include is unioned into every project, not overridden by it.
+    //
+    // This was previously commented "the per-project blocks below override
+    // these for named runs", which is the opposite of what happens, and it had
+    // consequences: `--project integration`, `--project rls` and
+    // `--project business` each matched ~870 files instead of their own 5, 0
+    // and 7, because they set `include` but not `exclude` and so inherited the
+    // broad root pattern with nothing to narrow it. `unit` looked correct only
+    // because it also overrides `exclude` and explicitly subtracts the other
+    // three categories.
+    //
+    // The visible symptom was in CI: the "Business contracts" job runs
+    // `vitest run --project business`, so it re-ran the ENTIRE unit suite
+    // under a name that claims to check seven contract files — roughly
+    // doubling test wall-clock on every PR while reporting something untrue.
+    //
+    // `exclude` stays at the root deliberately: merging excludes is additive
+    // in the safe direction (each project subtracts at least these), which is
+    // exactly what it is for.
     exclude: ['node_modules', '.next', 'archive', 'helm-website-ui', 'helm-intelligence'],
 
     projects: [
@@ -113,6 +129,14 @@ export default defineConfig({
         test: {
           ...sharedTestConfig,
           name: 'rls',
+          // Selects ZERO files today — no `src/**/*.rls.test.*` exists, and
+          // `npm run test:rls` consequently does nothing. That is not a gap:
+          // RLS is tested for real by the pgTAP suites in
+          // supabase/tests/rls/*.sql, which run against a fresh Postgres in
+          // CI's "Supabase lint + RLS tests" job and currently carry 93
+          // assertions. Kept as a defined project so the naming convention
+          // stays available, but do not read a green `test:rls` as evidence
+          // of anything.
           include: ['src/**/*.rls.test.{ts,tsx}'],
           exclude: ['node_modules', '.next'],
           testTimeout: 30_000,
