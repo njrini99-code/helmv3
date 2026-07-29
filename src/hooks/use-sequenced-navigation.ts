@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
@@ -33,6 +33,19 @@ export interface SequencedNavigationOptions {
   onFade: () => void;
 }
 
+/**
+ * Returned by the hook so a caller that navigates on its OWN (a Skip button)
+ * can stand the sequence down.
+ *
+ * Without this, skipping left the armed failsafe running: it fires
+ * `window.location.replace` — a HARD navigation — some seconds later, on
+ * whatever page the user has since reached. That was survivable while the hook
+ * was only armed after identity resolved, because a fast skip usually beat the
+ * arming. It is not survivable now that the sequence arms at mount, which is
+ * the whole point of the hang fix. Skipping has to be able to cancel.
+ */
+export type SequencedNavigationControls = { cancel: () => void };
+
 export function useSequencedNavigation({
   armed,
   destinationRef,
@@ -40,10 +53,21 @@ export function useSequencedNavigation({
   navigateAtMs,
   failsafeAtMs,
   onFade,
-}: SequencedNavigationOptions): void {
+}: SequencedNavigationOptions): SequencedNavigationControls {
   const router = useRouter();
   const hasArmedRef = useRef(false);
   const hasNavigatedRef = useRef(false);
+  // Timer ids kept on a ref so `cancel()` can reach them from outside the
+  // effect that created them.
+  const timerIdsRef = useRef<number[]>([]);
+
+  const cancel = useCallback(() => {
+    // Claim the navigation so neither the scheduled `router.replace` nor the
+    // hard `window.location.replace` failsafe can also fire.
+    hasNavigatedRef.current = true;
+    timerIdsRef.current.forEach((id) => window.clearTimeout(id));
+    timerIdsRef.current = [];
+  }, []);
 
   useEffect(() => {
     if (!armed || hasArmedRef.current) return;
@@ -65,10 +89,13 @@ export function useSequencedNavigation({
       }
     }, failsafeAtMs);
 
+    timerIdsRef.current = [fadeId, navId, failsafeId];
+
     return () => {
       window.clearTimeout(fadeId);
       window.clearTimeout(navId);
       window.clearTimeout(failsafeId);
+      timerIdsRef.current = [];
     };
   }, [armed, destinationRef, fadeAtMs, navigateAtMs, failsafeAtMs, onFade, router]);
 
@@ -81,4 +108,6 @@ export function useSequencedNavigation({
       // prefetch is best-effort
     }
   }, [armed, destinationRef, router]);
+
+  return { cancel };
 }

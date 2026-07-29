@@ -20,7 +20,13 @@
 
 // Minified-ish IIFE; wrapped in try/catch so a storage exception never blocks
 // paint. Mirrors resolveIsDark(): dark when choice==='dark', or 'system' + OS dark.
-const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}}catch(e){}})();`;
+// `/golf/welcome` is in the guard alongside the dashboard because it is the
+// post-sign-in interstitial and it now paints on the SAME `bg-canvas` /
+// `bg-canvas-gradient` tokens the dashboard does. Without the boot script those
+// tokens resolve to their LIGHT values regardless of preference, so a dark-mode
+// user got a full-screen light page for the length of the hold and then a flip
+// to espresso on arrival — the light flash simply moved rather than going away.
+const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome')return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}}catch(e){}})();`;
 
 export function ThemeScript() {
   return <script dangerouslySetInnerHTML={{ __html: BOOT }} suppressHydrationWarning />;
