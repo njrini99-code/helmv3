@@ -8,22 +8,38 @@
 -- (20260625000030:214, :235). DO NOTHING means every column is fixed at the
 -- moment of the FIRST sync and never revisited.
 --
--- `user_id` is copied from `baseball_players.user_id`, which is NULL until the
--- player accepts their invite and their account is linked. A coach who runs
--- Sync Athletes before their roster has finished signing up — which is the
--- normal order of operations, and what the demo seed does — writes NULL into
--- every athlete row. Re-running the sync does not fix it. Nothing else writes
--- that column.
+-- WHERE THE NULLs COME FROM. Not from the RPC:
+-- `baseball_players.user_id` and `golf_players.user_id` are both NOT NULL
+-- (20260527000000_prod_public_baseline.sql:8005 and the golf_players block),
+-- so the SELECTs below can only ever copy a real account id. An earlier
+-- draft of this migration blamed unaccepted invites; that was wrong, and CI
+-- rejected the fixture built on it with `null value in column "user_id" of
+-- relation "baseball_players" violates not-null constraint`.
+--
+-- They come from writes that bypass the RPC entirely. The demo seed inserts
+-- athlete rows directly with `user_id: null`
+-- (scripts/seed-baseball-lifting-demo.ts:311, "player logins from Phase-1
+-- don't auto-link here"), overriding it for exactly one demo login. Every
+-- other seeded athlete is unlinked. Any future direct write has the same
+-- effect.
+--
+-- Under DO NOTHING those NULLs were PERMANENT: the one mechanism that could
+-- have supplied the id — this sync — declined to write it. Nothing else
+-- writes that column, and no UI repairs it.
 --
 -- The consequence is not cosmetic: `/lifting/dashboard`'s athlete-self gate
--- resolves the viewer through `helm_lifting_athletes.user_id`. A player whose
--- row was seeded early can never see their own lifting data, permanently, and
--- there is no UI anywhere that repairs it.
+-- resolves the viewer through `helm_lifting_athletes.user_id`. An unlinked
+-- athlete can never see their own lifting data.
+--
+-- Because the source columns are NOT NULL, the repair below is guaranteed to
+-- succeed rather than merely likely: `EXCLUDED.user_id` always carries a real
+-- id, so one re-sync fixes every unlinked row.
 --
 -- THE FIX. `DO NOTHING` becomes a NARROW `DO UPDATE` that refreshes the
 -- identity fields the source of truth owns. Re-running Sync Athletes — which
 -- coaches already do, and which the settings screen already offers — now
--- repairs the link.
+-- repairs the link. It also means a rename or position change on the roster
+-- finally propagates, which DO NOTHING had silently prevented too.
 --
 -- WHAT IT DELIBERATELY DOES NOT TOUCH
 --

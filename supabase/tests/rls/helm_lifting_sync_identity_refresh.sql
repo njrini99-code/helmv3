@@ -2,11 +2,18 @@
 -- (supabase/migrations/20260729000300_helm_lifting_sync_refreshes_identity.sql).
 --
 -- The bug: the function upserted with `ON CONFLICT ... DO NOTHING`, so every
--- column was fixed at the first sync. `user_id` is copied from
--- baseball_players.user_id, which is NULL until a player accepts their invite
--- — so a coach syncing before their roster finished signing up wrote NULL
--- permanently, and those players could never see their own data at
--- /lifting/dashboard. Nothing else writes that column and no UI repaired it.
+-- column was fixed at the first write and never revisited.
+--
+-- The NULL user_ids do NOT come from the RPC — baseball_players.user_id is
+-- NOT NULL, so its SELECT can only copy a real id. (An earlier version of
+-- this suite built a fixture on the opposite assumption and CI rejected it
+-- outright: "null value in column user_id violates not-null constraint".)
+-- They come from writes that BYPASS the RPC — the demo seed inserts athlete
+-- rows directly with user_id: null
+-- (scripts/seed-baseball-lifting-demo.ts:311). Under DO NOTHING those NULLs
+-- were permanent, because the one mechanism that could have supplied the id
+-- declined to write it, and /lifting/dashboard's athlete-self gate resolves
+-- the viewer through that column.
 --
 -- These are BEHAVIOURAL: real rows, a real second sync, and assertions on what
 -- actually changed. The two that matter most are the negative ones — a sync
@@ -48,13 +55,29 @@ BEGIN
             'liftcoach@helm.test', 'active')
   ON CONFLICT DO NOTHING;
 
-  -- Player A: seeded BEFORE their account existed (user_id NULL) — the case
-  -- that used to be unrecoverable.
+  -- Player A: a real, linked player whose Lift Lab row was written DIRECTLY
+  -- with user_id NULL, exactly as the demo seed does. This is the state that
+  -- used to be unrecoverable.
+  INSERT INTO auth.users (id, email, role) VALUES
+    ('00000000-0000-0000-0000-0000000d0402', 'nowlinked@helm.test', 'authenticated')
+  ON CONFLICT DO NOTHING;
+  INSERT INTO public.users (id, email, role) VALUES
+    ('00000000-0000-0000-0000-0000000d0402', 'nowlinked@helm.test', 'player')
+  ON CONFLICT DO NOTHING;
   INSERT INTO public.baseball_players (id, user_id, first_name, last_name, primary_position, player_type)
-    VALUES ('00000000-0000-0000-0000-0000000d0401', NULL, 'Unlinked', 'Player', 'SS', 'college')
+    VALUES ('00000000-0000-0000-0000-0000000d0401', '00000000-0000-0000-0000-0000000d0402',
+            'Unlinked', 'Player', 'SS', 'college')
   ON CONFLICT DO NOTHING;
   INSERT INTO public.baseball_team_members (team_id, player_id, status)
     VALUES ('00000000-0000-0000-0000-0000000d0101', '00000000-0000-0000-0000-0000000d0401', 'active')
+  ON CONFLICT DO NOTHING;
+
+  -- The bypassing write. Pre-creating the athlete row with a NULL link is what
+  -- the seed script does; the sync below must repair it.
+  INSERT INTO public.helm_lifting_athletes
+    (organization_id, sport, sport_player_id, user_id, first_name, last_name, is_active)
+  VALUES ('00000000-0000-0000-0000-0000000d0001', 'baseball',
+          '00000000-0000-0000-0000-0000000d0401', NULL, 'Stale', 'Name', true)
   ON CONFLICT DO NOTHING;
 
   -- Player B: already linked, and CUT from the roster in Lift Lab.
@@ -108,8 +131,8 @@ SELECT ok(
 );
 
 -- ============================================================================
--- GROUP 2 — behavioural: the first sync, then a second one after the link
--- appears.
+-- GROUP 2 — behavioural: a sync over a pre-seeded NULL link, then a second
+-- sync after a rename and a roster cut.
 -- ============================================================================
 
 SET LOCAL role TO authenticated;
@@ -119,8 +142,8 @@ SET LOCAL request.jwt.claims TO
 SELECT ok(
   public.helm_lifting_sync_org_athletes(
     '00000000-0000-0000-0000-0000000d0001', 'baseball',
-    '00000000-0000-0000-0000-0000000d0101') >= 2,
-  'first sync seeds both athletes'
+    '00000000-0000-0000-0000-0000000d0101') >= 1,
+  'the sync touches the roster (inserting the new athlete, updating the pre-seeded one)'
 );
 
 RESET role;
@@ -129,26 +152,18 @@ RESET request.jwt.claims;
 SELECT is(
   (SELECT user_id FROM public.helm_lifting_athletes
     WHERE sport_player_id = '00000000-0000-0000-0000-0000000d0401'),
-  NULL::uuid,
-  'the unlinked player seeds with a NULL user_id (the state that used to be permanent)'
+  '00000000-0000-0000-0000-0000000d0402'::uuid,
+  'THE FIX: the sync repairs a directly-written NULL link, so the player can reach /lifting/dashboard'
 );
 
--- The player accepts their invite: the source row gains a user_id.
+-- The roster corrects a misspelled name, and a coach cuts Player B (which
+-- sets is_active = false in Lift Lab, via roster.ts's propagation).
 DO $$
 BEGIN
-  INSERT INTO auth.users (id, email, role) VALUES
-    ('00000000-0000-0000-0000-0000000d0402', 'nowlinked@helm.test', 'authenticated')
-  ON CONFLICT DO NOTHING;
-  INSERT INTO public.users (id, email, role) VALUES
-    ('00000000-0000-0000-0000-0000000d0402', 'nowlinked@helm.test', 'player')
-  ON CONFLICT DO NOTHING;
-
   UPDATE public.baseball_players
-     SET user_id = '00000000-0000-0000-0000-0000000d0402',
-         first_name = 'Corrected'
+     SET first_name = 'Corrected'
    WHERE id = '00000000-0000-0000-0000-0000000d0401';
 
-  -- And a coach cuts Player B, which sets is_active = false in Lift Lab.
   UPDATE public.helm_lifting_athletes
      SET is_active = false
    WHERE sport_player_id = '00000000-0000-0000-0000-0000000d0502';
@@ -172,7 +187,7 @@ SELECT is(
   (SELECT user_id FROM public.helm_lifting_athletes
     WHERE sport_player_id = '00000000-0000-0000-0000-0000000d0401'),
   '00000000-0000-0000-0000-0000000d0402'::uuid,
-  'THE FIX: re-syncing repairs the account link, so the player can reach /lifting/dashboard'
+  'a repaired link survives further syncs — COALESCE never blanks it'
 );
 
 SELECT is(
