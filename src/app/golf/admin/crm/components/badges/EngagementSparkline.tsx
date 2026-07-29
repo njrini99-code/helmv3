@@ -31,7 +31,7 @@ export function EngagementSparkline({
         style={{ width, height }}
         aria-label="No email engagement in last 90 days"
       >
-        <div className="h-px w-full bg-warm-200" />
+        <div className="h-px w-full bg-surface-sunken" />
       </div>
     );
   }
@@ -57,7 +57,7 @@ export function EngagementSparkline({
         width={opensW}
         height={barH}
         rx="1"
-        className="fill-blue-400"
+        className="fill-text-tertiary"
       />
       {/* Clicks — primary */}
       <rect
@@ -66,7 +66,7 @@ export function EngagementSparkline({
         width={clicksW}
         height={barH}
         rx="1"
-        className="fill-primary-500"
+        className="fill-accent-500"
       />
     </svg>
   );

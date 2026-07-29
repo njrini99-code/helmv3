@@ -106,16 +106,53 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle different types of requests
+  // Never touch another origin. Supabase, Sentry, fonts and analytics have
+  // their own failure handling; wrapping them in ours can only subtract.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   if (isApiRequest(url)) {
     event.respondWith(handleApiRequest(event.request));
-  } else if (isGolfDashboardPage(event.request, url)) {
-    event.respondWith(handlePageRequest(event.request));
-  } else if (isStaticAsset(url)) {
-    event.respondWith(handleStaticAsset(event.request));
-  } else {
-    event.respondWith(handleDynamicRequest(event.request));
+    return;
   }
+
+  if (isGolfDashboardPage(event.request, url)) {
+    event.respondWith(handlePageRequest(event.request));
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // EVERY OTHER NAVIGATION IS LEFT ALONE. This is the important line.
+  //
+  // This worker is registered with `scope: '/'` from the golf dashboard
+  // (OfflineProvider), so it controls the ENTIRE origin — the marketing
+  // site, BaseballHelm, auth pages, all of it — even though only the golf
+  // dashboard ever asked for offline support.
+  //
+  // Those navigations used to fall through to handleDynamicRequest, whose
+  // catch block turned ANY fetch rejection into a full-page "No Connection"
+  // screen. One transient failure on a live LTE connection was enough:
+  // reported 2026-07-29 by a user on full bars, who saw offline.html on
+  // helmsportslabs.com and could not get past it — every tap navigated,
+  // was intercepted, failed once, and was answered with the offline page.
+  //
+  // A browser's own network-error page is recoverable: it has a reload
+  // button and it tells the truth about being a transient failure. Ours
+  // claimed the device had no internet and offered a "Try Again" that ran
+  // straight back into the same handler. Not intercepting at all is
+  // strictly better than intercepting and guessing wrong.
+  // ---------------------------------------------------------------------
+  if (event.request.mode === 'navigate') {
+    return;
+  }
+
+  if (isStaticAsset(url)) {
+    event.respondWith(handleStaticAsset(event.request));
+    return;
+  }
+
+  event.respondWith(handleDynamicRequest(event.request));
 });
 
 // ============================================================================
@@ -174,13 +211,26 @@ async function handlePageRequest(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch {
+  } catch (err) {
+    // A cached copy of THIS page is always the best answer — it is real
+    // content the user asked for, online or not.
     const cachedResponse = await cache.match(request);
     if (cachedResponse) {
       return cachedResponse;
     }
 
-    return getOfflinePage();
+    // No cached copy. Only claim "No Connection" when the device agrees it
+    // has none. `navigator.onLine === true` with a failed fetch means a
+    // transient error — a dropped socket, a cold edge, a DNS blip — and the
+    // browser's own error page handles that honestly and recoverably.
+    // Asserting "you are offline" at someone on full LTE bars is both false
+    // and a dead end, because our offline page's only exit re-enters this
+    // same code path.
+    if (self.navigator && self.navigator.onLine === false) {
+      return getOfflinePage();
+    }
+
+    throw err;
   }
 }
 
@@ -201,8 +251,14 @@ async function handleStaticAsset(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch {
-    return new Response('', { status: 404 });
+  } catch (err) {
+    // Do NOT synthesise `new Response('', { status: 404 })` here. For a
+    // JavaScript chunk that is worse than the real failure: a fabricated
+    // empty body is a WEAKER signal than a network error, so the page's own
+    // stale-deployment recovery (StaleDeploymentRecoveryScript, which watches
+    // for chunk-load failures) has less to catch, and the app degrades
+    // silently instead of reloading itself. Let the real error through.
+    throw err;
   }
 }
 
@@ -213,7 +269,7 @@ async function handleDynamicRequest(request) {
   try {
     const response = await fetch(request);
     return response;
-  } catch {
+  } catch (err) {
     const cache = await caches.open(DYNAMIC_CACHE);
     const cachedResponse = await cache.match(request);
 
@@ -221,12 +277,15 @@ async function handleDynamicRequest(request) {
       return cachedResponse;
     }
 
-    // For navigation requests, show offline page
-    if (request.mode === 'navigate') {
-      return getOfflinePage();
-    }
-
-    return new Response('', { status: 503 });
+    // No navigation branch here any more. The fetch handler above returns
+    // early for every navigation outside the golf dashboard, so one can no
+    // longer reach this function — and the branch that used to live here is
+    // what served a full-page "No Connection" to an online user.
+    //
+    // Subresources rethrow rather than resolving to a synthetic 503, for the
+    // same reason as handleStaticAsset: a real error is more informative to
+    // the caller than a fabricated response that looks like a server verdict.
+    throw err;
   }
 }
 

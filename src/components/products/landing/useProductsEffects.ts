@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
+import { markAllAnimReady, unmarkAllAnimReady } from '@/lib/motion/anim-gate';
 
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -42,11 +43,34 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
 
     // --- scroll reveal ------------------------------------------------------
     const reveals = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'));
+    // The first-paint gate (lib/motion/anim-gate.ts) is hiding every one of
+    // these right now, which is what stops the server's settled markup from
+    // being painted and then snatched back. Release them below, the moment this
+    // hook has written its own hidden state — never before, or they flash.
     let io: IntersectionObserver | undefined;
     if (!reduce && typeof IntersectionObserver === 'function') {
+      // TWO PASSES, AND THE ORDER IS THE WHOLE POINT.
+      //
+      // Writing `opacity: 0` and the `transition` in the SAME pass does not
+      // hide anything — Chrome resolves a transition against the AFTER-change
+      // style, so it sees a transition-property it is willing to animate and
+      // fades the element from 1 to 0 over .68s. The reveal blocks were
+      // therefore visible for most of a second and then dissolved, which is
+      // most of the "loads weird" report and is why the first-paint gate alone
+      // did not fix this page: the gate hid them correctly, and handing over to
+      // this hook re-exposed an element that was still mid-fade-out.
+      //
+      // So: hide with transitions explicitly OFF, force ONE style flush for the
+      // whole batch so that hidden state becomes the before-change style, and
+      // only then attach the transitions. They can now only ever run on the way
+      // IN, which is the only direction that was ever wanted.
       reveals.forEach((el) => {
+        el.style.transition = 'none';
         el.style.opacity = '0';
         el.style.transform = `translateY(${compact ? 14 : 20}px)`;
+      });
+      void root.offsetHeight; // flush: commit the hidden state before transitions exist
+      reveals.forEach((el) => {
         el.style.transition =
           `opacity ${compact ? '.52s' : '.68s'} cubic-bezier(.16,1,.3,1), transform ${compact ? '.52s' : '.68s'} cubic-bezier(.16,1,.3,1)`;
         const authoredDelay = Number(el.getAttribute('data-reveal-delay') ?? 0);
@@ -70,6 +94,12 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
       );
       reveals.forEach((el) => io?.observe(el));
     }
+    // Every reveal now carries its own inline `opacity: 0` (or, under reduced
+    // motion, was never hidden at all), so the CSS gate has nothing left to do
+    // for them. Handing over here — after the prep loop, in the same synchronous
+    // pass — means there is no frame in which a reveal is neither gated nor
+    // owned.
+    markAllAnimReady(reveals);
 
     // --- effects (count / spark / stagger / bar) ---------------------------
     const fx = Array.from(root.querySelectorAll<HTMLElement>('[data-fx]'));
@@ -120,9 +150,16 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
         el.style.strokeDashoffset = String(len);
       }
       if (kind === 'stagger') {
-        el.querySelectorAll<HTMLElement>('[data-si]').forEach((r) => {
+        // Same two-pass hide as the reveals above — one pass would fade these
+        // rows out from full opacity instead of hiding them. See that comment.
+        const rows = Array.from(el.querySelectorAll<HTMLElement>('[data-si]'));
+        rows.forEach((r) => {
+          r.style.transition = 'none';
           r.style.opacity = '0';
           r.style.transform = 'translateY(6px)';
+        });
+        void el.offsetHeight;
+        rows.forEach((r) => {
           r.style.transition = 'opacity .5s ease, transform .5s cubic-bezier(.16,1,.3,1)';
         });
       }
@@ -171,6 +208,10 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
       rafIds.forEach((id) => cancelAnimationFrame(id));
       io?.disconnect();
       if (onScroll) window.removeEventListener('scroll', onScroll);
+      // Re-gate. This effect also re-runs on a `compact` change (a resize
+      // across 767px), and without this the reveals would be left released but
+      // un-prepped for one paint. See unmarkAnimReady.
+      unmarkAllAnimReady(reveals);
     };
   }, [rootRef, compact]);
 }

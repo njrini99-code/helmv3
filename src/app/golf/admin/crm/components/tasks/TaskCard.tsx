@@ -32,10 +32,10 @@ interface TaskCardProps {
 }
 
 const PRIORITY_DOT: Record<TaskPriority, string> = {
-  low: 'bg-warm-300',
-  normal: 'bg-blue-400',
-  high: 'bg-amber-500',
-  urgent: 'bg-red-500',
+  low: 'bg-border-strong',
+  normal: 'bg-text-tertiary',
+  high: 'bg-fw-warning',
+  urgent: 'bg-fw-danger',
 };
 
 const PRIORITY_LABEL: Record<TaskPriority, string> = {
@@ -55,12 +55,12 @@ const KIND_LABEL: Record<TaskKind, string> = {
 };
 
 const KIND_TONE: Record<TaskKind, string> = {
-  general: 'bg-warm-100 text-warm-700 border-warm-200',
-  follow_up: 'bg-blue-50 text-blue-700 border-blue-200',
-  call: 'bg-primary-50 text-primary-700 border-primary-200',
-  demo: 'bg-purple-50 text-purple-700 border-purple-200',
-  email: 'bg-sky-50 text-sky-700 border-sky-200',
-  research: 'bg-amber-50 text-amber-700 border-amber-200',
+  general: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  follow_up: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  call: 'bg-accent-50 text-accent-700 border-accent-200',
+  demo: 'bg-accent-50 text-accent-800 border-accent-200',
+  email: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  research: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring',
 };
 
 export function TaskCard({
@@ -130,11 +130,11 @@ export function TaskCard({
           : undefined
       }
       className={cn(
-        'group rounded-xl border bg-cream-50 px-3 py-2.5 transition-colors',
+        'group rounded-fw-md border bg-surface px-3 py-2.5 transition-colors',
         completed
-          ? 'border-warm-200/60 opacity-70'
-          : 'border-warm-200/60 hover:border-warm-300/80',
-        onClick && 'cursor-pointer hover:bg-warm-50/40',
+          ? 'border-border-subtle opacity-70'
+          : 'border-border-subtle hover:border-border-strong/80',
+        onClick && 'cursor-pointer hover:bg-surface-sunken/40',
       )}
     >
       <div className="flex items-start gap-2.5">
@@ -146,10 +146,10 @@ export function TaskCard({
             disabled={busy || completed}
             aria-label={completed ? 'Task completed' : 'Mark task complete'}
             className={cn(
-              'mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors',
+              'mt-0.5 w-4 h-4 rounded-fw-sm border flex items-center justify-center flex-shrink-0 transition-colors',
               completed
-                ? 'bg-primary-500 border-primary-500 text-white'
-                : 'border-warm-300 hover:border-primary-500 hover:bg-primary-50',
+                ? 'bg-accent-650 border-accent-650 text-text-on-accent'
+                : 'border-border-strong hover:border-accent-500 hover:bg-accent-50',
             )}
           >
             {completed && <IconCheck size={10} />}
@@ -172,7 +172,7 @@ export function TaskCard({
             <p
               className={cn(
                 'text-sm font-medium leading-snug',
-                completed ? 'text-warm-500 line-through' : 'text-warm-900',
+                completed ? 'text-text-tertiary line-through' : 'text-text-primary',
               )}
             >
               {task.title}
@@ -180,7 +180,7 @@ export function TaskCard({
             {assigneeInitials && (
               <span
                 title={`Assigned to ${task.assignee_id}`}
-                className="flex-shrink-0 w-5 h-5 rounded-full bg-warm-100 text-eyebrow font-semibold text-warm-700 flex items-center justify-center"
+                className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-sunken text-eyebrow font-semibold text-text-secondary flex items-center justify-center"
               >
                 {assigneeInitials}
               </span>
@@ -188,7 +188,7 @@ export function TaskCard({
           </div>
 
           {task.description && (
-            <p className="mt-0.5 text-xs text-warm-500 line-clamp-2">
+            <p className="mt-0.5 text-xs text-text-tertiary line-clamp-2">
               {task.description}
             </p>
           )}
@@ -208,8 +208,8 @@ export function TaskCard({
                 className={cn(
                   'inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
                   due.overdue
-                    ? 'bg-red-50 text-red-700 border-red-200'
-                    : 'bg-warm-50 text-warm-700 border-warm-200',
+                    ? 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25'
+                    : 'bg-surface-sunken text-text-secondary border-border-subtle',
                 )}
                 title={due.absolute}
               >
@@ -219,14 +219,14 @@ export function TaskCard({
             )}
 
             {completed && (
-              <span className="inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border bg-primary-50 text-primary-700 border-primary-200">
+              <span className="inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border bg-accent-50 text-accent-700 border-accent-200">
                 <IconCheckCheck size={9} /> Completed
               </span>
             )}
           </div>
 
           {error && (
-            <p className="mt-1.5 text-eyebrow text-red-600">
+            <p className="mt-1.5 text-eyebrow text-fw-danger-ink">
               {error}
             </p>
           )}

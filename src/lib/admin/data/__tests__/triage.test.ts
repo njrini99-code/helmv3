@@ -119,3 +119,83 @@ describe('isExpectedAuthNoise', () => {
     expect(isExpectedAuthNoise(undefined)).toBe(false);
   });
 });
+
+/**
+ * Regression detection for APP-origin incidents. Sentry rows have always had
+ * this via Sentry's own substatus; the app-origin branch hardcoded null, so
+ * TriageQueue's REGRESSED tag could never fire for the majority-volume half
+ * of the feed. "Did my fix hold?" was unanswerable.
+ */
+describe('mergeTriage — app-origin regression detection', () => {
+  const RESOLVED_AT = '2026-07-01T00:00:00Z';
+
+  it('flags REGRESSED when the incident fired again AFTER its resolution', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [appEvent({ id: 'e1', created_at: '2026-07-02T00:00:00Z' })],
+      priorResolutions: new Map([['fp-1', RESOLVED_AT]]),
+    });
+    expect(items[0]?.substatus).toBe('regressed');
+  });
+
+  it('does NOT flag when the occurrence predates the resolution — an incident that was open all along is not a regression', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [appEvent({ id: 'e1', created_at: '2026-06-30T00:00:00Z' })],
+      priorResolutions: new Map([['fp-1', RESOLVED_AT]]),
+    });
+    expect(items[0]?.substatus).toBeNull();
+  });
+
+  it('compares against firstSeen, not lastSeen — an ongoing incident spanning a stale resolution must not read as regressed', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        // firstSeen precedes the resolution; lastSeen follows it.
+        appEvent({ id: 'e1', created_at: '2026-06-29T00:00:00Z' }),
+        appEvent({ id: 'e2', created_at: '2026-07-05T00:00:00Z' }),
+      ],
+      priorResolutions: new Map([['fp-1', RESOLVED_AT]]),
+    });
+    expect(items[0]?.substatus).toBeNull();
+  });
+
+  it('does not flag a fingerprint that was never resolved', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [appEvent({ id: 'e1', created_at: '2026-07-02T00:00:00Z' })],
+      priorResolutions: new Map(),
+    });
+    expect(items[0]?.substatus).toBeNull();
+  });
+
+  it('is inert when priorResolutions is omitted — every existing caller keeps its prior behaviour', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [appEvent({ id: 'e1', created_at: '2026-07-02T00:00:00Z' })],
+    });
+    expect(items[0]?.substatus).toBeNull();
+  });
+
+  it('only flags the fingerprint that actually regressed', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({ id: 'e1', fingerprint: 'fp-1', created_at: '2026-07-02T00:00:00Z' }),
+        appEvent({ id: 'e2', fingerprint: 'fp-2', created_at: '2026-07-02T00:00:00Z' }),
+      ],
+      priorResolutions: new Map([['fp-1', RESOLVED_AT]]),
+    });
+    expect(items.find((i) => i.key === 'app:fp-1')?.substatus).toBe('regressed');
+    expect(items.find((i) => i.key === 'app:fp-2')?.substatus).toBeNull();
+  });
+
+  it('leaves Sentry substatus untouched — Sentry remains the authority for its own rows', () => {
+    const items = mergeTriage({
+      sentryIssues: [sentryIssue({ substatus: 'ongoing' })],
+      appEvents: [],
+      priorResolutions: new Map([['fp-1', RESOLVED_AT]]),
+    });
+    expect(items[0]?.substatus).toBe('ongoing');
+  });
+});

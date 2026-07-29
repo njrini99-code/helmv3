@@ -36,6 +36,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
+import { markAnimReady, unmarkAnimReady } from '@/lib/motion/anim-gate';
 
 export const LANDING_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
@@ -102,16 +103,69 @@ function scheduleFrame() {
   if (!frameRaf) frameRaf = requestAnimationFrame(runFrame);
 }
 
+/**
+ * ─── The native scroll event is the DEFAULT driver, not the only one ────────
+ *
+ * When Lenis owns scrolling (MarketingScrollProvider, on / and /products) the
+ * native `scroll` event arrives AFTER the frame Lenis has already painted, and
+ * the browser coalesces it besides. Every subscriber here — the dashboard's
+ * perspective settle, the team board assembly, the parallax drift, the header's
+ * scrolled flag — therefore computes its transform from a stale position and
+ * lands on a MINORITY of frames. Measured inside the dashboard's own scrub
+ * range: 19 of the 41 frames on which the scroll moved left the transform
+ * unchanged (46%). The scene steps while the page glides under it, which is
+ * exactly what "fidgety" describes.
+ *
+ * MarketingScrollProvider's module doc already names this failure ("TWO loops
+ * racing each other") and fixed it between Lenis and GSAP; this loop was the
+ * third one, still reading the raw event. So Lenis now pumps it directly from
+ * the same callback that feeds `ScrollTrigger.update`, and the native scroll
+ * path stands down for as long as it does. Resize keeps the rAF path — Lenis
+ * has nothing to say about resize.
+ */
+let externalDrivers = 0;
+
+/**
+ * Claim the loop for an external driver. Returns the release; call it on
+ * teardown or the native scroll path stays disabled for the rest of the
+ * session. Ref-counted so a StrictMode double-mount cannot leave it stuck.
+ */
+export function beginExternalScrollFrame(): () => void {
+  externalDrivers += 1;
+  return () => {
+    externalDrivers = Math.max(0, externalDrivers - 1);
+  };
+}
+
+/**
+ * Run every subscriber NOW, on the caller's frame — not on the next one. Any
+ * rAF already queued is dropped, so this can never double-run the pass.
+ */
+export function pumpScrollFrame(): void {
+  if (frameRaf) {
+    cancelAnimationFrame(frameRaf);
+    frameRaf = 0;
+  }
+  frameSubs.forEach((cb) => cb());
+}
+
+function onNativeScroll() {
+  // An external driver is pumping this loop in-frame; running it again off the
+  // late native event would only redo the same layout reads a frame behind.
+  if (externalDrivers > 0) return;
+  scheduleFrame();
+}
+
 function ensureListeners() {
   if (frameListening) return;
-  window.addEventListener('scroll', scheduleFrame, { passive: true });
+  window.addEventListener('scroll', onNativeScroll, { passive: true });
   window.addEventListener('resize', scheduleFrame, { passive: true });
   frameListening = true;
 }
 
 function releaseListeners() {
   if (!frameListening || frameSubs.size > 0) return;
-  window.removeEventListener('scroll', scheduleFrame);
+  window.removeEventListener('scroll', onNativeScroll);
   window.removeEventListener('resize', scheduleFrame);
   if (frameRaf) cancelAnimationFrame(frameRaf);
   frameRaf = 0;
@@ -176,7 +230,10 @@ function visibleFraction(el: HTMLElement): number {
 }
 
 interface RevealProps extends HTMLAttributes<HTMLElement> {
-  as?: 'div' | 'section' | 'p' | 'span';
+  // h1/h2/h3 included so a headline that LOOKS like a heading can be marked up
+  // as one. /about shipped its 70px "There has to be a better way." as a <p>
+  // and had no <h1> at all — the page started at <h2>.
+  as?: 'div' | 'section' | 'p' | 'span' | 'h1' | 'h2' | 'h3';
   /** transition-delay in ms (the prototype's data-reveal-delay). */
   delay?: number;
   /**
@@ -194,7 +251,16 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
 
   useIsoLayoutEffect(() => {
     const el = ref.current;
-    if (!el || prefersReducedMotion()) return;
+    if (!el) return;
+    // Release this element from the first-paint gate. Done per element, and
+    // only once THIS instance has taken ownership below, because sibling
+    // Reveals prep in sequence — a global lift would un-hide the ones that
+    // have not been prepped yet. Under reduced motion nothing is hidden by
+    // either mechanism, so releasing immediately is correct.
+    if (prefersReducedMotion()) {
+      markAnimReady(el);
+      return () => unmarkAnimReady(el);
+    }
     const compact = window.innerWidth < 768;
     revealedRef.current = false;
     el.style.clipPath = CLIP_HIDDEN;
@@ -205,6 +271,11 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
       el.style.transition = `clip-path ${compact ? '0.56s' : '0.72s'} ${LANDING_EASE}, transform ${compact ? '0.56s' : '0.72s'} ${LANDING_EASE}`;
       if (delay) el.style.transitionDelay = `${compact ? Math.min(Math.round(delay * 0.4), 80) : delay}ms`;
     }
+    // Clipped and transitioned — this element now hides itself.
+    markAnimReady(el);
+    // Hand it back on teardown, or a StrictMode double-mount paints the settled
+    // element between the two passes. See unmarkAnimReady.
+    return () => unmarkAnimReady(el);
   }, [delay, wipeOnly]);
 
   useScrollFrame(
@@ -226,7 +297,12 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
     }, [wipeOnly]),
   );
 
-  return createElement(as, { ...rest, ref }, children);
+  // `data-fw-reveal` is the hook the first-paint entrance gate hides against
+  // (globals.css, "MARKETING ENTRANCE GATE"). Without it this component has the
+  // same flash every other entrance system had: the server paints the settled
+  // element, then the layout effect above clips it away in front of the reader.
+  // Stamped after `rest` so it is always present, never spread away by a caller.
+  return createElement(as, { ...rest, 'data-fw-reveal': '', ref }, children);
 }
 
 // ─── 3. On-enter sequence choreography ──────────────────────────────────────

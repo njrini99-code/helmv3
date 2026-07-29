@@ -53,6 +53,7 @@ import {
   CRM_TERTIARY_ACTION_CLASS,
   crmChoiceClass,
 } from '../page-contracts';
+import { EmptyState } from '@/components/fairway';
 
 // ── Category metadata (mirrors TemplatePicker's palette) ──
 const CATEGORY_LABELS: Record<TemplateCategory, string> = {
@@ -146,19 +147,19 @@ function TemplateListSkeleton() {
     <div className="space-y-4" aria-hidden>
       {[0, 1].map((g) => (
         <div key={g} className="space-y-2">
-          <div className="h-4 w-32 bg-warm-100 rounded animate-pulse" />
+          <div className="h-4 w-32 bg-surface-sunken rounded animate-pulse" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[0, 1].map((i) => (
               <div
                 key={i}
-                className="bg-cream-50 rounded-2xl p-4 animate-pulse"
+                className="bg-surface rounded-card p-4 animate-pulse"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-24 h-5 bg-warm-100 rounded-full" />
-                  <div className="w-16 h-5 bg-warm-100 rounded-full" />
+                  <div className="w-24 h-5 bg-surface-sunken rounded-full" />
+                  <div className="w-16 h-5 bg-surface-sunken rounded-full" />
                 </div>
-                <div className="w-3/4 h-3.5 bg-warm-50 rounded mb-2" />
-                <div className="w-full h-3 bg-warm-50 rounded" />
+                <div className="w-3/4 h-3.5 bg-surface-sunken rounded mb-2" />
+                <div className="w-full h-3 bg-surface-sunken rounded" />
               </div>
             ))}
           </div>
@@ -185,44 +186,44 @@ function PreviewPane({
   const mergedBody = useMemo(() => mergeTags(body, SAMPLE_RECIPIENT), [body]);
 
   return (
-    <div className="rounded-2xl border border-warm-200/60 glass-standard overflow-clip">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-warm-200/60 bg-warm-50/40">
-        <IconEye size={14} className="text-primary-500" aria-hidden />
-        <span className="text-xs font-semibold uppercase tracking-wider text-warm-600">
+    <div className="rounded-card border border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-clip">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-surface-sunken/60">
+        <IconEye size={14} className="text-accent-600" aria-hidden />
+        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Live preview
         </span>
-        <span className="ml-auto text-eyebrow text-warm-400">
+        <span className="ml-auto text-eyebrow text-text-tertiary">
           rendered for {SAMPLE_RECIPIENT.name}
         </span>
       </div>
-      <div className="px-4 py-3 border-b border-warm-100/80">
-        <p className="text-eyebrow uppercase tracking-wider text-warm-400 mb-0.5">Subject</p>
-        <p className="text-sm font-semibold text-warm-900 break-words">
-          {mergedSubject || <span className="text-warm-300 italic">No subject</span>}
+      <div className="px-4 py-3 border-b border-border-subtle">
+        <p className="text-eyebrow uppercase tracking-wider text-text-tertiary mb-0.5">Subject</p>
+        <p className="text-sm font-semibold text-text-primary break-words">
+          {mergedSubject || <span className="text-text-tertiary italic">No subject</span>}
         </p>
       </div>
-      <div className="p-4 max-h-72 overflow-auto bg-cream-100/40">
+      <div className="p-4 max-h-72 overflow-auto bg-canvas/50">
         {format === 'html' ? (
           mergedBody.trim() ? (
             <iframe
               title="HTML email preview"
               sandbox=""
               srcDoc={mergedBody}
-              className="w-full min-h-[16rem] rounded-lg border border-warm-200 bg-cream-50"
+              className="w-full min-h-[16rem] rounded-fw-sm border border-border-subtle bg-surface"
             />
           ) : (
-            <p className="text-sm text-warm-300 italic">No HTML body yet</p>
+            <p className="text-sm text-text-tertiary italic">No HTML body yet</p>
           )
         ) : mergedBody.trim() ? (
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-warm-700">
+          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-text-secondary">
             {mergedBody}
           </pre>
         ) : (
-          <p className="text-sm text-warm-300 italic">No body yet</p>
+          <p className="text-sm text-text-tertiary italic">No body yet</p>
         )}
       </div>
       {format !== 'html' && (
-        <p className="px-4 py-2 text-eyebrow text-warm-400 border-t border-warm-100/80">
+        <p className="px-4 py-2 text-eyebrow text-text-tertiary border-t border-border-subtle">
           {format === 'plain'
             ? 'On send, this gets wrapped in the branded greeting + signature shell.'
             : 'Sent as true text/plain — exactly as shown above.'}
@@ -365,17 +366,17 @@ function TemplateEditor({
   };
 
   return (
-    <div className="glass-standard rounded-2xl border border-primary-200/70 shadow-glass p-5 space-y-5">
+    <div className="rounded-card border border-accent-200/70 bg-surface [box-shadow:var(--fw-shadow-card)] p-5 space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-base font-bold text-warm-900">
-          <IconSparkles size={18} className="text-primary-500" aria-hidden />
+        <h3 className="flex items-center gap-2 text-base font-bold text-text-primary">
+          <IconSparkles size={18} className="text-accent-600" aria-hidden />
           {isEditing ? 'Edit template' : 'Create template'}
         </h3>
         <IconButton
           variant="default"
           onClick={onCancel}
           aria-label="Close editor"
-          className="p-1.5 rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/60 transition-colors"
+          className="p-1.5 rounded-fw-md text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken transition-colors"
         >
           <IconX size={18} aria-hidden />
         </IconButton>
@@ -406,7 +407,7 @@ function TemplateEditor({
 
           {/* Format selector */}
           <div>
-            <span className="block text-xs font-semibold text-warm-700 mb-1.5">Format</span>
+            <span className="block text-xs font-semibold text-text-secondary mb-1.5">Format</span>
             <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Email format">
               {FORMAT_OPTIONS.map((f) => {
                 const active = state.format === f;
@@ -425,8 +426,8 @@ function TemplateEditor({
                 );
               })}
             </div>
-            <p className="mt-2 flex items-start gap-1.5 text-eyebrow text-warm-500 leading-relaxed">
-              <IconInfo size={13} className="mt-px flex-shrink-0 text-warm-400" aria-hidden />
+            <p className="mt-2 flex items-start gap-1.5 text-eyebrow text-text-tertiary leading-relaxed">
+              <IconInfo size={13} className="mt-px flex-shrink-0 text-text-tertiary" aria-hidden />
               <span>{FORMAT_META[state.format].help}</span>
             </p>
           </div>
@@ -444,9 +445,9 @@ function TemplateEditor({
 
           {/* Merge-tag helper */}
           <div>
-            <span className="block text-xs font-semibold text-warm-700 mb-1.5">
+            <span className="block text-xs font-semibold text-text-secondary mb-1.5">
               Merge tags
-              <span className="ml-1.5 font-normal text-warm-400">— click to insert into the body</span>
+              <span className="ml-1.5 font-normal text-text-tertiary">— click to insert into the body</span>
             </span>
             <div className="flex flex-wrap gap-1.5">
               {MERGE_TOKENS.map((token) => {
@@ -461,11 +462,11 @@ function TemplateEditor({
                     className={cn(
                       'px-2.5 py-1 rounded-full text-xs font-mono font-medium border transition-colors min-h-0',
                       present
-                        ? 'bg-primary-50 border-primary-200 text-primary-700'
-                        : 'bg-warm-50 border-warm-200 text-warm-600 hover:bg-warm-100',
+                        ? 'bg-accent-50 border-accent-200 text-accent-700'
+                        : 'bg-surface-sunken border-border-subtle text-text-secondary hover:bg-surface-sunken',
                     )}
                   >
-                    {present && <IconCheck size={11} className="mr-1 text-primary-500" aria-hidden />}
+                    {present && <IconCheck size={11} className="mr-1 text-accent-600" aria-hidden />}
                     {`{${token}}`}
                   </Button>
                 );
@@ -495,11 +496,11 @@ function TemplateEditor({
               type="checkbox"
               checked={state.is_default}
               onChange={(e) => setState((s) => ({ ...s, is_default: e.target.checked }))}
-              className="h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500/30"
+              className="h-4 w-4 rounded border-border-strong text-accent-700 focus:ring-border-focus/30"
             />
-            <span className="text-sm text-warm-700">
+            <span className="text-sm text-text-secondary">
               Default for <span className="font-semibold">{CATEGORY_LABELS[state.category]}</span>
-              <span className="ml-1 text-warm-400">(unsets the current default)</span>
+              <span className="ml-1 text-text-tertiary">(unsets the current default)</span>
             </span>
           </label>
         </div>
@@ -511,9 +512,9 @@ function TemplateEditor({
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-fw-danger-ink">{error}</p>}
 
-      <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-warm-100">
+      <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-border-subtle">
         {isEditing && (
           <Button
             type="button"
@@ -565,15 +566,15 @@ function TemplateCard({
   const fmt = FORMAT_META[template.format];
 
   return (
-    <div className="group relative glass-standard rounded-2xl shadow-glass-sm p-4 transition-all duration-200 hover:bg-cream-100 hover:shadow-card-hover">
+    <div className="group relative rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 transition-all duration-200 hover:bg-surface-tint hover:shadow-raise">
       <div className="flex items-start gap-2 mb-1.5">
-        <span className="font-semibold text-sm text-warm-900 truncate flex-1">{template.name}</span>
+        <span className="font-semibold text-sm text-text-primary truncate flex-1">{template.name}</span>
         {template.is_default && (
           <span
-            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-primary-50 text-primary-700"
+            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-accent-50 text-accent-700"
             title="Default for this category"
           >
-            <IconStarFilled size={10} className="text-primary-500" aria-hidden />
+            <IconStarFilled size={10} className="text-accent-600" aria-hidden />
             Default
           </span>
         )}
@@ -587,26 +588,26 @@ function TemplateCard({
           {fmt.label}
         </span>
         {template.usage_count > 0 ? (
-          <span className="text-eyebrow text-warm-400">
+          <span className="text-eyebrow text-text-tertiary">
             {template.usage_count} sent
             {template.last_used_at
               ? ` · last ${new Date(template.last_used_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
               : ''}
           </span>
         ) : (
-          <span className="text-eyebrow text-warm-300">Never used</span>
+          <span className="text-eyebrow text-text-tertiary">Never used</span>
         )}
       </div>
 
-      <p className="text-sm text-warm-600 truncate leading-relaxed">{template.subject}</p>
-      <p className="text-xs text-warm-400 line-clamp-2 mt-1 leading-relaxed">
+      <p className="text-sm text-text-secondary truncate leading-relaxed">{template.subject}</p>
+      <p className="text-xs text-text-tertiary line-clamp-2 mt-1 leading-relaxed">
         {template.format === 'html'
           ? 'Full HTML email — replaces the standard greeting + signature shell.'
           : template.body}
       </p>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-warm-100">
+      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border-subtle">
         <Button
           type="button"
           variant="ghost"
@@ -635,7 +636,7 @@ function TemplateCard({
               disabled={busy}
               aria-label="Set as default for this category"
               title="Set as default"
-              className="p-1.5 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+              className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-accent-700 hover:bg-accent-50 transition-colors"
             >
               <IconStar size={15} aria-hidden />
             </IconButton>
@@ -646,7 +647,7 @@ function TemplateCard({
             disabled={busy}
             aria-label="Duplicate template"
             title="Duplicate"
-            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-700 hover:bg-warm-100/60 transition-colors"
+            className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken transition-colors"
           >
             <IconCopy size={15} aria-hidden />
           </IconButton>
@@ -656,7 +657,7 @@ function TemplateCard({
             disabled={busy}
             aria-label="Delete template"
             title="Delete"
-            className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg/50 transition-colors"
           >
             <IconTrash size={15} aria-hidden />
           </IconButton>
@@ -783,12 +784,12 @@ export function TemplateManager() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center">
-            <IconFileText size={18} className="text-primary-600" aria-hidden />
+          <div className="w-9 h-9 rounded-fw-md bg-accent-50 flex items-center justify-center">
+            <IconFileText size={18} className="text-accent-700" aria-hidden />
           </div>
           <div>
-            <h2 className="text-base font-bold text-warm-900">Template library</h2>
-            <p className="text-xs text-warm-500">
+            <h2 className="text-base font-bold text-text-primary">Template library</h2>
+            <p className="text-xs text-text-tertiary">
               {templates.length} template{templates.length === 1 ? '' : 's'} · author, preview & test in-app
             </p>
           </div>
@@ -823,30 +824,31 @@ export function TemplateManager() {
       {loading ? (
         <TemplateListSkeleton />
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50/60 p-6 text-center">
-          <p className="text-sm text-red-700 mb-3">{error}</p>
+        <div className="rounded-card border border-fw-danger/25 bg-fw-danger-bg/60 p-6 text-center">
+          <p className="text-sm text-fw-danger-ink mb-3">{error}</p>
           <Button type="button" variant="secondary" onClick={refresh} className={CRM_SECONDARY_ACTION_CLASS}>
             Try again
           </Button>
         </div>
       ) : templates.length === 0 && !editor ? (
-        <div className="rounded-2xl border border-dashed border-warm-200/70 glass-subtle p-6 sm:p-10 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-3">
-            <IconFileText size={22} className="text-warm-400" aria-hidden />
-          </div>
-          <p className="text-sm font-semibold text-warm-700 mb-1">No templates yet</p>
-          <p className="text-xs text-warm-500 mb-4">
-            Create your first reusable email — pick a format, add merge tags, preview, then test.
-          </p>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={startCreate}
-            leftIcon={<IconPlus size={16} aria-hidden />}
-            className={CRM_PRIMARY_ACTION_CLASS}
-          >
-            Create template
-          </Button>
+        <div className="rounded-card border border-dashed border-border-subtle bg-surface-tint">
+          <EmptyState
+            variant="subtle"
+            icon={<IconFileText size={20} aria-hidden />}
+            title="No templates yet"
+            description="Create your first reusable email — pick a format, add merge tags, preview, then test."
+            action={
+              <Button
+                type="button"
+                variant="primary"
+                onClick={startCreate}
+                leftIcon={<IconPlus size={16} aria-hidden />}
+                className={CRM_PRIMARY_ACTION_CLASS}
+              >
+                Create template
+              </Button>
+            }
+          />
         </div>
       ) : (
         <div className="space-y-6">
@@ -858,7 +860,7 @@ export function TemplateManager() {
                   <span className={cn('px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', colors.bg, colors.text)}>
                     {CATEGORY_LABELS[category]}
                   </span>
-                  <span className="text-eyebrow text-warm-400">
+                  <span className="text-eyebrow text-text-tertiary">
                     {items.length} template{items.length === 1 ? '' : 's'}
                   </span>
                 </div>

@@ -1,6 +1,8 @@
 'use client';
 
-import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { StatusPill } from '@/components/fairway';
+import type { FwStatusTone } from '@/components/fairway';
+import { cn } from '@/lib/utils';
 
 // ============================================================================
 // TYPES
@@ -32,32 +34,34 @@ interface EmailStatusBadgeProps extends EmailStatusFields {
 // ============================================================================
 // STATUS -> LABEL/COLOR MAP
 // ============================================================================
-// Tones match the warm-/warm- palette used across the CRM (see STATUS_CONFIG
-// in crm-config.tsx for reference tones: amber, red, emerald/green, blue,
-// warm/neutral).
+// Renders the Fairway StatusPill, not the pre-Fairway `@/components/ui/badge`:
+// that shared Badge resolves its `blue`/`amber`/`emerald` tones to raw Tailwind
+// hues, which are fixed-light and were the last palette leak inside the CRM
+// shell. The escalating accent ramp below matches resend/shared.tsx's
+// STATUS_CONFIG so the two email surfaces read as one vocabulary:
+//   sent (neutral) → delivered (accent-50) → opened (accent-100) → clicked
+//   (the solid accent fill — the strongest buying signal).
 interface EmailTone {
   label: string;
-  /** Canonical Badge tone (color-faithful base hue). */
-  tone: BadgeTone;
-  /** Extra classes for tints the tone alone doesn't reproduce. */
+  /** Fairway status tone (drives the base pill + dot colours). */
+  tone: FwStatusTone;
+  /** Extra classes for the ramp steps the base tone alone can't reproduce. */
   override?: string;
 }
 
 const TONE_BOUNCED: EmailTone = {
   label: 'Bounced',
-  tone: 'red',
+  tone: 'danger',
 };
 
 const TONE_COMPLAINED: EmailTone = {
   label: 'Complained',
-  tone: 'red',
+  tone: 'danger',
 };
 
 const TONE_UNSUBSCRIBED: EmailTone = {
   label: 'Unsubscribed',
-  tone: 'warm',
-  // Stronger warm-100 tint + warm-600 text (Badge warm-soft is warm-50/700).
-  override: 'bg-warm-100 text-warm-600',
+  tone: 'neutral',
 };
 
 // Inline ban / no-symbol glyph — the icon set ships no equivalent, and this
@@ -82,11 +86,15 @@ function IconBan({ size = 11 }: { size?: number }) {
 }
 
 const EVENT_TONES: Record<LastEmailEventType, EmailTone> = {
-  clicked: { label: 'Clicked', tone: 'emerald' },
-  opened: { label: 'Opened', tone: 'blue' },
-  delivered: { label: 'Delivered', tone: 'warm' }, // warm-soft text-700 matches
-  delivery_delayed: { label: 'Delayed', tone: 'amber' },
-  sent: { label: 'Sent', tone: 'warm', override: 'text-warm-600' },
+  clicked: {
+    label: 'Clicked',
+    tone: 'accent',
+    override: 'bg-accent-650 text-text-on-accent border-accent-700',
+  },
+  opened: { label: 'Opened', tone: 'accent', override: 'bg-accent-100 text-accent-800 border-accent-300' },
+  delivered: { label: 'Delivered', tone: 'accent' },
+  delivery_delayed: { label: 'Delayed', tone: 'warning' },
+  sent: { label: 'Sent', tone: 'neutral' },
   // Bounced/complained as last event fall back to their dedicated tones via
   // the priority rule below, but include them here for completeness.
   bounced: TONE_BOUNCED,
@@ -120,7 +128,7 @@ export function EmailStatusBadge({
     return (
       <span
         title={title}
-        className="text-micro text-warm-300 tabular-nums"
+        className="text-micro text-text-tertiary tabular-nums"
         aria-label="No email activity"
       >
         &mdash;
@@ -131,18 +139,16 @@ export function EmailStatusBadge({
   const isUnsubscribed = email_status === 'unsubscribed';
 
   return (
-    <Badge
+    <StatusPill
       tone={tone.tone}
-      size="none"
+      size="sm"
+      dot={!isUnsubscribed}
       title={title}
-      icon={isUnsubscribed ? <IconBan size={compact ? 10 : 11} /> : undefined}
-      // Plain string (not the shared cn): Badge's custom-fontSize-aware merge
-      // keeps BOTH `text-eyebrow` and the tone/override text color. Pre-merging
-      // here with the default cn would drop the size.
-      className={`gap-1 text-eyebrow px-1.5 py-0.5 ${tone.override ?? ''}`}
+      className={cn('gap-1 px-1.5 text-eyebrow', tone.override)}
     >
+      {isUnsubscribed ? <IconBan size={compact ? 10 : 11} /> : null}
       {tone.label}
-    </Badge>
+    </StatusPill>
   );
 }
 

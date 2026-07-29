@@ -44,10 +44,10 @@ const KIND_LABEL: Record<NoteKind, string> = {
 };
 
 const KIND_TONE: Record<NoteKind, string> = {
-  note: 'bg-warm-100 text-warm-700 border-warm-200',
-  call_log: 'bg-blue-50 text-blue-700 border-blue-200',
-  meeting_summary: 'bg-primary-50 text-primary-700 border-primary-200',
-  internal: 'bg-amber-50 text-amber-700 border-amber-200',
+  note: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  call_log: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  meeting_summary: 'bg-accent-50 text-accent-700 border-accent-200',
+  internal: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring',
 };
 
 const PREVIEW_CHARS = 200;
@@ -149,17 +149,20 @@ export function NoteCard({
   return (
     <div
       className={cn(
-        'group relative rounded-2xl border bg-cream-50 px-4 py-3 transition-colors',
+        'group relative rounded-card border bg-surface px-4 py-3 transition-colors',
         note.is_pinned
-          ? 'border-amber-200/80 bg-amber-50/30'
-          : 'border-warm-200/60 hover:border-warm-300/80',
+          ? 'border-fw-warning-ring/80 bg-fw-warning-bg/30'
+          : 'border-border-subtle hover:border-border-strong/80',
       )}
     >
       {/* Pin indicator */}
       {note.is_pinned && !editing && (
         <span
           aria-label="Pinned note"
-          className="absolute -left-2 top-3 inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white shadow-sm"
+          // `text-nav-bg` (warm-950) is the dark ink here on purpose: fw-warning
+          // is a LIGHT amber in both themes, so cream/on-accent copy would fail
+          // contrast, and text-text-primary inverts to cream after dusk.
+          className="absolute -left-2 top-3 inline-flex items-center justify-center w-5 h-5 rounded-full bg-fw-warning text-nav-bg shadow-flat"
         >
           <IconBookmark size={10} />
         </span>
@@ -176,7 +179,7 @@ export function NoteCard({
                 value: k,
                 label: KIND_LABEL[k],
               }))}
-              className="text-eyebrow font-medium px-2 py-0.5 rounded-md border border-warm-200 bg-cream-50 text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+              className="text-eyebrow font-medium px-2 py-0.5 rounded-fw-sm border border-border-subtle bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-border-focus/30"
             />
           ) : (
             <span
@@ -188,7 +191,7 @@ export function NoteCard({
               {KIND_LABEL[note.kind]}
             </span>
           )}
-          <span className="text-eyebrow text-warm-400 tabular-nums truncate">
+          <span className="text-eyebrow text-text-tertiary tabular-nums truncate">
             {relTime}
           </span>
         </div>
@@ -199,7 +202,7 @@ export function NoteCard({
               type="button"
               onClick={beginEdit}
               aria-label="Edit note"
-              className="p-1 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+              className="p-1 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
             >
               <IconPencil size={12} />
             </IconButton>
@@ -208,7 +211,7 @@ export function NoteCard({
               onClick={handleDelete}
               disabled={busy}
               aria-label="Delete note"
-              className="p-1 rounded-md text-warm-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+              className="p-1 rounded-fw-sm text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg/50 transition-colors disabled:opacity-50"
             >
               <IconTrash size={12} />
             </IconButton>
@@ -225,7 +228,7 @@ export function NoteCard({
             onChange={(e) => setDraft(e.target.value)}
             rows={5}
             maxLength={8000}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-cream-50 border border-warm-200/80 text-warm-900 placeholder:text-warm-400 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="w-full px-3 py-2 text-sm rounded-fw-sm bg-surface border border-border-subtle/80 text-text-primary placeholder:text-text-tertiary resize-y focus:outline-none focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400"
           />
           <div className="flex items-center justify-between gap-2">
             <Checkbox
@@ -238,7 +241,7 @@ export function NoteCard({
                 type="button"
                 onClick={cancelEdit}
                 disabled={busy}
-                className="px-2.5 py-1 text-xs text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
+                className="px-2.5 py-1 text-xs text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
               >
                 <span className="inline-flex items-center gap-1">
                   <IconX size={10} /> Cancel
@@ -248,7 +251,7 @@ export function NoteCard({
                 type="button"
                 onClick={handleSave}
                 disabled={busy || !draft.trim()}
-                className="px-3 py-1 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-xs font-semibold rounded-fw-sm bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {busy ? 'Saving...' : 'Save'}
               </Button>
@@ -256,13 +259,13 @@ export function NoteCard({
           </div>
         </div>
       ) : (
-        <p className="mt-1.5 text-sm text-warm-800 leading-relaxed whitespace-pre-wrap break-words">
+        <p className="mt-1.5 text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words">
           {visibleBody}
           {isLong && !showFull && (
             <Button variant="ghost"
               type="button"
               onClick={() => setShowFull(true)}
-              className="ml-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
+              className="ml-1 text-xs text-accent-700 hover:text-accent-800 font-medium"
             >
               Show more
             </Button>
@@ -271,7 +274,7 @@ export function NoteCard({
             <Button variant="ghost"
               type="button"
               onClick={() => setShowFull(false)}
-              className="ml-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
+              className="ml-1 text-xs text-accent-700 hover:text-accent-800 font-medium"
             >
               Show less
             </Button>
@@ -281,13 +284,13 @@ export function NoteCard({
 
       {/* Footer */}
       {!editing && (
-        <div className="mt-2 text-eyebrow text-warm-400 truncate">
+        <div className="mt-2 text-eyebrow text-text-tertiary truncate">
           {authorLabel ?? 'Unknown author'}
         </div>
       )}
 
       {error && (
-        <p className="mt-2 text-eyebrow text-red-600 bg-red-50 border border-red-200 rounded-md px-2 py-1">
+        <p className="mt-2 text-eyebrow text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-2 py-1">
           {error}
         </p>
       )}

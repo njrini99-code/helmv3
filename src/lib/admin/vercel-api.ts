@@ -5,6 +5,7 @@ import {
   failed,
   ok,
 } from '@/lib/admin/fetch-result';
+import { reportIntegrationFault } from '@/lib/admin/integration-health';
 
 /**
  * Helm Bridge — server-only Vercel deployments client. Reuses the exact
@@ -93,7 +94,11 @@ export async function fetchVercelDeployments(
       headers: { Authorization: `Bearer ${cfg.token}` },
       next: { revalidate: REVALIDATE_SECONDS },
     });
-    if (!res.ok) return failed(`Vercel deployments fetch failed: ${res.status}`);
+    if (!res.ok) {
+      return failed(
+        reportIntegrationFault('vercel', 'deployments fetch', `Vercel deployments fetch failed: ${res.status}`),
+      );
+    }
 
     const body = (await res.json()) as { deployments?: RawDeployment[] };
     const deployments = (body.deployments ?? []).map((d): VercelDeployment => ({
@@ -110,7 +115,13 @@ export async function fetchVercelDeployments(
     }));
     return ok(deployments);
   } catch (err) {
-    return failed(`Vercel deployments fetch threw: ${err instanceof Error ? err.message : String(err)}`);
+    return failed(
+      reportIntegrationFault(
+        'vercel',
+        'deployments fetch',
+        `Vercel deployments fetch threw: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
   }
 }
 
@@ -158,10 +169,18 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
       fetchPeriod(daysAgo(30)),
     ]);
     if (httpFailureStatus !== null) {
-      return failed(`Vercel web insights fetch failed: ${httpFailureStatus}`);
+      return failed(
+        reportIntegrationFault('vercel', 'web insights fetch', `Vercel web insights fetch failed: ${httpFailureStatus}`),
+      );
     }
     return ok({ visitors24h: v24h, visitors7d: v7d, visitors30d: v30d });
   } catch (err) {
-    return failed(`Vercel web insights threw: ${err instanceof Error ? err.message : String(err)}`);
+    return failed(
+      reportIntegrationFault(
+        'vercel',
+        'web insights fetch',
+        `Vercel web insights threw: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
   }
 }

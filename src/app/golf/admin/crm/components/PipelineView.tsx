@@ -8,6 +8,7 @@ import { STATUS_COLORS, PRIORITY_CONFIG } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
 import { getStageAges, type StageAge } from '@/app/golf/actions/crm-stage-ages';
 import { daysBetween, agingTier, median } from './pipeline-aging';
+import { EmptyState } from '@/components/fairway';
 
 interface PipelineViewProps {
   coaches: Coach[];
@@ -243,18 +244,18 @@ export function PipelineView({
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="glass-standard flex items-center gap-2 p-3 rounded-2xl">
+        <div className="border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] flex items-center gap-2 p-3 rounded-card">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-11 flex-1 rounded-full bg-warm-100/70 skeleton-shimmer" />
+            <div key={i} className="h-11 flex-1 rounded-full bg-surface-sunken/70 skeleton-shimmer" />
           ))}
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="min-w-0 flex flex-col gap-2">
-              <div className="glass-standard rounded-2xl h-14 skeleton-shimmer" />
-              <div className="rounded-2xl p-2 space-y-2 bg-warm-50/30 border border-warm-100/40">
+              <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] h-14 skeleton-shimmer" />
+              <div className="rounded-card p-2 space-y-2 bg-surface-sunken/60 border border-border-subtle">
                 {Array.from({ length: 3 }).map((_, j) => (
-                  <div key={j} className="h-20 rounded-2xl bg-warm-100/60 skeleton-shimmer" />
+                  <div key={j} className="h-20 rounded-card bg-surface-sunken skeleton-shimmer" />
                 ))}
               </div>
             </div>
@@ -268,12 +269,12 @@ export function PipelineView({
     <div className="space-y-4">
       {/* Getting Started — only when ALL coaches are new leads */}
       {allNewLeads && (
-        <div className="glass-standard p-6 rounded-2xl text-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
-            <IconRocket size={24} className="text-primary-600" />
+        <div className="border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6 rounded-card text-center">
+          <div className="w-14 h-14 rounded-card bg-accent-50 flex items-center justify-center mx-auto mb-4">
+            <IconRocket size={24} className="text-accent-700" />
           </div>
-          <h3 className="text-base font-semibold text-warm-900 mb-1.5 tracking-tight">Ready to start your pipeline</h3>
-          <p className="text-sm text-warm-500 max-w-md mx-auto mb-4">
+          <h3 className="text-base font-semibold text-text-primary mb-1.5 tracking-tight">Ready to start your pipeline</h3>
+          <p className="text-sm text-text-tertiary max-w-md mx-auto mb-4">
             All {stats.total} coaches are new leads. Start by contacting your top prospects and moving them through the pipeline.
           </p>
           <div className="flex items-center justify-center gap-2">
@@ -281,7 +282,7 @@ export function PipelineView({
               type="button"
               onClick={() => handleResearchNext(10)}
               disabled={processing}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors text-sm shadow-sm shadow-primary-500/20 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-650 text-text-on-accent rounded-fw-md font-medium hover:bg-accent-700 transition-colors text-sm shadow-soft disabled:opacity-50"
             >
               <IconZap size={14} /> Research Top 10
             </Button>
@@ -289,7 +290,7 @@ export function PipelineView({
               type="button"
               onClick={() => handleResearchNext(25)}
               disabled={processing}
-              className="px-4 py-2 glass-standard text-warm-700 rounded-xl font-medium hover:bg-cream-100 transition-colors text-sm disabled:opacity-50"
+              className="px-4 py-2 border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] text-text-secondary rounded-fw-md font-medium hover:bg-surface-tint transition-colors text-sm disabled:opacity-50"
             >
               Research Top 25
             </Button>
@@ -298,14 +299,14 @@ export function PipelineView({
       )}
 
       {/* Pipeline Funnel Summary — pill-shaped stages */}
-      <div className="glass-standard flex items-center gap-2 p-3 rounded-2xl overflow-x-auto scrollbar-hide">
+      <div className="border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] flex items-center gap-2 p-3 rounded-card overflow-x-auto scrollbar-hide">
         {pipelineStages.map((stage, index) => {
           const count = coachesByStage[stage.id]?.length || 0;
           return (
             <div key={stage.id} className="flex items-center flex-1 min-w-0">
               <div className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-full transition-colors w-full',
-                count > 0 ? `${stage.bgColor} ${stage.color}` : 'bg-warm-50 text-warm-400'
+                count > 0 ? `${stage.bgColor} ${stage.color}` : 'bg-surface-sunken text-text-tertiary'
               )}>
                 <span className="flex-shrink-0">{stage.icon}</span>
                 <div className="min-w-0">
@@ -314,7 +315,7 @@ export function PipelineView({
                 </div>
               </div>
               {index < pipelineStages.length - 1 && (
-                <IconArrowRight size={14} className="mx-1 text-warm-300 flex-shrink-0" aria-hidden="true" />
+                <IconArrowRight size={14} className="mx-1 text-text-tertiary flex-shrink-0" aria-hidden="true" />
               )}
             </div>
           );
@@ -341,25 +342,25 @@ export function PipelineView({
               onDragLeave={() => setDropTarget(null)}
               onDrop={(e) => handleDrop(e, stage)}
             >
-              {/* Column Header — glass-standard with status color accent */}
-              <div className="glass-standard rounded-2xl overflow-hidden mb-2">
-                <div className={cn('h-1', stageColors?.dot || 'bg-warm-300')} aria-hidden="true" />
+              {/* Column Header — border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] with status color accent */}
+              <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden mb-2">
+                <div className={cn('h-1', stageColors?.dot || 'bg-border-strong')} aria-hidden="true" />
                 <div className="px-3 py-2.5 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="flex-shrink-0" aria-hidden="true">{stage.icon}</span>
-                    <h3 className="text-sm font-semibold text-warm-900 truncate tracking-tight">{stage.label}</h3>
+                    <h3 className="text-sm font-semibold text-text-primary truncate tracking-tight">{stage.label}</h3>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <span className={cn(
                       'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
                       columnCoaches.length > 0
-                        ? `${stageColors?.bg || 'bg-warm-50'} ${stageColors?.text || 'text-warm-700'}`
-                        : 'bg-warm-100 text-warm-400'
+                        ? `${stageColors?.bg || 'bg-surface-sunken'} ${stageColors?.text || 'text-text-secondary'}`
+                        : 'bg-surface-sunken text-text-tertiary'
                     )}>
                       {columnCoaches.length}
                     </span>
                     {stageMedianDays[stage.id] !== undefined && (
-                      <span className="text-micro text-warm-400 tabular-nums whitespace-nowrap">
+                      <span className="text-micro text-text-tertiary tabular-nums whitespace-nowrap">
                         · {Math.round(stageMedianDays[stage.id]!)}d median
                       </span>
                     )}
@@ -370,9 +371,9 @@ export function PipelineView({
               {/* Cards Container */}
               <div
                 className={cn(
-                  'rounded-2xl p-2 space-y-2 flex-1 overflow-y-auto transition-colors',
-                  'bg-warm-50/30 border border-warm-100/40',
-                  isDropping && 'bg-primary-50/40 border-primary-200/60 ring-2 ring-primary-200/50'
+                  'rounded-card p-2 space-y-2 flex-1 overflow-y-auto transition-colors',
+                  'bg-surface-sunken/60 border border-border-subtle',
+                  isDropping && 'bg-accent-50/40 border-accent-200/60 ring-2 ring-accent-200/50'
                 )}
                 style={{ maxHeight: '70vh' }}
                 aria-label={`${stage.label} column, ${columnCoaches.length} coaches`}
@@ -404,7 +405,7 @@ export function PipelineView({
                       <Button variant="primary"
                         type="button"
                         onClick={() => toggleExpanded(stage.id)}
-                        className="w-full py-2 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/60 rounded-xl transition-colors"
+                        className="w-full py-2 text-center text-sm font-medium text-accent-700 hover:bg-accent-50/60 rounded-fw-md transition-colors"
                       >
                         Show {columnCoaches.length - CARDS_PER_PAGE} more…
                       </Button>
@@ -413,7 +414,7 @@ export function PipelineView({
                       <Button variant="ghost"
                         type="button"
                         onClick={() => toggleExpanded(stage.id)}
-                        className="w-full py-2 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/60 rounded-xl transition-colors"
+                        className="w-full py-2 text-center text-sm font-medium text-text-tertiary hover:bg-surface-sunken/60 rounded-fw-md transition-colors"
                       >
                         Show less
                       </Button>
@@ -470,24 +471,24 @@ function StageChoicePrompt({
         type="button"
         aria-label="Close dialog"
         onClick={onCancel}
-        className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-nav-bg/30"
       ><span className="sr-only">Close dialog</span></IconButton>
 
-      <div className="relative w-full max-w-sm rounded-2xl bg-cream-50 shadow-2xl border border-warm-100 p-5">
+      <div className="relative w-full max-w-sm rounded-card bg-surface shadow-raise border border-border-subtle p-5">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h2 id="stage-choice-title" className="text-base font-semibold text-warm-900">
+          <h2 id="stage-choice-title" className="text-base font-semibold text-text-primary">
             Move to {stage.label}
           </h2>
           <IconButton variant="default"
             type="button"
             onClick={onCancel}
             aria-label="Cancel"
-            className="p-1.5 -mt-1 -mr-1 rounded-md hover:bg-warm-100 text-warm-400 hover:text-warm-700"
+            className="p-1.5 -mt-1 -mr-1 rounded-fw-sm hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary"
           >
             <IconX size={14} />
           </IconButton>
         </div>
-        <p className="text-xs text-warm-500 mb-4">
+        <p className="text-xs text-text-tertiary mb-4">
           {coach.name} · {coach.school} — {stage.label} covers more than one status. Pick the exact outcome.
         </p>
         <div className="space-y-1.5">
@@ -499,8 +500,8 @@ function StageChoicePrompt({
                 type="button"
                 onClick={() => onChoose(status)}
                 className={cn(
-                  'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium justify-start',
-                  'border border-warm-100 hover:border-warm-200 transition-colors',
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-fw-md text-sm font-medium justify-start',
+                  'border border-border-subtle hover:border-border-subtle transition-colors',
                   colors?.bg, colors?.text,
                 )}
               >
@@ -516,7 +517,7 @@ function StageChoicePrompt({
 }
 
 // ============================================================================
-// KANBAN CARD — glass-standard card with hover lift + keyboard accessibility
+// KANBAN CARD — border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] card with hover lift + keyboard accessibility
 // ============================================================================
 function KanbanCard({
   coach, stageId, stageAge, nextStatus, isDragging, statusConfig,
@@ -586,13 +587,13 @@ function KanbanCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       className={cn(
-        'glass-standard rounded-2xl p-3',
-        'hover:-translate-y-0.5 hover:bg-cream-100',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
+        'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-3',
+        'hover:-translate-y-0.5 hover:bg-surface-tint',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/40 focus-visible:border-accent-300',
         'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',
         isDragging && 'opacity-40 scale-95',
-        isSelected && 'ring-2 ring-primary-500/50 bg-primary-50/30',
+        isSelected && 'ring-2 ring-accent-500/50 bg-accent-50/30',
       )}
     >
       {/* Name + optional selection checkbox + Star */}
@@ -608,32 +609,32 @@ function KanbanCard({
                 tabIndex={-1}
                 aria-label={isSelected ? `Deselect ${coach.name}` : `Select ${coach.name}`}
                 className={cn(
-                  'w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer transition-opacity',
+                  'w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer transition-opacity',
                   hasSelection ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
                 )}
               />
             </div>
           )}
-          <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1 tracking-tight">{coach.name}</p>
+          <p className="text-sm font-semibold text-text-primary leading-tight line-clamp-1 tracking-tight">{coach.name}</p>
         </div>
         <Button variant="ghost"
           type="button"
           onClick={(e) => { e.stopPropagation(); onToggleStar(coach.id, coach.is_starred); }}
-          className="flex-shrink-0 mt-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+          className="flex-shrink-0 mt-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/40"
           tabIndex={-1}
           aria-label={coach.is_starred ? `Unstar ${coach.name}` : `Star ${coach.name}`}
           aria-pressed={coach.is_starred}
         >
           {coach.is_starred ? (
-            <IconStar size={14} className="text-amber-500 fill-amber-500" aria-hidden="true" />
+            <IconStar size={14} className="text-fw-warning fill-fw-warning" aria-hidden="true" />
           ) : (
-            <IconStar size={14} className="text-warm-300 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
+            <IconStar size={14} className="text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
           )}
         </Button>
       </div>
 
       {/* School */}
-      <p className="text-xs text-warm-500 line-clamp-1 mb-2">{coach.school}</p>
+      <p className="text-xs text-text-tertiary line-clamp-1 mb-2">{coach.school}</p>
 
       {/* Status badge — column groups multiple statuses (e.g. Closed = won/
           lost/nurture), so the card must still show which one this coach is. */}
@@ -668,9 +669,9 @@ function KanbanCard({
             <span
               className={cn(
                 'text-micro tabular-nums rounded-full px-2 py-0.5 flex-shrink-0',
-                tier === 'fresh' && 'bg-cream-100 text-warm-500',
-                tier === 'aging' && 'bg-amber-50 text-amber-700',
-                tier === 'stale' && 'bg-red-50 text-red-700',
+                tier === 'fresh' && 'bg-canvas text-text-tertiary',
+                tier === 'aging' && 'bg-fw-warning-bg text-fw-warning-ink',
+                tier === 'stale' && 'bg-fw-danger-bg text-fw-danger-ink',
               )}
               title={stageAge?.isSeed ? 'approximate — tracking started Jul 20, 2026' : undefined}
             >
@@ -680,7 +681,7 @@ function KanbanCard({
         </div>
 
         {/* Last contacted — relative time */}
-        <span className="text-xs text-warm-400 tabular-nums">
+        <span className="text-xs text-text-tertiary tabular-nums">
           {relativeTime(coach.last_contacted_at)}
         </span>
       </div>
@@ -691,7 +692,7 @@ function KanbanCard({
           <IconButton variant="primary"
             type="button"
             onClick={(e) => { e.stopPropagation(); onStatusChange(coach.id, nextStatus); }}
-            className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-all"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-fw-sm flex items-center justify-center hover:bg-accent-50 active:bg-accent-100 text-accent-700 transition-all"
             title="Advance to next stage"
             aria-label={`Advance ${coach.name} to next stage`}
             tabIndex={-1}
@@ -709,12 +710,12 @@ function KanbanCard({
 // ============================================================================
 function EmptyColumn() {
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mb-2 text-warm-300">
-        <IconUsers size={20} aria-hidden="true" />
-      </div>
-      <p className="text-xs text-warm-400 font-medium">No coaches here yet</p>
-      <p className="text-eyebrow text-warm-300 mt-0.5">Drag coaches here or update their status</p>
-    </div>
+    <EmptyState
+      variant="subtle"
+      icon={<IconUsers size={18} aria-hidden="true" />}
+      title="No coaches here yet"
+      description="Drag coaches here or update their status."
+      className="px-4 py-8"
+    />
   );
 }

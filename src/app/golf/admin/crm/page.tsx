@@ -44,6 +44,7 @@ import {
   MOBILE_MORE_TABS,
   isSuppressedEmailStatus,
   SEGMENTED_TABLIST_CLASS,
+  CRM_PRIMARY_ACTION_CLASS,
   segmentedTabClass,
   segmentedTabIconClass,
   type TabId,
@@ -101,7 +102,10 @@ import { Button, IconButton } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { logError } from '@/lib/error-logging';
 import { NativeSelect } from '@/components/ui/native-select';
-import { Skeleton } from '@/components/ui/skeleton';
+// Fairway primitives — the CRM shell paints on the Fairway design system
+// (bg-canvas + `.fairway-ds` scope below), so chrome comes from here rather
+// than the pre-Fairway `@/components/ui` shells.
+import { Skeleton, EmptyState, StatusPill, Surface } from '@/components/fairway';
 import { nextStepLabel } from './components/next-step-label';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -1343,9 +1347,9 @@ export default function CRMPage() {
   // ============================================================================
   if (!sessionReady) {
     return (
-      <div className="min-h-dvh bg-cream-100 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-sm text-warm-600" role="status">
-          <span className="h-4 w-4 rounded-full border-2 border-warm-300 border-t-primary-500 animate-spin" />
+      <div className="min-h-dvh bg-canvas flex items-center justify-center">
+        <div className="flex items-center gap-3 text-sm text-text-secondary" role="status">
+          <span className="h-4 w-4 rounded-full border-2 border-border-strong border-t-accent-500 animate-spin" />
           Checking admin session…
         </div>
       </div>
@@ -1359,12 +1363,12 @@ export default function CRMPage() {
           bottom tab bar (see below). This standard action header keeps one
           leading control, the active destination, useful queue meta, and one
           primary action. Low-frequency data tools live in More. */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-nav-bg/95 backdrop-blur-xl border-b border-white/10">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-nav-bg/95 backdrop-blur-xl border-b border-nav-text/10">
         <div className="flex items-center gap-3 px-3 h-14">
           <a
             href="/golf/admin"
             aria-label="Back to admin dashboard"
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-nav-text-dim hover:bg-nav-surface hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nav-accent transition-colors"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md text-nav-text-dim hover:bg-nav-surface hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nav-accent transition-colors"
           >
             <ArrowLeft size={18} />
           </a>
@@ -1380,7 +1384,7 @@ export default function CRMPage() {
             variant="primary"
             aria-label="Add coach"
             onClick={() => setShowAddModal(true)}
-            className="min-h-10 flex-shrink-0 gap-1.5 rounded-xl bg-accent-650 px-3 text-sm font-semibold text-text-on-accent hover:bg-accent-700 focus-visible:ring-2 focus-visible:ring-nav-accent"
+            className="min-h-10 flex-shrink-0 gap-1.5 rounded-fw-md bg-accent-650 px-3 text-sm font-semibold text-text-on-accent hover:bg-accent-700 focus-visible:ring-2 focus-visible:ring-nav-accent"
           >
             <IconPlus size={16} />
             Add
@@ -1391,14 +1395,14 @@ export default function CRMPage() {
       {/* ═══════════════════ Desktop Sidebar ═══════════════════ */}
       <aside className={cn(
         'fixed left-0 top-0 bottom-0 z-50 flex flex-col',
-        'bg-nav-bg border-r border-white/5',
+        'bg-nav-bg border-r border-nav-text/10',
         'transition-all duration-300 ease-in-out',
         sidebarCollapsed ? 'w-[72px]' : 'w-[260px]',
         'hidden lg:flex'
       )}>
         {/* Logo */}
         <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
-          <div className="w-9 h-9 rounded-md bg-accent-650 flex items-center justify-center shadow-lg shadow-accent-900/20">
+          <div className="w-9 h-9 rounded-fw-sm bg-accent-650 flex items-center justify-center shadow-soft">
             <IconTarget size={18} className="text-text-on-accent" />
           </div>
           {!sidebarCollapsed && <span className="font-semibold text-lg text-nav-text tracking-tight">Fairway CRM</span>}
@@ -1407,8 +1411,8 @@ export default function CRMPage() {
         {/* Back to Dashboard */}
         <div className="px-3 mb-2">
           <a href="/golf/admin" className={cn(
-            'flex items-center gap-3 px-3 py-2 rounded-md',
-            'text-warm-400 hover:bg-warm-50/5 hover:text-white transition-all duration-200',
+            'flex items-center gap-3 px-3 py-2 rounded-fw-sm',
+            'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition-all duration-200',
             sidebarCollapsed && 'justify-center'
           )}>
             <ArrowLeft size={16} className="flex-shrink-0" />
@@ -1417,7 +1421,7 @@ export default function CRMPage() {
         </div>
 
         {/* Section Divider */}
-        <div className="mx-3 border-t border-white/10" />
+        <div className="mx-3 border-t border-nav-text/10" />
 
         {/* Navigation Tabs — grouped into labeled sections (WORK / AUTOMATE /
             ADMIN). Each section renders an uppercase eyebrow above its items
@@ -1429,11 +1433,11 @@ export default function CRMPage() {
             return (
               <div key={sectionDef.id} className={cn(sectionIdx > 0 && 'mt-4')}>
                 {!sidebarCollapsed ? (
-                  <div className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-warm-500">
+                  <div className="px-3 mb-1.5 text-eyebrow font-semibold uppercase tracking-[0.07em] text-nav-text-dim">
                     {sectionDef.label}
                   </div>
                 ) : (
-                  sectionIdx > 0 && <div className="mx-1 mb-2 border-t border-white/10" />
+                  sectionIdx > 0 && <div className="mx-1 mb-2 border-t border-nav-text/10" />
                 )}
                 <div className="space-y-1">
                   {sectionTabs.map((tab) => {
@@ -1447,21 +1451,21 @@ export default function CRMPage() {
                         aria-current={isActive ? 'page' : undefined}
                         title={sidebarCollapsed ? tab.label : undefined}
                         className={cn(
-                          'group relative flex items-center gap-3 w-full rounded-md transition-all duration-200',
+                          'group relative flex items-center gap-3 w-full rounded-fw-sm transition-all duration-200',
                           sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
-                          isActive ? 'bg-warm-50/10 text-white' : 'text-warm-400 hover:bg-warm-50/5 hover:text-white'
+                          isActive ? 'bg-nav-surface text-nav-text' : 'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text'
                         )}
                       >
-                        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />}
-                        <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white')} />
+                        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-nav-accent rounded-r-full" />}
+                        <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-nav-accent' : 'text-nav-text-dim group-hover:text-nav-text')} />
                         {!sidebarCollapsed && <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>}
                         {!sidebarCollapsed && (
-                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', isActive ? 'bg-primary-500/20 text-primary-400' : 'bg-warm-50/5 text-warm-500')}>
+                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', isActive ? 'bg-accent-500/20 text-nav-accent' : 'bg-nav-surface text-nav-text-dim')}>
                             {tab.shortcut}
                           </span>
                         )}
                         {sidebarCollapsed && (
-                          <div aria-hidden className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                          <div aria-hidden className="absolute left-full ml-3 px-3 py-1.5 bg-nav-bg text-nav-text text-sm rounded-fw-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-raise">
                             {tab.label}
                           </div>
                         )}
@@ -1482,14 +1486,14 @@ export default function CRMPage() {
         />
 
         {/* Action Buttons */}
-        <div className="p-3 border-t border-white/10 space-y-2">
+        <div className="p-3 border-t border-nav-text/10 space-y-2">
           <Button variant="primary"
             onClick={() => setShowAddModal(true)}
             aria-label="Add coach"
             title={sidebarCollapsed ? 'Add coach' : undefined}
             className={cn(
-              'w-full flex items-center justify-center gap-2 py-2.5 rounded-md font-medium transition-all duration-200',
-              'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700'
+              'w-full flex items-center justify-center gap-2 py-2.5 rounded-fw-sm font-medium transition-all duration-200',
+              'bg-accent-650 text-text-on-accent hover:bg-accent-700'
             )}
           >
             <IconPlus size={16} className="flex-shrink-0" />
@@ -1497,10 +1501,10 @@ export default function CRMPage() {
           </Button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-warm-50/5 hover:bg-warm-50/10 text-warm-400 transition-all duration-200">
+              <Button variant="ghost" onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-fw-sm text-sm font-medium bg-nav-surface hover:bg-nav-surface/70 text-nav-text-dim transition-all duration-200">
                 <IconUpload size={14} /> Import
               </Button>
-              <Button variant="ghost" onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-warm-50/5 hover:bg-warm-50/10 text-warm-400 transition-all duration-200">
+              <Button variant="ghost" onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-fw-sm text-sm font-medium bg-nav-surface hover:bg-nav-surface/70 text-nav-text-dim transition-all duration-200">
                 <IconDownload size={14} /> Export
               </Button>
             </div>
@@ -1513,7 +1517,7 @@ export default function CRMPage() {
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-expanded={!sidebarCollapsed}
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-warm-900 border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-all duration-200 shadow-lg"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-nav-bg border border-nav-text/20 flex items-center justify-center text-nav-text-dim hover:text-nav-text transition-all duration-200 shadow-soft"
         >
           {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
         </Button>
@@ -1530,36 +1534,45 @@ export default function CRMPage() {
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
       )}>
         {/* Top Bar */}
-        <header className="hidden lg:block sticky top-0 z-30 glass-standard border-b-0 rounded-none px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-warm-900">{TABS.find(t => t.id === activeTab)?.label}</h2>
-              <p className="text-sm text-warm-500 mt-0.5 hidden sm:block">{TABS.find(t => t.id === activeTab)?.description}</p>
+        {/* A sticky top bar IS on the §4.3 glass allow-list — the warm cream
+            material reads through it while the page scrolls under. Matte
+            `bg-surface` fallback where backdrop-filter is unsupported. The
+            meta cluster uses the ONE Fairway StatusPill so these counters
+            can't drift from every other status chip in the product. */}
+        <header className="hidden lg:block sticky top-0 z-30 border-b border-border-subtle bg-surface/85 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/75 px-6 py-3">
+          <div className="flex items-center justify-between gap-6">
+            <div className="min-w-0">
+              <h2 className="font-fw-display text-h3 font-semibold tracking-[-0.015em] text-text-primary">
+                {tabsById.get(activeTab)?.label}
+              </h2>
+              <p className="mt-0.5 hidden text-body-sm text-text-secondary sm:block">
+                {tabsById.get(activeTab)?.description}
+              </p>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-standard shadow-glass-sm">
-                <IconUsers size={14} className="text-warm-500" />
-                <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.total}</span>
-                <span className="text-xs text-warm-500 hidden sm:inline">coaches</span>
-              </div>
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-standard shadow-glass-sm">
-                <IconTrendingUp size={14} className="text-primary-500" />
-                <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.inPipeline}</span>
-                <span className="text-xs text-warm-500">in pipeline</span>
-              </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <StatusPill tone="neutral" dot={false}>
+                <IconUsers size={13} className="text-text-tertiary" aria-hidden />
+                <span className="font-semibold tabular-nums text-text-primary">{stats.total}</span>
+                <span className="hidden sm:inline">coaches</span>
+              </StatusPill>
+              <StatusPill tone="accent" dot={false} className="hidden sm:inline-flex">
+                <IconTrendingUp size={13} aria-hidden />
+                <span className="font-semibold tabular-nums">{stats.inPipeline}</span>
+                <span>in pipeline</span>
+              </StatusPill>
               {stats.followUpsDue > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/50">
-                  <IconClock size={14} className="text-amber-600" />
-                  <span className="text-sm font-bold text-amber-700 tabular-nums">{stats.followUpsDue}</span>
-                  <span className="text-xs text-amber-600 hidden sm:inline">due</span>
-                </div>
+                <StatusPill tone="warning" dot={false}>
+                  <IconClock size={13} aria-hidden />
+                  <span className="font-semibold tabular-nums">{stats.followUpsDue}</span>
+                  <span className="hidden sm:inline">due</span>
+                </StatusPill>
               )}
               {stats.hot > 0 && (
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200/50">
-                  <IconFlame size={14} className="text-orange-600" />
-                  <span className="text-sm font-bold text-orange-700 tabular-nums">{stats.hot}</span>
-                  <span className="text-xs text-orange-600">high priority</span>
-                </div>
+                <StatusPill tone="warning" dot={false} className="hidden sm:inline-flex">
+                  <IconFlame size={13} aria-hidden />
+                  <span className="font-semibold tabular-nums">{stats.hot}</span>
+                  <span>high priority</span>
+                </StatusPill>
               )}
             </div>
           </div>
@@ -1679,7 +1692,7 @@ export default function CRMPage() {
                   statusConfig={STATUS_CONFIG}
                 />
                 {coachView === 'table' && (
-                  <div className="rounded-2xl glass-standard">
+                  <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
                     <CoachTable
                       coaches={filteredCoaches}
                       loading={loading}
@@ -1808,7 +1821,7 @@ export default function CRMPage() {
         aria-label="Primary"
         className={cn(
           'lg:hidden fixed bottom-0 left-0 right-0 z-40',
-          'bg-elevated/95 backdrop-blur-xl border-t border-border-subtle rounded-t-2xl shadow-glass',
+          'bg-elevated/95 backdrop-blur-xl border-t border-border-subtle rounded-t-card shadow-flat',
           'pb-[env(safe-area-inset-bottom)]',
         )}
       >
@@ -1825,7 +1838,7 @@ export default function CRMPage() {
                 onClick={() => setActiveTab(id)}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-xl px-1 transition-colors duration-200',
+                  'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-fw-md px-1 transition-colors duration-200',
                   isActive ? 'bg-accent-50 text-accent-700' : 'text-text-tertiary hover:text-text-primary',
                 )}
               >
@@ -1845,7 +1858,7 @@ export default function CRMPage() {
                 aria-haspopup="dialog"
                 aria-expanded={moreSheetOpen}
                 className={cn(
-                  'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-xl px-1 transition-colors duration-200',
+                  'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-fw-md px-1 transition-colors duration-200',
                   moreActive || moreSheetOpen ? 'bg-accent-50 text-accent-700' : 'text-text-tertiary hover:text-text-primary',
                 )}
               >
@@ -1866,18 +1879,18 @@ export default function CRMPage() {
             type="button"
             aria-label="Close menu"
             onClick={() => setMoreSheetOpen(false)}
-            className="absolute inset-0 bg-warm-900/40 backdrop-blur-sm cursor-default"
+            className="absolute inset-0 bg-nav-bg/45 backdrop-blur-sm cursor-default"
           >
             <span className="sr-only">Close menu</span>
           </IconButton>
-          <div className="absolute bottom-0 left-0 right-0 glass-prominent rounded-t-2xl shadow-glass pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-4 duration-200">
+          <div className="absolute bottom-0 left-0 right-0 rounded-t-card bg-elevated shadow-raise pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-4 duration-200">
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <h2 className="text-sm font-semibold text-warm-900">More</h2>
+              <h2 className="text-sm font-semibold text-text-primary">More</h2>
               <IconButton
                 variant="default"
                 aria-label="Close menu"
                 onClick={() => setMoreSheetOpen(false)}
-                className="p-1.5 rounded-xl text-warm-500 hover:text-warm-900 hover:bg-warm-100/60 transition-colors duration-200"
+                className="p-1.5 rounded-fw-md text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors duration-200"
               >
                 <IconX size={18} />
               </IconButton>
@@ -1895,13 +1908,13 @@ export default function CRMPage() {
                     onClick={() => { setActiveTab(id); setMoreSheetOpen(false); }}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'flex items-center gap-3 min-h-[44px] px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors duration-200',
+                      'flex items-center gap-3 min-h-[44px] px-3 py-2.5 rounded-fw-md text-sm font-medium text-left transition-colors duration-200',
                       isActive
-                        ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200'
-                        : 'text-warm-700 hover:bg-warm-100/60',
+                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200'
+                        : 'text-text-secondary hover:bg-surface-sunken',
                     )}
                   >
-                    <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} />
+                    <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-accent-700' : 'text-text-tertiary')} />
                     <span className="flex-1 min-w-0 truncate">{tab.label}</span>
                   </Button>
                 );
@@ -1915,14 +1928,14 @@ export default function CRMPage() {
                 <Button
                   variant="ghost"
                   onClick={() => { setMoreSheetOpen(false); setShowImportModal(true); }}
-                  className="min-h-11 justify-start gap-2 rounded-xl bg-surface-tint px-3 text-sm font-medium text-text-secondary"
+                  className="min-h-11 justify-start gap-2 rounded-fw-md bg-surface-tint px-3 text-sm font-medium text-text-secondary"
                 >
                   <IconUpload size={17} /> Import
                 </Button>
                 <Button
                   variant="ghost"
                   onClick={() => { setMoreSheetOpen(false); exportToCSV(); }}
-                  className="min-h-11 justify-start gap-2 rounded-xl bg-surface-tint px-3 text-sm font-medium text-text-secondary"
+                  className="min-h-11 justify-start gap-2 rounded-fw-md bg-surface-tint px-3 text-sm font-medium text-text-secondary"
                 >
                   <IconDownload size={17} /> Export CSV
                 </Button>
@@ -2049,22 +2062,19 @@ export default function CRMPage() {
 // ============================================================================
 function CoachLoadErrorCard({ error, onRetry }: { error: string; onRetry: () => void }) {
   return (
-    <div className="flex items-center justify-center p-8">
-      <div className="glass-standard rounded-2xl shadow-glass p-8 text-center max-w-md">
-        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-          <IconWarning size={28} className="text-red-500" />
-        </div>
-        <h2 className="text-xl font-bold text-warm-900 mb-2">Error loading coaches</h2>
-        <p className="text-warm-600 mb-6">{error}</p>
-        <Button
-          variant="primary"
-          onClick={onRetry}
-          className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all duration-200 shadow-sm"
-        >
-          Try Again
-        </Button>
-      </div>
-    </div>
+    <Surface padding="lg" className="mx-auto max-w-md">
+      <EmptyState
+        variant="subtle"
+        icon={<IconWarning size={20} className="text-fw-danger" />}
+        title="Couldn’t load coaches"
+        description={error}
+        action={
+          <Button variant="primary" onClick={onRetry} className={CRM_PRIMARY_ACTION_CLASS}>
+            Try again
+          </Button>
+        }
+      />
+    </Surface>
   );
 }
 
@@ -2151,15 +2161,15 @@ function InsightsDashboardSkeleton() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="glass-standard rounded-2xl p-4">
-            <Skeleton variant="text" className="w-2/3 mb-3" />
-            <Skeleton variant="text" className="w-1/2 h-7" />
-          </div>
+          <Surface key={i} padding="sm">
+            <Skeleton className="mb-3 h-3 w-2/3" />
+            <Skeleton className="h-7 w-1/2" />
+          </Surface>
         ))}
       </div>
-      <div className="glass-standard rounded-2xl p-6">
-        <Skeleton variant="chart" className="h-56 w-full" />
-      </div>
+      <Surface>
+        <Skeleton className="h-56 w-full rounded-fw-md" />
+      </Surface>
     </div>
   );
 }
@@ -2215,9 +2225,9 @@ function ManualGmailTemplateBar({
   const spam = active ? scoreColdEmail({ subject: active.subject, body: active.body }) : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl glass-standard px-3 py-2">
-      <span className="flex items-center gap-1.5 text-sm font-medium text-warm-700">
-        <IconMail size={15} className="text-primary-500" />
+    <div className="flex flex-wrap items-center gap-2 rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-3 py-2">
+      <span className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+        <IconMail size={15} className="text-accent-600" />
         Gmail template:
       </span>
       <div className="relative inline-flex items-center">
@@ -2227,11 +2237,11 @@ function ManualGmailTemplateBar({
           onChange={(e) => handleSelect(e.target.value)}
           disabled={templates.length === 0}
           className={cn(
-            'appearance-none cursor-pointer min-h-[44px] rounded-xl border pl-3 pr-9 py-2 text-sm font-medium transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed',
+            'appearance-none cursor-pointer min-h-[44px] rounded-fw-md border pl-3 pr-9 py-2 text-sm font-medium transition-colors',
+            'focus:outline-none focus:ring-2 focus:ring-border-focus/30 disabled:opacity-50 disabled:cursor-not-allowed',
             active
-              ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-cream-50/60 border-warm-200/60 text-warm-600 hover:bg-cream-50/80',
+              ? 'bg-accent-50 border-accent-200 text-accent-700'
+              : 'bg-surface/80 border-border-subtle text-text-secondary hover:bg-surface/90',
           )}
         >
           <option value="">
@@ -2241,11 +2251,11 @@ function ManualGmailTemplateBar({
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
         </NativeSelect>
-        <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-warm-400" />
+        <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-text-tertiary" />
       </div>
       {active && (
         <>
-          <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-50 border border-primary-200/60 px-2.5 py-1 text-xs font-semibold text-primary-700">
+          <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200/60 px-2.5 py-1 text-xs font-semibold text-accent-700">
             Armed: <span className="max-w-[160px] truncate">{active.name}</span>
           </span>
           {spam && (
@@ -2253,9 +2263,9 @@ function ManualGmailTemplateBar({
               title={spam.issues.length ? `Spam-risk signals:\n• ${spam.issues.join('\n• ')}` : 'No spam-risk signals — reads like a normal note.'}
               className={cn(
                 'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold cursor-help',
-                spam.level === 'good' && 'bg-primary-50 border-primary-200/60 text-primary-700',
-                spam.level === 'warn' && 'bg-amber-50 border-amber-200/60 text-amber-700',
-                spam.level === 'risk' && 'bg-red-50 border-red-200/60 text-red-700',
+                spam.level === 'good' && 'bg-accent-50 border-accent-200/60 text-accent-700',
+                spam.level === 'warn' && 'bg-fw-warning-bg border-fw-warning-ring text-fw-warning-ink',
+                spam.level === 'risk' && 'bg-fw-danger-bg border-fw-danger/25 text-fw-danger-ink',
               )}
             >
               {spam.level === 'good'
@@ -2268,7 +2278,7 @@ function ManualGmailTemplateBar({
             type="button"
             onClick={() => onChange(null)}
             aria-label="Clear armed Gmail template"
-            className="inline-flex items-center gap-1 min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-medium text-warm-500 hover:text-warm-800 hover:bg-warm-100/60 transition-colors"
+            className="inline-flex items-center gap-1 min-h-[44px] px-3 py-1.5 rounded-fw-md text-xs font-medium text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
           >
             <IconX size={14} /> Clear
           </Button>
@@ -2277,7 +2287,7 @@ function ManualGmailTemplateBar({
       {directEnabled && (
         <>
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-primary-50 border border-primary-200/60 px-2.5 py-1 text-xs font-semibold text-primary-700"
+            className="inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200/60 px-2.5 py-1 text-xs font-semibold text-accent-700"
             title="Gmail is configured to send directly through your Workspace mailbox (no compose tab)."
           >
             <IconSend size={12} /> Direct send
@@ -2288,8 +2298,8 @@ function ManualGmailTemplateBar({
               className={cn(
                 'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold cursor-help',
                 domainAuth.ok
-                  ? 'bg-primary-50 border-primary-200/60 text-primary-700'
-                  : 'bg-amber-50 border-amber-200/60 text-amber-700',
+                  ? 'bg-accent-50 border-accent-200/60 text-accent-700'
+                  : 'bg-fw-warning-bg border-fw-warning-ring text-fw-warning-ink',
               )}
             >
               {domainAuth.ok ? 'Email auth ✓' : <><IconWarning size={12} /> Check SPF/DKIM/DMARC</>}
@@ -2302,13 +2312,13 @@ function ManualGmailTemplateBar({
               onClick={onSendBatch}
               disabled={batchSending}
               aria-label="Send the next 10 cold emails via Gmail"
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-fw-md text-xs font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
               <IconSend size={14} /> {batchSending ? 'Sending…' : 'Send next 10'}
             </Button>
           )}
           {sendStatus && (
-            <span className="text-micro text-warm-500 tabular-nums">
+            <span className="text-micro text-text-tertiary tabular-nums">
               {sendStatus.sentToday} of {sendStatus.dailyCap} sent today
             </span>
           )}
@@ -2334,9 +2344,9 @@ function AssigneeScopeBar({
 }) {
   const active = scope !== 'all';
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl glass-standard px-3 py-2">
-      <span className="flex items-center gap-1.5 text-sm font-medium text-warm-700">
-        <IconUser size={15} className="text-primary-500" />
+    <div className="flex flex-wrap items-center gap-2 rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-3 py-2">
+      <span className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+        <IconUser size={15} className="text-accent-600" />
         Assignee:
       </span>
       <div className="relative inline-flex items-center">
@@ -2345,11 +2355,11 @@ function AssigneeScopeBar({
           value={scope}
           onChange={(e) => onChange(e.target.value as 'all' | 'unassigned' | CrmAssignee)}
           className={cn(
-            'appearance-none cursor-pointer min-h-[44px] rounded-xl border pl-3 pr-9 py-2 text-sm font-medium transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
+            'appearance-none cursor-pointer min-h-[44px] rounded-fw-md border pl-3 pr-9 py-2 text-sm font-medium transition-colors',
+            'focus:outline-none focus:ring-2 focus:ring-border-focus/30',
             active
-              ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-cream-50/60 border-warm-200/60 text-warm-600 hover:bg-cream-50/80',
+              ? 'bg-accent-50 border-accent-200 text-accent-700'
+              : 'bg-surface/80 border-border-subtle text-text-secondary hover:bg-surface/90',
           )}
         >
           <option value="all">All</option>
@@ -2358,7 +2368,7 @@ function AssigneeScopeBar({
           ))}
           <option value="unassigned">Unassigned</option>
         </NativeSelect>
-        <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-warm-400" />
+        <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-text-tertiary" />
       </div>
     </div>
   );

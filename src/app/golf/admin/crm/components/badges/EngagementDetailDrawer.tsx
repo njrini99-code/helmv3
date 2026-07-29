@@ -20,6 +20,7 @@ import type {
 } from '@/app/golf/admin/crm/types/foundations';
 import { EngagementSparkline } from './EngagementSparkline';
 import { IconButton } from '@/components/ui/button';
+import { EmptyState } from '@/components/fairway';
 
 // ============================================================================
 // EngagementDetailDrawer — right-side slide-out shown when an engagement
@@ -44,26 +45,29 @@ const TONES: Record<CoachTemperature, {
   pillClass: string;
   scoreClass: string;
 }> = {
+  // Mirrors ./EngagementBadge.tsx's ramp — a hot lead is a positive signal, so
+  // it takes the solid accent fill; amber/red stay reserved for deliverability
+  // failures. Cold sits neutral, Warm on the accent wash.
   hot: {
     label: 'Hot',
     Icon: IconFlame,
-    iconClass: 'text-orange-500',
-    pillClass: 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 border-orange-200',
-    scoreClass: 'text-orange-600',
+    iconClass: 'text-text-on-accent',
+    pillClass: 'bg-accent-650 text-text-on-accent border-accent-700',
+    scoreClass: 'text-accent-800',
   },
   warm: {
     label: 'Warm',
     Icon: IconSparkles,
-    iconClass: 'text-amber-500',
-    pillClass: 'bg-amber-50 text-amber-700 border-amber-200',
-    scoreClass: 'text-amber-600',
+    iconClass: 'text-accent-700',
+    pillClass: 'bg-accent-50 text-accent-700 border-accent-200',
+    scoreClass: 'text-accent-700',
   },
   cold: {
     label: 'Cold',
     Icon: IconStar,
-    iconClass: 'text-warm-400',
-    pillClass: 'bg-warm-50 text-warm-500 border-warm-200',
-    scoreClass: 'text-warm-500',
+    iconClass: 'text-text-tertiary',
+    pillClass: 'bg-surface-sunken text-text-tertiary border-border-subtle',
+    scoreClass: 'text-text-tertiary',
   },
 };
 
@@ -80,15 +84,16 @@ const EMAIL_EVENT_LABEL: Record<string, string> = {
 };
 
 const EMAIL_EVENT_TONE: Record<string, string> = {
-  sent: 'bg-blue-50 text-blue-700 border-blue-200',
-  delivered: 'bg-blue-50 text-blue-700 border-blue-200',
-  opened: 'bg-primary-50 text-primary-700 border-primary-200',
-  clicked: 'bg-primary-50 text-primary-700 border-primary-200',
-  bounced: 'bg-red-50 text-red-700 border-red-200',
-  complained: 'bg-red-50 text-red-700 border-red-200',
-  unsubscribed: 'bg-red-50 text-red-700 border-red-200',
-  failed: 'bg-red-50 text-red-700 border-red-200',
-  delivery_delayed: 'bg-amber-50 text-amber-700 border-amber-200',
+  // Escalating accent ramp (see resend/shared.tsx STATUS_CONFIG for the rule).
+  sent: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  delivered: 'bg-accent-50 text-accent-700 border-accent-200',
+  opened: 'bg-accent-100 text-accent-800 border-accent-300',
+  clicked: 'bg-accent-650 text-text-on-accent border-accent-700',
+  bounced: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',
+  complained: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',
+  unsubscribed: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',
+  failed: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',
+  delivery_delayed: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring',
 };
 
 export function EngagementDetailDrawer({
@@ -174,7 +179,7 @@ export function EngagementDetailDrawer({
       {/* Backdrop */}
       <div
         aria-hidden="true"
-        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-50 bg-nav-bg/35 transition-opacity"
         onClick={onClose}
       />
 
@@ -183,20 +188,20 @@ export function EngagementDetailDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby="engagement-drawer-title"
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] glass-prominent shadow-2xl border-l border-warm-200/60 flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-elevated shadow-raise border-l border-border-subtle flex flex-col"
       >
         {/* Header */}
-        <header className="flex items-center justify-between gap-3 px-5 py-4 border-b border-warm-100">
+        <header className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center flex-shrink-0">
-              <IconActivity size={16} className="text-warm-600" />
+            <span className="w-8 h-8 rounded-fw-sm bg-surface-sunken flex items-center justify-center flex-shrink-0">
+              <IconActivity size={16} className="text-text-secondary" />
             </span>
             <div className="min-w-0">
-              <h2 id="engagement-drawer-title" className="text-base font-semibold text-warm-900 truncate">
+              <h2 id="engagement-drawer-title" className="text-base font-semibold text-text-primary truncate">
                 Engagement detail
               </h2>
               {coachName && (
-                <p className="text-xs text-warm-500 truncate">{coachName}</p>
+                <p className="text-xs text-text-tertiary truncate">{coachName}</p>
               )}
             </div>
           </div>
@@ -204,7 +209,7 @@ export function EngagementDetailDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+            className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
           >
             <IconX size={14} />
           </IconButton>
@@ -214,34 +219,32 @@ export function EngagementDetailDrawer({
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
           {loading && !engagement && (
             <div className="space-y-3">
-              <div className="h-24 rounded-2xl bg-warm-50/60 skeleton-shimmer" />
-              <div className="h-32 rounded-2xl bg-warm-50/60 skeleton-shimmer" />
+              <div className="h-24 rounded-card bg-surface-sunken/70 skeleton-shimmer" />
+              <div className="h-32 rounded-card bg-surface-sunken/70 skeleton-shimmer" />
             </div>
           )}
 
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
               {error}
             </p>
           )}
 
           {!loading && !error && !engagement && (
-            <div className="rounded-2xl border border-dashed border-warm-200 bg-warm-50/40 px-4 py-10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-cream-50 flex items-center justify-center mx-auto mb-2 border border-warm-200/60">
-                <IconActivity size={18} className="text-warm-400" />
-              </div>
-              <p className="text-sm font-medium text-warm-700">No engagement data yet</p>
-              <p className="text-xs text-warm-500 mt-1 max-w-xs mx-auto">
-                Once this coach starts opening or clicking emails, their score
-                will populate here.
-              </p>
+            <div className="rounded-card border border-dashed border-border-subtle bg-surface-sunken/60">
+              <EmptyState
+                variant="subtle"
+                icon={<IconActivity size={18} />}
+                title="No engagement data yet"
+                description="Once this coach starts opening or clicking emails, their score populates here."
+              />
             </div>
           )}
 
           {engagement && tone && (
             <>
               {/* Score card */}
-              <section className="rounded-2xl border border-warm-200/60 bg-cream-50 p-4">
+              <section className="rounded-card border border-border-subtle bg-surface p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span
@@ -253,39 +256,39 @@ export function EngagementDetailDrawer({
                       <tone.Icon size={11} className={tone.iconClass} />
                       {tone.label}
                     </span>
-                    <p className="mt-2 text-xs text-warm-500">Engagement score</p>
+                    <p className="mt-2 text-xs text-text-tertiary">Engagement score</p>
                     <p className={cn('mt-0.5 text-3xl font-semibold tabular-nums', tone.scoreClass)}>
                       {engagement.score}
-                      <span className="text-sm font-normal text-warm-400 ml-1">/100</span>
+                      <span className="text-sm font-normal text-text-tertiary ml-1">/100</span>
                     </p>
                   </div>
                   <EngagementSparkline engagement={engagement} width={96} height={32} />
                 </div>
 
                 <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
-                  <div className="rounded-lg bg-warm-50/60 px-2 py-2">
-                    <dt className="text-eyebrow uppercase tracking-wider text-warm-500">
+                  <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
+                    <dt className="text-eyebrow uppercase tracking-wider text-text-tertiary">
                       Opens
                     </dt>
-                    <dd className="text-lg font-semibold text-warm-900 tabular-nums">
+                    <dd className="text-lg font-semibold text-text-primary tabular-nums">
                       {engagement.opens_90d}
                     </dd>
-                    <dd className="text-eyebrow text-warm-400">last 90d</dd>
+                    <dd className="text-eyebrow text-text-tertiary">last 90d</dd>
                   </div>
-                  <div className="rounded-lg bg-warm-50/60 px-2 py-2">
-                    <dt className="text-eyebrow uppercase tracking-wider text-warm-500">
+                  <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
+                    <dt className="text-eyebrow uppercase tracking-wider text-text-tertiary">
                       Clicks
                     </dt>
-                    <dd className="text-lg font-semibold text-warm-900 tabular-nums">
+                    <dd className="text-lg font-semibold text-text-primary tabular-nums">
                       {engagement.clicks_90d}
                     </dd>
-                    <dd className="text-eyebrow text-warm-400">last 90d</dd>
+                    <dd className="text-eyebrow text-text-tertiary">last 90d</dd>
                   </div>
-                  <div className="rounded-lg bg-warm-50/60 px-2 py-2">
-                    <dt className="text-eyebrow uppercase tracking-wider text-warm-500">
+                  <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
+                    <dt className="text-eyebrow uppercase tracking-wider text-text-tertiary">
                       Last event
                     </dt>
-                    <dd className="text-sm font-semibold text-warm-900">
+                    <dd className="text-sm font-semibold text-text-primary">
                       {lastEventLabel ?? '—'}
                     </dd>
                   </div>
@@ -294,14 +297,14 @@ export function EngagementDetailDrawer({
 
               {/* Why this score */}
               {explainer && (
-                <section className="rounded-2xl border border-warm-200/60 bg-warm-50/40 p-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 mb-2">
+                <section className="rounded-card border border-border-subtle bg-surface-sunken/60 p-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
                     Why this score?
                   </h3>
-                  <p className="text-sm text-warm-800 leading-relaxed">
+                  <p className="text-sm text-text-primary leading-relaxed">
                     {explainer}
                   </p>
-                  <p className="mt-2 text-eyebrow text-warm-500">
+                  <p className="mt-2 text-eyebrow text-text-tertiary">
                     Score uses a 14-day half-life decay over the last 90 days
                     of email events. Hot ≥ 60, Warm ≥ 25, Cold &lt; 25.
                   </p>
@@ -310,16 +313,16 @@ export function EngagementDetailDrawer({
 
               {/* Recent events */}
               <section>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 mb-2 flex items-center gap-2">
-                  <IconMail size={12} className="text-warm-500" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2 flex items-center gap-2">
+                  <IconMail size={12} className="text-text-tertiary" />
                   Recent email events
                 </h3>
                 {events.length === 0 ? (
-                  <p className="text-xs text-warm-500 italic px-1">
+                  <p className="text-xs text-text-tertiary italic px-1">
                     No email events in the last 90 days.
                   </p>
                 ) : (
-                  <ul className="rounded-2xl border border-warm-200/60 bg-cream-50 divide-y divide-warm-100">
+                  <ul className="rounded-card border border-border-subtle bg-surface divide-y divide-border-subtle">
                     {events.map((evt) => (
                       <EventRow key={evt.id} event={evt} />
                     ))}
@@ -367,7 +370,7 @@ function EventRow({ event }: EventRowProps) {
     ? event.metadata.recipient_email
     : null;
 
-  const tone = EMAIL_EVENT_TONE[event.type] ?? 'bg-warm-100 text-warm-700 border-warm-200';
+  const tone = EMAIL_EVENT_TONE[event.type] ?? 'bg-surface-sunken text-text-secondary border-border-subtle';
   const label = EMAIL_EVENT_LABEL[event.type] ?? event.title ?? event.type;
 
   return (
@@ -383,14 +386,14 @@ function EventRow({ event }: EventRowProps) {
             {label}
           </span>
           {recipient && (
-            <span className="text-eyebrow text-warm-500 truncate">
+            <span className="text-eyebrow text-text-tertiary truncate">
               {recipient}
             </span>
           )}
         </div>
       </div>
       <span
-        className="text-eyebrow text-warm-400 tabular-nums flex-shrink-0"
+        className="text-eyebrow text-text-tertiary tabular-nums flex-shrink-0"
         title={absolute}
       >
         {rel}

@@ -33,9 +33,9 @@ export function SegmentBadge({
         onClick={onClick}
         title={segment.description ?? segment.name}
         className={cn(
-          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-eyebrow font-medium',
-          'bg-primary-50 text-primary-700 border border-primary-200/60',
-          'hover:bg-primary-100 transition-colors',
+          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-fw-sm text-eyebrow font-medium',
+          'bg-accent-50 text-accent-700 border border-accent-200/60',
+          'hover:bg-accent-100 transition-colors',
           'max-w-[120px] truncate',
           className,
         )}
@@ -53,11 +53,11 @@ export function SegmentBadge({
       onContextMenu={onContextMenu}
       title={segment.description ?? segment.name}
       className={cn(
-        'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md',
+        'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-fw-sm',
         'text-sm font-medium transition-all duration-200',
         isActive
-          ? 'bg-cream-50/15 text-white'
-          : 'text-warm-400 hover:bg-cream-50/5 hover:text-white',
+          ? 'bg-nav-surface text-nav-text'
+          : 'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text',
         className,
       )}
     >
@@ -70,8 +70,8 @@ export function SegmentBadge({
           className={cn(
             'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
             isActive
-              ? 'bg-primary-500/20 text-primary-200'
-              : 'bg-cream-50/5 text-warm-500',
+              ? 'bg-accent-500/25 text-nav-accent'
+              : 'bg-nav-surface text-nav-text-dim',
           )}
         >
           {count}

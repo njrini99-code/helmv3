@@ -5,6 +5,7 @@ import { IconMessageSquare } from '@/components/icons';
 import type { TimelineItem as TimelineItemType } from '@/app/golf/admin/crm/types/foundations';
 import { getCoachTimeline } from '@/app/golf/actions/crm-timeline';
 import { TimelineItem } from './TimelineItem';
+import { EmptyState } from '@/components/fairway';
 
 interface CoachTimelineProps {
   coachId: string;
@@ -48,13 +49,13 @@ export function CoachTimeline({ coachId, limit, since, refreshKey }: CoachTimeli
   if (loading) {
     return (
       <ul className="relative pl-6">
-        <span aria-hidden="true" className="absolute left-[11px] top-0 bottom-0 w-px bg-warm-200/60" />
+        <span aria-hidden="true" className="absolute left-[11px] top-0 bottom-0 w-px bg-surface-sunken" />
         {[0, 1, 2].map((i) => (
           <li key={i} className="relative pb-5">
-            <span className="absolute left-[-13px] top-0.5 w-[22px] h-[22px] rounded-full bg-warm-200/60 skeleton-shimmer" />
+            <span className="absolute left-[-13px] top-0.5 w-[22px] h-[22px] rounded-full bg-surface-sunken skeleton-shimmer" />
             <div className="ml-4 space-y-1.5 pt-0.5">
-              <div className="h-3 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
-              <div className="h-3 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
+              <div className="h-3 w-32 bg-surface-sunken rounded skeleton-shimmer" />
+              <div className="h-3 w-48 bg-surface-sunken rounded skeleton-shimmer" />
             </div>
           </li>
         ))}
@@ -65,28 +66,25 @@ export function CoachTimeline({ coachId, limit, since, refreshKey }: CoachTimeli
   if (error) {
     return (
       <div className="py-6 text-center">
-        <p className="text-xs text-red-600">{error}</p>
+        <p className="text-xs text-fw-danger-ink">{error}</p>
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="py-10 text-center">
-        <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
-          <IconMessageSquare size={18} className="text-warm-300" />
-        </div>
-        <p className="text-sm font-medium text-warm-500">No activity yet</p>
-        <p className="text-xs text-warm-400 mt-0.5">
-          Try logging a contact or creating a task.
-        </p>
-      </div>
+      <EmptyState
+        variant="subtle"
+        icon={<IconMessageSquare size={18} />}
+        title="No activity yet"
+        description="Try logging a contact or creating a task."
+      />
     );
   }
 
   return (
     <ul className="relative pl-6">
-      <span aria-hidden="true" className="absolute left-[11px] top-0 bottom-0 w-px bg-warm-200/60" />
+      <span aria-hidden="true" className="absolute left-[11px] top-0 bottom-0 w-px bg-surface-sunken" />
       {items.map((item) => (
         <TimelineItem key={item.id} item={item} />
       ))}

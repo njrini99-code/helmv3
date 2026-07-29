@@ -25,6 +25,16 @@ interface MarketingShellProps {
   children: ReactNode;
 }
 
+/**
+ * NOTE ON THE ENTRANCE GATE. This shell deliberately does NOT lift
+ * `marketing-anim-gate` (see lib/motion/anim-gate.ts). Lifting it here looks
+ * right — the shell is the one component every marketing page mounts — but
+ * `/products` renders MarketingShell and ProductsLanding as separate client
+ * boundaries that hydrate in separate commits, so the shell's effect fired
+ * first and un-hid all 20 reveal blocks a measured ~20ms (94ms at 4x CPU)
+ * before useProductsEffects could hide them. The gate is released per element
+ * by whichever system owns it instead.
+ */
 export function MarketingShell({ showCta = false, children }: MarketingShellProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const triggerRef = useRef<HTMLElement | null>(null);

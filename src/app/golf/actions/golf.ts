@@ -5183,7 +5183,10 @@ async function savePartialRoundImpl(
       );
 
       if (rpcError) {
-        await logServerException(new Error(rpcError.message), { action: 'savePartialRound.rpc' });
+        // Single log call per failure — logServerError already carries the
+        // richer domain context (roundId/playerId/errorCode/hint/details);
+        // a paired logServerException here would just double-write the
+        // same failure to admin_events.
         await logServerError(`Auto-save RPC failed: ${rpcError.message}`, {
           action: 'savePartialRound',
           roundId: existingRoundId,
@@ -5309,24 +5312,30 @@ async function savePartialRoundImpl(
           .select()
           .maybeSingle();
         if (updateError) {
-          await logServerException(new Error(updateError.message), { action: 'savePartialRound.updateExisting' });
-          await logServerError(`Auto-save update failed: ${updateError.message}`, {
-            action: 'savePartialRound.updateExisting',
-            roundId: existingRound.id,
-            playerId: player.id,
-            userId: user.id,
-            userEmail: user.email,
-            errorCode: updateError.code,
-            errorHint: updateError.hint,
-            errorDetails: updateError.details,
-          });
-          maybeCaptureRlsDenial(updateError, {
+          // maybeCaptureRlsDenial fires first and reports whether it
+          // already logged this failure under the rls_denial classification.
+          // Only fall through to the generic logServerError when it did NOT
+          // — otherwise the same Postgres failure writes two admin_events
+          // rows (one per classification) instead of one.
+          const capturedAsRlsDenial = maybeCaptureRlsDenial(updateError, {
             table: 'golf_rounds',
             verb: 'update',
             action: 'savePartialRound',
             feature: 'round_tracking',
             sport: 'golf',
           });
+          if (!capturedAsRlsDenial) {
+            await logServerError(`Auto-save update failed: ${updateError.message}`, {
+              action: 'savePartialRound.updateExisting',
+              roundId: existingRound.id,
+              playerId: player.id,
+              userId: user.id,
+              userEmail: user.email,
+              errorCode: updateError.code,
+              errorHint: updateError.hint,
+              errorDetails: updateError.details,
+            });
+          }
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
         if (!updatedRound) {
@@ -5345,22 +5354,26 @@ async function savePartialRoundImpl(
           .single();
 
         if (roundError) {
-          await logServerException(new Error(roundError.message), { action: 'savePartialRound.insertRound' });
-          await logServerError(`Auto-save insert round failed: ${roundError.message}`, {
-            action: 'savePartialRound.insertRound',
-            playerId: player.id,
-            userId: user.id,
-            userEmail: user.email,
-            errorCode: roundError.code,
-            errorDetails: roundError.details,
-          });
-          maybeCaptureRlsDenial(roundError, {
+          // Same single-row-per-failure contract as the updateExisting
+          // branch above: check RLS classification first, only log the
+          // generic error when it wasn't already captured as a denial.
+          const capturedAsRlsDenial = maybeCaptureRlsDenial(roundError, {
             table: 'golf_rounds',
             verb: 'insert',
             action: 'savePartialRound',
             feature: 'round_tracking',
             sport: 'golf',
           });
+          if (!capturedAsRlsDenial) {
+            await logServerError(`Auto-save insert round failed: ${roundError.message}`, {
+              action: 'savePartialRound.insertRound',
+              playerId: player.id,
+              userId: user.id,
+              userEmail: user.email,
+              errorCode: roundError.code,
+              errorDetails: roundError.details,
+            });
+          }
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
         round = newRound;
@@ -5382,7 +5395,7 @@ async function savePartialRoundImpl(
           .select('id, hole_number');
 
         if (holesError) {
-          await logServerException(new Error(holesError.message), { action: 'savePartialRound.insertHoles' });
+          // Single log call per failure (see updateExisting branch above).
           await logServerError(`Auto-save insert holes failed: ${holesError.message}`, {
             action: 'savePartialRound.insertHoles',
             roundId,
@@ -5433,7 +5446,7 @@ async function savePartialRoundImpl(
               .upsert(shotsData, { onConflict: 'round_id,hole_number,shot_number' })
               .select('id, hole_number, shot_number');
             if (shotsError) {
-              await logServerException(new Error(shotsError.message), { action: 'savePartialRound.insertShots' });
+              // Single log call per failure (see updateExisting branch above).
               await logServerError(`Auto-save insert shots failed: ${shotsError.message}`, {
                 action: 'savePartialRound.insertShots',
                 roundId,
@@ -5552,7 +5565,10 @@ async function savePartialRoundImpl(
     return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
 
   } catch (err) {
-    await logServerException(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' }, 'critical');
+    // Single log call per failure (see updateExisting branch above) — keep
+    // logServerError since it already carries the stack via `extra.stack`
+    // below; a paired logServerException would only double-write this
+    // same unexpected error to admin_events.
     await logServerError(`Auto-save unexpected error: ${describeError(err)}`, {
       action: 'savePartialRound.catch',
       extra: { stack: err instanceof Error ? err.stack : undefined },
@@ -5573,7 +5589,20 @@ async function savePartialRoundImpl(
  */
 const observedSavePartialRound = withAdminObserved(
   'savePartialRound',
-  { sport: 'golf', feature: 'round_tracking' },
+  {
+    sport: 'golf',
+    feature: 'round_tracking',
+    // Every returned-failure branch in savePartialRoundImpl already records
+    // its own admin_events row (via logServerError or maybeCaptureRlsDenial)
+    // with richer domain context (roundId/playerId/errorCode/etc). Without
+    // this flag the wrapper's generic soft-failure observer ALSO fires on
+    // every success-false return, doubling admin_events writes for real
+    // failures and even logging the intentionally-silent 'conflict' /
+    // "already been completed" race-condition returns that the impl
+    // deliberately chose not to log. See src/app/golf/actions/insights.ts
+    // getPlayerPatterns for the established idiom.
+    observeSoftFailures: false,
+  },
   savePartialRoundImpl,
 );
 

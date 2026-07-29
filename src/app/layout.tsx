@@ -21,6 +21,7 @@ import { VercelAnalyticsProvider } from '@/components/providers/VercelAnalyticsP
 import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeScript } from '@/components/golf/theme/ThemeScript';
+import { MarketingAnimGate } from '@/components/landing/MarketingAnimGate';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -110,6 +111,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <ThemeScript />
+        <MarketingAnimGate />
         <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ExternalLink, CheckCheck } from 'lucide-react';
 import { Button, StatusPill } from '@/components/fairway';
 import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
+import { INCIDENT_CLASS_LABEL } from '@/lib/admin/incident-classification';
 import { resolveTriageEvents } from '@/app/admin/actions/triage';
 import { SportBadge } from './SportBadge';
 import { PanelAllClear } from './PanelStates';
@@ -126,8 +127,42 @@ export function TriageQueue({
             <p className="font-fw-mono text-xs tabular-nums text-warm-500">
               {affectedUsersLabel(item)} · {item.occurrences} events · last{' '}
               <LocalTime iso={item.lastSeen} />
-              {item.substatus === 'regressed' ? ' · REGRESSED' : ''}
             </p>
+            {/* REGRESSED is the single highest-signal thing on a triage row —
+                it means a fix did not hold — so it gets a real badge rather
+                than the inline mono text it used to share with the counts.
+                Now reachable for app-origin rows too, not just Sentry. */}
+            {item.substatus === 'regressed' ? (
+              <p className="pt-0.5">
+                <StatusPill tone="danger" dot size="sm">
+                  Regressed — resolved, then fired again
+                </StatusPill>
+              </p>
+            ) : null}
+            {/* Kind axis. Only shown when it is NOT a plain actionable defect —
+                labelling every ordinary bug "Defect" would be pure chrome. The
+                cases worth calling out are the ones that change what an
+                operator does: non-actionable noise, and a degraded message. */}
+            {!item.actionable || item.hasDegradedMessage ? (
+              <p className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                {!item.actionable ? (
+                  <span
+                    className="rounded bg-warm-100 px-1.5 py-0.5 text-eyebrow uppercase text-warm-600"
+                    title={item.klassReason}
+                  >
+                    {INCIDENT_CLASS_LABEL[item.klass]}
+                  </span>
+                ) : null}
+                {item.hasDegradedMessage ? (
+                  <span
+                    className="rounded bg-warm-100 px-1.5 py-0.5 text-eyebrow uppercase text-warm-600"
+                    title="The message was stringified on capture (e.g. [object Object]) — the real cause was lost. Fix the call site to use describeError()."
+                  >
+                    message lost
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
             {detailLine(item) ? (
               <p className="break-words font-fw-mono text-caption leading-4 text-warm-500 [overflow-wrap:anywhere]">
                 {detailLine(item)}

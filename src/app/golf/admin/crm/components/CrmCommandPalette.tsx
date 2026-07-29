@@ -15,7 +15,7 @@
  * golf-dashboard CommandPalette.
  *
  * Visual surface mirrors the California-modern recipe used elsewhere: a warm
- * cream/glass panel over a tinted, blurred backdrop, rounded-2xl, with
+ * cream/glass panel over a tinted, blurred backdrop, rounded-card, with
  * primary-50 highlight on the active row and warm text throughout.
  */
 
@@ -97,10 +97,10 @@ export function CrmCommandPalette({
     : [];
 
   const itemClass = cn(
-    'flex items-center gap-3 min-h-[44px] px-3 py-2.5 rounded-xl cursor-pointer outline-none',
+    'flex items-center gap-3 min-h-[44px] px-3 py-2.5 rounded-fw-md cursor-pointer outline-none',
     'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-    'text-warm-700 data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary-900',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+    'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-accent-800',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/40',
   );
 
   return (
@@ -111,7 +111,7 @@ export function CrmCommandPalette({
         type="button"
         aria-label="Close command palette"
         onClick={close}
-        className="absolute inset-0 h-auto w-full min-h-0 rounded-none bg-warm-900/40 backdrop-blur-md cursor-default hover:bg-warm-900/40"
+        className="absolute inset-0 h-auto w-full min-h-0 rounded-none bg-nav-bg/45 backdrop-blur-md cursor-default hover:bg-nav-bg/45"
       >
         <span className="sr-only">Close command palette</span>
       </Button>
@@ -129,34 +129,34 @@ export function CrmCommandPalette({
           loop
           shouldFilter={false}
           className={cn(
-            'overflow-hidden rounded-2xl bg-[#FFFEFA]/95 backdrop-blur-xl border border-white/40',
+            'overflow-hidden rounded-fw-lg bg-elevated/95 backdrop-blur-xl border border-border-subtle',
             'shadow-[0_4px_18px_rgba(28,25,23,0.10),0_28px_60px_rgba(28,25,23,0.16)]',
           )}
         >
           {/* Search input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/40">
-            <IconSearch size={18} className="text-warm-400" aria-hidden />
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle">
+            <IconSearch size={18} className="text-text-tertiary" aria-hidden />
             <Command.Input
               value={search}
               onValueChange={setSearch}
               placeholder="Search coaches, jump to a tab, run an action…"
-              className="flex-1 bg-transparent outline-none text-base text-warm-900 placeholder:text-warm-500 tracking-[-0.005em] focus-visible:outline-none"
+              className="flex-1 bg-transparent outline-none text-base text-text-primary placeholder:text-text-tertiary tracking-[-0.005em] focus-visible:outline-none"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-text-tertiary bg-surface-tint rounded-fw-sm border border-border-subtle">
               ESC
             </kbd>
           </div>
 
           {/* Results */}
           <Command.List className="max-h-[60vh] overflow-y-auto p-2">
-            <Command.Empty className="text-center py-10 text-sm text-warm-500">
+            <Command.Empty className="text-center py-10 text-sm text-text-tertiary">
               No results found.
             </Command.Empty>
 
             {/* Go to — navigable destinations */}
             <Command.Group
               heading="Go to"
-              className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+              className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
             >
               {destinations.map((d) => (
                 <Command.Item
@@ -178,7 +178,7 @@ export function CrmCommandPalette({
             {/* Actions */}
             <Command.Group
               heading="Actions"
-              className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+              className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
             >
               <Command.Item
                 value="New Coach add create coach"
@@ -188,7 +188,7 @@ export function CrmCommandPalette({
                 }}
                 className={itemClass}
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
+                <span className="flex h-8 w-8 items-center justify-center rounded-fw-sm bg-surface-tint text-text-secondary data-[selected=true]:bg-accent-100">
                   <IconPlus size={18} aria-hidden />
                 </span>
                 <span className="flex-1 min-w-0 text-sm font-medium tracking-[-0.005em] truncate">
@@ -203,7 +203,7 @@ export function CrmCommandPalette({
                 }}
                 className={itemClass}
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
+                <span className="flex h-8 w-8 items-center justify-center rounded-fw-sm bg-surface-tint text-text-secondary data-[selected=true]:bg-accent-100">
                   <IconMail size={18} aria-hidden />
                 </span>
                 <span className="flex-1 min-w-0 text-sm font-medium tracking-[-0.005em] truncate">
@@ -218,7 +218,7 @@ export function CrmCommandPalette({
                 }}
                 className={itemClass}
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
+                <span className="flex h-8 w-8 items-center justify-center rounded-fw-sm bg-surface-tint text-text-secondary data-[selected=true]:bg-accent-100">
                   <IconUpload size={18} aria-hidden />
                 </span>
                 <span className="flex-1 min-w-0 text-sm font-medium tracking-[-0.005em] truncate">
@@ -231,7 +231,7 @@ export function CrmCommandPalette({
             {matchedCoaches.length > 0 && (
               <Command.Group
                 heading="Coaches"
-                className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
               >
                 {matchedCoaches.map((c) => (
                   <Command.Item
@@ -243,14 +243,14 @@ export function CrmCommandPalette({
                     }}
                     className={itemClass}
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-tint text-text-secondary data-[selected=true]:bg-accent-100">
                       <IconUser size={16} aria-hidden />
                     </span>
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm font-medium tracking-[-0.005em] truncate">
                         {c.name}
                       </span>
-                      <span className="block text-xs text-warm-500 truncate">
+                      <span className="block text-xs text-text-tertiary truncate">
                         {c.school}
                         {c.email ? ` · ${c.email}` : ''}
                       </span>
@@ -262,14 +262,14 @@ export function CrmCommandPalette({
           </Command.List>
 
           {/* Footer hints */}
-          <div className="px-4 py-2 border-t border-warm-200/40 flex items-center justify-between text-eyebrow text-warm-500">
+          <div className="px-4 py-2 border-t border-border-subtle flex items-center justify-between text-eyebrow text-text-tertiary">
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-surface-tint rounded border border-border-subtle">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-surface-tint rounded border border-border-subtle">↓</kbd>
               <span>Navigate</span>
             </div>
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-surface-tint rounded border border-border-subtle">↵</kbd>
               <span>Select</span>
             </div>
           </div>
