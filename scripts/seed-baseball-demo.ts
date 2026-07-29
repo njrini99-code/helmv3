@@ -1,10 +1,11 @@
 /**
  * seed-baseball-demo.ts — Phase-1 BaseballHelm demo seed.
  *
- * Seeds ONE demo team ("Demo University Baseball") across EVERY new Phase-1
- * table so the BaseballHelm surfaces (timeline, acknowledgements, imports,
- * practice planner, lifting/readiness, coach insights with source attribution)
- * all render real, internally-consistent data for a demo login.
+ * Seeds ONE demo team ("Demo University Baseball") across the Phase-1 tables so
+ * the BaseballHelm surfaces (timeline, acknowledgements, imports, practice
+ * planner, announcements, travel, documents, Lift Lab progression, postgame
+ * action review, coach insights with source attribution) all render real,
+ * internally-consistent data for a demo login.
  *
  * Mirrors the GolfHelm demo pattern (scripts/provision-demo-accounts.mjs +
  * scripts/seed-demo-player.ts): a stable demo team identity, a coach login and
@@ -31,22 +32,49 @@
  *   - With no flags it does a DRY RUN: it prints exactly what it WOULD seed
  *     (every table + row count) and writes NOTHING to the database or auth.
  *   - It only writes when you pass --confirm explicitly.
+ *   - PRODUCTION IS REFUSED even with --confirm. It additionally requires
+ *     --allow-prod, the same escape hatch scripts/seed-baseball-stats.mjs and
+ *     seed-baseball-box-scores.mjs use for the same project. Any other remote
+ *     project must be named back to the script. See assertWriteTargetAllowed().
  *
  * Run (later, by the user):
  *   # 1. Dry run (default — prints the plan, touches nothing):
  *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts
- *   # 2. Actually seed (writes to the SHARED prod Supabase — scoped to demo ids):
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts --confirm
+ *   # 2. Seed a LOCAL stack (the intended target — `supabase start` first):
+ *   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 npx tsx scripts/seed-baseball-demo.ts --confirm
+ *   # 3. Seed production (deliberate, loud, rarely correct):
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts --confirm --allow-prod
  *
  * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  *
- * WHAT IT SEEDS (only tables that exist in supabase/migrations):
+ * WHAT IT SEEDS (only tables that exist and are LIVE — see the graveyard note):
  *   organizations · baseball_teams · baseball_coaches · baseball_players ·
  *   baseball_team_members · baseball_events · baseball_event_acknowledgements ·
  *   baseball_import_runs · baseball_player_external_ids · baseball_practices ·
  *   baseball_practice_blocks · baseball_practice_attendance · baseball_exercises ·
- *   baseball_lift_assignments · baseball_lift_results · baseball_readiness_checkins ·
+ *   baseball_announcements · baseball_announcement_recipients ·
+ *   baseball_announcement_acknowledgements · baseball_travel_itineraries ·
+ *   baseball_travel_expenses · baseball_documents · baseball_document_versions ·
+ *   baseball_games · baseball_box_score_batting · baseball_box_score_pitching ·
+ *   baseball_postgame_reviews · baseball_postgame_review_items ·
+ *   helm_lifting_athletes · helm_lifting_exercises · helm_lifting_maxes ·
+ *   helm_lifting_bodyweight_entries ·
  *   baseball_coach_insights · baseball_player_timeline_events
+ *
+ * GRAVEYARDED TABLES THIS SCRIPT USED TO WRITE (removed 2026-07-29):
+ *   baseball_lift_assignments · baseball_lift_results · baseball_readiness_checkins
+ *   were moved out of `public` into the `graveyard` schema by
+ *   supabase/migrations/20260704070000_graveyard_dead_liftlab_tables_phase2.sql.
+ *   `graveyard` is not in PostgREST's exposed schemas, so those upserts could
+ *   only ever fail — and the failure text ("could not find the table ... in the
+ *   schema cache") matched this script's own schema-skip filter, so the rows
+ *   were dropped from the summary and the run still reported success. The
+ *   live successors are the helm_lifting_* family, and the sessions/set-results/
+ *   readiness half of it is already seeded in full by Phase 2
+ *   (scripts/seed-baseball-lifting-demo.ts) — so those three writes are simply
+ *   GONE here rather than repointed. What Phase 2 does NOT cover, and what this
+ *   script now owns, is the progression layer: helm_lifting_maxes and
+ *   helm_lifting_bodyweight_entries (see section 7).
  *
  * Demo login it assumes / creates (parallels golfhelmdemo.com):
  *   COACH  : demo-coach@baseballhelmdemo.com  / BaseballDemo2026
@@ -55,25 +83,25 @@
  *    baseball_players.user_id is NOT NULL + UNIQUE + FK to public.users.)
  *
  * SCHEMA GAPS / NOTES (things this seed deliberately does NOT touch):
- *   - No baseball_player_stats / aggregates / box-score / season stats here:
- *     this script only seeds the roster + operational surfaces listed above.
- *     Its companion script, scripts/seed-baseball-stats.mjs, is the stats
- *     seeder (#379) — it seeds BOTH the legacy flat/aggregate layer AND the
- *     canonical box-score/season layer `stats-center.ts` reads, so run it
- *     against this same team/coach after this script if you want the
- *     hitting/pitching panels AND the Stats Center populated. Run this
- *     script alone and Stats Center, Command Center, Roster, etc. will
- *     correctly empty-state — that is honest, not broken UI; it does NOT
- *     mean Stats Center should stay empty once seed-baseball-stats.mjs has
- *     also been run (see docs/baseball/stats-architecture.md).
- *   - No recruiting pipeline rows (baseball_recruiting_interests) — demo team is
- *     a college roster, recruiting is a separate surface.
+ *   - Exactly ONE game and its box score, seeded only because a postgame
+ *     action review is FK-bound to a game and is meaningless without the
+ *     lines it cites (see section 11). This is NOT the stats seeder: no
+ *     baseball_player_stats / baseball_player_aggregates /
+ *     baseball_player_season_stats rows are written here, so a Phase-1-only
+ *     database still shows an honestly-empty Stats Center. The stats seeders
+ *     are scripts/seed-baseball-stats.mjs (#379) and Phase 4
+ *     (scripts/seed-baseball-demo-program.ts), which recalculates season
+ *     stats through the same RPC the app uses and will pick this game up.
+ *   - No recruiting data of any kind. The recruiting module is SUNSET
+ *     (src/lib/baseball/product-modules.ts, enabled: false) — the product
+ *     being sold is team operations + player development + Lift Lab.
  *   - baseball_coaches.email column is set; if your prod copy lacks it the row
  *     still inserts (extra keys are rejected by PostgREST, so keep this in sync
  *     with the live schema if you see a column error).
  */
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createRetryingFetch, describeFetchError } from './lib/retrying-fetch';
 import { createHash } from 'node:crypto';
 
 // ---------------------------------------------------------------------------
@@ -97,6 +125,171 @@ function assertRequiredSeedEnv(): void {
 }
 assertRequiredSeedEnv();
 
+// ---------------------------------------------------------------------------
+// PRODUCTION-TARGET GUARD.
+//
+// `--confirm` answers "did you mean to write?". It does NOT answer "did you
+// mean to write HERE" — and that second question is the dangerous one. This
+// script reads its target from NEXT_PUBLIC_SUPABASE_URL, so a stale .env.local,
+// a copied shell, or a `vercel env pull` from the wrong project silently
+// redirects a full demo seed (10 auth users, a fake "Demo University" org, a
+// password force-reset, a login_attempts DELETE) into someone else's database.
+//
+// ⚠️ THE PRODUCTION REF IS A DENY, NOT AN ALLOW. An earlier version of this
+// guard treated `qmnssrrolpinvwjjnufo` as the expected demo project and let it
+// through on `--confirm` alone. That ref is PRODUCTION — the same one
+// `.env.local` points at, and the same one scripts/seed-baseball-stats.mjs:85
+// and scripts/seed-baseball-box-scores.mjs:36 both REFUSE by name. A guard
+// that allowlists the one target it exists to protect is worse than no guard,
+// because it reads as protection.
+//
+// The rules, in order:
+//   * A local stack (127.0.0.1 / localhost / an explicit .local host on the
+//     loopback set) -> allowed. Nothing outside the machine can be hurt.
+//   * PRODUCTION -> refused unless BOTH --confirm AND --allow-prod are given.
+//     Same escape hatch, same name, as the sibling seed scripts.
+//   * ANY other project -> refused unless the operator types that project's
+//     own ref back via --allow-project=<ref>. Naming it is the point: you
+//     cannot hit a foreign project by accident, only on purpose.
+//
+// The ref below is NOT a credential. It is the public sub-domain of
+// NEXT_PUBLIC_SUPABASE_URL, a value every browser that loads the app already
+// has, committed for the same reason the sibling scripts commit it: a guard
+// that lives in an env var is absent exactly when the env is wrong.
+// ---------------------------------------------------------------------------
+const HELM_PROD_PROJECT_REF = 'qmnssrrolpinvwjjnufo';
+
+/**
+ * Hostnames that are unambiguously this machine.
+ *
+ * `.local` is NOT accepted as a suffix. `https://totally-not-ours.local` is a
+ * routable mDNS name on the operator's LAN, not loopback — trusting the suffix
+ * meant any host on the network could be seeded silently.
+ */
+const LOCAL_SUPABASE_HOSTS = new Set([
+  'localhost',
+  '127.0.0.1',
+  '[::1]',
+  '::1',
+  'host.docker.internal',
+  'kong',
+  'localhost.local',
+]);
+
+/** Domains under which the first hostname label really is a Supabase project ref. */
+const SUPABASE_DOMAINS = ['.supabase.co', '.supabase.in', '.supabase.net'];
+
+interface SeedTarget {
+  host: string;
+  /** Supabase project ref (first label), '' when the host is local or unrecognised. */
+  ref: string;
+  isLocal: boolean;
+}
+
+function describeSeedTarget(rawUrl: string): SeedTarget {
+  let host: string;
+  try {
+    host = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    // An unparseable URL cannot be proven safe, so it is treated as foreign.
+    return { host: rawUrl, ref: '', isLocal: false };
+  }
+  if (LOCAL_SUPABASE_HOSTS.has(host)) {
+    return { host, ref: '', isLocal: true };
+  }
+  // The first label is only a project ref if the host is actually a Supabase
+  // domain. Without this check `https://<prodref>.example.invalid` resolved to
+  // the production ref and was waved through — a typo-squat or an internal
+  // proxy sharing the first label was trusted on the strength of a substring.
+  const domain = SUPABASE_DOMAINS.find((d) => host.endsWith(d));
+  if (!domain) {
+    return { host, ref: '', isLocal: false };
+  }
+  return { host, ref: host.slice(0, host.length - domain.length), isLocal: false };
+}
+
+function hasFlag(flag: string): boolean {
+  return process.argv.includes(flag);
+}
+
+function readFlagValue(flag: string): string {
+  const prefix = `${flag}=`;
+  const hit = process.argv.find((a) => a.startsWith(prefix));
+  return hit ? hit.slice(prefix.length).trim() : '';
+}
+
+const DESTRUCTIVE_WARNING = [
+  'This script creates a fake "Demo University" org and 10 auth users,',
+  'force-resets two passwords, and deletes login_attempts rows.',
+].join('\n');
+
+/** Exits non-zero unless this run is allowed to WRITE to `target`. */
+function assertWriteTargetAllowed(target: SeedTarget): void {
+  if (target.isLocal) return;
+
+  if (target.ref === HELM_PROD_PROJECT_REF) {
+    if (hasFlag('--allow-prod')) {
+      console.warn(
+        `  ⚠ SEEDING PRODUCTION (${target.ref}) — allowed only because --allow-prod was passed.`,
+      );
+      return;
+    }
+    console.error(
+      [
+        '',
+        'REFUSING TO SEED — the target Supabase project is PRODUCTION.',
+        '',
+        `  NEXT_PUBLIC_SUPABASE_URL host : ${target.host}`,
+        `  resolved project ref          : ${target.ref}`,
+        '',
+        DESTRUCTIVE_WARNING,
+        '',
+        'Seed a local stack instead (supabase start), or, if you genuinely mean',
+        'production, say so explicitly:',
+        '  ... scripts/seed-baseball-demo.ts --confirm --allow-prod',
+        '',
+      ].join('\n'),
+    );
+    process.exit(1);
+  }
+
+  const acknowledged =
+    readFlagValue('--allow-project') ||
+    (process.env.BASEBALL_DEMO_SEED_ALLOW_PROJECT_REF ?? '').trim();
+
+  if (target.ref && acknowledged && acknowledged === target.ref) {
+    console.warn(
+      `  ⚠ writing to Supabase project "${target.ref}" — allowed only because you named it explicitly.`,
+    );
+    return;
+  }
+
+  console.error(
+    [
+      '',
+      'REFUSING TO SEED — the target is neither a local stack nor a project you named.',
+      '',
+      `  NEXT_PUBLIC_SUPABASE_URL host : ${target.host}`,
+      `  resolved project ref          : ${target.ref || '(not a recognised Supabase host)'}`,
+      '',
+      DESTRUCTIVE_WARNING,
+      '',
+      target.ref
+        ? [
+            'If this really is the project you want, name it back to the script:',
+            `  ... scripts/seed-baseball-demo.ts --confirm --allow-project=${target.ref}`,
+          ].join('\n')
+        : [
+            'The host is not a *.supabase.co project, so no ref could be resolved and',
+            'nothing can be verified about it. Point NEXT_PUBLIC_SUPABASE_URL at a local',
+            'stack or a real Supabase project.',
+          ].join('\n'),
+      '',
+    ].join('\n'),
+  );
+  process.exit(1);
+}
+
 import type { BaseballPlayerTimelineEventInsert } from '../src/lib/types/baseball-extended';
 import type { BaseballEventAcknowledgementInsert } from '../src/lib/types/baseball-acknowledgements';
 import type {
@@ -108,13 +301,23 @@ import type {
   BaseballPracticeBlockInsert,
   BaseballPracticeAttendanceInsert,
 } from '../src/lib/types/baseball-practice';
-import type {
-  BaseballExerciseInsert,
-  BaseballLiftAssignmentInsert,
-  BaseballLiftResultInsert,
-  BaseballReadinessCheckinInsert,
-} from '../src/lib/types/baseball-lifting';
+import type { BaseballExerciseInsert } from '../src/lib/types/baseball-lifting';
 import type { BaseballInsightSourceRef } from '../src/lib/types/baseball-coachhelm';
+import type {
+  BaseballPostgameReviewInsert,
+  BaseballPostgameReviewItemInsert,
+} from '../src/lib/types/baseball-postgame';
+// The demo's postgame review is generated by the SAME pure builder the product
+// runs (src/lib/baseball/postgame/build-review.ts), fed the exact box-score
+// rows seeded below — so every sentence and every source_ref in the demo is a
+// real generator output over real rows, not hand-written marketing prose. If
+// the builder's thresholds change, the seeded review changes with them.
+import {
+  buildPostgameReview,
+  type PostgameBattingLine,
+  type PostgameGameInput,
+  type PostgamePitchingLine,
+} from '../src/lib/baseball/postgame/build-review';
 
 // ---------------------------------------------------------------------------
 // Stable demo identity (deterministic — survives re-runs).
@@ -135,8 +338,11 @@ const DEMO_PASSWORD = 'BaseballDemo2026';
 const NS = 'baseballhelm-demo-phase1';
 
 // Deterministic uuid v5-style from a stable key (no external dep).
-function detId(key: string): string {
-  const h = createHash('sha1').update(`${NS}:${key}`).digest('hex');
+// Namespace-parameterised so this script can also re-derive ANOTHER phase's ids
+// byte-for-byte (see the cross-phase convergence note in section 7b) — the same
+// `detIdIn` shape scripts/seed-baseball-demo-program.ts uses.
+function detIdIn(namespace: string, key: string): string {
+  const h = createHash('sha1').update(`${namespace}:${key}`).digest('hex');
   // Format as a v5 uuid (set version nibble + variant).
   const b = h.slice(0, 32).split('');
   b[12] = '5';
@@ -144,6 +350,8 @@ function detId(key: string): string {
   const s = b.join('');
   return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20, 32)}`;
 }
+
+const detId = (key: string) => detIdIn(NS, key);
 
 const ORG_ID = detId('org');
 const TEAM_ID = detId('team');
@@ -177,6 +385,13 @@ function dateDaysAgo(days: number): string {
 }
 function isoDaysFromNow(days: number): string {
   return isoDaysAgo(-days);
+}
+// Sub-day offsets. isoDaysAgo() cannot express these: setUTCDate() truncates a
+// fractional argument to an integer, so isoDaysAgo(2.5) is silently isoDaysAgo(2).
+function isoHoursAgo(hours: number): string {
+  const d = new Date(NOW);
+  d.setUTCHours(d.getUTCHours() - hours);
+  return d.toISOString();
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +444,15 @@ const FORCE_PASSWORD_RESET_EMAILS = new Set(
   [DEMO_COACH_EMAIL, DEMO_PLAYER_EMAIL].map((e) => e.toLowerCase()),
 );
 
+// ---------------------------------------------------------------------------
+// Transient-failure resilience
+// ---------------------------------------------------------------------------
+// Every Supabase request this script makes goes through `retryingFetch` (wired
+// into the client in main()). See scripts/lib/retrying-fetch.ts for the full
+// rationale — in short, this seed gates a REQUIRED CI check, so one unretried
+// request turns a ten-second Supabase blip into a repo-wide merge freeze.
+const retryingFetch = createRetryingFetch();
+
 async function ensureAuthUser(email: string): Promise<{ userId: string | null; created: boolean }> {
   const { data: existing } = await supabase
     .from('users')
@@ -257,7 +481,24 @@ async function ensureAuthUser(email: string): Promise<{ userId: string | null; c
     password: DEMO_PASSWORD,
     email_confirm: true,
   });
-  if (error || !data?.user) throw new Error(`createUser failed for ${email}: ${error?.message}`);
+  if (error || !data?.user) {
+    // `createUser` is a POST, and retryingFetch above may replay it. A 522
+    // fails the RESPONSE, not necessarily the write — so the origin can have
+    // created the user and then timed out answering. The replay then comes
+    // back "already registered", which for a SEED is success wearing a
+    // failure's clothes: the row we wanted exists. Re-resolve and carry on
+    // rather than failing a required check over our own retry.
+    const message = describeFetchError(error);
+    if (/already (been )?registered|already exists|duplicate key/i.test(message)) {
+      const { data: found } = await supabase
+        .from('users')
+        .select('id')
+        .ilike('email', email)
+        .maybeSingle();
+      if (found?.id) return { userId: found.id as string, created: false };
+    }
+    throw new Error(`createUser failed for ${email}: ${message}`);
+  }
   return { userId: data.user.id, created: true };
 }
 
@@ -269,7 +510,24 @@ async function main() {
   // Required env already validated by assertRequiredSeedEnv() at import time.
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
-  supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  // Resolve and PRINT the target before creating the client, so the operator
+  // sees which database is about to be touched in both modes — a dry run whose
+  // plan looks right but whose target is wrong is the exact failure this
+  // banner exists to catch. The write gate runs before the first write.
+  const target = describeSeedTarget(url);
+  console.log(
+    `Target Supabase: ${target.host}${target.isLocal ? ' (local stack)' : ` (project ${target.ref || 'unresolvable'})`}`,
+  );
+  if (!DRY) assertWriteTargetAllowed(target);
+
+  // `global.fetch` carries the transient-retry wrapper, so EVERY request this
+  // client makes — auth admin, PostgREST, storage — survives a Supabase blip
+  // instead of red-lining a required CI check. See retryingFetch above.
+  supabase = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: retryingFetch },
+  });
 
   if (DRY) {
     console.log('[DRY RUN] No flag passed — printing the seed plan, writing NOTHING.');
@@ -355,6 +613,27 @@ async function main() {
   // --- 2. Players + memberships -----------------------------------
 
   const playerIdByKey: Record<string, string> = {};
+
+  /**
+   * Resolve a ROSTER key to its seeded player id, or fail loudly.
+   *
+   * `playerIdByKey[key]` is `string` by the index signature but `undefined` at
+   * runtime for a key that is not on the roster — and TypeScript with
+   * noUncheckedIndexedAccess says so. Writing that `undefined` into a
+   * `player_id` column produces a row that either violates NOT NULL or, worse,
+   * silently attaches a box-score line to nobody. A typo in a key is a bug in
+   * this file, so it should stop the seed here rather than surface as a demo
+   * screen that renders a blank name.
+   */
+  const playerId = (key: string | undefined): string => {
+    const id = key === undefined ? undefined : playerIdByKey[key];
+    if (!id) {
+      throw new Error(
+        `seed-baseball-demo: no seeded player for roster key "${key ?? '(undefined)'}" — check ROSTER.`,
+      );
+    }
+    return id;
+  };
   const playerRows: Record<string, unknown>[] = [];
   const memberRows: Record<string, unknown>[] = [];
   for (const p of ROSTER) {
@@ -523,7 +802,12 @@ async function main() {
   }));
   await upsert('baseball_practice_attendance', attendance);
 
-  // --- 7. Lifting: exercises -> assignments -> results + readiness --------
+  // --- 7. Lifting ---------------------------------------------------------
+  // baseball_exercises is still LIVE (it survived all three 2026-07-04
+  // graveyard phases) and Phase 4 reuses these rows, so it stays. The
+  // assignment/result/readiness writes that used to follow it did not survive:
+  // see the GRAVEYARDED TABLES note in the file header. The live progression
+  // layer is seeded further down (helm_lifting_maxes / bodyweight).
   const exercises: (BaseballExerciseInsert & { id: string })[] = [
     { id: detId('ex:squat'), team_id: TEAM_ID, name: 'Back Squat', category: 'lower', description: 'Barbell back squat', created_by_coach_id: COACH_ID, is_global: false },
     { id: detId('ex:bench'), team_id: TEAM_ID, name: 'Bench Press', category: 'upper', description: 'Flat barbell bench', created_by_coach_id: COACH_ID, is_global: false },
@@ -532,81 +816,690 @@ async function main() {
   ];
   await upsert('baseball_exercises', exercises);
 
-  const squatId = detId('ex:squat');
-  const benchId = detId('ex:bench');
-  const assignmentRows: (BaseballLiftAssignmentInsert & { id: string })[] = [];
-  const resultRows: (BaseballLiftResultInsert & { id: string })[] = [];
-  const readinessRows: (BaseballReadinessCheckinInsert & { id: string })[] = [];
-  const armStatuses = ['fresh', 'normal', 'tight', 'normal', 'sore', 'fresh', 'normal', 'tight'] as const;
+  // --- 7b. Lift Lab progression: maxes + bodyweight ------------------------
+  //
+  // Phase 2 (scripts/seed-baseball-lifting-demo.ts) seeds the PROGRAMMING half
+  // of Helm Lift Lab (programs -> weeks -> days -> prescriptions -> sessions ->
+  // set results -> readiness). It never seeds the PROGRESSION half, so
+  // helm_lifting_maxes and helm_lifting_bodyweight_entries were empty in every
+  // demo: a strength coach opening Lift Lab saw prescriptions computed off
+  // percentages with no 1RM behind them, and a bodyweight chart with no points.
+  // This section closes that, and it lives here (Phase 1) rather than Phase 2
+  // because Phase 1 is the layer that owns "the roster exists".
+  //
+  // CROSS-PHASE ID CONVERGENCE (load-bearing): helm_lifting_athletes is UNIQUE
+  // on (organization_id, sport, sport_player_id) and helm_lifting_exercises on
+  // (organization_id, sport, lower(name)). If this script minted its OWN ids
+  // for those rows, Phase 2's upsert-by-id would hit those unique indexes with
+  // a different primary key and abort the whole Phase-2 run with a 23505 that
+  // its schema-skip filter does not catch. So both scripts derive the SAME ids
+  // from the SAME namespace + keys, and upserting in either order converges on
+  // one row. `liftDetId` MUST stay byte-identical to Phase 2's `detId`.
+  const liftDetId = (key: string) => detIdIn('baseballhelm-demo-lifting-v1', key);
+  const athleteIdFor = (rosterKey: string) => liftDetId(`athlete:${rosterKey}`);
+  const HELM_EX_SQUAT = liftDetId('ex:back_squat');
+  const HELM_EX_BENCH = liftDetId('ex:bench_press');
+
+  // Column sets are deliberately NARROWER than Phase 2's. PostgREST's upsert
+  // only writes the keys present in the payload, so omitting user_id /
+  // created_by_coach_id / instructions / coaching_cues means a Phase-1 re-run
+  // after Phase 2 can never blank the richer values Phase 2 wrote.
+  await upsert(
+    'helm_lifting_athletes',
+    ROSTER.map((p) => ({
+      id: athleteIdFor(p.key),
+      organization_id: ORG_ID,
+      sport: 'baseball',
+      sport_player_id: playerIdByKey[p.key],
+      team_id: TEAM_ID,
+      first_name: p.first,
+      last_name: p.last,
+      position: p.pos,
+      is_active: true,
+    })),
+  );
+
+  await upsert('helm_lifting_exercises', [
+    {
+      id: HELM_EX_SQUAT,
+      organization_id: ORG_ID,
+      sport: 'baseball',
+      name: 'Back Squat',
+      category: 'strength',
+      primary_pattern: 'squat',
+      body_region: 'lower',
+      equipment: 'barbell',
+      default_unit: 'lb',
+      track_load: true,
+      track_reps: true,
+      track_sets: true,
+      track_rpe: true,
+      is_global: false,
+      is_active: true,
+    },
+    {
+      id: HELM_EX_BENCH,
+      organization_id: ORG_ID,
+      sport: 'baseball',
+      name: 'Bench Press',
+      category: 'strength',
+      primary_pattern: 'push',
+      body_region: 'upper',
+      equipment: 'barbell',
+      default_unit: 'lb',
+      track_load: true,
+      track_reps: true,
+      track_sets: true,
+      track_rpe: true,
+      is_global: false,
+      is_active: true,
+    },
+  ]);
+
+  // Two TESTED maxes per lift (a winter test day and a spring re-test) plus the
+  // TRAINING max the program actually prescribes off (90% of the latest test,
+  // rounded to the nearest 5 lb — the plate maths a coach would recognise).
+  // Squat moves +15 lb for everyone; bench moves for odd-indexed players and is
+  // deliberately FLAT for the even ones, so the demo contains a real, visible
+  // stall for the coach to find (and for the insight in section 8 to cite).
+  const TEST_DAYS_AGO_EARLY = 56;
+  const TEST_DAYS_AGO_LATEST = 21;
+  const roundTo5 = (n: number) => Math.round(n / 5) * 5;
+
+  const maxRows: Record<string, unknown>[] = [];
+  const bodyweightRows: Record<string, unknown>[] = [];
 
   for (const [i, p] of ROSTER.entries()) {
-    const pid = playerIdByKey[p.key];
-    // One per-player squat assignment (assigned) + a completed one.
-    const aId = detId(`assign:squat:${p.key}`);
-    assignmentRows.push({
-      id: aId,
+    const athleteId = athleteIdFor(p.key);
+    const squatEarly = 300 + i * 10;
+    const squatLatest = squatEarly + 15;
+    const benchEarly = 205 + i * 5;
+    const benchLatest = benchEarly + (i % 2 === 0 ? 0 : 10);
+
+    for (const m of [
+      { key: 'squat:early', exId: HELM_EX_SQUAT, value: squatEarly, days: TEST_DAYS_AGO_EARLY, type: 'tested_1rm' },
+      { key: 'squat:latest', exId: HELM_EX_SQUAT, value: squatLatest, days: TEST_DAYS_AGO_LATEST, type: 'tested_1rm' },
+      { key: 'bench:early', exId: HELM_EX_BENCH, value: benchEarly, days: TEST_DAYS_AGO_EARLY, type: 'tested_1rm' },
+      { key: 'bench:latest', exId: HELM_EX_BENCH, value: benchLatest, days: TEST_DAYS_AGO_LATEST, type: 'tested_1rm' },
+      { key: 'squat:training', exId: HELM_EX_SQUAT, value: roundTo5(squatLatest * 0.9), days: TEST_DAYS_AGO_LATEST, type: 'training_max' },
+      { key: 'bench:training', exId: HELM_EX_BENCH, value: roundTo5(benchLatest * 0.9), days: TEST_DAYS_AGO_LATEST, type: 'training_max' },
+    ]) {
+      maxRows.push({
+        id: liftDetId(`max:${m.key}:${p.key}`),
+        organization_id: ORG_ID,
+        sport: 'baseball',
+        athlete_id: athleteId,
+        exercise_id: m.exId,
+        max_type: m.type,
+        value: m.value,
+        unit: 'lb',
+        test_date: dateDaysAgo(m.days),
+        // A tested max was watched by a coach; a training max is arithmetic off
+        // it. Neither is a guess, so both carry a high but not perfect
+        // confidence, and the source says which is which.
+        source: m.type === 'tested_1rm' ? 'coach_test' : 'calculated',
+        confidence: m.type === 'tested_1rm' ? 0.95 : 0.9,
+      });
+    }
+
+    // Five weekly weigh-ins ending TODAY at the player's roster weight, so the
+    // chart and the roster card can never disagree. Even-indexed players are
+    // gaining, odd-indexed are cutting — a squad is never all one direction.
+    const currentWeight = 185 + (p.jersey % 25);
+    const weeklyDelta = i % 2 === 0 ? 1 : -0.5;
+    for (let w = 0; w < 5; w++) {
+      bodyweightRows.push({
+        id: liftDetId(`bw:${p.key}:${w}`),
+        organization_id: ORG_ID,
+        sport: 'baseball',
+        athlete_id: athleteId,
+        entry_date: dateDaysAgo((4 - w) * 7),
+        weight_lbs: currentWeight - (4 - w) * weeklyDelta,
+        source: 'player',
+      });
+    }
+  }
+  await upsert('helm_lifting_maxes', maxRows);
+  await upsert('helm_lifting_bodyweight_entries', bodyweightRows);
+
+  // --- 8. Announcements: board + targeting + read receipts ----------------
+  // Three announcements, because one is not a board. The urgent one is
+  // RECIPIENT-SCOPED to the two pitchers: baseball_announcement_recipients
+  // narrows RLS visibility (baseball_announcement_has_recipients /
+  // _is_recipient), so seeding one targeted post is the only way the demo can
+  // show that targeting exists at all — and it correctly does NOT appear for
+  // the demo player login (a shortstop), which is the feature working.
+  const announcementTeamTravelId = detId('announcement:travel');
+  const announcementStudyHallId = detId('announcement:study-hall');
+  const announcementArmCareId = detId('announcement:arm-care');
+
+  await upsert('baseball_announcements', [
+    {
+      id: announcementTeamTravelId,
       team_id: TEAM_ID,
-      player_id: pid,
-      assigned_by_coach_id: COACH_ID,
-      exercise_id: squatId,
-      title: 'Lower-body strength',
-      due_date: dateDaysAgo(-3),
-      prescription: { sets: 4, reps: 5, intensity_pct: 80, rest_seconds: 150 },
-      status: 'assigned',
+      created_by_id: COACH_ID,
+      title: 'Conference series: bus now leaves 1:30pm Friday',
+      content:
+        'Departure moved up an hour — the athletic department needs the bus back ' +
+        'Sunday night. Be dressed and loaded by 1:15pm. Travel roster is posted in ' +
+        'Documents; if you are not on it, report to normal lift at 2:00pm.',
+      urgency: 'high',
+      is_pinned: true,
+      published_at: isoDaysAgo(2),
+    },
+    {
+      id: announcementStudyHallId,
+      team_id: TEAM_ID,
+      created_by_id: COACH_ID,
+      title: 'Study hall hours extended through finals',
+      content:
+        'Academic center is open until 10pm every night for the next two weeks. ' +
+        'Anyone under a 2.7 is required for six hours a week; everyone else is ' +
+        'welcome. Bring your own laptop — the lab machines are booked for exams.',
+      urgency: 'normal',
+      is_pinned: false,
+      published_at: isoDaysAgo(6),
+    },
+    {
+      id: announcementArmCareId,
+      team_id: TEAM_ID,
+      created_by_id: COACH_ID,
+      title: 'Arm care is mandatory before Friday bullpens',
+      content:
+        'Full band series and sleeper stretch before you touch a ball. Trainer signs ' +
+        'off. No sign-off, no bullpen — this is not negotiable after last week.',
+      urgency: 'urgent',
+      is_pinned: false,
+      published_at: isoDaysAgo(1),
+    },
+  ]);
+
+  const pitcherKeys = ROSTER.filter((p) => p.pos === 'P').map((p) => p.key);
+  await upsert(
+    'baseball_announcement_recipients',
+    pitcherKeys.map((k) => ({
+      id: detId(`announcement-recipient:arm-care:${k}`),
+      announcement_id: announcementArmCareId,
+      player_id: playerIdByKey[k],
+    })),
+  );
+
+  // Read receipts: 6 of 8 on the travel post (a partially-filled meter is the
+  // honest state of any real team) and 1 of the 2 pitchers on the arm-care one.
+  const ackRowsAnnouncements = [
+    ...ROSTER.slice(0, 6).map((p, i) => ({
+      id: detId(`announcement-ack:travel:${p.key}`),
+      announcement_id: announcementTeamTravelId,
+      player_id: playerIdByKey[p.key],
+      // Staggered so the "who has seen this" list reads like people, not a
+      // batch job: hours after publication, not all on the same second.
+      acknowledged_at: isoHoursAgo(46 - i * 3),
+    })),
+    {
+      id: detId('announcement-ack:arm-care:p4'),
+      announcement_id: announcementArmCareId,
+      player_id: playerId(pitcherKeys[0]),
+      acknowledged_at: isoHoursAgo(20),
+    },
+  ];
+  await upsert('baseball_announcement_acknowledgements', ackRowsAnnouncements);
+
+  // --- 9. Travel: one completed trip with a settled budget, one upcoming ---
+  const itineraryPastId = detId('itinerary:past-series');
+  const itineraryUpcomingId = detId('itinerary:upcoming-series');
+
+  await upsert('baseball_travel_itineraries', [
+    {
+      id: itineraryPastId,
+      team_id: TEAM_ID,
+      created_by: COACH_ID,
+      event_name: 'Conference series at Ridgeline State',
+      departure_date: dateDaysAgo(12),
+      return_date: dateDaysAgo(10),
+      location: 'Ridgeline, NC',
+      accommodation: 'Ridgeline Inn & Suites — 12 doubles, breakfast included',
+      transportation: 'Charter coach (52 seat), departs Demo Field lot',
+      notes: 'Three-game series. Weight room access arranged at the host facility Saturday AM.',
+    },
+    {
+      id: itineraryUpcomingId,
+      team_id: TEAM_ID,
+      created_by: COACH_ID,
+      event_name: 'Conference series at Northgate',
+      departure_date: dateDaysAgo(-5),
+      return_date: dateDaysAgo(-7),
+      location: 'Northgate, SC',
+      accommodation: 'Northgate Garden Hotel — rooming list due Wednesday',
+      transportation: 'Charter coach (52 seat), 1:30pm departure',
+      notes: 'Travel roster of 27. Academic center will proctor two exams on the road.',
+    },
+  ]);
+
+  // Expenses hang off the COMPLETED trip only — an upcoming trip with actuals
+  // already logged would be a lie the demo tells about its own timeline.
+  await upsert('baseball_travel_expenses', [
+    {
+      id: detId('expense:past:coach'),
+      itinerary_id: itineraryPastId,
+      team_id: TEAM_ID,
+      category: 'transport',
+      amount: 2850.0,
+      description: 'Charter coach, round trip, 2 nights driver lodging',
+      vendor_name: 'Piedmont Coach Lines',
+      paid_by: 'team',
+      expense_date: dateDaysAgo(12),
+      created_by: coachUser.userId,
+    },
+    {
+      id: detId('expense:past:hotel'),
+      itinerary_id: itineraryPastId,
+      team_id: TEAM_ID,
+      category: 'lodging',
+      amount: 4120.0,
+      description: '12 doubles x 2 nights, tax included',
+      vendor_name: 'Ridgeline Inn & Suites',
+      paid_by: 'team',
+      expense_date: dateDaysAgo(11),
+      created_by: coachUser.userId,
+    },
+    {
+      id: detId('expense:past:meals'),
+      itinerary_id: itineraryPastId,
+      team_id: TEAM_ID,
+      category: 'meals',
+      amount: 1340.5,
+      description: 'Per diem, 27 travelers x 2 days',
+      vendor_name: 'Team per diem',
+      paid_by: 'team',
+      expense_date: dateDaysAgo(10),
+      created_by: coachUser.userId,
+    },
+    {
+      id: detId('expense:past:equipment'),
+      itinerary_id: itineraryPastId,
+      team_id: TEAM_ID,
+      category: 'equipment',
+      amount: 210.75,
+      description: 'Replacement game balls + rosin after rain delay',
+      vendor_name: 'Ridgeline Athletics',
+      paid_by: 'pending_reimbursement',
+      expense_date: dateDaysAgo(11),
+      created_by: coachUser.userId,
+    },
+  ]);
+
+  // --- 10. Documents: real files in storage, not dangling rows ------------
+  // A baseball_documents row whose object does not exist in the `documents`
+  // bucket renders in the list and 404s on click. So the bytes go up FIRST and
+  // the rows are only written if the upload succeeded — an empty Documents tab
+  // is a smaller lie than a shelf of files that cannot be opened, and the
+  // verifier will name the gap either way.
+  const DOCUMENT_BUCKET = 'documents';
+  const documentSeeds = [
+    {
+      key: 'handbook',
+      title: '2026 Team Handbook',
+      description: 'Program standards, travel conduct, academic requirements, and the discipline ladder.',
+      category: 'general',
+      playerVisible: true,
+      folder: 'Program',
+      body: [
+        '# Demo University Baseball — 2026 Team Handbook',
+        '',
+        '## 1. Standards',
+        'On time is five minutes early. Uniform is uniform. You represent the program',
+        'in the classroom, in the weight room, and on the road.',
+        '',
+        '## 2. Academics',
+        'Six hours of study hall per week under a 2.7 GPA. Missed class is a missed',
+        'lift, and a missed lift is a missed start.',
+        '',
+        '## 3. Travel conduct',
+        'Travel roster is posted 48 hours before departure. Bus times are hard times.',
+        '',
+        '## 4. Discipline ladder',
+        'Conversation, then conditioning, then playing time, then the head coach.',
+      ].join('\n'),
+    },
+    {
+      key: 'lift-safety',
+      title: 'Weight Room Safety & Spotting Policy',
+      description: 'Required reading before any barbell work. Covers spotting, bar path, and the injury-report chain.',
+      category: 'conditioning',
+      playerVisible: true,
+      folder: 'Performance',
+      body: [
+        '# Weight Room Safety & Spotting Policy',
+        '',
+        '## Spotting',
+        'Every bench and back squat set above 70% gets a spotter. No exceptions, no',
+        'headphones, no phones on the platform.',
+        '',
+        '## Testing days',
+        'Tested 1RMs are recorded by a coach, not self-reported. Your training max is',
+        '90% of your most recent tested max and is what every percentage on your',
+        'program is calculated from.',
+        '',
+        '## Injury reporting',
+        'Anything you would describe as sharp goes to the trainer the same day.',
+      ].join('\n'),
+    },
+    {
+      key: 'per-diem',
+      title: 'Travel Per Diem & Reimbursement Policy',
+      description: 'Staff-only: per diem rates, receipt requirements, and the reimbursement window.',
+      category: 'administrative',
+      playerVisible: false,
+      folder: 'Operations',
+      body: [
+        '# Travel Per Diem & Reimbursement Policy (Staff)',
+        '',
+        '## Rates',
+        'Breakfast $12, lunch $16, dinner $24. Rates are set by the athletic',
+        'department and are renegotiated each fiscal year.',
+        '',
+        '## Receipts',
+        'Itemized receipts within 10 business days of return. Card statements are not',
+        'receipts. Anything logged as pending_reimbursement in Travel stays open on',
+        'the trip budget until the receipt lands.',
+      ].join('\n'),
+    },
+  ] as const;
+
+  const documentRows: Record<string, unknown>[] = [];
+  const documentVersionRows: Record<string, unknown>[] = [];
+  for (const doc of documentSeeds) {
+    const documentId = detId(`document:${doc.key}`);
+    // Path convention is set by the app's own upload path
+    // (src/app/baseball/actions/documents.ts): baseball-documents/{team}/{uuid}.{ext}
+    const storagePath = `baseball-documents/${TEAM_ID}/${documentId}.md`;
+    const bytes = Buffer.from(`${doc.body}\n`, 'utf8');
+
+    if (!DRY) {
+      const { error: uploadErr } = await supabase.storage
+        .from(DOCUMENT_BUCKET)
+        .upload(storagePath, bytes, { contentType: 'text/markdown', upsert: true });
+      if (uploadErr) {
+        skipped.push(`baseball_documents/${doc.key} — storage upload failed: ${uploadErr.message}`);
+        console.warn(
+          `  ⚠ skipped document "${doc.title}" — could not upload to bucket "${DOCUMENT_BUCKET}": ${uploadErr.message}`,
+        );
+        continue;
+      }
+    }
+
+    documentRows.push({
+      id: documentId,
+      team_id: TEAM_ID,
+      title: doc.title,
+      description: doc.description,
+      // The read path re-signs from the latest version's storage_path and
+      // overwrites file_url, so the stored value is the path itself rather than
+      // a signed URL that would be expired before anyone ever loaded the page.
+      file_url: storagePath,
+      file_type: 'text/markdown',
+      file_size: bytes.byteLength,
+      category: doc.category,
+      is_player_visible: doc.playerVisible,
+      uploaded_by: coachUser.userId,
+      version_count: 1,
+      folder: doc.folder,
     });
-    // A completed bench assignment with a logged result.
-    const aBench = detId(`assign:bench:${p.key}`);
-    assignmentRows.push({
-      id: aBench,
-      team_id: TEAM_ID,
-      player_id: pid,
-      assigned_by_coach_id: COACH_ID,
-      exercise_id: benchId,
-      title: 'Upper-body strength',
-      due_date: dateDaysAgo(2),
-      prescription: { sets: 3, reps: 8, intensity_pct: 70 },
-      status: 'completed',
-    });
-    resultRows.push({
-      id: detId(`result:bench:${p.key}`),
-      team_id: TEAM_ID,
-      player_id: pid,
-      assignment_id: aBench,
-      exercise_id: benchId,
-      performed_at: isoDaysAgo(2),
-      sets: 3,
-      reps: 8,
-      weight: 155 + i * 5,
-      rpe: 7.5,
-      notes: 'Felt strong.',
-      source: 'manual',
-    });
-    // A readiness check-in today.
-    readinessRows.push({
-      id: detId(`readiness:${p.key}`),
-      team_id: TEAM_ID,
-      player_id: pid,
-      check_date: dateDaysAgo(0),
-      sleep_hours: 7 + (i % 3),
-      energy_level: 3 + (i % 3),
-      soreness_level: 1 + (i % 4),
-      arm_status: armStatuses[i % armStatuses.length],
-      mood: i % 2 === 0 ? 'locked in' : 'a little tired',
-      notes: null,
+    documentVersionRows.push({
+      id: detId(`document-version:${doc.key}:1`),
+      document_id: documentId,
+      version_number: 1,
+      file_name: `${doc.title}.md`,
+      file_size: bytes.byteLength,
+      mime_type: 'text/markdown',
+      storage_path: storagePath,
+      file_url: storagePath,
+      change_notes: 'Initial upload',
+      uploaded_by: coachUser.userId,
     });
   }
-  await upsert('baseball_lift_assignments', assignmentRows);
-  await upsert('baseball_lift_results', resultRows);
-  await upsert('baseball_readiness_checkins', readinessRows);
+  if (documentRows.length) {
+    await upsert('baseball_documents', documentRows);
+    await upsert('baseball_document_versions', documentVersionRows);
+  }
 
-  // --- 8. Coach insights WITH source attribution --------------------------
+  // --- 11. One completed game -> box score -> postgame action review -------
+  //
+  // Postgame is the only surface that CANNOT be seeded standalone: a review is
+  // FK-bound to a game and is worthless without the box-score lines it cites.
+  // Phase 4 (seed-baseball-demo-program.ts) seeds a whole season, but Phase 1
+  // must not depend on Phase 4 — the documented run order puts Phase 1 first —
+  // so Phase 1 owns exactly ONE recent game, dated after Phase 4's Feb–May
+  // schedule so it sorts to the top of the postgame game picker either way.
+  //
+  // The lines below are hand-authored and internally consistent: batting runs
+  // sum to our_score (6), pitching runs allowed sum to opponent_score (4), and
+  // innings sum to 9. Nothing here is random, so the same demo tells the same
+  // story every time it is rebuilt.
+  const gameEventId = detId('event:game-1');
+  const gameId = detId('game:1');
+  const gameDate = dateDaysAgo(3);
+
+  await upsert('baseball_events', [
+    {
+      id: gameEventId,
+      team_id: TEAM_ID,
+      created_by: COACH_ID,
+      title: 'vs Ridgeline State',
+      description: 'Conference game. Final: 6-4.',
+      event_type: 'game',
+      location: 'Demo Field',
+      start_time: isoDaysAgo(3),
+      end_time: isoDaysAgo(3),
+      is_mandatory: true,
+    },
+  ]);
+
+  await upsert('baseball_games', [
+    {
+      id: gameId,
+      team_id: TEAM_ID,
+      event_id: gameEventId,
+      game_date: gameDate,
+      game_type: 'game',
+      opponent_name: 'Ridgeline State',
+      location: 'Demo Field',
+      home_away: 'home',
+      our_score: 6,
+      opponent_score: 4,
+      innings_played: 9,
+      status: 'completed',
+      created_by: COACH_ID,
+    },
+  ]);
+
+  // key, order, ab, r, h, 2b, 3b, hr, rbi, bb, k
+  const battingLines = [
+    { key: 'p1', order: 1, ab: 4, r: 1, h: 2, doubles: 1, triples: 0, hr: 0, rbi: 1, bb: 1, k: 1 },
+    { key: 'p6', order: 2, ab: 3, r: 1, h: 1, doubles: 0, triples: 0, hr: 0, rbi: 0, bb: 1, k: 1 },
+    { key: 'p3', order: 3, ab: 4, r: 2, h: 3, doubles: 1, triples: 0, hr: 1, rbi: 3, bb: 0, k: 0 },
+    { key: 'p2', order: 4, ab: 4, r: 1, h: 1, doubles: 0, triples: 0, hr: 0, rbi: 1, bb: 0, k: 2 },
+    { key: 'p5', order: 5, ab: 4, r: 0, h: 0, doubles: 0, triples: 0, hr: 0, rbi: 0, bb: 0, k: 3 },
+    { key: 'p8', order: 6, ab: 4, r: 1, h: 1, doubles: 1, triples: 0, hr: 0, rbi: 1, bb: 0, k: 1 },
+  ] as const;
+
+  // key, ip, h, r, er, bb, k, hr, pitches, result
+  const pitchingLines = [
+    { key: 'p4', ip: 6, h: 5, r: 3, er: 3, bb: 2, k: 7, hr: 0, pitches: 98, result: 'W', gs: 1 },
+    // 'S', not 'SV'. baseball_box_score_pitching.result has a CHECK allowing
+    // only W|L|S|H|BS|ND (20260527000000_prod_public_baseline.sql:7443), which
+    // both app validators agree with (imports.ts:1625, games.ts:1246). 'SV'
+    // exists in src/ only as a DISPLAY label for the aggregate save count.
+    // Writing it violated the constraint, and the seed's own skip filter
+    // swallowed the violation — so BOTH pitching lines vanished from a batch
+    // upsert that reported success, and the postgame review's workload and
+    // practice-focus items cited rows that did not exist.
+    { key: 'p7', ip: 3, h: 2, r: 1, er: 1, bb: 3, k: 4, hr: 0, pitches: 52, result: 'S', gs: 0 },
+  ] as const;
+
+  await upsert(
+    'baseball_box_score_batting',
+    battingLines.map((l) => ({
+      id: detId(`bat:${gameId}:${l.key}`),
+      game_id: gameId,
+      team_id: TEAM_ID,
+      player_id: playerIdByKey[l.key],
+      batting_order: l.order,
+      ab: l.ab,
+      r: l.r,
+      h: l.h,
+      doubles: l.doubles,
+      triples: l.triples,
+      hr: l.hr,
+      rbi: l.rbi,
+      bb: l.bb,
+      k: l.k,
+      sb: 0,
+      cs: 0,
+      hbp: 0,
+      sac: 0,
+      sf: 0,
+      def_position: ROSTER.find((p) => p.key === l.key)?.pos ?? null,
+    })),
+    'game_id,player_id',
+  );
+
+  await upsert(
+    'baseball_box_score_pitching',
+    pitchingLines.map((l) => ({
+      id: detId(`pit:${gameId}:${l.key}`),
+      game_id: gameId,
+      team_id: TEAM_ID,
+      player_id: playerIdByKey[l.key],
+      ip: l.ip,
+      h: l.h,
+      r: l.r,
+      er: l.er,
+      bb: l.bb,
+      k: l.k,
+      hr: l.hr,
+      pitch_count: l.pitches,
+      result: l.result,
+      gs: l.gs,
+      gf: l.gs === 1 ? 0 : 1,
+    })),
+    'game_id,player_id',
+  );
+
+  const nameFor = (key: string) => {
+    const p = ROSTER.find((r) => r.key === key);
+    return p ? `${p.first} ${p.last}` : null;
+  };
+
+  const postgameGame: PostgameGameInput = {
+    id: gameId,
+    game_date: gameDate,
+    opponent_name: 'Ridgeline State',
+    game_type: 'game',
+    our_score: 6,
+    opponent_score: 4,
+    batting_lines_n: battingLines.length,
+    pitching_lines_n: pitchingLines.length,
+    source_status: 'official',
+    import_warnings: [],
+  };
+  const postgameBatting: PostgameBattingLine[] = battingLines.map((l) => ({
+    player_id: playerId(l.key),
+    player_name: nameFor(l.key),
+    at_bats: l.ab,
+    hits: l.h,
+    doubles: l.doubles,
+    triples: l.triples,
+    home_runs: l.hr,
+    walks: l.bb,
+    strikeouts: l.k,
+    rbis: l.rbi,
+  }));
+  const postgamePitching: PostgamePitchingLine[] = pitchingLines.map((l) => ({
+    player_id: playerId(l.key),
+    player_name: nameFor(l.key),
+    innings_pitched: l.ip,
+    earned_runs: l.er,
+    walks_allowed: l.bb,
+    strikeouts_thrown: l.k,
+    pitches_thrown: l.pitches,
+    hits_allowed: l.h,
+  }));
+
+  // Baselines are deliberately EMPTY. Phase 1 seeds exactly one game, so there
+  // is no season norm to compare against — and the builder is honest about that
+  // ("No season baseline yet — a single line, not a trend") rather than
+  // inventing a delta. Once Phase 4's season exists, hitting Regenerate on the
+  // page re-runs this same builder WITH baselines and the copy sharpens; that
+  // difference is a demo beat, not a defect.
+  const built = buildPostgameReview({
+    game: postgameGame,
+    batting: postgameBatting,
+    pitching: postgamePitching,
+    baselines: {},
+  });
+
+  const postgameReviewId = detId('postgame:review:1');
+  const postgameReview: BaseballPostgameReviewInsert & { id: string } = {
+    id: postgameReviewId,
+    team_id: TEAM_ID,
+    game_id: gameId,
+    coach_id: COACH_ID,
+    source_status: 'official',
+    batting_lines_n: battingLines.length,
+    pitching_lines_n: pitchingLines.length,
+    import_warnings: [],
+    title: built.title,
+    summary: built.summary,
+    confidence: built.confidence,
+    visibility: built.visibility,
+    disposition: 'new',
+    // Stamped with the builder that actually produced it, so the provenance
+    // drawer does not claim a model was involved when none was.
+    generated_by_model: 'baseball-postgame-builder@1',
+    generated_at: isoDaysAgo(3),
+  };
+  await upsert('baseball_postgame_reviews', [postgameReview]);
+
+  const postgameItems: (BaseballPostgameReviewItemInsert & { id: string })[] = built.items.map(
+    (c) => ({
+      id: detId(`postgame:item:${c.dedupeKey}`),
+      team_id: TEAM_ID,
+      review_id: postgameReviewId,
+      player_id: c.playerId,
+      item_kind: c.itemKind,
+      signal_source: c.signalSource,
+      title: c.title,
+      detail: c.detail,
+      action_label: c.actionLabel,
+      action_type: c.actionType,
+      owner_role: c.ownerRole,
+      priority: c.priority,
+      confidence: c.confidence,
+      visibility: c.visibility,
+      player_visible: c.playerVisible,
+      source_refs: c.sourceRefs,
+      disposition: 'new',
+      dedupe_key: c.dedupeKey,
+    }),
+  );
+  await upsert('baseball_postgame_review_items', postgameItems);
+
+  // --- 12. Coach insights WITH source attribution --------------------------
   // Demonstrates the Phase-1 attribution columns (source_refs / confidence /
   // lifecycle_state / player_visible / generated_by / dedupe_key) pointing at
-  // the lineage + lifting/readiness rows seeded above.
+  // the lineage + progression rows seeded above.
+  //
+  // Every cited table is one THIS script writes. The previous version of this
+  // insight cited baseball_readiness_checkins and baseball_lift_results, both
+  // graveyarded 2026-07-04 — a demo insight whose "evidence" drawer resolved to
+  // nothing. The claim below is arithmetic over the rows in section 7b: for the
+  // demo player (roster index 0) bench tested 1RM is identical at both test
+  // dates while bodyweight climbed 4 lb.
   const demoPid = playerIdByKey[DEMO_PLAYER_KEY];
-  const srcRefsReadiness: BaseballInsightSourceRef[] = [
-    { table: 'baseball_readiness_checkins', column: 'arm_status', sample_n: 7, confidence: 0.8, label: 'Last 7 readiness check-ins', visibility: 'staff_only' },
-    { table: 'baseball_lift_results', column: 'rpe', sample_n: ROSTER.length, confidence: 0.7, label: 'Recent bench RPE', visibility: 'team' },
+  const srcRefsProgression: BaseballInsightSourceRef[] = [
+    { table: 'helm_lifting_maxes', column: 'value', sample_n: 4, confidence: 0.95, label: 'Bench + squat tested 1RM, two test days', visibility: 'staff_only' },
+    { table: 'helm_lifting_bodyweight_entries', column: 'weight_lbs', sample_n: 5, confidence: 0.9, label: 'Five weekly weigh-ins', visibility: 'team' },
   ];
   const srcRefsImport: BaseballInsightSourceRef[] = [
     { table: 'baseball_import_runs', id: importRunId, sample_n: ROSTER.length, confidence: 0.95, label: 'TrackMan demo import', visibility: 'staff_only' },
@@ -617,20 +1510,29 @@ async function main() {
       team_id: TEAM_ID,
       coach_id: COACH_ID,
       player_id: demoPid,
-      insight_type: 'readiness',
-      title: 'Arm fatigue trending up',
-      body: 'Reported arm status has drifted toward "tight/sore" while bench RPE held high. Consider a lighter throwing day.',
+      insight_type: 'strength',
+      title: 'Bench flat across two test days while bodyweight climbed',
+      body:
+        'Tested bench 1RM is unchanged between the two most recent test days, ' +
+        'while bodyweight is up 4 lb over the last five weigh-ins. Squat moved ' +
+        '+15 lb over the same window, so this is upper-body specific, not a ' +
+        'general recovery problem. Worth a pressing-volume review before the ' +
+        'next test day.',
       priority: 'medium',
-      status: 'open',
+      // Command Center's risk feed filters status IN ('active','acknowledged')
+      // (src/lib/baseball/read-models/command-center.ts). The seed used to write
+      // 'open', which is not in that set, so both demo insights existed in the
+      // table and were invisible on the only surface that shows them.
+      status: 'active',
       // Phase-1 attribution columns:
-      source_refs: srcRefsReadiness,
+      source_refs: srcRefsProgression,
       confidence: 0.74,
       lifecycle_state: 'detected',
       player_visible: true,
-      generated_by: 'demo_seed.readiness_trend',
-      dedupe_key: `${TEAM_ID}:readiness_trend:${demoPid}`,
+      generated_by: 'demo_seed.strength_progression',
+      dedupe_key: `${TEAM_ID}:strength_progression:${demoPid}`,
       last_generated_at: isoDaysAgo(0),
-      metadata: { evidence: { source_refs: srcRefsReadiness } },
+      metadata: { evidence: { source_refs: srcRefsProgression } },
     },
     {
       id: detId('insight:import'),
@@ -641,7 +1543,7 @@ async function main() {
       title: 'All TrackMan rows matched',
       body: 'The latest TrackMan import matched 100% of rows to roster players via external ids.',
       priority: 'low',
-      status: 'open',
+      status: 'active',
       source_refs: srcRefsImport,
       confidence: 0.95,
       lifecycle_state: 'detected',
@@ -653,7 +1555,7 @@ async function main() {
     },
   ]);
 
-  // --- 9. Player timeline events (with source refs back to the data) ------
+  // --- 13. Player timeline events (with source refs back to the data) ------
   const timelineRows: (BaseballPlayerTimelineEventInsert & { id: string })[] = [
     {
       id: detId('timeline:import'),
@@ -670,15 +1572,19 @@ async function main() {
       visibility: 'team',
     },
     {
+      // Was source_type 'baseball_lift_results' pointing at a row this script
+      // no longer writes (graveyarded 2026-07-04) — a timeline entry whose
+      // "view source" led nowhere. It now cites the Lift Lab max this script
+      // does seed, which is also the more interesting event for a player.
       id: detId('timeline:lift'),
       player_id: demoPid,
       team_id: TEAM_ID,
       event_type: 'lift_logged',
-      title: 'Bench press logged',
-      body: 'Completed assigned bench session at RPE 7.5.',
-      source_type: 'baseball_lift_results',
-      source_id: detId(`result:bench:${DEMO_PLAYER_KEY}`),
-      occurred_at: isoDaysAgo(2),
+      title: 'Bench 1RM re-tested',
+      body: 'Tested bench max recorded on the spring test day; training max updated to 90% of it.',
+      source_type: 'helm_lifting_maxes',
+      source_id: liftDetId(`max:bench:latest:${DEMO_PLAYER_KEY}`),
+      occurred_at: isoDaysAgo(TEST_DAYS_AGO_LATEST),
       created_by: coachUser.userId,
       visibility: 'player_only',
     },
@@ -687,12 +1593,27 @@ async function main() {
       player_id: demoPid,
       team_id: TEAM_ID,
       event_type: 'coach_insight',
-      title: 'Coach flagged arm fatigue',
-      body: 'Staff-only note from the readiness insight engine.',
+      title: 'Coach flagged a stalled bench',
+      body: 'Staff-only note from the strength-progression insight.',
       source_type: 'baseball_coach_insights',
       source_id: detId('insight:readiness'),
       confidence: 0.74,
       occurred_at: isoDaysAgo(0),
+      created_by: coachUser.userId,
+      visibility: 'staff_only',
+    },
+    {
+      // The postgame review is the demo's strongest "source -> signal ->
+      // action" beat, so the player timeline links straight into it.
+      id: detId('timeline:postgame'),
+      player_id: demoPid,
+      team_id: TEAM_ID,
+      event_type: 'coach_insight',
+      title: 'Postgame review published',
+      body: 'Action review generated from the Ridgeline State box score.',
+      source_type: 'baseball_postgame_reviews',
+      source_id: postgameReviewId,
+      occurred_at: isoDaysAgo(3),
       created_by: coachUser.userId,
       visibility: 'staff_only',
     },
@@ -702,10 +1623,39 @@ async function main() {
   // --- Report -------------------------------------------------------------
   console.log(`\n${DRY ? '[DRY RUN] would seed' : 'Seeded'} rows:`);
   for (const [t, n] of Object.entries(counts)) console.log(`  ${t.padEnd(34)} ${n}`);
+  // `skipped` was collected but never printed, which is half of why three
+  // writes to graveyarded tables went unnoticed for weeks: the rows vanished
+  // from `counts`, nothing replaced them in the output, and the run still ended
+  // with a success banner. A skip is now a first-class part of the report.
+  if (skipped.length) {
+    console.log(`\nSKIPPED — these tables/columns were NOT seeded:`);
+    for (const s of skipped) console.log(`  ⚠ ${s}`);
+    console.log(
+      '  A skip means the surface backed by that table will be EMPTY in the demo.\n' +
+      '  Run scripts/verify-baseball-demo-coverage.ts to see which routes that affects.',
+    );
+  }
   console.log(`\nDemo logins (password: ${DEMO_PASSWORD}):`);
   console.log(`  COACH : ${DEMO_COACH_EMAIL}${coachUser.created ? ' (created)' : ' (existing)'}`);
   console.log(`  PLAYER: ${DEMO_PLAYER_EMAIL}${playerUser.created ? ' (created)' : ' (existing)'}`);
   console.log(`  Team  : Demo University Baseball (${TEAM_ID})`);
+
+  // A skip is a FAILURE, not a footnote. Printing it while still exiting 0
+  // left `npm run seed:baseball:ci` green with tables missing — the same
+  // silence, one layer up: the operator now had the information and the
+  // machine still said everything was fine. A demo surface that will render
+  // empty is not a successful seed.
+  //
+  // Document-upload skips are exempt: they depend on a storage bucket that is
+  // legitimately absent on a fresh local stack, and failing the whole seed for
+  // it would make the local path unusable for the thing it is for.
+  const fatalSkips = skipped.filter((s) => !s.startsWith('baseball_documents/'));
+  if (fatalSkips.length) {
+    console.error(
+      `\n${fatalSkips.length} table(s) could not be seeded. Exiting non-zero — the demo is incomplete.`,
+    );
+    process.exitCode = 1;
+  }
 }
 
 main().catch((e) => {
