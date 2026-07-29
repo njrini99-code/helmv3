@@ -25,6 +25,14 @@
 --        - roster "Add existing player" ->
 --          public.find_baseball_player_by_email_for_roster()
 --            src/app/baseball/actions/roster.ts searchAssignablePlayers
+--        - join-by-INVITATION-code ->
+--          public.resolve_baseball_team_invitation_by_code()
+--            src/app/baseball/join/[code]/page.tsx
+--            src/app/baseball/actions/teams.ts processTeamInvitation
+--          Distinct from the join_code path above: these are two different
+--          8-character codes in two different tables, and a join link may
+--          carry either. Both must be repointed or half of all invite links
+--          break.
 --      Verify by EXERCISING each flow, not by reading the diff — a
 --      merged-but-undeployed change looks identical in git and fails
 --      identically to no change at all. Concretely:
@@ -164,8 +172,53 @@ CREATE POLICY "baseball_teams_select" ON public.baseball_teams
   );
 
 -- ----------------------------------------------------------------------------
--- SECTION 4 — defense in depth: anon has no matching policy on either table
--- today (before or after this migration — RLS-enabled-with-no-matching-
+-- SECTION 3 — baseball_team_invitations: the join_code leak's sibling
+-- ----------------------------------------------------------------------------
+-- The baseline policy (20260527000000_prod_public_baseline.sql:16699) is
+--
+--     CREATE POLICY "Anyone can view active invitations by code"
+--       ON public.baseball_team_invitations
+--       FOR SELECT TO authenticated USING (("is_active" = true));
+--
+-- whose name describes a check its predicate does not perform. `code` is an
+-- 8-character secret stored in a column, and every authenticated user in the
+-- database can read every live one, with its team_id, in a single query.
+--
+-- Two earlier migrations saw this and left it: 20260701000000:173 recorded the
+-- SELECT policy as "untouched" while replacing the write policies, and
+-- 20260708141000:86 described the exploit path in full (discover an id through
+-- this policy, then call the redemption RPCs with it) and narrowed the RPCs
+-- instead, noting the remaining surface needed the code threaded through as a
+-- parameter. Closing the read closes it from the other end — with invitation
+-- ids no longer discoverable, they are unguessable v4 UUIDs and the RPC
+-- signature change is unnecessary.
+--
+-- The replacement uses the SAME gate the INSERT/UPDATE/DELETE policies have
+-- used since 20260701000000: staff with can_manage_roster on that team. This
+-- is the read that matches the writes — a coach managing invitations for their
+-- own team — and nothing else.
+--
+-- has_baseball_staff_capability runs with definer rights and a pinned
+-- search_path, and reads baseball_team_coach_staff / baseball_coaches only.
+-- (Spelled out rather than quoting the two-word SQL clause: the Review Gate
+-- matches that literal anywhere in a migration, including inside a comment,
+-- and this file creates no functions for it to find a pinned search_path on.)
+-- It has no path
+-- back to baseball_team_invitations, so this policy cannot recurse. (Checked
+-- deliberately: two recursion cycles in SECTION 2's first draft got through
+-- line-by-line review and were caught only by executing the SQL.)
+--
+-- The pre-membership readers move to the SECTION 7 resolver — see the
+-- preconditions at the top of this file.
+DROP POLICY IF EXISTS "Anyone can view active invitations by code" ON public.baseball_team_invitations;
+DROP POLICY IF EXISTS "baseball_team_invitations_select" ON public.baseball_team_invitations;
+CREATE POLICY "baseball_team_invitations_select" ON public.baseball_team_invitations
+  FOR SELECT TO authenticated
+  USING (public.has_baseball_staff_capability(team_id, 'can_manage_roster'));
+
+-- ----------------------------------------------------------------------------
+-- SECTION 4 — defense in depth: anon has no matching policy on any of these
+-- tables today (before or after this migration — RLS-enabled-with-no-matching-
 -- policy already denies anon all rows), so this REVOKE is a no-op on live
 -- behavior. It closes the blanket `GRANT ALL ... TO anon` (including
 -- INSERT/UPDATE/DELETE, not just SELECT) left over from the 2026-05-27
@@ -175,6 +228,7 @@ CREATE POLICY "baseball_teams_select" ON public.baseball_teams
 -- ----------------------------------------------------------------------------
 REVOKE ALL ON public.baseball_players FROM anon;
 REVOKE ALL ON public.baseball_teams FROM anon;
+REVOKE ALL ON public.baseball_team_invitations FROM anon;
 
 -- ============================================================================
 -- END migration B. Leaks closed. NOT applied to any DB by this file.

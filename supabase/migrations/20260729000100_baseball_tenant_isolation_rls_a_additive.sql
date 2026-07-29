@@ -460,6 +460,130 @@ REVOKE ALL ON FUNCTION public.has_any_baseball_team_membership(uuid) FROM PUBLIC
 REVOKE EXECUTE ON FUNCTION public.has_any_baseball_team_membership(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.has_any_baseball_team_membership(uuid) TO authenticated, service_role;
 
+-- ----------------------------------------------------------------------------
+-- SECTION 7 — invitation-code resolver (the join_code leak's sibling)
+-- ----------------------------------------------------------------------------
+-- THE LEAK. baseball_team_invitations carries a secret in a column:
+--
+--     "code" character varying(8) NOT NULL
+--
+-- and its SELECT policy, live since the 2026-05-27 baseline
+-- (20260527000000_prod_public_baseline.sql:16699), is:
+--
+--     CREATE POLICY "Anyone can view active invitations by code"
+--       ON public.baseball_team_invitations
+--       FOR SELECT TO authenticated USING (("is_active" = true));
+--
+-- The name states the intent and the predicate does not implement it. RLS
+-- cannot see a query's own WHERE clause, so "by code" is not expressible as a
+-- policy — exactly the mistake corrected for baseball_teams.join_code in
+-- SECTION 3. `USING (is_active = true)` means ANY authenticated user can
+--
+--     SELECT code, team_id FROM public.baseball_team_invitations
+--      WHERE is_active;
+--
+-- and enumerate every live invitation code for every program in the database,
+-- then redeem them. One account on one team is enough to join any other team.
+--
+-- THIS WAS KNOWN AND LEFT OPEN. 20260701000000_baseball_rls_legacy_policy_
+-- cleanup.sql:173 replaced the INSERT/UPDATE/DELETE policies with
+-- has_baseball_staff_capability gates and recorded that "the existing 'Anyone
+-- can view active invitations by code' SELECT policy is untouched".
+-- 20260708141000_gate_secdef_ownership_and_redemption.sql:86 then described
+-- the consequence precisely — an arbitrary caller can discover any active
+-- invitation's id through this policy and call the redemption RPCs with it —
+-- gated those RPCs to player accounts, and closed with "This narrows but does
+-- not fully close the surface ... a complete fix needs the invitation `code`
+-- (not just its id) threaded through as a second parameter, which ... is out
+-- of scope for this additive pass."
+--
+-- This pair is that complete fix, and it arrives from the other direction:
+-- rather than threading the code into the redemption RPCs, it removes the
+-- discovery step those RPCs were being abused through. Once the SELECT policy
+-- is staff-scoped (migration B SECTION 3), invitation ids are unguessable
+-- v4 UUIDs that a non-staff caller has no route to. The signature change
+-- 20260708141000 called for is not needed.
+--
+-- WHY A RESOLVER IS REQUIRED. Two reads happen BEFORE the caller is a member
+-- of the team — the same pre-membership problem as join_code:
+--   - src/app/baseball/join/[code]/page.tsx  (renders the join screen)
+--   - src/app/baseball/actions/teams.ts processTeamInvitation
+-- Under a staff-scoped policy neither can satisfy any row-level predicate, so
+-- the code must be validated as an explicit argument inside a definer body.
+--
+-- WHAT IT RETURNS, AND WHY THAT IS NOT THE LEAK AGAIN. Only the single row
+-- whose code the caller already supplied. Never `code` itself — echoing back
+-- a secret the caller just proved they hold buys nothing and turns any
+-- accidental log of the result into a credential leak. The remaining columns
+-- (expiry, active flag, use counts, team and organization identity) are
+-- exactly what the join screen renders and what the redemption path must
+-- check, and all of them are already known to anyone legitimately holding the
+-- code. A caller without a valid code gets zero rows — no enumeration, no
+-- oracle beyond "this 8-character string is or is not live", which is the
+-- irreducible minimum for a redeemable code and is rate-limited by the
+-- application, unchanged from today.
+--
+-- ⚠️ DELIBERATE BEHAVIOUR CHANGE, called out because it is not a pure
+-- security no-op. The resolver returns the matching row REGARDLESS of
+-- is_active/expires_at; the old policy filtered `is_active = true` in the
+-- policy itself. Today a deactivated code is invisible, so
+-- processTeamInvitation's `if (!invitation.is_active)` and its expiry check
+-- are unreachable dead branches and the player is told "Invalid invitation
+-- code" for a code that is real but switched off. Returning the row revives
+-- both branches, so the player sees "This invitation is no longer active" /
+-- "This invitation has expired" — true statements, and actionable ones. This
+-- discloses nothing extra: the caller supplied the code.
+CREATE OR REPLACE FUNCTION public.resolve_baseball_team_invitation_by_code(
+  p_code text
+)
+RETURNS TABLE (
+  invitation_id        uuid,
+  team_id              uuid,
+  expires_at           timestamptz,
+  is_active            boolean,
+  max_uses             integer,
+  used_count           integer,
+  team_name            text,
+  team_type            public.baseball_coach_type,
+  organization_name    text,
+  organization_city    text,
+  organization_state   text,
+  organization_logo_url text
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT
+    bti.id,
+    bti.team_id,
+    bti.expires_at,
+    bti.is_active,
+    bti.max_uses,
+    bti.used_count,
+    bt.name,
+    bt.team_type,
+    o.name,
+    o.location_city,
+    o.location_state,
+    o.logo_url
+  FROM public.baseball_team_invitations bti
+  JOIN public.baseball_teams bt ON bt.id = bti.team_id
+  LEFT JOIN public.organizations o ON o.id = bt.organization_id
+  WHERE bti.code = p_code
+  LIMIT 1;
+$$;
+
+COMMENT ON FUNCTION public.resolve_baseball_team_invitation_by_code(text) IS
+  'Invitation-code resolver (tenant-isolation fix, 2026-07-29). Companion RPC for the invitation redemption flow now that baseball_team_invitations'' SELECT policy is staff-scoped — a pre-membership caller cannot satisfy any row-level predicate, so the code must be validated as an explicit argument inside a definer-rights body. Returns at most one row and never returns `code` itself. Deliberately does NOT filter on is_active/expires_at so the app can distinguish "no such code" from "deactivated" and "expired"; the caller already holds the code, so this discloses nothing. REQUIRED APP CHANGE (made alongside this migration): src/app/baseball/join/[code]/page.tsx and src/app/baseball/actions/teams.ts processTeamInvitation must call this RPC instead of `.from(''baseball_team_invitations'').select(...).eq(''code'', code)` — the latter returns 0 rows for any non-staff caller once migration B is applied.';
+
+REVOKE ALL ON FUNCTION public.resolve_baseball_team_invitation_by_code(text) FROM PUBLIC;
+-- Supabase's default privileges grant EXECUTE on new public functions to
+-- anon, and REVOKE ... FROM PUBLIC does not remove a role-specific grant.
+REVOKE EXECUTE ON FUNCTION public.resolve_baseball_team_invitation_by_code(text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.resolve_baseball_team_invitation_by_code(text) TO authenticated, service_role;
+
 -- ============================================================================
 -- END migration A (additive). Nothing here changes existing behaviour.
 -- Next: deploy the companion app changes, THEN apply migration B

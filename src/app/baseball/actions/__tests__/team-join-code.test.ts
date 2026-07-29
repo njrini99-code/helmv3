@@ -67,13 +67,43 @@ function chain(resolver: () => unknown) {
   return builder;
 }
 
+/**
+ * The invitation row as the RESOLVER returns it — flat, and without `code`.
+ *
+ * processTeamInvitation no longer reads baseball_team_invitations directly.
+ * That table's SELECT policy is staff-scoped (migration 20260729000200
+ * SECTION 3, replacing the baseline's `USING (is_active = true)`, which let
+ * any authenticated user enumerate every live invite code in the database), so
+ * a `.eq('code', ...)` returns zero rows for every legitimate joiner — who is
+ * by definition not staff on the team they are joining. The code goes to a
+ * SECURITY DEFINER resolver as an argument instead.
+ */
+function invitationRow(overrides: Record<string, unknown> = {}) {
+  return {
+    invitation_id: 'inv-1',
+    team_id: 'team-1',
+    expires_at: null,
+    is_active: true,
+    max_uses: 5,
+    used_count: 1,
+    ...overrides,
+  };
+}
+
+/** What resolve_baseball_team_invitation_by_code answers with, per test. */
+let resolvedInvitations: unknown[] = [];
+
 describe('processTeamInvitation max_uses accounting', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
     fromUntypedEq.mockResolvedValue({ error: null });
-    // Two different RPCs run in this flow, so the default must dispatch by
+    resolvedInvitations = [invitationRow()];
+    // Three different RPCs run in this flow, so the default must dispatch by
     // name rather than answer everything with one shape:
+    //   resolve_baseball_team_invitation_by_code — resolves the invite code for
+    //     a caller who is not staff on the target team. Set-returning, so it
+    //     answers with an array; an unmatched code is [].
     //   try_redeem_baseball_team_invitation — reserves a redemption atomically
     //     before joinTeam runs (#395); returns a bare boolean. Default: granted.
     //   get_baseball_team_join_context — resolves the team's non-secret join
@@ -81,6 +111,9 @@ describe('processTeamInvitation max_uses accounting', () => {
     //     Set-returning, so it answers with an array. joinTeam calls it twice
     //     (validatePlayerCanJoinTeam, then the policy check).
     rpc.mockImplementation(async (fn: string) => {
+      if (fn === 'resolve_baseball_team_invitation_by_code') {
+        return { data: resolvedInvitations, error: null };
+      }
       if (fn === 'get_baseball_team_join_context') {
         return {
           data: [
@@ -100,18 +133,7 @@ describe('processTeamInvitation max_uses accounting', () => {
   });
 
   it('blocks when invitation used_count meets max_uses (not roster size)', async () => {
-    const invitationChain = chain(() => ({
-      data: {
-        id: 'inv-1',
-        team_id: 'team-1',
-        expires_at: null,
-        is_active: true,
-        max_uses: 3,
-        used_count: 3,
-        baseball_teams: { id: 'team-1', name: 'Eagles', team_type: 'college' },
-      },
-      error: null,
-    }));
+    resolvedInvitations = [invitationRow({ max_uses: 3, used_count: 3 })];
 
     const ownershipChain = chain(() => ({
       data: { user_id: 'user-1' },
@@ -120,7 +142,6 @@ describe('processTeamInvitation max_uses accounting', () => {
 
     from.mockImplementation((table: string) => {
       if (table === 'baseball_players') return ownershipChain;
-      if (table === 'baseball_team_invitations') return invitationChain;
       return chain(() => ({ data: null, error: null }));
     });
 
@@ -131,19 +152,6 @@ describe('processTeamInvitation max_uses accounting', () => {
   });
 
   it('increments used_count after a successful join', async () => {
-    const invitationChain = chain(() => ({
-      data: {
-        id: 'inv-1',
-        team_id: 'team-1',
-        expires_at: null,
-        is_active: true,
-        max_uses: 5,
-        used_count: 1,
-        baseball_teams: { id: 'team-1', name: 'Eagles', team_type: 'college' },
-      },
-      error: null,
-    }));
-
     let playerReads = 0;
     from.mockImplementation((table: string) => {
       if (table === 'baseball_players') {
@@ -156,7 +164,6 @@ describe('processTeamInvitation max_uses accounting', () => {
           error: null,
         }));
       }
-      if (table === 'baseball_team_invitations') return invitationChain;
       if (table === 'baseball_teams') {
         return chain(() => ({
           data: { id: 'team-1', name: 'Eagles', team_type: 'college' },
@@ -189,19 +196,6 @@ describe('processTeamInvitation max_uses accounting', () => {
   });
 
   it('releases the reserved redemption when joinTeam fails after redeeming', async () => {
-    const invitationChain = chain(() => ({
-      data: {
-        id: 'inv-1',
-        team_id: 'team-1',
-        expires_at: null,
-        is_active: true,
-        max_uses: 5,
-        used_count: 1,
-        baseball_teams: { id: 'team-1', name: 'Eagles', team_type: 'college' },
-      },
-      error: null,
-    }));
-
     let playerReads = 0;
     from.mockImplementation((table: string) => {
       if (table === 'baseball_players') {
@@ -214,7 +208,6 @@ describe('processTeamInvitation max_uses accounting', () => {
           error: null,
         }));
       }
-      if (table === 'baseball_team_invitations') return invitationChain;
       if (table === 'baseball_teams') {
         return chain(() => ({
           data: { id: 'team-1', name: 'Eagles', team_type: 'college' },
@@ -262,5 +255,104 @@ describe('processTeamInvitation max_uses accounting', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/own player profile/i);
+  });
+});
+
+describe('processTeamInvitation reads the invite code through the resolver', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    fromUntypedEq.mockResolvedValue({ error: null });
+    resolvedInvitations = [invitationRow()];
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === 'resolve_baseball_team_invitation_by_code') {
+        return { data: resolvedInvitations, error: null };
+      }
+      if (fn === 'get_baseball_team_join_context') {
+        return {
+          data: [
+            {
+              id: 'team-1',
+              name: 'Eagles',
+              team_type: 'college',
+              invite_policy: 'open',
+              require_coach_approval: false,
+            },
+          ],
+          error: null,
+        };
+      }
+      return { data: true, error: null };
+    });
+    from.mockImplementation((table: string) => {
+      if (table === 'baseball_players') {
+        return chain(() => ({ data: { user_id: 'user-1' }, error: null }));
+      }
+      return chain(() => ({ data: null, error: null }));
+    });
+  });
+
+  /**
+   * The regression guard for the fix itself.
+   *
+   * A direct `.from('baseball_team_invitations').eq('code', …)` is the shape
+   * that only worked because the baseline SELECT policy was
+   * `USING (is_active = true)` — i.e. because every authenticated user could
+   * read every live invite code in the database. Reinstating that read would
+   * silently break every join once the policy migration is applied (zero rows,
+   * reported to the player as "Invalid invitation code"), so it is asserted on
+   * directly rather than inferred from the happy path passing.
+   */
+  it('never reads baseball_team_invitations directly', async () => {
+    resolvedInvitations = [invitationRow({ max_uses: 1, used_count: 1 })];
+
+    await processTeamInvitation('ABC12345', PLAYER_ID);
+
+    expect(rpc).toHaveBeenCalledWith(
+      'resolve_baseball_team_invitation_by_code',
+      { p_code: 'ABC12345' },
+    );
+    expect(from).not.toHaveBeenCalledWith('baseball_team_invitations');
+  });
+
+  /**
+   * Previously unreachable. The old policy filtered `is_active = true` inside
+   * the policy, so a deactivated invitation was indistinguishable from a
+   * nonexistent one: the lookup returned nothing, the join_code fallback
+   * missed, and the player was told their real-but-switched-off code was
+   * invalid. The resolver returns the row, which revives this branch.
+   */
+  it('tells the player a deactivated invitation is inactive, not invalid', async () => {
+    resolvedInvitations = [invitationRow({ is_active: false })];
+
+    const result = await processTeamInvitation('ABC12345', PLAYER_ID);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/no longer active/i);
+    expect(result.error).not.toMatch(/invalid/i);
+  });
+
+  /** Same reasoning for expiry — also unreachable under the old policy. */
+  it('tells the player an expired invitation is expired, not invalid', async () => {
+    resolvedInvitations = [
+      invitationRow({ expires_at: new Date(Date.now() - 86_400_000).toISOString() }),
+    ];
+
+    const result = await processTeamInvitation('ABC12345', PLAYER_ID);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/expired/i);
+  });
+
+  /** An unknown code must still fall through to the join_code fallback. */
+  it('falls through to the join_code path when the code matches no invitation', async () => {
+    resolvedInvitations = [];
+
+    await processTeamInvitation('ABC12345', PLAYER_ID);
+
+    expect(rpc).toHaveBeenCalledWith(
+      'resolve_baseball_team_by_join_code',
+      { p_join_code: 'ABC12345' },
+    );
   });
 });

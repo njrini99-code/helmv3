@@ -36,49 +36,50 @@ export default async function JoinTeamPage({ params }: PageProps) {
     redirect('/baseball/signup');
   }
 
-  // Find team by invite code - try both methods
-  // 1. First check baseball_team_invitations table
-  type InvitationWithTeam = {
-    id: string;
+  // Find team by invite code - try both methods.
+  // 1. First check baseball_team_invitations.code.
+  //
+  // Same pre-membership problem as the join_code branch below, and the same
+  // shape of fix. Whoever lands on this page is by definition not yet on the
+  // team, and this table's SELECT policy is staff-scoped (a coach reading
+  // their OWN team's invitations) — so no row-level predicate can admit this
+  // reader. RLS never sees the `code` a query filters on, so "prove you
+  // already hold the code" is only expressible as a function argument compared
+  // server-side. The resolver returns identity columns only and never the code
+  // itself.
+  //
+  // It deliberately does NOT filter on is_active/expires_at, so the
+  // inactive/expired cards below can tell the player the truth instead of
+  // showing "invalid code" for a real invitation that was simply switched off.
+  type ResolvedInvitation = {
+    invitation_id: string;
     team_id: string;
-    code: string;
     expires_at: string | null;
     is_active: boolean | null;
-    baseball_teams: {
-      id: string;
-      name: string;
-      team_type: string;
-      organizations: {
-        name: string;
-        location_city: string | null;
-        location_state: string | null;
-        logo_url: string | null;
-      } | null;
-    };
+    team_name: string;
+    team_type: string;
+    organization_name: string | null;
+    organization_city: string | null;
+    organization_state: string | null;
+    organization_logo_url: string | null;
   };
 
-  const { data: invitation } = await supabase
-    .from('baseball_team_invitations')
-    .select(`
-      id,
-      team_id,
-      code,
-      expires_at,
-      is_active,
-      baseball_teams!inner (
-        id,
-        name,
-        team_type,
-        organizations (
-          name,
-          location_city,
-          location_state,
-          logo_url
-        )
-      )
-    `)
-    .eq('code', code)
-    .single() as { data: InvitationWithTeam | null };
+  const { data: resolvedInvitations, error: invitationRpcError } = (await supabase.rpc(
+    'resolve_baseball_team_invitation_by_code' as never,
+    { p_code: code } as never,
+  )) as { data: ResolvedInvitation[] | null; error: { message?: string } | null };
+
+  if (invitationRpcError) {
+    // Do not collapse an infrastructure failure into "invalid code" silently —
+    // that reads to the player as a bad link and to us as nothing at all.
+    console.error(
+      '[join] invitation code resolver failed (is migration 20260729000100 applied?):',
+      invitationRpcError.message ?? invitationRpcError,
+    );
+  }
+
+  // Set-returning function: an unmatched code comes back as an empty array.
+  const invitation = resolvedInvitations?.[0] ?? null;
 
   // 2. If not found, check direct join_code on baseball_teams
   type TeamWithInviteCode = {
@@ -98,8 +99,24 @@ export default async function JoinTeamPage({ params }: PageProps) {
   let isExpired = false;
   let isInactive = false;
 
-  if (invitation?.baseball_teams) {
-    team = invitation.baseball_teams;
+  if (invitation) {
+    // The resolver returns a flat row rather than the embedded organizations
+    // join the old query used, so the branding block is rebuilt here. An
+    // invitation whose team has no organization still resolves — the card just
+    // renders without program branding.
+    team = {
+      id: invitation.team_id,
+      name: invitation.team_name,
+      team_type: invitation.team_type,
+      organizations: invitation.organization_name
+        ? {
+            name: invitation.organization_name,
+            location_city: invitation.organization_city,
+            location_state: invitation.organization_state,
+            logo_url: invitation.organization_logo_url,
+          }
+        : null,
+    };
     isInvitationBased = true;
     isInactive = !invitation.is_active;
     isExpired = invitation.expires_at ? new Date(invitation.expires_at) < new Date() : false;

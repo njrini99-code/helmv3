@@ -577,26 +577,42 @@ async function processTeamInvitationImpl(inviteCode: string, playerId: string) {
       metadata: { inviteCode: validatedData.invite_code, playerId: validatedData.player_id },
     });
 
-    // Find the invitation
-    const { data: invitation, error: inviteError } = await supabase
-      .from('baseball_team_invitations')
-      .select(`
-        id,
-        team_id,
-        expires_at,
-        is_active,
-        max_uses,
-        used_count,
-        baseball_teams!inner (
-          id,
-          name,
-          team_type
-        )
-      `)
-      .eq('code', validatedData.invite_code)
-      .single();
+    // Find the invitation.
+    //
+    // Via a SECURITY DEFINER resolver, not a table read: the caller is by
+    // definition not yet on the team, and baseball_team_invitations' SELECT
+    // policy is staff-scoped, so a direct `.eq('code', ...)` returns zero rows
+    // for every legitimate joiner. RLS cannot see the code a query filters on,
+    // so it is passed as an argument and compared server-side. Mirrors the
+    // join_code resolver used by joinTeamByCodeImpl.
+    type ResolvedInvitation = {
+      invitation_id: string;
+      team_id: string;
+      expires_at: string | null;
+      is_active: boolean | null;
+      max_uses: number | null;
+      used_count: number | null;
+    };
 
-    if (inviteError || !invitation) {
+    const { data: resolvedInvitations, error: inviteError } = (await supabase.rpc(
+      'resolve_baseball_team_invitation_by_code' as never,
+      { p_code: validatedData.invite_code } as never,
+    )) as { data: ResolvedInvitation[] | null; error: { message?: string } | null };
+
+    if (inviteError) {
+      // An RPC failure is not a bad code. Say so in the log rather than letting
+      // it fall through into the join_code fallback and out as "Invalid
+      // invitation code", which would hide a missing migration indefinitely.
+      console.error(
+        '[teams] invitation code resolver failed (is migration 20260729000100 applied?):',
+        inviteError.message ?? inviteError,
+      );
+    }
+
+    // Set-returning function: an unmatched code comes back as an empty array.
+    const invitation = resolvedInvitations?.[0] ?? null;
+
+    if (!invitation) {
       // The code wasn't found in baseball_team_invitations, but it may be a
       // persistent team join_code (baseball_teams.join_code) rather than an
       // invitation-table code. Mirror the dual-lookup the /baseball/join/[code]
@@ -647,7 +663,7 @@ async function processTeamInvitationImpl(inviteCode: string, playerId: string) {
     // Reserve redemption atomically before creating membership (#395).
     const { data: redeemed, error: redeemError } = (await supabase.rpc(
       'try_redeem_baseball_team_invitation' as never,
-      { p_invitation_id: invitation.id } as never,
+      { p_invitation_id: invitation.invitation_id } as never,
     )) as { data: boolean | null; error: unknown };
 
     if (redeemError || !redeemed) {
@@ -662,7 +678,7 @@ async function processTeamInvitationImpl(inviteCode: string, playerId: string) {
     if (!joinResult.success) {
       await supabase.rpc(
         'release_baseball_team_invitation_redemption' as never,
-        { p_invitation_id: invitation.id } as never,
+        { p_invitation_id: invitation.invitation_id } as never,
       );
       return joinResult;
     }
