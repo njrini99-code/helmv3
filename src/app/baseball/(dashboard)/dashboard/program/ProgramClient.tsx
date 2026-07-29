@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { InlineNotice } from '@/components/fairway';
 
 const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA', 'JUCO', 'High School', 'Showcase'];
@@ -36,6 +37,13 @@ interface OrganizationData {
   primary_color?: string;
   secondary_color?: string;
 }
+
+// Who the public program page at /baseball/program/[id] is actually for.
+// That page survives the sunset — it is a program's front door for players and
+// their families, not a recruiting artifact — but calling its audience
+// "recruits" describes a module the product is not currently shipping, on a
+// coach settings screen. The recruiting wording returns with the module.
+const PUBLIC_PAGE_AUDIENCE = isRecruitingEnabled() ? 'recruits' : 'players and families';
 
 export default function ProgramClient() {
   const { user, coach, loading: authLoading } = useAuth();
@@ -253,7 +261,7 @@ export default function ProgramClient() {
           </Link>
         }
       >
-        <p className="font-annual text-body-sm text-text-secondary">Customize how your program appears to recruits</p>
+        <p className="font-annual text-body-sm text-text-secondary">{`Customize how your program appears to ${PUBLIC_PAGE_AUDIENCE}`}</p>
       </SectionMasthead>
 
       <div>
@@ -263,7 +271,7 @@ export default function ProgramClient() {
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">Program Information</h3>
                 <p className="text-sm leading-relaxed text-warm-500">
-                  This information appears on your public program page that recruits can view.
+                  {`This information appears on your public program page, which ${PUBLIC_PAGE_AUDIENCE} can view.`}
                 </p>
               </div>
 
@@ -364,7 +372,7 @@ export default function ProgramClient() {
                   value={formData.description || ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={5}
-                  placeholder="Tell recruits about your program, culture, and what makes it special..."
+                  placeholder={`Tell ${PUBLIC_PAGE_AUDIENCE} about your program, culture, and what makes it special...`}
                 />
               </div>
 
