@@ -98,11 +98,32 @@ CREATE POLICY "baseball_players_select" ON public.baseball_players
   FOR SELECT TO authenticated
   USING (
     auth.uid() = user_id
-    OR EXISTS (
-      SELECT 1 FROM public.baseball_team_members btm
-      WHERE btm.player_id = baseball_players.id
-        AND public.can_view_baseball_player(btm.team_id, baseball_players.id)
-    )
+    -- The ONE-ARG can_view_baseball_player (20260624000050:230), not an inline
+    -- EXISTS over baseball_team_members.
+    --
+    -- ⚠️ SECOND RECURSION CYCLE, also found only by executing this. The inline
+    -- subquery is not SECURITY DEFINER, so it is filtered by
+    -- baseball_team_members_select — which itself contains
+    -- `EXISTS (SELECT 1 FROM baseball_players bp JOIN ...)`
+    -- (20260527000000_prod_public_baseline.sql:18350-18353). That re-enters
+    -- THIS policy:
+    --
+    --   baseball_players_select
+    --     -> EXISTS over baseball_team_members
+    --       -> baseball_team_members_select
+    --         -> reads baseball_players
+    --           -> baseball_players_select   ← loop
+    --
+    -- Postgres rejects the whole policy: "infinite recursion detected in
+    -- policy for relation baseball_players", i.e. EVERY query against the
+    -- table fails, not just the recruiting branch.
+    --
+    -- The one-arg definer form does the identical work — self-check, then the
+    -- same team_members lookup deferring to the two-arg authority function —
+    -- but under definer rights, so it never re-enters either policy. Two
+    -- independent line-by-line reviews of this policy missed this. Reading
+    -- cannot find it; running it does immediately.
+    OR public.can_view_baseball_player(baseball_players.id)
     -- Columns passed IN, not re-read. The function is called from this very
     -- policy, so a `SELECT ... FROM baseball_players` inside it re-enters here
     -- and Postgres rejects the whole policy with "infinite recursion detected

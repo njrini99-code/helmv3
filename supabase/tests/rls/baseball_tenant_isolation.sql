@@ -37,7 +37,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(32);
+SELECT plan(34);
 
 -- ============================================================================
 -- GROUP 1 — function invariants (SECURITY DEFINER, pinned search_path,
@@ -131,6 +131,38 @@ SELECT ok(
         AND p.polname = 'baseball_players_select'
   ), '')) > 0,
   'baseball_players_select USING clause references is_baseball_player_recruiting_discoverable (recruiting branch)'
+);
+
+-- THE invariant behind both recursion bugs. Every predicate in this policy
+-- must be a SECURITY DEFINER function call — no inline table read. A bare
+-- `EXISTS (SELECT ... FROM baseball_team_members ...)` here is filtered by
+-- baseball_team_members_select, which itself reads baseball_players
+-- (20260527000000_prod_public_baseline.sql:18350-18353), which re-enters this
+-- policy. Postgres then rejects EVERY query against the table with "infinite
+-- recursion detected in policy". Two line-by-line reviews missed it; only
+-- running the migration found it. This is the cheap way to keep it found.
+SELECT ok(
+  position(' FROM ' IN upper(COALESCE((
+    SELECT pg_get_expr(p.polqual, p.polrelid)
+      FROM pg_policy p
+      JOIN pg_class c ON c.oid = p.polrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relname = 'baseball_players'
+        AND p.polname = 'baseball_players_select'
+  ), ''))) = 0,
+  'baseball_players_select contains NO inline table read — definer predicates only'
+);
+
+SELECT ok(
+  position(' FROM ' IN upper(COALESCE((
+    SELECT pg_get_expr(p.polqual, p.polrelid)
+      FROM pg_policy p
+      JOIN pg_class c ON c.oid = p.polrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relname = 'baseball_teams'
+        AND p.polname = 'baseball_teams_select'
+  ), ''))) = 0,
+  'baseball_teams_select contains NO inline table read — definer predicates only'
 );
 
 SELECT ok(
