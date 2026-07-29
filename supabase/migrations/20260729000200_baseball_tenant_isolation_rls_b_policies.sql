@@ -103,7 +103,17 @@ CREATE POLICY "baseball_players_select" ON public.baseball_players
       WHERE btm.player_id = baseball_players.id
         AND public.can_view_baseball_player(btm.team_id, baseball_players.id)
     )
-    OR public.is_baseball_player_recruiting_discoverable(baseball_players.id)
+    -- Columns passed IN, not re-read. The function is called from this very
+    -- policy, so a `SELECT ... FROM baseball_players` inside it re-enters here
+    -- and Postgres rejects the whole policy with "infinite recursion detected
+    -- in policy for relation baseball_players" — verified in CI, invisible on
+    -- inspection. The row is already in scope here; handing over the two
+    -- columns it needs is both the fix and one fewer lookup.
+    OR public.is_baseball_player_recruiting_discoverable(
+         baseball_players.id,
+         baseball_players.player_type,
+         baseball_players.recruiting_activated
+       )
   );
 
 -- baseball_teams: team staff OR team member, own team(s) only. join_code

@@ -57,13 +57,13 @@ SELECT ok(
 );
 
 SELECT isnt(
-  has_function_privilege('anon', 'public.is_baseball_player_recruiting_discoverable(uuid)', 'EXECUTE'),
+  has_function_privilege('anon', 'public.is_baseball_player_recruiting_discoverable(uuid, public.baseball_player_type, boolean)', 'EXECUTE'),
   true,
   'anon cannot execute is_baseball_player_recruiting_discoverable'
 );
 
 SELECT ok(
-  has_function_privilege('authenticated', 'public.is_baseball_player_recruiting_discoverable(uuid)', 'EXECUTE'),
+  has_function_privilege('authenticated', 'public.is_baseball_player_recruiting_discoverable(uuid, public.baseball_player_type, boolean)', 'EXECUTE'),
   'authenticated CAN execute is_baseball_player_recruiting_discoverable'
 );
 
@@ -158,8 +158,13 @@ SELECT ok(
   'baseball_teams_select USING clause references is_baseball_team_staff'
 );
 
+-- has_any_baseball_team_membership, NOT is_baseball_team_member. The latter
+-- requires status = 'active', but a join inserts 'pending' whenever the team
+-- requires coach approval (the fail-closed default) — so under the
+-- active-only helper a player who had just joined could not read the team
+-- they joined, and their own pending-approval screen would render nothing.
 SELECT ok(
-  position('is_baseball_team_member' IN COALESCE((
+  position('has_any_baseball_team_membership' IN COALESCE((
     SELECT pg_get_expr(p.polqual, p.polrelid)
       FROM pg_policy p
       JOIN pg_class c ON c.oid = p.polrelid
@@ -167,7 +172,7 @@ SELECT ok(
       WHERE n.nspname = 'public' AND c.relname = 'baseball_teams'
         AND p.polname = 'baseball_teams_select'
   ), '')) > 0,
-  'baseball_teams_select USING clause references is_baseball_team_member'
+  'baseball_teams_select admits ANY membership status, not just active'
 );
 
 -- ============================================================================
@@ -401,7 +406,11 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000ba101", "role": "authenticated"}';
 
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000bc202'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000bc202'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+  ),
   true,
   'College coach A CAN see recruiting-activated HS Player C1 (discoverable team)'
 );
@@ -418,7 +427,11 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000ba101", "role": "authenticated"}';
 
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000bc202'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000bc202'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+  ),
   false,
   'College coach A CANNOT see Player C1 once recruiting_activated is false'
 );
@@ -439,7 +452,11 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000ba101", "role": "authenticated"}';
 
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000bc202'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000bc202'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+  ),
   false,
   'College coach A CANNOT see Player C1 once profile_visibility is private'
 );
@@ -457,14 +474,22 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000bd401", "role": "authenticated"}';
 
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000bc202'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000bc202'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+  ),
   true,
   'JUCO coach D CAN see recruiting-activated HS Player C1'
 );
 
 -- JUCO coach D CANNOT see JUCO Player E1 (JUCO coaches may not recruit other JUCO players).
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000be202'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000be202'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202')
+  ),
   false,
   'JUCO coach D CANNOT see recruiting-activated JUCO Player E1 (coach_type/player_type mismatch)'
 );
@@ -478,7 +503,11 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000ba101", "role": "authenticated"}';
 
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000be202'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000be202'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202')
+  ),
   true,
   'College coach A CAN see recruiting-activated JUCO Player E1'
 );
@@ -492,7 +521,11 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000bf601", "role": "authenticated"}';
 
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000bc202'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000bc202'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+  ),
   false,
   'high_school coach_type CANNOT see any recruiting-activated player (coach_type gate)'
 );
@@ -506,7 +539,11 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000ba101", "role": "authenticated"}';
 
 SELECT is(
-  public.is_baseball_player_recruiting_discoverable('00000000-0000-0000-0000-0000000b7702'::uuid),
+  public.is_baseball_player_recruiting_discoverable(
+    '00000000-0000-0000-0000-0000000b7702'::uuid,
+    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000b7702'),
+    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000b7702')
+  ),
   false,
   'College coach A CANNOT see recruiting-activated Player G1, who has no team assignment'
 );

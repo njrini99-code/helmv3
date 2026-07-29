@@ -52,7 +52,7 @@
 --
 -- ROLLBACK for this file (safe at any time — nothing depends on these until
 -- migration B is applied, and after that only B's policies do):
---   DROP FUNCTION IF EXISTS public.is_baseball_player_recruiting_discoverable(uuid);
+--   DROP FUNCTION IF EXISTS public.is_baseball_player_recruiting_discoverable(uuid, public.baseball_player_type, boolean);
 --   DROP FUNCTION IF EXISTS public.resolve_baseball_team_by_join_code(text);
 --   DROP FUNCTION IF EXISTS public.find_baseball_player_by_email_for_roster(uuid, text);
 --   DROP FUNCTION IF EXISTS public.get_baseball_team_join_context(uuid);
@@ -81,8 +81,35 @@
 -- public.has_baseball_staff_capability (20260624000050). This is why
 -- tightening baseball_teams_select in SECTION 2 below does not break this
 -- function's own internal organization-type lookup.
+-- ⚠️ THE SIGNATURE IS LOAD-BEARING. This takes the player's `player_type` and
+-- `recruiting_activated` as ARGUMENTS rather than re-reading them by id.
+--
+-- The obvious version — `is_..._discoverable(p_player_id uuid)`, reading the
+-- row itself — was written first and CI rejected it:
+--
+--   ERROR: infinite recursion detected in policy for relation "baseball_players"
+--
+-- The function is called FROM baseball_players_select, so its own
+-- `SELECT ... FROM baseball_players` re-enters that policy, which calls the
+-- function again. SECURITY DEFINER does not save it: Supabase applies
+-- migrations as a role for which row security is still in force here, so the
+-- definer's read is policy-checked like any other.
+--
+-- `SET row_security = off` would silence it, but it is the wrong instrument —
+-- it disables RLS for every read in the body, including the settings and
+-- team-membership lookups that have nothing to do with the recursion.
+--
+-- Passing the columns in is strictly better anyway: the policy already has the
+-- row in scope, so re-reading it was both a cycle and a wasted lookup. The
+-- remaining reads (baseball_coaches, baseball_player_settings,
+-- baseball_team_members, baseball_teams, organizations) touch OTHER relations
+-- and cannot recurse into this policy.
+--
+-- Caught only because the migration was executed. It is not visible by reading.
 CREATE OR REPLACE FUNCTION public.is_baseball_player_recruiting_discoverable(
-  p_player_id uuid
+  p_player_id   uuid,
+  p_player_type public.baseball_player_type,
+  p_activated   boolean
 )
 RETURNS boolean
 LANGUAGE plpgsql
@@ -93,8 +120,8 @@ AS $$
 DECLARE
   v_coach_id    uuid := public.get_my_coach_id();
   v_coach_type  public.baseball_coach_type;
-  v_player_type public.baseball_player_type;
-  v_activated   boolean;
+  v_player_type public.baseball_player_type := p_player_type;
+  v_activated   boolean := p_activated;
 BEGIN
   IF v_coach_id IS NULL OR p_player_id IS NULL THEN
     RETURN false;
@@ -111,12 +138,9 @@ BEGIN
     RETURN false;
   END IF;
 
-  SELECT player_type, recruiting_activated
-    INTO v_player_type, v_activated
-    FROM public.baseball_players
-   WHERE id = p_player_id;
-
-  IF NOT FOUND OR v_activated IS NOT TRUE THEN
+  -- Supplied by the policy from the row being tested — deliberately NOT read
+  -- back from baseball_players; see the recursion note on the signature.
+  IF v_activated IS NOT TRUE THEN
     RETURN false;
   END IF;
 
@@ -161,11 +185,21 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.is_baseball_player_recruiting_discoverable(uuid) IS
-  'RLS backstop for baseball_players_select (#CRIT tenant-isolation fix, 2026-07-29): re-implements the recruiting-discoverability predicate already independently enforced in discover.ts / recruitability.ts / player-peek.ts / compare/actions.ts at the DB layer. SECURITY DEFINER so its internal table reads are not themselves subject to the caller''s (tightened) RLS.';
+-- Drop the id-only signature if a prior attempt created it: leaving both
+-- overloads in place makes the policy's call ambiguous to resolve and leaves a
+-- recursing function reachable.
+DROP FUNCTION IF EXISTS public.is_baseball_player_recruiting_discoverable(uuid);
 
-REVOKE ALL ON FUNCTION public.is_baseball_player_recruiting_discoverable(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_baseball_player_recruiting_discoverable(uuid) TO authenticated, service_role;
+COMMENT ON FUNCTION public.is_baseball_player_recruiting_discoverable(uuid, public.baseball_player_type, boolean) IS
+  'RLS backstop for baseball_players_select (#CRIT tenant-isolation fix, 2026-07-29): re-implements the recruiting-discoverability predicate already independently enforced in discover.ts / recruitability.ts / player-peek.ts / compare/actions.ts at the DB layer. Takes player_type and recruiting_activated as ARGUMENTS, supplied by the policy from the row under test — reading them back from baseball_players re-enters the very policy that calls this function (verified: "infinite recursion detected in policy for relation baseball_players").';
+
+REVOKE ALL ON FUNCTION public.is_baseball_player_recruiting_discoverable(uuid, public.baseball_player_type, boolean) FROM PUBLIC;
+-- Explicit REVOKE FROM anon: Supabase's default privileges grant EXECUTE on
+-- new public functions to anon, and REVOKE ... FROM PUBLIC does not remove a
+-- role-specific grant. Without this the function is anon-callable. Matches the
+-- idiom in 20260625000030_helm_lifting_accept_invite_rpc.sql.
+REVOKE EXECUTE ON FUNCTION public.is_baseball_player_recruiting_discoverable(uuid, public.baseball_player_type, boolean) FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_baseball_player_recruiting_discoverable(uuid, public.baseball_player_type, boolean) TO authenticated, service_role;
 
 -- ----------------------------------------------------------------------------
 -- SECTION 3 — join-by-code RPC (the join_code case needs an RPC, not a
@@ -217,6 +251,9 @@ COMMENT ON FUNCTION public.resolve_baseball_team_by_join_code(text) IS
   'Join-by-code resolver (#CRIT tenant-isolation fix, 2026-07-29). Required companion RPC for the join_code redemption flow now that baseball_teams_select is tenant-scoped — a non-member cannot satisfy any row-level predicate, so the code must be validated as an explicit argument inside a SECURITY DEFINER function instead. Returns id/name/team_type/organization_id only (never join_code itself). REQUIRED APP CHANGE (not made by this migration — outside this file''s ownership): src/app/baseball/join/[code]/page.tsx (~lines 107-124) and src/app/baseball/actions/teams.ts joinTeamByCodeImpl (~lines 920-935) must call supabase.rpc(''resolve_baseball_team_by_join_code'', { p_join_code: code }) instead of `.from(''baseball_teams'').select(...).eq(''join_code'', code)` — the latter will return 0 rows for any pre-membership caller once this migration is applied.';
 
 REVOKE ALL ON FUNCTION public.resolve_baseball_team_by_join_code(text) FROM PUBLIC;
+-- Supabase's default privileges grant EXECUTE on new public functions to
+-- anon, and REVOKE ... FROM PUBLIC does not remove a role-specific grant.
+REVOKE EXECUTE ON FUNCTION public.resolve_baseball_team_by_join_code(text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.resolve_baseball_team_by_join_code(text) TO authenticated, service_role;
 
 
@@ -305,6 +342,9 @@ COMMENT ON FUNCTION public.find_baseball_player_by_email_for_roster(uuid, text) 
   'Exact-email player lookup for the roster "Add existing player" (mid-season transfer) flow, companion to the tenant-isolation fix (2026-07-29). Replaces the cross-tenant ILIKE substring browse in roster.ts searchAssignablePlayers(), which returned strangers'' names and email addresses from every program. Exact match only, at most one row, and never returns email/phone/GPA/test scores — the caller already holds the email and needs only enough to confirm the person. Re-checks can_manage_roster on the specific target team inside the definer body.';
 
 REVOKE ALL ON FUNCTION public.find_baseball_player_by_email_for_roster(uuid, text) FROM PUBLIC;
+-- Supabase's default privileges grant EXECUTE on new public functions to
+-- anon, and REVOKE ... FROM PUBLIC does not remove a role-specific grant.
+REVOKE EXECUTE ON FUNCTION public.find_baseball_player_by_email_for_roster(uuid, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.find_baseball_player_by_email_for_roster(uuid, text) TO authenticated, service_role;
 
 -- ----------------------------------------------------------------------------
@@ -371,6 +411,9 @@ COMMENT ON FUNCTION public.get_baseball_team_join_context(uuid) IS
   'Non-secret join-flow context for a team (name, team_type, invite_policy, require_coach_approval), companion to the tenant-isolation fix (2026-07-29). Required because validatePlayerCanJoinTeamImpl and joinTeamImpl both read baseball_teams for a caller who has no membership yet — after the tightened policy those reads return zero rows and the join fails with "Team not found". Never returns join_code or created_by. A strict reduction from the USING(true) policy it replaces, which exposed every column of every team.';
 
 REVOKE ALL ON FUNCTION public.get_baseball_team_join_context(uuid) FROM PUBLIC;
+-- Supabase's default privileges grant EXECUTE on new public functions to
+-- anon, and REVOKE ... FROM PUBLIC does not remove a role-specific grant.
+REVOKE EXECUTE ON FUNCTION public.get_baseball_team_join_context(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_baseball_team_join_context(uuid) TO authenticated, service_role;
 
 -- ----------------------------------------------------------------------------
@@ -412,6 +455,9 @@ COMMENT ON FUNCTION public.has_any_baseball_team_membership(uuid) IS
   'True when the caller has ANY baseball_team_members row for the team, regardless of status — unlike is_baseball_team_member(), which requires status = ''active''. Used ONLY by baseball_teams_select (2026-07-29 tenant-isolation fix) so a player awaiting coach approval can still see the team they joined. Deliberately separate from is_baseball_team_member so widening it here cannot leak into the many other policies that call that helper to gate real team data.';
 
 REVOKE ALL ON FUNCTION public.has_any_baseball_team_membership(uuid) FROM PUBLIC;
+-- Supabase's default privileges grant EXECUTE on new public functions to
+-- anon, and REVOKE ... FROM PUBLIC does not remove a role-specific grant.
+REVOKE EXECUTE ON FUNCTION public.has_any_baseball_team_membership(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.has_any_baseball_team_membership(uuid) TO authenticated, service_role;
 
 -- ============================================================================
