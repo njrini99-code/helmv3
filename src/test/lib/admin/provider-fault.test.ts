@@ -107,6 +107,110 @@ describe('classifyProviderFault', () => {
     ).toBe('credit_exhausted');
   });
 
+  /**
+   * 2026-07-29. The Inngest key fault above is asserted from `new Error(msg)`
+   * and passes — yet the SAME failure reached production unclassified:
+   *
+   *   admin_events.metadata.extra.stack:
+   *     "Error: Inngest API Error: 404 Event key not found
+   *          at a.getResponseError (…/chunks/22064.js:6:6199)"
+   *   admin_events.metadata.errorCode: null   <- classifier returned null
+   *   message: "…falling back to direct postRoundTrigger: Inngest API Error:
+   *             404 Event key not found"      <- the fault==null branch
+   *
+   * Three daily occurrences (07-27, 07-28, 07-29), the last of them AFTER the
+   * 18:37Z deploy of the commit containing this classifier.
+   *
+   * RULED OUT, each by checking rather than reasoning:
+   *   - the pattern not matching the text (tested in node against the DEPLOYED
+   *     regex, extracted from `git show <sha>`: it matches);
+   *   - the classifier not being in the deployed build (`git show` confirms the
+   *     file and both `key not found` clauses are present);
+   *   - the call site not invoking it (present in the deployed golf.ts);
+   *   - `messageOf` losing an Error's `.message` (the stack's first line proves
+   *     the shape is a plain Error carrying the full text).
+   *
+   * STILL UNEXPLAINED. So `messageOf` was widened to stop depending on any one
+   * extraction being the right one, and these cases pin the shapes it previously
+   * returned an EMPTY STRING for — each of which classified as "not a provider
+   * fault" and would have produced exactly the symptom observed.
+   */
+  it('classifies provider faults out of shapes that previously extracted nothing', () => {
+    // Verified against the pre-change implementation: each of these produced ''
+    // from messageOf and therefore classifyProviderFault(...) === null.
+    const previouslyBlind: unknown[] = [
+      { response: { message: REAL_MESSAGES.inngestKey } },
+      { data: { error: REAL_MESSAGES.inngestKey } },
+      { status: 404, body: 'Event key not found' },
+      Object.assign(new Error('Inngest API Error'), { cause: { message: '404 Event key not found' } }),
+    ];
+
+    for (const shape of previouslyBlind) {
+      const fault = classifyProviderFault(shape);
+      expect(fault, `should classify: ${JSON.stringify(shape)}`).not.toBeNull();
+      expect(fault!.kind).toBe('invalid_credential');
+    }
+  });
+
+  /**
+   * The stack rescues the KIND but deliberately cannot name the PROVIDER, and
+   * this asserts that asymmetry rather than papering over it.
+   *
+   * My first version of this test expected `provider: 'inngest'` and failed. The
+   * code was right and the expectation was wrong: stacks are excluded from
+   * provider detection on purpose, because they are full of file paths and this
+   * repo has `src/lib/inngest/client.ts`. Allowing the stack to identify a
+   * provider is exactly what made a Vercel AI Gateway credit error report
+   * `provider: 'inngest'` — caught by the pre-existing gateway test.
+   *
+   * So the honest contract is: signature-in-stack-only gets you a correctly
+   * classified, correctly tiered, operator-blocking fault whose account is
+   * reported as generic. Better than silence, worse than a named account, and
+   * far better than confidently naming the WRONG account.
+   */
+  it('rescues the fault KIND from a stack trace, but will not name a provider from it', () => {
+    // The exact production stack, first line included, with the outer message
+    // emptied so the stack is the only carrier.
+    const bare = new Error('');
+    bare.stack = [
+      'Error: Inngest API Error: 404 Event key not found',
+      '    at a.getResponseError (/var/task/.next/server/chunks/22064.js:6:6199)',
+      '    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)',
+    ].join('\n');
+
+    const fault = classifyProviderFault(bare);
+    expect(fault).not.toBeNull();
+    expect(fault!.kind).toBe('invalid_credential');
+    expect(fault!.needsOperator).toBe(true);
+    expect(fault!.provider).toBe('unknown');
+  });
+
+  it('will not let a file path in a stack decide which account is at fault', () => {
+    // The regression the pre-existing gateway test caught. A path segment naming
+    // one provider must not override the message naming another.
+    const err = new Error(REAL_MESSAGES.anthropicCredit);
+    err.stack = [
+      `Error: ${REAL_MESSAGES.anthropicCredit}`,
+      '    at sendEvent (/var/task/src/lib/inngest/client.js:12:9)',
+    ].join('\n');
+
+    const fault = classifyProviderFault(err);
+    expect(fault!.kind).toBe('credit_exhausted');
+    expect(fault!.provider).toBe('anthropic');
+  });
+
+  it('is cycle-safe — a self-referencing cause must not throw inside an error handler', () => {
+    // This runs in a catch block. A second throw here loses the original
+    // failure entirely, which is strictly worse than failing to classify.
+    const a = new Error('Inngest API Error: 404 Event key not found');
+    const b = new Error('wrapper');
+    (a as { cause?: unknown }).cause = b;
+    (b as { cause?: unknown }).cause = a;
+
+    expect(() => classifyProviderFault(b)).not.toThrow();
+    expect(classifyProviderFault(b)!.kind).toBe('invalid_credential');
+  });
+
   it('leaves everything that is not a provider/account fault alone', () => {
     for (const notAFault of [
       new Error('new row violates row-level security policy for table "golf_conversations"'),

@@ -148,24 +148,131 @@ function summarise(kind: ProviderFaultKind, provider: ProviderId): string {
   }
 }
 
-function messageOf(error: unknown): string {
-  if (error instanceof Error) {
-    // Providers routinely nest the informative text one level down (the AI SDK
-    // wraps gateway responses, Inngest wraps fetch failures), and the outer
-    // message can be as bare as "Bad Request".
-    const cause = (error as { cause?: unknown }).cause;
-    const causeText = cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : '';
-    return `${error.name} ${error.message} ${causeText}`;
-  }
-  if (typeof error === 'string') return error;
-  if (error && typeof error === 'object') {
-    const record = error as Record<string, unknown>;
-    const parts = ['message', 'error', 'detail', 'type', 'code']
-      .map((key) => (typeof record[key] === 'string' ? (record[key] as string) : ''))
-      .filter(Boolean);
-    if (parts.length > 0) return parts.join(' ');
-  }
-  return '';
+/**
+ * Extract every string this error carries that a fault rule could match.
+ *
+ * WHY THIS IS BELT-AND-BRACES RATHER THAN ONE TIDY PATH. On 2026-07-29 a
+ * production Inngest failure went unclassified even though its message matches
+ * `invalid_credential` exactly:
+ *
+ *     admin_events.metadata.extra.stack:
+ *       "Error: Inngest API Error: 404 Event key not found
+ *            at a.getResponseError (…/chunks/22064.js:6:6199)"
+ *     admin_events.metadata.errorCode: null      <- the classifier returned null
+ *
+ * The stack's first line proves `err instanceof Error` with that exact
+ * `.message`, so the previous single-path implementation should have matched and
+ * did not — reproduced against the deployed regex in node, where it DOES match.
+ * That discrepancy is unexplained (see the test file for what was ruled out).
+ *
+ * So this deliberately stops depending on one extraction being right. It
+ * concatenates every candidate source — name, message, cause (recursively, and
+ * for object causes too), the stack, and a JSON view of own enumerable
+ * properties. A rule can then match text carried by ANY of them.
+ *
+ * Concatenating cannot lose a match that previously succeeded: the old output is
+ * a substring of the new one. It can only add matches. The one cost is that a
+ * signature appearing anywhere in a long stack now counts — acceptable, because
+ * every FAULT_RULES pattern is a provider-specific credential/quota phrase, not
+ * a word that shows up incidentally in a file path.
+ */
+/**
+ * ⚠️ THE STACK IS DELIBERATELY EXCLUDED FROM PROVIDER DETECTION.
+ *
+ * Caught by an existing test failing when the stack was first included
+ * everywhere: a Vercel AI Gateway credit error came back
+ * `provider: 'inngest'`. A stack is full of FILE PATHS, and this repo has
+ * `src/lib/inngest/client.ts` — so `PROVIDER_RULES`' `/inngest/i`, which is
+ * checked first, matched a path segment and mis-attributed the account an
+ * operator would go and fix.
+ *
+ * The asymmetry is the point:
+ *   - FAULT KIND is matched against everything including the stack. Every rule
+ *     is a credential/quota phrase ("event key not found", "credit balance is
+ *     too low") that does not occur in a path.
+ *   - PROVIDER is matched against the message-ish text only. Provider names
+ *     absolutely do occur in paths, and a wrong provider sends a human to the
+ *     wrong dashboard.
+ */
+interface ErrorText {
+  /** Everything, stack included — for matching the fault KIND. */
+  full: string;
+  /** Message-ish text only, no stack — for detecting the PROVIDER. */
+  identifying: string;
+}
+
+function extractText(error: unknown): ErrorText {
+  const parts: string[] = [];
+  const identifying: string[] = [];
+  const seen = new Set<unknown>();
+
+  const walk = (value: unknown, depth: number): void => {
+    if (value == null || depth > 3) return;
+    // Cyclic `cause` chains are rare but real, and this runs inside an error
+    // handler where a second throw would lose the original failure entirely.
+    if (typeof value === 'object') {
+      if (seen.has(value)) return;
+      seen.add(value);
+    }
+
+    const add = (text: string, identifies: boolean): void => {
+      parts.push(text);
+      if (identifies) identifying.push(text);
+    };
+
+    if (typeof value === 'string') {
+      add(value, true);
+      return;
+    }
+
+    if (value instanceof Error) {
+      add(value.name, true);
+      add(value.message, true);
+      // The stack's first line is `Name: message`, but providers that wrap a
+      // fetch also leave the informative text further down it. Fault-kind only —
+      // see the comment above ErrorText for why it must not identify a provider.
+      if (typeof value.stack === 'string') add(value.stack, false);
+      walk((value as { cause?: unknown }).cause, depth + 1);
+      return;
+    }
+
+    if (typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      // Named keys first, in the original order, so the common shapes read the
+      // same way they always did.
+      for (const key of ['message', 'error', 'detail', 'type', 'code', 'body', 'statusText']) {
+        const v = record[key];
+        if (typeof v === 'string') add(v, true);
+        else if (typeof v === 'number') add(String(v), true);
+      }
+      // Then the nested containers providers actually use — `{response:{...}}`
+      // and `{data:{...}}` both returned an EMPTY string before this change.
+      walk(record.cause, depth + 1);
+      walk(record.response, depth + 1);
+      walk(record.data, depth + 1);
+      // Finally a JSON view, so a shape nobody anticipated still contributes its
+      // text instead of classifying as "not a provider fault". Excluded from
+      // provider identification: a serialized object can contain a `stack` field
+      // and so drag paths back in through the side door.
+      try {
+        const json = JSON.stringify(value);
+        if (json && json !== '{}') add(json, false);
+      } catch {
+        // circular or BigInt — the named keys above already contributed.
+      }
+      return;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      add(String(value), true);
+    }
+  };
+
+  walk(error, 0);
+  return {
+    full: parts.filter(Boolean).join(' '),
+    identifying: identifying.filter(Boolean).join(' '),
+  };
 }
 
 function detectProvider(text: string): ProviderId {
@@ -183,12 +290,16 @@ function detectProvider(text: string): ProviderId {
  * the AI SDK's `onError` hands over whatever the transport produced.
  */
 export function classifyProviderFault(error: unknown): ProviderFault | null {
-  const text = messageOf(error);
-  if (!text.trim()) return null;
+  const { full, identifying } = extractText(error);
+  if (!full.trim()) return null;
 
   for (const rule of FAULT_RULES) {
-    if (!rule.pattern.test(text)) continue;
-    const provider = detectProvider(text);
+    if (!rule.pattern.test(full)) continue;
+    // `identifying` deliberately excludes stacks and serialized blobs — a file
+    // path must never decide which account a human is sent to. Falls back to
+    // `full` only when there is no message-ish text at all, which is better than
+    // reporting `unknown` and naming no account.
+    const provider = detectProvider(identifying.trim() ? identifying : full);
     return {
       kind: rule.kind,
       provider,
