@@ -29,11 +29,11 @@ interface CardSpec {
 }
 
 const ACCENT_CONFIG = {
-  neutral: { icon: 'text-warm-500',    text: 'text-warm-900' },
-  success: { icon: 'text-primary-600', text: 'text-warm-900' },
-  info:    { icon: 'text-info',        text: 'text-warm-900' },
-  warning: { icon: 'text-warning',     text: 'text-warm-900' },
-  error:   { icon: 'text-destructive', text: 'text-warm-900' },
+  neutral: { icon: 'text-text-tertiary',    text: 'text-text-primary' },
+  success: { icon: 'text-accent-700', text: 'text-text-primary' },
+  info:    { icon: 'text-info',        text: 'text-text-primary' },
+  warning: { icon: 'text-warning',     text: 'text-text-primary' },
+  error:   { icon: 'text-destructive', text: 'text-text-primary' },
 };
 
 export function KPIGrid({ stats, loading }: KPIGridProps) {
@@ -44,11 +44,11 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="glass-standard rounded-2xl p-6 animate-pulse"
+            className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6 animate-pulse"
           >
-            <div className="h-3 w-20 bg-warm-100 rounded mb-3" />
-            <div className="h-9 w-24 bg-warm-100 rounded mb-2" />
-            <div className="h-3 w-16 bg-warm-100 rounded" />
+            <div className="h-3 w-20 bg-surface-sunken rounded mb-3" />
+            <div className="h-9 w-24 bg-surface-sunken rounded mb-2" />
+            <div className="h-3 w-16 bg-surface-sunken rounded" />
           </div>
         ))}
       </div>
@@ -131,15 +131,15 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.03, duration: 0.25 })}
             className={cn(
-              'glass-standard rounded-2xl p-6',
-              'hover:bg-cream-100 hover:shadow-card-hover transition-all duration-200'
+              'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6',
+              'hover:bg-surface-tint hover:shadow-raise transition-all duration-200'
             )}
           >
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">
+              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">
                 {card.label}
               </p>
-              <div className={cn('p-1.5 rounded-lg bg-cream-50', cfg.icon)}>
+              <div className={cn('p-1.5 rounded-fw-sm bg-surface', cfg.icon)}>
                 {card.icon}
               </div>
             </div>
@@ -150,13 +150,13 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
 
             <div className="mt-2 flex items-center gap-2">
               {card.secondary && (
-                <p className="text-xs text-warm-500 truncate">{card.secondary}</p>
+                <p className="text-xs text-text-tertiary truncate">{card.secondary}</p>
               )}
               {card.live && (
-                <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-primary-700 uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-accent-700 uppercase tracking-wider">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-primary-500 opacity-75 animate-ping" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-500" />
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-accent-500 opacity-75 animate-ping" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-500" />
                   </span>
                   Live
                 </span>
@@ -179,9 +179,9 @@ interface DailyTrendChartProps {
 export function DailyTrendChart({ data }: DailyTrendChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
-        <p className="text-sm font-medium text-warm-500 mb-1">Daily volume</p>
-        <div className="h-48 flex items-center justify-center text-sm text-warm-400">
+      <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6">
+        <p className="text-sm font-medium text-text-tertiary mb-1">Daily volume</p>
+        <div className="h-48 flex items-center justify-center text-sm text-text-tertiary">
           No activity in this window.
         </div>
       </div>
@@ -191,17 +191,17 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
   const maxSent = Math.max(...data.map((d) => d.sent), 1);
 
   return (
-    <div className="glass-standard rounded-2xl p-6">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
-          <p className="text-sm font-semibold text-warm-900">Daily volume</p>
-          <p className="text-xs text-warm-500 mt-0.5">Sends, delivers, opens, and clicks per day</p>
+          <p className="text-sm font-semibold text-text-primary">Daily volume</p>
+          <p className="text-xs text-text-tertiary mt-0.5">Sends, delivers, opens, and clicks per day</p>
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <LegendDot color="bg-warm-400"     label="Sent" />
-          <LegendDot color="bg-primary-500" label="Delivered" />
-          <LegendDot color="bg-blue-500"    label="Opened" />
-          <LegendDot color="bg-violet-500"  label="Clicked" />
+          <LegendDot color="bg-text-tertiary"     label="Sent" />
+          <LegendDot color="bg-accent-500" label="Delivered" />
+          <LegendDot color="bg-text-tertiary"    label="Opened" />
+          <LegendDot color="bg-accent-500"  label="Clicked" />
         </div>
       </div>
 
@@ -214,7 +214,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
           return (
             <div key={d.day} className="flex-1 flex flex-col justify-end h-full relative group">
               <div className="absolute -top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                <div className="whitespace-nowrap bg-warm-900 text-white text-eyebrow font-medium px-2 py-1 rounded shadow-lg">
+                <div className="whitespace-nowrap bg-nav-bg text-nav-text text-eyebrow font-medium px-2 py-1 rounded shadow-soft">
                   <div className="font-semibold mb-0.5">
                     {new Date(d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
@@ -222,24 +222,24 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
                   <div>Delivered: {d.delivered}</div>
                   <div>Opened: {d.opened}</div>
                   <div>Clicked: {d.clicked}</div>
-                  {d.bounced > 0 && <div className="text-red-300">Bounced: {d.bounced}</div>}
+                  {d.bounced > 0 && <div className="text-fw-danger/70">Bounced: {d.bounced}</div>}
                 </div>
               </div>
               <div className="flex flex-col justify-end items-stretch gap-px h-full">
                 <div
-                  className="bg-warm-300 rounded-t-sm transition-all"
+                  className="bg-border-strong rounded-t-fw-sm transition-all"
                   style={{ height: `${sentH}%` }}
                 />
                 <div
-                  className="bg-primary-400"
+                  className="bg-accent-500"
                   style={{ height: `${delivH}%`, marginTop: `-${delivH}%` }}
                 />
                 <div
-                  className="bg-blue-500"
+                  className="bg-text-tertiary"
                   style={{ height: `${openH}%`, marginTop: `-${openH}%` }}
                 />
                 <div
-                  className="bg-violet-500 rounded-b-sm"
+                  className="bg-accent-500 rounded-b-fw-sm"
                   style={{ height: `${clickH}%`, marginTop: `-${clickH}%` }}
                 />
               </div>
@@ -248,7 +248,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
         })}
       </div>
 
-      <div className="mt-3 flex justify-between text-eyebrow text-warm-400">
+      <div className="mt-3 flex justify-between text-eyebrow text-text-tertiary">
         <span>
           {new Date(data[0]!.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
@@ -262,8 +262,8 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 text-warm-500">
-      <span className={cn('w-2 h-2 rounded-sm', color)} />
+    <span className="inline-flex items-center gap-1 text-text-tertiary">
+      <span className={cn('w-2 h-2 rounded-fw-sm', color)} />
       {label}
     </span>
   );

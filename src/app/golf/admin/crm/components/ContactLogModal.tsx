@@ -46,12 +46,12 @@ const STATUS_OPTIONS: { value: CoachStatus; label: string }[] = [
   { value: 'nurture', label: 'Nurture' },
 ];
 
-const inputClass = 'w-full bg-cream-50 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const inputClass = 'w-full bg-surface-sunken border border-border-subtle rounded-fw-sm px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400 outline-none';
 const STATUS_UPDATE_OPTIONS = [
   { value: '', label: 'Keep current status' },
   ...STATUS_OPTIONS,
 ];
-const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+const labelClass = 'text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block';
 
 export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalProps) {
   const uid = useId();
@@ -159,58 +159,58 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-nav-bg/40 p-4">
+      <div className="rounded-card bg-elevated shadow-raise w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle flex-shrink-0">
           <div>
             <div className="flex items-center gap-2">
-              <IconPhone size={16} className="text-warm-600" />
-              <h2 className="text-lg font-semibold text-warm-900">{coach.name}</h2>
+              <IconPhone size={16} className="text-text-secondary" />
+              <h2 className="text-lg font-semibold text-text-primary">{coach.name}</h2>
             </div>
-            <p className="text-sm text-warm-500 ml-6">{coach.school} &middot; {coach.conference}</p>
+            <p className="text-sm text-text-tertiary ml-6">{coach.school} &middot; {coach.conference}</p>
           </div>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="text-warm-400 hover:text-warm-600 transition-colors"
+            className="text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <IconX size={18} />
           </IconButton>
         </div>
 
         {/* Coach Details */}
-        <div className="px-6 py-4 bg-warm-50/50 border-b border-warm-100 flex-shrink-0">
+        <div className="px-6 py-4 bg-surface-sunken/60 border-b border-border-subtle flex-shrink-0">
           <div className="flex items-center gap-6 text-sm">
             {coach.email && (
-              <a href={`mailto:${coach.email}`} className="flex items-center gap-2 text-blue-600 hover:underline">
+              <a href={`mailto:${coach.email}`} className="flex items-center gap-2 text-accent-700 hover:underline">
                 <IconMail className="w-4 h-4" />
                 {coach.email}
               </a>
             )}
             {coach.phone && (
-              <a href={`tel:${coach.phone}`} className="flex items-center gap-2 text-blue-600 hover:underline">
+              <a href={`tel:${coach.phone}`} className="flex items-center gap-2 text-accent-700 hover:underline">
                 <IconPhone className="w-4 h-4" />
                 {coach.phone}
               </a>
             )}
-            <span className="text-warm-600">
+            <span className="text-text-secondary">
               Status: <span className="font-medium">{coach.status.replace(/_/g, ' ')}</span>
             </span>
           </div>
           {coach.notes && (
-            <p className="mt-2 text-sm text-warm-600">{coach.notes}</p>
+            <p className="mt-2 text-sm text-text-secondary">{coach.notes}</p>
           )}
         </div>
 
         {/* Contact Log */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-warm-900">Contact History</h3>
+            <h3 className="font-medium text-text-primary">Contact History</h3>
             {!showAddForm && (
               <Button variant="primary"
                 onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-fw-md bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium transition-colors"
               >
                 <IconPlus className="w-4 h-4" />
                 Log Contact
@@ -220,7 +220,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
 
           {/* Add Log Form */}
           {showAddForm && (
-            <form onSubmit={handleAddLog} className="mb-6 p-4 bg-warm-50/50 rounded-xl border border-warm-100 space-y-4">
+            <form onSubmit={handleAddLog} className="mb-6 p-4 bg-surface-sunken/60 rounded-fw-md border border-border-subtle space-y-4">
               <div className="flex gap-2 flex-wrap">
                 {CONTACT_TYPES.map((type) => {
                   const TypeIcon = type.icon;
@@ -230,10 +230,10 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                       type="button"
                       onClick={() => setNewLog({ ...newLog, contact_type: type.value })}
                       className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm transition-colors',
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-fw-md text-sm transition-colors',
                         newLog.contact_type === type.value
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-cream-50 border border-warm-200 hover:bg-warm-50 text-warm-700'
+                          ? 'bg-accent-650 text-text-on-accent'
+                          : 'bg-surface border border-border-subtle hover:bg-surface-sunken text-text-secondary'
                       )}
                     >
                       <TypeIcon size={14} />
@@ -290,14 +290,14 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 <Button variant="ghost"
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-100 transition-colors"
+                  className="bg-surface border border-border-subtle text-text-secondary rounded-fw-md px-5 py-2.5 text-sm font-medium hover:bg-surface-sunken transition-colors"
                 >
                   Cancel
                 </Button>
                 <Button variant="primary"
                   type="submit"
                   disabled={submitting}
-                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                  className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Save Log'}
                 </Button>
@@ -309,30 +309,30 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
           {loading ? (
             <div className="py-4 space-y-3" aria-label="Loading">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-16 rounded-xl bg-warm-100 animate-pulse" />
+                <div key={i} className="h-16 rounded-fw-md bg-surface-sunken animate-pulse" />
               ))}
             </div>
           ) : logs.length === 0 ? (
-            <div className="text-center py-8 text-warm-500">No contact history yet</div>
+            <div className="text-center py-8 text-text-tertiary">No contact history yet</div>
           ) : (
             <div className="space-y-4">
               {logs.map((log) => {
                 const typeConfig = CONTACT_TYPES.find(t => t.value === log.contact_type);
                 const TypeIcon = typeConfig?.icon || IconNote;
                 return (
-                  <div key={log.id} className="border border-warm-100 rounded-xl p-4">
+                  <div key={log.id} className="border border-border-subtle rounded-fw-md p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium capitalize flex items-center gap-1.5">
-                        <TypeIcon size={14} className="text-warm-500" />
+                        <TypeIcon size={14} className="text-text-tertiary" />
                         {log.contact_type}
                       </span>
-                      <span className="text-xs text-warm-500">{formatDate(log.contact_date)}</span>
+                      <span className="text-xs text-text-tertiary">{formatDate(log.contact_date)}</span>
                     </div>
                     {log.notes && (
-                      <p className="text-sm text-warm-700">{log.notes}</p>
+                      <p className="text-sm text-text-secondary">{log.notes}</p>
                     )}
                     {log.next_action && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-warm-500">
+                      <div className="mt-2 flex items-center gap-2 text-xs text-text-tertiary">
                         <IconCalendar className="w-3 h-3" />
                         Next: {log.next_action}
                         {log.next_action_date && ` (${new Date(log.next_action_date).toLocaleDateString()})`}

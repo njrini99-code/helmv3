@@ -89,7 +89,7 @@ export function EnrollSegmentDialog({
     <>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog */}
       <div
-        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-nav-bg/35"
         onClick={() => onOpenChange(false)}
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
@@ -97,16 +97,16 @@ export function EnrollSegmentDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="enroll-segment-title"
-          className="w-full max-w-md bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
+          className="w-full max-w-md bg-surface rounded-card border border-border-subtle shadow-raise pointer-events-auto"
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-                <IconBookmark size={16} className="text-primary-600" />
+              <span className="w-8 h-8 rounded-fw-sm bg-accent-50 flex items-center justify-center">
+                <IconBookmark size={16} className="text-accent-700" />
               </span>
               <h2
                 id="enroll-segment-title"
-                className="text-base font-semibold text-warm-900"
+                className="text-base font-semibold text-text-primary"
               >
                 Enroll a segment
               </h2>
@@ -115,14 +115,14 @@ export function EnrollSegmentDialog({
               type="button"
               onClick={() => onOpenChange(false)}
               aria-label="Close"
-              className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+              className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
             >
               <IconX size={14} />
             </IconButton>
           </div>
 
           <div className="px-5 py-4 space-y-4">
-            <p className="text-sm text-warm-600">
+            <p className="text-sm text-text-secondary">
               Every coach matching the segment&apos;s filter definition will be
               enrolled in this sequence. Already-enrolled coaches are skipped.
             </p>
@@ -130,12 +130,12 @@ export function EnrollSegmentDialog({
             <div>
               <label
                 htmlFor="seg-pick"
-                className="block text-xs font-medium text-warm-700 mb-1"
+                className="block text-xs font-medium text-text-secondary mb-1"
               >
                 Segment
               </label>
               {!loading && segments.length === 0 ? (
-                <p className="text-xs text-warm-500 bg-warm-50/60 border border-warm-100 rounded-lg px-3 py-2">
+                <p className="text-xs text-text-tertiary bg-surface-sunken/70 border border-border-subtle rounded-fw-sm px-3 py-2">
                   No segments yet — create one on the Segments tab, then come
                   back to enroll it here.
                 </p>
@@ -145,7 +145,7 @@ export function EnrollSegmentDialog({
                   value={selectedSegmentId}
                   onChange={(e) => setSelectedSegmentId(e.target.value)}
                   disabled={loading || submitting}
-                  className="text-sm rounded-lg bg-cream-50 border-warm-200/80 focus:ring-primary-500/30 focus:border-primary-400"
+                  className="text-sm rounded-fw-sm bg-surface border-border-subtle/80 focus:ring-border-focus/30 focus:border-accent-400"
                   placeholder="— Select a segment —"
                   options={segments.map((s) => ({ value: s.id, label: s.name }))}
                 />
@@ -153,13 +153,13 @@ export function EnrollSegmentDialog({
             </div>
 
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
                 {error}
               </p>
             )}
 
             {result && (
-              <div className="text-xs text-warm-700 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2">
+              <div className="text-xs text-text-secondary bg-accent-50 border border-accent-200 rounded-fw-sm px-3 py-2">
                 Enrolled <strong>{result.enrolled}</strong> coach
                 {result.enrolled === 1 ? '' : 'es'}. Skipped{' '}
                 <strong>{result.skipped}</strong> already-enrolled.
@@ -167,12 +167,12 @@ export function EnrollSegmentDialog({
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-warm-100 bg-warm-50/40 rounded-b-2xl">
+          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border-subtle bg-surface-sunken/60 rounded-b-card">
             <Button variant="ghost"
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={submitting}
-              className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
             >
               Close
             </Button>
@@ -181,8 +181,8 @@ export function EnrollSegmentDialog({
               onClick={handleEnroll}
               disabled={!selectedSegmentId || submitting}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-xl shadow-sm',
-                'bg-primary-600 text-white hover:bg-primary-700 transition-colors',
+                'flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-fw-md shadow-flat',
+                'bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >

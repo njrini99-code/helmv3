@@ -51,11 +51,13 @@ interface ScheduleForm {
   notes: string;
 }
 
+// Selection is carried by the ONE accent fill (see ScheduleEventModal) — the
+// action type reads from its icon + label, not from a per-type hue.
 const ACTION_TYPES = [
-  { value: 'demo' as const, label: 'Demo', icon: <IconVideo size={18} />, color: 'bg-violet-500' },
-  { value: 'follow_up' as const, label: 'Follow-up', icon: <IconPhone size={18} />, color: 'bg-blue-500' },
-  { value: 'call' as const, label: 'Call', icon: <IconPhone size={18} />, color: 'bg-primary-500' },
-  { value: 'meeting' as const, label: 'Meeting', icon: <IconUsers size={18} />, color: 'bg-amber-500' },
+  { value: 'demo' as const, label: 'Demo', icon: <IconVideo size={18} /> },
+  { value: 'follow_up' as const, label: 'Follow-up', icon: <IconPhone size={18} /> },
+  { value: 'call' as const, label: 'Call', icon: <IconPhone size={18} /> },
+  { value: 'meeting' as const, label: 'Meeting', icon: <IconUsers size={18} /> },
 ];
 
 const QUICK_TIMES = [
@@ -213,7 +215,7 @@ export function QuickActionsPanel({
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-nav-bg/40"
       onClick={onClose}
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
@@ -222,45 +224,45 @@ export function QuickActionsPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${uid}-title`}
-        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="rounded-card bg-elevated shadow-raise w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-warm-800 to-warm-900 text-white p-5">
+        <div className="bg-surface-tint border-b border-border-subtle text-text-primary p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <IconButton variant="default" aria-label="Favorite"
                 onClick={() => onUpdate({ is_starred: !coach.is_starred })}
                 className="hover:scale-110 transition-transform"
               >
-                <IconStar size={20} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-white/40')} />
+                <IconStar size={20} className={cn(coach.is_starred ? 'fill-fw-warning text-fw-warning' : 'text-text-tertiary')} />
               </IconButton>
               <div>
                 <h2 id={`${uid}-title`} className="text-xl font-bold">{coach.school}</h2>
-                <p className="text-warm-300 text-sm">{coach.name} &middot; {coach.conference}</p>
+                <p className="text-text-secondary text-sm">{coach.name} &middot; {coach.conference}</p>
               </div>
             </div>
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 rounded-xl hover:bg-cream-50/10 transition-colors"
+              className="p-2 rounded-fw-md hover:bg-surface-sunken transition-colors"
             >
-              <IconX size={18} className="text-white/70" aria-hidden="true" />
+              <IconX size={18} className="text-text-secondary" aria-hidden="true" />
             </IconButton>
           </div>
 
           {/* Quick Status Bar */}
           <div className="flex items-center gap-2 mt-4">
             <span className={cn(
-              'px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-1',
+              'px-3 py-1 rounded-fw-sm text-sm font-medium flex items-center gap-1',
               statusConfig[coach.status]?.bgColor,
               statusConfig[coach.status]?.color
             )}>
               {statusConfig[coach.status]?.icon} {statusConfig[coach.status]?.label}
             </span>
             <span className={cn(
-              'px-2 py-1 rounded-lg text-xs font-bold',
-              coach.division === 'D2' ? 'bg-blue-500/20 text-blue-300' : 'bg-violet-500/20 text-violet-300'
+              'px-2 py-1 rounded-fw-sm text-xs font-bold',
+              coach.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-50 text-accent-700'
             )}>
               {coach.division}
             </span>
@@ -275,14 +277,14 @@ export function QuickActionsPanel({
               <div className="grid grid-cols-2 gap-3">
                 <Button variant="ghost"
                   onClick={() => setView('schedule')}
-                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-violet-500 to-violet-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-[transform,box-shadow] hover:scale-[1.02]"
+                  className="flex items-center justify-center gap-2 p-4 bg-accent-650 text-text-on-accent rounded-fw-md font-semibold shadow-soft hover:shadow-raise transition-[transform,box-shadow] hover:scale-[1.02]"
                 >
                   <IconCalendar size={20} />
                   <span>Schedule</span>
                 </Button>
                 <Button variant="primary"
                   onClick={() => setView('log')}
-                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-[transform,box-shadow] hover:scale-[1.02]"
+                  className="flex items-center justify-center gap-2 p-4 bg-accent-650 text-text-on-accent rounded-fw-md font-semibold shadow-soft hover:shadow-raise transition-[transform,box-shadow] hover:scale-[1.02]"
                 >
                   <IconPencil size={20} />
                   <span>Log Contact</span>
@@ -294,7 +296,7 @@ export function QuickActionsPanel({
                 {coach.email && (
                   <a
                     href={`mailto:${coach.email}`}
-                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-xl font-medium hover:bg-blue-100 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-surface-sunken text-text-secondary rounded-fw-md font-medium hover:bg-surface-sunken transition-colors"
                   >
                     <IconMail size={16} /> Email
                   </a>
@@ -302,14 +304,14 @@ export function QuickActionsPanel({
                 {coach.phone && (
                   <a
                     href={`tel:${coach.phone}`}
-                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-primary-50 text-primary-700 rounded-xl font-medium hover:bg-primary-100 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-accent-50 text-accent-700 rounded-fw-md font-medium hover:bg-accent-100 transition-colors"
                   >
                     <IconPhone size={16} /> Call
                   </a>
                 )}
                 <Button variant="ghost"
                   onClick={() => setView('note')}
-                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-xl font-medium hover:bg-amber-100 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-fw-warning-bg text-fw-warning-ink rounded-fw-md font-medium hover:bg-fw-warning-bg/70 transition-colors"
                 >
                   <IconFileText size={16} /> Note
                 </Button>
@@ -317,7 +319,7 @@ export function QuickActionsPanel({
 
               {/* Change Status */}
               <div>
-                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
+                <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2 block">
                   Status
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -329,10 +331,10 @@ export function QuickActionsPanel({
                         key={status}
                         onClick={() => handleStatusChange(status)}
                         className={cn(
-                          'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          'flex items-center gap-1 px-3 py-1.5 rounded-fw-sm text-sm font-medium transition-colors',
                           isActive
-                            ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-warm-300`
-                            : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                            ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-border-strong`
+                            : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
                         )}
                       >
                         {config.icon} {config.label}
@@ -344,17 +346,17 @@ export function QuickActionsPanel({
 
               {/* Change Priority */}
               <div>
-                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
+                <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2 block">
                   Priority
                 </p>
                 <div className="flex gap-2">
                   <Button variant="ghost"
                     onClick={() => handlePriorityChange(0)}
                     className={cn(
-                      'flex-1 py-2 rounded-xl text-sm font-medium transition-colors',
+                      'flex-1 py-2 rounded-fw-md text-sm font-medium transition-colors',
                       coach.priority === 0
-                        ? 'bg-warm-200 text-warm-700 ring-2 ring-warm-400'
-                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                        ? 'bg-surface-sunken text-text-secondary ring-2 ring-border-strong'
+                        : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
                     )}
                   >
                     Normal
@@ -362,10 +364,10 @@ export function QuickActionsPanel({
                   <Button variant="ghost"
                     onClick={() => handlePriorityChange(1)}
                     className={cn(
-                      'flex-1 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1',
+                      'flex-1 py-2 rounded-fw-md text-sm font-medium transition-colors flex items-center justify-center gap-1',
                       coach.priority === 1
-                        ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400'
-                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                        ? 'bg-fw-warning-bg text-fw-warning-ink ring-2 ring-fw-warning'
+                        : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
                     )}
                   >
                     <IconZap size={14} /> High
@@ -373,10 +375,10 @@ export function QuickActionsPanel({
                   <Button variant="ghost"
                     onClick={() => handlePriorityChange(2)}
                     className={cn(
-                      'flex-1 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1',
+                      'flex-1 py-2 rounded-fw-md text-sm font-medium transition-colors flex items-center justify-center gap-1',
                       coach.priority === 2
-                        ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-400'
-                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                        ? 'bg-fw-warning-bg text-fw-warning-ink ring-2 ring-fw-warning'
+                        : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
                     )}
                   >
                     <IconFlame size={14} /> Hot
@@ -390,12 +392,12 @@ export function QuickActionsPanel({
             <div className="space-y-4">
               <Button variant="ghost"
                 onClick={() => setView('main')}
-                className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
+                className="flex items-center gap-1 text-sm text-text-tertiary hover:text-text-secondary mb-2"
               >
                 <IconArrowLeft size={14} /> Back
               </Button>
 
-              <h3 className="text-lg font-bold text-warm-800">Schedule Event</h3>
+              <h3 className="text-lg font-bold text-text-primary">Schedule Event</h3>
 
               {/* Event Type */}
               <div className="grid grid-cols-4 gap-2">
@@ -408,10 +410,10 @@ export function QuickActionsPanel({
                       title: `${type.label} with ${coach.school}`,
                     }))}
                     className={cn(
-                      'p-3 rounded-xl text-center transition-colors',
+                      'p-3 rounded-fw-md text-center transition-colors',
                       scheduleForm.type === type.value
-                        ? `${type.color} text-white shadow-lg`
-                        : 'bg-warm-100 hover:bg-warm-200'
+                        ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                        : 'bg-surface-sunken text-text-secondary hover:bg-surface-tint'
                     )}
                   >
                     <span className="block mb-1">{type.icon}</span>
@@ -422,7 +424,7 @@ export function QuickActionsPanel({
 
               {/* Quick Time Select */}
               <div>
-                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
+                <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2 block">
                   Quick Select
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -433,7 +435,7 @@ export function QuickActionsPanel({
                         const { date, time } = qt.getValue();
                         setScheduleForm(f => ({ ...f, date, time }));
                       }}
-                      className="px-3 py-1.5 bg-warm-100 hover:bg-warm-200 rounded-xl text-sm font-medium text-warm-700 transition-colors"
+                      className="px-3 py-1.5 bg-surface-sunken hover:bg-surface-sunken rounded-fw-md text-sm font-medium text-text-secondary transition-colors"
                     >
                       {qt.label}
                     </Button>
@@ -444,7 +446,7 @@ export function QuickActionsPanel({
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor={`${uid}-sched-date`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-sched-date`} className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
                     Date
                   </label>
                   <Input
@@ -452,11 +454,11 @@ export function QuickActionsPanel({
                     type="date"
                     value={scheduleForm.date}
                     onChange={(e) => setScheduleForm(f => ({ ...f, date: e.target.value }))}
-                    className="bg-cream-50/60"
+                    className="bg-surface/80"
                   />
                 </div>
                 <div>
-                  <label htmlFor={`${uid}-sched-time`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-sched-time`} className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
                     Time
                   </label>
                   <Input
@@ -464,14 +466,14 @@ export function QuickActionsPanel({
                     type="time"
                     value={scheduleForm.time}
                     onChange={(e) => setScheduleForm(f => ({ ...f, time: e.target.value }))}
-                    className="bg-cream-50/60"
+                    className="bg-surface/80"
                   />
                 </div>
               </div>
 
               {/* Duration */}
               <div>
-                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
                   Duration
                 </p>
                 <div className="flex gap-2">
@@ -480,10 +482,10 @@ export function QuickActionsPanel({
                       key={d}
                       onClick={() => setScheduleForm(f => ({ ...f, duration: d }))}
                       className={cn(
-                        'flex-1 py-2 rounded-xl text-sm font-medium transition-colors',
+                        'flex-1 py-2 rounded-fw-md text-sm font-medium transition-colors',
                         scheduleForm.duration === d
-                          ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-400'
-                          : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                          ? 'bg-accent-100 text-accent-700 ring-2 ring-accent-400'
+                          : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
                       )}
                     >
                       {d}m
@@ -494,7 +496,7 @@ export function QuickActionsPanel({
 
               {/* Title */}
               <div>
-                <label htmlFor={`${uid}-sched-title`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                <label htmlFor={`${uid}-sched-title`} className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
                   Title
                 </label>
                 <Input
@@ -502,22 +504,22 @@ export function QuickActionsPanel({
                   type="text"
                   value={scheduleForm.title}
                   onChange={(e) => setScheduleForm(f => ({ ...f, title: e.target.value }))}
-                  className="bg-cream-50/60"
+                  className="bg-surface/80"
                   placeholder="Event title"
                 />
               </div>
 
               {/* Meeting URL (optional) */}
               <div>
-                <label htmlFor={`${uid}-sched-url`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
-                  Meeting Link <span className="text-warm-400 font-normal">(optional)</span>
+                <label htmlFor={`${uid}-sched-url`} className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
+                  Meeting Link <span className="text-text-tertiary font-normal">(optional)</span>
                 </label>
                 <Input
                   id={`${uid}-sched-url`}
                   type="url"
                   value={scheduleForm.meetingUrl}
                   onChange={(e) => setScheduleForm(f => ({ ...f, meetingUrl: e.target.value }))}
-                  className="bg-cream-50/60"
+                  className="bg-surface/80"
                   placeholder="https://zoom.us/j/..."
                 />
               </div>
@@ -526,7 +528,7 @@ export function QuickActionsPanel({
               <Button variant="primary"
                 onClick={handleSchedule}
                 disabled={submitting || !scheduleForm.date || !scheduleForm.time}
-                className="w-full py-3 bg-primary-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-primary-600 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 bg-accent-650 text-text-on-accent rounded-fw-md font-bold text-lg shadow-soft hover:bg-accent-700 hover:shadow-raise transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <IconCalendar size={18} />
                 {submitting ? 'Scheduling...' : 'Schedule Event'}
@@ -538,12 +540,12 @@ export function QuickActionsPanel({
             <div className="space-y-4">
               <Button variant="ghost"
                 onClick={() => setView('main')}
-                className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
+                className="flex items-center gap-1 text-sm text-text-tertiary hover:text-text-secondary mb-2"
               >
                 <IconArrowLeft size={14} /> Back
               </Button>
 
-              <h3 className="text-lg font-bold text-warm-800">Log Contact</h3>
+              <h3 className="text-lg font-bold text-text-primary">Log Contact</h3>
 
               {/* Contact Type */}
               <div className="flex flex-wrap gap-2">
@@ -558,10 +560,10 @@ export function QuickActionsPanel({
                     key={type.value}
                     onClick={() => setLogForm(f => ({ ...f, type: type.value }))}
                     className={cn(
-                      'px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5',
+                      'px-4 py-2 rounded-fw-md text-sm font-medium transition-colors flex items-center gap-1.5',
                       logForm.type === type.value
-                        ? 'bg-primary-500 text-white shadow-lg'
-                        : 'bg-warm-100 hover:bg-warm-200 text-warm-600'
+                        ? 'bg-accent-650 text-text-on-accent shadow-soft'
+                        : 'bg-surface-sunken hover:bg-surface-sunken text-text-secondary'
                     )}
                   >
                     {type.icon} {type.label}
@@ -571,14 +573,14 @@ export function QuickActionsPanel({
 
               {/* Notes */}
               <div>
-                <label htmlFor={`${uid}-log-notes`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                <label htmlFor={`${uid}-log-notes`} className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
                   Notes
                 </label>
                 <Textarea
                   id={`${uid}-log-notes`}
                   value={logForm.notes}
                   onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
-                  className="bg-cream-50/60"
+                  className="bg-surface/80"
                   rows={3}
                   placeholder="What happened during this contact?"
                 />
@@ -587,7 +589,7 @@ export function QuickActionsPanel({
               {/* Next Action */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor={`${uid}-log-next-action`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-log-next-action`} className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
                     Next Action
                   </label>
                   <Input
@@ -595,12 +597,12 @@ export function QuickActionsPanel({
                     type="text"
                     value={logForm.nextAction}
                     onChange={(e) => setLogForm(f => ({ ...f, nextAction: e.target.value }))}
-                    className="bg-cream-50/60"
+                    className="bg-surface/80"
                     placeholder="e.g., Follow up call"
                   />
                 </div>
                 <div>
-                  <label htmlFor={`${uid}-log-followup`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-log-followup`} className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1 block">
                     Follow-up Date
                   </label>
                   <Input
@@ -608,7 +610,7 @@ export function QuickActionsPanel({
                     type="date"
                     value={logForm.nextActionDate}
                     onChange={(e) => setLogForm(f => ({ ...f, nextActionDate: e.target.value }))}
-                    className="bg-cream-50/60"
+                    className="bg-surface/80"
                   />
                 </div>
               </div>
@@ -617,7 +619,7 @@ export function QuickActionsPanel({
               <Button variant="primary"
                 onClick={handleLogContact}
                 disabled={submitting}
-                className="w-full py-3 bg-primary-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-primary-600 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-accent-650 text-text-on-accent rounded-fw-md font-bold text-lg shadow-soft hover:bg-accent-700 hover:shadow-raise transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <IconCheck size={18} />
                 {submitting ? 'Saving...' : 'Log Contact'}
@@ -629,20 +631,20 @@ export function QuickActionsPanel({
             <div className="space-y-4">
               <Button variant="ghost"
                 onClick={() => setView('main')}
-                className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
+                className="flex items-center gap-1 text-sm text-text-tertiary hover:text-text-secondary mb-2"
               >
                 <IconArrowLeft size={14} /> Back
               </Button>
 
-              <h3 className="text-lg font-bold text-warm-800 flex items-center gap-2">
-                <IconFileText size={20} className="text-warm-600" /> Notes
+              <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                <IconFileText size={20} className="text-text-secondary" /> Notes
               </h3>
 
               {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
               <Textarea autoFocus
                 value={noteForm}
                 onChange={(e) => setNoteForm(e.target.value)}
-                className="bg-cream-50/60"
+                className="bg-surface/80"
                 rows={6}
                 placeholder="Add notes about this coach..."
               />
@@ -650,7 +652,7 @@ export function QuickActionsPanel({
               <Button variant="ghost"
                 onClick={handleSaveNote}
                 disabled={submitting}
-                className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-amber-600 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-fw-warning-bg text-fw-warning-ink border border-fw-warning-ring rounded-fw-md font-bold text-lg shadow-flat hover:shadow-soft transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <IconSave size={18} />
                 {submitting ? 'Saving...' : 'Save Note'}

@@ -70,15 +70,15 @@ export function PipelineColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex-shrink-0 w-[280px] rounded-2xl glass-subtle overflow-hidden',
+        'flex-shrink-0 w-[280px] rounded-card border border-border-subtle bg-surface-tint overflow-hidden',
         'flex flex-col transition-all duration-200 min-h-[400px]',
-        isOver && 'ring-2 ring-primary-500 ring-offset-2 bg-primary-50/40',
+        isOver && 'ring-2 ring-accent-500 ring-offset-2 bg-accent-50/40',
       )}
     >
       {/* Column header */}
       <div
         className={cn(
-          'px-3 py-2.5 flex items-center justify-between gap-2 border-b border-warm-100/60',
+          'px-3 py-2.5 flex items-center justify-between gap-2 border-b border-border-subtle/60',
           headerBg,
         )}
       >
@@ -98,7 +98,7 @@ export function PipelineColumn({
             'inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-eyebrow font-bold tabular-nums',
             countBg,
             countText,
-            isOver && 'bg-primary-600 text-white',
+            isOver && 'bg-accent-650 text-text-on-accent',
           )}
         >
           {coaches.length}
@@ -106,7 +106,7 @@ export function PipelineColumn({
       </div>
 
       {description && (
-        <p className="px-3 pt-2 text-eyebrow text-warm-400">{description}</p>
+        <p className="px-3 pt-2 text-eyebrow text-text-tertiary">{description}</p>
       )}
 
       {/* Card list */}
@@ -125,7 +125,7 @@ export function PipelineColumn({
             variant="ghost"
             type="button"
             onClick={() => setVisibleCount((count) => count + INITIAL_CARD_LIMIT)}
-            className="w-full py-2 text-center text-xs font-medium text-primary-600 hover:bg-primary-50/60 rounded-xl transition-colors"
+            className="w-full py-2 text-center text-xs font-medium text-accent-700 hover:bg-accent-50/60 rounded-fw-md transition-colors"
           >
             Show 60 more ({remaining} remaining)
           </Button>
@@ -135,7 +135,7 @@ export function PipelineColumn({
           <div
             className={cn(
               'text-center text-xs py-8 transition-colors',
-              isOver ? 'text-primary-700 font-semibold' : 'text-warm-300',
+              isOver ? 'text-accent-700 font-semibold' : 'text-text-tertiary',
             )}
           >
             {isOver

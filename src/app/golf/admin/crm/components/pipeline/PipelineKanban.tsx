@@ -59,66 +59,66 @@ const COLUMNS: ColumnSpec[] = [
     status: 'new_lead',
     label: 'New Lead',
     description: 'Unworked prospects',
-    headerBg: 'bg-warm-100/80',
-    headerText: 'text-warm-700',
-    countBg: 'bg-warm-200/80',
-    countText: 'text-warm-700',
-    dotColor: 'bg-warm-400',
+    headerBg: 'bg-surface-sunken/80',
+    headerText: 'text-text-secondary',
+    countBg: 'bg-surface-sunken/80',
+    countText: 'text-text-secondary',
+    dotColor: 'bg-text-tertiary',
     promptsReason: false,
   },
   {
     status: 'contacted',
     label: 'Contacted',
     description: 'First outreach sent',
-    headerBg: 'bg-blue-50/80',
-    headerText: 'text-blue-700',
-    countBg: 'bg-blue-100',
-    countText: 'text-blue-700',
-    dotColor: 'bg-blue-400',
+    headerBg: 'bg-surface-sunken/80',
+    headerText: 'text-text-secondary',
+    countBg: 'bg-surface-sunken',
+    countText: 'text-text-secondary',
+    dotColor: 'bg-text-tertiary',
     promptsReason: false,
   },
   {
     status: 'engaged',
     label: 'Engaged',
     description: 'Two-way conversation',
-    headerBg: 'bg-violet-50/80',
-    headerText: 'text-violet-700',
-    countBg: 'bg-violet-100',
-    countText: 'text-violet-700',
-    dotColor: 'bg-violet-400',
+    headerBg: 'bg-accent-50/80',
+    headerText: 'text-accent-800',
+    countBg: 'bg-accent-100',
+    countText: 'text-accent-800',
+    dotColor: 'bg-accent-400',
     promptsReason: false,
   },
   {
     status: 'proposal',
     label: 'Proposal',
     description: 'Pitch / pricing in flight',
-    headerBg: 'bg-amber-50/80',
-    headerText: 'text-amber-700',
-    countBg: 'bg-amber-100',
-    countText: 'text-amber-700',
-    dotColor: 'bg-amber-400',
+    headerBg: 'bg-fw-warning-bg/80',
+    headerText: 'text-fw-warning-ink',
+    countBg: 'bg-fw-warning-bg',
+    countText: 'text-fw-warning-ink',
+    dotColor: 'bg-fw-warning/80',
     promptsReason: false,
   },
   {
     status: 'won',
     label: 'Customer',
     description: 'Closed-won',
-    headerBg: 'bg-primary-50/80',
-    headerText: 'text-primary-700',
-    countBg: 'bg-primary-100',
-    countText: 'text-primary-700',
-    dotColor: 'bg-primary-500',
+    headerBg: 'bg-accent-50/80',
+    headerText: 'text-accent-700',
+    countBg: 'bg-accent-100',
+    countText: 'text-accent-700',
+    dotColor: 'bg-accent-500',
     promptsReason: true,
   },
   {
     status: 'lost',
     label: 'Lost',
     description: 'Closed-lost',
-    headerBg: 'bg-red-50/80',
-    headerText: 'text-red-700',
-    countBg: 'bg-red-100',
-    countText: 'text-red-700',
-    dotColor: 'bg-red-400',
+    headerBg: 'bg-fw-danger-bg/80',
+    headerText: 'text-fw-danger-ink',
+    countBg: 'bg-fw-danger-bg',
+    countText: 'text-fw-danger-ink',
+    dotColor: 'bg-fw-danger/70',
     promptsReason: true,
   },
   {
@@ -127,11 +127,11 @@ const COLUMNS: ColumnSpec[] = [
     description: 'Long-term touchpoints',
     // Deeper primary tint than `won` (not a second green hue) — keeps the
     // two "closed" columns visually distinct while staying in one family.
-    headerBg: 'bg-primary-100/80',
-    headerText: 'text-primary-800',
-    countBg: 'bg-primary-200',
-    countText: 'text-primary-800',
-    dotColor: 'bg-primary-700',
+    headerBg: 'bg-accent-100/80',
+    headerText: 'text-accent-800',
+    countBg: 'bg-accent-200',
+    countText: 'text-accent-800',
+    dotColor: 'bg-accent-700',
     promptsReason: true,
   },
 ];
@@ -297,12 +297,12 @@ export function PipelineKanban({
   return (
     <>
       {error && (
-        <div className="mb-3 px-4 py-2.5 rounded-xl bg-red-50 border border-red-100 flex items-center justify-between gap-3">
-          <p className="text-xs text-red-700">{error}</p>
+        <div className="mb-3 px-4 py-2.5 rounded-fw-md bg-fw-danger-bg border border-fw-danger/20 flex items-center justify-between gap-3">
+          <p className="text-xs text-fw-danger-ink">{error}</p>
           <Button variant="danger"
             type="button"
             onClick={() => setError(null)}
-            className="text-xs text-red-600 hover:text-red-800 font-semibold"
+            className="text-xs text-fw-danger-ink hover:text-fw-danger-ink font-semibold"
           >
             Dismiss
           </Button>

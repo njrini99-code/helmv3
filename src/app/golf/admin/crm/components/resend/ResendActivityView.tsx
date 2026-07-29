@@ -122,21 +122,21 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-warm-900 tracking-tight">
+            <h2 className="text-xl font-bold text-text-primary tracking-tight">
               Deliverability activity
             </h2>
             <a
               href="https://resend.com/emails"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-text-tertiary hover:text-accent-700 transition-colors"
               title="Open Resend dashboard"
             >
               <IconExternalLink size={12} />
               Resend
             </a>
           </div>
-          <p className="text-sm text-warm-500 mt-1">
+          <p className="text-sm text-text-tertiary mt-1">
             Email deliverability mirrored from the Resend dashboard, in real time.
           </p>
         </div>
@@ -253,24 +253,24 @@ function SourceBreakdown({
   const COLORS: Record<string, string> = {
     crm: 'bg-accent-650',
     transactional: 'bg-accent-300',
-    unknown: 'bg-warm-400',
+    unknown: 'bg-text-tertiary',
   };
 
   return (
-    <div className="glass-standard rounded-2xl p-6">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold text-warm-900">By source</p>
-        <p className="text-xs text-warm-500">{total.toLocaleString()} emails</p>
+        <p className="text-sm font-semibold text-text-primary">By source</p>
+        <p className="text-xs text-text-tertiary">{total.toLocaleString()} emails</p>
       </div>
 
       {/* Stacked bar */}
-      <div className="flex h-3 rounded-full overflow-hidden bg-warm-100 mb-4">
+      <div className="flex h-3 rounded-full overflow-hidden bg-surface-sunken mb-4">
         {entries.map(([source, count]) => {
           const pct = (count / total) * 100;
           return (
             <div
               key={source}
-              className={cn('h-full', COLORS[source] ?? 'bg-warm-300')}
+              className={cn('h-full', COLORS[source] ?? 'bg-border-strong')}
               style={{ width: `${pct}%` }}
               title={`${source}: ${count} (${pct.toFixed(1)}%)`}
             />
@@ -285,14 +285,14 @@ function SourceBreakdown({
             <div key={source} className="flex items-center gap-2">
               <span
                 className={cn(
-                  'w-2 h-2 rounded-sm',
-                  COLORS[source] ?? 'bg-warm-300'
+                  'w-2 h-2 rounded-fw-sm',
+                  COLORS[source] ?? 'bg-border-strong'
                 )}
               />
-              <span className="font-medium text-warm-900 capitalize">
+              <span className="font-medium text-text-primary capitalize">
                 {source}
               </span>
-              <span className="text-warm-500 tabular-nums">
+              <span className="text-text-tertiary tabular-nums">
                 {count.toLocaleString()} · {pct.toFixed(1)}%
               </span>
             </div>
@@ -336,19 +336,19 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
 
   if (loading) {
     return (
-      <div className="glass-standard rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-warm-100/60">
-          <div className="h-4 w-40 bg-warm-100 rounded animate-pulse" />
+      <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-subtle/60">
+          <div className="h-4 w-40 bg-surface-sunken rounded animate-pulse" />
         </div>
-        <div className="divide-y divide-warm-100/60">
+        <div className="divide-y divide-border-subtle/60">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               className="px-6 py-3 flex items-center gap-4 animate-pulse"
             >
-              <div className="h-5 w-24 bg-warm-100 rounded-full" />
-              <div className="h-4 w-52 bg-warm-100 rounded" />
-              <div className="h-4 flex-1 bg-warm-100 rounded" />
+              <div className="h-5 w-24 bg-surface-sunken rounded-full" />
+              <div className="h-4 w-52 bg-surface-sunken rounded" />
+              <div className="h-4 flex-1 bg-surface-sunken rounded" />
             </div>
           ))}
         </div>
@@ -358,14 +358,14 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
 
   if (rows.length === 0) {
     return (
-      <div className="glass-standard rounded-2xl p-10 text-center">
-        <div className="p-3 rounded-full bg-primary-50 text-primary-600 inline-flex mb-3">
+      <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-10 text-center">
+        <div className="p-3 rounded-full bg-accent-50 text-accent-700 inline-flex mb-3">
           <IconWarning size={20} />
         </div>
-        <p className="text-sm font-semibold text-warm-900">
+        <p className="text-sm font-semibold text-text-primary">
           No failed emails — nice
         </p>
-        <p className="text-xs text-warm-500 mt-1 max-w-sm mx-auto">
+        <p className="text-xs text-text-tertiary mt-1 max-w-sm mx-auto">
           Nothing has bounced or been marked as spam. Future issues will appear
           here automatically.
         </p>
@@ -383,35 +383,35 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
     <div className="space-y-4">
       {/* Summary */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="glass-standard rounded-xl p-4">
-          <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">
+        <div className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4">
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">
             Bounces
           </p>
-          <p className="text-2xl font-bold text-warm-900 mt-1 tabular-nums">
+          <p className="text-2xl font-bold text-text-primary mt-1 tabular-nums">
             {bounceCount}
           </p>
         </div>
-        <div className="glass-standard rounded-xl p-4">
-          <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">
+        <div className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4">
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">
             Complaints
           </p>
-          <p className="text-2xl font-bold text-warm-900 mt-1 tabular-nums">
+          <p className="text-2xl font-bold text-text-primary mt-1 tabular-nums">
             {complaintCount}
           </p>
         </div>
       </div>
 
       {/* List */}
-      <div className="glass-standard rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-warm-100/60">
-          <p className="text-sm font-semibold text-warm-900">
+      <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-subtle/60">
+          <p className="text-sm font-semibold text-text-primary">
             Emails requiring attention
           </p>
-          <p className="text-xs text-warm-500 mt-0.5">
+          <p className="text-xs text-text-tertiary mt-0.5">
             Click any row to view the full event timeline.
           </p>
         </div>
-        <ul className="divide-y divide-warm-100/60">
+        <ul className="divide-y divide-border-subtle/60">
           {rows.map((row) => {
             const status = deriveStatus(row);
             const cfg = STATUS_CONFIG[status];
@@ -437,17 +437,17 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
                       {cfg.label}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-warm-900 truncate">
+                      <p className="text-sm text-text-primary truncate">
                         {primaryTo}
                       </p>
-                      <p className="text-xs text-warm-500 truncate">
+                      <p className="text-xs text-text-tertiary truncate">
                         {row.subject || (
                           <span className="italic">(no subject)</span>
                         )}
                       </p>
                     </div>
                     <span
-                      className="text-xs text-warm-500 tabular-nums shrink-0"
+                      className="text-xs text-text-tertiary tabular-nums shrink-0"
                       title={failedAt ?? undefined}
                     >
                       {formatRelative(failedAt)}

@@ -63,14 +63,14 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
         'transition-all duration-200',
         isDragging && !isOverlay && 'opacity-30',
         !isDragging && !isOverlay && 'cursor-grab active:cursor-grabbing',
-        isOverlay && 'rotate-2 shadow-2xl scale-105 cursor-grabbing',
+        isOverlay && 'rotate-2 shadow-raise scale-105 cursor-grabbing',
       )}
     >
       <div
         className={cn(
-          'relative glass-standard rounded-xl overflow-hidden',
-          'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200',
-          isOverlay && 'ring-2 ring-primary-500',
+          'relative rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden',
+          'hover:shadow-soft hover:-translate-y-0.5 transition-all duration-200',
+          isOverlay && 'ring-2 ring-accent-500',
         )}
       >
         <Button variant="ghost"
@@ -89,7 +89,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
             {coach.is_starred && (
               <IconStar
                 size={12}
-                className="fill-amber-400 text-amber-400 flex-shrink-0 mt-0.5"
+                className="fill-fw-warning text-fw-warning flex-shrink-0 mt-0.5"
               />
             )}
             {/* Priority dot — mirrors the CoachTable priority-cell idiom (a
@@ -99,24 +99,24 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
               <span
                 className={cn(
                   'w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5',
-                  coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500',
+                  coach.priority >= 2 ? 'bg-fw-danger' : 'bg-fw-warning',
                 )}
                 aria-label={coach.priority >= 2 ? 'Hot priority' : 'High priority'}
                 title={coach.priority >= 2 ? 'Hot priority' : 'High priority'}
               />
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-warm-900 truncate">
+              <p className="text-sm font-semibold text-text-primary truncate">
                 {coach.name}
               </p>
-              <p className="text-xs text-warm-500 truncate">{coach.school}</p>
+              <p className="text-xs text-text-tertiary truncate">{coach.school}</p>
             </div>
           </div>
 
           <div className="flex items-center justify-between gap-2 mt-2">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {coach.conference && (
-                <span className="text-eyebrow font-medium text-warm-500 truncate">
+                <span className="text-eyebrow font-medium text-text-tertiary truncate">
                   {coach.conference}
                 </span>
               )}
@@ -125,8 +125,8 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
                   className={cn(
                     'px-1.5 py-0.5 rounded text-eyebrow font-bold flex-shrink-0',
                     coach.division === 'D2'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-primary-100 text-primary-700',
+                      ? 'bg-surface-sunken text-text-secondary'
+                      : 'bg-accent-100 text-accent-700',
                   )}
                 >
                   {coach.division}
@@ -136,12 +136,12 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
             <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
           </div>
 
-          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-warm-100/60">
-            <span className="text-eyebrow text-warm-400 truncate">
+          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border-subtle/60">
+            <span className="text-eyebrow text-text-tertiary truncate">
               {lastContacted ? `Last contact ${lastContacted}` : 'No contact yet'}
             </span>
             {isOverdue && (
-              <span className="inline-flex items-center gap-0.5 text-eyebrow text-red-600 font-medium flex-shrink-0">
+              <span className="inline-flex items-center gap-0.5 text-eyebrow text-fw-danger-ink font-medium flex-shrink-0">
                 <IconClock size={9} /> Overdue
               </span>
             )}

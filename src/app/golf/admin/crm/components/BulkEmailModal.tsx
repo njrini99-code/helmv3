@@ -650,32 +650,32 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
     <>
       {/* Backdrop */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events -- modal backdrop dismisses on click; Escape is handled by the dialog */}
-      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={sending ? undefined : onClose} />
+      <div className="fixed inset-0 z-50 bg-nav-bg/40" onClick={sending ? undefined : onClose} />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-stretch justify-center md:items-center md:p-4">
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing while interacting with modal content */}
         <div
-          className="glass-prominent shadow-2xl w-full h-[100dvh] flex flex-col overflow-hidden md:h-auto md:rounded-2xl md:max-w-[1024px] md:max-h-[90vh]"
+          className="bg-elevated shadow-raise w-full h-[100dvh] flex flex-col overflow-hidden md:h-auto md:rounded-card md:max-w-[1024px] md:max-h-[90vh]"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-warm-100 glass-standard shrink-0">
+          <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] shrink-0">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-                <IconMail size={18} className="text-primary-600" />
+              <div className="w-9 h-9 rounded-fw-md bg-accent-50 flex items-center justify-center shrink-0">
+                <IconMail size={18} className="text-accent-700" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-warm-900">Email Coaches</h2>
-                <p className="text-xs text-warm-500">
+                <h2 className="text-lg font-bold text-text-primary">Email Coaches</h2>
+                <p className="text-xs text-text-tertiary">
                   {coachesWithEmail.length} recipient{coachesWithEmail.length !== 1 ? 's' : ''} selected
                   {coachesWithoutEmail.length > 0 && (
-                    <span className="text-amber-500 ml-1.5">
+                    <span className="text-fw-warning ml-1.5">
                       ({coachesWithoutEmail.length} skipped — no email)
                     </span>
                   )}
                   {excludedSuppressed.length > 0 && (
-                    <span className="text-amber-500 ml-1.5">
+                    <span className="text-fw-warning ml-1.5">
                       ({excludedSuppressed.length} excluded — unsubscribed/bounced)
                     </span>
                   )}
@@ -686,10 +686,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       type="checkbox"
                       checked={primaryOnly}
                       onChange={e => setPrimaryOnly(e.target.checked)}
-                      className="w-3.5 h-3.5 rounded border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer"
                     />
-                    <span className="text-xs text-warm-600 font-medium">
-                      Primary contacts only <span className="text-warm-400 font-normal">(skip assistants)</span>
+                    <span className="text-xs text-text-secondary font-medium">
+                      Primary contacts only <span className="text-text-tertiary font-normal">(skip assistants)</span>
                     </span>
                   </label>
                 )}
@@ -700,7 +700,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 <Button variant="ghost"
                   type="button"
                   onClick={() => { setMode('gmail'); setError(null); setHelmResult(null); }}
-                  className="shrink-0 text-xs text-warm-400 hover:text-warm-600 font-medium transition-colors underline"
+                  className="shrink-0 text-xs text-text-tertiary hover:text-text-secondary font-medium transition-colors underline"
                 >
                   <span className="sm:hidden">Gmail BCC</span>
                   <span className="hidden sm:inline">Use Gmail BCC instead</span>
@@ -710,7 +710,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 <Button variant="ghost"
                   type="button"
                   onClick={() => { setMode('helm'); setError(null); setHelmResult(null); }}
-                  className="shrink-0 text-xs text-primary-500 hover:text-primary-700 font-medium transition-colors underline"
+                  className="shrink-0 text-xs text-accent-600 hover:text-accent-800 font-medium transition-colors underline"
                 >
                   <span className="sm:hidden">Back to Helm</span>
                   <span className="hidden sm:inline">Back to Send from Helm</span>
@@ -720,7 +720,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 onClick={onClose}
                 disabled={sending}
                 aria-label="Close"
-                className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors disabled:opacity-50"
+                className="p-2 rounded-fw-md hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary transition-colors disabled:opacity-50"
               >
                 <IconX size={18} />
               </IconButton>
@@ -733,27 +733,27 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
             <div className="flex-1 lg:w-[60%] lg:flex-none overflow-y-auto px-4 py-4 sm:px-6 space-y-4">
               {/* Recipient summary */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block">
+                <label className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block">
                   {mode === 'gmail' ? 'BCC Recipients' : 'Recipients'}
                 </label>
                 <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                   {coachesWithEmail.slice(0, 20).map(c => (
                     <span
                       key={c.id}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded-full text-xs font-medium border border-primary-100"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-50 text-accent-700 rounded-full text-xs font-medium border border-accent-100"
                     >
                       {c.name}
-                      <span className="text-primary-400 ml-0.5 text-eyebrow">{c.email}</span>
+                      <span className="text-accent-500 ml-0.5 text-eyebrow">{c.email}</span>
                     </span>
                   ))}
                   {coachesWithEmail.length > 20 && (
-                    <span className="inline-flex items-center px-2 py-0.5 bg-warm-100 text-warm-600 rounded-full text-xs font-medium">
+                    <span className="inline-flex items-center px-2 py-0.5 bg-surface-sunken text-text-secondary rounded-full text-xs font-medium">
                       +{coachesWithEmail.length - 20} more
                     </span>
                   )}
                 </div>
                 {coachesWithoutEmail.length > 0 && (
-                  <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-600">
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-fw-warning-ink">
                     <IconAlertCircle size={12} />
                     <span>
                       {coachesWithoutEmail.length} coach{coachesWithoutEmail.length !== 1 ? 'es' : ''}{' '}
@@ -762,7 +762,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   </div>
                 )}
                 {excludedSuppressed.length > 0 && (
-                  <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-600">
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-fw-warning-ink">
                     <IconAlertCircle size={12} />
                     <span>
                       {excludedSuppressed.length} coach{excludedSuppressed.length !== 1 ? 'es' : ''}{' '}
@@ -774,8 +774,8 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
 
               {/* Gmail info banner */}
               {mode === 'gmail' && (
-                <div className="px-4 py-3 rounded-xl bg-blue-50/50 border border-blue-100">
-                  <p className="text-sm text-blue-800">
+                <div className="px-4 py-3 rounded-fw-md bg-surface-sunken/60 border border-border-subtle">
+                  <p className="text-sm text-text-primary">
                     Opens Gmail with all {coachesWithEmail.length} email{coachesWithEmail.length !== 1 ? 's' : ''} in{' '}
                     <strong>BCC</strong>. Make sure you&apos;re signed into <strong>admin@helmsportslabs.com</strong>.
                   </p>
@@ -787,7 +787,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 <div className="flex items-center gap-3">
                   <TemplatePicker onSelect={handleTemplateSelect} coachData={coachData} />
                   {selectedTemplateId && (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium border border-primary-200/50">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-50 text-accent-700 rounded-fw-sm text-xs font-medium border border-accent-200/50">
                       <IconCheck size={12} />
                       Template applied
                       <IconButton variant="default" aria-label="Remove template"
@@ -797,7 +797,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                           setBody('');
                           setBodyFormat('plain');
                         }}
-                        className="ml-1 text-primary-400 hover:text-primary-600"
+                        className="ml-1 text-accent-500 hover:text-accent-700"
                       >
                         <IconX size={12} />
                       </IconButton>
@@ -813,7 +813,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     type="button"
                     onClick={coachesWithEmail.length === 1 ? handlePersonalize : handlePersonalizeBulk}
                     disabled={personalizing || !body.trim()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-all shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 rounded-fw-md text-sm font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-700 disabled:opacity-50 transition-all shadow-flat"
                   >
                     {personalizing ? (
                       <>
@@ -837,7 +837,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                           setShowOriginal(!showOriginal);
                         }
                       }}
-                      className="text-xs text-warm-500 hover:text-warm-700 font-medium underline"
+                      className="text-xs text-text-tertiary hover:text-text-secondary font-medium underline"
                     >
                       {showOriginal ? 'Showing original' : 'View original'}
                     </Button>
@@ -847,9 +847,9 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
 
               {/* Subject */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block">
-                  Subject {mode === 'helm' && <span className="text-red-400">*</span>}
-                  {mode === 'gmail' && <span className="text-warm-400 normal-case font-normal">(optional)</span>}
+                <label className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block">
+                  Subject {mode === 'helm' && <span className="text-fw-danger/80">*</span>}
+                  {mode === 'gmail' && <span className="text-text-tertiary normal-case font-normal">(optional)</span>}
                 </label>
                 {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
                 <Input autoFocus
@@ -864,7 +864,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               {/* Merge Tag Toolbar */}
               {mode === 'helm' && (
                 <div>
-                  <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block">
+                  <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block">
                     Insert Merge Tag
                   </p>
                   {/* Mobile: horizontal scrolling chip rail (bleeds to the screen
@@ -875,7 +875,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                         key={tag.value}
                         type="button"
                         onClick={() => insertMergeTag(tag.value)}
-                        className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 cursor-pointer transition-colors"
+                        className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 cursor-pointer transition-colors"
                       >
                         {tag.label}
                       </Button>
@@ -886,9 +886,9 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
 
               {/* Body */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block">
-                  Message {mode === 'helm' && <span className="text-red-400">*</span>}
-                  {mode === 'gmail' && <span className="text-warm-400 normal-case font-normal">(optional)</span>}
+                <label className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block">
+                  Message {mode === 'helm' && <span className="text-fw-danger/80">*</span>}
+                  {mode === 'gmail' && <span className="text-text-tertiary normal-case font-normal">(optional)</span>}
                 </label>
                 <Textarea
                   ref={bodyRef}
@@ -911,10 +911,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 <div className="flex gap-2">
                   <Button variant="ghost"
                     onClick={() => copyToClipboard(bccList, 'bcc')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-warm-100/60 hover:bg-warm-100 text-warm-600 transition-colors border border-warm-200/50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-xs font-medium bg-surface-sunken hover:bg-surface-sunken text-text-secondary transition-colors border border-border-subtle"
                   >
                     {copied === 'bcc' ? (
-                      <><IconCheck size={12} className="text-primary-600" /><span className="text-primary-600">Copied!</span></>
+                      <><IconCheck size={12} className="text-accent-700" /><span className="text-accent-700">Copied!</span></>
                     ) : (
                       <><IconCopy size={12} />Copy BCC List</>
                     )}
@@ -922,10 +922,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   {body.trim() && (
                     <Button variant="ghost"
                       onClick={() => copyToClipboard(body.trim(), 'body')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-warm-100/60 hover:bg-warm-100 text-warm-600 transition-colors border border-warm-200/50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-xs font-medium bg-surface-sunken hover:bg-surface-sunken text-text-secondary transition-colors border border-border-subtle"
                     >
                       {copied === 'body' ? (
-                        <><IconCheck size={12} className="text-primary-600" /><span className="text-primary-600">Copied!</span></>
+                        <><IconCheck size={12} className="text-accent-700" /><span className="text-accent-700">Copied!</span></>
                       ) : (
                         <><IconCopy size={12} />Copy Body</>
                       )}
@@ -938,16 +938,16 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               {mode === 'helm' && sending && sendProgress && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-warm-700 font-medium">
+                    <span className="text-text-secondary font-medium">
                       Sending {sendProgress.current} of {sendProgress.total}...
                     </span>
-                    <span className="text-warm-500 text-xs">
+                    <span className="text-text-tertiary text-xs">
                       {Math.round((sendProgress.current / sendProgress.total) * 100)}%
                     </span>
                   </div>
-                  <div className="w-full bg-warm-100 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-surface-sunken rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                      className="h-full bg-accent-500 rounded-full transition-all duration-500"
                       style={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
                     />
                   </div>
@@ -958,16 +958,16 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               {personalizing && sendProgress && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-violet-700 font-medium">
+                    <span className="text-accent-800 font-medium">
                       Personalizing {sendProgress.current} of {sendProgress.total}...
                     </span>
-                    <span className="text-warm-500 text-xs">
+                    <span className="text-text-tertiary text-xs">
                       {Math.round((sendProgress.current / sendProgress.total) * 100)}%
                     </span>
                   </div>
-                  <div className="w-full bg-violet-100 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-accent-100 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                      className="h-full bg-accent-500 rounded-full transition-all duration-500"
                       style={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
                     />
                   </div>
@@ -976,57 +976,57 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
 
               {/* Helm Result Card */}
               {mode === 'helm' && helmResult && (
-                <div className="rounded-xl border border-warm-200/50 overflow-hidden">
-                  <div className="px-4 py-3 glass-standard flex items-center gap-4">
+                <div className="rounded-fw-md border border-border-subtle overflow-hidden">
+                  <div className="px-4 py-3 border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] flex items-center gap-4">
                     {helmResult.sent > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-primary-500" />
-                        <span className="text-sm font-medium text-primary-700">{helmResult.sent} sent</span>
+                        <div className="w-2 h-2 rounded-full bg-accent-500" />
+                        <span className="text-sm font-medium text-accent-700">{helmResult.sent} sent</span>
                       </div>
                     )}
                     {helmResult.skipped > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="text-sm font-medium text-amber-700">{helmResult.skipped} skipped</span>
+                        <div className="w-2 h-2 rounded-full bg-fw-warning" />
+                        <span className="text-sm font-medium text-fw-warning-ink">{helmResult.skipped} skipped</span>
                       </div>
                     )}
                     {helmResult.failed > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                        <span className="text-sm font-medium text-red-700">{helmResult.failed} failed</span>
+                        <div className="w-2 h-2 rounded-full bg-fw-danger" />
+                        <span className="text-sm font-medium text-fw-danger-ink">{helmResult.failed} failed</span>
                       </div>
                     )}
                     {helmResult.details && helmResult.details.length > 0 && (
                       <Button variant="ghost"
                         onClick={() => setShowResultDetails(!showResultDetails)}
-                        className="ml-auto text-xs text-warm-500 hover:text-warm-700 font-medium transition-colors"
+                        className="ml-auto text-xs text-text-tertiary hover:text-text-secondary font-medium transition-colors"
                       >
                         {showResultDetails ? 'Hide details' : 'Show details'}
                       </Button>
                     )}
                   </div>
                   {showResultDetails && helmResult.details && (
-                    <div className="border-t border-warm-100 max-h-40 overflow-y-auto">
+                    <div className="border-t border-border-subtle max-h-40 overflow-y-auto">
                       {helmResult.details.map((d, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between px-4 py-2 text-xs border-b border-warm-50 last:border-b-0"
+                          className="flex items-center justify-between px-4 py-2 text-xs border-b border-border-subtle last:border-b-0"
                         >
                           <div className="flex items-center gap-2">
                             <div className={cn(
                               'w-1.5 h-1.5 rounded-full',
-                              d.status === 'sent' && 'bg-primary-500',
-                              d.status === 'skipped' && 'bg-amber-500',
-                              d.status === 'failed' && 'bg-red-500',
+                              d.status === 'sent' && 'bg-accent-500',
+                              d.status === 'skipped' && 'bg-fw-warning',
+                              d.status === 'failed' && 'bg-fw-danger',
                             )} />
-                            <span className="text-warm-700 font-medium">{d.name}</span>
-                            <span className="text-warm-400">{d.email}</span>
+                            <span className="text-text-secondary font-medium">{d.name}</span>
+                            <span className="text-text-tertiary">{d.email}</span>
                           </div>
                           <span className={cn(
                             'font-medium',
-                            d.status === 'sent' && 'text-primary-600',
-                            d.status === 'skipped' && 'text-amber-600',
-                            d.status === 'failed' && 'text-red-600',
+                            d.status === 'sent' && 'text-accent-700',
+                            d.status === 'skipped' && 'text-fw-warning-ink',
+                            d.status === 'failed' && 'text-fw-danger-ink',
                           )}>
                             {d.status}{d.reason ? ` — ${d.reason}` : ''}
                           </span>
@@ -1040,7 +1040,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
             </div>
 
             {/* Right Pane — Live Preview (40%) */}
-            <div className="shrink-0 lg:shrink lg:w-[40%] lg:flex-none border-t lg:border-t-0 lg:border-l border-warm-100 bg-warm-50/50 overflow-y-auto">
+            <div className="shrink-0 lg:shrink lg:w-[40%] lg:flex-none border-t lg:border-t-0 lg:border-l border-border-subtle bg-surface-sunken/60 overflow-y-auto">
               {/* Mobile-only disclosure toggle — keeps the preview from eating the
                   screen on a phone. Hidden on md+ where the preview is always shown. */}
               <Button variant="ghost"
@@ -1049,24 +1049,24 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 aria-expanded={previewOpenMobile}
                 className="md:hidden w-full min-h-[44px] flex items-center gap-2 px-5 py-3 text-left justify-start"
               >
-                <IconEye size={16} className="text-warm-400 shrink-0" />
-                <span className="text-xs font-medium text-warm-600 uppercase tracking-wider">Preview</span>
+                <IconEye size={16} className="text-text-tertiary shrink-0" />
+                <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Preview</span>
                 {firstCoach && (
-                  <span className="text-eyebrow text-warm-400 truncate">· {firstCoach.name}</span>
+                  <span className="text-eyebrow text-text-tertiary truncate">· {firstCoach.name}</span>
                 )}
                 <IconChevronDown
                   size={16}
-                  className={cn('ml-auto shrink-0 text-warm-400 transition-transform', previewOpenMobile && 'rotate-180')}
+                  className={cn('ml-auto shrink-0 text-text-tertiary transition-transform', previewOpenMobile && 'rotate-180')}
                 />
               </Button>
               <div className={cn('px-5 py-4 md:block', !previewOpenMobile && 'hidden')}>
                 {/* Preview Header — hidden below md (the mobile disclosure toggle
                     above already carries this label); unchanged on md+. */}
                 <div className="hidden md:flex items-center gap-2 mb-4">
-                  <IconEye size={16} className="text-warm-400" />
-                  <span className="text-xs font-medium text-warm-600 uppercase tracking-wider">Preview</span>
+                  <IconEye size={16} className="text-text-tertiary" />
+                  <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Preview</span>
                   {firstCoach && (
-                    <span className="text-eyebrow text-warm-400 ml-auto">
+                    <span className="text-eyebrow text-text-tertiary ml-auto">
                       Showing data for {firstCoach.name}
                     </span>
                   )}
@@ -1076,12 +1076,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 {bodyFormat === 'html' ? (
                   /* HTML mode: render the body verbatim in a sandboxed iframe.
                      No greeting + signature wrapper — the template IS the email. */
-                  <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
+                  <div className="bg-surface-sunken rounded-fw-md border border-border-subtle overflow-hidden p-3">
                     <div className="flex items-center justify-between px-1 pb-2">
-                      <span className="text-eyebrow uppercase tracking-wider font-semibold text-warm-500">
+                      <span className="text-eyebrow uppercase tracking-wider font-semibold text-text-tertiary">
                         HTML Mockup
                       </span>
-                      <span className="text-eyebrow text-warm-400">
+                      <span className="text-eyebrow text-text-tertiary">
                         Full HTML — sent as-is
                       </span>
                     </div>
@@ -1092,28 +1092,28 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                         // are inert in preview, but layout/CSS/images render.
                         sandbox=""
                         srcDoc={mode === 'helm' ? replaceMergeTags(body) : body}
-                        className="w-full bg-cream-50 rounded-lg shadow-sm border-0"
+                        className="w-full bg-surface rounded-fw-sm shadow-flat border-0"
                         style={{ minHeight: 720, height: '70vh' }}
                       />
                     ) : (
-                      <div className="bg-cream-50 rounded-lg py-12 text-center">
-                        <p className="text-sm text-warm-300 italic">
+                      <div className="bg-surface rounded-fw-sm py-12 text-center">
+                        <p className="text-sm text-text-tertiary italic">
                           Paste HTML or pick an HTML template to preview...
                         </p>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
-                    <div className="bg-cream-50 rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: 600 }}>
+                  <div className="bg-surface-sunken rounded-fw-md border border-border-subtle overflow-hidden p-3">
+                    <div className="bg-surface rounded-fw-sm overflow-hidden shadow-flat" style={{ maxWidth: 600 }}>
                       {/* Greeting */}
                       <div className="px-5 pt-5">
                         {firstCoach ? (
-                          <p className="text-sm font-semibold text-warm-900">
+                          <p className="text-sm font-semibold text-text-primary">
                             Coach {firstCoach.name.split(' ').length > 1 ? firstCoach.name.split(' ').slice(-1)[0] : firstCoach.name},
                           </p>
                         ) : (
-                          <p className="text-sm text-warm-300 italic">
+                          <p className="text-sm text-text-tertiary italic">
                             Coach &#123;last_name&#125;,
                           </p>
                         )}
@@ -1122,12 +1122,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       {/* Body */}
                       <div className="px-5 pt-3 pb-5">
                         {body.trim() ? (
-                          <div className="text-sm text-warm-600 whitespace-pre-wrap leading-relaxed">
+                          <div className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
                             {mode === 'helm' ? replaceMergeTags(body) : body}
                           </div>
                         ) : (
                           <div className="py-8 text-center">
-                            <p className="text-sm text-warm-300 italic">
+                            <p className="text-sm text-text-tertiary italic">
                               Start typing to see a preview...
                             </p>
                           </div>
@@ -1136,19 +1136,19 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
 
                       {/* Signature */}
                       <div className="px-5 pb-5">
-                        <div className="border-t border-warm-200 pt-4">
+                        <div className="border-t border-border-subtle pt-4">
                           <div className="flex items-start gap-3">
                             <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" className="w-10 h-10 object-contain flex-shrink-0 mt-0.5" />
                             <div>
-                              <p className="text-sm text-warm-600">Best,</p>
-                              <p className="text-sm font-semibold text-warm-900 mt-1">Leah Potter & Nick Rini</p>
-                              <p className="text-xs text-warm-500">Co-Founders, Helm Sports Labs</p>
+                              <p className="text-sm text-text-secondary">Best,</p>
+                              <p className="text-sm font-semibold text-text-primary mt-1">Leah Potter & Nick Rini</p>
+                              <p className="text-xs text-text-tertiary">Co-Founders, Helm Sports Labs</p>
                               <div className="flex items-center gap-3 mt-1">
-                                <a href="https://helmsportslabs.com" className="text-xs font-medium text-primary-600 no-underline hover:underline">
+                                <a href="https://helmsportslabs.com" className="text-xs font-medium text-accent-700 no-underline hover:underline">
                                   helmsportslabs.com
                                 </a>
-                                <span className="text-warm-300">|</span>
-                                <a href="mailto:admin@helmsportslabs.com" className="text-xs text-warm-500 no-underline hover:underline">
+                                <span className="text-text-tertiary">|</span>
+                                <a href="mailto:admin@helmsportslabs.com" className="text-xs text-text-tertiary no-underline hover:underline">
                                   admin@helmsportslabs.com
                                 </a>
                               </div>
@@ -1162,15 +1162,15 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
 
                 {/* Preview info */}
                 {!firstCoach && (
-                  <div className="mt-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100">
-                    <p className="text-xs text-amber-600">
+                  <div className="mt-3 px-3 py-2 rounded-fw-sm bg-fw-warning-bg border border-fw-warning-ring/60">
+                    <p className="text-xs text-fw-warning-ink">
                       No recipients with email addresses selected. Add recipients to see a personalized preview.
                     </p>
                   </div>
                 )}
 
                 {mode === 'gmail' && firstCoach && (
-                  <p className="mt-3 text-eyebrow text-warm-400 text-center">
+                  <p className="mt-3 text-eyebrow text-text-tertiary text-center">
                     This preview shows what will be pre-filled in Gmail.
                     {'\n'}You can edit everything before sending.
                   </p>
@@ -1182,16 +1182,16 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
           {/* Footer — sticky bottom of the flex column. On mobile it holds the
               primary Send button above the keyboard/home-indicator via safe-area
               inset padding. */}
-          <div className="shrink-0 border-t border-warm-100 glass-standard pb-[env(safe-area-inset-bottom)]">
+          <div className="shrink-0 border-t border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] pb-[env(safe-area-inset-bottom)]">
             {/* Error banner — always visible in footer */}
             {error && (
-              <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 text-sm font-medium bg-red-50 text-red-700 border-b border-red-200/50">
+              <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 text-sm font-medium bg-fw-danger-bg text-fw-danger-ink border-b border-fw-danger/25">
                 <IconAlertCircle size={16} className="shrink-0" />
                 <span className="flex-1">{error}</span>
                 <IconButton variant="default" aria-label="Dismiss error"
                   type="button"
                   onClick={() => setError(null)}
-                  className="shrink-0 p-0.5 rounded hover:bg-red-100 transition-colors"
+                  className="shrink-0 p-0.5 rounded hover:bg-fw-danger-bg/70 transition-colors"
                 >
                   <IconX size={14} />
                 </IconButton>
@@ -1202,7 +1202,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               type="button"
               onClick={onClose}
               disabled={sending}
-              className="min-h-[44px] px-4 py-2 text-sm text-warm-600 hover:text-warm-800 font-medium transition-colors disabled:opacity-50"
+              className="min-h-[44px] px-4 py-2 text-sm text-text-secondary hover:text-text-primary font-medium transition-colors disabled:opacity-50"
             >
               Cancel
             </Button>
@@ -1213,8 +1213,8 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 onClick={openInGmail}
                 disabled={suppressionsLoading || coachesWithEmail.length === 0}
                 className={cn(
-                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
-                  'bg-blue-600 text-white hover:bg-blue-700',
+                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition-all shadow-flat',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
@@ -1236,8 +1236,8 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 onClick={handleSendViaHelm}
                 disabled={sending || suppressionsLoading || coachesWithEmail.length === 0 || !!helmResult}
                 className={cn(
-                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
-                  'bg-primary-600 text-white hover:bg-primary-700',
+                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition-all shadow-flat',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >

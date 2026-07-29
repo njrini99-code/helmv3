@@ -20,7 +20,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 const STATUS_CONFIG = {
-  new_lead: { label: 'New Lead', color: 'text-warm-700', bgColor: 'bg-warm-100', icon: null },
+  new_lead: { label: 'New Lead', color: 'text-text-secondary', bgColor: 'bg-surface-sunken', icon: null },
 } as Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode }>;
 
 const COACH: Coach = {

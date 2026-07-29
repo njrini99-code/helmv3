@@ -16,7 +16,7 @@ interface AddCoachModalProps {
   statusConfig: Record<CoachStatus, { label: string; iconLabel: React.ReactNode }>;
 }
 
-const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+const labelClass = 'text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block';
 
 export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModalProps) {
   const uid = useId();
@@ -76,7 +76,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-nav-bg/40 p-4"
       onClick={onClose}
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
@@ -85,20 +85,20 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${uid}-title`}
-        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        className="rounded-card bg-elevated shadow-raise w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-warm-100 flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
-            <IconUser size={16} className="text-warm-600" />
-            <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">Add New Coach</h2>
+            <IconUser size={16} className="text-text-secondary" />
+            <h2 id={`${uid}-title`} className="text-lg font-semibold text-text-primary">Add New Coach</h2>
           </div>
           <IconButton variant="default"
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-warm-400 hover:text-warm-600 transition-colors"
+            className="text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <IconX size={18} />
           </IconButton>
@@ -107,7 +107,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
         {/* Body */}
         <form id="add-coach-form" onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            <div className="p-3 bg-fw-danger-bg border border-fw-danger/25 rounded-fw-md text-sm text-fw-danger-ink">
               {error}
             </div>
           )}
@@ -259,11 +259,11 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-100 flex justify-end gap-3 flex-shrink-0">
+        <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3 flex-shrink-0">
           <Button variant="ghost"
             type="button"
             onClick={onClose}
-            className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+            className="bg-surface border border-border-subtle text-text-secondary rounded-fw-md px-5 py-2.5 text-sm font-medium hover:bg-surface-sunken transition-colors"
           >
             Cancel
           </Button>
@@ -271,7 +271,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
             type="submit"
             form="add-coach-form"
             disabled={submitting}
-            className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+            className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {submitting ? 'Adding...' : 'Add Coach'}
           </Button>
