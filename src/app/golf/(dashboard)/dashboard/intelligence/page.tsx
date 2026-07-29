@@ -15,8 +15,7 @@ import { FeatureUnavailable, type PlayersGridPlayer, type PlayersGridFocusArea, 
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { surfaceName } from '@/lib/golf/surface-registry';
 import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
-import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
-import { getProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
+import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { getTeamCausalRelationships, type CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
@@ -302,8 +301,13 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // intelligence surfaces and simply omits the composer. ────────────────────
   let command: React.ComponentProps<typeof CoachIntelligenceHome>['command'] = null;
   try {
-    const chatCtx = await resolveCoachChatContext(supabase);
-    const pulse = await getProgramPulse(supabase, chatCtx);
+    // Request-cached: the dashboard layout resolves this same context and pulse
+    // for the CoachHelm drawer on every /golf/dashboard/* render. Going through
+    // the cached zero-arg getters means this page reuses that work instead of
+    // repeating six serial round trips plus the pulse's query wave.
+    const chatCtx = await getCoachChatContext();
+    const pulse = await getCoachProgramPulse();
+    if (!pulse) throw new Error('program pulse unavailable');
     command = {
       teamName: chatCtx.team_name,
       // `golf_coaches` stores one `full_name`; the greeting wants the first
