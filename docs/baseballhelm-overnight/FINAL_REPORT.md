@@ -1,11 +1,12 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 04:30 EDT. Branch
+_2026-07-28 23:35 → 2026-07-29 06:00 EDT. Branch
 `baseball/overnight-completion`, draft PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 32 commits.
-CI is green except `BaseballHelm authenticated smoke`, which fails on a
-Cloudflare 522 from the production Supabase — red before this branch existed,
-unrelated to the diff._
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 45 commits.
+CI is green except `BaseballHelm authenticated smoke` (and the CI aggregate
+that depends on it), which fails on a Cloudflare 522 from the production
+Supabase — red before this branch existed, unrelated to the diff, and the
+same outage that blocked every live database question below._
 
 The brief asked for an honest split between complete, production-usable,
 improved-but-incomplete, blocked, intentionally-hidden, and out-of-scope. That
@@ -16,78 +17,76 @@ stated next to it rather than in a footnote.
 
 ## Read this first
 
-**0. Every private message in the database is readable — and writable — by any
-authenticated user who is in a single conversation.** Three baseline policies
-on `baseball_messages` compare `cp.conversation_id` to *itself*, which is
-always true, so the predicate means "does the caller participate in any
-conversation at all". One conversation anywhere buys every coach↔player DM in
-every program, plus the ability to post into any thread under your own name.
-It survived two months because the same rule written *correctly* sits twenty
-lines below it — and permissive policies OR together, so the correct one never
-mattered.
+**1. Seven live security findings in production, all predating this branch.**
+Every one is in the 2026-05-27 baseline. None was introduced by this work.
 
-**The fix is three `DROP POLICY` statements, no `CREATE`, no app change**, and
-it is safe under both old and new code because every dropped policy already has
-a correctly-correlated twin. It does not need to wait for the rest of the
-sequence. If one thing gets applied in the morning, apply this.
+| | Table | What is exposed | State |
+|---|---|---|---|
+| 🔴 | `baseball_messages` | **Every private coach↔player message in the database — read AND write** | Fix written |
+| 🔴 | `baseball_players` | Every program's roster PII — email, phone, GPA, SAT/ACT | Fix written |
+| 🔴 | `baseball_teams` | Every team's secret `join_code` | Fix written |
+| 🔴 | `baseball_team_invitations` | Every live invitation `code` | Fix written |
+| 🟠 | `baseball_player_percentiles` | Every player's academic + athletic ranking | Fix written |
+| 🟠 | `baseball_coaches` | Every coach's email + phone, to any coach | **Not fixed** — product decision |
+| 🟠 | `golf_coaches` | Every golf coach's email + phone, to *any* logged-in user | **Not fixed** — out of scope, live product |
 
-**1. Five further cross-tenant exposures are open in production.** Any
-authenticated user on any team can read every other program's roster PII —
-email, phone, GPA, SAT/ACT — every team's secret `join_code`, every live
-invitation `code`, and every player's academic and athletic percentile
-ranking; and any coach can read every coach's email and phone. Live since
-2026-05-27. The fixes are written, executed in CI, and **applied to nothing**
-(the coach one is deliberately unfixed — it needs a product decision). It is a
-three-step sequence: `DATABASE_STATUS.md` has the reasoning,
-`CURRENT_PRIORITIES.md` has the checklist.
+Plus one write hole: `baseball_notifications` lets any authenticated user post
+a notification to anyone (in-app phishing, not a leak). Not fixed — the
+obvious fix breaks practice-publish; see `DATABASE_STATUS.md`.
 
-All four are one mistake repeated: an over-broad SELECT policy on a table
-whose rows belong to somebody. Three are the sharper form — a secret in a
-column guarded by a predicate that cannot see the query filtering on it. RLS
-never sees a WHERE-clause literal, so "you may read this row if you already
-know its code" always degrades to "you may read this row".
+**➜ If only one thing gets applied in the morning, apply the
+`baseball_messages` fix.** Three baseline policies compare
+`cp.conversation_id` to *itself* — always true — so the predicate reduces to
+"is the caller in *any* conversation". One conversation anywhere buys every
+DM in every program, plus the ability to post into any private thread under
+your own name. It survived two months because the same rule written
+*correctly* sits twenty lines below it, and permissive policies OR together,
+so the correct one never mattered.
 
-**Recon reported two of the four.** The other two came from asking narrower
-questions afterwards: what *else* uses the same `.eq('code', …)` shape
-(→ `baseball_team_invitations`, whose policy is literally named *"Anyone can
-view active invitations by code"* and checks no code — noticed **twice**
-before, at `20260701000000:173` and `20260708141000:86`, described accurately
-both times, and deferred as out of scope), and what *else* in the baseline is
-`FOR SELECT … USING (true)` (→ `baseball_player_percentiles`, never noticed by
-anyone). The second question is one grep. It should have been the first thing
-run, and that is the most portable lesson in this report.
+That fix is **three `DROP POLICY` statements, no `CREATE`, no app change**,
+safe under both old and new code because every dropped policy already has a
+correctly-correlated twin. Alone among this work it needs no deploy ordering.
 
-**A sixth was found last, and is the worst.** `baseball_messages` — see item 0
-above. It came from a task that was supposed to produce *coverage*, not fixes:
-auditing the policies of the tables that had no pgTAP suite, before writing
-their tests. Six other tables were audited in the same pass and came out clean.
-The generalisable part is that every one of these six findings came from
-re-asking the previous question one level wider — none needed new information,
-only a refusal to stop at the first answer.
+The other five fixes ship as a **sequenced pair** of migrations —
+`DATABASE_STATUS.md` has the reasoning, `CURRENT_PRIORITIES.md` the checklist.
+All are verified by execution in CI (six pgTAP suites, 93 assertions) and
+**applied to nothing**.
 
-**A fifth is confirmed and deliberately left alone.** `baseball_coaches_select`
-is `USING (auth.uid() = user_id OR get_my_coach_id() IS NOT NULL)` — the `OR`
-makes the first clause irrelevant to anyone holding a coach row, so any coach
-reads every coach's email and phone. It is not in the migration pair for two
-reasons: `20260701014000` explicitly reserved the scope of coach-sees-all as a
-product decision, and 75 call sites read that table directly. Fixing it means
-auditing all 75, which is not a 4am change. Severity is real but below #1–#4:
-it needs a coach account and exposes contact details that are usually on a
-public athletics staff page. `DATABASE_STATUS.md` §5 states the decision needed.
-
-**2. Nothing in this run touched a database.** No migration was applied, no
+**2. Nothing in this run touched a database.** No migration applied, no
 `supabase db push`, no `psql`. The only writes were to files and to git.
+Production Postgres was unreachable all night in any case — last retried
+05:30 EDT.
 
 **3. Do not demo against a prospect's own data until (1) is applied.** A demo
 org is fine.
+
+### How they were found — the transferable part
+
+Recon reported **two** of the seven. The rest came from re-asking the previous
+question one level wider. None needed information that was not in the repo on
+day one:
+
+| Question | Found |
+|---|---|
+| What *else* uses the same `.eq('code', …)` shape as the join_code leak? | `baseball_team_invitations` — a policy literally named *"Anyone can view active invitations by code"* that checks no code. Noticed **twice** before (`20260701000000:173`, `20260708141000:86`), described accurately both times, deferred as out of scope both times. |
+| What *else* in the baseline is `FOR SELECT … USING (true)`? | `baseball_player_percentiles`. Thirty seconds of grep; should have been the first thing run. |
+| Then where would a *fifth* be — a predicate neither `true` nor missing? | `baseball_coaches`. The prediction was written at the end of the previous sweep, then actually executed. |
+| Read the policies of the untested tables *before* writing their tests | `baseball_messages` — the worst of the seven, from a task meant to produce coverage. |
+| Re-run all of it across *every* table, not just `baseball_*` | `golf_coaches`, on the live revenue product. |
+
+Four further sweeps came back **clean** and are recorded in
+`DATABASE_STATUS.md` so nobody repeats them: RLS is enabled on all 98 baseball
+tables, the self-comparison typo exists nowhere else, the write surface is
+otherwise clean, and every definer function already has a pinned
+`search_path`.
 
 ---
 
 ## The through-line: reading is not verifying
 
-Four of the run's most serious findings were invisible to inspection and
-surfaced only by running something. This is the most useful thing the night
-produced, and it is worth more than any individual fix:
+The run's most serious findings were invisible to inspection and surfaced only
+by running something. This is the most useful thing the night produced, and it
+is worth more than any individual fix:
 
 | Found by | What it was |
 |---|---|
@@ -95,6 +94,8 @@ produced, and it is worth more than any individual fix:
 | **Executing the SQL** | All five new functions were anon-callable. `REVOKE ... FROM PUBLIC` does not remove Supabase's role-specific default grant to `anon`. |
 | **Asserting the props object, not the DOM** | The public player page shipped withheld GPA, SAT, ACT and private video URLs inside its HTML. The client gated them in JSX, which keeps data out of the DOM and not out of `curl`. The first version of the fix still leaked every URL under the raw relation key — the payload test caught that too. |
 | **Running the seed script** | Its "production guard" *allowlisted* production, plus two bypasses (`<prodref>.example.invalid` was trusted on a first-label substring; any `.local` host on the LAN was trusted as loopback). |
+| **Counting what a config selects** | Three vitest projects matched ~870 files each instead of 5, 0 and 7 — `extends: true` merges array options rather than replacing them. CI's "Business contracts" job was re-running the entire unit suite under a name promising seven contract files. The config's own comment asserted the opposite of what the tool does, which is what preserved it. |
+| **Executing the pgTAP** | A fixture that passed auth user ids where `baseball_coaches.id` was required. Zero of ten assertions ran. Worth noting because a fixture error and a policy regression look identical from outside — only the error text distinguishes them. |
 
 The corollary, recorded because it cuts the other way: recon reported a P0 that
 **did not exist** (the staff-invite RPC missing an email-ownership check — it
