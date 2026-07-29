@@ -118,4 +118,89 @@ describe('describeError', () => {
     expect(describeError(404)).toBe('404');
     expect(describeError(false)).toBe('false');
   });
+
+  /**
+   * A gateway that fails before reaching the origin answers with an HTML PAGE,
+   * and the whole page lands in `error.message`.
+   *
+   * Real production text, 2026-07-29 (two cron routes, /api/cron/integrity-check
+   * and /api/cron/log-retention). The harm is not verbosity — it is that the page
+   * carries a unique Cloudflare Ray ID, a unique client IP and a to-the-second
+   * timestamp, and `admin_events` fingerprints hash the message. Every 522
+   * therefore minted a NEW incident group, which is how the 9.4-hour database
+   * wedge never presented as one event.
+   */
+  describe('HTML gateway error bodies', () => {
+    const cloudflare522 = (rayId: string, ip: string, when: string) =>
+      [
+        '<!DOCTYPE html>',
+        '<html class="no-js" lang="en-US">',
+        '<head>',
+        '<title>supabase.co | 522: Connection timed out</title>',
+        '</head><body>',
+        '<h1><span class="inline-block">Connection timed out</span>',
+        '<span class="code-label">Error code 522</span></h1>',
+        `<div class="mt-3">${when}</div>`,
+        `<span>Cloudflare Ray ID: <strong>${rayId}</strong></span>`,
+        `<span id="cf-footer-ip">${ip}</span>`,
+        '</body></html>',
+      ].join('\n');
+
+    it('collapses a Cloudflare 522 page to one short line', () => {
+      const out = describeError(
+        new Error(cloudflare522('a22a42d3dbe0d4c1', '35.175.113.239', '2026-07-29 07:03:17 UTC')),
+      );
+      expect(out).toBe(
+        'upstream returned an HTML error page (HTTP 522): supabase.co | 522: Connection timed out',
+      );
+      expect(out.length).toBeLessThan(120);
+    });
+
+    /** The property that actually fixes incident grouping. */
+    it('produces BYTE-IDENTICAL output for two occurrences of the same outage', () => {
+      const first = describeError(
+        new Error(cloudflare522('a22a42d3dbe0d4c1', '35.175.113.239', '2026-07-29 07:03:17 UTC')),
+      );
+      const second = describeError(
+        new Error(cloudflare522('bb3b91e0ffff2c77', '34.204.13.189', '2026-07-29 07:30:48 UTC')),
+      );
+      expect(first).toBe(second);
+    });
+
+    it('leaks no Ray ID, IP or timestamp into the message the fingerprint hashes', () => {
+      const out = describeError(
+        new Error(cloudflare522('a22a42d3dbe0d4c1', '35.175.113.239', '2026-07-29 07:03:17 UTC')),
+      );
+      expect(out).not.toContain('a22a42d3dbe0d4c1');
+      expect(out).not.toContain('35.175.113.239');
+      expect(out).not.toContain('07:03:17');
+      expect(out).not.toContain('<');
+    });
+
+    it('handles the Supabase plain-object shape, keeping the pg code', () => {
+      expect(
+        describeError({ code: 'PGRST000', message: cloudflare522('r', '1.2.3.4', 'now') }),
+      ).toBe(
+        'code=PGRST000 msg=upstream returned an HTML error page (HTTP 522): supabase.co | 522: Connection timed out',
+      );
+    });
+
+    it('falls back gracefully when the page has no title', () => {
+      const out = describeError(new Error('<!DOCTYPE html><html><body>502 Bad Gateway</body></html>'));
+      expect(out).toContain('upstream returned an HTML error page');
+      expect(out).toContain('no <title>');
+    });
+
+    /** Must not hijack ordinary messages that merely mention markup. */
+    it('leaves non-HTML messages completely alone', () => {
+      for (const plain of [
+        'canceling statement due to statement timeout',
+        'new row violates row-level security policy for table "golf_rounds"',
+        'Unexpected token < in JSON at position 0',
+        'value <= 0 is not allowed',
+      ]) {
+        expect(describeError(new Error(plain))).toBe(plain);
+      }
+    });
+  });
 });
