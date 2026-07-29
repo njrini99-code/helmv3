@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconClipboardList, IconX } from '@/components/icons';
-import { createCrmTask } from '@/app/golf/actions/crm-foundations';
+import { createCrmTask, updateCrmTask } from '@/app/golf/actions/crm-foundations';
 import { createClient } from '@/lib/supabase/client';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,14 @@ import type {
 } from '@/app/golf/admin/crm/types/foundations';
 
 // ============================================================================
-// CreateTaskDialog — capture a new CrmTask against a coach.
+// CreateTaskDialog — capture a new CrmTask against a coach, or edit one.
 // ============================================================================
+// 2026-07-29: `updateCrmTask` had been written, tested and revalidate-wired for
+// months with ZERO callers, so a task was immutable once saved — the only verb
+// the UI offered was "complete". A typo in a title, a due date set to the wrong
+// day, a priority that turned out to be urgent: all permanent. Passing `task`
+// puts this dialog in edit mode instead of adding a second near-identical one,
+// the same shape ScheduleEventModal uses for its `event` prop.
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -25,10 +31,34 @@ interface CreateTaskDialogProps {
   coachId: string;
   /** Fired with the newly-created task. */
   onCreated?: (task: CrmTask) => void;
+  /**
+   * When set, the dialog edits this task instead of creating one: fields
+   * prefill from it and submit calls updateCrmTask.
+   */
+  task?: CrmTask | null;
+  /** Fired with the updated task after a successful edit. */
+  onUpdated?: (task: CrmTask) => void;
   /** Optional default priority (defaults to 'normal'). */
   defaultPriority?: TaskPriority;
   /** Optional default kind (defaults to 'general'). */
   defaultKind?: TaskKind;
+}
+
+/**
+ * ISO instant -> the `YYYY-MM-DDTHH:mm` a datetime-local input expects, in LOCAL
+ * time.
+ *
+ * Deliberately not `iso.slice(0, 16)` or `toISOString().slice(0, 16)`: both hand
+ * back UTC, so opening the editor on a task due 9:00am would display it shifted
+ * by the offset (4pm in UTC+7, or the previous evening in UTC-5) and saving
+ * without touching the field would silently MOVE the due date. Round-tripping
+ * has to be a no-op.
+ */
+function toLocalDateTimeInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 const PRIORITY_OPTIONS: TaskPriority[] = ['low', 'normal', 'high', 'urgent'];
@@ -61,9 +91,12 @@ export function CreateTaskDialog({
   onOpenChange,
   coachId,
   onCreated,
+  task,
+  onUpdated,
   defaultPriority = 'normal',
   defaultKind = 'general',
 }: CreateTaskDialogProps) {
+  const isEdit = !!task;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueAt, setDueAt] = useState('');
@@ -75,15 +108,28 @@ export function CreateTaskDialog({
 
   useEffect(() => {
     if (open) {
-      setTitle('');
-      setDescription('');
-      setDueAt('');
-      setPriority(defaultPriority);
-      setKind(defaultKind);
+      // Edit mode prefills from the task; create mode starts blank. Keyed on
+      // task.id so reopening the dialog on a DIFFERENT task refreshes the fields
+      // rather than showing the previous one's values.
+      setTitle(task?.title ?? '');
+      setDescription(task?.description ?? '');
+      setDueAt(task?.due_at ? toLocalDateTimeInput(task.due_at) : '');
+      setPriority(task?.priority ?? defaultPriority);
+      setKind(task?.kind ?? defaultKind);
       setSubmitting(false);
       setError(null);
     }
-  }, [open, defaultPriority, defaultKind]);
+  }, [
+    open,
+    defaultPriority,
+    defaultKind,
+    task?.id,
+    task?.title,
+    task?.description,
+    task?.due_at,
+    task?.priority,
+    task?.kind,
+  ]);
 
   // Resolve the acting admin so new tasks self-assign by default — without
   // this, assignee_id stays null and the task can never surface in the
@@ -132,23 +178,43 @@ export function CreateTaskDialog({
     setSubmitting(true);
     setError(null);
     try {
-      const created = await createCrmTask({
-        coach_id: coachId,
-        assignee_id: currentUserId,
-        title: trimmedTitle,
-        description: description.trim() || null,
-        due_at: dueIso,
-        status: 'pending',
-        priority,
-        kind,
-        source: 'manual',
-        reminder_at: null,
-        metadata: {},
-      });
-      onCreated?.(created);
+      if (task) {
+        // Only the five editable fields. status / completed_at stay out of the
+        // patch on purpose — completion is completeCrmTask's job, and letting an
+        // edit reopen a completed task would make the two paths fight over the
+        // same columns. (updateCrmTask also strips id/created_by/created_at
+        // server-side, so this is belt-and-braces.)
+        const updated = await updateCrmTask(task.id, {
+          title: trimmedTitle,
+          description: description.trim() || null,
+          due_at: dueIso,
+          priority,
+          kind,
+        });
+        onUpdated?.(updated);
+      } else {
+        const created = await createCrmTask({
+          coach_id: coachId,
+          assignee_id: currentUserId,
+          title: trimmedTitle,
+          description: description.trim() || null,
+          due_at: dueIso,
+          status: 'pending',
+          priority,
+          kind,
+          source: 'manual',
+          reminder_at: null,
+          metadata: {},
+        });
+        onCreated?.(created);
+      }
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+      setError(
+        err instanceof Error
+          ? err.message
+          : `Failed to ${task ? 'update' : 'create'} task`,
+      );
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +242,7 @@ export function CreateTaskDialog({
                   <IconClipboardList size={16} className="text-accent-700" />
                 </span>
                 <h2 id="create-task-title" className="text-base font-semibold text-text-primary">
-                  New task
+                  {isEdit ? 'Edit task' : 'New task'}
                 </h2>
               </div>
               <IconButton variant="default"
@@ -252,9 +318,11 @@ export function CreateTaskDialog({
                 />
               </div>
 
-              <p className="text-eyebrow text-text-tertiary">
-                Assigned to you — appears in your Inbox &quot;Due today&quot; list.
-              </p>
+              {!isEdit && (
+                <p className="text-eyebrow text-text-tertiary">
+                  Assigned to you — appears in your Inbox &quot;Due today&quot; list.
+                </p>
+              )}
 
               {error && (
                 <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
@@ -281,7 +349,7 @@ export function CreateTaskDialog({
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >
-                {submitting ? 'Creating...' : 'Create task'}
+                {submitting ? (isEdit ? 'Saving...' : 'Creating...') : isEdit ? 'Save changes' : 'Create task'}
               </Button>
             </div>
           </form>
