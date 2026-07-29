@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { TEST_USERS } from './helpers/auth';
+import { RECRUITING_ENABLED, RECRUITING_SUNSET_REASON } from './helpers/product-modules';
 
 /**
  * BaseballHelm Phase 1 — E2E smoke (Wave 12, P12.3).
@@ -49,7 +50,7 @@ test.describe('BaseballHelm Phase 1 — route wiring (anonymous)', () => {
     '/baseball/dashboard/stats-center',
     '/baseball/dashboard/stats/upload',
     '/baseball/dashboard/import',
-    '/baseball/dashboard/journey',
+    // '/baseball/dashboard/journey' — recruiting, sunset. Re-add with the module.
     '/baseball/dashboard/program',
     '/baseball/dashboard/settings/staff',
     '/baseball/dashboard/settings/program',
@@ -145,7 +146,11 @@ test.describe('BaseballHelm Phase 1 — coach surfaces', () => {
       '/baseball/dashboard/travel',
       '/baseball/dashboard/tasks',
       '/baseball/dashboard/documents',
-      '/baseball/dashboard/camps',
+      // /camps is a recruiting route. Left in the list conditionally rather
+      // than removed, because the failure mode here is silent: /camps
+      // redirects to the command center, whose h1 IS visible, so the loop
+      // would keep passing while proving nothing about camps.
+      ...(RECRUITING_ENABLED ? ['/baseball/dashboard/camps'] : []),
     ]) {
       await page.goto(route);
       await expect(page.locator('body')).not.toContainText(/Application error|500/i);
@@ -165,8 +170,16 @@ test.describe('BaseballHelm Phase 1 — player surfaces + isolation', () => {
     test.skip(!ok, 'player login fixture unavailable in this environment');
     await page.goto('/baseball/dashboard/performance');
     await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
-    await page.goto('/baseball/dashboard/journey');
-    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
+
+    // Same silent-pass trap as /camps above: /journey redirects under the
+    // sunset and the redirect target has a heading, so this assertion would go
+    // green while testing the wrong page.
+    if (RECRUITING_ENABLED) {
+      await page.goto('/baseball/dashboard/journey');
+      await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
+    } else {
+      test.info().annotations.push({ type: 'skipped-assertion', description: RECRUITING_SUNSET_REASON });
+    }
   });
 
   test('player is denied staff-only program + staff management surfaces', async ({

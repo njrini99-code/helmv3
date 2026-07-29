@@ -6,6 +6,7 @@ import { test, expect } from '@playwright/test';
 // coach/player never saw the seeded camp.
 import { loginAsFixtureCoach as loginAsCoach, loginAsFixturePlayer as loginAsPlayer } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
+import { RECRUITING_ENABLED, RECRUITING_SUNSET_REASON } from './helpers/product-modules';
 
 /**
  * Baseball Camps E2E Test
@@ -31,6 +32,7 @@ const SEEDED_CAMP_NAME = 'E2E Prospect Camp';
 const SEEDED_REGISTRANT_NAME = 'Riley Bennett';
 
 test.describe('Camps - Player Flow', () => {
+  test.skip(!RECRUITING_ENABLED, RECRUITING_SUNSET_REASON);
   test.skip(!SEEDED, 'no seeded baseball camp fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
   test.beforeEach(async ({ page }) => {
@@ -88,6 +90,7 @@ test.describe('Camps - Player Flow', () => {
 });
 
 test.describe('Camps - Coach Flow', () => {
+  test.skip(!RECRUITING_ENABLED, RECRUITING_SUNSET_REASON);
   test.skip(!SEEDED, 'no seeded baseball camp fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
   test.beforeEach(async ({ page }) => {
