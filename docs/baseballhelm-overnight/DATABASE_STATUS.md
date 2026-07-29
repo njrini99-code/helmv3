@@ -155,7 +155,7 @@ reason this section exists.
 | 2 | `baseball_teams` join_code world-readable | ✅ **CLOSED.** Same migration. Join codes visible to a non-member: 13 → 1. |
 | 3 | `baseball_team_invitations` — every live invite code readable | ✅ **CLOSED** (`2c2c939cf`). Gated to `can_manage_roster`. Table is empty in production today, so this is a fix ahead of the exposure rather than after it. |
 | 4 | `baseball_player_percentiles` — every player's academic/athletic ranking readable | ✅ **CLOSED** (`2855a0646`). Also empty in production today. |
-| 5 | `baseball_coaches` — every coach's email + phone, readable by any coach | ⚠️ **STILL OPEN — CONFIRMED, NOT FIXED.** Needs a product decision + a 75-call-site audit. `20260701014000` explicitly reserved it. See §5. **This is now the only unclosed P0 in this document.** |
+| 5 | `baseball_coaches` — every coach's email readable by any coach | ⚠️ **STILL OPEN, but AUDITED and a fix is written** (`20260729200000_baseball_coaches_org_scope.sql`, not applied). The "75-call-site audit" is **done and collapses to zero**: of 74 reads, 66 are self-scoped, 2 are INSERTs, 1 uses the service-role client, and the remaining 5 are same-org by construction. **No call site needs a cross-org read.** Measured exposure: 10 coaches across 8 orgs, 10 with email, **0 with phone** — the long-standing "email + phone" wording overstated it. See §5. **Still the only unclosed P0.** |
 | **6** | **`baseball_messages` — every private conversation in the database, READ AND WRITE** | ✅ **CLOSED** (`e1011f50b`). The three self-comparing policies are gone; only the four correctly-correlated ones remain. See §6. |
 | — | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See the retraction section. |
 
@@ -167,7 +167,11 @@ reason this section exists.
 >
 > **#5 is the one left.** Unlike the others it has no authored fix, because
 > tightening it is a product decision (which coaches may see which coaches'
-> contact details) attached to a 75-call-site audit, not a policy swap.
+> contact details). **The 75-call-site audit that was the other half of the
+> blocker is now DONE, and it removes itself as an obstacle:** not one of the 74
+> reads needs cross-organization access. The fix is written and measured
+> (`20260729200000_baseball_coaches_org_scope.sql`) but deliberately not
+> applied — see that file's header and § finding 5.
 
 ---
 
@@ -361,9 +365,23 @@ contained.
    (recruiting cross-program visibility) is a separate product decision and
    intentionally NOT done here."* Overturning a predecessor's stated decision
    unattended is not the same as fixing a bug they missed.
-2. **75 call sites** read `baseball_coaches` directly (vs 52 using the
+2. ~~**75 call sites** read `baseball_coaches` directly (vs 52 using the
    `baseball_coaches_public` view). Each would need auditing for whether it
-   reads own-org or cross-org coaches. That is not a 4am change.
+   reads own-org or cross-org coaches. That is not a 4am change.~~
+   **✅ AUDIT DONE 2026-07-29. This reason no longer holds.** 74 reads in
+   `src/` (excluding tests), classified by query shape:
+
+   | | count | effect of org-scoping |
+   |---|---|---|
+   | `.eq('user_id', <caller>)` | **66** | none — self-scoped |
+   | `.eq('id', coachId)` where `coachId` is the caller's own | 3 | none |
+   | `INSERT` (onboarding ×2) | 2 | none — a SELECT policy cannot reach a write |
+   | service-role client (`admin/data/users.ts:272`) | 1 | none — bypasses RLS |
+   | same-org by construction (`coach-notes.ts:263` note authors, `documents.ts:62` uploaders) | 2 | none — both already degrade to a missing name rather than failing |
+
+   **Not one call site requires a cross-organization read.** `documents.ts`
+   even documents its own graceful degradation: unknown uploaders "degrade to
+   `null` rather than failing the whole page load".
 3. Severity is genuinely lower than #1–#4: it requires a coach account, and it
    exposes professional contact details that are typically on an athletics
    department's public staff page — not a player's GPA.

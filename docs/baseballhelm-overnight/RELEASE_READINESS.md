@@ -30,8 +30,15 @@ exercised through the exact RPC the app calls, after applying. See
 `DATABASE_STATUS.md` for the full before/after and PR **#1102** for the record.
 
 **Still open — the only unclosed P0:** `baseball_coaches`. Any coach reads every
-coach's email and phone. No authored fix; it needs a product decision plus a
-75-call-site audit.
+coach's **email** (not phone — `phone` is NULL for every row in production; the
+long-standing "email + phone" wording overstated it). Measured: 10 coaches
+across 8 organizations, of which 1 org is the caller's own.
+
+**It is no longer blocked on the audit.** The 75-call-site audit is done and
+collapses to zero: of 74 reads, 66 are self-scoped, 2 are INSERTs, 1 uses the
+service-role client, and the rest are same-org by construction. A measured fix
+exists — `20260729200000_baseball_coaches_org_scope.sql` — deliberately
+unapplied pending CI and review.
 
 **Caveat:** every measurement is a row count at the data layer. No browser
 walked these screens, so the residual risk is a rendering bug in the app rather
@@ -50,9 +57,15 @@ than a policy denying too much.
 | Recruiting | Deliberately hidden. This is a feature, not a gap: it was the least complete surface and diluted the pitch. |
 | Demo seed data | **Verify before demoing.** Recon found no seed coverage for Announcements, Travel, Documents, Post-Game Reviews, or lifting maxes/bodyweight. Work is in flight; confirm it landed before opening those tabs. |
 
-**The caveat:** demo against a demo org, never against a prospect's own data,
-until the RLS fix is applied. The leak means anything opened in one program is
-visible from another.
+~~**The caveat:** demo against a demo org, never against a prospect's own data,
+until the RLS fix is applied.~~ **Lifted 2026-07-29** — the fix is applied and
+verified. Cross-program roster and join-code visibility is closed, so a demo no
+longer risks showing one program's data to another.
+
+**The one residue:** a coach can still see other coaches' names and emails
+across organizations (finding #5). That is professional contact information of
+the kind usually on a public athletics staff page, not player data — but it is
+the remaining reason to prefer a demo org over a prospect's live tenant.
 
 **Fixed tonight, and each of these was demo-visible:**
 
@@ -75,7 +88,7 @@ visible from another.
 | Blocker | Status |
 |---|---|
 | Cross-tenant leak | ✅ **CLOSED in production 2026-07-29.** Five of six exposures fixed and verified by execution. |
-| `baseball_coaches` email/phone readable by any coach | 🔴 **STILL OPEN.** The sixth. Needs a product decision + 75-call-site audit, not a policy swap. |
+| `baseball_coaches` email readable by any coach | 🟡 **OPEN, but no longer blocked on the audit.** The 75-call-site audit is done and collapses to zero cross-org readers; a measured fix is written (`20260729200000`) and deliberately unapplied pending CI + review. Exposure is 10 coaches / 8 orgs / 10 emails / **0 phones** — the "email + phone" wording overstated it. |
 | RLS test coverage | 35% of `baseball_*` tables have zero pgTAP coverage — messaging, tasks, travel, announcements, invitations, dev plans. A hole in any of them would not be caught. |
 | `helm_lifting_athletes.user_id` staleness | ✅ **FIXED AND REPAIRED.** `20260729000300` applied, and the repair run: 21 of 22 athletes were unlinked and locked out of `/lifting/dashboard`; now 0, with `is_active` untouched and every link matching its source player across 22 distinct accounts. |
 
@@ -105,11 +118,20 @@ here would defeat the point of the file.
 
 ### Production-usable but not proven
 
-- The RLS migrations. Authored, reviewed line-by-line against the real schema,
-  and **never executed**. CI on #1092 is the first real test.
-- The companion app changes. They work under both the old and new policies by
-  construction, but the second half of that claim is only exercised once
-  migration B is applied somewhere.
+- ~~The RLS migrations. Authored, reviewed line-by-line, **never executed**.~~
+  **Superseded 2026-07-29: applied to production and verified by execution**,
+  as three real users via role impersonation. Moved to "Complete and verified".
+- ~~The companion app changes … only exercised once migration B is applied.~~
+  **Now exercised.** Migration B is applied and every affected flow was run
+  through the exact RPC the app calls.
+- **What genuinely remains unproven:** all of that verification is row counts at
+  the data layer. No browser walked the join-by-code, roster-search or public
+  profile screens. The residual risk is a rendering or call-shape bug, not a
+  policy that denies too much.
+- The mobile hamburger fix (#1099) is deployed by SHA and covered by 5 passing
+  unit tests, but was **not** visually re-confirmed in production — Chrome will
+  not resize below ~500px, Playwright's MCP profile was locked by another
+  session, and the site correctly refuses to be framed.
 
 ### Improved but incomplete
 
@@ -126,11 +148,20 @@ here would defeat the point of the file.
 
 ### Blocked, deliberately
 
-- Applying anything to the database. Shared production DB with live Golf users;
-  a mis-scoped RLS policy locks legitimate users out rather than failing safe,
-  turning a confidentiality bug into an outage. The exposure has been live
-  ~2 months; the marginal risk reduction from applying at 02:00 unattended
-  versus with the owner present does not justify that.
+- ~~Applying anything to the database.~~ **Unblocked and done 2026-07-29** on
+  the owner's explicit instruction, with them awake. The reasoning for the
+  overnight deferral was correct at the time and is preserved in
+  `DATABASE_STATUS.md` — it is the argument that has to be made again next time,
+  not a mistake to erase.
+- **Still deliberately unapplied:** `20260729180000` (golf shot-detail RLS perf,
+  3413ms → 515ms) and `20260729200000` (baseball_coaches org scope). Both are
+  measured against production inside rolled-back transactions, both are RLS
+  changes with no pgTAP coverage yet, and `CLAUDE.md` mandates
+  db-migration-reviewer for RLS. The tenant-isolation pair's CI caught two
+  recursion cycles that had already survived two line-by-line human reviews —
+  a perf win and a tidy audit do not justify skipping the gate that caught them.
+- **Deploying** is no longer blocked either: production is `b18c2a174` as of
+  18:37:10Z, carrying every merged fix.
 
 ### Out of scope
 
