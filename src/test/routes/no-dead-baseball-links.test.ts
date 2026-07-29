@@ -124,7 +124,11 @@ function findDeadLinks(files: string[]): DeadLink[] {
     LINK_RE.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = LINK_RE.exec(src)) !== null) {
-      const href = m[1].split('?')[0].split('#')[0].replace(/\/$/, '') || '/';
+      // The capture group is non-optional in LINK_RE, but noUncheckedIndexedAccess
+      // types it as possibly undefined — narrow rather than assert.
+      const captured = m[1];
+      if (!captured) continue;
+      const href = captured.split('?')[0]?.split('#')[0]?.replace(/\/$/, '') || '/';
       if (!href.startsWith('/baseball')) continue;
       if (resolvesToRoute(href) || resolvesToPublicFile(href)) continue;
       const line = src.slice(0, m.index).split('\n').length;

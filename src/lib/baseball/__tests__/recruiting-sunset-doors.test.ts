@@ -22,6 +22,8 @@
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { BASEBALL_PROGRAM_TYPES, type BaseballProgramType } from '@/lib/types/baseball-settings';
 import { BASEBALL_NAV_REGISTRY, getVisibleBaseballNav, type BaseballNavContext } from '../nav-registry';
 import { isPathnameModuleDisabled, isRecruitingEnabled, MODULE_ROUTE_PREFIXES } from '../product-modules';
@@ -81,6 +83,131 @@ describe('recruiting sunset — nav layer is closed for every role x program typ
     expect(visible.some((e) => e.hub === 'recruiting')).toBe(false);
     for (const id of [...RECRUITING_HUB_IDS, ...RECRUITING_MODULE_IDS]) {
       expect(visible.map((e) => e.id)).not.toContain(id);
+    }
+  });
+});
+
+// Map a literal pathname to its App Router page file, skipping route groups.
+// Only literal segments are handled, which is all the recruiting nav needs —
+// every recruiting href in the registry is a fixed path.
+function findPageFile(pathname: string): string | null {
+  const wanted = pathname.split('/').filter(Boolean);
+
+  const walk = (dir: string, segs: string[]): string | null => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return null;
+    }
+
+    if (segs.length === wanted.length && segs.every((s, i) => s === wanted[i])) {
+      const page = entries.find((e) => e.isFile() && /^page\.(tsx?|jsx?)$/.test(e.name));
+      if (page) return join(dir, page.name);
+    }
+
+    for (const e of entries) {
+      if (!e.isDirectory()) continue;
+      const isGroup = e.name.startsWith('(') && e.name.endsWith(')');
+      const next = isGroup ? segs : [...segs, e.name];
+      // Prune: never descend past the path we are looking for.
+      if (!isGroup && (next.length > wanted.length || next[next.length - 1] !== wanted[next.length - 1])) {
+        continue;
+      }
+      const hit = walk(join(dir, e.name), next);
+      if (hit) return hit;
+    }
+    return null;
+  };
+
+  return walk(join(__dirname, '../../../app'), []);
+}
+
+/** Does this route's own page file call a recruiting server guard? */
+function pageCallsRecruitingGuard(pathname: string): boolean {
+  const file = findPageFile(pathname);
+  if (!file) return false;
+  return /requireRecruiting(Coach|Player)Route/.test(readFileSync(file, 'utf8'));
+}
+
+describe('recruiting sunset — nav and routes agree with each other', () => {
+  // The two sweeps above are each complete on their own axis and still leave a
+  // seam between them, which is where /baseball/dashboard/activate hid: the
+  // nav layer knew it was recruiting (module: 'recruiting', so it was hidden),
+  // the route layer did not (absent from MODULE_ROUTE_PREFIXES, so nothing
+  // closed the door). Each suite passed. Neither compared its answer to the
+  // other's.
+  //
+  // These two assertions close that seam from both sides. They are about
+  // AGREEMENT, not about either list being right — which is the only kind of
+  // check that can catch an omission, since an omission is invisible to any
+  // sweep that iterates the list it is missing from.
+
+  it('the page-file resolver answers in both directions (guards the assertion below)', () => {
+    // Without this, a resolver that silently returned null for everything
+    // would make pageCallsRecruitingGuard() a constant `false`. The sweep
+    // below would then be testing only MODULE_ROUTE_PREFIXES while its failure
+    // message claimed to have checked two mechanisms — a test that lies about
+    // what it looked at is worse than one that checks less.
+    expect(findPageFile('/baseball/dashboard/roster')).toMatch(/roster\/page\.tsx$/);
+    expect(findPageFile('/baseball/dashboard/definitely-not-a-route')).toBeNull();
+
+    // A route genuinely closed by the server guard, and one genuinely not.
+    expect(pageCallsRecruitingGuard('/baseball/dashboard/watchlist')).toBe(true);
+    expect(pageCallsRecruitingGuard('/baseball/dashboard/roster')).toBe(false);
+  });
+
+  it('every recruiting-tagged nav entry has its door shut by SOMETHING', () => {
+    // Deliberately not "…covered by MODULE_ROUTE_PREFIXES". The first draft
+    // asserted exactly that and failed on /dashboard/watchlist — whose page
+    // calls requireRecruitingCoachRoute(), i.e. is closed, by a different
+    // mechanism. Demanding one specific mechanism would have made the test
+    // pass only by adding a second, redundant gate to a route that already
+    // had one, which is the shape of change that leaves a codebase with
+    // comments describing problems it does not have.
+    //
+    // So this asserts the property that actually matters — the door is shut —
+    // and accepts either lock:
+    //   (1) the central route-prefix registry (checked by middleware), or
+    //   (2) a recruiting server guard in the route's own page file.
+    const taggedRecruiting = BASEBALL_NAV_REGISTRY.filter(
+      (e) => e.hub === 'recruiting' || e.module === 'recruiting',
+    );
+    expect(taggedRecruiting.length).toBeGreaterThan(0);
+
+    for (const entry of taggedRecruiting) {
+      for (const href of [entry.href, entry.playerHref].filter(
+        (h): h is string => typeof h === 'string' && h.startsWith('/baseball'),
+      )) {
+        const byRegistry = isPathnameModuleDisabled(href);
+        const byServerGuard = pageCallsRecruitingGuard(href);
+        expect(
+          byRegistry || byServerGuard,
+          `Nav entry "${entry.id}" is tagged recruiting and therefore hidden, but ${href} ` +
+            `has NO server-side gate: it is absent from MODULE_ROUTE_PREFIXES and its page ` +
+            `file does not call a requireRecruiting*Route guard. Hiding a link is not ` +
+            `closing a door — this is exactly how /dashboard/activate stayed reachable.`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('no VISIBLE nav entry points at a route the module gate blocks', () => {
+    // The inverse seam: an entry that forgot its recruiting tag would stay in
+    // the sidebar while its destination redirects — a link that visibly leads
+    // nowhere, which is worse for a demo than one that is simply absent.
+    for (const pt of ALL_PROGRAM_TYPES) {
+      for (const ctx of [coachCtx(pt), playerCtx(pt)]) {
+        for (const entry of getVisibleBaseballNav(ctx)) {
+          const href = ctx.role === 'player' ? (entry.playerHref ?? entry.href) : entry.href;
+          if (!href?.startsWith('/baseball')) continue;
+          expect(
+            isPathnameModuleDisabled(href),
+            `Visible ${ctx.role} nav entry "${entry.id}" (programType=${pt}) links to ${href}, ` +
+              `which a disabled product module blocks.`,
+          ).toBe(false);
+        }
+      }
     }
   });
 });
