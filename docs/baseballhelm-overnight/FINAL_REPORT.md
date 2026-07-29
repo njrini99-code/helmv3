@@ -1,13 +1,24 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 06:40 EDT. Branch
+_2026-07-28 23:35 → 2026-07-29 08:35 EDT. Branch
 `baseball/overnight-completion`, draft PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 77 commits ahead
-of `main`. Full unit suite green at 06:37: **868 files, 8,221 tests**.
-CI is green except `BaseballHelm authenticated smoke` (and the CI aggregate
-that depends on it), which fails on a Cloudflare 522 from the production
-Supabase — red before this branch existed, unrelated to the diff, and the
-same outage that blocked every live database question below._
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 91 commits ahead
+of `main` (now merged up to date with it). Full unit suite green: **868 files,
+8,221 tests**._
+
+> **The run was interrupted at 07:12 by a live production incident** — a user
+> on full LTE bars served `offline.html` and unable to use the site. It is
+> diagnosed, fixed, and merged to `main` as
+> [#1094](https://github.com/njrini99-code/helmv3/pull/1094), but **not
+> deployed**: `main` does not auto-deploy and the permission classifier denies
+> production deploys to autonomous execution. Until someone runs
+> `cd /tmp/helm-deploy && vercel --prod`, users remain affected. Details in
+> `CURRENT_PRIORITIES.md`.
+
+_CI is green except `BaseballHelm authenticated smoke` (and the aggregate that
+depends on it), which fails against the production Supabase — red before this
+branch existed, unrelated to the diff, and the same outage that blocked every
+live database question below._
 
 The brief asked for an honest split between complete, production-usable,
 improved-but-incomplete, blocked, intentionally-hidden, and out-of-scope. That
@@ -196,6 +207,51 @@ Each has tests, and the tests assert behaviour rather than existence.
   draft would have meant deleting the links instead of gating them. The rule
   became "consult the gate", and the header states the residual gap rather
   than implying more coverage than exists.
+
+## The production incident (2026-07-29 07:12 EDT)
+
+Not part of the mission brief; it arrived mid-run and took precedence.
+
+**Symptom.** A user on full LTE bars, on an iPhone, taps the marketing site's
+mobile menu. Nothing navigates. Then: a full-page **"No Connection — Helm
+Sports Labs needs an internet connection."**
+
+**Cause.** `public/sw.js` is registered `scope: '/'` by the GOLF DASHBOARD's
+`OfflineProvider`. It therefore controls the entire origin — marketing,
+BaseballHelm, auth — although only the golf dashboard ever wanted offline
+support. Every other navigation reached `handleDynamicRequest`, whose `catch`
+turned **any** `fetch` rejection into `offline.html`. No retry, no
+`navigator.onLine` check, and the page's only exit re-entered the same handler.
+One transient blip and the site was gone until website data was cleared.
+
+**Fix** (#1094, merged, **undeployed**): navigations outside the golf dashboard
+are not intercepted at all; the offline page is served only when
+`navigator.onLine === false`; the synthetic empty `404`/`503` responses are
+gone; cross-origin requests are skipped. Golf's offline support is preserved
+and a test asserts it, so "stop intercepting" cannot become "delete the
+feature".
+
+**On method — three wrong turns worth recording, because each was caught by
+running something rather than by thinking harder:**
+
+1. I measured the mobile menu's tap targets as `0×0` and nearly reported it as
+   the bug. It was **my own test artifact** — the window resized but the
+   viewport did not, so a `md:hidden` rule made the sheet `display: none`.
+2. I told the user the service worker was "a very likely culprit", then tested
+   it: registered it, confirmed it was controlling the page, and the menu
+   worked. I retracted that publicly before they acted on it. Four
+   reproduction attempts against production all passed — the deployed build
+   really was fine, and it took **their screenshot** to identify the trigger.
+3. I reported `CACHE_VERSION` as a third defect — a constant that never
+   changes, so caches never invalidate. Wrong: `prebuild` runs
+   `scripts/stamp-sw.mjs`, which rewrites it to the commit SHA on real Vercel
+   builds. I had read the constant and assumed its runtime value. Retracted; no
+   change made.
+
+The worker had **no tests** and is the most dangerous file in the repo — a bad
+one pins every client permanently, and you cannot push a fix to a client that
+will not fetch. It has 10 now, and they were validated against the SHIPPED
+worker: 5 fail on it, and the 5 covering preserved behaviour still pass.
 
 ## Verified, and the answer was "already fine"
 

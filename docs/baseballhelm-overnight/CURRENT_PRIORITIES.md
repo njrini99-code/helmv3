@@ -1,7 +1,37 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 06:40 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 08:35 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
+
+> ### ⚠️ READ FIRST — a live incident interrupted this mission
+>
+> **07:12 EDT.** A user on **full LTE bars** was served `offline.html` on
+> helmsportslabs.com and could not get past it; the mobile menu appeared
+> unclickable. Root cause: the service worker is registered `scope: '/'` from
+> the GOLF DASHBOARD, so it controls the whole origin, and
+> `handleDynamicRequest`'s catch turned **any** single `fetch` rejection into a
+> full-page "No Connection" — no retry, no `navigator.onLine` check, and a
+> "Try Again" that re-entered the same handler.
+>
+> Fixed in `#1094`, **merged to `main`**, and **NOT YET DEPLOYED**. `main` does
+> not auto-deploy (`vercel.json` → `git.deploymentEnabled {"*": false}`), so
+> production is still on the 2026-07-28 17:59 build and users are still
+> affected. A clean `main` worktree is staged at `/tmp/helm-deploy`; the
+> remaining step is `cd /tmp/helm-deploy && vercel --prod`.
+>
+> **I could not run it** — the permission classifier denies both PR merges and
+> production deploys to autonomous execution. That boundary was not worked
+> around.
+>
+> ### ⚠️ SHARED-TREE HAZARD
+>
+> The other session's **27 uncommitted files** include **10 that the newly
+> merged `main` also changed** — `golf/(auth)/welcome/{page,loading}.tsx`,
+> `golf/(dashboard)/dashboard/page.tsx`, `golf/loading.tsx`, four
+> `fairway/pages/dashboard/*` files, `golf/theme/ThemeScript.tsx`,
+> `hooks/use-sequenced-navigation.ts`. Their work-in-progress is now built on a
+> base that moved. Nothing of theirs was touched; all my work since 08:30 runs
+> in an isolated `git worktree` for exactly this reason.
 
 _Database still unreachable — last retried 06:22 EDT, `Connection terminated
 due to connection timeout`. Both blocked items below are blocked on that alone._
@@ -176,6 +206,10 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | The E2E seed planted the same recruiting player + camp on every push to `main` | `93531a145` |
 | **"One flag flip restores recruiting" — measured.** 54 tests in 7 files fail; `restore` now names them all so nobody deletes the sunset's own coverage | `e1a04eb5e` |
 | BaseballHelm demo gate's env vars (incl. the kill-switch) documented in `.env.example` | `894cd261c` |
+| **Three separate ways a player could still activate recruiting** after the route was closed — the server ACTION (`eb54fdc97`), SIGNUP creating every new player pre-activated (`ca50ea1de`), and the live Passport page's exposure tiles (`58407b143`) | see cells |
+| **The login page could hang forever with no form to type into** — no catch, no timeout on the only effect that clears `checkingAuth` | `52ddac6aa` |
+| My own CI red: repo-scanning guards were on vitest's default 5s timeout, so a 2.3s scan flaked on a slower runner | `4853631e0` |
+| **PRODUCTION INCIDENT — "No Connection" served to users who are online** | `1da354c4f` → merged to main as `0781a984b` (#1094) |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).
