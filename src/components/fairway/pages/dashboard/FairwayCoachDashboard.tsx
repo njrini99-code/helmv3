@@ -130,6 +130,26 @@ export interface FairwayCoachDashboardProps {
    * to FairwayJoinRequestAlert's own self-fetch (kept for any other caller).
    */
   joinRequests?: JoinRequestData[];
+  /**
+   * The time-of-day greeting phrase ("Good morning" / "Welcome back"),
+   * resolved SERVER-side in the team's timezone by the RSC page.
+   *
+   * This used to be derived in a `useEffect` here, seeded with a time-neutral
+   * "Welcome back". That meant the <h1> — the largest text on the page —
+   * visibly rewrote itself on every single load, a beat after first paint.
+   * The server already knows the team timezone (it is the same value that
+   * arrives as `enhancedData.timezone`), so it can resolve the phrase once and
+   * hand it over settled. Omit it and the effect fallback below still runs,
+   * for any caller that has not wired the prop.
+   */
+  greeting?: string;
+  /**
+   * Today's date, pre-formatted in the team's timezone by the RSC page (e.g.
+   * "Tuesday, July 28"). Server-formatted for the same reason as `greeting`:
+   * an `Intl` call on the client would disagree with the server's markup for
+   * anyone not sitting in the team's timezone.
+   */
+  todayLabel?: string;
 }
 
 const RANGE_OPTIONS: { value: DashboardDateRange; label: string }[] = [
@@ -211,11 +231,30 @@ function seriesDeltaLabel(points: number): string {
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * One fact in the opener's `meta` row — a leading icon and a count.
+ *
+ * The ViewHeader `meta` slot already sets the row's voice (caption size,
+ * `text-text-tertiary`, wrap + gap), so this adds only the icon pairing and
+ * `tabular-nums`. The figures sit next to each other and change between loads;
+ * proportional digits would make them shuffle sideways as the numbers move.
+ */
+function MetaFact({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 tabular-nums">
+      <span className="text-text-tertiary/70">{icon}</span>
+      {children}
+    </span>
+  );
+}
+
 export function FairwayCoachDashboard({
   data,
   enhancedData,
   dateRange: initialRange = 'all',
   joinRequests,
+  greeting: serverGreeting,
+  todayLabel,
 }: FairwayCoachDashboardProps) {
   const { coach, team, stats, recentRounds, topPlayers, teamScoringTrend } = data;
   const router = useRouter();
@@ -236,13 +275,22 @@ export function FairwayCoachDashboard({
   const firstName = coach.full_name?.split(' ')[0] || 'Coach';
 
   // Time-aware greeting (P008). The fixed "Good day" was subtly wrong all day.
-  // Resolve the hour in the team timezone (falling back to the browser's) on the
-  // CLIENT after mount — computing it during SSR would either pin to the server
-  // clock (wrong for the coach) or risk a hydration mismatch. Until then we show
-  // a time-neutral "Welcome back" that is never incorrect.
+  //
+  // The phrase is resolved SERVER-side now (see the `greeting` prop) and used
+  // verbatim, so the <h1> is correct in the team's timezone from the very first
+  // painted byte. Previously this ran as a post-mount effect seeded with a
+  // time-neutral "Welcome back", which meant the biggest text on the page
+  // rewrote itself a beat after paint on every load — one of the "it renders,
+  // then fidgets and starts again" symptoms, sitting on the one element the eye
+  // is already fixed on.
+  //
+  // The effect below is now a FALLBACK ONLY: it runs when a caller has not
+  // wired the prop, and is skipped entirely (no state write, no swap) when the
+  // server has already settled the phrase.
   const tzForGreeting = enhancedData?.timezone;
-  const [greeting, setGreeting] = useState(`Welcome back, ${firstName}`);
+  const [clientGreeting, setClientGreeting] = useState<string | null>(null);
   useEffect(() => {
+    if (serverGreeting) return; // server resolved it — never rewrite the h1
     const tz = tzForGreeting || Intl.DateTimeFormat().resolvedOptions().timeZone;
     try {
       const hour = getCurrentDecimalHourInTz(tz);
@@ -251,12 +299,14 @@ export function FairwayCoachDashboard({
       // the same sane 4-bucket scheme (incl. a "Welcome back" late-night
       // bucket) that src/lib/utils/time-of-day.ts and src/lib/entry/
       // greeting.ts already use.
-      setGreeting(`${getGreeting(timeOfDayForHour(hour))}, ${firstName}`);
+      setClientGreeting(getGreeting(timeOfDayForHour(hour)));
     } catch {
       // Intl/timezone unavailable — keep the time-neutral welcome.
-      setGreeting(`Welcome back, ${firstName}`);
+      setClientGreeting('Welcome back');
     }
-  }, [tzForGreeting, firstName]);
+  }, [serverGreeting, tzForGreeting]);
+
+  const greeting = `${serverGreeting ?? clientGreeting ?? 'Welcome back'}, ${firstName}`;
 
   // PRESERVED LOGIC: range change keeps the force-dynamic ?range re-fetch
   // contract (router.push). Presentation is calm; the contract is unchanged.
@@ -518,18 +568,53 @@ export function FairwayCoachDashboard({
   // scrolled page. pb-28 (112px) clears that 80px zone with margin.
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 overflow-x-clip px-5 pt-8 pb-8 md:gap-10 md:px-8 md:pt-10 md:pb-28">
-      {/* ── 1 · MASTHEAD — single h1 + promoted action cluster ─────────────── */}
+      {/* ── 1 · OPENER — the warm plinth (DESIGN-SYSTEM §4.1, ONE per page) ──
+          Redesign notes, because most of this is a deletion:
+
+          • EYEBROW was the literal string "Coach Dashboard" — a label the top
+            bar already carries two inches above it. It now carries the DATE,
+            formatted server-side in the team's timezone. A date earns the slot:
+            it pairs with the time-of-day greeting directly under it, and it is
+            the one piece of orientation a dashboard opener actually owes you.
+          • DESCRIPTION was a `·`-joined dump of the team name and two counts.
+            The name is the description now; the counts moved to `meta`, where
+            they render as real chips with their own icons and tabular figures
+            instead of running together as prose.
+          • PLINTH: the opener sits on the warm `surface-tint` band rather than
+            floating as one more flat text block on `bg-canvas`. This is what
+            makes it read as the page's hero rather than as its <title>.
+          • disableAnimation: the ViewHeader's default entrance is an
+            opacity-0 → 1 / y-8 → 0 stagger. A shape-matched skeleton paints
+            this exact silhouette immediately before it, so animating in from
+            nothing means the text visibly drops 8px away from where the
+            placeholder just sat. Settled content that was already placeheld
+            must not re-enter — that IS the flicker. */}
       <ViewHeader
-        eyebrow="Coach Dashboard"
+        plinth
+        disableAnimation
+        eyebrow={todayLabel ?? 'Coach Dashboard'}
         title={greeting}
         description={
           stats.rosterSize === 0
             ? 'Invite players to start tracking rounds, qualifiers and team performance.'
-            : `${team.name} · ${stats.rosterSize} ${stats.rosterSize === 1 ? 'player' : 'players'} on the roster${
-                stats.upcomingEvents > 0
-                  ? ` · ${stats.upcomingEvents} upcoming ${stats.upcomingEvents === 1 ? 'event' : 'events'}`
-                  : ''
-              }`
+            : team.name
+        }
+        meta={
+          stats.rosterSize === 0 ? undefined : (
+            <>
+              <MetaFact icon={<IconUsers size={14} aria-hidden />}>
+                {stats.rosterSize} {stats.rosterSize === 1 ? 'player' : 'players'}
+              </MetaFact>
+              <MetaFact icon={<IconCalendar size={14} aria-hidden />}>
+                {stats.upcomingEvents} upcoming{' '}
+                {stats.upcomingEvents === 1 ? 'event' : 'events'}
+              </MetaFact>
+              <MetaFact icon={<IconFlag size={14} aria-hidden />}>
+                {stats.activeQualifiers} active{' '}
+                {stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}
+              </MetaFact>
+            </>
+          )
         }
         secondaryActions={
           <>
@@ -560,12 +645,13 @@ export function FairwayCoachDashboard({
         }
       />
 
-      {/* Masthead hairline — the owner's "more green" ruling: the loud graphite
-          masthead sits on a real green rule, not a neutral divider. */}
-      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-
-      {/* ── 2 · Quiet toolbar band: date-range scope (calm, not glass) ─────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* ── 2 · Scope band — the green rule AND the window control, one row ──
+          The owner's "more green" ruling is preserved exactly: the masthead
+          still sits on a real green rule, not a neutral divider. It is now the
+          `border-t` of the row it was introducing rather than a free-floating
+          `h-px` sibling, which removes one of the four stacked horizontal bands
+          the opener used to spend before any content. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-accent-300 pt-5">
         <span className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
           Window
         </span>

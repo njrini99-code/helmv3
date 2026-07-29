@@ -126,6 +126,13 @@ interface FairwayPlayerDashboardProps {
    * player, exactly like the Hub was skipped for teamless players before.
    */
   hubData?: PlayerHubSummaryData | null;
+  /**
+   * The time-of-day greeting phrase ("Good morning" / "Welcome back"), resolved
+   * SERVER-side in the team's timezone by the RSC page, so the <h1> is settled
+   * at first paint instead of being rewritten after mount. Omit it and the
+   * effect fallback in the body still runs off the browser clock.
+   */
+  greeting?: string;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -264,16 +271,29 @@ function seriesDeltaLabel(points: number): string {
  * Component
  * ──────────────────────────────────────────────────────────────────────── */
 
-export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayPlayerDashboardProps) {
+export function FairwayPlayerDashboard({
+  data,
+  enhancedData,
+  hubData,
+  greeting: serverGreeting,
+}: FairwayPlayerDashboardProps) {
   const { player, team, stats, recentRounds } = data;
   const firstName = player.first_name?.trim() || 'there';
 
-  // Greeting: name is server-known and renders immediately (no late pop). Only
-  // the time-of-day word resolves on the client to avoid an SSR tz mismatch.
-  const [timeWord, setTimeWord] = useState('Welcome back');
+  // Greeting: name is server-known and renders immediately (no late pop). The
+  // time-of-day word is now server-known too — see the `greeting` prop. It used
+  // to resolve in this effect from a "Welcome back" seed on the stated grounds
+  // of avoiding an SSR tz mismatch, but the payload carries the team timezone,
+  // so the server can settle the phrase without guessing at the client's clock.
+  // The effect below is a FALLBACK for callers that don't pass the prop; when
+  // the server has resolved it, nothing here writes state and the <h1> never
+  // rewrites itself after paint.
+  const [clientTimeWord, setClientTimeWord] = useState<string | null>(null);
   useEffect(() => {
-    setTimeWord(getGreeting(getTimeOfDay()));
-  }, []);
+    if (serverGreeting) return;
+    setClientTimeWord(getGreeting(getTimeOfDay()));
+  }, [serverGreeting]);
+  const timeWord = serverGreeting ?? clientTimeWord ?? 'Welcome back';
 
   const hasRounds = stats.roundsPlayed > 0;
 
@@ -353,7 +373,15 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
           can stretch every full-width card past the phone's viewport (#957). */}
       <div className="mx-auto w-full max-w-[1200px] overflow-x-clip px-6 py-8 md:px-12 md:py-12">
         {/* ── ViewHeader: single h1, persistent New Round action ───────────── */}
+        {/* Same warm plinth as the coach opener. The two dashboards share ONE
+            pre-role skeleton (FairwayDashboardSkeleton — role isn't known until
+            the page resolves), so their mastheads have to agree on geometry or
+            whichever one differs inherits a jump when the skeleton hands over.
+            `disableAnimation` for the same reason: the placeholder already sat
+            on these pixels, so a y-8 entrance would move settled text. */}
         <ViewHeader
+          plinth
+          disableAnimation
           eyebrow={team?.name ?? 'Your team'}
           title={`${timeWord}, ${firstName}`}
           description="Your game at a glance — trend, standing, and what's next."
