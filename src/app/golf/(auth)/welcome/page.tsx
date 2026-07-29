@@ -157,6 +157,24 @@ function WelcomeContent() {
     isSafeInternalPath(nextParam) ? (nextParam as string) : '/golf/dashboard',
   );
 
+  const onFade = useCallback(() => setLeaving(true), []);
+
+  // ARMED UNCONDITIONALLY. This is the whole fix for the hang: the sequence no
+  // longer waits on anything that can fail.
+  //
+  // DECLARED HERE, above the identity effect, ON PURPOSE. It used to live below
+  // that effect, which meant the effect could not reference `cancelSequence` —
+  // and so the signed-out exit below never stood the sequence down. See the
+  // comment on that branch for what that cost.
+  const { cancel: cancelSequence } = useSequencedNavigation({
+    armed: true,
+    destinationRef: destRef,
+    fadeAtMs: prefersReducedMotion ? T_FADE_OUT_REDUCED : T_FADE_OUT,
+    navigateAtMs: prefersReducedMotion ? T_NAVIGATE_REDUCED : T_NAVIGATE,
+    failsafeAtMs: T_FAILSAFE,
+    onFade,
+  });
+
   // ── Identity: cosmetic. Never gates the greeting, the Skip button, or the
   //    navigation. Any failure degrades to the bare time-of-day greeting. ────
   useEffect(() => {
@@ -172,6 +190,21 @@ function WelcomeContent() {
 
         // Signed out — bounce immediately rather than greeting a stranger.
         if (!user) {
+          // Stand the automatic sequence down BEFORE leaving. It is armed
+          // unconditionally, its navigate step is a `router.replace` to the
+          // dashboard, and its 4.5s failsafe is a hard `window.location.replace`
+          // — neither of which cares that we have since left the page.
+          //
+          // Left armed (it was), a signed-out visitor to /golf/welcome got
+          // bounced here to /golf/login, started typing their password, and was
+          // then yanked onto /golf/dashboard and HARD-RELOADED a few seconds
+          // later — which, having no session, bounced them back to /golf/login
+          // with the form cleared. The identical hazard is already documented on
+          // the Skip handler below; this exit simply never got the same
+          // treatment, because `cancelSequence` used to be declared after this
+          // effect and so was unreachable from here.
+          cancelSequence();
+
           // ThemeScript now boots the golf theme on THIS path (it has to: the
           // page paints on the same canvas tokens as the dashboard). But
           // `router.replace` is a soft navigation, so the `.dark` class it set
@@ -255,20 +288,7 @@ function WelcomeContent() {
     return () => {
       cancelled = true;
     };
-  }, [nextParam, router]);
-
-  const onFade = useCallback(() => setLeaving(true), []);
-
-  // ARMED UNCONDITIONALLY. This is the whole fix for the hang: the sequence no
-  // longer waits on anything that can fail.
-  const { cancel: cancelSequence } = useSequencedNavigation({
-    armed: true,
-    destinationRef: destRef,
-    fadeAtMs: prefersReducedMotion ? T_FADE_OUT_REDUCED : T_FADE_OUT,
-    navigateAtMs: prefersReducedMotion ? T_NAVIGATE_REDUCED : T_NAVIGATE,
-    failsafeAtMs: T_FAILSAFE,
-    onFade,
-  });
+  }, [nextParam, router, cancelSequence]);
 
   // Skip's own exit timer, tracked so it cannot fire after unmount. Previously
   // this was a bare `window.setTimeout` with no handle: skip, navigate onward
@@ -282,7 +302,21 @@ function WelcomeContent() {
     [],
   );
 
+  /**
+   * Idempotent by design. Someone dismissing an animation they have seen before
+   * taps Skip two or three times in quick succession — that is the whole
+   * interaction — and each extra tap used to arm ANOTHER exit timer while
+   * overwriting `skipTimerRef` with the newest handle. The orphaned earlier
+   * timers were then unreachable: the unmount cleanup could only clear the last
+   * one, so the rest still fired `router.replace` from a component that no
+   * longer existed. That is precisely the failure the comment above says was
+   * fixed — tracking one handle addressed a single timer, not the unbounded set
+   * a repeat tap creates.
+   */
+  const skippedRef = useRef(false);
   const onSkip = useCallback(() => {
+    if (skippedRef.current) return;
+    skippedRef.current = true;
     // Stand the automatic sequence down FIRST. Its failsafe is a hard
     // `window.location.replace`; left armed, it would fire ~4.5s later on
     // whatever page the user had since reached and reload the browser there.
