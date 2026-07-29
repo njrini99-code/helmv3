@@ -25,15 +25,23 @@ Doing 3 before 2 is an outage — join-by-code, Discover/Compare and roster
 "Add existing player" all return **empty results, not errors**, so the symptom
 is "the product quietly stopped working."
 
+**✅ The SQL is now verified by execution.** CI on PR #1092 applies both
+migrations to a fresh Postgres and runs the pgTAP suite: **`Result: PASS`,
+34/34**. It failed three times first — two independent recursion cycles that
+would have made *every* query against `baseball_players` fail on apply, plus
+five functions left anon-callable. None was visible to reading; two
+adversarial line-by-line reviews had already missed them.
+
 **Action on waking:**
 1. `db-migration-reviewer` on both files (CLAUDE.md mandates it; this is the
-   shared Golf + Baseball production database).
-2. Run `supabase/tests/rls/baseball_tenant_isolation.sql` through pgTAP against
-   a real Postgres. **The SQL has never been executed** — it was authored and
-   statically reviewed only. That suite asserts the post-step-3 state.
-3. Apply step 1. Verify step 2 is deployed (load the join page, add a player —
-   do not verify by reading the diff; merged-but-undeployed looks identical in
-   git). Apply step 3.
+   shared Golf + Baseball production database). CI proves the SQL is correct
+   against a *fresh* database — not against production's actual state.
+2. Re-verify live `pg_policies`. It could not be read overnight; Supabase's
+   Postgres connections timed out on every attempt and CI's own seed step got
+   a Cloudflare 522. See `DATABASE_STATUS.md` → ops note.
+3. Apply step 1. Verify step 2 is deployed by **exercising** it — join a team
+   by code, search a transfer by full email — not by reading the diff;
+   merged-but-undeployed looks identical in git. Apply step 3.
 
 **Why not applied overnight:** shared production DB with live users; a
 mis-scoped RLS policy locks legitimate users out rather than failing safe,

@@ -1,10 +1,18 @@
 # DATABASE STATUS
 
-_Verified 2026-07-29 ~00:30 EDT against migration source. The Supabase MCP
-connection timed out three consecutive times during this check, so **live
-`pg_policies` state is unconfirmed** — findings below are verified from
-migration source, which is authoritative for what was applied but cannot rule
-out an out-of-band hotfix. Re-verify against the live DB before acting._
+_Updated 2026-07-29 03:10 EDT._
+
+_Findings are verified from **migration source**; live `pg_policies` state is
+still unconfirmed (Supabase's Postgres connections timed out all night — see
+the ops note at the bottom). Migration source is authoritative for what was
+applied but cannot rule out an out-of-band hotfix, so re-verify live before
+acting._
+
+_The **fix**, unlike the findings, is now verified by execution: CI on PR
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092) applies both
+migrations to a fresh Postgres and runs the pgTAP suite — `Result: PASS`,
+34/34. It failed three times first, on defects no amount of reading found.
+See "The SQL HAS now been executed" below._
 
 ---
 
@@ -143,24 +151,71 @@ challenged:
 **This is the #1 item for the morning**, called out at the top of
 `RELEASE_READINESS.md`. A decision deferred deliberately, not an item missed.
 
-### What has NOT been verified about this SQL
+### ✅ The SQL HAS now been executed — and it was wrong three times
 
-Stated plainly because it changes what "reviewed" has to mean in the morning:
+Updated 2026-07-29 03:10 EDT. This section previously said the SQL had never
+been run and that doing so was the first real correctness gate. It has been
+run, on PR #1092: CI's `supabase` job builds a fresh Postgres from every
+migration and runs the pgTAP suites.
 
-- **The SQL has never been executed.** No Postgres has parsed it. plpgsql
-  syntax errors, function-overload ambiguity, and RLS evaluation-order
-  surprises are all unverified beyond static review. Run
-  `supabase/tests/rls/baseball_tenant_isolation.sql` through pgTAP against a
-  real database as the *first* correctness gate, not the last.
-- That pgTAP suite asserts the **post-step-3** state. Running it after step 1
+**Current state: `Result: PASS`, 34/34 assertions.** Both migrations apply
+cleanly and the tenant-isolation behaviour is verified, not asserted.
+
+It took four rounds to get there, and every defect was invisible to reading.
+Two independent adversarial reviewers had already gone through this migration
+line by line against the real schema and found none of them:
+
+| # | Defect | Consequence if applied |
+|---|---|---|
+| 1 | `is_baseball_player_recruiting_discoverable(id)` read `baseball_players` — the table whose policy calls it | `infinite recursion detected in policy` — **every** query against `baseball_players` fails, for everyone |
+| 2 | All five functions were anon-callable (`REVOKE ... FROM PUBLIC` does not remove Supabase's role-specific default grant to `anon`) | Anonymous callers could execute the discoverability and join-code resolvers |
+| 3 | The staff branch was an inline `EXISTS` over `baseball_team_members`, whose own policy reads `baseball_players` | The same total recursion, by a second path |
+| 4 | The pgTAP setup `UPDATE`d `recruiting_activated`, which a trigger write-protects | Suite aborted mid-run |
+
+Defects 1 and 3 would each have taken the whole product down for every user
+on apply — a confidentiality fix converted into a total outage. That is the
+concrete reason the "do not apply unattended" call was right.
+
+Both policies now contain **only** `SECURITY DEFINER` function calls, and two
+pgTAP assertions enforce that no inline table read (` FROM `) ever appears in
+either `USING` clause. That is the invariant behind both recursion bugs, and
+it is now pinned rather than remembered.
+
+### Still not verified
+
+- The pgTAP suite asserts the **post-step-3** state. Running it after step 1
   only will fail the policy-behaviour groups — a correct failure, not a broken
   test.
-- **Live `pg_policies` state is unconfirmed.** The Supabase MCP connection
-  timed out three consecutive times during verification, so everything here is
-  read from migration source. That is authoritative for what was *applied*, but
-  cannot rule out an out-of-band hotfix. Re-verify against the live DB first.
+- CI proves the SQL is correct against a **fresh** database built from
+  migrations. It does not prove it is correct against **production's actual
+  state**, which may have drifted. Re-verify live `pg_policies` before
+  applying.
+- Live `pg_policies` remains unconfirmed: Supabase MCP timed out on every
+  attempt through the night, and CI's own seed step hit a Cloudflare 522
+  against the production project at 06:03 UTC. See the ops note below.
 - Verify step 2 is **deployed**, not merely merged. A merged-but-undeployed
   change looks identical in `git` and fails identically to no change at all.
+
+---
+
+## ⚠️ OPS: production Postgres was intermittently unreachable overnight
+
+Not caused by this work, and worth checking before anything is applied.
+
+- `mcp__supabase__execute_sql` timed out on **every** attempt between 00:30 and
+  03:00 EDT — five or more, each "Connection terminated due to connection
+  timeout".
+- CI's `Seed BaseballHelm CI accounts` step got a **Cloudflare 522** from
+  `qmnssrrolpinvwjjnufo.supabase.co` at 06:03 UTC, then
+  `createUser failed for demo-coach@baseballhelmdemo.com`.
+- Direct probes of the REST and auth endpoints answered **401 in ~0.1s** — so
+  the edge is healthy and it is specifically **direct Postgres connections**
+  that are failing or exhausted.
+
+That pattern (REST fine, DB connections timing out) points at connection-pool
+exhaustion or compute pressure rather than an outage. It is also why the
+`public_profile_mode` question below could not be settled, and why the
+BaseballHelm smoke job is red on the PR for reasons unrelated to the diff.
 
 ---
 
