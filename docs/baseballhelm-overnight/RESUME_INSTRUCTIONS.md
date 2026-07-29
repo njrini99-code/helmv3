@@ -58,14 +58,23 @@ heartbeat exists that does not.
 |---|---|---|
 | **This file + the status files** | ✅ On disk, survives everything | The real recovery contract. Any agent, any session, can resume from here. |
 | **Git branch + granular commits** | ✅ On disk | Every landed change is recoverable and attributable via `git log main..HEAD`. |
-| **`CronCreate` 03:00 heartbeat** | ⚠️ **Session-only** | Fires at 03:00 local **only while this Claude session is alive and the REPL is idle**. The tool documents: "nothing is written to disk, and the job is gone when Claude exits." It is a stall-recovery nudge, **not** a durable scheduler. |
+| **`CronCreate` hourly heartbeat** (job `9234a858`, `11 * * * *`) | ⚠️ **Session-only** | Fires at :11 past every hour — which covers the 03:00 checkpoint the brief asked for, and every other hour too — **only while this Claude session is alive and the REPL is idle**. The tool's own documentation: "nothing is written to disk, and the job is gone when Claude exits." It is a stall-recovery nudge, **not** a durable scheduler. Hourly rather than 03:00-only because a single 3am wakeup wastes an hour if the run stalls at 2am. |
 
 **What is NOT claimed:** there is no OS-level (launchd/cron) job that will
 restart Claude if the process exits. If the session dies, the run resumes when
 a human or a new agent opens this file. That is a real limitation, stated
 plainly rather than papered over.
 
-### If you are the 03:00 heartbeat firing
+### The one thing that must never happen
+
+**Do not apply a database migration.** Not `mcp__supabase__apply_migration`,
+not `supabase db push`, not `psql`. `.env.local` points at the shared
+production database serving live Golf users. The RLS work in this run is
+authored as files precisely so a human can review and apply it deliberately.
+An agent applying step B of that pair unattended converts a two-month-old
+confidentiality bug into an immediate outage for both products.
+
+### If you are the heartbeat firing
 
 Do **not** simply report status. Execute:
 
