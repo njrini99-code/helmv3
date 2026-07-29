@@ -141,16 +141,16 @@ export function ReplyThread({ reply, onRead, onOpenCoach }: ReplyThreadProps) {
             variant="ghost"
             type="button"
             onClick={() => onOpenCoach(reply.coach_id!)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium min-h-0"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-fw-sm text-caption font-medium min-h-0"
           >
             {/* Layout-only overrides above; ghost variant already supplies
-                text-warm-600 / hover states via Button's variants map. */}
+                text-text-secondary / hover states via Button's variants map. */}
             <IconUser size={12} /> Open coach
           </Button>
         )}
         <a
           href={mailtoHref}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-fw-sm text-caption font-medium text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors"
         >
           <IconSend size={12} /> Reply
         </a>
@@ -159,7 +159,7 @@ export function ReplyThread({ reply, onRead, onOpenCoach }: ReplyThreadProps) {
             href={gmailUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-fw-sm text-caption font-medium text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors"
           >
             <IconExternalLink size={12} /> Open in Gmail
           </a>
@@ -167,7 +167,7 @@ export function ReplyThread({ reply, onRead, onOpenCoach }: ReplyThreadProps) {
       </div>
 
       {error && (
-        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
           {error}
         </p>
       )}
@@ -175,7 +175,7 @@ export function ReplyThread({ reply, onRead, onOpenCoach }: ReplyThreadProps) {
       {loading && sorted.length <= 1 && (
         <div className="space-y-2">
           {[0, 1].map((i) => (
-            <div key={i} className="h-24 rounded-xl bg-cream-50 border border-warm-200/60 skeleton-shimmer" />
+            <div key={i} className="h-24 rounded-fw-md bg-surface border border-border-subtle skeleton-shimmer" />
           ))}
         </div>
       )}
@@ -184,51 +184,51 @@ export function ReplyThread({ reply, onRead, onOpenCoach }: ReplyThreadProps) {
         <article
           key={r.id}
           className={cn(
-            'rounded-xl border glass-standard px-4 py-3 transition-colors',
-            idx === 0 ? 'border-primary-200 shadow-glass-sm' : 'border-warm-200/60',
+            'rounded-fw-md border border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-4 py-3 transition-colors',
+            idx === 0 ? 'border-accent-200 shadow-flat' : 'border-border-subtle',
           )}
         >
           <header className="flex items-start justify-between gap-3 mb-2">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <IconMail size={14} className="text-warm-500 flex-shrink-0" />
-                <span className="text-sm font-semibold text-warm-900 truncate">
+                <IconMail size={14} className="text-text-tertiary flex-shrink-0" />
+                <span className="text-sm font-semibold text-text-primary truncate">
                   {r.from_address}
                 </span>
                 {!r.is_read && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-primary-50 border border-primary-200 text-eyebrow font-medium text-primary-700">
+                  <span className="px-1.5 py-0.5 rounded-full bg-accent-50 border border-accent-200 text-eyebrow font-medium text-accent-700">
                     Unread
                   </span>
                 )}
                 {r.is_read && idx === 0 && (
-                  <span className="inline-flex items-center gap-1 text-eyebrow text-warm-500">
+                  <span className="inline-flex items-center gap-1 text-eyebrow text-text-tertiary">
                     <IconCheckCircle2 size={10} /> Read
                   </span>
                 )}
               </div>
               {r.subject && (
-                <p className="text-xs text-warm-700 mt-0.5 truncate">{r.subject}</p>
+                <p className="text-xs text-text-secondary mt-0.5 truncate">{r.subject}</p>
               )}
             </div>
-            <time className="text-eyebrow text-warm-500 flex-shrink-0">
+            <time className="text-eyebrow text-text-tertiary flex-shrink-0">
               {relTime(r.received_at)}
             </time>
           </header>
 
-          <div className="text-sm text-warm-800 whitespace-pre-wrap break-words">
+          <div className="text-sm text-text-primary whitespace-pre-wrap break-words">
             {r.body_text ? (
               r.body_text
             ) : r.body_html ? (
-              <span className="text-xs italic text-warm-500">
+              <span className="text-xs italic text-text-tertiary">
                 (HTML-only message — view raw payload to inspect)
               </span>
             ) : (
-              <span className="text-xs italic text-warm-500">(empty body)</span>
+              <span className="text-xs italic text-text-tertiary">(empty body)</span>
             )}
           </div>
 
           {r.to_addresses.length > 0 && (
-            <p className="text-eyebrow text-warm-500 mt-2 truncate">
+            <p className="text-eyebrow text-text-tertiary mt-2 truncate">
               To: {r.to_addresses.join(', ')}
             </p>
           )}
@@ -236,7 +236,7 @@ export function ReplyThread({ reply, onRead, onOpenCoach }: ReplyThreadProps) {
       ))}
 
       {context && (
-        <p className="px-1 text-caption text-warm-500">
+        <p className="px-1 text-caption text-text-tertiary">
           In reply to: {context.subject ?? 'your prior outreach'} · sent {relTime(context.contactDate)}
         </p>
       )}

@@ -132,14 +132,14 @@ export function SuppressionsAdminPanel() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-            <IconShield size={18} className="text-red-600" />
+          <span className="w-10 h-10 rounded-fw-md bg-fw-danger-bg flex items-center justify-center flex-shrink-0">
+            <IconShield size={18} className="text-fw-danger-ink" />
           </span>
           <div>
-            <h2 className="text-xl font-semibold text-warm-900">
+            <h2 className="text-xl font-semibold text-text-primary">
               Email suppressions
             </h2>
-            <p className="text-sm text-warm-500 mt-0.5 max-w-2xl">
+            <p className="text-sm text-text-tertiary mt-0.5 max-w-2xl">
               Addresses on this list will not receive any email from the
               platform. Suppressions are added automatically by Resend webhooks
               and can also be managed manually here.
@@ -149,16 +149,16 @@ export function SuppressionsAdminPanel() {
       </header>
 
       {/* Add form */}
-      <section className="rounded-2xl border border-warm-200/60 bg-cream-50 p-4">
-        <h2 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
-          <IconPlus size={14} className="text-primary-600" />
+      <section className="rounded-card border border-border-subtle bg-surface p-4">
+        <h2 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+          <IconPlus size={14} className="text-accent-700" />
           Add suppression
         </h2>
         <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2">
           <div className="relative">
             <IconMail
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none z-10"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none z-10"
             />
             <Input
               type="email"
@@ -184,15 +184,15 @@ export function SuppressionsAdminPanel() {
           </Button>
         </form>
         {addError && (
-          <p className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <p className="mt-2 text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
             {addError}
           </p>
         )}
       </section>
 
       {/* Filter row */}
-      <section className="rounded-2xl border border-warm-200/60 bg-cream-50">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-warm-100">
+      <section className="rounded-card border border-border-subtle bg-surface">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border-subtle">
           <div className={CRM_CHOICE_GROUP_CLASS}>
             {REASON_FILTERS.map((opt) => {
               const isActive = filter === opt.value;
@@ -210,7 +210,7 @@ export function SuppressionsAdminPanel() {
                   <span
                     className={cn(
                       'tabular-nums text-eyebrow',
-                      isActive ? 'text-accent-700' : 'text-warm-400',
+                      isActive ? 'text-accent-700' : 'text-text-tertiary',
                     )}
                   >
                     {count}
@@ -232,24 +232,24 @@ export function SuppressionsAdminPanel() {
         {loading ? (
           <div className="p-4 space-y-2">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-10 rounded-lg bg-warm-50/60 skeleton-shimmer" />
+              <div key={i} className="h-10 rounded-fw-sm bg-surface-sunken/70 skeleton-shimmer" />
             ))}
           </div>
         ) : error ? (
           <div className="p-4">
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-sm text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
               {error}
             </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-12 text-center">
-            <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
-              <IconMail size={18} className="text-warm-400" />
+            <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center mx-auto mb-2">
+              <IconMail size={18} className="text-text-tertiary" />
             </div>
-            <p className="text-sm font-medium text-warm-700">
+            <p className="text-sm font-medium text-text-secondary">
               {rows.length === 0 ? 'No suppressions yet' : 'No matches'}
             </p>
-            <p className="text-xs text-warm-500 mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               {rows.length === 0
                 ? 'Resend webhooks will populate this list automatically.'
                 : 'Try a different reason filter or search query.'}
@@ -259,7 +259,7 @@ export function SuppressionsAdminPanel() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                <tr className="text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary border-b border-border-subtle">
                   <th className="px-4 py-2.5">Email</th>
                   <th className="px-4 py-2.5">Reason</th>
                   <th className="px-4 py-2.5">Source</th>

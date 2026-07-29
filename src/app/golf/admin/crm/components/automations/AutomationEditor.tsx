@@ -201,7 +201,7 @@ export function AutomationEditor({
       {/* Backdrop */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog */}
       <div
-        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-nav-bg/35"
         onClick={() => onOpenChange(false)}
       />
 
@@ -211,16 +211,16 @@ export function AutomationEditor({
           role="dialog"
           aria-modal="true"
           aria-labelledby="automation-editor-title"
-          className="w-full max-w-2xl max-h-[90vh] overflow-hidden bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto flex flex-col"
+          className="w-full max-w-2xl max-h-[90vh] overflow-hidden bg-surface rounded-card border border-border-subtle shadow-raise pointer-events-auto flex flex-col"
         >
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-                  <IconZap size={16} className="text-primary-600" />
+                <span className="w-8 h-8 rounded-fw-sm bg-accent-50 flex items-center justify-center">
+                  <IconZap size={16} className="text-accent-700" />
                 </span>
-                <h2 id="automation-editor-title" className="text-base font-semibold text-warm-900">
+                <h2 id="automation-editor-title" className="text-base font-semibold text-text-primary">
                   {isEdit ? 'Edit automation' : 'New automation'}
                 </h2>
               </div>
@@ -228,7 +228,7 @@ export function AutomationEditor({
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close"
-                className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
               >
                 <IconX size={14} />
               </IconButton>
@@ -239,8 +239,8 @@ export function AutomationEditor({
               {/* Name + Active */}
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
                 <div>
-                  <label htmlFor="automation-name" className="block text-xs font-medium text-warm-700 mb-1">
-                    Name <span className="text-red-500">*</span>
+                  <label htmlFor="automation-name" className="block text-xs font-medium text-text-secondary mb-1">
+                    Name <span className="text-fw-danger">*</span>
                   </label>
                   {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
                   <Input autoFocus
@@ -251,7 +251,7 @@ export function AutomationEditor({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Follow up after open"
-                    className="min-h-0 py-2 rounded-lg"
+                    className="min-h-0 py-2 rounded-fw-sm"
                   />
                 </div>
                 <div className="pb-2">
@@ -265,8 +265,8 @@ export function AutomationEditor({
 
               {/* Description */}
               <div>
-                <label htmlFor="automation-description" className="block text-xs font-medium text-warm-700 mb-1">
-                  Description <span className="text-warm-400 font-normal">(optional)</span>
+                <label htmlFor="automation-description" className="block text-xs font-medium text-text-secondary mb-1">
+                  Description <span className="text-text-tertiary font-normal">(optional)</span>
                 </label>
                 <Textarea
                   id="automation-description"
@@ -274,28 +274,28 @@ export function AutomationEditor({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this automation do?"
-                  className="py-2 rounded-lg"
+                  className="py-2 rounded-fw-sm"
                 />
               </div>
 
               {/* Trigger + Priority */}
               <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-3">
                 <div>
-                  <span className="block text-xs font-medium text-warm-700 mb-1">
-                    Trigger event <span className="text-red-500">*</span>
+                  <span className="block text-xs font-medium text-text-secondary mb-1">
+                    Trigger event <span className="text-fw-danger">*</span>
                   </span>
                   <Select
                     options={triggerOptions.map((t) => ({ value: t.value, label: t.label }))}
                     value={triggerEvent}
                     onChange={(value) => setTriggerEvent(value as CrmAutomationTrigger)}
-                    className="rounded-lg"
+                    className="rounded-fw-sm"
                   />
-                  <p className="mt-1 text-eyebrow text-warm-500">
+                  <p className="mt-1 text-eyebrow text-text-tertiary">
                     {TRIGGER_EVENTS.find((t) => t.value === triggerEvent)?.description}
                   </p>
                 </div>
                 <div>
-                  <label htmlFor="automation-priority" className="block text-xs font-medium text-warm-700 mb-1">
+                  <label htmlFor="automation-priority" className="block text-xs font-medium text-text-secondary mb-1">
                     Priority
                   </label>
                   <Input
@@ -305,28 +305,28 @@ export function AutomationEditor({
                     max={1000}
                     value={priority}
                     onChange={(e) => setPriority(parseInt(e.target.value, 10) || 0)}
-                    className="min-h-0 py-2 rounded-lg"
+                    className="min-h-0 py-2 rounded-fw-sm"
                   />
-                  <p className="mt-1 text-eyebrow text-warm-500">Lower runs first.</p>
+                  <p className="mt-1 text-eyebrow text-text-tertiary">Lower runs first.</p>
                 </div>
               </div>
 
               {/* Conditions */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-warm-500">
-                    Conditions <span className="font-normal normal-case text-warm-400">(all must match)</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                    Conditions <span className="font-normal normal-case text-text-tertiary">(all must match)</span>
                   </span>
                   <Button variant="ghost"
                     type="button"
                     onClick={addCondition}
-                    className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors"
                   >
                     <IconPlus size={12} /> Add condition
                   </Button>
                 </div>
                 {conditions.length === 0 ? (
-                  <p className="text-xs text-warm-500 px-3 py-2 bg-warm-50/40 rounded-lg border border-dashed border-warm-200">
+                  <p className="text-xs text-text-tertiary px-3 py-2 bg-surface-sunken/60 rounded-fw-sm border border-dashed border-border-subtle">
                     No conditions — runs on every matching event.
                   </p>
                 ) : (
@@ -341,7 +341,7 @@ export function AutomationEditor({
                           value={cond.field}
                           onChange={(e) => updateCondition(idx, { field: e.target.value })}
                           placeholder="coach.status"
-                          className="min-h-0 px-3 py-1.5 rounded-lg"
+                          className="min-h-0 px-3 py-1.5 rounded-fw-sm"
                         />
                         <Select
                           options={CONDITION_OPS.map((op) => ({ value: op.value, label: op.label }))}
@@ -349,24 +349,24 @@ export function AutomationEditor({
                           onChange={(value) =>
                             updateCondition(idx, { op: value as CrmAutomationConditionOp })
                           }
-                          className="min-h-0 px-3 py-1.5 rounded-lg"
+                          className="min-h-0 px-3 py-1.5 rounded-fw-sm"
                         />
                         {cond.op === 'is_null' || cond.op === 'is_not_null' ? (
-                          <span className="text-xs text-warm-400 italic px-3">—</span>
+                          <span className="text-xs text-text-tertiary italic px-3">—</span>
                         ) : (
                           <Input
                             type="text"
                             value={typeof cond.value === 'string' ? cond.value : String(cond.value ?? '')}
                             onChange={(e) => updateCondition(idx, { value: e.target.value })}
                             placeholder="value"
-                            className="min-h-0 px-3 py-1.5 rounded-lg"
+                            className="min-h-0 px-3 py-1.5 rounded-fw-sm"
                           />
                         )}
                         <IconButton variant="default"
                           type="button"
                           onClick={() => removeCondition(idx)}
                           aria-label="Remove condition"
-                          className="p-1.5 rounded-md text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg/50 transition-colors"
                         >
                           <IconTrash size={14} />
                         </IconButton>
@@ -379,13 +379,13 @@ export function AutomationEditor({
               {/* Actions */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-warm-500">
-                    Actions <span className="font-normal normal-case text-warm-400">(run in order)</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                    Actions <span className="font-normal normal-case text-text-tertiary">(run in order)</span>
                   </span>
                   <Button variant="ghost"
                     type="button"
                     onClick={addAction}
-                    className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors"
                   >
                     <IconPlus size={12} /> Add action
                   </Button>
@@ -411,14 +411,14 @@ export function AutomationEditor({
                               params: nextMeta ? { [nextMeta.paramKey]: '' } : {},
                             });
                           }}
-                          className="min-h-0 px-3 py-1.5 rounded-lg"
+                          className="min-h-0 px-3 py-1.5 rounded-fw-sm"
                         />
                         <Input
                           type="text"
                           value={typeof paramVal === 'string' ? paramVal : String(paramVal ?? '')}
                           onChange={(e) => updateActionParam(idx, paramKey, e.target.value)}
                           placeholder={meta?.paramPlaceholder ?? ''}
-                          className="min-h-0 px-3 py-1.5 rounded-lg"
+                          className="min-h-0 px-3 py-1.5 rounded-fw-sm"
                         />
                         <IconButton variant="default"
                           type="button"
@@ -426,10 +426,10 @@ export function AutomationEditor({
                           aria-label="Remove action"
                           disabled={actions.length === 1}
                           className={cn(
-                            'p-1.5 rounded-md transition-colors',
+                            'p-1.5 rounded-fw-sm transition-colors',
                             actions.length === 1
-                              ? 'text-warm-300 cursor-not-allowed'
-                              : 'text-warm-400 hover:text-red-600 hover:bg-red-50',
+                              ? 'text-text-tertiary cursor-not-allowed'
+                              : 'text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg/50',
                           )}
                         >
                           <IconTrash size={14} />
@@ -441,35 +441,35 @@ export function AutomationEditor({
               </div>
 
               {/* Advanced JSON view */}
-              <div className="border-t border-warm-100 pt-3">
+              <div className="border-t border-border-subtle pt-3">
                 <Button variant="ghost"
                   type="button"
                   onClick={() => setShowAdvanced((v) => !v)}
-                  className="text-xs font-medium text-warm-600 hover:text-warm-900 transition-colors"
+                  className="text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
                 >
                   {showAdvanced ? '▾' : '▸'} Advanced JSON view
                 </Button>
                 {showAdvanced && (
-                  <pre className="mt-2 p-3 bg-warm-50 border border-warm-200 rounded-lg text-eyebrow text-warm-700 overflow-x-auto whitespace-pre">
+                  <pre className="mt-2 p-3 bg-surface-sunken border border-border-subtle rounded-fw-sm text-eyebrow text-text-secondary overflow-x-auto whitespace-pre">
                     {advancedJson}
                   </pre>
                 )}
               </div>
 
               {error && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
                   {error}
                 </p>
               )}
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-warm-100 bg-warm-50/40 rounded-b-2xl">
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border-subtle bg-surface-sunken/60 rounded-b-card">
               <Button variant="ghost"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
-                className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
               >
                 Cancel
               </Button>
@@ -477,8 +477,8 @@ export function AutomationEditor({
                 type="submit"
                 disabled={submitting || !name.trim()}
                 className={cn(
-                  'px-4 py-1.5 text-sm font-semibold rounded-xl shadow-sm transition-colors',
-                  'bg-primary-600 text-white hover:bg-primary-700',
+                  'px-4 py-1.5 text-sm font-semibold rounded-fw-md shadow-flat transition-colors',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >

@@ -63,17 +63,36 @@ export function FairwayDashboardSkeleton() {
     >
       <span className="sr-only">Loading dashboard…</span>
 
-      {/* ── 1 · Masthead — ViewHeader silhouette (shared by both roles) ────── */}
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="h-9 w-72 max-w-full" />
-          <Skeleton className="h-4 w-80 max-w-full" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Skeleton className="h-9 w-28 rounded-full" />
-          <Skeleton className="h-9 w-28 rounded-full" />
-          <Skeleton className="h-9 w-32 rounded-full" />
+      {/* ── 1 · Masthead — ViewHeader PLINTH silhouette (shared by both roles)
+          Every class here is copied from what ViewHeader actually renders with
+          `plinth` at default size, so the real header lands on exactly these
+          pixels rather than near them:
+            plinth band   `rounded-fw-lg bg-surface-tint px-8 py-7` + `gap-4`
+            masthead row  `flex flex-col gap-5 sm:flex-row sm:items-start
+                           sm:justify-between`
+            title column  `flex min-w-0 flex-col gap-1.5`
+          The plinth is rendered as a REAL tinted band, not a shimmer block:
+          `bg-surface-tint` is chrome the resolved header keeps, so painting it
+          here means the band is simply already there when the text arrives. */}
+      <div className="flex w-full flex-col gap-4 rounded-fw-lg bg-surface-tint px-6 py-5 md:px-8 md:py-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            {/* eyebrow → title → description, on the header's own 1.5 rhythm */}
+            <Skeleton className="h-3 w-36" />
+            <Skeleton className="h-9 w-64 max-w-full" />
+            <Skeleton className="h-4 w-48 max-w-full" />
+            {/* meta row — the opener's fact chips */}
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <Skeleton className="h-3.5 w-20" />
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-3.5 w-24" />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Skeleton className="h-9 w-28 rounded-full" />
+            <Skeleton className="h-9 w-28 rounded-full" />
+            <Skeleton className="h-9 w-32 rounded-full" />
+          </div>
         </div>
       </div>
 

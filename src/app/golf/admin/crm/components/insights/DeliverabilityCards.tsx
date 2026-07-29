@@ -35,14 +35,14 @@ export function DeliverabilityCards({ summary, loading }: DeliverabilityCardsPro
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="glass-standard rounded-2xl shadow-glass p-5"
+            className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 space-y-2">
-                <div className="h-3 w-20 bg-warm-100 rounded animate-pulse" />
-                <div className="h-7 w-16 bg-warm-100 rounded animate-pulse" />
+                <div className="h-3 w-20 bg-surface-sunken rounded animate-pulse" />
+                <div className="h-7 w-16 bg-surface-sunken rounded animate-pulse" />
               </div>
-              <div className="w-10 h-10 rounded-full bg-warm-50 animate-pulse" />
+              <div className="w-10 h-10 rounded-full bg-surface-sunken animate-pulse" />
             </div>
           </div>
         ))}
@@ -60,15 +60,15 @@ export function DeliverabilityCards({ summary, loading }: DeliverabilityCardsPro
     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
       <KpiCard
         icon={<IconMail size={20} />}
-        iconBg="bg-blue-100"
-        iconColor="text-blue-600"
+        iconBg="bg-surface-sunken"
+        iconColor="text-accent-700"
         label="Sent"
         value={sent.toLocaleString()}
       />
       <KpiCard
         icon={<IconCheckCircle2 size={20} />}
-        iconBg="bg-primary-100"
-        iconColor="text-primary-600"
+        iconBg="bg-accent-100"
+        iconColor="text-accent-700"
         label="Delivered"
         value={delivered.toLocaleString()}
         subtitle={
@@ -79,8 +79,8 @@ export function DeliverabilityCards({ summary, loading }: DeliverabilityCardsPro
       />
       <KpiCard
         icon={<IconEye size={20} />}
-        iconBg="bg-violet-100"
-        iconColor="text-violet-600"
+        iconBg="bg-accent-100"
+        iconColor="text-accent-700"
         label="Opened"
         value={opened.toLocaleString()}
         subtitle={
@@ -91,8 +91,8 @@ export function DeliverabilityCards({ summary, loading }: DeliverabilityCardsPro
       />
       <KpiCard
         icon={<MousePointerClick size={20} />}
-        iconBg="bg-indigo-100"
-        iconColor="text-indigo-600"
+        iconBg="bg-accent-100"
+        iconColor="text-accent-700"
         label="Clicked"
         value={clicked.toLocaleString()}
         subtitle={
@@ -103,8 +103,8 @@ export function DeliverabilityCards({ summary, loading }: DeliverabilityCardsPro
       />
       <KpiCard
         icon={<Ban size={20} />}
-        iconBg="bg-red-100"
-        iconColor="text-red-600"
+        iconBg="bg-fw-danger-bg"
+        iconColor="text-fw-danger-ink"
         label="Bounced"
         value={bounced.toLocaleString()}
         subtitle={
@@ -141,24 +141,24 @@ function KpiCard({
   return (
     <div
       className={cn(
-        'glass-standard rounded-2xl p-5',
-        'shadow-glass transition-[transform,box-shadow] duration-200 group',
-        'hover:-translate-y-0.5 hover:shadow-lg',
+        'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5',
+        'shadow-flat transition-[transform,box-shadow] duration-200 group',
+        'hover:-translate-y-0.5 hover:shadow-soft',
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-warm-500 uppercase tracking-wider">{label}</p>
+          <p className="text-xs text-text-tertiary uppercase tracking-wider">{label}</p>
           <p
             className={cn(
               'text-2xl font-bold tabular-nums tracking-tight mt-1',
-              emphasis === 'warn' ? 'text-red-700' : 'text-warm-900',
+              emphasis === 'warn' ? 'text-fw-danger-ink' : 'text-text-primary',
             )}
           >
             {value}
           </p>
           {subtitle && (
-            <p className="text-eyebrow text-warm-400 mt-0.5">{subtitle}</p>
+            <p className="text-eyebrow text-text-tertiary mt-0.5">{subtitle}</p>
           )}
         </div>
         <div

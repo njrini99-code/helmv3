@@ -28,7 +28,7 @@ interface ParsedCoach {
   isDuplicate?: boolean;
 }
 
-const inputClass = 'w-full bg-cream-50 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const inputClass = 'w-full bg-surface-sunken border border-border-subtle rounded-fw-sm px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400 outline-none';
 const DIVISION_OPTIONS = [
   { value: 'D1', label: 'Division I' },
   { value: 'D2', label: 'Division II' },
@@ -37,7 +37,7 @@ const DIVISION_OPTIONS = [
   { value: 'JUCO', label: 'JUCO' },
 ];
 const DIVISION_VALUES: readonly Division[] = ['D1', 'D2', 'D3', 'NAIA', 'JUCO'];
-const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+const labelClass = 'text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block';
 
 // Normalizes a raw CSV "Division" cell (e.g. "D1", "Division I", "DIII") to a
 // canonical Division value. Returns null when the cell is empty/unrecognized
@@ -293,7 +293,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-nav-bg/40 p-4"
       onClick={onClose}
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
@@ -302,19 +302,19 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${uid}-title`}
-        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="rounded-card bg-elevated shadow-raise w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle flex-shrink-0">
           <div className="flex items-center gap-2">
-            <IconUpload size={16} className="text-warm-600" />
-            <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">Import Coaches</h2>
+            <IconUpload size={16} className="text-text-secondary" />
+            <h2 id={`${uid}-title`} className="text-lg font-semibold text-text-primary">Import Coaches</h2>
           </div>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="text-warm-400 hover:text-warm-600 transition-colors"
+            className="text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <IconX size={18} />
           </IconButton>
@@ -331,7 +331,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   onChange={(value) => setDivision(value as Division)}
                   className={inputClass}
                 />
-                <p className="text-xs text-warm-500 mt-1">
+                <p className="text-xs text-text-tertiary mt-1">
                   Used for rows without a recognized Division column value.
                 </p>
               </div>
@@ -360,9 +360,9 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </div>
 
               {errors.length > 0 && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="font-medium text-red-800 mb-2">Parse Errors:</p>
-                  <ul className="text-sm text-red-600 space-y-1">
+                <div className="p-4 bg-fw-danger-bg border border-fw-danger/25 rounded-fw-md">
+                  <p className="font-medium text-fw-danger-ink mb-2">Parse Errors:</p>
+                  <ul className="text-sm text-fw-danger-ink space-y-1">
                     {errors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
@@ -370,7 +370,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 </div>
               )}
 
-              <div className="text-xs text-warm-500">
+              <div className="text-xs text-text-tertiary">
                 <p className="font-medium mb-1">Expected columns:</p>
                 <p>Conference, School, Coach Name, Title, Email, Program, Division (optional)</p>
                 <p className="mt-1">Program values: Men&apos;s, Women&apos;s, Both</p>
@@ -380,7 +380,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex items-center justify-between gap-3">
                 <Button variant="ghost"
                   onClick={() => setShowDuplicateReview(true)}
-                  className="inline-flex items-center gap-1.5 bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-surface border border-border-subtle text-text-secondary rounded-fw-md px-4 py-2.5 text-sm font-medium hover:bg-surface-sunken transition-colors"
                 >
                   <IconLayers size={16} />
                   Find duplicates
@@ -388,14 +388,14 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 <div className="flex justify-end gap-3">
                   <Button variant="ghost"
                     onClick={onClose}
-                    className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                    className="bg-surface border border-border-subtle text-text-secondary rounded-fw-md px-5 py-2.5 text-sm font-medium hover:bg-surface-sunken transition-colors"
                   >
                     Cancel
                   </Button>
                   <Button variant="primary"
                     onClick={parseCSV}
                     disabled={!csvText.trim()}
-                    className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                    className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     Parse & Preview
                   </Button>
@@ -407,25 +407,25 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           {step === 'preview' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-warm-600">
+                <p className="text-sm text-text-secondary">
                   Found <span className="font-semibold">{parsedData.length}</span> coaches to import
                   {duplicateCount > 0 && (
-                    <span className="text-amber-600 ml-1">
+                    <span className="text-fw-warning-ink ml-1">
                       ({duplicateCount} duplicate{duplicateCount !== 1 ? 's' : ''} will be skipped)
                     </span>
                   )}
                 </p>
                 <span className={cn(
                   'px-2 py-1 rounded text-xs font-medium',
-                  division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                  division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-800'
                 )}>
                   Default: {division}
                 </span>
               </div>
 
               {errors.length > 0 && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-                  <p className="text-sm text-yellow-800 flex items-center gap-1.5">
+                <div className="p-3 bg-fw-warning-bg border border-fw-warning-ring rounded-fw-md">
+                  <p className="text-sm text-fw-warning-ink flex items-center gap-1.5">
                     <IconWarning className="w-4 h-4" />
                     {errors.length} rows skipped due to errors
                   </p>
@@ -433,29 +433,29 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               )}
 
               {duplicateCount > 0 && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                  <p className="text-sm text-amber-800 flex items-center gap-1.5">
+                <div className="p-3 bg-fw-warning-bg border border-fw-warning-ring rounded-fw-md">
+                  <p className="text-sm text-fw-warning-ink flex items-center gap-1.5">
                     <IconWarning className="w-4 h-4" />
                     {duplicateCount} coach{duplicateCount !== 1 ? 'es' : ''} already exist (matched by email) and will be skipped
                   </p>
                 </div>
               )}
 
-              <div className="border border-warm-100 rounded-xl max-h-[300px] overflow-y-auto overflow-x-auto">
+              <div className="border border-border-subtle rounded-fw-md max-h-[300px] overflow-y-auto overflow-x-auto">
                 <table className="w-full text-sm min-w-[520px]">
-                  <thead className="bg-warm-50 sticky top-0">
+                  <thead className="bg-surface-sunken sticky top-0">
                     <tr>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Name</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">School</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Conference</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Division</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Program</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider w-20">Status</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase tracking-wider">Name</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase tracking-wider">School</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase tracking-wider">Conference</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase tracking-wider">Division</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase tracking-wider">Program</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase tracking-wider w-20">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-warm-100">
+                  <tbody className="divide-y divide-border-subtle">
                     {parsedData.slice(0, 50).map((coach, i) => (
-                      <tr key={i} className={cn(coach.isDuplicate && 'bg-amber-50/50')}>
+                      <tr key={i} className={cn(coach.isDuplicate && 'bg-fw-warning-bg/50')}>
                         <td className="px-3 py-2">{coach.name}</td>
                         <td className="px-3 py-2">{coach.school}</td>
                         <td className="px-3 py-2 truncate max-w-[150px]">{coach.conference}</td>
@@ -463,7 +463,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                         <td className="px-3 py-2 capitalize">{coach.program}</td>
                         <td className="px-3 py-2">
                           {coach.isDuplicate && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-micro font-semibold bg-amber-100 text-amber-700">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-micro font-semibold bg-fw-warning-bg text-fw-warning-ink">
                               Duplicate
                             </span>
                           )}
@@ -473,7 +473,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   </tbody>
                 </table>
                 {parsedData.length > 50 && (
-                  <div className="px-3 py-2 bg-warm-50 text-sm text-warm-500 text-center">
+                  <div className="px-3 py-2 bg-surface-sunken text-sm text-text-tertiary text-center">
                     ...and {parsedData.length - 50} more
                   </div>
                 )}
@@ -482,14 +482,14 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex justify-end gap-3">
                 <Button variant="ghost"
                   onClick={() => { setStep('upload'); setDuplicateCount(0); }}
-                  className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="bg-surface border border-border-subtle text-text-secondary rounded-fw-md px-5 py-2.5 text-sm font-medium hover:bg-surface-sunken transition-colors"
                 >
                   Back
                 </Button>
                 <Button variant="primary"
                   onClick={handleImport}
                   disabled={parsedData.filter(c => !c.isDuplicate).length === 0}
-                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                  className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   Import {parsedData.filter(c => !c.isDuplicate).length} Coaches
                 </Button>
@@ -500,21 +500,21 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           {step === 'importing' && (
             <div className="text-center py-8">
               <div className="flex items-center justify-center gap-2 mx-auto mb-4">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                <span className="w-2.5 h-2.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                <span className="w-2.5 h-2.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                <span className="w-2.5 h-2.5 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                <span className="w-2.5 h-2.5 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                <span className="w-2.5 h-2.5 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
               </div>
-              <p className="text-warm-700 font-medium">
+              <p className="text-text-secondary font-medium">
                 Importing coaches... {importProgress.current} / {importProgress.total}
               </p>
               {importProgress.errors > 0 && (
-                <p className="text-sm text-red-600 mt-2">
+                <p className="text-sm text-fw-danger-ink mt-2">
                   {importProgress.errors} errors so far
                 </p>
               )}
-              <div className="w-full bg-warm-200 rounded-full h-2 mt-4 max-w-md mx-auto">
+              <div className="w-full bg-surface-sunken rounded-full h-2 mt-4 max-w-md mx-auto">
                 <div
-                  className="bg-primary-500 h-2 rounded-full transition-all"
+                  className="bg-accent-500 h-2 rounded-full transition-all"
                   style={{ width: `${importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}%` }}
                 />
               </div>
@@ -525,24 +525,24 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             <div className="text-center py-8">
               <div className={cn(
                 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4',
-                importProgress.errors === 0 ? 'bg-primary-100' : 'bg-yellow-100'
+                importProgress.errors === 0 ? 'bg-accent-100' : 'bg-fw-warning-bg'
               )}>
                 <IconCheck className={cn(
                   'w-8 h-8',
-                  importProgress.errors === 0 ? 'text-primary-600' : 'text-yellow-600'
+                  importProgress.errors === 0 ? 'text-accent-700' : 'text-fw-warning-ink'
                 )} />
               </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">Import Complete</h3>
-              <p className="text-warm-600">
+              <h3 className="text-lg font-semibold text-text-primary mb-2">Import Complete</h3>
+              <p className="text-text-secondary">
                 Successfully imported {importProgress.total - importProgress.errors} coaches
                 {importProgress.errors > 0 && ` (${importProgress.errors} failed)`}
                 {duplicateCount > 0 && ` (${duplicateCount} duplicates skipped)`}
               </p>
 
               {errors.length > 0 && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-left max-h-[200px] overflow-y-auto">
-                  <p className="font-medium text-red-800 mb-2">Errors:</p>
-                  <ul className="text-sm text-red-600 space-y-1">
+                <div className="mt-4 p-4 bg-fw-danger-bg border border-fw-danger/25 rounded-fw-md text-left max-h-[200px] overflow-y-auto">
+                  <p className="font-medium text-fw-danger-ink mb-2">Errors:</p>
+                  <ul className="text-sm text-fw-danger-ink space-y-1">
                     {errors.slice(0, 20).map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
@@ -555,7 +555,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
               <Button variant="primary"
                 onClick={onSuccess}
-                className="mt-6 bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors"
+                className="mt-6 bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors"
               >
                 Done
               </Button>

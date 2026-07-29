@@ -69,19 +69,19 @@ const STATUS_META: Record<'won' | 'lost' | 'nurture', { title: string; descripti
     title: 'Mark as Customer',
     description: 'Capture the closing context so you can replay successful playbooks later.',
     Icon: IconTrophy,
-    iconBg: 'bg-primary-50',
-    iconColor: 'text-primary-600',
+    iconBg: 'bg-accent-50',
+    iconColor: 'text-accent-700',
     submitLabel: 'Mark won',
-    submitClass: 'bg-primary-600 hover:bg-primary-700',
+    submitClass: 'bg-accent-650 hover:bg-accent-700',
   },
   lost:    {
     title: 'Mark as Lost',
     description: 'Logging the loss reason helps you spot patterns across deals you didn’t close.',
     Icon: IconXCircle,
-    iconBg: 'bg-red-50',
-    iconColor: 'text-red-600',
+    iconBg: 'bg-fw-danger-bg',
+    iconColor: 'text-fw-danger-ink',
     submitLabel: 'Mark lost',
-    submitClass: 'bg-red-600 hover:bg-red-700',
+    submitClass: 'bg-fw-danger hover:bg-fw-danger/85',
   },
   nurture: {
     title: 'Move to Nurture',
@@ -89,10 +89,10 @@ const STATUS_META: Record<'won' | 'lost' | 'nurture', { title: string; descripti
     Icon: Sprout,
     // Deeper primary tint than `won` (not a second green hue) — keeps the
     // two "closed" outcomes visually distinct while staying in one family.
-    iconBg: 'bg-primary-100',
-    iconColor: 'text-primary-700',
+    iconBg: 'bg-accent-100',
+    iconColor: 'text-accent-700',
     submitLabel: 'Move to nurture',
-    submitClass: 'bg-primary-700 hover:bg-primary-800',
+    submitClass: 'bg-accent-700 hover:bg-accent-800',
   },
 };
 
@@ -139,7 +139,7 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
         type="button"
         aria-label="Close dialog"
         onClick={onClose}
-        className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-nav-bg/30"
       ><span className="sr-only">Close dialog</span></IconButton>
 
       {/* display:contents wrapper — pure ref anchor for useFocusTrap's Tab-cycle
@@ -148,12 +148,12 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
       <div ref={modalRef} className="contents">
         <form
           onSubmit={handleSubmit}
-          className="relative w-full max-w-md rounded-2xl bg-cream-50 shadow-2xl border border-warm-100"
+          className="relative w-full max-w-md rounded-card bg-surface shadow-raise border border-border-subtle"
         >
           <div className="px-5 pt-5 pb-3 flex items-start gap-3">
             <span
               className={cn(
-                'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                'w-10 h-10 rounded-fw-md flex items-center justify-center flex-shrink-0',
                 meta.iconBg,
                 meta.iconColor,
               )}
@@ -161,17 +161,17 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
               <Icon size={20} />
             </span>
             <div className="flex-1 min-w-0">
-              <h2 id="winloss-dialog-title" className="text-base font-semibold text-warm-900">
+              <h2 id="winloss-dialog-title" className="text-base font-semibold text-text-primary">
                 {meta.title}
               </h2>
-              <p className="text-xs text-warm-500 mt-0.5">{coach.name} · {coach.school}</p>
-              <p className="text-xs text-warm-500 mt-2">{meta.description}</p>
+              <p className="text-xs text-text-tertiary mt-0.5">{coach.name} · {coach.school}</p>
+              <p className="text-xs text-text-tertiary mt-2">{meta.description}</p>
             </div>
             <IconButton variant="default"
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="p-1.5 rounded-md hover:bg-warm-100 text-warm-400 hover:text-warm-700"
+              className="p-1.5 rounded-fw-sm hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary"
             >
               <IconX size={14} />
             </IconButton>
@@ -191,9 +191,9 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
             <div>
               <label
                 htmlFor="winloss-notes"
-                className="block text-xs font-semibold text-warm-700 mb-1.5"
+                className="block text-xs font-semibold text-text-secondary mb-1.5"
               >
-                Notes <span className="text-warm-400 font-normal">(optional)</span>
+                Notes <span className="text-text-tertiary font-normal">(optional)</span>
               </label>
               <Textarea
                 id="winloss-notes"
@@ -203,12 +203,12 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
                 maxLength={2000}
                 disabled={submitting}
                 placeholder="What happened? Anything we should remember next time?"
-                className="text-sm bg-cream-50"
+                className="text-sm bg-surface"
               />
             </div>
 
             {error && (
-              <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <div className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/20 rounded-fw-sm px-3 py-2">
                 {error}
               </div>
             )}
@@ -219,7 +219,7 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary disabled:opacity-50"
             >
               Cancel
             </Button>
@@ -227,7 +227,7 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
               type="submit"
               disabled={submitting}
               className={cn(
-                'px-4 py-1.5 text-sm font-semibold text-white rounded-xl shadow-sm transition-colors',
+                'px-4 py-1.5 text-sm font-semibold text-text-on-accent rounded-fw-md shadow-flat transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 meta.submitClass,
               )}

@@ -14,3 +14,69 @@
 .landing-selection ::selection {
   background: oklch(0.648 0.149 149.6 / 0.22);
 }
+
+/* ── Team stat tiles (TeamSection) ───────────────────────────────────────────
+ * The three "8 / 3 / 1" tiles are laid out `grid-cols-3` at every width. On a
+ * phone that gives each one ~107px, and a 12px label in a 107px column sits
+ * exactly ON the wrap boundary: at 402px "Active qualifier" fits on one line
+ * while "Players on roster" and "Events this week" take two. WHICH tiles wrap
+ * therefore changes with the device width (measured: 2/2/2 at 390, 2/2/1 at
+ * 402 and 430, 2/2/2 at 360) — which is why the row looked broken in a
+ * different way every time it was looked at.
+ *
+ * The second half of the problem is chrome. Each tile carried the shared
+ * four-layer GLASS_CARD shadow, whose 26px/56px spread is tuned for a large
+ * surface. At 107x91 the shadow is visually heavier than the content inside
+ * it, so the three read as floating blobs rather than as one row of figures.
+ *
+ * Below `sm` they are therefore ONE grouped row: a single hairline surface with
+ * dividers between the tiles, no per-tile card, no shadow, and a label box tall
+ * enough for two lines so the figures always sit on the same baseline whichever
+ * way the text happens to break. The glass card returns at `sm`, where each
+ * tile is ~200px wide and the icon + inline-label layout it was designed for
+ * actually fits.
+ *
+ * Lives here rather than as an inline style because GLASS_CARD is a shared
+ * object and this treatment has to be viewport-conditional — which an inline
+ * style cannot express. */
+.team-stats {
+  gap: 0;
+  overflow: clip;
+  border: 1px solid oklch(0.4 0.02 60 / 0.11);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--fw-color-surface) 72%, transparent);
+}
+
+.team-stats > [data-team-stat] + [data-team-stat] {
+  border-left: 1px solid oklch(0.4 0.02 60 / 0.1);
+}
+
+@media (min-width: 640px) {
+  .team-stats {
+    gap: 0.875rem;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .team-stats > [data-team-stat] + [data-team-stat] {
+    border-left: 0;
+  }
+
+  /* The GLASS_CARD recipe, restored at the size it was designed for. */
+  .team-stat-tile {
+    background:
+      linear-gradient(180deg, oklch(1 0 0 / 0.3), oklch(1 0 0 / 0.1)),
+      color-mix(in srgb, var(--fw-color-surface) 60%, transparent);
+    border: 1px solid oklch(1 0 0 / 0.55);
+    border-radius: 16px;
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.55),
+      0 1px 2px oklch(0.18 0.01 60 / 0.07),
+      0 10px 24px oklch(0.18 0.01 60 / 0.12),
+      0 26px 56px oklch(0.18 0.01 60 / 0.14);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  }
+}

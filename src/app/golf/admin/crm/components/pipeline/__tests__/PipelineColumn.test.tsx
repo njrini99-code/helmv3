@@ -65,10 +65,10 @@ function renderColumn(coaches: Coach[]) {
     <PipelineColumn
       status="new_lead"
       label="New Lead"
-      headerBg="bg-warm-100/80"
-      headerText="text-warm-700"
-      countBg="bg-warm-200/80"
-      countText="text-warm-700"
+      headerBg="bg-surface-sunken"
+      headerText="text-text-secondary"
+      countBg="bg-surface-sunken"
+      countText="text-text-secondary"
       coaches={coaches}
       engagementMap={{}}
     />,

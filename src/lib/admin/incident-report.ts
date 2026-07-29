@@ -63,6 +63,17 @@ export interface IncidentReportInput {
   deployMarkers?: IncidentReportDeploy[];
   sentryUrl?: string | null;
   stackTrace?: string | null;
+  /** Derived kind axis — see @/lib/admin/incident-classification. */
+  incidentClass?: string | null;
+  /** Why the classifier chose that class, in operator-readable words. */
+  incidentClassReason?: string | null;
+  /**
+   * True when the captured message lost its content (e.g. "[object Object]").
+   * Called out explicitly because this report is routinely pasted into Claude
+   * to debug — a reader must know the message is USELESS rather than
+   * concluding the error itself is content-free.
+   */
+  hasDegradedMessage?: boolean;
   /** Injectable for deterministic tests; defaults to `new Date().toISOString()`. */
   generatedAt?: string;
 }
@@ -237,8 +248,25 @@ export function buildIncidentReport(input: IncidentReportInput): string {
   );
   lines.push('');
 
+  // Classification leads, because it changes how the whole report should be
+  // read: an "Integrity OK" or "Empty state" row is not a bug to chase, and a
+  // reader (human or Claude) that learns this only after wading through a
+  // stack trace has already wasted the effort.
+  if (input.incidentClass) {
+    lines.push('## Classification');
+    lines.push(`- Kind: ${input.incidentClass}`);
+    if (input.incidentClassReason) lines.push(`- Why: ${input.incidentClassReason}`);
+    lines.push('');
+  }
+
   lines.push('## Message', '');
   lines.push(fence(input.message?.length ? input.message : '(no message captured)'));
+  if (input.hasDegradedMessage) {
+    lines.push('');
+    lines.push(
+      '> ⚠️ **This message was degraded on capture** — the call site stringified an error object instead of using `describeError()`, so the real cause is NOT in this report. Fix the call site before trying to debug from this text.',
+    );
+  }
   lines.push('');
 
   lines.push('## Stack trace', '');

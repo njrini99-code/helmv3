@@ -17,6 +17,8 @@ import { Button, IconButton } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/select';
 import { nextStepLabel } from './next-step-label';
 import { groupBy } from './group-coaches';
+import { EmptyState } from '@/components/fairway';
+import { CRM_PRIMARY_ACTION_CLASS, CRM_SECONDARY_ACTION_CLASS } from '../page-contracts';
 
 // Row-density modes. Comfortable keeps the original generous vertical rhythm;
 // Compact tightens cell padding + line height so ~2x as many rows fit a
@@ -67,16 +69,16 @@ function RowContactHeader({ coach }: { coach: Coach }) {
   const hasMeta = coach.email || coach.phone || roleLabel || programLabel;
   if (!hasMeta) return null;
   return (
-    <div className="px-3 pt-2 pb-2 mb-1 border-b border-warm-100/70">
-      <p className="text-sm font-semibold text-warm-900 truncate">{coach.name}</p>
+    <div className="px-3 pt-2 pb-2 mb-1 border-b border-border-subtle/70">
+      <p className="text-sm font-semibold text-text-primary truncate">{coach.name}</p>
       {coach.email && (
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-warm-500 min-w-0" title={coach.email}>
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-text-tertiary min-w-0" title={coach.email}>
           <IconMail size={11} className="shrink-0 opacity-60" />
           <span className="truncate">{coach.email}</span>
         </p>
       )}
       {coach.phone && (
-        <p className="flex items-center gap-1 text-xs text-warm-500 min-w-0" title={coach.phone}>
+        <p className="flex items-center gap-1 text-xs text-text-tertiary min-w-0" title={coach.phone}>
           <IconPhone size={11} className="shrink-0 opacity-60" />
           <span className="truncate">{coach.phone}</span>
         </p>
@@ -84,12 +86,12 @@ function RowContactHeader({ coach }: { coach: Coach }) {
       {(roleLabel || programLabel) && (
         <div className="mt-1 flex items-center flex-wrap gap-1">
           {roleLabel && (
-            <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">
+            <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">
               {roleLabel}
             </span>
           )}
           {programLabel && (
-            <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
+            <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-accent-700">
               {programLabel}
             </span>
           )}
@@ -103,9 +105,9 @@ function RowContactHeader({ coach }: { coach: Coach }) {
 // division labels gets a distinct soft pill so the book split reads at a glance.
 // Unknown labels fall through to a neutral warm tint. Purely presentational.
 const ASSIGNEE_TINT: Record<string, string> = {
-  Nick: 'bg-primary-50 text-primary-700 ring-1 ring-primary-200',
-  Ben: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
-  Leah: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+  Nick: 'bg-accent-50 text-accent-700 ring-1 ring-accent-200',
+  Ben: 'bg-surface-sunken text-text-secondary ring-1 ring-border-subtle',
+  Leah: 'bg-accent-50 text-accent-800 ring-1 ring-accent-200',
 };
 
 // Small tinted badge shown in the row / card when a coach has been assigned to
@@ -115,7 +117,7 @@ function AssigneeChip({ assignee }: { assignee: string }) {
     <span
       className={cn(
         'shrink-0 inline-flex items-center gap-1 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-        ASSIGNEE_TINT[assignee] ?? 'bg-warm-100 text-warm-600 ring-1 ring-warm-200',
+        ASSIGNEE_TINT[assignee] ?? 'bg-surface-sunken text-text-secondary ring-1 ring-border-subtle',
       )}
       title={`Assigned to ${assignee}`}
     >
@@ -156,16 +158,16 @@ function AssigneeSubmenu({
     <div className="relative">
       <Button variant="ghost"
         onClick={e => { e.stopPropagation(); onToggle(); }}
-        className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
+        className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center justify-between"
       >
         <span className="flex items-center gap-2">
-          <IconUserPlus size={16} className="text-warm-400" /> Assign
+          <IconUserPlus size={16} className="text-text-tertiary" /> Assign
         </span>
-        <IconChevronRight size={12} className="text-warm-400" />
+        <IconChevronRight size={12} className="text-text-tertiary" />
       </Button>
       {isOpen && (
         <div className={cn(
-          'absolute top-0 z-50 w-36 py-1 glass-prominent rounded-xl shadow-xl',
+          'absolute top-0 z-50 w-36 py-1 bg-elevated shadow-raise rounded-fw-md shadow-raise',
           flyoutSide === 'left' ? 'left-full ml-1' : 'right-full mr-1',
         )}>
           {CRM_ASSIGNEES.map(label => (
@@ -174,24 +176,24 @@ function AssigneeSubmenu({
               onClick={() => apply(label)}
               className={cn(
                 'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-                coach.assigned_to === label ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                coach.assigned_to === label ? 'bg-accent-50 font-semibold text-accent-700' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
               )}
             >
-              <IconUser size={14} className={coach.assigned_to === label ? 'text-primary-500' : 'text-warm-400'} />
+              <IconUser size={14} className={coach.assigned_to === label ? 'text-accent-600' : 'text-text-tertiary'} />
               <span className="flex-1">{label}</span>
-              {coach.assigned_to === label && <IconCheck size={13} className="text-primary-600" />}
+              {coach.assigned_to === label && <IconCheck size={13} className="text-accent-700" />}
             </Button>
           ))}
-          <div className="my-1 h-px bg-warm-100" />
+          <div className="my-1 h-px bg-surface-sunken" />
           <Button variant="ghost"
             onClick={() => apply(null)}
             disabled={!coach.assigned_to}
             className={cn(
               'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-              coach.assigned_to ? 'text-warm-700 hover:bg-warm-50 active:bg-warm-100' : 'text-warm-300 cursor-default',
+              coach.assigned_to ? 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken' : 'text-text-tertiary cursor-default',
             )}
           >
-            <IconUserX size={14} className="text-warm-400" /> Unassign
+            <IconUserX size={14} className="text-text-tertiary" /> Unassign
           </Button>
         </div>
       )}
@@ -275,10 +277,10 @@ function formatRelativeDate(dateStr: string | null): string {
 // inline in each render site) so the desktop <td>, mobile card meta line, and
 // any future consumer render byte-identical styling for the same tone.
 const NEXT_STEP_TONE_CLASS: Record<ReturnType<typeof nextStepLabel>['tone'], string> = {
-  none: 'text-caption text-warm-300',
-  future: 'text-caption text-warm-700',
-  today: 'text-xs text-amber-700 font-medium',
-  overdue: 'text-xs text-red-700 font-medium',
+  none: 'text-caption text-text-tertiary',
+  future: 'text-caption text-text-secondary',
+  today: 'text-xs text-fw-warning-ink font-medium',
+  overdue: 'text-xs text-fw-danger-ink font-medium',
 };
 
 // "Next step" cell/line — shared between the desktop <td> and the mobile card
@@ -370,10 +372,10 @@ const CoachTableRow = React.memo(
     return (
       <tr
         className={cn(
-          'border-b border-warm-50 cursor-pointer group transition-colors duration-150',
-          isSelected && 'bg-primary-50/50',
-          !isSelected && isFocused && 'bg-cream-100',
-          !isSelected && !isFocused && 'hover:bg-cream-100',
+          'border-b border-border-subtle cursor-pointer group transition-colors duration-150',
+          isSelected && 'bg-accent-50/50',
+          !isSelected && isFocused && 'bg-canvas',
+          !isSelected && !isFocused && 'hover:bg-surface-tint',
         )}
         onClick={handleRowClick}
       >
@@ -383,7 +385,7 @@ const CoachTableRow = React.memo(
             type="checkbox"
             checked={isSelected}
             onChange={handleCheckbox}
-            className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+            className="w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer"
           />
         </td>
 
@@ -393,7 +395,7 @@ const CoachTableRow = React.memo(
             onClick={handleStar}
             className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
           >
-            <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-amber-300')} />
+            <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-fw-warning text-fw-warning' : 'text-text-tertiary hover:text-fw-warning/80')} />
           </IconButton>
         </td>
 
@@ -403,7 +405,7 @@ const CoachTableRow = React.memo(
             rows stay one clean line per field. Always shown. */}
         <td className={cellPad}>
           <div className="flex items-center gap-2 min-w-0">
-            <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
+            <p className="text-sm font-medium text-text-primary leading-tight truncate">{coach.name}</p>
             <span className={cn(
               'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
               'bg-surface-tint text-text-secondary ring-1 ring-border-subtle',
@@ -411,11 +413,11 @@ const CoachTableRow = React.memo(
               {coach.division}
             </span>
             {coach.is_primary_contact && (
-              <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★</span>
+              <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★</span>
             )}
             {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
           </div>
-          {secondary && <p className="text-label text-warm-400 truncate">{secondary}</p>}
+          {secondary && <p className="text-label text-text-tertiary truncate">{secondary}</p>}
         </td>
 
         {/* Engagement (Hot / Warm / Cold) — visible at lg+.
@@ -435,7 +437,7 @@ const CoachTableRow = React.memo(
               className={cn(
                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
                 STATUS_COLORS[coach.status]?.bg, STATUS_COLORS[coach.status]?.text, STATUS_COLORS[coach.status]?.border,
-                'hover:ring-1 hover:ring-warm-200',
+                'hover:ring-1 hover:ring-border-subtle',
               )}
             >
               <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
@@ -444,14 +446,14 @@ const CoachTableRow = React.memo(
             </Button>
             {isStatusOpen && (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents row click from closing dropdown
-              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-elevated shadow-raise rounded-fw-md shadow-raise" onClick={e => e.stopPropagation()}>
                 {ALL_STATUSES.map(status => (
                   <Button variant="primary"
                     key={status}
                     onClick={() => { onStatusChange(coach.id, status); onOpenStatus(null); }}
                     className={cn(
                       'w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
-                      coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                      coach.status === status ? 'bg-accent-50 font-semibold text-accent-700' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                     )}
                   >
                     <span className="flex items-center">{statusConfig[status]?.icon}</span>
@@ -477,18 +479,18 @@ const CoachTableRow = React.memo(
         <td className={cn('hidden xl:table-cell', cellPad)}>
           {coach.priority > 0 ? (
             <span className={cn('inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
-              <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500')} />
+              <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-fw-danger' : 'bg-fw-warning')} />
               <span className="flex items-center">{priorityConfig[coach.priority]?.iconLabel}</span>
               {priorityConfig[coach.priority]?.label}
             </span>
           ) : (
-            <span className="text-micro text-warm-300">&mdash;</span>
+            <span className="text-micro text-text-tertiary">&mdash;</span>
           )}
         </td>
 
         {/* Conference — visible at xl+ */}
         <td className={cn('hidden xl:table-cell', cellPad)}>
-          <p className="text-xs text-warm-500 truncate">{coach.conference}</p>
+          <p className="text-xs text-text-tertiary truncate">{coach.conference}</p>
         </td>
 
         {/* Last Contact — visible whenever the table shows (md+); right-aligned
@@ -496,7 +498,7 @@ const CoachTableRow = React.memo(
         <td className={cn('hidden md:table-cell text-right', cellPad)}>
           <span className={cn(
             'text-xs tabular-nums',
-            !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500',
+            !coach.last_contacted_at ? 'text-fw-danger font-medium' : 'text-text-tertiary',
           )}>
             {formatRelativeDate(coach.last_contacted_at)}
           </span>
@@ -517,11 +519,11 @@ const CoachTableRow = React.memo(
                 <SegmentBadge key={seg.id} segment={seg} variant="chip" />
               ))}
               {segments.length > 3 && (
-                <span className="text-eyebrow text-warm-400 self-center">+{segments.length - 3}</span>
+                <span className="text-eyebrow text-text-tertiary self-center">+{segments.length - 3}</span>
               )}
             </div>
           ) : (
-            <span className="text-micro text-warm-300">&mdash;</span>
+            <span className="text-micro text-text-tertiary">&mdash;</span>
           )}
         </td>
 
@@ -531,7 +533,7 @@ const CoachTableRow = React.memo(
             <IconButton variant="default" aria-label="More options"
               onClick={e => { e.stopPropagation(); onOpenAction(isActionOpen ? null : coach.id); }}
               className={cn(
-                'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
+                'p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                 'opacity-0 group-hover:opacity-100 transition-all duration-200',
               )}
             >
@@ -539,76 +541,76 @@ const CoachTableRow = React.memo(
             </IconButton>
             {isActionOpen && (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents row click from closing action menu
-              <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 bg-elevated shadow-raise rounded-fw-md shadow-raise" onClick={e => e.stopPropagation()}>
                 {/* Contact detail header — the email / phone / role / program that
                     used to over-stack the name cell now live here (still in the
                     detail panel too). */}
                 <RowContactHeader coach={coach} />
                 <Button variant="ghost"
                   onClick={() => { onLogContact(coach); onOpenAction(null); }}
-                  className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken transition-colors flex items-center gap-2"
                 >
-                  <IconMessageSquare size={16} className="text-warm-400" /> Log Contact
+                  <IconMessageSquare size={16} className="text-text-tertiary" /> Log Contact
                 </Button>
                 {coach.email && (
                   <a
                     href={`mailto:${coach.email}`}
                     onClick={() => onOpenAction(null)}
-                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                   >
-                    <IconMail size={16} className="text-warm-400" /> Send Email
+                    <IconMail size={16} className="text-text-tertiary" /> Send Email
                   </a>
                 )}
                 {manualTemplateArmed && onOpenInGmail && coach.email && (
                   <Button variant="ghost"
                     onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
-                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                   >
                     {gmailDirectSend
-                      ? <><IconMail size={16} className="text-primary-500" /> Send via Gmail</>
-                      : <><IconExternalLink size={16} className="text-primary-500" /> Open in Gmail</>}
+                      ? <><IconMail size={16} className="text-accent-600" /> Send via Gmail</>
+                      : <><IconExternalLink size={16} className="text-accent-600" /> Open in Gmail</>}
                   </Button>
                 )}
                 {coach.phone && (
                   <a
                     href={`tel:${coach.phone}`}
                     onClick={() => onOpenAction(null)}
-                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                   >
-                    <IconPhone size={16} className="text-warm-400" /> Call
+                    <IconPhone size={16} className="text-text-tertiary" /> Call
                   </a>
                 )}
                 <Button variant="ghost"
                   onClick={() => { onStatusChange(coach.id, 'contacted' as CoachStatus); onOpenAction(null); }}
-                  className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                 >
-                  <IconArrowRight size={16} className="text-warm-400" /> Move to Contacted
+                  <IconArrowRight size={16} className="text-text-tertiary" /> Move to Contacted
                 </Button>
                 <Button variant="ghost"
                   onClick={() => { onToggleStar(coach.id, coach.is_starred); onOpenAction(null); }}
-                  className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                 >
-                  <IconStar size={16} className="text-warm-400" /> {coach.is_starred ? 'Unstar' : 'Star'}
+                  <IconStar size={16} className="text-text-tertiary" /> {coach.is_starred ? 'Unstar' : 'Star'}
                 </Button>
 
                 {/* Set Priority submenu */}
                 <div className="relative">
                   <Button variant="ghost"
                     onClick={e => { e.stopPropagation(); onOpenPriority(isPriorityOpen ? null : coach.id); }}
-                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
+                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center justify-between"
                   >
                     <span className="flex items-center gap-2">
-                      <IconFlame size={16} className="text-warm-400" /> Set Priority
+                      <IconFlame size={16} className="text-text-tertiary" /> Set Priority
                     </span>
-                    <IconChevronRight size={12} className="text-warm-400" />
+                    <IconChevronRight size={12} className="text-text-tertiary" />
                   </Button>
                   {isPriorityOpen && (
-                    <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 glass-prominent rounded-xl shadow-xl">
+                    <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 bg-elevated shadow-raise rounded-fw-md shadow-raise">
                       <Button variant="ghost"
                         onClick={() => { onPriorityChange?.(coach.id, 0); onOpenAction(null); onOpenPriority(null); }}
                         className={cn(
                           'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-                          coach.priority === 0 ? 'bg-warm-50 font-semibold text-warm-900' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                          coach.priority === 0 ? 'bg-surface-sunken font-semibold text-text-primary' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                         )}
                       >
                         Normal
@@ -617,19 +619,19 @@ const CoachTableRow = React.memo(
                         onClick={() => { onPriorityChange?.(coach.id, 1); onOpenAction(null); onOpenPriority(null); }}
                         className={cn(
                           'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-                          coach.priority === 1 ? 'bg-amber-50 font-semibold text-amber-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                          coach.priority === 1 ? 'bg-fw-warning-bg font-semibold text-fw-warning-ink' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                         )}
                       >
-                        <IconZap size={16} className="text-amber-500" /> High
+                        <IconZap size={16} className="text-fw-warning" /> High
                       </Button>
                       <Button variant="ghost"
                         onClick={() => { onPriorityChange?.(coach.id, 2); onOpenAction(null); onOpenPriority(null); }}
                         className={cn(
                           'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-                          coach.priority >= 2 ? 'bg-orange-50 font-semibold text-orange-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                          coach.priority >= 2 ? 'bg-fw-warning-bg font-semibold text-fw-warning-ink' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                         )}
                       >
-                        <IconFlame size={16} className="text-orange-500" /> Hot
+                        <IconFlame size={16} className="text-fw-warning" /> Hot
                       </Button>
                     </div>
                   )}
@@ -745,9 +747,9 @@ const CoachTableCard = React.memo(
           'flex flex-col items-stretch justify-start rounded-none min-h-0',
           'cursor-pointer group transition-colors duration-150 px-3 py-3.5 w-full text-left',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500',
-          isSelected && 'bg-primary-50/50',
-          !isSelected && isFocused && 'bg-cream-100',
-          !isSelected && !isFocused && 'hover:bg-cream-100',
+          isSelected && 'bg-accent-50/50',
+          !isSelected && isFocused && 'bg-canvas',
+          !isSelected && !isFocused && 'hover:bg-surface-tint',
         )}
         onClick={handleCardClick}
         onKeyDown={(event) => {
@@ -766,7 +768,7 @@ const CoachTableCard = React.memo(
               type="checkbox"
               checked={isSelected}
               onChange={handleCheckbox}
-              className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+              className="w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer"
             />
           </div>
 
@@ -774,7 +776,7 @@ const CoachTableCard = React.memo(
             {/* Name + division chip (+ primary marker). The over-stacked
                 email/phone/role moved into this card's action menu + detail panel. */}
             <div className="flex items-center gap-2 min-w-0">
-              <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
+              <p className="text-sm font-medium text-text-primary leading-tight truncate">{coach.name}</p>
               <span className={cn(
                 'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
                 'bg-surface-tint text-text-secondary ring-1 ring-border-subtle',
@@ -782,12 +784,12 @@ const CoachTableCard = React.memo(
                 {coach.division}
               </span>
               {coach.is_primary_contact && (
-                <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★</span>
+                <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★</span>
               )}
               {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
             </div>
             {coachSecondaryLine(coach) && (
-              <p className="text-label text-warm-400 truncate">{coachSecondaryLine(coach)}</p>
+              <p className="text-label text-text-tertiary truncate">{coachSecondaryLine(coach)}</p>
             )}
           </div>
 
@@ -798,87 +800,87 @@ const CoachTableCard = React.memo(
               onClick={handleStar}
               className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-40')}
             >
-              <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-amber-300')} />
+              <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-fw-warning text-fw-warning' : 'text-text-tertiary hover:text-fw-warning/80')} />
             </IconButton>
 
             {/* Three-dot action menu */}
             <div className="relative">
               <IconButton variant="default" aria-label="More options"
                 onClick={e => { e.stopPropagation(); onOpenAction(isActionOpen ? null : coach.id); }}
-                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-all duration-200"
+                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken transition-all duration-200"
               >
                 <IconMoreHorizontal size={16} />
               </IconButton>
               {isActionOpen && (
                 // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click from closing action menu
-                <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
+                <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 bg-elevated shadow-raise rounded-fw-md shadow-raise" onClick={e => e.stopPropagation()}>
                   {/* Contact detail header — email / phone / role / program. */}
                   <RowContactHeader coach={coach} />
                   <Button variant="ghost"
                     onClick={() => { onLogContact(coach); onOpenAction(null); }}
-                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken transition-colors flex items-center gap-2"
                   >
-                    <IconMessageSquare size={16} className="text-warm-400" /> Log Contact
+                    <IconMessageSquare size={16} className="text-text-tertiary" /> Log Contact
                   </Button>
                   {coach.email && (
                     <a
                       href={`mailto:${coach.email}`}
                       onClick={() => onOpenAction(null)}
-                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                     >
-                      <IconMail size={16} className="text-warm-400" /> Send Email
+                      <IconMail size={16} className="text-text-tertiary" /> Send Email
                     </a>
                   )}
                   {manualTemplateArmed && onOpenInGmail && coach.email && (
                     <Button variant="ghost"
                       onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
-                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                     >
                       {gmailDirectSend
-                        ? <><IconMail size={16} className="text-primary-500" /> Send via Gmail</>
-                        : <><IconExternalLink size={16} className="text-primary-500" /> Open in Gmail</>}
+                        ? <><IconMail size={16} className="text-accent-600" /> Send via Gmail</>
+                        : <><IconExternalLink size={16} className="text-accent-600" /> Open in Gmail</>}
                     </Button>
                   )}
                   {coach.phone && (
                     <a
                       href={`tel:${coach.phone}`}
                       onClick={() => onOpenAction(null)}
-                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                     >
-                      <IconPhone size={16} className="text-warm-400" /> Call
+                      <IconPhone size={16} className="text-text-tertiary" /> Call
                     </a>
                   )}
                   <Button variant="ghost"
                     onClick={() => { onStatusChange(coach.id, 'contacted' as CoachStatus); onOpenAction(null); }}
-                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                   >
-                    <IconArrowRight size={16} className="text-warm-400" /> Move to Contacted
+                    <IconArrowRight size={16} className="text-text-tertiary" /> Move to Contacted
                   </Button>
                   <Button variant="ghost"
                     onClick={() => { onToggleStar(coach.id, coach.is_starred); onOpenAction(null); }}
-                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                   >
-                    <IconStar size={16} className="text-warm-400" /> {coach.is_starred ? 'Unstar' : 'Star'}
+                    <IconStar size={16} className="text-text-tertiary" /> {coach.is_starred ? 'Unstar' : 'Star'}
                   </Button>
 
                   {/* Set Priority submenu */}
                   <div className="relative">
                     <Button variant="ghost"
                       onClick={e => { e.stopPropagation(); onOpenPriority(isPriorityOpen ? null : coach.id); }}
-                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
+                      className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center justify-between"
                     >
                       <span className="flex items-center gap-2">
-                        <IconFlame size={16} className="text-warm-400" /> Set Priority
+                        <IconFlame size={16} className="text-text-tertiary" /> Set Priority
                       </span>
-                      <IconChevronRight size={12} className="text-warm-400" />
+                      <IconChevronRight size={12} className="text-text-tertiary" />
                     </Button>
                     {isPriorityOpen && (
-                      <div className="absolute right-full top-0 mr-1 z-50 w-36 py-1 glass-prominent rounded-xl shadow-xl">
+                      <div className="absolute right-full top-0 mr-1 z-50 w-36 py-1 bg-elevated shadow-raise rounded-fw-md shadow-raise">
                         <Button variant="ghost"
                           onClick={() => { onPriorityChange?.(coach.id, 0); onOpenAction(null); onOpenPriority(null); }}
                           className={cn(
                             'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-                            coach.priority === 0 ? 'bg-warm-50 font-semibold text-warm-900' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                            coach.priority === 0 ? 'bg-surface-sunken font-semibold text-text-primary' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                           )}
                         >
                           Normal
@@ -887,19 +889,19 @@ const CoachTableCard = React.memo(
                           onClick={() => { onPriorityChange?.(coach.id, 1); onOpenAction(null); onOpenPriority(null); }}
                           className={cn(
                             'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-                            coach.priority === 1 ? 'bg-amber-50 font-semibold text-amber-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                            coach.priority === 1 ? 'bg-fw-warning-bg font-semibold text-fw-warning-ink' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                           )}
                         >
-                          <IconZap size={16} className="text-amber-500" /> High
+                          <IconZap size={16} className="text-fw-warning" /> High
                         </Button>
                         <Button variant="ghost"
                           onClick={() => { onPriorityChange?.(coach.id, 2); onOpenAction(null); onOpenPriority(null); }}
                           className={cn(
                             'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
-                            coach.priority >= 2 ? 'bg-orange-50 font-semibold text-orange-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                            coach.priority >= 2 ? 'bg-fw-warning-bg font-semibold text-fw-warning-ink' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                           )}
                         >
-                          <IconFlame size={16} className="text-orange-500" /> Hot
+                          <IconFlame size={16} className="text-fw-warning" /> Hot
                         </Button>
                       </div>
                     )}
@@ -919,7 +921,7 @@ const CoachTableCard = React.memo(
             </div>
 
             {/* Chevron — affordance that tapping the card opens the detail panel */}
-            <IconChevronRight size={16} className="text-warm-300 shrink-0" aria-hidden="true" />
+            <IconChevronRight size={16} className="text-text-tertiary shrink-0" aria-hidden="true" />
           </div>
         </div>
 
@@ -936,7 +938,7 @@ const CoachTableCard = React.memo(
               className={cn(
                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
                 STATUS_COLORS[coach.status]?.bg, STATUS_COLORS[coach.status]?.text, STATUS_COLORS[coach.status]?.border,
-                'hover:ring-1 hover:ring-warm-200',
+                'hover:ring-1 hover:ring-border-subtle',
               )}
             >
               <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
@@ -945,14 +947,14 @@ const CoachTableCard = React.memo(
             </Button>
             {isStatusOpen && (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click from closing status dropdown
-              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-elevated shadow-raise rounded-fw-md shadow-raise" onClick={e => e.stopPropagation()}>
                 {ALL_STATUSES.map(status => (
                   <Button variant="primary"
                     key={status}
                     onClick={() => { onStatusChange(coach.id, status); onOpenStatus(null); }}
                     className={cn(
                       'w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
-                      coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                      coach.status === status ? 'bg-accent-50 font-semibold text-accent-700' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
                     )}
                   >
                     <span className="flex items-center">{statusConfig[status]?.icon}</span>
@@ -980,7 +982,7 @@ const CoachTableCard = React.memo(
           {/* Priority */}
           {coach.priority > 0 ? (
             <span className={cn('inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
-              <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500')} />
+              <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-fw-danger' : 'bg-fw-warning')} />
               <span className="flex items-center">{priorityConfig[coach.priority]?.iconLabel}</span>
               {priorityConfig[coach.priority]?.label}
             </span>
@@ -992,11 +994,11 @@ const CoachTableCard = React.memo(
           <div className="flex items-center gap-3 min-w-0">
             <span className={cn(
               'text-xs tabular-nums',
-              !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500',
+              !coach.last_contacted_at ? 'text-fw-danger font-medium' : 'text-text-tertiary',
             )}>
               {formatRelativeDate(coach.last_contacted_at)}
             </span>
-            <span className="flex items-center gap-1 text-xs text-warm-400 min-w-0">
+            <span className="flex items-center gap-1 text-xs text-text-tertiary min-w-0">
               Next step: <NextStepValue coach={coach} />
             </span>
           </div>
@@ -1006,7 +1008,7 @@ const CoachTableCard = React.memo(
                 <SegmentBadge key={seg.id} segment={seg} variant="chip" />
               ))}
               {segments.length > 3 && (
-                <span className="text-eyebrow text-warm-400 self-center">+{segments.length - 3}</span>
+                <span className="text-eyebrow text-text-tertiary self-center">+{segments.length - 3}</span>
               )}
             </div>
           )}
@@ -1193,23 +1195,23 @@ function SchoolGroupView({
     <div className="space-y-3">
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <p className="text-sm text-warm-500">
-          <span className="font-semibold text-warm-700">{schoolGroups.length}</span> schools &middot;{' '}
-          <span className="font-semibold text-warm-700">{coaches.length}</span> coaches
+        <p className="text-sm text-text-tertiary">
+          <span className="font-semibold text-text-secondary">{schoolGroups.length}</span> schools &middot;{' '}
+          <span className="font-semibold text-text-secondary">{coaches.length}</span> coaches
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="ghost" type="button" onClick={toggleSelectAllFiltered}
-            className={cn('px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
-              allFilteredSelected ? 'text-primary-700 bg-primary-50 hover:bg-primary-100' : 'text-primary-700 hover:bg-primary-50'
+            className={cn('px-3 py-1.5 text-xs font-semibold rounded-fw-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30',
+              allFilteredSelected ? 'text-accent-700 bg-accent-50 hover:bg-accent-100' : 'text-accent-700 hover:bg-accent-50'
             )}>
             {allFilteredSelected ? 'Clear selection' : `Select all ${coaches.length}`}
           </Button>
           <Button variant="ghost" type="button" onClick={expandAll}
-            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors">
+            className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors">
             Expand All
           </Button>
           <Button variant="ghost" type="button" onClick={collapseAll}
-            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors">
+            className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors">
             Collapse All
           </Button>
         </div>
@@ -1222,7 +1224,7 @@ function SchoolGroupView({
         const panelId = `school-panel-${group.school.replace(/\s+/g, '-')}`;
 
         return (
-          <div key={group.school} className="glass-standard rounded-2xl shadow-glass overflow-clip">
+          <div key={group.school} className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-clip">
             {/* School Header */}
             <div className="flex items-center gap-3 p-4">
               <input
@@ -1231,26 +1233,26 @@ function SchoolGroupView({
                 checked={allSelected}
                 ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
                 onChange={() => toggleGroupSelection(group)}
-                className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                className="w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer"
               />
               <Button variant="ghost" type="button"
                 onClick={() => toggleSchool(group.school)}
                 aria-expanded={isExpanded}
                 aria-controls={panelId}
-                className="flex-1 min-w-0 flex items-center gap-3 -m-2 p-2 rounded-lg hover:bg-warm-50/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 transition-colors text-left"
+                className="flex-1 min-w-0 flex items-center gap-3 -m-2 p-2 rounded-fw-sm hover:bg-surface-sunken/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30 transition-colors text-left"
               >
-                <span className="text-warm-400 flex-shrink-0" aria-hidden="true">
+                <span className="text-text-tertiary flex-shrink-0" aria-hidden="true">
                   {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                 </span>
                 <span className="flex-1 min-w-0 flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-warm-900 truncate">{group.school}</h3>
-                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-warm-100 text-label font-bold text-warm-600 tabular-nums">
+                  <h3 className="text-sm font-semibold text-text-primary truncate">{group.school}</h3>
+                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-surface-sunken text-label font-bold text-text-secondary tabular-nums">
                     {group.count}
                   </span>
                 </span>
                 <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                   <span className={cn(
-                    'px-2 py-0.5 rounded-lg text-micro font-bold tabular-nums',
+                    'px-2 py-0.5 rounded-fw-sm text-micro font-bold tabular-nums',
                     'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
                   )}>
                     {group.division}
@@ -1279,7 +1281,7 @@ function SchoolGroupView({
                       onClick={(e) => { e.stopPropagation(); onGmailTouch?.(main); }}
                       aria-label={`Send Gmail to ${main.name} (${roleLabel}) at ${group.school}`}
                       title={`Send to ${main.name} — ${roleLabel}`}
-                      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+                      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-fw-sm px-2.5 py-1.5 text-xs font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30"
                     >
                       <IconSend size={13} aria-hidden="true" /> Send
                     </Button>
@@ -1295,7 +1297,7 @@ function SchoolGroupView({
                     onClick={(e) => { e.stopPropagation(); onGmailTouch?.(main); }}
                     aria-label={`Open Gmail to ${main.name} (${roleLabel}) at ${group.school}`}
                     title={`Email ${main.name} — ${roleLabel}`}
-                    className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+                    className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-fw-sm px-2.5 py-1.5 text-xs font-medium bg-accent-50 text-accent-700 hover:bg-accent-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30"
                   >
                     <IconMail size={13} aria-hidden="true" /> Gmail
                   </a>
@@ -1305,14 +1307,14 @@ function SchoolGroupView({
 
             {/* Expanded Coach List */}
             {isExpanded && (
-              <div id={panelId} role="region" aria-label={`${group.school} coaches`} className="border-t border-warm-100/50">
+              <div id={panelId} role="region" aria-label={`${group.school} coaches`} className="border-t border-border-subtle">
                 <table className="w-full table-fixed">
                   <thead>
-                    <tr className="border-b border-warm-100/30">
+                    <tr className="border-b border-border-subtle">
                       <th className="w-10 px-4 py-2" />
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Coach</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider w-28">Role</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Coach</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider w-28">Role</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1324,9 +1326,9 @@ function SchoolGroupView({
                         <tr
                           key={coach.id}
                           className={cn(
-                            'border-b border-warm-50/50 transition-all duration-150 cursor-pointer group',
-                            isSelected && 'bg-primary-50/50',
-                            !isSelected && 'hover:bg-primary-50/20'
+                            'border-b border-border-subtle/50 transition-all duration-150 cursor-pointer group',
+                            isSelected && 'bg-accent-50/50',
+                            !isSelected && 'hover:bg-accent-50/20'
                           )}
                           onClick={() => onCoachClick(coach)}
                         >
@@ -1340,33 +1342,33 @@ function SchoolGroupView({
                                 if (next.has(coach.id)) next.delete(coach.id); else next.add(coach.id);
                                 onSelectionChange(next);
                               }}
-                              className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                              className="w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer"
                             />
                           </td>
                           <td className="px-4 py-2.5">
-                            <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
-                            {coach.email && <p className="text-xs text-warm-400 truncate">{coach.email}</p>}
+                            <p className="text-sm font-medium text-text-primary truncate">{coach.name}</p>
+                            {coach.email && <p className="text-xs text-text-tertiary truncate">{coach.email}</p>}
                             <p className={cn(
                               'text-micro tabular-nums',
-                              !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-400',
+                              !coach.last_contacted_at ? 'text-fw-danger font-medium' : 'text-text-tertiary',
                             )}>
                               Last contacted: {formatRelativeDate(coach.last_contacted_at)}
                             </p>
                             {coach.is_primary_contact && (
-                              <span className="text-micro font-bold px-1 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★ Primary</span>
+                              <span className="text-micro font-bold px-1 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★ Primary</span>
                             )}
                           </td>
                           <td className="px-4 py-2.5">
                             <div className="flex items-center gap-1">
-                              <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">{roleLabel}</span>
+                              <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">{roleLabel}</span>
                               {programLabel && (
-                                <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{programLabel}</span>
+                                <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-accent-700">{programLabel}</span>
                               )}
                             </div>
                           </td>
                           <td className="px-4 py-2.5">
                             <span className={cn(
-                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-micro font-medium',
+                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-fw-sm text-micro font-medium',
                               statusConfig[coach.status]?.bgColor,
                               statusConfig[coach.status]?.color,
                             )}>
@@ -1432,7 +1434,7 @@ export function CoachTable({
   // presentational state only — does not alter data, selection, or callbacks.
   const [density, setDensity] = useState<Density>('comfortable');
   // focusedIndex is only set by keyboard nav (j/k) — NOT on mouse hover.
-  // Hover state is now pure CSS (`hover:bg-cream-100` on the row) which
+  // Hover state is now pure CSS (`hover:bg-surface-tint` on the row) which
   // avoids re-rendering the table on every mouse traversal.
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -1608,17 +1610,17 @@ export function CoachTable({
       <div className="p-6 space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 py-3">
-            <div className="w-4 h-4 rounded bg-warm-200/60 skeleton-shimmer" />
-            <div className="w-4 h-4 rounded bg-warm-200/60 skeleton-shimmer" />
+            <div className="w-4 h-4 rounded bg-surface-sunken skeleton-shimmer" />
+            <div className="w-4 h-4 rounded bg-surface-sunken skeleton-shimmer" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3.5 w-36 bg-warm-200/60 rounded skeleton-shimmer" />
-              <div className="h-2.5 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
+              <div className="h-3.5 w-36 bg-surface-sunken rounded skeleton-shimmer" />
+              <div className="h-2.5 w-24 bg-surface-sunken rounded skeleton-shimmer" />
             </div>
-            <div className="h-3 w-32 bg-warm-100/60 rounded skeleton-shimmer" />
-            <div className="h-5 w-10 bg-warm-100/60 rounded-full skeleton-shimmer" />
-            <div className="h-5 w-20 bg-warm-100/60 rounded-full skeleton-shimmer" />
-            <div className="h-4 w-14 bg-warm-100/60 rounded-full skeleton-shimmer" />
-            <div className="h-3 w-16 bg-warm-100/60 rounded skeleton-shimmer" />
+            <div className="h-3 w-32 bg-surface-sunken rounded skeleton-shimmer" />
+            <div className="h-5 w-10 bg-surface-sunken rounded-full skeleton-shimmer" />
+            <div className="h-5 w-20 bg-surface-sunken rounded-full skeleton-shimmer" />
+            <div className="h-4 w-14 bg-surface-sunken rounded-full skeleton-shimmer" />
+            <div className="h-3 w-16 bg-surface-sunken rounded skeleton-shimmer" />
           </div>
         ))}
       </div>
@@ -1627,31 +1629,26 @@ export function CoachTable({
 
   if (coaches.length === 0) {
     return (
-      <div className="py-16 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
-          <IconUsers size={24} className="text-warm-300" />
-        </div>
-        <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
-        <p className="text-sm text-warm-500 max-w-xs mx-auto mb-6">Try adjusting your filters or import some coaches to get started.</p>
-        <div className="flex items-center justify-center gap-3">
-          {onImport && (
-            <Button variant="ghost"
-              onClick={onImport}
-              className="flex items-center gap-2 px-4 py-2.5 bg-cream-50 border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm"
-            >
-              <IconUpload size={16} /> Import Coaches
-            </Button>
-          )}
-          {onAddCoach && (
-            <Button variant="primary"
-              onClick={onAddCoach}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors text-sm shadow-sm shadow-primary-500/25"
-            >
-              <IconUserPlus size={16} /> Add Coach
-            </Button>
-          )}
-        </div>
-      </div>
+      <EmptyState
+        variant="search"
+        icon={<IconUsers size={24} />}
+        title="No coaches found"
+        description="Try adjusting your filters, or import some coaches to get started."
+        action={
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {onImport && (
+              <Button variant="ghost" onClick={onImport} className={cn(CRM_SECONDARY_ACTION_CLASS, 'gap-2')}>
+                <IconUpload size={16} /> Import coaches
+              </Button>
+            )}
+            {onAddCoach && (
+              <Button variant="primary" onClick={onAddCoach} className={cn(CRM_PRIMARY_ACTION_CLASS, 'gap-2')}>
+                <IconUserPlus size={16} /> Add coach
+              </Button>
+            )}
+          </div>
+        }
+      />
     );
   }
 
@@ -1663,7 +1660,7 @@ export function CoachTable({
         <div className="flex justify-end">
           <Button variant="ghost" type="button"
             onClick={() => setGroupBySchool(false)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-primary-50 border-primary-200 text-primary-700 hover:bg-primary-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-accent-50 border-accent-200 text-accent-700 hover:bg-accent-100 transition-colors"
           >
             <IconX size={13} aria-hidden="true" /> Exit School View
           </Button>
@@ -1689,13 +1686,13 @@ export function CoachTable({
       <div className="flex items-center justify-between md:justify-end gap-2 px-3 sm:px-4 pt-3 pb-2">
         {/* Density toggle (Comfortable / Compact) — desktop table only; the
             mobile card layout is fixed. */}
-        <div className="hidden md:inline-flex items-center rounded-full glass-subtle p-0.5" role="group" aria-label="Row density">
+        <div className="hidden md:inline-flex items-center rounded-full border border-border-subtle bg-surface-tint p-0.5" role="group" aria-label="Row density">
           <Button variant="ghost" type="button"
             onClick={() => setDensity('comfortable')}
             aria-pressed={density === 'comfortable'}
             className={cn(
               'px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
-              density === 'comfortable' ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : 'text-warm-500 hover:text-warm-700',
+              density === 'comfortable' ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200' : 'text-text-tertiary hover:text-text-secondary',
             )}
           >
             Comfortable
@@ -1705,7 +1702,7 @@ export function CoachTable({
             aria-pressed={density === 'compact'}
             className={cn(
               'px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
-              density === 'compact' ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : 'text-warm-500 hover:text-warm-700',
+              density === 'compact' ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200' : 'text-text-tertiary hover:text-text-secondary',
             )}
           >
             Compact
@@ -1713,7 +1710,7 @@ export function CoachTable({
         </div>
         <Button variant="ghost" type="button"
           onClick={() => setGroupBySchool(true)}
-          className="flex items-center gap-1.5 min-h-10 px-3 py-1.5 rounded-xl text-xs font-medium glass-subtle text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+          className="flex items-center gap-1.5 min-h-10 px-3 py-1.5 rounded-fw-md text-xs font-medium border border-border-subtle bg-surface-tint text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken transition-colors"
         >
           <IconSchool size={13} aria-hidden="true" />
           <span className="md:hidden">By school</span>
@@ -1724,18 +1721,18 @@ export function CoachTable({
       {/* Select-all-filtered banner — act on every coach matching the current
           filter/search, not just the current page. Feeds the bulk Email action. */}
       {pageAllSelected && sortedCoaches.length > paginatedCoaches.length && (
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-2 bg-primary-50/70 border-b border-primary-100 text-sm text-primary-800">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-2 bg-accent-50/70 border-b border-accent-100 text-sm text-accent-800">
           {allFilteredSelected ? (
             <>
               <span>All <strong className="tabular-nums">{sortedCoaches.length}</strong> coaches matching this filter are selected.</span>
-              <Button variant="ghost" onClick={clearSelection} className="px-2 py-0.5 rounded-lg font-semibold text-primary-700 hover:bg-primary-100 transition-colors">
+              <Button variant="ghost" onClick={clearSelection} className="px-2 py-0.5 rounded-fw-sm font-semibold text-accent-700 hover:bg-accent-100 transition-colors">
                 Clear selection
               </Button>
             </>
           ) : (
             <>
               <span><strong className="tabular-nums">{paginatedCoaches.length}</strong> on this page selected.</span>
-              <Button variant="ghost" onClick={selectAllFiltered} className="px-2 py-0.5 rounded-lg font-semibold text-primary-700 hover:bg-primary-100 transition-colors">
+              <Button variant="ghost" onClick={selectAllFiltered} className="px-2 py-0.5 rounded-fw-sm font-semibold text-accent-700 hover:bg-accent-100 transition-colors">
                 Select all {sortedCoaches.length} coaches
               </Button>
             </>
@@ -1749,22 +1746,22 @@ export function CoachTable({
           gated to lg/xl so the laptop view stays uncramped. */}
       <table className="hidden md:table w-full table-fixed">
         <thead>
-          <tr className="border-b border-warm-100 bg-warm-50/50">
+          <tr className="border-b border-border-subtle bg-surface-sunken/60">
             {/* Checkbox — always */}
             <th className={cn('w-10 px-4', DENSITY_EDGE_PADDING[density])}>
               <input type="checkbox" checked={paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id))} onChange={toggleAll}
-                className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
+                className="w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer" />
             </th>
             {/* Star — always */}
             <th className={cn('w-10 px-2', DENSITY_EDGE_PADDING[density])} />
             {/* Coach (name + school·title + division chip) — always */}
             <TH field="name" label="Coach" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]}><SortArrow field="name" /></TH>
             {/* Engagement — lg+ */}
-            <th className={cn('hidden lg:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-24', DENSITY_CELL_PADDING[density])}>Engagement</th>
+            <th className={cn('hidden lg:table-cell text-left text-xs font-medium text-text-tertiary uppercase tracking-wide w-24', DENSITY_CELL_PADDING[density])}>Engagement</th>
             {/* Status — always */}
             <TH field="status" label="Status" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]}><SortArrow field="status" /></TH>
             {/* Email — xl+ */}
-            <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-24', DENSITY_CELL_PADDING[density])}>Email</th>
+            <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-text-tertiary uppercase tracking-wide w-24', DENSITY_CELL_PADDING[density])}>Email</th>
             {/* Priority — xl+ */}
             <TH field="priority" label="Priority" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden xl:table-cell w-20"><SortArrow field="priority" /></TH>
             {/* Conference — xl+ */}
@@ -1774,7 +1771,7 @@ export function CoachTable({
             {/* Next step — md+ (next_follow_up_at), right-aligned like Last Contact */}
             <TH field="next_follow_up_at" label="Next step" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden md:table-cell !text-right"><SortArrow field="next_follow_up_at" /></TH>
             {/* Segments — xl+. Stream C owns. */}
-            <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-[180px]', DENSITY_CELL_PADDING[density])}>Segments</th>
+            <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-text-tertiary uppercase tracking-wide w-[180px]', DENSITY_CELL_PADDING[density])}>Segments</th>
             {/* Actions — always */}
             <th className={cn('w-12 px-4', DENSITY_EDGE_PADDING[density])} />
           </tr>
@@ -1859,12 +1856,12 @@ export function CoachTable({
       {/* Pagination */}
       <div className="bg-surface-tint/50 border-t border-border-subtle px-3 sm:px-4 py-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-4 text-sm text-warm-600">
+          <div className="flex items-center gap-4 text-sm text-text-secondary">
             <span className="font-medium tabular-nums">
               {((page - 1) * pageSize) + 1}&ndash;{Math.min(page * pageSize, sortedCoaches.length)} of {sortedCoaches.length}
             </span>
             {selectedIds.size > 0 && (
-              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-lg text-xs font-semibold tabular-nums">
+              <span className="px-2 py-0.5 bg-accent-100 text-accent-700 rounded-fw-sm text-xs font-semibold tabular-nums">
                 {selectedIds.size} selected
               </span>
             )}
@@ -1874,12 +1871,12 @@ export function CoachTable({
               value={String(pageSize)}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
               options={PAGE_SIZES.map(s => ({ value: String(s), label: `${s}/page` }))}
-              className="min-h-0 text-sm px-2.5 py-1.5 rounded-lg bg-cream-50/85 border-warm-200/60 focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 transition-all duration-200"
+              className="min-h-0 text-sm px-2.5 py-1.5 rounded-fw-sm bg-surface/90 border-border-subtle focus:ring-2 focus:ring-border-focus/30 focus:border-accent-300 transition-all duration-200"
             />
             <div className="flex items-center gap-1">
               <PaginationButton onClick={() => setPage(1)} disabled={page === 1}>&laquo;</PaginationButton>
               <PaginationButton onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>&lsaquo;</PaginationButton>
-              <span className="px-3 text-sm font-semibold text-warm-700 tabular-nums">{page} / {totalPages}</span>
+              <span className="px-3 text-sm font-semibold text-text-secondary tabular-nums">{page} / {totalPages}</span>
               <PaginationButton onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>&rsaquo;</PaginationButton>
               <PaginationButton onClick={() => setPage(totalPages)} disabled={page === totalPages}>&raquo;</PaginationButton>
             </div>
@@ -1898,7 +1895,7 @@ function TH({ field, label, onSort, children, className, padding = 'px-4 py-3' }
 }) {
   return (
     <th
-      className={cn('text-left text-xs font-medium text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700 transition-colors', padding, className)}
+      className={cn('text-left text-xs font-medium text-text-tertiary uppercase tracking-wide cursor-pointer hover:text-text-secondary transition-colors', padding, className)}
       onClick={() => onSort(field)}
     >
       {label}{children}
@@ -1909,7 +1906,7 @@ function TH({ field, label, onSort, children, className, padding = 'px-4 py-3' }
 function PaginationButton({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
   return (
     <Button variant="ghost" onClick={onClick} disabled={disabled}
-      className="px-2 py-1 rounded-lg hover:bg-cream-100 disabled:opacity-40 text-sm font-medium transition-colors">
+      className="px-2 py-1 rounded-fw-sm hover:bg-surface-tint disabled:opacity-40 text-sm font-medium transition-colors">
       {children}
     </Button>
   );

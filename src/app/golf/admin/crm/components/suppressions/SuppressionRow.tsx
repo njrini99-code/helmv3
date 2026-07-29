@@ -21,11 +21,11 @@ interface SuppressionRowProps {
 }
 
 const REASON_TONE: Record<SuppressionReason, string> = {
-  unsubscribed: 'bg-red-50 text-red-700 border-red-200',
-  complained: 'bg-red-50 text-red-700 border-red-200',
-  hard_bounce: 'bg-amber-50 text-amber-700 border-amber-200',
-  manual: 'bg-warm-100 text-warm-700 border-warm-200',
-  invalid: 'bg-warm-100 text-warm-700 border-warm-200',
+  unsubscribed: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',
+  complained: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',
+  hard_bounce: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring',
+  manual: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  invalid: 'bg-surface-sunken text-text-secondary border-border-subtle',
 };
 
 const REASON_LABEL: Record<SuppressionReason, string> = {
@@ -85,8 +85,8 @@ export function SuppressionRow({ row, onRemove }: SuppressionRowProps) {
   };
 
   return (
-    <tr className="border-b border-warm-100 hover:bg-warm-50/40 transition-colors">
-      <td className="px-4 py-2.5 text-sm text-warm-900 font-medium truncate max-w-xs" title={row.email}>
+    <tr className="border-b border-border-subtle hover:bg-surface-sunken/40 transition-colors">
+      <td className="px-4 py-2.5 text-sm text-text-primary font-medium truncate max-w-xs" title={row.email}>
         {row.email}
       </td>
       <td className="px-4 py-2.5">
@@ -99,10 +99,10 @@ export function SuppressionRow({ row, onRemove }: SuppressionRowProps) {
           {REASON_LABEL[row.reason]}
         </span>
       </td>
-      <td className="px-4 py-2.5 text-xs text-warm-600">
+      <td className="px-4 py-2.5 text-xs text-text-secondary">
         {SOURCE_LABEL[row.source] ?? row.source}
       </td>
-      <td className="px-4 py-2.5 text-xs text-warm-500" title={absolute}>
+      <td className="px-4 py-2.5 text-xs text-text-tertiary" title={absolute}>
         {rel || absolute}
       </td>
       <td className="px-4 py-2.5 text-right">
@@ -110,12 +110,12 @@ export function SuppressionRow({ row, onRemove }: SuppressionRowProps) {
           type="button"
           onClick={handleRemove}
           disabled={busy}
-          className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 text-xs text-fw-danger-ink hover:text-fw-danger-ink hover:bg-fw-danger-bg/50 px-2 py-1 rounded-fw-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <IconTrash size={12} />
           {busy ? 'Removing...' : 'Remove'}
         </Button>
-        {error && <p className="mt-1 text-eyebrow text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-eyebrow text-fw-danger-ink">{error}</p>}
       </td>
     </tr>
   );

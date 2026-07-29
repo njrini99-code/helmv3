@@ -93,7 +93,7 @@ export function CoachPageHeader({
         coach.is_starred ? (
           <IconStar
             size={18}
-            className="fill-amber-400 text-amber-400 flex-shrink-0"
+            className="fill-fw-warning text-fw-warning flex-shrink-0"
           />
         ) : undefined
       }
@@ -104,19 +104,19 @@ export function CoachPageHeader({
           <span className="font-medium">{coach.school}</span>
           {coach.conference && (
             <>
-              <span className="text-warm-300">·</span>
+              <span className="text-text-tertiary">·</span>
               <span>{coach.conference}</span>
             </>
           )}
           {coach.division && (
             <>
-              <span className="text-warm-300">·</span>
+              <span className="text-text-tertiary">·</span>
               <span
                 className={cn(
                   'px-1.5 py-0.5 rounded text-eyebrow font-bold',
                   coach.division === 'D2'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-primary-100 text-primary-700',
+                    ? 'bg-surface-sunken text-text-secondary'
+                    : 'bg-accent-100 text-accent-700',
                 )}
               >
                 {coach.division}
@@ -125,7 +125,7 @@ export function CoachPageHeader({
           )}
           {coach.program && (
             <>
-              <span className="text-warm-300">·</span>
+              <span className="text-text-tertiary">·</span>
               <span className="capitalize">
                 {coach.program === 'mens'
                   ? "Men's"
@@ -139,9 +139,9 @@ export function CoachPageHeader({
       }
       callout={
         isOverdue && coach.next_follow_up_at ? (
-          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50/80 border border-red-200/40">
-            <IconClock size={12} className="text-red-500" />
-            <span className="text-eyebrow font-medium text-red-600">
+          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-fw-sm bg-fw-danger-bg/80 border border-fw-danger/25/40">
+            <IconClock size={12} className="text-fw-danger" />
+            <span className="text-eyebrow font-medium text-fw-danger-ink">
               Overdue follow-up · {formatShort(coach.next_follow_up_at)}
             </span>
           </div>
@@ -152,7 +152,7 @@ export function CoachPageHeader({
           {coach.email ? (
             <a
               href={`mailto:${coach.email}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors shadow-flat"
             >
               <IconMail size={14} /> Email
             </a>
@@ -160,7 +160,7 @@ export function CoachPageHeader({
             <Button variant="ghost"
               type="button"
               disabled
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-warm-100 text-warm-400 cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-surface-sunken text-text-tertiary cursor-not-allowed"
               title="No email on file"
             >
               <IconMail size={14} /> Email
@@ -169,7 +169,7 @@ export function CoachPageHeader({
           {coach.phone ? (
             <a
               href={`tel:${coach.phone}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-surface border border-border-subtle text-text-secondary hover:bg-surface-sunken transition-colors"
             >
               <IconPhone size={14} /> Call
             </a>
@@ -177,7 +177,7 @@ export function CoachPageHeader({
             <Button variant="ghost"
               type="button"
               disabled
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-warm-100 text-warm-400 cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-surface-sunken text-text-tertiary cursor-not-allowed"
               title="No phone on file"
             >
               <IconPhone size={14} /> Call
@@ -187,7 +187,7 @@ export function CoachPageHeader({
             <Button variant="ghost"
               type="button"
               onClick={onSchedule}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-surface border border-border-subtle text-text-secondary hover:bg-surface-sunken transition-colors"
             >
               <IconCalendar size={14} /> Schedule
             </Button>
@@ -196,7 +196,7 @@ export function CoachPageHeader({
             <Button variant="ghost"
               type="button"
               onClick={onLogContact}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-surface border border-border-subtle text-text-secondary hover:bg-surface-sunken transition-colors"
             >
               <IconFileText size={14} /> Log Contact
             </Button>
@@ -206,7 +206,7 @@ export function CoachPageHeader({
               href={coach.athletics_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-surface border border-border-subtle text-text-secondary hover:bg-surface-sunken transition-colors"
             >
               <IconExternalLink size={14} /> Staff Page
             </a>

@@ -1,14 +1,21 @@
 'use client';
 
-import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { StatusPill } from '@/components/fairway';
+import type { FwStatusTone } from '@/components/fairway';
+import { cn } from '@/lib/utils';
 import { IconFlame, IconSparkles, IconStar } from '@/components/icons';
 import type { CoachEngagement } from '@/app/golf/admin/crm/types/foundations';
 
 // ============================================================================
 // EngagementBadge — Hot / Warm / Cold pill
 // ============================================================================
-// Tones mirror EmailStatusBadge.tsx (warm-/warm-/red-/blue palette). The
-// parent surface (CoachTable) passes a pre-fetched engagement map and each
+// Tones mirror EmailStatusBadge.tsx — the same escalating Fairway accent ramp,
+// because a HOT lead is a positive signal, not a warning: amber/red are
+// reserved for the deliverability failure states. Cold sits neutral, Warm on
+// the accent wash, Hot on the solid accent fill. The Flame/Sparkles/Star icon
+// and the label carry the tier too, so colour is never the only channel.
+//
+// The parent surface (CoachTable) passes a pre-fetched engagement map and each
 // badge looks up its own row — keeping the data fetch one-shot per page load
 // while preserving per-row React.memo benefits.
 // ============================================================================
@@ -21,12 +28,9 @@ interface EngagementBadgeProps {
 
 interface EngagementTone {
   label: string;
-  /** Canonical Badge tone (color-faithful base hue). */
-  tone: BadgeTone;
-  /**
-   * Extra classes layered over the Badge soft surface to reproduce looks the
-   * tone alone can't: the Hot gradient, and the muted text shades.
-   */
+  /** Fairway status tone (drives the base pill colours). */
+  tone: FwStatusTone;
+  /** Extra classes for the ramp step the base tone alone can't reproduce. */
   override: string;
   Icon: typeof IconFlame;
   iconClass: string;
@@ -35,26 +39,24 @@ interface EngagementTone {
 const TONES: Record<'hot' | 'warm' | 'cold', EngagementTone> = {
   hot: {
     label: 'Hot',
-    // Hot keeps its orange→red gradient surface (no single tone reproduces it).
-    tone: 'orange',
-    override: 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 border-orange-200',
+    tone: 'accent',
+    override: 'bg-accent-650 text-text-on-accent border-accent-700',
     Icon: IconFlame,
-    iconClass: 'text-orange-500',
+    iconClass: 'text-text-on-accent',
   },
   warm: {
     label: 'Warm',
-    tone: 'amber',
+    tone: 'accent',
     override: '',
     Icon: IconSparkles,
-    iconClass: 'text-amber-500',
+    iconClass: 'text-accent-700',
   },
   cold: {
     label: 'Cold',
-    tone: 'warm',
-    // Cold uses the muted warm-500 text (Badge warm-soft is warm-700).
-    override: 'text-warm-500',
+    tone: 'neutral',
+    override: '',
     Icon: IconStar,
-    iconClass: 'text-warm-400',
+    iconClass: 'text-text-tertiary',
   },
 };
 
@@ -66,7 +68,7 @@ export function EngagementBadge({
   if (!engagement) {
     return (
       <span
-        className="text-micro text-warm-300 tabular-nums"
+        className="text-micro text-text-tertiary tabular-nums"
         aria-label="No engagement data"
       >
         &mdash;
@@ -86,20 +88,16 @@ export function EngagementBadge({
   const iconSize = size === 'md' ? 12 : 10;
 
   return (
-    <Badge
+    <StatusPill
       tone={tone.tone}
-      size="none"
+      size="sm"
+      dot={false}
       title={title}
-      icon={<tone.Icon size={iconSize} className={tone.iconClass} />}
-      // Plain string (not the shared cn): Badge's own custom-fontSize-aware
-      // merge dedups these, keeping BOTH `text-eyebrow` and the tone/override
-      // text color. Pre-merging here with the default cn would drop the size.
-      className={`gap-1 ${
-        size === 'md' ? 'text-eyebrow px-2 py-0.5' : 'text-eyebrow px-1.5 py-0.5'
-      } ${tone.override}`}
+      className={cn('gap-1 text-eyebrow', size === 'md' ? 'px-2' : 'px-1.5', tone.override)}
     >
+      <tone.Icon size={iconSize} className={tone.iconClass} aria-hidden />
       {tone.label}
-    </Badge>
+    </StatusPill>
   );
 }
 

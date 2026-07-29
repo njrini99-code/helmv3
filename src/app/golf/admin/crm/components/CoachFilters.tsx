@@ -75,10 +75,10 @@ const QUEUE_OPTIONS: ReadonlyArray<{ value: NonNullable<Filters['queueStatus']>;
   { value: 'done', label: 'Done' },
 ];
 
-// Soft selected state per the design system: bg-primary-50 / text-primary-700 /
-// ring-primary-200. Reserved kelly-green fills are for ACTION buttons only.
-const SOFT_SELECTED = 'bg-primary-50 text-primary-700 ring-1 ring-inset ring-primary-200';
-const SOFT_IDLE = 'bg-cream-50/60 text-warm-600 ring-1 ring-inset ring-warm-200/60 hover:bg-warm-50 hover:text-warm-700';
+// Soft selected state per the design system: bg-accent-50 / text-accent-700 /
+// ring-accent-200. Reserved kelly-green fills are for ACTION buttons only.
+const SOFT_SELECTED = 'bg-accent-50 text-accent-700 ring-1 ring-inset ring-accent-200';
+const SOFT_IDLE = 'bg-surface/80 text-text-secondary ring-1 ring-inset ring-border-subtle/60 hover:bg-surface-sunken hover:text-text-secondary';
 
 /** A compact soft chip used inside the popover facet rows. ≥44px touch target. */
 function FacetChip({
@@ -99,7 +99,7 @@ function FacetChip({
       className={cn(
         'inline-flex items-center gap-1.5 px-3 min-h-[44px] sm:min-h-0 sm:py-2 rounded-full',
         'text-xs font-medium whitespace-nowrap transition-colors duration-200',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/40',
         selected ? SOFT_SELECTED : SOFT_IDLE,
       )}
     >
@@ -118,7 +118,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
         size="sm"
         aria-label={`Remove ${label} filter`}
         onClick={onRemove}
-        className="h-5 w-5 min-h-0 rounded-full text-primary-500 hover:text-primary-700 hover:bg-primary-100"
+        className="h-5 w-5 min-h-0 rounded-full text-accent-600 hover:text-accent-800 hover:bg-accent-100"
       >
         <IconX size={12} />
       </IconButton>
@@ -233,9 +233,9 @@ export function CoachFilters({
   if (filters.noNextStep) activeChips.push({ key: 'noNextStep', label: 'No Next Step', onRemove: () => setFilters(f => ({ ...f, noNextStep: false })) });
 
   const selectClass = (active: boolean) => cn(
-    'w-full min-h-[44px] rounded-lg text-xs font-medium',
-    'bg-cream-50 text-warm-700',
-    active ? 'border-primary-300 bg-primary-50/70 text-primary-700' : 'border-warm-200/60',
+    'w-full min-h-[44px] rounded-fw-sm text-xs font-medium',
+    'bg-surface text-text-secondary',
+    active ? 'border-accent-300 bg-accent-50/70 text-accent-700' : 'border-border-subtle',
   );
 
   const statusOptions = [
@@ -256,7 +256,7 @@ export function CoachFilters({
   ];
 
   return (
-    <div className="glass-standard rounded-2xl p-3 sm:p-4 space-y-3">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-3 sm:p-4 space-y-3">
       {/* Row 1: Search + single Filters trigger + Save + Clear */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:flex sm:flex-wrap items-center gap-2">
         {/* Search */}
@@ -274,10 +274,10 @@ export function CoachFilters({
               <IconSearch size={16} />
             )}
             className={cn(
-              'min-h-[44px] rounded-lg text-sm',
-              'bg-cream-50 border border-warm-200/60',
-              'text-warm-900 placeholder:text-warm-400',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400',
+              'min-h-[44px] rounded-fw-sm text-sm',
+              'bg-surface border border-border-subtle',
+              'text-text-primary placeholder:text-text-tertiary',
+              'focus:outline-none focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400',
               'transition-all duration-200',
             )}
           />
@@ -293,14 +293,14 @@ export function CoachFilters({
           className={cn(
             'inline-flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-full text-xs font-medium',
             'transition-colors duration-200 whitespace-nowrap',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/40',
             showMore || activeFilterCount > 0 ? SOFT_SELECTED : SOFT_IDLE,
           )}
         >
           <IconFilter size={14} />
           Filters
           {activeFilterCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-primary-600 text-white text-caption font-bold rounded-full leading-none">
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-accent-650 text-text-on-accent text-caption font-bold rounded-full leading-none">
               {activeFilterCount}
             </span>
           )}
@@ -317,7 +317,7 @@ export function CoachFilters({
             size="sm"
             leftIcon={<IconBookmark size={14} />}
             onClick={() => setSaveSegmentOpen(true)}
-            className="col-span-1 sm:col-auto rounded-xl whitespace-nowrap"
+            className="col-span-1 sm:col-auto rounded-fw-md whitespace-nowrap"
             title="Save current filters as a reusable segment"
           >
             Save segment
@@ -331,7 +331,7 @@ export function CoachFilters({
             size="sm"
             leftIcon={<IconX size={14} />}
             onClick={clearFilters}
-            className="col-span-1 sm:col-auto rounded-xl whitespace-nowrap"
+            className="col-span-1 sm:col-auto rounded-fw-md whitespace-nowrap"
           >
             Clear {activeFilterCount}
           </Button>
@@ -360,11 +360,11 @@ export function CoachFilters({
           ref={popoverRef}
           role="dialog"
           aria-label="Filter coaches"
-          className="rounded-xl glass-prominent p-4 space-y-4"
+          className="rounded-fw-md bg-elevated shadow-raise p-4 space-y-4"
         >
           {/* Division — soft chips, no "All" */}
           <fieldset className="space-y-1.5">
-            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Division</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-text-tertiary">Division</legend>
             <div className="flex flex-wrap gap-1.5">
               {DIVISION_OPTIONS.map(opt => {
                 const selected = filters.division === opt.value;
@@ -383,7 +383,7 @@ export function CoachFilters({
 
           {/* Program — soft chips, no "All" */}
           <fieldset className="space-y-1.5">
-            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Program</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-text-tertiary">Program</legend>
             <div className="flex flex-wrap gap-1.5">
               {PROGRAM_OPTIONS.map(opt => {
                 const selected = filters.program === opt.value;
@@ -403,7 +403,7 @@ export function CoachFilters({
           {/* Compact labeled dropdowns: Status / Conference / Priority / Queue */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="space-y-1.5">
-              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Status</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-text-tertiary">Status</span>
               <Select
                 options={statusOptions}
                 value={filters.status}
@@ -413,7 +413,7 @@ export function CoachFilters({
             </div>
 
             <div className="space-y-1.5">
-              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Conference</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-text-tertiary">Conference</span>
               <Select
                 options={conferenceOptions}
                 value={filters.conference}
@@ -423,7 +423,7 @@ export function CoachFilters({
             </div>
 
             <div className="space-y-1.5">
-              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Priority</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-text-tertiary">Priority</span>
               <Select
                 options={priorityOptions}
                 value={filters.priority}
@@ -433,7 +433,7 @@ export function CoachFilters({
             </div>
 
             <div className="space-y-1.5">
-              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Queue status</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-text-tertiary">Queue status</span>
               <Select
                 options={queueOptions}
                 value={filters.queueStatus ?? 'all'}
@@ -445,7 +445,7 @@ export function CoachFilters({
 
           {/* Boolean toggles — soft chips with leading icons */}
           <fieldset className="space-y-1.5">
-            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Quick filters</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-text-tertiary">Quick filters</legend>
             <div className="flex flex-wrap gap-1.5">
               <FacetChip selected={filters.followUpDue} onClick={() => setFilters(f => ({ ...f, followUpDue: !f.followUpDue }))}>
                 <IconClock size={12} /> Follow-ups Due
@@ -472,13 +472,13 @@ export function CoachFilters({
           </fieldset>
 
           {/* Popover footer actions */}
-          <div className="flex items-center justify-between pt-1 border-t border-warm-100/60">
+          <div className="flex items-center justify-between pt-1 border-t border-border-subtle/60">
             {activeFilterCount > 0 ? (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-warm-600">
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-text-secondary">
                 Clear all
               </Button>
             ) : (
-              <span className="text-xs text-warm-400">No filters applied</span>
+              <span className="text-xs text-text-tertiary">No filters applied</span>
             )}
             <Button variant="secondary" size="sm" onClick={() => setShowMore(false)} className="rounded-full">
               Done

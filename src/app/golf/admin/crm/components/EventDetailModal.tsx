@@ -23,26 +23,24 @@ interface EventDetailModalProps {
 const EVENT_TYPE_CONFIG: Record<CRMEventType, {
   label: string;
   icon: typeof IconVideo;
-  bgColor: string;
-  textColor: string;
 }> = {
-  demo: { label: 'Demo', icon: IconVideo, bgColor: 'bg-violet-500', textColor: 'text-white' },
-  follow_up: { label: 'Follow-up', icon: IconPhone, bgColor: 'bg-blue-500', textColor: 'text-white' },
-  call: { label: 'Call', icon: IconPhone, bgColor: 'bg-primary-500', textColor: 'text-white' },
-  meeting: { label: 'Meeting', icon: IconUsers, bgColor: 'bg-amber-500', textColor: 'text-white' },
-  email_reminder: { label: 'Email', icon: IconMail, bgColor: 'bg-warm-500', textColor: 'text-white' },
-  other: { label: 'Other', icon: IconMapPin, bgColor: 'bg-warm-500', textColor: 'text-white' },
+  demo: { label: 'Demo', icon: IconVideo },
+  follow_up: { label: 'Follow-up', icon: IconPhone },
+  call: { label: 'Call', icon: IconPhone },
+  meeting: { label: 'Meeting', icon: IconUsers },
+  email_reminder: { label: 'Email', icon: IconMail },
+  other: { label: 'Other', icon: IconMapPin },
 };
 
 const STATUS_OPTIONS = [
-  { value: 'scheduled', label: 'Scheduled', icon: IconCalendar, color: 'bg-blue-100 text-blue-700' },
-  { value: 'completed', label: 'Completed', icon: IconCheck, color: 'bg-primary-100 text-primary-700' },
-  { value: 'cancelled', label: 'Cancelled', icon: IconX, color: 'bg-red-100 text-red-700' },
-  { value: 'rescheduled', label: 'Rescheduled', icon: IconClock, color: 'bg-amber-100 text-amber-700' },
+  { value: 'scheduled', label: 'Scheduled', icon: IconCalendar, color: 'bg-surface-sunken text-text-secondary' },
+  { value: 'completed', label: 'Completed', icon: IconCheck, color: 'bg-accent-100 text-accent-700' },
+  { value: 'cancelled', label: 'Cancelled', icon: IconX, color: 'bg-fw-danger-bg text-fw-danger-ink' },
+  { value: 'rescheduled', label: 'Rescheduled', icon: IconClock, color: 'bg-fw-warning-bg text-fw-warning-ink' },
 ];
 
-const inputClass = 'w-full bg-cream-50/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
-const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+const inputClass = 'w-full bg-surface-sunken border border-border-subtle rounded-fw-sm px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400 outline-none';
+const labelClass = 'text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -155,7 +153,7 @@ export function EventDetailModal({
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-nav-bg/40 p-4"
       onClick={onClose}
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
@@ -164,23 +162,23 @@ export function EventDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${uid}-title`}
-        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+        className="rounded-card bg-elevated shadow-raise w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-warm-100 flex-shrink-0">
+        <div className="px-6 py-4 border-b border-border-subtle flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TypeIcon size={16} className="text-warm-600" />
+              <TypeIcon size={16} className="text-text-secondary" />
               <div>
-                <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">{event.title}</h2>
-                <p className="text-sm text-warm-500">{typeConfig.label}</p>
+                <h2 id={`${uid}-title`} className="text-lg font-semibold text-text-primary">{event.title}</h2>
+                <p className="text-sm text-text-tertiary">{typeConfig.label}</p>
               </div>
             </div>
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="text-warm-400 hover:text-warm-600 transition-colors"
+              className="text-text-tertiary hover:text-text-secondary transition-colors"
             >
               <IconX size={18} />
             </IconButton>
@@ -190,23 +188,23 @@ export function EventDetailModal({
         {/* Body */}
         <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Time Info */}
-          <div className="flex items-center gap-4 p-4 bg-warm-50 rounded-xl">
+          <div className="flex items-center gap-4 p-4 bg-surface-sunken rounded-fw-md">
             <div className="text-center">
-              <div className="text-2xl font-bold text-warm-800">
+              <div className="text-2xl font-bold text-text-primary">
                 {format(startTime, 'd')}
               </div>
-              <div className="text-xs font-medium text-warm-500 uppercase">
+              <div className="text-xs font-medium text-text-tertiary uppercase">
                 {format(startTime, 'MMM')}
               </div>
             </div>
             <div className="flex-1">
-              <div className="font-semibold text-warm-800">
+              <div className="font-semibold text-text-primary">
                 {format(startTime, 'EEEE')}
               </div>
-              <div className="text-sm text-warm-600">
+              <div className="text-sm text-text-secondary">
                 {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
               </div>
-              <div className="text-xs text-warm-500 mt-0.5">
+              <div className="text-xs text-text-tertiary mt-0.5">
                 {duration} minutes
               </div>
             </div>
@@ -214,11 +212,11 @@ export function EventDetailModal({
 
           {/* Coach Info */}
           {event.coach_name && (
-            <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-xl">
-              <IconUser size={18} className="text-primary-600" />
+            <div className="flex items-center gap-3 p-3 bg-accent-50 rounded-fw-md">
+              <IconUser size={18} className="text-accent-700" />
               <div>
-                <div className="font-semibold text-warm-800">{event.coach_school}</div>
-                <div className="text-sm text-warm-600">{event.coach_name}</div>
+                <div className="font-semibold text-text-primary">{event.coach_school}</div>
+                <div className="text-sm text-text-secondary">{event.coach_name}</div>
               </div>
             </div>
           )}
@@ -227,8 +225,8 @@ export function EventDetailModal({
           {(event.location || event.meeting_url) && (
             <div className="space-y-2">
               {event.location && (
-                <div className="flex items-center gap-2 text-sm text-warm-600">
-                  <IconMapPin size={14} className="text-warm-400" />
+                <div className="flex items-center gap-2 text-sm text-text-secondary">
+                  <IconMapPin size={14} className="text-text-tertiary" />
                   <span>{event.location}</span>
                 </div>
               )}
@@ -237,7 +235,7 @@ export function EventDetailModal({
                   href={event.meeting_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                  className="flex items-center gap-2 text-sm text-accent-700 hover:underline"
                 >
                   <IconLink size={14} />
                   <span>Join Meeting</span>
@@ -252,7 +250,7 @@ export function EventDetailModal({
               <p className={labelClass}>
                 Notes
               </p>
-              <p className="text-sm text-warm-700 bg-warm-50 rounded-xl p-3">
+              <p className="text-sm text-text-secondary bg-surface-sunken rounded-fw-md p-3">
                 {event.description}
               </p>
             </div>
@@ -272,10 +270,10 @@ export function EventDetailModal({
                     onClick={() => handleStatusChange(opt.value)}
                     disabled={submitting}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium transition-all',
                       status === opt.value
-                        ? `${opt.color} ring-2 ring-offset-1 ring-warm-300`
-                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                        ? `${opt.color} ring-2 ring-offset-1 ring-border-strong`
+                        : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
                     )}
                   >
                     <OptIcon size={14} />
@@ -288,9 +286,9 @@ export function EventDetailModal({
 
           {/* Outcome Form (when completing) */}
           {showOutcomeForm && (
-            <div className="p-4 bg-primary-50 rounded-xl border border-primary-200 space-y-3">
-              <h4 className="font-semibold text-primary-800 flex items-center gap-1.5">
-                <IconCheck size={16} className="text-primary-600" />
+            <div className="p-4 bg-accent-50 rounded-fw-md border border-accent-200 space-y-3">
+              <h4 className="font-semibold text-accent-800 flex items-center gap-1.5">
+                <IconCheck size={16} className="text-accent-700" />
                 Mark as Completed
               </h4>
               {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
@@ -307,14 +305,14 @@ export function EventDetailModal({
                     setShowOutcomeForm(false);
                     setStatus(event.status);
                   }}
-                  className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="bg-surface border border-border-subtle text-text-secondary rounded-fw-md px-5 py-2.5 text-sm font-medium hover:bg-surface-sunken transition-colors"
                 >
                   Cancel
                 </Button>
                 <Button variant="primary"
                   onClick={handleComplete}
                   disabled={submitting}
-                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                  className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Complete'}
                 </Button>
@@ -324,7 +322,7 @@ export function EventDetailModal({
 
           {/* Google Calendar Sync Status */}
           {event.google_event_id && (
-            <div className="flex items-center gap-2 text-xs text-warm-500 p-2 bg-warm-50 rounded-lg">
+            <div className="flex items-center gap-2 text-xs text-text-tertiary p-2 bg-surface-sunken rounded-fw-sm">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               </svg>
@@ -334,11 +332,11 @@ export function EventDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-t border-border-subtle flex items-center justify-between flex-shrink-0">
           <Button variant="danger"
             onClick={handleDelete}
             disabled={submitting}
-            className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-fw-danger-ink hover:text-fw-danger-ink font-medium text-sm disabled:opacity-50 transition-colors"
           >
             <IconTrash size={14} />
             Delete
@@ -346,7 +344,7 @@ export function EventDetailModal({
 
           <Button variant="primary"
             onClick={onEdit}
-            className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-1.5"
+            className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-1.5"
           >
             <IconEdit size={14} />
             Edit

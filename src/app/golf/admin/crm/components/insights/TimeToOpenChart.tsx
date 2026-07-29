@@ -51,30 +51,30 @@ export function TimeToOpenChart({ buckets, loading }: TimeToOpenChartProps) {
 
   if (loading) {
     return (
-      <div className="glass-standard rounded-2xl shadow-glass p-5">
-        <div className="h-[260px] bg-warm-50 rounded-lg animate-pulse" />
+      <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5">
+        <div className="h-[260px] bg-surface-sunken rounded-fw-sm animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
-      <div className="px-5 py-4 border-b border-warm-100/60 flex items-center justify-between">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
+      <div className="px-5 py-4 border-b border-border-subtle/60 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
+          <span className="w-7 h-7 rounded-fw-sm bg-fw-warning-bg text-fw-warning-ink flex items-center justify-center">
             <IconClock size={14} />
           </span>
-          <h3 className="text-sm font-semibold text-warm-900">Time to first open</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Time to first open</h3>
         </div>
-        <span className="text-xs text-warm-500 tabular-nums">
+        <span className="text-xs text-text-tertiary tabular-nums">
           {total.toLocaleString()} opens tracked
         </span>
       </div>
 
       {total === 0 ? (
         <div className="px-5 py-12 text-center">
-          <p className="text-sm font-medium text-warm-500">No opens tracked in window</p>
-          <p className="text-xs text-warm-400 mt-1">
+          <p className="text-sm font-medium text-text-tertiary">No opens tracked in window</p>
+          <p className="text-xs text-text-tertiary mt-1">
             Once recipients open emails, their time-to-open distribution will plot here.
           </p>
         </div>
@@ -100,7 +100,7 @@ export function TimeToOpenChart({ buckets, loading }: TimeToOpenChartProps) {
                 cursor={{ fill: 'rgba(22,163,74,0.06)' }}
                 content={<TimeToOpenTooltip />}
               />
-              <Bar dataKey="count" fill="var(--color-primary-600)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="count" fill="var(--fw-color-accent-500)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

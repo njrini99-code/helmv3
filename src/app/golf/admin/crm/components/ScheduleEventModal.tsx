@@ -35,13 +35,16 @@ interface FormState {
   coachId: string | null;
 }
 
-const EVENT_TYPES: { value: CRMEventType; label: string; icon: typeof IconVideo; color: string }[] = [
-  { value: 'demo', label: 'Demo', icon: IconVideo, color: 'bg-violet-500' },
-  { value: 'follow_up', label: 'Follow-up', icon: IconPhone, color: 'bg-blue-500' },
-  { value: 'call', label: 'Call', icon: IconPhone, color: 'bg-primary-500' },
-  { value: 'meeting', label: 'Meeting', icon: IconUsers, color: 'bg-amber-500' },
-  { value: 'email_reminder', label: 'Email', icon: IconMail, color: 'bg-warm-500' },
-  { value: 'other', label: 'Other', icon: IconMapPin, color: 'bg-warm-500' },
+// Fairway: the SELECTED chip is the one accent fill (accent-650 is the only
+// green that carries cream copy at AA); the type is carried by its icon +
+// label, never by a per-type hue — so no per-entry colour lives here.
+const EVENT_TYPES: { value: CRMEventType; label: string; icon: typeof IconVideo }[] = [
+  { value: 'demo', label: 'Demo', icon: IconVideo },
+  { value: 'follow_up', label: 'Follow-up', icon: IconPhone },
+  { value: 'call', label: 'Call', icon: IconPhone },
+  { value: 'meeting', label: 'Meeting', icon: IconUsers },
+  { value: 'email_reminder', label: 'Email', icon: IconMail },
+  { value: 'other', label: 'Other', icon: IconMapPin },
 ];
 
 const DURATIONS = [
@@ -60,8 +63,8 @@ const QUICK_TIMES = [
   { label: 'Next week', getValue: () => ({ date: format(addDays(new Date(), 7), 'yyyy-MM-dd'), time: '10:00' }) },
 ];
 
-const inputClass = 'min-h-0 w-full glass-subtle border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
-const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+const inputClass = 'min-h-0 w-full bg-surface-sunken border border-border-subtle rounded-fw-sm px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400 outline-none';
+const labelClass = 'text-xs font-medium text-text-secondary uppercase tracking-wider mb-1.5 block';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -260,7 +263,7 @@ export function ScheduleEventModal({
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-nav-bg/40 p-4"
       onClick={onClose}
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
@@ -269,26 +272,26 @@ export function ScheduleEventModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${uid}-title`}
-        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+        className="rounded-card bg-elevated shadow-raise w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-warm-100 flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
-            <IconCalendar size={16} className="text-warm-600" />
+            <IconCalendar size={16} className="text-text-secondary" />
             <div>
-              <h2 id={`${uid}-title`} className="text-lg font-semibold text-warm-900">
+              <h2 id={`${uid}-title`} className="text-lg font-semibold text-text-primary">
                 {isEditing ? 'Edit Event' : 'Schedule Event'}
               </h2>
               {selectedCoach && (
-                <p className="text-sm text-warm-500">{selectedCoach.school}</p>
+                <p className="text-sm text-text-tertiary">{selectedCoach.school}</p>
               )}
             </div>
           </div>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="text-warm-400 hover:text-warm-600 transition-colors"
+            className="text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <IconX size={18} />
           </IconButton>
@@ -297,7 +300,7 @@ export function ScheduleEventModal({
         {/* Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-5">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+            <div className="p-3 bg-fw-danger-bg border border-fw-danger/25 rounded-fw-md text-fw-danger-ink text-sm">
               {error}
             </div>
           )}
@@ -306,7 +309,7 @@ export function ScheduleEventModal({
           {!selectedCoach && !isEditing && (
             <div>
               <label htmlFor={`${uid}-coach-search`} className={labelClass}>
-                Coach <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
+                Coach <span className="text-text-tertiary font-normal normal-case tracking-normal">(optional)</span>
               </label>
               <div className="relative">
                 <Input
@@ -318,7 +321,7 @@ export function ScheduleEventModal({
                   className={inputClass}
                 />
                 {coachSearchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-cream-50 border border-warm-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border-subtle rounded-fw-md shadow-raise z-10 max-h-48 overflow-y-auto">
                     {coachSearchResults.map((c) => (
                       <Button variant="ghost"
                         key={c.id}
@@ -328,17 +331,17 @@ export function ScheduleEventModal({
                           setCoachSearchQuery('');
                           setCoachSearchResults([]);
                         }}
-                        className="w-full p-3 text-left hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-3"
+                        className="w-full p-3 text-left hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-3"
                       >
                         <span className={cn(
                           'px-2 py-1 rounded text-xs font-bold',
-                          c.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'
+                          c.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-800'
                         )}>
                           {c.division}
                         </span>
                         <div>
-                          <div className="font-medium text-warm-800">{c.school}</div>
-                          <div className="text-xs text-warm-500">{c.name}</div>
+                          <div className="font-medium text-text-primary">{c.school}</div>
+                          <div className="text-xs text-text-tertiary">{c.name}</div>
                         </div>
                       </Button>
                     ))}
@@ -350,16 +353,16 @@ export function ScheduleEventModal({
 
           {/* Selected Coach Badge */}
           {selectedCoach && (
-            <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl">
+            <div className="flex items-center gap-3 p-3 bg-surface-sunken rounded-fw-md">
               <span className={cn(
                 'px-2 py-1 rounded text-xs font-bold',
-                selectedCoach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'
+                selectedCoach.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-800'
               )}>
                 {selectedCoach.division}
               </span>
               <div className="flex-1">
-                <div className="font-medium text-warm-800">{selectedCoach.school}</div>
-                <div className="text-xs text-warm-500">{selectedCoach.name}</div>
+                <div className="font-medium text-text-primary">{selectedCoach.school}</div>
+                <div className="text-xs text-text-tertiary">{selectedCoach.name}</div>
               </div>
               {!isEditing && (
                 <IconButton variant="default" aria-label="Close"
@@ -367,7 +370,7 @@ export function ScheduleEventModal({
                     setSelectedCoach(null);
                     setForm(f => ({ ...f, coachId: null }));
                   }}
-                  className="text-warm-400 hover:text-warm-600 transition-colors"
+                  className="text-text-tertiary hover:text-text-secondary transition-colors"
                 >
                   <IconX size={14} />
                 </IconButton>
@@ -386,10 +389,10 @@ export function ScheduleEventModal({
                     key={type.value}
                     onClick={() => setForm(f => ({ ...f, type: type.value }))}
                     className={cn(
-                      'p-3 rounded-xl text-center transition-all',
+                      'p-3 rounded-fw-md text-center transition-all',
                       form.type === type.value
-                        ? `${type.color} text-white shadow-lg`
-                        : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
+                        ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                        : 'bg-surface-sunken text-text-secondary hover:bg-surface-tint'
                     )}
                   >
                     <span className="flex justify-center mb-1"><TypeIcon size={18} /></span>
@@ -425,7 +428,7 @@ export function ScheduleEventModal({
                       const { date, time } = qt.getValue();
                       setForm(f => ({ ...f, date, time }));
                     }}
-                    className="px-3 py-2 bg-warm-100 hover:bg-warm-200 rounded-xl text-sm font-medium text-warm-700 transition-colors"
+                    className="px-3 py-2 bg-surface-sunken hover:bg-surface-sunken rounded-fw-md text-sm font-medium text-text-secondary transition-colors"
                   >
                     {qt.label}
                   </Button>
@@ -467,10 +470,10 @@ export function ScheduleEventModal({
                   key={d.value}
                   onClick={() => setForm(f => ({ ...f, duration: d.value }))}
                   className={cn(
-                    'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+                    'px-4 py-2 rounded-fw-md text-sm font-medium transition-all',
                     form.duration === d.value
-                      ? 'bg-primary-500 text-white shadow-lg'
-                      : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
+                      ? 'bg-accent-650 text-text-on-accent shadow-soft'
+                      : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
                   )}
                 >
                   {d.label}
@@ -482,7 +485,7 @@ export function ScheduleEventModal({
           {/* Location */}
           <div>
             <label htmlFor={`${uid}-location`} className={labelClass}>
-              Location <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
+              Location <span className="text-text-tertiary font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <Input
               id={`${uid}-location`}
@@ -497,7 +500,7 @@ export function ScheduleEventModal({
           {/* Meeting URL */}
           <div>
             <label htmlFor={`${uid}-meeting-url`} className={labelClass}>
-              Meeting Link <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
+              Meeting Link <span className="text-text-tertiary font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <Input
               id={`${uid}-meeting-url`}
@@ -512,7 +515,7 @@ export function ScheduleEventModal({
           {/* Description */}
           <div>
             <label htmlFor={`${uid}-description`} className={labelClass}>
-              Notes <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
+              Notes <span className="text-text-tertiary font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <Textarea
               id={`${uid}-description`}
@@ -526,12 +529,12 @@ export function ScheduleEventModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-t border-border-subtle flex items-center justify-between flex-shrink-0">
           {isEditing ? (
             <Button variant="danger"
               onClick={handleDelete}
               disabled={submitting}
-              className="flex items-center gap-1.5 px-4 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-fw-danger-ink hover:text-fw-danger-ink font-medium text-sm disabled:opacity-50 transition-colors"
             >
               <IconTrash size={14} />
               Delete
@@ -543,14 +546,14 @@ export function ScheduleEventModal({
           <div className="flex items-center gap-3">
             <Button variant="ghost"
               onClick={onClose}
-              className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+              className="bg-surface border border-border-subtle text-text-secondary rounded-fw-md px-5 py-2.5 text-sm font-medium hover:bg-surface-sunken transition-colors"
             >
               Cancel
             </Button>
             <Button variant="primary"
               onClick={handleSubmit}
               disabled={submitting || !form.title || !form.date || !form.time}
-              className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Schedule'}
             </Button>

@@ -10,6 +10,7 @@ import type {
 import { CreateTaskDialog } from './CreateTaskDialog';
 import { TaskCard } from './TaskCard';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/fairway';
 
 // ============================================================================
 // TasksPanel — coach-scoped task list. Splits into Open and Completed sections.
@@ -91,12 +92,12 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-lg bg-warm-100 flex items-center justify-center">
-            <IconClipboardList size={14} className="text-warm-600" />
+          <span className="w-7 h-7 rounded-fw-sm bg-surface-sunken flex items-center justify-center">
+            <IconClipboardList size={14} className="text-text-secondary" />
           </span>
-          <h3 className="text-sm font-semibold text-warm-900">Tasks</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Tasks</h3>
           {!loading && open.length > 0 && (
-            <span className="text-eyebrow text-warm-400 tabular-nums">
+            <span className="text-eyebrow text-text-tertiary tabular-nums">
               {open.length} open
             </span>
           )}
@@ -104,7 +105,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
         <Button variant="primary"
           type="button"
           onClick={() => setDialogOpen(true)}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-fw-sm bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors"
         >
           <IconPlus size={12} /> New task
         </Button>
@@ -115,33 +116,32 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="h-16 rounded-xl border border-warm-200/60 bg-warm-50/60 skeleton-shimmer"
+              className="h-16 rounded-fw-md border border-border-subtle bg-surface-sunken/70 skeleton-shimmer"
             />
           ))}
         </div>
       )}
 
       {!loading && error && (
-        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
           {error}
         </p>
       )}
 
       {!loading && !error && open.length === 0 && completed.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-warm-200 bg-warm-50/40 px-4 py-8 text-center">
-          <div className="w-10 h-10 rounded-xl bg-cream-50 flex items-center justify-center mx-auto mb-2 border border-warm-200/60">
-            <IconClipboardList size={18} className="text-warm-400" />
-          </div>
-          <p className="text-sm font-medium text-warm-700">No tasks yet</p>
-          <p className="text-xs text-warm-500 mt-1 max-w-sm mx-auto">
-            Create a follow-up task for this coach.
-          </p>
+        <div className="rounded-card border border-dashed border-border-subtle bg-surface-sunken/60">
+          <EmptyState
+            variant="subtle"
+            icon={<IconClipboardList size={18} />}
+            title="No tasks yet"
+            description="Create a follow-up task for this coach."
+          />
         </div>
       )}
 
       {!loading && !error && open.length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500 px-1">
+          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary px-1">
             Open
           </h4>
           <div className="space-y-1.5">
@@ -154,7 +154,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       {!loading && !error && completed.length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500 px-1">
+          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary px-1">
             Recently completed
           </h4>
           <div className="space-y-1.5">
