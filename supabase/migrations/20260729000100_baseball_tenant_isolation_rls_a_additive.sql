@@ -584,6 +584,86 @@ REVOKE ALL ON FUNCTION public.resolve_baseball_team_invitation_by_code(text) FRO
 REVOKE EXECUTE ON FUNCTION public.resolve_baseball_team_invitation_by_code(text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.resolve_baseball_team_invitation_by_code(text) TO authenticated, service_role;
 
+-- ----------------------------------------------------------------------------
+-- SECTION 8 — who may address a notification to whom
+-- ----------------------------------------------------------------------------
+-- THE PROBLEM. baseball_notifications' INSERT policy is
+--
+--     -- 20260527000000_prod_public_baseline.sql:18078
+--     CREATE POLICY "baseball_notifications_insert"
+--       ON public.baseball_notifications FOR INSERT WITH CHECK (true);
+--
+-- No TO clause, so it covered anon as well until
+-- 20260626000030_baseball_notifications_revoke_anon.sql removed anon's table
+-- grant. What is left is still wide open: any authenticated user can insert a
+-- notification addressed to ANY other user, with attacker-chosen type, title,
+-- body and data. Reads are correctly scoped (_select is auth.uid() = user_id),
+-- so this is not a leak — it is in-app phishing. A convincing "Coach Davis
+-- from Texas A&M viewed your profile — tap to view" lands in a real user's
+-- feed, rendered by the product's own UI, indistinguishable from a real one.
+--
+-- WHY THE OBVIOUS FIX IS WRONG. `WITH CHECK (auth.uid() = user_id)` would
+-- break the product. Notifications are legitimately written TO OTHER PEOPLE,
+-- through the caller's own session rather than a service-role client:
+--
+--   src/app/baseball/actions/practice.ts:516     coach publishes a practice ->
+--                                                one row per rostered player
+--   src/app/baseball/actions/lifting-v11.ts:2411 coach sends a lift message ->
+--                                                one row for that player
+--
+-- Both use createClient() (user-scoped), not createAdminClient(). Self-only
+-- would stop both silently — a "quietly stopped working" failure, which is the
+-- worst kind and the one this migration pair keeps warning about.
+--
+-- Those two are the ONLY inserters. Verified twice over: grep for
+-- `from('baseball_notifications')` across src returns exactly these two
+-- inserts plus notifications.ts, which only SELECTs and marks-read; and grep
+-- for `INSERT INTO ... baseball_notifications` across every migration returns
+-- nothing, so no trigger or RPC writes them either. (A definer function that
+-- did would bypass RLS anyway and be unaffected by this policy.)
+--
+-- THE RULE THAT ACTUALLY MATCHES THE PRODUCT: you may notify yourself, or a
+-- player on a team you are staff on. Both real call sites are exactly the
+-- second case; nothing else is permitted.
+--
+-- Deliberately NOT included, because nothing needs it today and each would
+-- widen the phishing surface again:
+--   - staff -> staff on the same team (no call site).
+--   - player -> their coach (no call site; and this is the direction an
+--     attacker would want, since a coach acting on a fake notification is
+--     worth more than a player doing so).
+-- Both fail closed. Adding either later is a deliberate edit here, not an
+-- accident.
+CREATE OR REPLACE FUNCTION public.can_notify_baseball_user(
+  p_target_user_id uuid
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT
+    -- Always allowed to address yourself.
+    p_target_user_id = auth.uid()
+    OR EXISTS (
+      SELECT 1
+      FROM public.baseball_team_members btm
+      JOIN public.baseball_players bp ON bp.id = btm.player_id
+      WHERE bp.user_id = p_target_user_id
+        AND public.is_baseball_team_staff(btm.team_id)
+    );
+$$;
+
+COMMENT ON FUNCTION public.can_notify_baseball_user(uuid) IS
+  'True when the caller may address a baseball notification to p_target_user_id: themselves, or a player rostered on a team the caller is active staff on. Backs baseball_notifications_insert (2026-07-29), replacing a baseline WITH CHECK (true) that let any authenticated user inject a notification into any other user''s feed — in-app phishing, since reads were already correctly self-scoped. Deliberately does NOT permit staff->staff or player->coach: neither has a call site today, and the latter is the direction an attacker benefits from most. Definer + pinned search_path, so its reads of baseball_team_members/baseball_players do not re-enter their own policies.';
+
+REVOKE ALL ON FUNCTION public.can_notify_baseball_user(uuid) FROM PUBLIC;
+-- Supabase's default privileges grant EXECUTE on new public functions to
+-- anon, and REVOKE ... FROM PUBLIC does not remove a role-specific grant.
+REVOKE EXECUTE ON FUNCTION public.can_notify_baseball_user(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.can_notify_baseball_user(uuid) TO authenticated, service_role;
+
 -- ============================================================================
 -- END migration A (additive). Nothing here changes existing behaviour.
 -- Next: deploy the companion app changes, THEN apply migration B

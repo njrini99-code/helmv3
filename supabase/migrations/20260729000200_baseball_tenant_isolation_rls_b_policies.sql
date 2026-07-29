@@ -335,7 +335,37 @@ DROP POLICY IF EXISTS "Users can send baseball messages" ON public.baseball_mess
 DROP POLICY IF EXISTS "Users can update baseball message read status" ON public.baseball_messages;
 
 -- ----------------------------------------------------------------------------
--- SECTION 6 — defense in depth: anon has no matching policy on any of these
+-- SECTION 6 — baseball_notifications: stop anyone notifying anyone
+-- ----------------------------------------------------------------------------
+-- The baseline INSERT policy is `WITH CHECK (true)` with no TO clause
+-- (baseline:18078). anon's table grant was already revoked by 20260626000030,
+-- so the live surface is `authenticated` — but that is still every logged-in
+-- user able to inject a notification into any other user's feed with
+-- attacker-chosen title, body and data. Reads are correctly self-scoped, so
+-- this is in-app phishing rather than disclosure: the product's own UI renders
+-- the fake indistinguishably from a real one.
+--
+-- Replaced with the rule the product actually needs — notify yourself, or a
+-- player on a team you are staff on — expressed as a single definer call. See
+-- migration A SECTION 8 for why `auth.uid() = user_id` alone is WRONG (it
+-- silently breaks practice-publish and coach lift messages, which legitimately
+-- notify other people through the caller's own session), and for the evidence
+-- that those two are the only inserters.
+--
+-- No inline subquery, so no path to a recursion cycle; can_notify_baseball_user
+-- runs with definer rights and a pinned search_path, and its reads of
+-- baseball_team_members / baseball_players therefore do not re-enter those
+-- tables' own policies.
+--
+-- `TO authenticated` is now explicit. The baseline policy had no TO clause at
+-- all, which is how it came to cover anon in the first place.
+DROP POLICY IF EXISTS "baseball_notifications_insert" ON public.baseball_notifications;
+CREATE POLICY "baseball_notifications_insert" ON public.baseball_notifications
+  FOR INSERT TO authenticated
+  WITH CHECK (public.can_notify_baseball_user(user_id));
+
+-- ----------------------------------------------------------------------------
+-- SECTION 7 — defense in depth: anon has no matching policy on any of these
 -- tables today (before or after this migration — RLS-enabled-with-no-matching-
 -- policy already denies anon all rows), so this REVOKE is a no-op on live
 -- behavior. It closes the blanket `GRANT ALL ... TO anon` (including
