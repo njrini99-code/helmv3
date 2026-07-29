@@ -226,7 +226,9 @@ function chainTable(table: string) {
           eq: vi.fn(() => ({ single: vi.fn(async () => ({ data: null, error: null })) })),
         })),
       };
-    case 'baseball_teams':
+    // See discover-privacy.test.ts: the cross-org browse reads the anon-safe
+    // public-profile VIEW, not the tenant-scoped base table.
+    case 'baseball_teams_public_profile':
       return {
         select: vi.fn(() => ({
           in: vi.fn(async (_col: string, orgIds: string[]) => ({

@@ -114,13 +114,27 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
         return;
       }
 
-      // Step 2: teams for this org
+      // Step 2: teams for this org.
+      //
+      // Reads the anon-safe public-profile VIEW, not baseball_teams. This
+      // panel peeks at an org the viewing coach does NOT staff, so once
+      // baseball_teams_select is tenant-scoped (migration 20260729000200) the
+      // base table returns zero rows here and the panel renders empty staff
+      // and an empty roster — silently, because both downstream queries are
+      // skipped on an empty teamIds rather than erroring.
+      //
+      // The view returns the same `id` and excludes join_code by construction.
       const { data: orgTeams } = await supabase
-        .from('baseball_teams')
+        .from('baseball_teams_public_profile')
         .select('id')
         .eq('organization_id', id);
 
-      const teamIds = orgTeams?.map((t) => t.id) ?? [];
+      // The view's columns are nullable in the generated types (a view has no
+      // NOT NULL guarantees), so narrow rather than casting — a null id would
+      // silently widen the `.in()` filter below.
+      const teamIds = (orgTeams ?? [])
+        .map((t) => t.id)
+        .filter((teamId): teamId is string => typeof teamId === 'string');
 
       // Step 3: coaching staff + roster in parallel
       const [staffResult, rosterResult] = await Promise.all([

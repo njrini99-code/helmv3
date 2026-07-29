@@ -132,7 +132,9 @@ function chainTable(table: string) {
       })),
     };
   }
-  if (table === 'baseball_teams') {
+  // See discover-privacy.test.ts: the cross-org browse reads the anon-safe
+  // public-profile VIEW, not the tenant-scoped base table.
+  if (table === 'baseball_teams_public_profile') {
     return {
       select: vi.fn(() => ({
         in: vi.fn(async () => ({ data: [{ id: DISCOVERABLE_TEAM_ID }], error: null })),

@@ -211,13 +211,22 @@ async function getDiscoverableTeamPlayerIdsForCompare(
   if (!orgs?.length) return new Set();
   const orgIds = orgs.map((o) => o.id);
 
+  // Cross-org read → public.baseball_teams_public_profile, matching
+  // discover.ts / recruitability.ts. baseball_teams' SELECT policy is scoped to
+  // the caller's own teams, so the base table would reduce this set to the
+  // coach's roster and leave Compare unable to add anyone. The view carries
+  // only non-sensitive identity columns (no join_code) and drops programs with
+  // public_profile_mode = 'private', which is the same discoverable definition
+  // the search results are expected to honor.
   const { data: teams } = await supabase
-    .from('baseball_teams')
+    .from('baseball_teams_public_profile')
     .select('id')
     .in('organization_id', orgIds);
 
   if (!teams?.length) return new Set();
-  const teamIds = teams.map((t) => t.id);
+  // Every view column is nullable in the generated types — narrow first.
+  const teamIds = teams.map((t) => t.id).filter((id): id is string => Boolean(id));
+  if (teamIds.length === 0) return new Set();
 
   const { data: members } = await supabase
     .from('baseball_team_members')

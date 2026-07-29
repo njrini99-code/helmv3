@@ -11,6 +11,13 @@
 --        - join-by-code -> public.resolve_baseball_team_by_join_code()
 --            src/app/baseball/join/[code]/page.tsx
 --            src/app/baseball/actions/teams.ts joinTeamByCodeImpl
+--          AND the rest of that chain ->
+--          public.get_baseball_team_join_context()
+--            src/app/baseball/actions/teams.ts validatePlayerCanJoinTeamImpl
+--            src/app/baseball/actions/teams.ts joinTeamImpl
+--          Resolving the code is only the FIRST of three pre-membership reads
+--          of baseball_teams. Repointing just the code lookup leaves join-by-
+--          code equally broken, reporting "Team not found" instead.
 --        - cross-org team browse -> public.baseball_teams_public_profile
 --            src/app/baseball/actions/discover.ts
 --            src/lib/baseball/recruitability.ts
@@ -18,9 +25,15 @@
 --        - roster "Add existing player" ->
 --          public.find_baseball_player_by_email_for_roster()
 --            src/app/baseball/actions/roster.ts searchAssignablePlayers
---      Verify by loading the join page and adding a player, not by reading
---      the diff — a merged-but-undeployed change looks identical in git and
---      fails identically to no change at all.
+--      Verify by EXERCISING each flow, not by reading the diff — a
+--      merged-but-undeployed change looks identical in git and fails
+--      identically to no change at all. Concretely:
+--        - Join a team with a code as a player who is not yet a member, and
+--          confirm the pending-approval screen still names the team.
+--        - Search a transfer's FULL email address in roster "Add existing
+--          player" and confirm the exact-email result appears. A substring
+--          search silently returning fewer rows is exactly the "quietly
+--          stopped working" symptom this file warns about.
 --
 -- WHAT BREAKS IF YOU APPLY THIS EARLY: joining a team by code returns
 -- "Invalid invite code" for every code (the pre-membership caller can satisfy
@@ -107,7 +120,16 @@ CREATE POLICY "baseball_teams_select" ON public.baseball_teams
   FOR SELECT TO authenticated
   USING (
     public.is_baseball_team_staff(id)
-    OR public.is_baseball_team_member(id)
+    -- has_any_baseball_team_membership, NOT is_baseball_team_member: the
+    -- latter requires status = 'active' (20260624000050:250-266), but
+    -- joinTeamImpl inserts 'pending' whenever require_coach_approval is not
+    -- explicitly false — the fail-closed DEFAULT. Using the active-only helper
+    -- here would mean a player who just joined cannot see the team they joined
+    -- until a coach approves them, so their own pending-approval screen would
+    -- render nothing. See migration A SECTION 6 for why this is a separate
+    -- predicate rather than a widening of is_baseball_team_member (which many
+    -- other policies call to gate real team data).
+    OR public.has_any_baseball_team_membership(id)
   );
 
 -- ----------------------------------------------------------------------------

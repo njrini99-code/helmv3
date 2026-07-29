@@ -80,11 +80,16 @@ async function validatePlayerCanJoinTeamImpl(
       .select('player_type')
       .eq('id', playerId)
       .single(),
-    supabase
-      .from('baseball_teams')
-      .select('id, name, team_type')
-      .eq('id', teamId)
-      .single(),
+    // NOT `.from('baseball_teams')`. This runs for a caller who has no
+    // membership on the target team — that is the whole point of a join —
+    // so the tenant-scoped SELECT policy (migration 20260729000200) admits
+    // them to zero rows and the join fails with "Team not found". The
+    // SECURITY DEFINER resolver returns the same non-secret identity fields
+    // and never exposes join_code.
+    supabase.rpc(
+      'get_baseball_team_join_context' as never,
+      { p_team_id: teamId } as never,
+    ),
     supabase
       .from('baseball_team_members')
       .select(`
@@ -99,7 +104,14 @@ async function validatePlayerCanJoinTeamImpl(
   ]);
 
   const { data: player, error: playerError } = playerResult;
-  const { data: targetTeam, error: teamError } = teamResult;
+  // get_baseball_team_join_context is set-returning, so it answers with an
+  // array (empty for an id that names nothing) rather than the single row
+  // `.single()` used to produce.
+  const { data: joinContextRows, error: teamError } = teamResult as {
+    data: Array<{ id: string; name: string; team_type: string }> | null;
+    error: unknown;
+  };
+  const targetTeam = joinContextRows?.[0] ?? null;
   const { data: currentMemberships } = membershipsResult;
 
   if (playerError || !player) {
@@ -313,11 +325,23 @@ async function joinTeamImpl(playerId: string, teamId: string) {
   // SECURITY: the team lookup error is captured and checked (not discarded) —
   // a schema mismatch (e.g. migration 20260624000095 not yet applied) must fail
   // closed rather than silently falling through with team === undefined.
-  const { data: team, error: teamError } = await supabase
-    .from('baseball_teams')
-    .select('team_type, invite_policy, require_coach_approval')
-    .eq('id', teamId)
-    .single();
+  // NOT `.from('baseball_teams')` — same reason as validatePlayerCanJoinTeam
+  // above: the caller has no membership yet, so the tenant-scoped SELECT
+  // policy (migration 20260729000200) gives them zero rows and this would
+  // fail closed on every legitimate join. The resolver returns the same
+  // non-secret join-policy fields and never exposes join_code.
+  const { data: joinContextRows, error: teamError } = (await supabase.rpc(
+    'get_baseball_team_join_context' as never,
+    { p_team_id: teamId } as never,
+  )) as {
+    data: Array<{
+      team_type: string | null;
+      invite_policy: string | null;
+      require_coach_approval: boolean | null;
+    }> | null;
+    error: unknown;
+  };
+  const team = joinContextRows?.[0] ?? null;
 
   if (teamError || !team) {
     await logServerError(
@@ -920,13 +944,39 @@ export const getCoachTeamForManagement = withBaseballAction(
 async function joinTeamByCodeImpl(inviteCode: string, playerId: string) {
   const supabase = await createClient();
 
+  // The caller is by definition not yet on this team, so no SELECT policy on
+  // baseball_teams can admit them — RLS cannot see the `join_code` literal a
+  // query filters on, only which rows the caller already has a relationship to.
+  // The code therefore travels as an explicit argument to a SECURITY DEFINER
+  // resolver that compares it server-side and returns at most one row of
+  // non-secret identity (never the join_code itself).
   type TeamByCode = { id: string; name: string; team_type: string };
-  const { data: team, error: teamError } = await fromUntyped(supabase, 'baseball_teams')
-    .select('id, name, team_type')
-    .eq('join_code', inviteCode)
-    .maybeSingle() as { data: TeamByCode | null; error: unknown };
+  const { data: resolvedTeams, error: teamError } = (await supabase.rpc(
+    'resolve_baseball_team_by_join_code' as never,
+    { p_join_code: inviteCode } as never,
+  )) as { data: TeamByCode[] | null; error: unknown };
 
-  if (teamError || !team) {
+  // A set-returning function gives back an array; a code that matches nothing
+  // is an empty set, which is the same "not a real code" outcome as before.
+  const team = resolvedTeams?.[0] ?? null;
+
+  if (teamError) {
+    // An RPC ERROR is not a bad code — it is the resolver being unreachable,
+    // which is exactly what a deploy landing before migration A looks like
+    // (PostgREST answers PGRST202, "function not found"). Collapsing that into
+    // "Invalid invite code" would present a total outage of join-by-code as a
+    // user typo, with no telemetry, for every user at once. Logged first so
+    // the failure is visible in Sentry and the admin feed; the user-facing
+    // copy stays deliberately unchanged, since "invalid code" is still the
+    // only honest thing to tell someone whose join we could not verify.
+    await logServerError(
+      `join_code resolver failed (is migration 20260729000100 applied?): ${describeError(teamError)}`,
+      { action: 'teams.joinTeamByCode' },
+    );
+    return { success: false, error: 'Invalid invite code' };
+  }
+
+  if (!team) {
     return { success: false, error: 'Invalid invite code' };
   }
 

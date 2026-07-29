@@ -104,24 +104,49 @@ export default async function JoinTeamPage({ params }: PageProps) {
     isInactive = !invitation.is_active;
     isExpired = invitation.expires_at ? new Date(invitation.expires_at) < new Date() : false;
   } else {
-    // Try direct team invite code
-    const { data: directTeam } = await supabase
-      .from('baseball_teams')
-      .select(`
-        id,
-        name,
-        team_type,
-        organizations (
-          name,
-          location_city,
-          location_state,
-          logo_url
-        )
-      `)
-      .eq('join_code' as 'id', code)
-      .single() as { data: TeamWithInviteCode | null };
+    // Try direct team invite code. Whoever lands on this page is by definition
+    // not yet on the team, so no row-level predicate on baseball_teams can let
+    // them read it — RLS never sees the `join_code` value a query filters on,
+    // only which rows the viewer already belongs to. The code is passed as an
+    // argument to a SECURITY DEFINER resolver instead, which compares it
+    // server-side and hands back identity columns only (never the code itself).
+    type ResolvedTeam = {
+      id: string;
+      name: string;
+      team_type: string;
+      organization_id: string | null;
+    };
 
-    team = directTeam;
+    const { data: resolvedTeams } = (await supabase.rpc(
+      'resolve_baseball_team_by_join_code' as never,
+      { p_join_code: code } as never,
+    )) as { data: ResolvedTeam[] | null; error: unknown };
+
+    // Set-returning function: an unmatched code comes back as an empty array,
+    // which leaves `team` null and falls through to the invalid-code card.
+    const directTeam = resolvedTeams?.[0] ?? null;
+
+    if (directTeam) {
+      // The resolver returns organization_id rather than the embedded
+      // organizations join the old query used, so the branding block is read
+      // in a second hop. organizations carries its own SELECT policy, which
+      // the tenant-isolation migrations leave alone, so a prospective joiner
+      // can still resolve the program name/city/logo shown on the card.
+      const { data: organization } = directTeam.organization_id
+        ? await supabase
+            .from('organizations')
+            .select('name, location_city, location_state, logo_url')
+            .eq('id', directTeam.organization_id)
+            .maybeSingle()
+        : { data: null };
+
+      team = {
+        id: directTeam.id,
+        name: directTeam.name,
+        team_type: directTeam.team_type,
+        organizations: organization,
+      };
+    }
   }
 
   // Check if player is already a member of this team

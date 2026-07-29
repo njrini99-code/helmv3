@@ -123,13 +123,24 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
     }
 
     // Method 2: Query via team_members → teams → organizations (works for ALL org types)
+    //
+    // Reads the anon-safe public-profile VIEW, not baseball_teams. This
+    // component renders on the PUBLIC program page for a viewer who staffs
+    // nothing — so once baseball_teams_select is tenant-scoped (migration
+    // 20260729000200) the base table returns zero rows and this whole branch
+    // is skipped, silently. The view returns the same `id` and never exposes
+    // join_code.
     const { data: teamsData } = await supabase
-      .from('baseball_teams')
+      .from('baseball_teams_public_profile')
       .select('id')
       .eq('organization_id', organizationId);
 
     if (teamsData && teamsData.length > 0) {
-      const teamIds = teamsData.map((t) => t.id);
+      // Nullable in the generated types because the source is a VIEW — narrow
+      // instead of casting, so a null id cannot widen the `.in()` filter.
+      const teamIds = teamsData
+        .map((t) => t.id)
+        .filter((teamId): teamId is string => typeof teamId === 'string');
 
       const { data: teamMembers, error } = await supabase
         .from('baseball_team_members')

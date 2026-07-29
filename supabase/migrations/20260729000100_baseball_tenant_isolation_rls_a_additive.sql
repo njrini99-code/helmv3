@@ -55,6 +55,8 @@
 --   DROP FUNCTION IF EXISTS public.is_baseball_player_recruiting_discoverable(uuid);
 --   DROP FUNCTION IF EXISTS public.resolve_baseball_team_by_join_code(text);
 --   DROP FUNCTION IF EXISTS public.find_baseball_player_by_email_for_roster(uuid, text);
+--   DROP FUNCTION IF EXISTS public.get_baseball_team_join_context(uuid);
+--   DROP FUNCTION IF EXISTS public.has_any_baseball_team_membership(uuid);
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -304,6 +306,113 @@ COMMENT ON FUNCTION public.find_baseball_player_by_email_for_roster(uuid, text) 
 
 REVOKE ALL ON FUNCTION public.find_baseball_player_by_email_for_roster(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.find_baseball_player_by_email_for_roster(uuid, text) TO authenticated, service_role;
+
+-- ----------------------------------------------------------------------------
+-- SECTION 5 — team join context (the rest of the join-by-code chain)
+-- ----------------------------------------------------------------------------
+-- WHY THIS EXISTS. Resolving the join code (SECTION 3) is only the FIRST of
+-- three pre-membership reads of baseball_teams in the join chain. An
+-- adversarial review of the companion app change caught the other two:
+--
+--   src/app/baseball/actions/teams.ts:84   validatePlayerCanJoinTeamImpl
+--     .from('baseball_teams').select('id, name, team_type').eq('id', teamId)
+--   src/app/baseball/actions/teams.ts:317  joinTeamImpl
+--     .from('baseball_teams')
+--     .select('team_type, invite_policy, require_coach_approval')
+--     .eq('id', teamId)
+--
+-- Both run on the RLS-bound session client, for a caller who by definition has
+-- no membership yet. After migration B they return zero rows, and the user is
+-- told "Team not found" — so repointing only the code lookup would have left
+-- join-by-code just as broken, with a more confusing error. Migration B's
+-- precondition list is not satisfied without this.
+--
+-- WHY IT IS SAFE TO EXPOSE THESE FIELDS. This function deliberately does NOT
+-- take a code or prove possession of one, so it is readable by any
+-- authenticated user for any team id. That is a real widening compared to the
+-- policy alone, and it is bounded on purpose:
+--
+--   - It returns name, team_type, invite_policy and require_coach_approval.
+--     None is a secret. They answer "may I join this team, and what happens if
+--     I do" — the question the join screen exists to answer.
+--   - It never returns join_code (the actual secret), created_by, or any other
+--     column.
+--   - It is a strict reduction from today, where USING(true) hands every
+--     authenticated user every column of every team including join_code.
+--
+-- The alternative — threading the resolved team object down from the code
+-- lookup — was rejected because joinTeam() is also reached from the
+-- invitation flow, so the fields would have to be plumbed through two callers
+-- and a public function signature to avoid one function. That trades a small,
+-- reviewable read surface for a larger, less obvious refactor of a security-
+-- sensitive path at the exact moment it is being tightened.
+CREATE OR REPLACE FUNCTION public.get_baseball_team_join_context(
+  p_team_id uuid
+)
+RETURNS TABLE (
+  id                     uuid,
+  name                   text,
+  team_type              public.baseball_coach_type,
+  invite_policy          text,
+  require_coach_approval boolean
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT bt.id, bt.name, bt.team_type, bt.invite_policy, bt.require_coach_approval
+  FROM public.baseball_teams bt
+  WHERE bt.id = p_team_id
+  LIMIT 1;
+$$;
+
+COMMENT ON FUNCTION public.get_baseball_team_join_context(uuid) IS
+  'Non-secret join-flow context for a team (name, team_type, invite_policy, require_coach_approval), companion to the tenant-isolation fix (2026-07-29). Required because validatePlayerCanJoinTeamImpl and joinTeamImpl both read baseball_teams for a caller who has no membership yet — after the tightened policy those reads return zero rows and the join fails with "Team not found". Never returns join_code or created_by. A strict reduction from the USING(true) policy it replaces, which exposed every column of every team.';
+
+REVOKE ALL ON FUNCTION public.get_baseball_team_join_context(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_baseball_team_join_context(uuid) TO authenticated, service_role;
+
+-- ----------------------------------------------------------------------------
+-- SECTION 6 — a pending member must still see their own team
+-- ----------------------------------------------------------------------------
+-- public.is_baseball_team_member() requires status = 'active'
+-- (20260624000050:250-266). But joinTeamImpl inserts status = 'pending'
+-- whenever require_coach_approval is not explicitly false — which is the
+-- fail-closed DEFAULT. So under migration B's policy, a player who has just
+-- successfully joined a team cannot read that team's row until a coach
+-- approves them: their own pending-approval screen would render nothing.
+--
+-- That is a bug in the new policy, not in the helper. `is_baseball_team_member`
+-- means "is an ACTIVE member" and is used elsewhere to gate real team data —
+-- widening it would silently grant pending players access across every policy
+-- that calls it. So this adds a SEPARATE, narrower predicate used only by the
+-- baseball_teams SELECT policy: you may read the team row you have ANY
+-- membership row for, including pending or inactive.
+--
+-- Reading the name of a team you have applied to is not a leak — you had to
+-- possess its join code or an invitation to create that row at all.
+CREATE OR REPLACE FUNCTION public.has_any_baseball_team_membership(p_team_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.baseball_team_members btm
+    JOIN public.baseball_players bp ON bp.id = btm.player_id
+    WHERE btm.team_id = p_team_id
+      AND bp.user_id = auth.uid()
+  );
+$$;
+
+COMMENT ON FUNCTION public.has_any_baseball_team_membership(uuid) IS
+  'True when the caller has ANY baseball_team_members row for the team, regardless of status — unlike is_baseball_team_member(), which requires status = ''active''. Used ONLY by baseball_teams_select (2026-07-29 tenant-isolation fix) so a player awaiting coach approval can still see the team they joined. Deliberately separate from is_baseball_team_member so widening it here cannot leak into the many other policies that call that helper to gate real team data.';
+
+REVOKE ALL ON FUNCTION public.has_any_baseball_team_membership(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.has_any_baseball_team_membership(uuid) TO authenticated, service_role;
 
 -- ============================================================================
 -- END migration A (additive). Nothing here changes existing behaviour.

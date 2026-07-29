@@ -72,9 +72,31 @@ describe('processTeamInvitation max_uses accounting', () => {
     vi.clearAllMocks();
     getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
     fromUntypedEq.mockResolvedValue({ error: null });
-    // try_redeem_baseball_team_invitation reserves a redemption atomically
-    // before joinTeam runs (#395); default to granting it.
-    rpc.mockResolvedValue({ data: true, error: null });
+    // Two different RPCs run in this flow, so the default must dispatch by
+    // name rather than answer everything with one shape:
+    //   try_redeem_baseball_team_invitation — reserves a redemption atomically
+    //     before joinTeam runs (#395); returns a bare boolean. Default: granted.
+    //   get_baseball_team_join_context — resolves the team's non-secret join
+    //     policy for a caller with no membership yet, which every invitee is.
+    //     Set-returning, so it answers with an array. joinTeam calls it twice
+    //     (validatePlayerCanJoinTeam, then the policy check).
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === 'get_baseball_team_join_context') {
+        return {
+          data: [
+            {
+              id: 'team-1',
+              name: 'Eagles',
+              team_type: 'college',
+              invite_policy: 'open',
+              require_coach_approval: false,
+            },
+          ],
+          error: null,
+        };
+      }
+      return { data: true, error: null };
+    });
   });
 
   it('blocks when invitation used_count meets max_uses (not roster size)', async () => {
