@@ -88,6 +88,43 @@ function findNestedInteractive(file: string): string[] {
   return violations;
 }
 
+/**
+ * Block-level elements inside <p>.
+ *
+ * The other everyday hydration crash, and the same mechanism: <p> auto-closes
+ * when the parser meets block content, so `<p>a<div>b</div></p>` becomes
+ * `<p>a</p><div>b</div><p></p>` in the DOM — three siblings where React
+ * expects one nested tree. React names this one explicitly:
+ * "validateDOMNesting(...): <div> cannot appear as a descendant of <p>".
+ */
+const BLOCK_LEVEL = new Set([
+  'div', 'p', 'ul', 'ol', 'table', 'section', 'article', 'form', 'blockquote',
+  'pre', 'hr', 'figure', 'main', 'nav', 'header', 'footer', 'aside',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+]);
+
+function findBlockInParagraph(file: string): string[] {
+  const source = readFileSync(file, 'utf8');
+  const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const violations: string[] = [];
+
+  const walk = (node: ts.Node, insideParagraph: boolean): void => {
+    let next = insideParagraph;
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const name = tagNameOf(node);
+      if (insideParagraph && BLOCK_LEVEL.has(name)) {
+        const { line } = sf.getLineAndCharacterOfPosition(node.getStart());
+        violations.push(`${path.relative(SRC, file)}:${line + 1} — <${name}> inside <p>`);
+      }
+      if (name === 'p') next = true;
+    }
+    ts.forEachChild(node, (child) => walk(child, next));
+  };
+
+  walk(sf, false);
+  return violations;
+}
+
 describe('DOM nesting: interactive elements are never nested', () => {
   it('finds no <button>/<a>/<Link> inside another interactive element', () => {
     const files = collectTsx(SRC);
@@ -136,5 +173,42 @@ describe('DOM nesting: interactive elements are never nested', () => {
     walk(sf, null);
 
     expect(found).toEqual(['button in button', 'Link in button']);
+  });
+});
+
+describe('DOM nesting: no block-level element inside a <p>', () => {
+  it('finds no <div>/<ul>/<section>/… inside a paragraph', () => {
+    const files = collectTsx(SRC);
+    expect(files.length).toBeGreaterThan(500);
+
+    const violations = files.flatMap(findBlockInParagraph);
+    expect(violations).toEqual([]);
+  });
+
+  it('actually detects a block inside a paragraph (not vacuous)', () => {
+    const fixture = `
+      export function Fixture() {
+        return (
+          <div>
+            <p>text <div>block inside p</div></p>
+            <p>fine <span>inline is allowed</span></p>
+          </div>
+        );
+      }
+    `;
+    const sf = ts.createSourceFile('fixture.tsx', fixture, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const found: string[] = [];
+    const walk = (node: ts.Node, insideParagraph: boolean): void => {
+      let next = insideParagraph;
+      if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+        const name = tagNameOf(node);
+        if (insideParagraph && BLOCK_LEVEL.has(name)) found.push(name);
+        if (name === 'p') next = true;
+      }
+      ts.forEachChild(node, (child) => walk(child, next));
+    };
+    walk(sf, false);
+
+    expect(found).toEqual(['div']);
   });
 });
