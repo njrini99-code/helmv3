@@ -155,6 +155,8 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | Notification spoofing closed — `can_notify_baseball_user()`, after verifying the only two insert paths | `bcbba306b` |
 | vitest projects selected ~870 files each instead of 5/0/7; "Business contracts" was re-running the whole suite | `0ae11337b` |
 | Select's clear button was nested inside its trigger button (invalid HTML, hydration-crash class) + a repo-wide parser guard | `394d3d875` |
+| Calendar's no-team empty state sold recruiting to a college coach, with a **"Browse prospects"** CTA into a sunset-blocked route | `70ea55143` |
+| **`/dashboard/activate` — the route that TURNS RECRUITING ON — was reachable by direct URL**; missing from `MODULE_ROUTE_PREFIXES` despite the middleware's comment claiming otherwise | `5f63a686a` |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).
@@ -192,3 +194,32 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
   The old search returned strangers' email addresses from every program — the
   leak shipped as a feature. The legitimate capability is "add a player I
   already know of", not "browse players I don't".
+- **A sweep is only as complete as the inventory it iterates.**
+  `recruiting-sunset-doors.test.ts` walks `MODULE_ROUTE_PREFIXES` across every
+  role × program type and passed all night — while `/activate` sat outside that
+  list, unguarded. The inventory now has its own assertion rather than being
+  trusted by the thing that reads it.
+
+---
+
+## Corrections to earlier claims in this run
+
+Recorded so a wrong claim never gets promoted by repetition.
+
+- **Two of three "open recruiting doors" were not open.** I reported `camps`,
+  `scout-packets` and `activate` as reachable, and added gates to all three.
+  Only `/activate` was real: `/baseball/dashboard/camps` and
+  `/baseball/dashboard/scout-packets` were already in `MODULE_ROUTE_PREFIXES`
+  and already enforced at `src/lib/supabase/middleware.ts:408`. Both edits were
+  reverted rather than shipped with comments describing gaps that did not exist.
+- **A regex nested-`<button>` detector reported 27 hits; all 27 were false.**
+  `<button\b[^>]*/>` cannot match a self-closing button whose attributes contain
+  `>` (`onClick={() => x}`), so it never closes and every later button looks
+  nested. Rewritten on the TypeScript parser: 0 false positives and **2 real
+  hits the regex never saw**.
+- **A green test suite proved half of what it claimed.** The first draft of
+  `recruiting-activate-door.test.ts` mocked `isRecruitingEnabled` to assert both
+  flag directions. `isPathnameModuleDisabled` calls it *internally*, so the mock
+  of the module's exports never applied — five of six assertions passed on the
+  real flag. Rewritten to assert restoration through attribution, which is
+  observable without a working mock.

@@ -1,8 +1,9 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 06:00 EDT. Branch
+_2026-07-28 23:35 → 2026-07-29 06:05 EDT. Branch
 `baseball/overnight-completion`, draft PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 45 commits.
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 60 commits ahead
+of `main`.
 CI is green except `BaseballHelm authenticated smoke` (and the CI aggregate
 that depends on it), which fails on a Cloudflare 522 from the production
 Supabase — red before this branch existed, unrelated to the diff, and the
@@ -30,9 +31,13 @@ Every one is in the 2026-05-27 baseline. None was introduced by this work.
 | 🟠 | `baseball_coaches` | Every coach's email + phone, to any coach | **Not fixed** — product decision |
 | 🟠 | `golf_coaches` | Every golf coach's email + phone, to *any* logged-in user | **Not fixed** — out of scope, live product |
 
-Plus one write hole: `baseball_notifications` lets any authenticated user post
-a notification to anyone (in-app phishing, not a leak). Not fixed — the
-obvious fix breaks practice-publish; see `DATABASE_STATUS.md`.
+Plus one write hole: `baseball_notifications` let any authenticated user post a
+notification into anyone's feed (in-app phishing, not a leak). **Fix written**
+(`bcbba306b`) and it is in migration B, so it applies with the rest. The
+obvious `auth.uid() = user_id` would have broken the product — practice-publish
+and coach lift messages legitimately notify *other* users through the caller's
+own session — so it gates on a definer `can_notify_baseball_user()` instead.
+See `DATABASE_STATUS.md`.
 
 **➜ If only one thing gets applied in the morning, apply the
 `baseball_messages` fix.** Three baseline policies compare
@@ -97,6 +102,8 @@ is worth more than any individual fix:
 | **Counting what a config selects** | Three vitest projects matched ~870 files each instead of 5, 0 and 7 — `extends: true` merges array options rather than replacing them. CI's "Business contracts" job was re-running the entire unit suite under a name promising seven contract files. The config's own comment asserted the opposite of what the tool does, which is what preserved it. |
 | **Executing the pgTAP** | A fixture that passed auth user ids where `baseball_coaches.id` was required. Zero of ten assertions ran. Worth noting because a fixture error and a policy regression look identical from outside — only the error text distinguishes them. |
 | **Parsing the JSX instead of grepping it** | A regex check for nested interactive elements reported 27 violations; **all 27 were false positives** (`<button onClick={() => x} />` contains a `>`, so a `[^>]*/>` self-close pattern never matches and every later button looks nested), and the **two real ones were not among them**. The lesson is not "regex is bad" — it is that a checker reporting a number nobody verifies is worse than no checker, which is why the guard now asserts it reports non-zero on a known-bad fixture. |
+| **Checking that a mock took effect** | A new suite mocked `isRecruitingEnabled` to assert a route was blocked *and* that re-enabling reopens it. `vi.mock` replaces a module's **exports**; `isPathnameModuleDisabled` calls the flag **internally**, through the module's own binding, so the mock never applied. Five of six assertions went green — on the real flag. The suite looked like it proved both directions while proving one. Green is not the same as meaningful. |
+| **Auditing the inventory, not just the sweep** | `recruiting-sunset-doors.test.ts` walks `MODULE_ROUTE_PREFIXES` across every role × program type and passed all night. `/baseball/dashboard/activate` — the route that *turns recruiting on* — was not in that list, so the sweep could not see it. A sweep is only as complete as the inventory it iterates; the inventory now has its own assertion. |
 
 The corollary, recorded because it cuts the other way: recon reported a P0 that
 **did not exist** (the staff-invite RPC missing an email-ownership check — it
@@ -119,6 +126,18 @@ Each has tests, and the tests assert behaviour rather than existence.
   behaviour were *kept* and re-run under a mock-enabled module, so
   `PRODUCT_MODULES.recruiting.enabled = true` restores the feature against a
   green suite instead of an archaeology project.
+- **The one recruiting route that could turn recruiting back on is shut.**
+  `/dashboard/activate` flips `baseball_players.recruiting_activated` and makes
+  a player discoverable to other programs. Nav hid it; nothing closed it. It
+  was missing from `MODULE_ROUTE_PREFIXES` even though the middleware that
+  reads that list names `/activate` in its own comment as a reason to defer to
+  the registry. Every other recruiting route only *displays* recruiting — this
+  one writes state that would have outlived the sunset.
+- **Calendar stopped selling a module the buyer cannot reach.** A college coach
+  with no team yet — an ordinary first login, and one on the demo path — was
+  shown "Your recruiting calendar is empty" under a **Browse prospects** button
+  pointing into a blocked route. Gated at read time, so the recruiting
+  narrative returns unedited when the module does.
 - **Roster status changes propagate to Lift Lab.** A cut player stayed
   `is_active` forever; nothing was going to converge, because the sync RPC is
   `ON CONFLICT DO NOTHING` and could add an athlete but never deactivate one.
@@ -248,6 +267,14 @@ Each has tests, and the tests assert behaviour rather than existence.
 - **Reviewers were also wrong sometimes** — one asserted a horizontal-overflow
   consequence that `overflow-hidden` makes impossible. Their findings were
   checked, not adopted.
+- **I was wrong sometimes too, and the retractions are in the tree.** I reported
+  three open recruiting doors and wrote gates for all three; two of them —
+  `camps` and `scout-packets` — were already in `MODULE_ROUTE_PREFIXES` and
+  already enforced at `src/lib/supabase/middleware.ts:408`. Reverted rather
+  than shipped, because the code would have been harmless while its comments
+  described gaps that did not exist, and a wrong comment outlives the person
+  who wrote it. Same for the retracted staff-invite P0. `CURRENT_PRIORITIES.md`
+  keeps a running "Corrections" list so no claim gets promoted by repetition.
 - **The heartbeat is real but session-scoped.** `CronCreate` job `9234a858`
   fires hourly at :11 while this session is alive and idle. Nothing on disk
   restarts it if the process exits. The durable recovery mechanism is
