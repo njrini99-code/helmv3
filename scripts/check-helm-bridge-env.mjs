@@ -68,8 +68,50 @@ if (!hasUsableValue('VERCEL_TEAM_ID')) {
   console.log('warn Vercel team id is not set; team deployments may be incomplete (VERCEL_TEAM_ID)');
 }
 
+/**
+ * DRIFT MODE (`--drift`, used by CI).
+ *
+ * CI has none of these secrets, so running the plain check there would fail
+ * on every single PR — a second permanently-red check nobody reads, which is
+ * worse than no check at all.
+ *
+ * The distinction that actually carries signal:
+ *
+ *   - NOTHING configured  → this environment simply does not provision Bridge
+ *                           integrations (exactly CI's situation). Report and
+ *                           exit 0. Not a finding.
+ *   - SOME configured     → this environment DOES provision them and one has
+ *                           gone missing or been left as a placeholder. That
+ *                           is real drift — a rotated token, a dropped var —
+ *                           and it fails.
+ *
+ * So the job stays green until the secrets are actually wired into CI, and
+ * from that moment on it starts catching regressions automatically with no
+ * follow-up edit. Removing a var that IS set still fails loudly.
+ */
+const driftMode = process.argv.includes('--drift');
+
+if (driftMode && failures.length === checks.length) {
+  console.log(
+    'skip No Helm Bridge integration env is provisioned here (0 of ' +
+      `${checks.length} set) — nothing to drift-check. This is expected in CI ` +
+      'until the secrets are wired in; once any one of them is set, a missing ' +
+      'sibling becomes a hard failure.',
+  );
+  process.exit(0);
+}
+
 if (failures.length > 0) {
-  console.error(`Helm Bridge env check failed: ${failures.length} required value(s) missing or placeholder.`);
+  if (driftMode) {
+    console.error(
+      `Helm Bridge env DRIFT: ${checks.length - failures.length} of ${checks.length} values are set, ` +
+        `but ${failures.length} are missing or placeholder. A partially-configured Bridge ` +
+        'silently degrades (blank panels, edge errors that never reach admin_events) ' +
+        'rather than failing visibly, so this is treated as an error.',
+    );
+  } else {
+    console.error(`Helm Bridge env check failed: ${failures.length} required value(s) missing or placeholder.`);
+  }
   process.exit(1);
 }
 
