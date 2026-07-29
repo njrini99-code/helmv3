@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 import { setRememberedFirstName } from '@/lib/entry/greeting';
+import { probeSignedIn } from '@/lib/demo/gate-probe';
 import {
   AuthCard,
   AuthFooterLinks,
@@ -123,13 +124,41 @@ export default function LoginPage() {
     setIsNative(isNativeApp());
   }, []);
 
+  // "Am I already signed in?" — via probeSignedIn, NOT a raw getUser().
+  //
+  // This effect is the only thing that clears `checkingAuth`, and `checkingAuth`
+  // is what stands between a visitor and the sign-in form. The previous version
+  // awaited `supabase.auth.getUser()` bare — no catch, no timeout — so any
+  // outcome other than a clean resolve left `setCheckingAuth(false)` unreached
+  // and the page pinned on "Checking sign-in status" forever, with no form to
+  // type into. A login screen that cannot render its own form because a network
+  // call did not come back is the worst possible failure on the most important
+  // page in the product.
+  //
+  // That hang is not hypothetical and it is already documented in this
+  // codebase: gate-probe.ts (#918) exists because "a stale/expired httpOnly
+  // Supabase auth cookie and a network blip can leave getUser()'s internal
+  // refresh-token exchange hanging indefinitely — the browser fetch GoTrue
+  // issues internally has no timeout of its own, so the returned promise may
+  // simply never settle." Both demo gates adopted probeSignedIn. The login
+  // pages never did.
+  //
+  // probeSignedIn races a 4s deadline and treats EVERY failure — timeout,
+  // throw, or an error surfaced through getUser()'s own `error` field — as
+  // signed out, so this effect always settles. Failing to "signed out" is the
+  // right bias here: the worst case is showing the form to someone already
+  // authenticated, and signing in again works fine.
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
+    let cancelled = false;
+    (async () => {
+      const user = await probeSignedIn(supabase);
+      if (cancelled) return;
       setIsLoggedIn(!!user);
       setCheckingAuth(false);
-    }
-    checkAuth();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [supabase]);
 
   // Entry World personalization (docs/baseball/ENTRY_SCENES_DESIGN.md family
