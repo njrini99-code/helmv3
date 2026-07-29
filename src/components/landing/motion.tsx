@@ -36,7 +36,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { markAnimReady } from '@/lib/motion/anim-gate';
+import { markAnimReady, unmarkAnimReady } from '@/lib/motion/anim-gate';
 
 export const LANDING_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
@@ -259,7 +259,7 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
     // either mechanism, so releasing immediately is correct.
     if (prefersReducedMotion()) {
       markAnimReady(el);
-      return;
+      return () => unmarkAnimReady(el);
     }
     const compact = window.innerWidth < 768;
     revealedRef.current = false;
@@ -273,6 +273,9 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
     }
     // Clipped and transitioned — this element now hides itself.
     markAnimReady(el);
+    // Hand it back on teardown, or a StrictMode double-mount paints the settled
+    // element between the two passes. See unmarkAnimReady.
+    return () => unmarkAnimReady(el);
   }, [delay, wipeOnly]);
 
   useScrollFrame(

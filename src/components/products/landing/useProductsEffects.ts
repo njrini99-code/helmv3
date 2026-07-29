@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
-import { markAllAnimReady } from '@/lib/motion/anim-gate';
+import { markAllAnimReady, unmarkAllAnimReady } from '@/lib/motion/anim-gate';
 
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -208,6 +208,10 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
       rafIds.forEach((id) => cancelAnimationFrame(id));
       io?.disconnect();
       if (onScroll) window.removeEventListener('scroll', onScroll);
+      // Re-gate. This effect also re-runs on a `compact` change (a resize
+      // across 767px), and without this the reveals would be left released but
+      // un-prepped for one paint. See unmarkAnimReady.
+      unmarkAllAnimReady(reveals);
     };
   }, [rootRef, compact]);
 }

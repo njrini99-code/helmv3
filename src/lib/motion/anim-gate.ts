@@ -42,3 +42,29 @@ export function markAnimReady(el: Element | null | undefined): void {
 export function markAllAnimReady(els: Iterable<Element | null | undefined>): void {
   for (const el of els) el?.setAttribute(ANIM_READY_ATTR, '');
 }
+
+/**
+ * HAND THE ELEMENT BACK TO THE GATE. Every system that marks must also unmark
+ * from its cleanup, because releasing is not a one-way door.
+ *
+ * React StrictMode (on in dev — next.config.mjs sets `reactStrictMode: true`)
+ * double-invokes effects: mount, clean up, mount again. `useScene`'s cleanup is
+ * `mm.revert()`, and reverting a GSAP context RESTORES the inline styles it
+ * wrote — which is to say it puts the element back in its SETTLED, VISIBLE
+ * state. With the release left stamped, the CSS gate no longer applies, so
+ * between the teardown and the second mount the finished hero paints at full
+ * opacity and then gets hidden and animated again. That is the "it flashes and
+ * then starts over" on every dev load, and it is the exact failure the gate
+ * exists to prevent, reintroduced through the back door.
+ *
+ * Unmarking here means a teardown re-gates the element, so the only thing
+ * visible across a double-mount is the hidden state.
+ */
+export function unmarkAnimReady(el: Element | null | undefined): void {
+  el?.removeAttribute(ANIM_READY_ATTR);
+}
+
+/** Bulk form of {@link unmarkAnimReady}. */
+export function unmarkAllAnimReady(els: Iterable<Element | null | undefined>): void {
+  for (const el of els) el?.removeAttribute(ANIM_READY_ATTR);
+}
