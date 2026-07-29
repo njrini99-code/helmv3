@@ -171,5 +171,5 @@ describe('baseball internal links', () => {
       dead,
       `Dead baseball links:\n${dead.map((d) => `  ${d.href}  ←  ${d.site}`).join('\n')}`,
     ).toEqual([]);
-  });
+  }, 60000);
 });

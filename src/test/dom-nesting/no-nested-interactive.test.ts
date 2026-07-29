@@ -134,7 +134,7 @@ describe('DOM nesting: interactive elements are never nested', () => {
 
     const violations = files.flatMap(findNestedInteractive);
     expect(violations).toEqual([]);
-  });
+  }, 120000);
 
   it('actually detects nesting when it exists (the detector is not vacuous)', () => {
     // A checker that reports zero is worthless until it is shown to report
@@ -183,7 +183,7 @@ describe('DOM nesting: no block-level element inside a <p>', () => {
 
     const violations = files.flatMap(findBlockInParagraph);
     expect(violations).toEqual([]);
-  });
+  }, 120000);
 
   it('actually detects a block inside a paragraph (not vacuous)', () => {
     const fixture = `

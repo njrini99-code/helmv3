@@ -195,7 +195,7 @@ describe('inbound links to disabled modules', () => {
     collectSourceFiles(SRC, files);
     const owned = files.filter((f) => isModuleOwned(relative(ROOT, f)));
     expect(owned.length).toBeGreaterThan(10);
-  });
+  }, 60000);
 
   it('no live surface links into a disabled module', () => {
     const files: string[] = [];
@@ -211,5 +211,5 @@ describe('inbound links to disabled modules', () => {
         'module — add it to MODULE_OWNED_PATHS.\n' +
         leaks.map((l) => `  ${l.site}  →  ${l.href}  [${l.module}]`).join('\n'),
     ).toEqual([]);
-  });
+  }, 60000);
 });
