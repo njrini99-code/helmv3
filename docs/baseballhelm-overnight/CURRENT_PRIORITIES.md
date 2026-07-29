@@ -35,14 +35,18 @@ broken policy already has a correctly-correlated twin. It is safe under old and
 new code alike, so it does **not** need to wait for the rest of the sequence
 below. If only one thing gets applied in the morning, apply this.
 
-**Only two of these were reported by recon.** #3 came from asking what else
-used the same `.eq('code', …)` shape as the join_code leak. #4 came from
-sweeping the baseline for *every* `FOR SELECT … USING (true)` on a baseball
-table instead of stopping at what had been flagged — thirty seconds of grep
-that should have run first, and that turned up a policy named "Anyone can view
-percentiles" sitting on a per-player table nothing had touched since May.
+**Only two of the six were reported by recon.** Each of the other four came
+from re-asking the previous question one level wider — none needed information
+that was not already in the repo:
 
-**A fifth exists and is deliberately NOT fixed.** `baseball_coaches_select` is
+| # | The question that found it |
+|---|---|
+| 3 | What *else* uses the same `.eq('code', …)` shape as the join_code leak? → `baseball_team_invitations`, whose policy is named "Anyone can view active invitations by code" and checks no code. Seen twice before and left both times: `20260701000000:173` recorded it as deliberately "untouched"; `20260708141000:86` described the exploit path exactly, narrowed the redemption RPCs, and closed with *"This narrows but does not fully close the surface."* Closing the read closes it — ids stop being discoverable, so the parameter change that migration called for is unnecessary. |
+| 4 | What *else* in the baseline is `FOR SELECT … USING (true)`? → `baseball_player_percentiles`. Thirty seconds of grep, and it should have been the first thing run. |
+| 5 | *"If a fifth exists it is behind a predicate that is neither `true` nor missing"* — written down at the end of the #4 sweep, then actually executed. → `baseball_coaches`. |
+| 6 | Read the policies of the uncovered tables *before* writing their tests. → `baseball_messages`. The task was meant to produce coverage; it produced the worst finding of the run. |
+
+**#5 is confirmed and deliberately NOT fixed.** `baseball_coaches_select` is
 `USING (auth.uid() = user_id OR get_my_coach_id() IS NOT NULL)` — the second
 clause asks only "am I a coach", never scoping to team or org, so **any coach
 reads every coach's email and phone**. It is not in the migration pair because
@@ -52,15 +56,6 @@ call sites read that table directly (52 already use the
 The question to answer: with recruiting sunset, does any surface still need a
 coach to see coaches outside their own organization? Details in
 `DATABASE_STATUS.md` §5.
-
-The third is named "Anyone can view active invitations by code" and never
-checks the code. One authenticated account could enumerate every live invite
-code in the database and join any team. It was seen twice before and left:
-`20260701000000:173` recorded it as deliberately "untouched"; `20260708141000:86`
-described the exploit path exactly, narrowed the redemption RPCs, and closed
-with *"This narrows but does not fully close the surface."* Closing the read
-closes it — invitation ids stop being discoverable, so the parameter change
-that migration called for is unnecessary.
 
 The fix is **written and committed as files, applied to nothing**
 (`9c4ad335e`, extended by `2c2c939cf`). It ships as a sequenced pair so no
@@ -82,16 +77,25 @@ Discover/Compare and roster "Add existing player" all return **empty results,
 not errors**, so the symptom is "the product quietly stopped working."
 
 **✅ The SQL is verified by execution.** CI on PR #1092 applies both migrations
-to a fresh Postgres and runs the pgTAP suites: **34/34** (tenant isolation) and
-**9/9** (Lift Lab sync identity), with **18** more added for the invitation fix
-(`2c2c939cf` — awaiting its first CI run). The tenant-isolation suite failed
-three times first: two independent recursion cycles that would have made
-*every* query against `baseball_players` fail on apply, plus five functions
-left anon-callable. None was visible to reading; two adversarial line-by-line
-reviews had already missed them. That is why the invitation policy carries an
-explicit "USING clause contains no inline subquery" assertion.
+to a fresh Postgres and runs the pgTAP suites — passing: **34/34** tenant
+isolation, **19/19** invitation codes, **9/9** player percentiles, **9/9** Lift
+Lab sync identity. Two more suites (`baseball_messages` ×12, team-scoped tables
+×10) are in their first CI run.
+
+The tenant-isolation suite failed three times before it passed: two independent
+recursion cycles that would have made *every* query against `baseball_players`
+fail on apply, plus five functions left anon-callable. None was visible to
+reading; two adversarial line-by-line reviews had already missed them. That is
+why each new policy now carries an explicit "USING clause contains no inline
+subquery" assertion — and why the `baseball_messages` suite asserts that no
+policy on that table may compare a column to itself.
 
 **Action on waking:**
+0. **Consider applying migration B SECTION 5 on its own, first.** It is three
+   `DROP POLICY` statements against `baseball_messages`, needs no companion app
+   change, is safe under old and new code, and closes a live write hole into
+   private conversations. It is the only part of this sequence with that
+   property.
 1. `db-migration-reviewer` on both files (CLAUDE.md mandates it; this is the
    shared Golf + Baseball production database). CI proves the SQL is correct
    against a *fresh* database — not against production's actual state.
