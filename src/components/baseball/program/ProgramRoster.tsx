@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -198,19 +199,39 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
 
   if (players.length === 0) {
     const isJuco = organizationType === 'juco';
+
+    // The visibility RULE above is unchanged — a high-school or showcase player
+    // is public only if they opted in, and widening that to make a demo page
+    // look fuller would publish minors' data to close a sale. What changes is
+    // the explanation.
+    //
+    // "Players on this team haven't activated their recruiting profiles yet"
+    // tells a parent or player the roster is one click away from filling in.
+    // Under the sunset it is not: activation redirects, so this state is now
+    // permanent for every non-JUCO program and the sentence quietly blames the
+    // players for a door the product closed.
+    const isSunsetLocked = !isJuco && !isRecruitingEnabled();
+
+    let heading: string;
+    let detail: string;
+    if (isJuco) {
+      heading = 'No players on roster';
+      detail = 'This JUCO program has no players on their roster yet.';
+    } else if (isSunsetLocked) {
+      heading = 'Roster is not public';
+      detail = "This program's roster isn't shown publicly. Coaches and players see it once they're signed in.";
+    } else {
+      heading = 'No recruiting-active players';
+      detail = "Players on this team haven't activated their recruiting profiles yet.";
+    }
+
     return (
       <Card className="p-8 text-center">
         <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
           <IconUsers size={28} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-semibold text-warm-900 mb-2">
-          {isJuco ? 'No players on roster' : 'No recruiting-active players'}
-        </h3>
-        <p className="text-sm text-warm-500 max-w-sm mx-auto">
-          {isJuco
-            ? 'This JUCO program has no players on their roster yet.'
-            : 'Players on this team haven\'t activated their recruiting profiles yet.'}
-        </p>
+        <h3 className="text-lg font-semibold text-warm-900 mb-2">{heading}</h3>
+        <p className="text-sm text-warm-500 max-w-sm mx-auto">{detail}</p>
       </Card>
     );
   }
