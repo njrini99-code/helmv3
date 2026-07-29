@@ -56,15 +56,31 @@ export default async function UserDetailPage({
 
     return (
       <div className="space-y-6">
-        <header className="flex flex-wrap items-center gap-4">
+        {/* Stacks below `sm`. Side-by-side, the "View as (read-only, 15 min)"
+            button took roughly half the row and squeezed the identity block
+            into a ~150px column — the meta line then wrapped to FOUR lines
+            ("player · joined / 5/28/2026 · last / seen 7/23/2026, / 4:53:02 PM")
+            and the email truncated to "kcentenoglen…". On an admin tool the
+            email IS the identity, so that is the one string that must not be
+            the thing that gets sacrificed. MOBILE_DOCTRINE rule 2: mastheads
+            condense on phone rather than compete for the row. `md`+ is
+            unchanged. */}
+        <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               {/* `min-w-0` on the h1 itself — it's a flex item of THIS inner
                   row (nested inside the outer `min-w-0 flex-1` header cell),
                   so without its own min-w-0 the default min-width:auto keeps
                   it pinned to the email's full un-clipped width, and
-                  `truncate` never engages for a long address. */}
-              <h1 className="min-w-0 truncate text-xl font-semibold text-warm-900">{user.email}</h1>
+                  `truncate` never engages for a long address.
+
+                  On phone it WRAPS instead of truncating: a full-width row has
+                  the space, and a half-shown address is useless for the one
+                  job this page has. `sm:truncate` restores the desktop
+                  single-line treatment, where the h1 shares its row. */}
+              <h1 className="min-w-0 break-all text-xl font-semibold text-warm-900 sm:break-normal sm:truncate">
+                {user.email}
+              </h1>
               {user.sports.map((s) => (
                 <SportBadge key={s} sport={s} />
               ))}
@@ -108,6 +124,17 @@ export default async function UserDetailPage({
           </div>
         </Surface>
 
+        {/* The two event lists below use `break-words sm:truncate`, not
+            `truncate`. `truncate` implies `white-space: nowrap`, and these
+            labels are log lines — "[getPlayerProfile] No completed rounds found
+            for this player". On a phone the label already gets its own line via
+            `basis-full`, so nowrap bought nothing and cost the whole message:
+            the text ran under the right edge and was clipped by the
+            `overflow-x: clip` on html/body (globals.css:182-188), cut mid-word
+            with no ellipsis to even signal something had been hidden. Wrapping
+            makes the line readable, which is the only reason these panels
+            exist. `sm:truncate` keeps the desktop one-line-per-event density
+            exactly as it was. */}
         <Surface padding="sm">
           <SectionLabel>Recent activity</SectionLabel>
           <div className="mt-3">
@@ -123,7 +150,7 @@ export default async function UserDetailPage({
                     <span className="w-14 shrink-0 font-fw-mono text-eyebrow uppercase text-warm-500">
                       {ACTIVITY_KIND_LABEL[a.kind] ?? a.kind}
                     </span>
-                    <span className="min-w-0 flex-1 basis-full truncate text-warm-800 sm:basis-auto">{a.label}</span>
+                    <span className="min-w-0 flex-1 basis-full break-words text-warm-800 sm:truncate sm:basis-auto">{a.label}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
                       <LocalTime iso={a.at} variant="datetime" />
                     </span>
@@ -172,12 +199,12 @@ export default async function UserDetailPage({
                       {e.fingerprint ? (
                         <Link
                           href={`/admin/errors/${e.fingerprint}`}
-                          className="min-w-0 flex-1 basis-full truncate text-warm-800 hover:underline sm:basis-auto"
+                          className="min-w-0 flex-1 basis-full break-words text-warm-800 sm:truncate hover:underline sm:basis-auto"
                         >
                           {e.title}
                         </Link>
                       ) : (
-                        <span className="min-w-0 flex-1 basis-full truncate text-warm-800 sm:basis-auto">{e.title}</span>
+                        <span className="min-w-0 flex-1 basis-full break-words text-warm-800 sm:truncate sm:basis-auto">{e.title}</span>
                       )}
                       <span className="font-fw-mono text-xs tabular-nums text-warm-500">
                         <LocalTime iso={e.created_at} variant="datetime" />
