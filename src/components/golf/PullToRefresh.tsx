@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { fwHaptic, fwHapticSequence } from '@/lib/fairway/haptics';
 
 interface PullToRefreshProps {
   /** Called when user pulls past the threshold. Should return a promise. */
@@ -144,12 +144,19 @@ export function PullToRefresh({
     const next = Math.min(delta * 0.5, threshold * 1.5);
     setPullDistance(next);
 
-    // Haptic tick when crossing threshold on the way out
+    // Arming tick when crossing the threshold, and again when backing off it.
+    //
+    // Was a single MEDIUM impact on the way out only. Two problems: a medium
+    // impact is a thud where iOS uses a light detent for arming (compare
+    // Mail/Safari), and going back under the threshold silently disarmed —
+    // the pull stopped being live with no way to feel it, so users released
+    // on a dead gesture and got no refresh.
     if (!hasPassedThreshold.current && next >= threshold) {
       hasPassedThreshold.current = true;
-      void triggerHaptic('medium');
+      fwHapticSequence('threshold');
     } else if (hasPassedThreshold.current && next < threshold) {
       hasPassedThreshold.current = false;
+      fwHapticSequence('threshold');
     }
   }
 
@@ -158,6 +165,10 @@ export function PullToRefresh({
     isPulling.current = false;
 
     if (pullDistance >= threshold && !isRefreshing && !effectivelyDisabled) {
+      // Release into the refresh — the arming tick said "let go now", this
+      // confirms the release actually took. Without it the gesture ends silent
+      // and the only feedback is the spinner appearing.
+      fwHaptic('light');
       setIsRefreshing(true);
       try {
         await onRefresh();

@@ -1,10 +1,26 @@
-# Helm Sports Labs — App Store submission package (v1.7, build 7)
+# Helm Sports Labs — App Store submission package (v2.0, build 8)
 
-Everything you need to fill in App Store Connect and submit tomorrow. The native
-build is ready (icon, splash, version, privacy strings, encryption flag all done
-— see "What's already done" at the bottom). The only things that require *you*
-are: archive + upload the build, paste this metadata, upload screenshots, answer
-the privacy questionnaire, attach the demo login, and hit Submit.
+Everything you need to fill in App Store Connect and submit. The native build is
+ready (version bumped, icon, splash, privacy strings, encryption flag, push
+entitlement). What requires *you* is: archive + upload, paste this metadata,
+upload screenshots, answer the privacy questionnaire, attach the demo login,
+and hit Submit.
+
+> **This is a big one.** The store last saw this app at v1.7 (PR #298).
+> **942 commits** have landed since. The entire dashboard was rebuilt on the
+> Fairway design system, CoachHelm was rewritten, navigation was consolidated,
+> and dark mode shipped. Reviewers will effectively be looking at a new app —
+> which is why this is 2.0 and not 1.8.
+
+---
+
+## 0. READ FIRST — what changed in this submission beyond the app itself
+
+| | |
+|---|---|
+| **Version** | `1.7 (7)` → **`2.0 (8)`**, Debug + Release, in `project.pbxproj` |
+| **Guideline 3.1.1 fix** | `DemoPricingNudge` is now hard-gated off native — see §11 |
+| **Scope** | **Golf only.** BaseballHelm is live on the web but is deliberately NOT part of this submission — see §12 |
 
 ---
 
@@ -12,20 +28,16 @@ the privacy questionnaire, attach the demo login, and hit Submit.
 
 | Field | Value |
 |---|---|
-| **Name** (max 30) | `Helm Sports Labs` *(matches the on-device name; alt: `GolfHelm`)* |
-| **Subtitle** (max 30) | `Team golf, run by the data` *(alts below)* |
+| **Name** (max 30) | `Helm Sports Labs` |
+| **Subtitle** (max 30) | `Team golf, run by the data` (26) |
 | **Bundle ID** | `com.helmsportslabs.golfhelm` |
-| **SKU** | `helmsportslabs-golf` *(your choice; any unique string)* |
+| **SKU** | `helmsportslabs-golf` |
 | **Primary category** | Sports |
 | **Secondary category** | Education |
 | **Primary language** | English (U.S.) |
-| **Price** | Free (no in-app purchases — the native app intentionally hides membership/marketing pages per Guideline 3.1.1) |
+| **Price** | Free (no in-app purchases — the native app intentionally hides membership/marketing/pricing surfaces per Guideline 3.1.1) |
 
-Subtitle alternatives (pick the one you like, ≤30 chars):
-- `Team golf, run by the data` (26)
-- `Strokes-gained for college golf` ❌ 31 — too long
-- `College golf team HQ` (20)
-- `Strokes gained, simplified` (26)
+Subtitle alternatives (≤30 chars): `College golf team HQ` (20) · `Strokes gained, simplified` (26)
 
 ---
 
@@ -39,7 +51,12 @@ Subtitle alternatives (pick the one you like, ≤30 chars):
 
 ## 3. Promotional text (max 170 chars — editable without a new build)
 
-> Now with per-recruit documents, average approach-putting distance, yards/meters, a men's/women's team toggle, and LPGA standards for women's teams.
+> Rebuilt from the ground up: a faster, calmer interface, full dark mode, and a
+> smarter CoachHelm that tells you what changed and what to do about it.
+
+(159 chars.)
+
+---
 
 ## 4. Description
 
@@ -51,47 +68,63 @@ Subtitle alternatives (pick the one you like, ≤30 chars):
 > • Roster, lineups, and player profiles
 > • Team calendar, travel itineraries, tasks, documents, and messaging
 > • Qualifiers and lineup competitions
-> • CoachHelm AI — surfaces each player's biggest strengths and leaks with cause-and-effect reads and recommended focus areas
+> • CoachHelm — a coaching intelligence layer that surfaces each player's biggest strengths and leaks, explains the cause behind them, and recommends focus areas
+> • A triage workspace that puts the day's signals in priority order
 > • Recruiting HQ — track prospects from first look to letter of intent, with per-recruit notes, schedules, and documents
 > • Run a men's and a women's program from one login and switch between them instantly
 >
 > **For players**
 > • Log rounds and shots fast
-> • Your own strokes-gained dashboard, trends, and round reviews
-> • Development plans and qualifier standings
+> • Your own strokes-gained dashboard, trends, and round reviews with shot-by-shot visuals
+> • Development plans, focus areas, and qualifier standings
 > • Choose yards or meters
+>
+> **Designed for the way coaches actually work** — a calm, dense interface, full light and dark modes, and haptic feedback throughout.
 >
 > Helm Sports Labs is a team product — you'll need an account from your program to sign in.
 
-## 5. Keywords (max 100 chars, comma-separated, no spaces)
+---
+
+## 5. Keywords (max 100 chars, comma-separated, no spaces after commas)
 
 ```
 golf,college golf,strokes gained,golf stats,team,coach,roster,recruiting,putting,handicap,qualifier
 ```
+
 *(99 chars. Don't repeat the app name — it's already indexed.)*
 
-## 6. What's New in This Version (v1.7)
+---
+
+## 6. What's New in This Version (v2.0)
 
 ```
-• A refreshed app icon and launch experience.
-• Recruiting HQ: upload and organize documents (notes, schedules, transcripts, film) per recruit.
-• Approach putting now shows the average distance left to the hole after every putt — by distance, too.
-• Choose yards or meters for every distance.
-• Program heads can toggle between their men's and women's teams.
-• Women's teams are now benchmarked against LPGA Tour standards.
-• Cloud course library in the new-round flow.
+A complete rebuild of the app you already use.
+
+• An entirely new interface — calmer, denser, and faster on every screen.
+• Full dark mode, with Light / Dark / System control in Settings.
+• CoachHelm rebuilt: a grounded command center that tells you what changed,
+  why it changed, and what to do next.
+• A coach triage workspace that puts each day's signals in priority order.
+• Round review rebuilt with shot-by-shot visuals.
+• Navigation consolidated to 8 coach hubs and 8 player tabs — far less hunting.
+• Stats reorganized into a single cockpit with team and player views.
+• Development plans and focus areas redesigned, with progress tracked over the
+  goal window rather than your all-time average.
+• Premium password reset and branded account emails.
+• Haptic feedback throughout, tuned per interaction.
+• Hundreds of fixes to performance, accessibility, and reliability.
 ```
 
 ---
 
-## 7. App Privacy (the "App Privacy" questionnaire / nutrition labels)
+## 7. App Privacy (nutrition labels)
 
 **Does this app collect data?** Yes.
-**Does this app use data to track you?** **No** — there are no ad networks or
-cross-app tracking SDKs, and the app does not request App Tracking Transparency.
+**Does this app use data to track you?** **No** — no ad networks, no cross-app
+tracking SDKs, and the app does not request App Tracking Transparency.
 
-Declare these data types (all **linked to the user's identity** unless noted, all
-**Not used for tracking**):
+Declare these data types (all **linked to identity** unless noted, all **not
+used for tracking**):
 
 | Data type | Specifics | Purpose |
 |---|---|---|
@@ -99,25 +132,28 @@ Declare these data types (all **linked to the user's identity** unless noted, al
 | **User Content** | Photos (profile/message/document uploads), other content (messages, documents, recruit notes, round notes) | App Functionality |
 | **Identifiers** | User ID | App Functionality |
 | **Other Data** | Golf round & performance data (scores, shots, stats) | App Functionality |
-| **Diagnostics** | Crash data, performance data *(Sentry / Datadog RUM)* | App Functionality, Analytics — **Not linked to identity** |
-| **Usage Data** | Product interaction *(Vercel Analytics)* | Analytics — **Not linked to identity** |
+| **Diagnostics** | Crash data, performance data *(Sentry)* | App Functionality, Analytics — **Not linked to identity** |
+| **Usage Data** | Product interaction *(Vercel Analytics, PostHog)* | Analytics — **Not linked to identity** |
 
-> ⚠️ Verify the **Diagnostics/Usage** linkage against your actual Sentry/Datadog
-> config before submitting. Sentry Session Replay is on with `maskAllText`; if you
-> consider replays identity-linked, mark Diagnostics "Linked: Yes". When unsure,
-> the conservative (and accurate-for-our-setup) answer is **Not linked**.
->
-> The app collects **no Location data** (no GPS permission is requested) and **no
-> Financial Info** (no in-app payments).
+Notes:
+- No **Location** data — the app requests no GPS permission.
+- No **Financial Info** — there are no in-app payments.
+- Sentry Session Replay runs with `maskAllText` on. We declare Diagnostics as
+  **not linked**; if you'd rather be conservative, marking it linked is also
+  defensible and will not fail review.
 
 ---
 
 ## 8. App Review information (CRITICAL — the app requires login)
 
-**Sign-in required:** Yes. Provide the reviewer a working demo account:
+**Sign-in required:** Yes.
 
 - **Email:** `demo@golfhelmdemo.com`
 - **Password:** `Demo2026`
+
+> ⚠️ **Verify this login works before you submit.** It is the single most common
+> cause of an automatic rejection. Sign out on a real device, sign in with the
+> credentials above, and confirm you land on a populated dashboard.
 
 **Review notes (paste this):**
 
@@ -126,66 +162,126 @@ Declare these data types (all **linked to the user's identity** unless noted, al
 > fully populated demo team (roster, rounds, stats, calendar, recruiting).
 >
 > Notes:
-> • This is a team/B2B product. There are no consumer sign-ups or purchases inside
->   the app; accounts are provisioned by each program. Per Guideline 3.1.1 the iOS
->   app does not show membership, pricing, or marketing pages.
+> • This is a team/B2B product. There are no consumer sign-ups and no purchases
+>   of any kind inside the app; accounts are provisioned by each program. Per
+>   Guideline 3.1.1 the iOS app does not display membership, pricing, or
+>   marketing surfaces.
 > • Camera/Photo access is used only when a user chooses to attach a photo to a
 >   message, their profile, or a document.
-> • To see the core value: after login, open **Stats** for a player (strokes-gained
->   dashboard), **Roster**, **Calendar**, and **Recruiting HQ**.
+> • Notifications are used for team announcements, calendar changes, and
+>   messages. They are optional and requested only after an in-app explanation.
+> • To see the core value: after login, open **Stats** for a player
+>   (strokes-gained dashboard), **Roster**, **Calendar**, and **Recruiting HQ**.
 
-**Contact:** Nick Rini — njrini99@gmail.com — (add phone for App Review).
+**Contact:** Nick Rini — njrini99@gmail.com — **add a phone number** (App Review
+will use it if they need to reach you, and a missing number slows escalation).
 
 ---
 
 ## 9. Age rating
 
-**4+.** Answer every category in the questionnaire **None / No** (no violence,
-no mature/suggestive content, no gambling, no unrestricted web access — the in-app
-web view is scoped to helmsportslabs.com). No Kids Category.
+**4+.** Answer every category **None / No** (no violence, no mature/suggestive
+content, no gambling, no unrestricted web access — the web view is scoped to
+helmsportslabs.com). No Kids Category.
 
 ---
 
 ## 10. Screenshots
 
-Apple needs **iPhone 6.7" (1290 × 2796 px)** at minimum (one set covers 6.7"/6.9").
-A starter set rendered from the live app is in `ios/appstore/screenshots/` if the
-generator ran (see `scripts/gen-appstore-screenshots.mjs`). For the nicest result,
-recapture on the iOS Simulator (iPhone 15/16 Pro Max) — real status bar, crisp text.
+Apple needs **iPhone 6.7" (1290 × 2796)** at minimum — one set covers 6.7"/6.9".
 
-Recommended 5 screens, in order (first 2 matter most — they're the thumbnail):
+> **These must be recaptured.** Any existing screenshots predate the Fairway
+> rebuild and no longer resemble the app. Shipping stale screenshots is both a
+> metadata-rejection risk and the single biggest conversion lever on the page.
+
+Capture on the iOS Simulator (iPhone 16 Pro Max) for a real status bar and crisp
+text. Recommended 5, in order — the first two are the thumbnail:
+
 1. **Player Stats** — the strokes-gained dashboard (the "wow")
-2. **Coach Dashboard / Roster**
-3. **Recruiting HQ** (newest feature)
-4. **Calendar / Travel**
-5. **Round review or CoachHelm insight**
+2. **Coach Dashboard / Triage**
+3. **CoachHelm insight** (rebuilt in this version)
+4. **Round review** with shot visuals
+5. **Roster or Calendar**
 
-Optional: add a one-line caption band per screenshot (e.g. "Strokes gained vs PGA
-& LPGA", "Run men's + women's from one login").
+Consider capturing 2–3 in **dark mode** — it's the headline feature of 2.0 and
+it differentiates the listing.
 
 ---
 
-## 11. What's already done (no action needed)
+## 11. Guideline 3.1.1 — what was fixed in this build
 
-- ✅ **App icon** redesigned — brand cream (#EDE0C8, matches splash + launch) + green mark, **fully opaque (no alpha)** → App-Store compliant. 1024² at `AppIcon-512@2x.png`; marketing copy at `ios/appstore/AppIcon-1024.png`.
-- ✅ **Version bumped** → Marketing `1.7`, Build `7` (Debug + Release).
-- ✅ **Splash + launch screen** — on-brand cream; splash auto-hide wired (`CapacitorProvider`).
-- ✅ **Status bar** — `Style.Light` = dark text for the light/cream background (correct).
+This app was **rejected once before** on 3.1.1 (`7933eb8be`, "strip membership
+refs from iOS surfaces"). This build closes a live re-offense:
+
+**`DemoPricingNudge`** (`src/components/golf/demo/DemoPricingNudge.tsx`) showed a
+toast reading *"Interested in pricing? — Grab a quick 15-minute call for your
+program"* with a **"Schedule a call"** action opening an external booking page.
+
+Why it mattered:
+- It fires **only for the shared demo coach account** — the exact account App
+  Review signs in with.
+- It arms on the **golf dashboard**, the screen the native app cold-starts onto.
+- It triggers after **30 seconds or 8 taps**, both of which a reviewer exceeds.
+- `proxy.ts` blocks marketing *routes* by user agent, but this is a toast mounted
+  inside an allowed app route — so that guard never covered it.
+
+It is now hard-gated behind `isNativeApp()`. Web demo behaviour is unchanged.
+
+The rest of the surface was audited: the remaining external links in native-
+reachable routes are functional (calendar sync, drill video, document preview,
+import wizards), not purchasing mechanisms. The admin CRM is super-admin gated
+and unreachable by a reviewer.
+
+---
+
+## 12. Scope note — BaseballHelm is NOT in this submission
+
+BaseballHelm is live on the web, but this build ships **golf only**, by decision.
+
+The native shell is hardcoded to golf in four places — `capacitor.config.ts`
+(`server.url` → `/golf/dashboard`), `proxy.ts` (native marketing bounce →
+`/golf/login`), `src/app/page.tsx`, and `NativeRedirect`. A baseball user who
+downloaded this build would authenticate successfully and then land in the golf
+dashboard with no route out.
+
+**Do not add baseball to the metadata for this submission.** Describing a sport
+the app cannot actually reach is itself a rejection risk (Guideline 2.3.1,
+accurate metadata).
+
+When baseball does ship natively, it needs: a sport-aware entry route, a
+resolver keyed on golf/baseball team membership, a chooser for dual-sport
+accounts, and updated metadata. Tracked separately.
+
+---
+
+## 13. What's already done (no action needed)
+
+- ✅ **Version** → Marketing `2.0`, Build `8` (Debug + Release).
+- ✅ **App icon** — brand cream (#EDE0C8) + green mark, fully opaque (no alpha).
+- ✅ **Splash + launch screen** — on-brand cream; auto-hide wired in `CapacitorProvider`.
+- ✅ **Status bar** — dark content for the light background.
 - ✅ **Privacy usage strings** — descriptive Camera + Photo Library strings in `Info.plist`.
-- ✅ **Encryption** — `ITSAppUsesNonExemptEncryption = false` (skips the per-build export-compliance prompt).
+- ✅ **Encryption** — `ITSAppUsesNonExemptEncryption = false` (skips the per-build export prompt).
+- ✅ **Push** — `aps-environment: production` entitlement present; permission is
+  requested only behind an in-app soft-ask, never cold.
+- ✅ **Universal Links** — `applinks:helmsportslabs.com` + AASA served, covering `/golf/*` and `/baseball/*`.
 - ✅ **Category** — `public.app-category.sports`.
 - ✅ **Sign in with Apple** — not required (email/password only, no third-party social login).
-- ✅ **Xcode Cloud** archive is green (SPM resolution fixed in #297).
+- ✅ **Guideline 3.1.1** — pricing nudge gated off native (§11).
 
-## 12. Your steps tomorrow
+---
 
-1. **Archive the build** (Xcode → Product → Archive, or let Xcode Cloud's Archive workflow produce it) and **upload to App Store Connect** (build 1.7(7)).
-2. In App Store Connect → your app → **+ Version 1.7**: paste §1, §3, §4, §5, §6, §10 captions; set URLs (§2).
-3. **Upload screenshots** (§10).
-4. **App Privacy** → fill per §7.
-5. **App Review Information** → demo login + notes (§8); **Age rating** → §9.
-6. Select the uploaded **build**, set pricing **Free**, then **Add for Review → Submit**.
+## 14. Your steps
 
-> First-submission gotchas: make sure the build finishes "processing" before you can
-> select it; if you ever offer Google/social login later, you'll then need Sign in
-> with Apple (Guideline 4.8) — not now.
+1. `npx cap sync ios`, then **Archive** (Xcode → Product → Archive, or Xcode
+   Cloud) and **upload** build `2.0 (8)`.
+2. App Store Connect → **+ Version 2.0** → paste §1, §3, §4, §5, §6; set URLs (§2).
+3. **Recapture and upload screenshots** (§10) — do not reuse the 1.7 set.
+4. **App Privacy** → §7. **Age rating** → §9.
+5. **App Review Information** → demo login + notes (§8). **Verify the login first.**
+6. Select the build (wait for "processing" to finish), set pricing **Free**, then
+   **Add for Review → Submit**.
+
+> Gotchas: the build must finish processing before it's selectable. If you ever
+> add Google/social login, you'll then need Sign in with Apple (Guideline 4.8) —
+> not now.

@@ -33,6 +33,7 @@
 
 import { useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
+import { isNativeApp } from '@/lib/utils/capacitor';
 import {
   DEMO_PRICING_NUDGED_STORAGE_KEY,
   DEMO_PRICING_NUDGE_DELAY_MS,
@@ -79,6 +80,23 @@ function writeSessionFlag(key: string, value: string): void {
 export function DemoPricingNudge() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // App Store Guideline 3.1.1 — NEVER arm this inside the native shell.
+    //
+    // This toast reads "Interested in pricing? … Schedule a call" and opens an
+    // external booking page. That is a call to action pointing at a purchasing
+    // mechanism outside of in-app purchase, and this app has already been
+    // rejected once for exactly that class of surface (7933eb8be, "strip
+    // membership refs from iOS surfaces").
+    //
+    // The exposure is not theoretical: App Review signs in with the shared
+    // demo coach account, which is the ONLY account this component fires for,
+    // and it arms on the golf dashboard — the screen the native app cold-starts
+    // onto. It fires after 30s or 8 taps, both of which a reviewer will
+    // comfortably exceed. proxy.ts blocks marketing *routes* by user agent, but
+    // this is a toast mounted inside an allowed app route, so that guard never
+    // saw it. Web demo behaviour is unchanged.
+    if (isNativeApp()) return;
 
     const { shouldMarkTour, shouldArm } = resolveNudgeArming({
       locationSearch: window.location.search,

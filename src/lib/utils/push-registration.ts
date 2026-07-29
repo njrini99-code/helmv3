@@ -1,6 +1,37 @@
 'use client';
 
 import { isNativeApp } from './capacitor';
+import { isSafeInternalPath } from './safe-redirect';
+import { fwHaptic } from '@/lib/fairway/haptics';
+
+/**
+ * Push events are surfaced to React as DOM CustomEvents rather than via a
+ * store, because the Capacitor listeners are registered once at app boot from
+ * a plain module that has no access to the router or to React context.
+ *
+ * Both are `cancelable`. A listener that has actually handled the event calls
+ * `preventDefault()`, which makes `dispatchEvent` return false — that is how
+ * the emitter distinguishes "a component took care of this" from "nothing was
+ * mounted to hear it" and decides whether it still needs the hard fallback.
+ */
+export const PUSH_NAVIGATE_EVENT = 'helm:push-navigate';
+export const PUSH_RECEIVED_EVENT = 'helm:push-received';
+
+export interface PushNavigateDetail { url: string }
+export interface PushReceivedDetail {
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+}
+
+/** Returns true when a listener claimed the event via preventDefault(). */
+function dispatchPushEvent(name: string, detail: unknown): boolean {
+  if (typeof window === 'undefined') return false;
+  const delivered = window.dispatchEvent(
+    new CustomEvent(name, { detail, cancelable: true }),
+  );
+  return !delivered;
+}
 
 /**
  * Push notification registration for iOS (Capacitor).
@@ -98,16 +129,41 @@ export async function initPushListeners(): Promise<void> {
 
     // Foreground notifications are displayed by the system based on
     // capacitor.config.ts presentationOptions: ["badge", "sound", "alert"].
+    // We additionally surface them in-app: previously this only console.log'd,
+    // so a notification arriving while the user was looking at the app updated
+    // nothing on screen.
     PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      console.log('[Push] Received in foreground:', notification.title);
+      fwHaptic('light');
+      dispatchPushEvent(PUSH_RECEIVED_EVENT, {
+        title: notification.title ?? '',
+        body: notification.body ?? '',
+        data: (notification.data ?? {}) as Record<string, unknown>,
+      });
     });
 
-    // Tap handler — deep-link via the URL in the notification payload
+    // Tap handler — deep-link via the URL in the notification payload.
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-      const data = action.notification.data;
-      if (data?.url && typeof window !== 'undefined') {
-        window.location.href = data.url;
-      }
+      if (typeof window === 'undefined') return;
+      const data = action.notification.data as Record<string, unknown> | undefined;
+      const rawUrl = typeof data?.url === 'string' ? data.url : null;
+
+      // SECURITY: the payload is attacker-influenceable in any scenario where a
+      // send path can be tricked into echoing user input, and this assignment
+      // used to accept it verbatim — an absolute `https://evil.example` would
+      // navigate the whole webview off-origin while still wearing the app's
+      // chrome. Only same-origin internal paths are allowed through.
+      if (!rawUrl || !isSafeInternalPath(rawUrl)) return;
+
+      fwHaptic('selection');
+
+      // Prefer an in-app route transition. A full location assignment tears
+      // down and re-cold-starts the SPA (re-auth, re-fetch, splash) for what
+      // should be an instant push into an existing screen. The provider that
+      // owns the Next router listens for this and calls router.push; if
+      // nothing is listening (listener not yet mounted on a cold launch from a
+      // tapped notification) we fall back to the hard navigation.
+      const handled = dispatchPushEvent(PUSH_NAVIGATE_EVENT, { url: rawUrl });
+      if (!handled) window.location.href = rawUrl;
     });
   } catch (err) {
     console.error('[Push] Listener setup failed:', err);
@@ -169,9 +225,24 @@ export async function requestPushPermission(): Promise<'granted' | 'denied'> {
 
 
 /**
- * Clear the iOS app icon badge count. Call when the user reads all notifications.
+ * Clear delivered notifications from Notification Center.
+ *
+ * ⚠️ This does NOT clear the app icon badge, despite the name it shipped under.
+ * Capacitor v8's push-notifications plugin exposes no way to write the badge
+ * — `badge` is read-only on an incoming notification — and neither
+ * local-notifications nor any installed plugin can set it either.
+ * `removeAllDeliveredNotifications()` empties the notification list and leaves
+ * the red number on the icon exactly where it was.
+ *
+ * The working path is server-side: APNs sets the badge, so send a push with an
+ * accurate absolute `badge` (0 to clear). `send-apns-push` now forwards that
+ * value through and omits the key entirely when unspecified, so a caller can
+ * drive the badge from the real unread count in `notification-badge-context`
+ * rather than the old hardcoded 1.
+ *
+ * To clear it locally instead, add `@capacitor/badge` and call it from here.
  */
-export async function clearPushBadge(): Promise<void> {
+export async function clearDeliveredNotifications(): Promise<void> {
   if (!isNativeApp()) return;
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');

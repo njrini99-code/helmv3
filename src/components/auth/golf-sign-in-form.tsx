@@ -8,6 +8,7 @@ import { logError } from '@/lib/error-logging';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { fwHapticSequence } from '@/lib/fairway/haptics';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { Button } from '@/components/ui/button';
 
@@ -75,8 +76,10 @@ export function GolfSignInForm() {
         return;
       }
 
-      // Success haptic before the nav — feels like a confirmation tap-through.
-      void triggerHaptic('success');
+      // Two-beat commit pattern rather than the flat system "success" buzz:
+      // signing in is the single most consequential tap in the app, and a
+      // rise-then-land sequence reads as a door opening instead of an alert.
+      fwHapticSequence('commit');
 
       // CRITICAL: After login, refresh first to ensure the session cookies
       // are recognized by the Next.js router cache before navigating.
