@@ -3,10 +3,15 @@
 _Updated 2026-07-29 05:05 EDT._
 
 _Findings are verified from **migration source**; live `pg_policies` state is
-still unconfirmed (Supabase's Postgres connections timed out all night — see
-the ops note at the bottom). Migration source is authoritative for what was
-applied but cannot rule out an out-of-band hotfix, so re-verify live before
-acting._
+still unconfirmed. Migration source is authoritative for what was applied but
+cannot rule out an out-of-band hotfix, so re-verify live before acting._
+
+_**Production Postgres was unreachable for the entire run.** Last retried
+05:30 EDT — `Connection terminated due to connection timeout`, the same cause
+as the Cloudflare 522 that keeps `BaseballHelm authenticated smoke` red. Two
+questions in this document are blocked on it and on nothing else: the live
+`pg_policies` cross-check, and the `public_profile_mode` distribution. Both
+are one query each once the database answers._
 
 _The **fixes**, unlike the findings, are verified by execution: CI on PR
 [#1092](https://github.com/njrini99-code/helmv3/pull/1092) applies both
