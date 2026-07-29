@@ -1,12 +1,100 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 10:45 EDT. Branch
+_2026-07-28 23:35 → **2026-07-29 19:30 EDT** (the window was originally
+10:45; an afternoon session continued it — see the addendum immediately below,
+which supersedes several claims in the body). Branch
 `baseball/overnight-completion`, PR
 [#1092](https://github.com/njrini99-code/helmv3/pull/1092) — **merged to
 `main` and deployed to production**. Full unit suite green on the merged
-tree: **875 files, 8,338 tests, 0 failures**; every CI check green including
+tree: **877 files, 8,359 tests, 0 failures**; every CI check green including
 `BaseballHelm authenticated smoke`, which passed for the first time this run
 once the database was restored._
+
+---
+
+## ⚡ ADDENDUM — the afternoon of 2026-07-29 (read before the body)
+
+**The single largest change: the RLS migrations are no longer unapplied.** The
+body of this report was written when they were files and nothing else, and it
+says so in several places. That is now historical. What changed:
+
+| | |
+|---|---|
+| Migrations **A**, **B**, **300** | ✅ **APPLIED to production** ~17:45Z, on the owner's explicit instruction while awake |
+| Five of six cross-tenant P0s | ✅ **CLOSED** — `baseball_players`, `baseball_teams`, `baseball_team_invitations`, `baseball_player_percentiles`, `baseball_messages` |
+| `unresolve_admin_event` | ✅ **APPLIED** (the body says "not applied" — stale) |
+| Lift Lab identity repair | ✅ **APPLIED AND RUN** — 21 of 22 athletes were locked out of `/lifting/dashboard`; now 0 |
+| Production deploy | ✅ **`b18c2a174` at 18:37:10Z**, carrying #1099, #1101, #1102, #1104 on top of the 14:30Z build |
+| `baseball_coaches` (#5, the sixth) | ⚠️ Fix written and measured (**#1105**), audit done, **not applied** |
+| Golf shot-detail RLS perf | ⚠️ 3413ms → 515ms measured (**#1103**), **not applied** |
+
+**What unblocked the migrations, and it is the most reusable thing in this
+entire report.** Migration B's own precondition read *"verify by EXERCISING each
+flow, not by reading the diff"*, and this report's body recorded that as
+unsatisfiable. **That was wrong.** Postgres will let you become the
+`authenticated` role and supply JWT claims inside a transaction, so every query
+runs under that named user's policies, and `ROLLBACK` makes it free:
+
+```sql
+BEGIN;
+  SET LOCAL ROLE authenticated;
+  SET LOCAL request.jwt.claims = '{"sub":"<user-uuid>","role":"authenticated"}';
+  -- every query here is filtered by RLS as that user
+ROLLBACK;
+```
+
+That converted "apply and hope" into a measured before/after, and it is also how
+both remaining migrations were measured without touching production.
+
+Measured, as three real users:
+
+| | player | coach (8-roster) | owner (14-roster) |
+|---|---|---|---|
+| teams / join codes visible | 13 → **1** | 13 → **1** | 13 → **1** |
+| players visible | 35 → **1** | 35 → **16** | 35 → **22** |
+| own roster / self row | 1 → 1 ✓ | 8 → 8 ✓ | 14 → 14 ✓ |
+
+**Three corrections the afternoon forced, each stated because it was asserted
+confidently first:**
+
+1. **"Every coach's email AND PHONE"** — repeated in four documents all night.
+   `phone` is **NULL for every coach row in production**. The exposure is names
+   and emails. Overstating a finding is how the real ones stop being believed.
+2. **The "75-call-site audit"** blocking finding #5 was done and **collapses to
+   zero**: of 74 reads, 66 are self-scoped, 2 are INSERTs, 1 is service-role,
+   and the rest are same-org by construction. Not one needs cross-org access.
+3. **"Browser-verify after deploying"** — I advised this, and it was backwards.
+   The new policies went live against the *already-deployed* build, so that
+   combination was what users were hitting and was the thing to verify. Waiting
+   for a deploy would have tested a future combination instead of the live one.
+
+**And one trap worth more than the fix it sits next to:** curling
+`/baseball/join/<code>` appears to render "not found" for **valid** codes. It
+does not. `not found` / `notFound` are framework identifiers present in the JS
+chunks of *every* response, including the invalid-code one — which is why all
+four test codes matched identically. I reported it as a possible live regression
+before checking whether the string was page content.
+
+**What the afternoon did NOT verify**, since the body's honesty split is the
+point of this file:
+
+- **The mobile hamburger was not visually re-confirmed in production.** Three
+  mechanical blockers: Chrome refuses to resize below ~500px, Playwright's MCP
+  browser profile was locked by another session, and the site correctly refuses
+  to be framed (killing the iframe workaround). It rests on 5 passing unit tests
+  and SHA confirmation.
+- **Join-by-code was not walked through the UI.** A logged-out visitor cannot
+  resolve a code by design (anon EXECUTE is revoked on the resolver), so the page
+  requires sign-in and entering credentials was out of scope.
+- Every RLS claim above is a **row count at the data layer**. No browser walked
+  these screens, and production carries little traffic, so "no errors since
+  applying" is weak evidence rather than strong.
+
+**Deploy hazard now written down:** `vercel --prod` uploads the local directory,
+and this repo's working tree carries another session's uncommitted files. The
+18:37Z deploy was made from a **clean detached worktree** at main's tip for
+exactly that reason. It is the one path where the shared-tree hazard reaches
+production.
 
 > **The run was interrupted by two live production incidents. Both are now
 > resolved and shipped.**
@@ -75,7 +163,17 @@ happened after it.
 - **Auto-resolve Rule C.** Auto-resolve already existed and ran nightly, but
   both its rules key on fingerprint and so could never touch the 87,653
   null-fingerprint rows that are 99% of the backlog.
-- **`unresolve_admin_event`** authored as a migration file, **not applied**.
+- ~~**`unresolve_admin_event`** authored as a migration file, **not applied**.~~
+  **APPLIED 2026-07-29 afternoon.** It also turned out to be anon-EXECUTEable —
+  Supabase default-grants EXECUTE to `anon` on new public functions, and
+  `REVOKE … FROM PUBLIC` does not remove that role-specific grant. Not
+  exploitable (it self-gates on `is_super_admin()`; an anon call was exercised
+  and returned `42501 Forbidden` before touching a row), but the grant is now
+  revoked so the gate is not the only thing standing between anon and an admin
+  write. A second function, `log_crm_stage_transition`, needed
+  `REVOKE … FROM PUBLIC` rather than `FROM anon`, because its grant came through
+  PUBLIC and revoking from `anon` was a silent no-op — verified the CRM trigger
+  still fires afterwards.
 
 ### Corrections to earlier versions of this report
 
@@ -417,9 +515,22 @@ tomorrow is waste:
   `DATABASE_STATUS.md`). One genuine drift was found elsewhere: the live
   `public_profile_mode` column default is `'unlisted'`, not the `'private'`
   the committed DDL declares.
-- **The companion app changes.** They work under both the old and new policies
-  by construction, but the second half of that is only exercised once migration
-  B is applied somewhere.
+- ~~**The companion app changes.** … only exercised once migration B is applied
+  somewhere.~~ **Now exercised** — B is applied and each flow was run through
+  the exact RPC the app calls, as a real non-member: join-by-code → 1 row,
+  join-context → 1 row, roster exact-email → 1 row, roster `'sm'` → **0 rows**
+  (that last one is the leak itself: the old search was an unscoped ILIKE over
+  name *and* email, so two characters returned strangers' addresses).
+
+- **What is genuinely still unproven after all of it.** Every verification
+  above — pgTAP, live `pg_policies`, role impersonation — operates on rows and
+  counts. None of it renders a page. The RLS failure mode most worth fearing is
+  an **empty result displayed as a blank screen rather than an error**, and a row
+  count cannot distinguish that from success. No browser walked join-by-code, the
+  roster search, or Discover/Compare after the change. Production also carries
+  little traffic right now, so the clean error logs are weak evidence.
+  **Residual risk is a rendering or call-shape bug in the app, not a policy that
+  denies too much** — the policies themselves have been executed as real users.
 
 ## Improved but incomplete
 
@@ -435,11 +546,37 @@ tomorrow is waste:
 
 ## Blocked, deliberately
 
-- **Applying anything to the database.** Shared production DB with live Golf
-  users. The two recursion cycles CI caught are the concrete vindication: each
-  would have taken the whole product down on apply. Reviewing this with the
-  owner awake is worth more than four hours of exposure that has already stood
-  for two months.
+- ~~**Applying anything to the database.**~~ **Unblocked and done** on
+  2026-07-29 afternoon, on the owner's explicit instruction with them awake —
+  which is precisely the condition this entry said to wait for. The reasoning is
+  preserved rather than deleted: it is the argument that has to be made again
+  next time, not a mistake. The two recursion cycles CI caught remain the
+  concrete vindication of having waited.
+
+- **Still deliberately unapplied, and these are the live ones:**
+  - **#1103** — golf shot-detail RLS, `3413ms → 515ms` (returning *zero* rows),
+    row-for-row equivalence proven across 3,394 production rows on both the
+    player and coach branches.
+  - **#1105** — `baseball_coaches` org scope, measured across all ten coach
+    identities, nobody losing their own row.
+
+  Both are RLS changes on live products with **no pgTAP coverage yet**, and
+  `CLAUDE.md` mandates `db-migration-reviewer` for RLS. A 6.6× perf win and a
+  tidy audit do not justify skipping the gate that caught two
+  product-down-on-apply bugs earlier in this same run. The measurements were
+  taken by applying inside a transaction and rolling back — evidence, not a
+  substitute for the gate.
+
+- **A note on authorization, because it matters for the next run.** The
+  afternoon's applies happened under a specific, explicit instruction. That
+  permission is **spent**, not standing: the autonomous rule is back to "never
+  apply a database migration", which is why #1103 and #1105 sit written and
+  unapplied rather than being pushed through on the momentum of the earlier
+  approval.
+
+- **Two blockers that are billing, not code:** the Anthropic API credit balance
+  is exhausted (11 chat failures) and the Vercel AI Gateway free tier is
+  blocking `round_review` (3 failures). No amount of engineering clears either.
 
 ## Intentionally hidden
 
@@ -477,10 +614,10 @@ tomorrow is waste:
 | | |
 |---|---|
 | **CI seeds PRODUCTION on every PR — confirmed from CI's own log** | `seed:baseball:ci` creates auth users, force-resets two passwords and deletes `login_attempts` rows in the production project. It has always done this. The strengthened guard makes it say so out loud now: `⚠ SEEDING PRODUCTION (qmnssrrolpinvwjjnufo) — allowed only because --allow-prod was passed`. Surfaced, not changed — flipping a working deployment behaviour unattended is not mine to do — but it should almost certainly target a local stack instead. |
-| **Production Supabase was intermittently failing all night** | REST and auth answered 401 in ~0.1s while direct Postgres connections timed out on every attempt from 00:30 to 03:00 EDT. CI's seed step hit a **Cloudflare 522** from `qmnssrrolpinvwjjnufo.supabase.co` at 06:03 UTC and again at 07:46, both ending `createUser failed for demo-coach@baseballhelmdemo.com`. Reads as connection-pool exhaustion or compute pressure rather than a hard outage. It is why live `pg_policies` could not be confirmed, and it is the sole reason the `BaseballHelm authenticated smoke` check is red on #1092 — it was red before any of this work and the cause is unrelated to the diff. |
-| **`public_profile_mode` semantics are unsettled** | DDL default is `'private'` (`20260624000091:23`); a 2026-07-09 live read recorded `'unlisted'`. If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. One query settles it. |
+| ~~**Production Supabase was intermittently failing all night**~~ ✅ **ROOT-CAUSED AND RESOLVED** — it was not intermittency; production Postgres was WEDGED, serving zero queries for 9.4h while the control plane reported `ACTIVE_HEALTHY`. Fixed by an owner-approved Management API restart at 13:38Z. Original text kept below for the diagnostic detail. | REST and auth answered 401 in ~0.1s while direct Postgres connections timed out on every attempt from 00:30 to 03:00 EDT. CI's seed step hit a **Cloudflare 522** from `qmnssrrolpinvwjjnufo.supabase.co` at 06:03 UTC and again at 07:46, both ending `createUser failed for demo-coach@baseballhelmdemo.com`. Reads as connection-pool exhaustion or compute pressure rather than a hard outage. It is why live `pg_policies` could not be confirmed, and it is the sole reason the `BaseballHelm authenticated smoke` check is red on #1092 — it was red before any of this work and the cause is unrelated to the diff. |
+| ~~**`public_profile_mode` semantics are unsettled**~~ **SETTLED — live default is `'unlisted'`, drifted from the committed DDL's `'private'`.** Impact today is zero (recruiting sunset), so this is a note about production-not-matching-its-migration, not an action. Original text: | DDL default is `'private'` (`20260624000091:23`); a 2026-07-09 live read recorded `'unlisted'`. If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. One query settles it. |
 | **The pgTAP RLS coverage gap is now closed for the tables that had none** | Messaging, tasks, travel, announcements and developmental plans all have suites as of this run. Writing them found two P0s: the invitation-code leak (twice noticed and twice deferred by prior migrations) and the `baseball_messages` typo (never noticed by anyone). Two for five tables is not a coincidence — an untested policy is an unverified claim, and this codebase now has the evidence to say so rather than the intuition. |
-| **`helm_lifting_athletes.user_id` is stale in production** | Write-once at seed time, never re-synced. Any player synced before their account was linked permanently fails the athlete-self gate at `/lifting/dashboard`. |
+| ~~**`helm_lifting_athletes.user_id` is stale in production**~~ ✅ **FIXED AND REPAIRED 2026-07-29** | Migration `20260729000300` applied, and the repair itself RUN — applying the file only makes repair possible, a coach clicking "Sync Athletes" performs it. Measured before: **21 of 22 athletes had `user_id` NULL and `is_active`**, every one unable to open `/lifting/dashboard`, permanently, because `DO NOTHING` meant the only mechanism that could supply the id refused to. After: **0 unlinked, 22 active (unchanged — no activation flipped), every link equal to its source player's `user_id` across 22 distinct accounts.** Verified in a rolled-back transaction FIRST that a deactivated athlete stays deactivated; including `is_active` in the upsert would resurrect cut players on every sync. |
 
 ---
 
