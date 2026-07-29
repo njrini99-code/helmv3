@@ -17,14 +17,21 @@
  *     defaults to status='pending' and had no coach control to clear it).
  *   • RosterRowMenu — kebab menu on the roster wall row: Edit jersey/position
  *     (assignPlayerToTeam upsert) + Remove from team (removePlayerFromTeam).
- *   • AssignPlayerModal — "Add existing player": search by name/email, then
- *     assignPlayerToTeam for a mid-season transfer / manual add.
+ *   • AssignPlayerModal — "Add existing player": find a player by name (only
+ *     ever players this coach can already see) or by their exact, whole email
+ *     address (the cross-program mid-season-transfer path), then
+ *     assignPlayerToTeam. The email half is exact-match by design — see
+ *     searchAssignablePlayers in src/app/baseball/actions/roster.ts — so the
+ *     copy in this modal has to teach that, or a coach who types "smith",
+ *     gets nothing, and knows the player is out there just concludes the
+ *     feature is broken.
  * ========================================================================== */
 
 import { useEffect, useState } from 'react';
-import { Select, Input, Button as FairwayButton, IconButton, PopoverPanel, ModalShell, SearchField } from '@/components/fairway';
+import { SearchX } from 'lucide-react';
+import { Select, Input, Button as FairwayButton, IconButton, PopoverPanel, ModalShell, SearchField, EmptyState, InlineNotice } from '@/components/fairway';
 import { IconMoreVertical, IconEdit, IconTrash, IconCheck, IconX } from '@/components/icons';
-import type { AssignablePlayerResult } from '@/app/baseball/actions/roster';
+import type { AssignablePlayerLookup, AssignablePlayerResult } from '@/app/baseball/actions/roster';
 import { POSITIONS } from './roster-constants';
 
 export type RosterActionOutcome = { success: boolean; error?: string };
@@ -305,6 +312,19 @@ export function RosterRowMenu({
 
 // ── Add existing player (mid-season transfer / manual add) ─────────────────
 
+/**
+ * The one line of detail shown under a candidate's name. Position and class
+ * year are all we get and all we need: the email path already matched a unique
+ * address, and the name path only ever surfaces players this coach can see, so
+ * these two are enough to tell two same-named players apart. The lookup
+ * deliberately does not return contact details, so there is nothing here that
+ * could be blank-but-labelled.
+ */
+function playerDetailLine(p: AssignablePlayerResult): string {
+  const parts = [p.primary_position, p.grad_year ? `Class of ${p.grad_year}` : null].filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : 'No position or class year on file';
+}
+
 export function AssignPlayerModal({
   open,
   onClose,
@@ -313,7 +333,14 @@ export function AssignPlayerModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSearch: (query: string) => Promise<{ success: boolean; data?: AssignablePlayerResult[]; error?: string }>;
+  onSearch: (query: string) => Promise<{
+    success: boolean;
+    data?: AssignablePlayerResult[];
+    lookup?: AssignablePlayerLookup;
+    exactEmailMatchId?: string | null;
+    alreadyOnRoster?: number;
+    error?: string;
+  }>;
   onAssign: (input: {
     playerId: string;
     jerseyNumber: number | null;
@@ -324,6 +351,22 @@ export function AssignPlayerModal({
   const [results, setResults] = useState<AssignablePlayerResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  // What the server actually did, carried back with the response rather than
+  // re-derived from `query` here. `query` has already moved on by the time a
+  // slow response lands, and the server sanitizes the string before it decides
+  // which lookup to run — so a client-side guess could disagree with what was
+  // really searched and put the wrong explanation under an empty list.
+  // `exactEmailMatchId` names the one row (if any) that came from the exact-
+  // email lookup, so the two paths stay visibly distinct in a mixed list.
+  const [searched, setSearched] = useState<{
+    term: string;
+    lookup: AssignablePlayerLookup;
+    exactEmailMatchId: string | null;
+    // Matches the server found and withheld because they are already on this
+    // roster. An empty list with this non-zero is a completely different fact
+    // from an empty list with it zero, and the two must not share copy.
+    alreadyOnRoster: number;
+  } | null>(null);
   const [selected, setSelected] = useState<AssignablePlayerResult | null>(null);
   const [jerseyValue, setJerseyValue] = useState('');
   const [positionValue, setPositionValue] = useState('');
@@ -336,6 +379,7 @@ export function AssignPlayerModal({
     if (q.length < 2) {
       setResults([]);
       setSearchError(null);
+      setSearched(null);
       setSearching(false);
       return;
     }
@@ -346,9 +390,16 @@ export function AssignPlayerModal({
       if (result.success) {
         setResults(result.data ?? []);
         setSearchError(null);
+        setSearched({
+          term: q,
+          lookup: result.lookup ?? 'name',
+          exactEmailMatchId: result.exactEmailMatchId ?? null,
+          alreadyOnRoster: result.alreadyOnRoster ?? 0,
+        });
       } else {
         setResults([]);
         setSearchError(result.error ?? 'Search failed. Please try again.');
+        setSearched(null);
       }
     }, 300);
     return () => clearTimeout(handle);
@@ -358,6 +409,7 @@ export function AssignPlayerModal({
   function reset() {
     setQuery('');
     setResults([]);
+    setSearched(null);
     setSelected(null);
     setJerseyValue('');
     setPositionValue('');
@@ -399,7 +451,7 @@ export function AssignPlayerModal({
       }}
       size="md"
       title="Add existing player"
-      description="Search for a player who already has an account — useful for a mid-season transfer or a manual add."
+      description="Add someone who already has a Helm account. Players you can see — your own program, and recruits you have access to — come up by name. Anyone else, including a transfer from another program, has to be looked up by their exact email address."
     >
       <ModalShell.Body>
         {!selected ? (
@@ -410,15 +462,94 @@ export function AssignPlayerModal({
               onChange={(e) => setQuery(e.target.value)}
               onClear={() => setQuery('')}
               loading={searching}
-              placeholder="Search by name or email"
-              aria-label="Search players"
+              placeholder="Name, or a full email address"
+              aria-label="Find a player by name or exact email address"
             />
             {searchError ? (
-              <p className="font-fw-sans text-body-sm text-fw-danger-ink">{searchError}</p>
-            ) : !searching && query.trim().length >= 2 && results.length === 0 ? (
-              <p className="font-fw-sans text-body-sm text-text-tertiary">No matching players found.</p>
+              <InlineNotice tone="danger" title="Search failed">
+                {searchError}
+              </InlineNotice>
+            ) : !searching && searched && results.length === 0 ? (
+              // Two different failures that a single "No results" would blur
+              // into one. An exact-email miss is a fact about the world (no
+              // such account); a name miss is a fact about this coach's reach,
+              // and the recovery is a different search, not a different spelling.
+              // The searched term goes in the DESCRIPTION, never the title: an
+              // email address is one long unbreakable token, and EmptyState's
+              // title has no wrapping affordance to survive it in a modal this
+              // narrow. `break-all` on the echoed term does the rest.
+              searched.alreadyOnRoster > 0 ? (
+                // The search DID find them — and correctly refused to offer a
+                // player who is already here. Falling through to either message
+                // below would tell a coach that someone sitting on their own
+                // roster does not exist, and (on the email path) send them off
+                // to issue an invite for a player they already have.
+                <EmptyState
+                  variant="subtle"
+                  icon={SearchX}
+                  title={
+                    searched.alreadyOnRoster === 1
+                      ? 'They are already on this roster'
+                      : 'Everyone matching is already on this roster'
+                  }
+                  description={
+                    <>
+                      {searched.alreadyOnRoster === 1 ? 'The player' : 'Every player'} matching{' '}
+                      <span className="break-all font-medium text-text-primary">
+                        {searched.term}
+                      </span>{' '}
+                      is already a member of this team, so there is nothing to add. Find them in the
+                      roster list to change their number or position — or, if they were cut,
+                      reactivate them there.
+                    </>
+                  }
+                />
+              ) : searched.lookup === 'email' ? (
+                <EmptyState
+                  variant="subtle"
+                  icon={SearchX}
+                  title="No account uses that address"
+                  description={
+                    <>
+                      Nothing matches{' '}
+                      <span className="break-all font-medium text-text-primary">
+                        {searched.term}
+                      </span>
+                      . Email lookup is exact — the whole address has to match, character for
+                      character. Check it for a typo, or ask the player which address they signed up
+                      with. If they have never made a Helm account, close this and use &ldquo;Invite
+                      players&rdquo; to send them a join link.
+                    </>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  variant="subtle"
+                  icon={SearchX}
+                  title="No one you can see by that name"
+                  description={
+                    <>
+                      Nothing matches{' '}
+                      <span className="break-words font-medium text-text-primary">
+                        &ldquo;{searched.term}&rdquo;
+                      </span>
+                      . Searching by name only reaches players you already have access to — your own
+                      program, and recruits you can view. To pick up a transfer from another
+                      program, type their full email address instead; a last name or a partial
+                      address will not find them.
+                    </>
+                  }
+                />
+              )
+            ) : !searching && query.trim().length === 0 ? (
+              <p className="font-fw-sans text-body-sm text-text-tertiary">
+                Type a name to search your own program, or a transfer&rsquo;s full email address to
+                find them anywhere.
+              </p>
             ) : query.trim().length > 0 && query.trim().length < 2 ? (
-              <p className="font-fw-sans text-body-sm text-text-tertiary">Keep typing to search.</p>
+              <p className="font-fw-sans text-body-sm text-text-tertiary">
+                Keep typing — two characters minimum.
+              </p>
             ) : null}
             {results.length > 0 ? (
               <ul className="flex max-h-64 flex-col gap-1 overflow-y-auto">
@@ -434,13 +565,21 @@ export function AssignPlayerModal({
                       }}
                       className="flex w-full flex-col items-start gap-0.5 rounded-fw-md border border-border-subtle bg-surface px-3 py-2 text-left transition-colors hover:border-border-strong hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                     >
-                      <span className="font-fw-sans text-body-sm font-medium text-text-primary">
-                        {[p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unnamed player'}
+                      <span className="flex w-full items-center gap-2">
+                        <span className="font-fw-sans text-body-sm font-medium text-text-primary">
+                          {[p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unnamed player'}
+                        </span>
+                        {/* The two lookups carry different evidence: this row
+                            was confirmed against an address the coach already
+                            held, the rest are name substrings. Say which. */}
+                        {searched?.exactEmailMatchId === p.id ? (
+                          <span className="rounded-full bg-surface-sunken px-2 py-0.5 font-fw-sans text-caption text-text-secondary">
+                            Exact email match
+                          </span>
+                        ) : null}
                       </span>
                       <span className="font-fw-sans text-caption text-text-tertiary">
-                        {[p.email, p.primary_position, p.grad_year ? String(p.grad_year) : null]
-                          .filter(Boolean)
-                          .join(' · ') || 'No additional details'}
+                        {playerDetailLine(p)}
                       </span>
                     </button>
                   </li>
@@ -454,8 +593,18 @@ export function AssignPlayerModal({
               <p className="font-fw-sans text-body-sm font-medium text-text-primary">
                 {[selected.first_name, selected.last_name].filter(Boolean).join(' ') || 'Unnamed player'}
               </p>
-              {selected.email ? (
-                <p className="font-fw-sans text-caption text-text-tertiary">{selected.email}</p>
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                {playerDetailLine(selected)}
+              </p>
+              {/* Position and class year alone are thin grounds for adding a
+                  stranger to a roster. When this came from the email path,
+                  restating which address it matched is the confirmation that
+                  actually carries weight — and it is the coach's own input,
+                  not a contact detail the lookup handed back. */}
+              {searched?.exactEmailMatchId === selected.id ? (
+                <p className="mt-1 font-fw-sans text-caption text-text-secondary">
+                  Matched the email address you entered: {searched.term}
+                </p>
               ) : null}
               {/* eslint-disable-next-line helm/no-raw-button */}
               <button
