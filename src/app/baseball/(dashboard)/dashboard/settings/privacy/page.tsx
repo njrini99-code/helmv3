@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { PrivacySettingsForm } from '@/components/player/settings/PrivacySettingsForm';
+import { SettingsShell } from '@/components/baseball/settings/SettingsChrome';
 
 export const metadata = {
   title: 'Privacy Settings | Helm',
@@ -36,25 +37,21 @@ export default async function PrivacySettingsPage() {
       }
     : undefined;
 
+  // Privacy is one of only two settings screens a PLAYER can reach, so it is
+  // where a player forms their impression of the product. It used to be the one
+  // settings route with no masthead at all — a bespoke `bg-cream-100` full-bleed
+  // wrapper, a `max-w-[720px]` measure nothing else in the tree uses, and a raw
+  // `text-2xl text-warm-900` heading. It now wears the same `SettingsShell` as
+  // every coach screen, so the two roles see one product.
   return (
-    <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-[720px] mx-auto px-6 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-warm-900 mb-2">
-            Privacy Settings
-          </h1>
-          <p className="text-warm-600">
-            Control what information is visible on your public profile. These settings help you manage your recruiting presence while maintaining your privacy.
-          </p>
-        </div>
-
-        {/* Privacy Form */}
-        <PrivacySettingsForm
-          playerId={player.id}
-          initialSettings={transformedSettings}
-        />
-      </div>
-    </div>
+    <SettingsShell
+      title="Privacy Settings"
+      lede="Control what information is visible on your public profile. These settings help you manage your recruiting presence while maintaining your privacy."
+    >
+      <PrivacySettingsForm
+        playerId={player.id}
+        initialSettings={transformedSettings}
+      />
+    </SettingsShell>
   );
 }

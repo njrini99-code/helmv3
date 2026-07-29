@@ -10,9 +10,18 @@
 // capability-gated — this surface makes the trail reachable. No mutations: the
 // log is append-only by design (RLS has no UPDATE/DELETE policy).
 //
-// Palette: cream/green GolfHelm look reused verbatim. No navy/amber/new palette.
 // No golf vocabulary. source -> signal -> action -> timeline honored: each row is
 // a timeline entry (actor + event + before/after) anchored to the change.
+//
+// DESIGN MIGRATION (settings unification)
+// ---------------------------------------
+// Like Season and Integrations, this screen had a hand-rolled
+// `border-b border-warm-200/60` title bar instead of a masthead, legacy
+// `Card variant="glass"` rows, the generic `@/components/ui/empty-state`
+// EmptyState, and `primary-*` filter chips. It now composes from
+// `SettingsChrome` + the Living Annual kit. The sensitive/routine distinction
+// keeps its two-ink read (clay vs green) and still carries in the LABEL as well
+// as the color.
 //
 // 90+ bar improvements over original:
 //  - Event-type filter (chips for sensitive vs routine vs export categories)
@@ -22,11 +31,25 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
-import { IconClock, IconFilter } from '@/components/icons';
+import { IconFilter } from '@/components/icons';
+import {
+  EditorsLetter,
+  InkBadge,
+  PaperCard,
+} from '@/components/baseball/living-annual';
+import {
+  SettingsNotice,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
+
+/** Selected vs unselected chrome for the event-category filter chips. */
+const CHIP_BASE =
+  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-200';
+const CHIP_SELECTED = 'border-grade-plus bg-grade-plus/10 text-text-primary';
+const CHIP_IDLE =
+  'border-[color:var(--hairline)] bg-[var(--paper-canvas)] text-text-secondary hover:border-grade-plus/40';
 import type {
   BaseballSettingsAuditEntry,
   BaseballSettingsAuditEvent,
@@ -131,11 +154,11 @@ function DiffPreview({
         const changed = JSON.stringify(bv) !== JSON.stringify(av);
         if (!changed) return null;
         return (
-          <div key={k} className="flex items-baseline gap-1.5 text-warm-400">
-            <dt className="font-mono text-warm-500">{k}:</dt>
-            <dd className="line-through text-warm-400">{String(bv ?? '—')}</dd>
+          <div key={k} className="flex items-baseline gap-1.5 text-text-tertiary">
+            <dt className="font-mono text-text-tertiary">{k}:</dt>
+            <dd className="text-text-tertiary line-through">{String(bv ?? '—')}</dd>
             <span aria-hidden>→</span>
-            <dd className="text-warm-700 font-medium">{String(av ?? '—')}</dd>
+            <dd className="font-medium text-text-primary">{String(av ?? '—')}</dd>
           </div>
         );
       })}
@@ -159,139 +182,123 @@ export function SettingsAuditClient({ teamName, entries }: Props) {
   };
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Settings Audit Log</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{`${teamName} • append-only history`}</p>
-        </div>
-      </div>
+    <SettingsShell title="Settings Audit Log" lede={`${teamName} • append-only history`}>
+      <SettingsNotice>
+        This log is append-only. Every sensitive settings change is recorded and
+        can never be edited or deleted from here.
+      </SettingsNotice>
 
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-        <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600">
-          This log is append-only. Every sensitive settings change is recorded and
-          can never be edited or deleted from here.
-        </div>
-
-        {/* Event-type filter chips */}
-        {entries.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter by event type">
-            <IconFilter size={14} className="text-warm-400 flex-shrink-0" />
-            {FILTER_CATEGORIES.map((cat) => {
-              const count =
-                cat.value === 'all'
-                  ? entries.length
-                  : entries.filter((e) => matchesFilter(e, cat.value)).length;
-              const active = activeFilter === cat.value;
-              return (
-                <Button
-                  key={cat.value}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveFilter(cat.value)}
-                  aria-pressed={active}
+      {/* Event-type filter chips */}
+      {entries.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by event type">
+          <IconFilter size={14} className="flex-shrink-0 text-text-tertiary" />
+          {FILTER_CATEGORIES.map((cat) => {
+            const count =
+              cat.value === 'all'
+                ? entries.length
+                : entries.filter((e) => matchesFilter(e, cat.value)).length;
+            const active = activeFilter === cat.value;
+            return (
+              <Button
+                key={cat.value}
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveFilter(cat.value)}
+                aria-pressed={active}
+                className={cn(CHIP_BASE, active ? CHIP_SELECTED : CHIP_IDLE)}
+              >
+                {cat.label}
+                <span
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                    'rounded-full px-1.5 py-0.5 text-xs tabular-nums',
                     active
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-warm-200 bg-cream-50 text-warm-500 hover:border-warm-300 hover:text-warm-700',
+                      ? 'bg-grade-plus/20 text-text-primary'
+                      : 'bg-[var(--paper)] text-text-tertiary',
                   )}
                 >
-                  {cat.label}
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 py-0.5 text-xs tabular-nums',
-                      active ? 'bg-primary-100 text-primary-700' : 'bg-warm-100 text-warm-500',
-                    )}
-                  >
-                    {count}
-                  </span>
-                </Button>
+                  {count}
+                </span>
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <EditorsLetter
+          ink="team"
+          title={
+            activeFilter !== 'all'
+              ? `No ${FILTER_CATEGORIES.find((c) => c.value === activeFilter)?.label.toLowerCase()} changes yet.`
+              : 'No setting changes yet.'
+          }
+          body={
+            activeFilter !== 'all'
+              ? 'Try a different filter or check back after more settings are changed.'
+              : 'When a coach changes the program type, access policy, AI settings, imports, or integrations, the change will appear here.'
+          }
+          action={
+            activeFilter !== 'all' ? (
+              <Button size="sm" variant="secondary" onClick={() => setActiveFilter('all')}>
+                Show all changes
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeFilter}
+            className="relative space-y-3"
+            variants={listVariants}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0, transition: { duration: 0.1 } }}
+          >
+            {filtered.map((e) => {
+              const sensitive = SENSITIVE.has(e.event_type);
+              return (
+                <motion.div key={e.id} variants={itemVariants}>
+                  <PaperCard className="p-5">
+                    <div className="flex items-start gap-3">
+                      {/* Lane dot: clay for a sensitive-access event, green for a
+                          routine one. Decorative only — the event LABEL beside it
+                          says which, so the timeline never depends on color. */}
+                      <span
+                        className={cn(
+                          'mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full',
+                          sensitive ? 'bg-pursuit' : 'bg-grade-plus',
+                        )}
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <InkBadge
+                            label={EVENT_LABEL[e.event_type] ?? e.event_type}
+                            tone={sensitive ? 'pursuit' : 'team'}
+                            variant="solid"
+                          />
+                          <span className="text-xs text-text-tertiary">
+                            {formatWhen(e.created_at)}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-text-primary">
+                          {e.summary}
+                        </p>
+                        <DiffPreview
+                          before={e.before_value}
+                          after={e.after_value}
+                        />
+                      </div>
+                    </div>
+                  </PaperCard>
+                </motion.div>
               );
             })}
-          </div>
-        )}
-
-        {filtered.length === 0 ? (
-          <EmptyState
-            variant="card"
-            glass
-            icon={<IconClock size={40} />}
-            title={
-              activeFilter !== 'all'
-                ? `No ${FILTER_CATEGORIES.find((c) => c.value === activeFilter)?.label.toLowerCase()} changes yet`
-                : 'No setting changes yet'
-            }
-            description={
-              activeFilter !== 'all'
-                ? 'Try a different filter or check back after more settings are changed.'
-                : 'When a coach changes the program type, access policy, AI settings, imports, or integrations, the change will appear here.'
-            }
-            action={
-              activeFilter !== 'all'
-                ? { label: 'Show all changes', onClick: () => setActiveFilter('all') }
-                : undefined
-            }
-          />
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeFilter}
-              className="relative space-y-3"
-              variants={listVariants}
-              initial="hidden"
-              animate="show"
-              exit={{ opacity: 0, transition: { duration: 0.1 } }}
-            >
-              {filtered.map((e) => {
-                const sensitive = SENSITIVE.has(e.event_type);
-                return (
-                  <motion.div key={e.id} variants={itemVariants}>
-                    <Card variant="glass">
-                      <CardContent className="p-5">
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={cn(
-                              'mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full',
-                              sensitive ? 'bg-pursuit' : 'bg-primary-500',
-                            )}
-                            aria-hidden
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
-                              <span
-                                className={cn(
-                                  'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
-                                  sensitive
-                                    ? 'bg-pursuit/10 text-pursuit border-pursuit/30'
-                                    : 'bg-primary-50 text-primary-700 border-primary-200',
-                                )}
-                              >
-                                {EVENT_LABEL[e.event_type] ?? e.event_type}
-                              </span>
-                              <span className="text-xs text-warm-400">
-                                {formatWhen(e.created_at)}
-                              </span>
-                            </div>
-                            <p className="text-sm leading-relaxed text-warm-800 mt-2">
-                              {e.summary}
-                            </p>
-                            <DiffPreview
-                              before={e.before_value}
-                              after={e.after_value}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
-        )}
-      </div>
-    </>
+          </motion.div>
+        </AnimatePresence>
+      )}
+    </SettingsShell>
   );
 }

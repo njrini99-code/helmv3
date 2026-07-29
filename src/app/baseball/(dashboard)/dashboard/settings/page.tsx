@@ -1,15 +1,40 @@
 'use client';
 
+// =============================================================================
+// src/app/baseball/(dashboard)/dashboard/settings/page.tsx
+//
+// The Settings hub — the first screen a head coach opens when configuring the
+// program, and previously the surface where three design vocabularies collided
+// most visibly: a Living Annual `SectionMasthead` sat on top of legacy
+// `Card variant="glass" | "interactive"` panels painted in raw `warm-*` /
+// `cream-*` / `primary-*`, with a single Fairway `InlineNotice` dropped into
+// the delete-account flow. Three card stocks, three border colors, three text
+// ramps, one page.
+//
+// Everything now composes from `SettingsChrome` (SettingsShell / SettingsSection
+// / SettingsNavCard / SettingsNotice) so the hub and its ten leaves share one
+// card stock and one type ramp. Form primitives (`Input`, `Button` from
+// `@/components/ui/*`) are untouched — same convention as ProgramSettingsClient.
+//
+// PRESENTATION-ONLY: every href, every settings key, `changePasswordAction`,
+// the `/api/account/delete` call, the DELETE-confirmation gate, and the
+// role-based link partition are preserved verbatim.
+// =============================================================================
+
 import { useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { changePasswordAction } from '@/app/baseball/actions/auth';
-import { SectionMasthead } from '@/components/baseball/living-annual';
-import { InlineNotice } from '@/components/fairway';
+import { InkNotice } from '@/components/baseball/living-annual';
+import {
+  SettingsNavCard,
+  SettingsSection,
+  SettingsShell,
+} from '@/components/baseball/settings/SettingsChrome';
+import { SettingsHubSkeleton } from '@/components/baseball/settings/SettingsHubSkeleton';
 import {
   IconBell,
   IconBuilding,
@@ -26,8 +51,8 @@ import {
   IconTarget,
   IconUpload,
   IconUsers,
+  IconX,
 } from '@/components/icons';
-import Link from 'next/link';
 
 const COACH_SETTINGS_LINKS = [
   {
@@ -138,6 +163,48 @@ const CONSOLIDATED_SETTINGS_LINKS = [
   },
 ] as const;
 
+/**
+ * Password-strength meter ink.
+ *
+ * The old meter mixed `bg-primary-500` / `bg-warm-200` utilities with inline
+ * `style` overrides reading `--notice-error-ink` and `--pursuit-ink`, so the
+ * three states were painted by two different mechanisms. They now all read the
+ * two-ink lane: clay for "not there yet", team green for strong. The label
+ * carries the meaning in words, so color is never the only channel.
+ */
+/**
+ * BAR fill. `medium` is deliberately a 55% mix — a partially-filled meter
+ * reads as "partway there", and a large block of colour can afford the
+ * lighter value.
+ */
+const STRENGTH_INK = {
+  weak: 'var(--notice-error-ink)',
+  medium: 'color-mix(in oklch, var(--pursuit-ink) 55%, var(--paper))',
+  strong: 'var(--grade-plus)',
+} as const;
+
+/**
+ * LABEL ink — deliberately NOT the same values as the bar.
+ *
+ * A unification pass collapsed these two into one map, which dropped the 12px
+ * "Medium" text from roughly 3.1:1 to 1.8:1 on --paper. WCAG AA wants 4.5:1
+ * for body text (3:1 at large sizes, which 12px is not). A 55% mix is fine
+ * across a 40px meter segment and illegible across four characters of type.
+ *
+ * The original code had them split for this reason; they are split again,
+ * with the reason written down so the next unification pass leaves them alone.
+ */
+const STRENGTH_LABEL_INK = {
+  weak: 'var(--notice-error-ink)',
+  medium: 'var(--pursuit-ink)',
+  strong: 'var(--grade-plus)',
+} as const;
+
+const STRENGTH_LABEL = { weak: 'Weak', medium: 'Medium', strong: 'Strong' } as const;
+
+/** How many of the three segments are lit at each strength. */
+const STRENGTH_SEGMENTS = { weak: 1, medium: 2, strong: 3 } as const;
+
 export default function SettingsPage() {
   const { user, loading } = useAuth();
   const { showToast } = useToast();
@@ -164,7 +231,9 @@ export default function SettingsPage() {
     }
   };
 
-  if (loading) return <PageLoading />;
+  // Shape-matches the route-level loading.tsx, so the auth-settling frame and
+  // the navigation frame are the same picture rather than two different ones.
+  if (loading) return <SettingsHubSkeleton />;
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,267 +298,238 @@ export default function SettingsPage() {
     }
   };
 
+  const dismissDeleteConfirm = () => {
+    setShowDeleteConfirm(false);
+    setDeleteConfirmText('');
+  };
+
+  const isCoach = user?.role === 'coach';
+  const navLinks = isCoach ? COACH_SETTINGS_LINKS : PLAYER_SETTINGS_LINKS;
+
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      {/* Shared LA masthead — same component + eyebrow grammar as Roles and
-          Program Settings, so the three settings surfaces read as one section
-          of the publication (spec §5, ui-migration-map settings row). */}
-      <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Settings" ink="team">
-        <p className="font-annual text-body-sm text-text-secondary">Manage your account settings</p>
-      </SectionMasthead>
+    <SettingsShell title="Settings" lede="Manage your account settings" width="wide">
+      <section className="grid gap-3 sm:grid-cols-2">
+        {navLinks.map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <SettingsNavCard
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              description={item.description}
+              icon={<Icon size={20} />}
+              index={i}
+            />
+          );
+        })}
+      </section>
 
-      <div className="space-y-6">
-        <section className="grid gap-3 sm:grid-cols-2">
-          {(user?.role === 'coach' ? COACH_SETTINGS_LINKS : PLAYER_SETTINGS_LINKS).map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link key={item.href} href={item.href}>
-                <Card variant="interactive" className="h-full cursor-pointer transition-all hover:border-primary-200">
-                  <CardContent className="p-5">
-                    <div className="flex h-full items-start justify-between gap-4">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100">
-                          <Icon size={20} className="text-primary-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-warm-900">{item.label}</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-warm-500">{item.description}</p>
-                        </div>
-                      </div>
-                      <IconChevronRight size={18} className="mt-2 shrink-0 text-warm-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </section>
-
-        {user?.role === 'coach' && (
-          <Card variant="glass">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <IconSettings size={20} className="text-warm-600" />
-                <h2 className="font-semibold text-warm-900">Consolidated Program Sections</h2>
-              </div>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              {CONSOLIDATED_SETTINGS_LINKS.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="bg-[color:var(--paper)] rounded-lg border border-warm-200/70 p-4 transition-colors hover:border-primary-200 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <Icon size={18} className="text-warm-600" />
-                      <IconChevronRight size={16} className="text-warm-400" />
-                    </div>
-                    <h3 className="font-medium text-warm-900">{item.label}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-warm-500">{item.description}</p>
-                  </Link>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Program Profile Link (Coaches Only) */}
-        {user?.role === 'coach' && (
-          <Link href="/baseball/dashboard/program">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                      <IconBuilding size={24} className="text-primary-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-warm-900 mb-1">Program Profile</h3>
-                      <p className="text-sm leading-relaxed text-warm-500">Customize your public program page for recruits</p>
-                    </div>
+      {isCoach && (
+        <SettingsSection
+          icon={<IconSettings size={18} />}
+          title="Consolidated Program Sections"
+          subtitle="These controls live as sections of Program Settings — one save surface, one capability gate."
+          bodySpacing="none"
+        >
+          <div className="grid gap-3 sm:grid-cols-3">
+            {CONSOLIDATED_SETTINGS_LINKS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  // Inset stock (paper-canvas) rather than another PaperCard:
+                  // a card inside a card at the same value reads as a seam.
+                  className="group rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-4 transition-colors duration-200 hover:border-grade-plus/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--paper)]"
+                  href={item.href}
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <Icon size={18} className="text-grade-plus" />
+                    <IconChevronRight
+                      size={16}
+                      className="text-text-tertiary transition-colors duration-200 group-hover:text-grade-plus"
+                    />
                   </div>
-                  <IconChevronRight size={20} className="text-warm-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-
-        <Card variant="glass">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <IconMail size={20} className="text-warm-600" />
-              <h2 className="font-semibold text-warm-900">Account Information</h2>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input label="Email" type="email" value={user?.email || ''} disabled />
-            <Input label="Role" value={user?.role || ''} disabled className="capitalize" />
-          </CardContent>
-        </Card>
-
-        <Card variant="glass">
-          <CardHeader><h2 className="font-semibold text-warm-900">Change Password</h2></CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordChange} className="space-y-4">
-              <Input
-                label="Current Password"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-              <div>
-                <Input
-                  label="New Password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => updatePasswordStrength(e.target.value)}
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                />
-                {/* Password strength indicator */}
-                {passwordStrength && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="flex-1 flex gap-1">
-                      <div
-                        className={`h-1.5 rounded-full flex-1 transition-colors ${
-                          passwordStrength === 'strong' ? 'bg-primary-500' : ''
-                        }`}
-                        style={
-                          passwordStrength === 'weak'
-                            ? { backgroundColor: 'var(--notice-error-ink)' }
-                            : passwordStrength === 'medium'
-                            ? { backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 55%, var(--paper))' }
-                            : undefined
-                        }
-                      />
-                      <div
-                        className={`h-1.5 rounded-full flex-1 transition-colors ${
-                          passwordStrength === 'strong' ? 'bg-primary-500' : passwordStrength === 'weak' ? 'bg-warm-200' : ''
-                        }`}
-                        style={
-                          passwordStrength === 'medium'
-                            ? { backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 55%, var(--paper))' }
-                            : undefined
-                        }
-                      />
-                      <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-warm-200'
-                      }`} />
-                    </div>
-                    <span
-                      className={`text-xs font-medium ${passwordStrength === 'strong' ? 'text-primary-600' : ''}`}
-                      style={
-                        passwordStrength === 'weak'
-                          ? { color: 'var(--notice-error-ink)' }
-                          : passwordStrength === 'medium'
-                          ? { color: 'var(--pursuit-ink)' }
-                          : undefined
-                      }
-                    >
-                      {passwordStrength === 'weak' ? 'Weak' : passwordStrength === 'medium' ? 'Medium' : 'Strong'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <Input
-                label="Confirm New Password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-                autoComplete="new-password"
-              />
-              <div className="flex justify-end pt-4">
-                <Button type="submit" isLoading={saving}>Update Password</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card variant="glass">
-          <CardHeader><h2 className="font-semibold text-warm-900">Legal & Data</h2></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-3 text-sm">
-              <Link href="/privacy" className="text-warm-600 hover:text-warm-900 transition-colors">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="text-warm-600 hover:text-warm-900 transition-colors">
-                Terms of Service
-              </Link>
-            </div>
-            <div className="pt-2 border-t border-warm-200/60">
-              {!showDeleteConfirm ? (
-                <>
-                  <p className="text-sm text-warm-500 mb-3">
-                    You can permanently delete your account and personal data. This action is irreversible.
+                  <h3 className="font-annual text-body font-semibold text-text-primary">
+                    {item.label}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                    {item.description}
                   </p>
+                </Link>
+              );
+            })}
+          </div>
+        </SettingsSection>
+      )}
+
+      {/* Program Profile Link (Coaches Only) */}
+      {isCoach && (
+        <SettingsNavCard
+          href="/baseball/dashboard/program"
+          label="Program Profile"
+          description="Customize your public program page for recruits"
+          icon={<IconBuilding size={20} />}
+        />
+      )}
+
+      <SettingsSection icon={<IconMail size={18} />} title="Account Information">
+        <Input label="Email" type="email" value={user?.email || ''} disabled />
+        <Input label="Role" value={user?.role || ''} disabled className="capitalize" />
+      </SettingsSection>
+
+      <SettingsSection icon={<IconLock size={18} />} title="Change Password" bodySpacing="none">
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <Input
+            label="Current Password"
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+          />
+          <div>
+            <Input
+              label="New Password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => updatePasswordStrength(e.target.value)}
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+            {/* Password strength indicator */}
+            {passwordStrength && (
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex flex-1 gap-1">
+                  {[0, 1, 2].map((segment) => (
+                    <div
+                      key={segment}
+                      className="h-1.5 flex-1 rounded-full transition-colors"
+                      style={{
+                        backgroundColor:
+                          segment < STRENGTH_SEGMENTS[passwordStrength]
+                            ? STRENGTH_INK[passwordStrength]
+                            // An UNLIT segment still has to be visible, or the
+                            // meter reads as one short bar and its length stops
+                            // carrying information. `--hairline` on `--paper`
+                            // is about 1.4:1 — a divider value, correct for a
+                            // 1px rule and invisible as a 6px track.
+                            : 'color-mix(in oklch, var(--pursuit-ink) 18%, var(--paper))',
+                      }}
+                    />
+                  ))}
+                </div>
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: STRENGTH_LABEL_INK[passwordStrength] }}
+                >
+                  {STRENGTH_LABEL[passwordStrength]}
+                </span>
+              </div>
+            )}
+          </div>
+          <Input
+            label="Confirm New Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+            autoComplete="new-password"
+          />
+          <div className="flex justify-end pt-4">
+            <Button type="submit" isLoading={saving}>Update Password</Button>
+          </div>
+        </form>
+      </SettingsSection>
+
+      <SettingsSection icon={<IconShield size={18} />} title="Legal & Data">
+        <div className="flex flex-wrap gap-4 text-sm">
+          <Link
+            href="/privacy"
+            className="text-text-secondary underline-offset-4 transition-colors hover:text-text-primary hover:underline"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            href="/terms"
+            className="text-text-secondary underline-offset-4 transition-colors hover:text-text-primary hover:underline"
+          >
+            Terms of Service
+          </Link>
+        </div>
+        <div className="border-t border-[color:var(--hairline)] pt-4">
+          {!showDeleteConfirm ? (
+            <>
+              <p className="mb-3 text-sm leading-relaxed text-text-secondary">
+                You can permanently delete your account and personal data. This action is irreversible.
+              </p>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Delete Account
+              </Button>
+            </>
+          ) : (
+            // InkNotice, not the Fairway InlineNotice this used to render: the
+            // baseball empty-state doctrine routes urgency through a clay ink
+            // rule on paper stock rather than a tinted danger box, and mixing
+            // the two systems is exactly what made this page look assembled.
+            <InkNotice ink="pursuit">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-annual text-body font-semibold text-text-primary">
+                    Confirm account deletion
+                  </h3>
                   <Button
                     type="button"
-                    variant="danger"
-                    onClick={() => setShowDeleteConfirm(true)}
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={dismissDeleteConfirm}
+                    aria-label="Dismiss account deletion confirmation"
+                    className="-mr-1 -mt-1 shrink-0 text-text-tertiary hover:text-text-primary"
                   >
-                    Delete Account
+                    <IconX size={14} />
                   </Button>
-                </>
-              ) : (
-                <InlineNotice
-                  tone="danger"
-                  title="Confirm account deletion"
-                  dismissible
-                  onDismiss={() => {
-                    setShowDeleteConfirm(false);
-                    setDeleteConfirmText('');
-                  }}
-                >
-                  <div className="space-y-3">
-                    <p>
-                      This will permanently delete your account, all your data, and any
-                      associated content. This action cannot be undone.
-                    </p>
-                    <p>
-                      Type <span className="font-mono font-semibold">DELETE</span> to confirm:
-                    </p>
-                    <Input
-                      type="text"
-                      value={deleteConfirmText}
-                      onChange={(e) => setDeleteConfirmText(e.target.value)}
-                      placeholder="Type DELETE to confirm"
-                    />
-                    <div className="flex items-center gap-3 justify-end">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          setShowDeleteConfirm(false);
-                          setDeleteConfirmText('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        isLoading={deletingAccount}
-                        onClick={handleDeleteAccount}
-                        disabled={deleteConfirmText !== 'DELETE'}
-                      >
-                        Permanently Delete Account
-                      </Button>
-                    </div>
-                  </div>
-                </InlineNotice>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+                </div>
+                <p className="text-text-secondary">
+                  This will permanently delete your account, all your data, and any
+                  associated content. This action cannot be undone.
+                </p>
+                <p className="text-text-secondary">
+                  Type <span className="font-mono font-semibold text-text-primary">DELETE</span> to confirm:
+                </p>
+                <Input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                />
+                <div className="flex items-center justify-end gap-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={dismissDeleteConfirm}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    isLoading={deletingAccount}
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== 'DELETE'}
+                  >
+                    Permanently Delete Account
+                  </Button>
+                </div>
+              </div>
+            </InkNotice>
+          )}
+        </div>
+      </SettingsSection>
+    </SettingsShell>
   );
 }
