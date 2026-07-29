@@ -27,6 +27,7 @@ import {
   CRM_PRIMARY_ACTION_CLASS,
   CRM_SECONDARY_ACTION_CLASS,
 } from '../../page-contracts';
+import { EmptyState } from '@/components/fairway';
 
 // ============================================================================
 // AutomationsList — table of automations grouped by trigger_event.
@@ -158,11 +159,11 @@ export function AutomationsList() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-warm-900 flex items-center gap-2">
-            <IconZap size={20} className="text-primary-600" />
+          <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
+            <IconZap size={20} className="text-accent-700" />
             Automations
           </h2>
-          <p className="text-sm text-warm-500 mt-0.5">
+          <p className="text-sm text-text-tertiary mt-0.5">
             Configurable rules that fire on email events and pipeline changes.
           </p>
         </div>
@@ -192,7 +193,7 @@ export function AutomationsList() {
 
       {/* Error */}
       {error && (
-        <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+        <div className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-md px-3 py-2">
           {error}
         </div>
       )}
@@ -201,21 +202,25 @@ export function AutomationsList() {
       {loading && (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-cream-50 border border-warm-200/60 skeleton-shimmer" />
+            <div key={i} className="h-16 rounded-fw-md bg-surface border border-border-subtle skeleton-shimmer" />
           ))}
         </div>
       )}
 
       {/* Empty state */}
       {!loading && automations.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-warm-300 glass-subtle px-5 py-8 text-center sm:px-6 sm:py-10">
-          <span className="inline-flex w-10 h-10 rounded-full bg-warm-100 items-center justify-center mb-3">
-            <IconZap size={18} className="text-warm-500" />
-          </span>
-          <p className="text-sm font-medium text-warm-800">No automations yet</p>
-          <p className="text-xs text-warm-500 mt-1">
-            Click <span className="font-medium">New automation</span> to create your first rule.
-          </p>
+        <div className="rounded-card border border-dashed border-border-strong bg-surface-tint">
+          <EmptyState
+            variant="subtle"
+            icon={<IconZap size={18} />}
+            title="No automations yet"
+            description={
+              <>
+                Click <span className="font-medium text-text-primary">New automation</span> to create
+                your first rule.
+              </>
+            }
+          />
         </div>
       )}
 
@@ -228,13 +233,13 @@ export function AutomationsList() {
             return (
               <section key={trigger.value} className="space-y-2">
                 <div className="flex items-baseline gap-2 px-1">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-700">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
                     {trigger.label}
                   </h3>
-                  <span className="text-eyebrow text-warm-400">{rows.length}</span>
+                  <span className="text-eyebrow text-text-tertiary">{rows.length}</span>
                 </div>
-                <div className="rounded-2xl glass-standard overflow-hidden">
-                  <ul className="divide-y divide-warm-100">
+                <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
+                  <ul className="divide-y divide-border-subtle">
                     {rows.map((a) => {
                       const seeded = isSeededAutomation(a.name);
                       const condCount = Array.isArray(a.conditions) ? a.conditions.length : 0;
@@ -242,7 +247,7 @@ export function AutomationsList() {
                       return (
                         <li
                           key={a.id}
-                          className="flex items-start gap-3 px-4 py-3 hover:bg-warm-50/40 transition-colors"
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-surface-sunken/40 transition-colors"
                         >
                           {/* Active toggle */}
                           <IconButton
@@ -252,18 +257,18 @@ export function AutomationsList() {
                             disabled={togglingId === a.id}
                             aria-label={a.is_active ? 'Deactivate automation' : 'Activate automation'}
                             aria-pressed={a.is_active}
-                            className="mt-0.5 min-h-11 min-w-11 flex-shrink-0 rounded-xl bg-transparent p-0 hover:bg-surface-tint"
+                            className="mt-0.5 min-h-11 min-w-11 flex-shrink-0 rounded-fw-md bg-transparent p-0 hover:bg-surface-tint"
                           >
                             <span
                               className={cn(
                                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                                a.is_active ? 'bg-accent-650' : 'bg-warm-300',
+                                a.is_active ? 'bg-accent-650' : 'bg-border-strong',
                                 togglingId === a.id && 'opacity-50',
                               )}
                             >
                               <span
                                 className={cn(
-                                  'inline-block h-4 w-4 transform rounded-full bg-cream-50 transition-transform',
+                                  'inline-block h-4 w-4 transform rounded-full bg-surface transition-transform',
                                   a.is_active ? 'translate-x-4' : 'translate-x-0.5',
                                 )}
                               />
@@ -272,7 +277,7 @@ export function AutomationsList() {
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-semibold text-warm-900 truncate">
+                              <span className="text-sm font-semibold text-text-primary truncate">
                                 {a.name}
                               </span>
                               {seeded && (
@@ -281,20 +286,20 @@ export function AutomationsList() {
                                 </span>
                               )}
                               {!a.is_active && (
-                                <span className="px-2 py-0.5 rounded-full bg-warm-100 text-eyebrow font-medium text-warm-600">
+                                <span className="px-2 py-0.5 rounded-full bg-surface-sunken text-eyebrow font-medium text-text-secondary">
                                   Inactive
                                 </span>
                               )}
-                              <span className="px-2 py-0.5 rounded-full bg-warm-50 border border-warm-200 text-eyebrow text-warm-600">
+                              <span className="px-2 py-0.5 rounded-full bg-surface-sunken border border-border-subtle text-eyebrow text-text-secondary">
                                 priority {a.priority}
                               </span>
                             </div>
                             {a.description && (
-                              <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">
+                              <p className="text-xs text-text-tertiary mt-0.5 line-clamp-2">
                                 {a.description}
                               </p>
                             )}
-                            <p className="text-eyebrow text-warm-500 mt-1">
+                            <p className="text-eyebrow text-text-tertiary mt-1">
                               {condCount === 0
                                 ? 'Always runs'
                                 : `${condCount} condition${condCount === 1 ? '' : 's'}`}{' '}
@@ -318,7 +323,7 @@ export function AutomationsList() {
                               type="button"
                               onClick={() => handleDelete(a)}
                               aria-label="Delete automation"
-                              className="min-h-11 min-w-11 rounded-xl text-text-tertiary hover:bg-fw-danger-bg hover:text-fw-danger-ink"
+                              className="min-h-11 min-w-11 rounded-fw-md text-text-tertiary hover:bg-fw-danger-bg hover:text-fw-danger-ink"
                             >
                               <IconTrash size={14} />
                             </IconButton>

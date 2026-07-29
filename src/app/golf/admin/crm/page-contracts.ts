@@ -130,11 +130,11 @@ export const MOBILE_MORE_TABS = ['dashboard', 'sequences', 'templates', 'setting
 // sub-tabs, Coach views, Inbox sections). Drift between these controls was a
 // cohesion bug — change them together or not at all.
 export const SEGMENTED_TABLIST_CLASS =
-  'inline-flex max-w-full items-center gap-1 overflow-x-auto scrollbar-hide rounded-xl border border-border-subtle bg-surface-tint/70 p-1';
+  'inline-flex max-w-full items-center gap-1 overflow-x-auto scrollbar-hide rounded-fw-md border border-border-subtle bg-surface-tint/70 p-1';
 
 export function segmentedTabClass(isActive: boolean): string {
   return [
-    'flex items-center gap-1.5 min-h-11 px-3 py-1.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-[background-color,color,border-color,box-shadow,transform] duration-200 active:scale-[0.98]',
+    'flex items-center gap-1.5 min-h-11 px-3 py-1.5 rounded-fw-sm border text-sm font-medium whitespace-nowrap transition-[background-color,color,border-color,box-shadow,transform] duration-200 active:scale-[0.98]',
     isActive
       ? 'border-accent-200 bg-accent-50 text-accent-800 shadow-flat'
       : 'border-transparent text-text-tertiary hover:bg-elevated hover:text-text-primary',
@@ -146,29 +146,29 @@ export function segmentedTabIconClass(isActive: boolean): string {
 }
 
 export const CRM_RADIX_TAB_CLASS =
-  'min-h-11 rounded-lg border px-3 py-1.5 text-sm font-medium whitespace-nowrap before:hidden data-[state=active]:border-accent-200 data-[state=active]:bg-accent-50 data-[state=active]:text-accent-800 data-[state=active]:shadow-flat data-[state=inactive]:border-transparent data-[state=inactive]:text-text-tertiary data-[state=inactive]:hover:bg-elevated data-[state=inactive]:hover:text-text-primary';
+  'min-h-11 rounded-fw-sm border px-3 py-1.5 text-sm font-medium whitespace-nowrap before:hidden data-[state=active]:border-accent-200 data-[state=active]:bg-accent-50 data-[state=active]:text-accent-800 data-[state=active]:shadow-flat data-[state=inactive]:border-transparent data-[state=inactive]:text-text-tertiary data-[state=inactive]:hover:bg-elevated data-[state=inactive]:hover:text-text-primary';
 
 export const CRM_PRIMARY_ACTION_CLASS =
-  'min-h-11 rounded-xl bg-accent-650 px-4 text-sm font-semibold text-text-on-accent shadow-soft hover:bg-accent-700 hover:shadow-raise focus-visible:ring-border-focus';
+  'min-h-11 rounded-fw-md bg-accent-650 px-4 text-sm font-semibold text-text-on-accent shadow-soft hover:bg-accent-700 hover:shadow-raise focus-visible:ring-border-focus';
 
 export const CRM_SECONDARY_ACTION_CLASS =
-  'min-h-11 rounded-xl border border-border-subtle bg-elevated px-4 text-sm font-medium text-text-secondary shadow-flat hover:border-border-strong hover:bg-surface-tint hover:text-text-primary';
+  'min-h-11 rounded-fw-md border border-border-subtle bg-elevated px-4 text-sm font-medium text-text-secondary shadow-flat hover:border-border-strong hover:bg-surface-tint hover:text-text-primary';
 
 export const CRM_TERTIARY_ACTION_CLASS =
-  'min-h-11 rounded-xl px-3 text-sm font-medium text-text-secondary hover:bg-surface-tint hover:text-text-primary';
+  'min-h-11 rounded-fw-md px-3 text-sm font-medium text-text-secondary hover:bg-surface-tint hover:text-text-primary';
 
 export const CRM_DANGER_ACTION_CLASS =
-  'min-h-11 rounded-xl border border-fw-danger/30 bg-fw-danger-bg px-4 text-sm font-semibold text-fw-danger-ink hover:border-fw-danger/50';
+  'min-h-11 rounded-fw-md border border-fw-danger/30 bg-fw-danger-bg px-4 text-sm font-semibold text-fw-danger-ink hover:border-fw-danger/50';
 
 export const CRM_ICON_ACTION_CLASS =
-  'min-h-11 min-w-11 rounded-xl text-text-tertiary hover:bg-surface-tint hover:text-text-primary';
+  'min-h-11 min-w-11 rounded-fw-md text-text-tertiary hover:bg-surface-tint hover:text-text-primary';
 
 export const CRM_CHOICE_GROUP_CLASS =
-  'inline-flex max-w-full items-center gap-1 overflow-x-auto scrollbar-hide rounded-xl border border-border-subtle bg-surface-tint/70 p-1';
+  'inline-flex max-w-full items-center gap-1 overflow-x-auto scrollbar-hide rounded-fw-md border border-border-subtle bg-surface-tint/70 p-1';
 
 export function crmChoiceClass(isActive: boolean): string {
   return [
-    'min-h-10 rounded-lg border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-[background-color,color,border-color,transform] duration-200 active:scale-[0.98]',
+    'min-h-10 rounded-fw-sm border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-[background-color,color,border-color,transform] duration-200 active:scale-[0.98]',
     isActive
       ? 'border-accent-200 bg-accent-50 text-accent-800'
       : 'border-transparent text-text-tertiary hover:bg-elevated hover:text-text-primary',
@@ -176,7 +176,7 @@ export function crmChoiceClass(isActive: boolean): string {
 }
 
 export const CRM_RADIX_CHOICE_CLASS =
-  'min-h-10 rounded-lg border px-3 py-1.5 text-xs font-medium whitespace-nowrap data-[state=on]:border-accent-200 data-[state=on]:bg-accent-50 data-[state=on]:text-accent-800 data-[state=off]:border-transparent data-[state=off]:text-text-tertiary data-[state=off]:hover:bg-elevated data-[state=off]:hover:text-text-primary';
+  'min-h-10 rounded-fw-sm border px-3 py-1.5 text-xs font-medium whitespace-nowrap data-[state=on]:border-accent-200 data-[state=on]:bg-accent-50 data-[state=on]:text-accent-800 data-[state=off]:border-transparent data-[state=off]:text-text-tertiary data-[state=off]:hover:bg-elevated data-[state=off]:hover:text-text-primary';
 
 // Email statuses that must never receive a manual Gmail send. Mirrors the
 // email_status/suppression gate that already exists server-side for the

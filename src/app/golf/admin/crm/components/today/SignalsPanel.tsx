@@ -111,7 +111,7 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
   }, [onFollowUpSet]);
 
   if (loading) {
-    return <div className="h-11 rounded-2xl glass-standard skeleton-shimmer" aria-hidden="true" />;
+    return <div className="h-11 rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] skeleton-shimmer" aria-hidden="true" />;
   }
 
   if (isAllEmpty(signals)) {
@@ -122,8 +122,8 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <SignalCard
         title="Hot right now"
-        iconBg="bg-red-50"
-        icon={<IconFlame size={16} className="text-red-600" />}
+        iconBg="bg-fw-danger-bg"
+        icon={<IconFlame size={16} className="text-fw-danger-ink" />}
         emptyLabel="No hot engagement in the last 90 days."
       >
         {signals.hot.length > 0 && (
@@ -132,11 +132,11 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
               <SignalRow key={coach.id} coach={coach} onCoachClick={onCoachClick}>
                 <span className="flex flex-shrink-0 items-center gap-1.5">
                   {typeof coach.score === 'number' && (
-                    <span className="rounded-full bg-red-50 px-2 text-micro font-semibold tabular-nums text-red-700">
+                    <span className="rounded-full bg-fw-danger-bg px-2 text-micro font-semibold tabular-nums text-fw-danger-ink">
                       {coach.score}
                     </span>
                   )}
-                  <span className="text-micro tabular-nums text-warm-400">
+                  <span className="text-micro tabular-nums text-text-tertiary">
                     {relativeCompact(coach.last_event_at)}
                   </span>
                 </span>
@@ -148,8 +148,8 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
 
       <SignalCard
         title="Overdue follow-ups"
-        iconBg="bg-amber-50"
-        icon={<IconClock size={16} className="text-amber-600" />}
+        iconBg="bg-fw-warning-bg"
+        icon={<IconClock size={16} className="text-fw-warning-ink" />}
         emptyLabel="Nothing overdue."
       >
         {signals.overdue.length > 0 && (
@@ -157,7 +157,7 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
             {signals.overdue.slice(0, 8).map((coach) => (
               <SignalRow key={coach.id} coach={coach} onCoachClick={onCoachClick}>
                 <span className="flex flex-shrink-0 items-center gap-1.5">
-                  <span className="text-micro font-medium tabular-nums text-amber-700">
+                  <span className="text-micro font-medium tabular-nums text-fw-warning-ink">
                     {overdueLabel(coach.next_follow_up_at)}
                   </span>
                   <Button
@@ -171,7 +171,7 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
                     }}
                     aria-label={`Push ${coach.name}'s follow-up out one week`}
                     title="Push out one week"
-                    className="min-h-[32px] rounded-md bg-cream-100 px-2 py-0 text-micro font-medium text-warm-600 hover:bg-cream-200 disabled:opacity-50"
+                    className="min-h-[32px] rounded-fw-sm bg-canvas px-2 py-0 text-micro font-medium text-text-secondary hover:bg-surface-tint disabled:opacity-50"
                   >
                     +1w
                   </Button>
@@ -184,8 +184,8 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
 
       <SignalCard
         title="No next step"
-        iconBg="bg-warm-100"
-        icon={<IconTarget size={16} className="text-warm-600" />}
+        iconBg="bg-surface-sunken"
+        icon={<IconTarget size={16} className="text-text-secondary" />}
         emptyLabel="Every open coach has a follow-up scheduled."
         headline={`${signals.noNextStepTotal} in pipeline with no follow-up`}
       >
@@ -210,7 +210,7 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
                         void quickSet(coach, days, 'noNextStep');
                       }}
                       aria-label={`Set ${coach.name}'s next follow-up ${label.slice(1)} from now`}
-                      className="min-h-[32px] rounded-md bg-cream-100 px-2 py-0 text-micro font-medium text-warm-600 hover:bg-cream-200 disabled:opacity-50"
+                      className="min-h-[32px] rounded-fw-sm bg-canvas px-2 py-0 text-micro font-medium text-text-secondary hover:bg-surface-tint disabled:opacity-50"
                     >
                       {label}
                     </Button>
@@ -240,17 +240,17 @@ interface SignalCardProps {
 
 function SignalCard({ title, iconBg, icon, emptyLabel, headline, children }: SignalCardProps) {
   return (
-    <div className="glass-standard rounded-2xl p-5 shadow-glass">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5">
       <div className="mb-1 flex items-center gap-2.5">
-        <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
+        <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-fw-sm ${iconBg}`}>
           {icon}
         </span>
-        <h3 className="text-sm font-bold text-warm-900">{title}</h3>
+        <h3 className="text-sm font-bold text-text-primary">{title}</h3>
       </div>
-      {headline && <p className="mb-2 ml-[42px] text-micro text-warm-500">{headline}</p>}
+      {headline && <p className="mb-2 ml-[42px] text-micro text-text-tertiary">{headline}</p>}
       <div className={headline ? '' : 'mt-3'}>
         {isEmptyChildren(children) ? (
-          <p className="text-caption text-warm-400">{emptyLabel}</p>
+          <p className="text-caption text-text-tertiary">{emptyLabel}</p>
         ) : (
           children
         )}
@@ -282,17 +282,17 @@ interface SignalRowProps {
 
 function SignalRow({ coach, onCoachClick, children }: SignalRowProps) {
   return (
-    <li className="flex items-center justify-between gap-2 rounded-xl transition-colors hover:bg-cream-100">
+    <li className="flex items-center justify-between gap-2 rounded-fw-md transition-colors hover:bg-surface-tint">
       <Button
         variant="ghost"
         type="button"
         haptic="none"
         onClick={() => onCoachClick(coach.id)}
-        className="min-h-[44px] flex-1 justify-start rounded-xl px-2 py-1.5 text-left"
+        className="min-h-[44px] flex-1 justify-start rounded-fw-md px-2 py-1.5 text-left"
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium text-warm-900">{coach.name}</span>
-          <span className="block truncate text-micro text-warm-500">{coach.school ?? '—'}</span>
+          <span className="block truncate font-medium text-text-primary">{coach.name}</span>
+          <span className="block truncate text-micro text-text-tertiary">{coach.school ?? '—'}</span>
         </span>
       </Button>
       {children}

@@ -116,8 +116,8 @@ export function InsightsDashboard() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-warm-900 tracking-tight">Analytics overview</h2>
-          <p className="text-sm text-warm-500 mt-1">
+          <h2 className="text-xl font-bold text-text-primary tracking-tight">Analytics overview</h2>
+          <p className="text-sm text-text-tertiary mt-1">
             Per-template performance, time-to-open distribution, and top-clicked
             destinations across your CRM email program.
           </p>
@@ -159,11 +159,11 @@ export function InsightsDashboard() {
       </div>
 
       {error && (
-        <div className="bg-red-50/70 backdrop-blur-xl border border-red-200/60 rounded-2xl p-4 flex items-start gap-3">
-          <IconActivity size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+        <div className="bg-fw-danger-bg/70 backdrop-blur-xl border border-fw-danger/25 rounded-card p-4 flex items-start gap-3">
+          <IconActivity size={16} className="text-fw-danger flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-red-800">Couldn’t load insights</p>
-            <p className="text-xs text-red-600 mt-0.5">{error}</p>
+            <p className="text-sm font-semibold text-fw-danger-ink">Couldn’t load insights</p>
+            <p className="text-xs text-fw-danger-ink mt-0.5">{error}</p>
           </div>
           <Button variant="danger"
             onClick={() => fetchAll(window)}
@@ -175,9 +175,9 @@ export function InsightsDashboard() {
       )}
 
       {!error && partialFailure && (
-        <div className="bg-amber-50/70 backdrop-blur-xl border border-amber-200/60 rounded-2xl px-4 py-2.5 flex items-center gap-2.5">
-          <IconWarning size={14} className="text-amber-600 flex-shrink-0" />
-          <p className="text-xs font-medium text-amber-800 flex-1">
+        <div className="bg-fw-warning-bg/70 backdrop-blur-xl border border-fw-warning-ring rounded-card px-4 py-2.5 flex items-center gap-2.5">
+          <IconWarning size={14} className="text-fw-warning-ink flex-shrink-0" />
+          <p className="text-xs font-medium text-fw-warning-ink flex-1">
             Some analytics failed to load — refresh
           </p>
           <Button variant="ghost"

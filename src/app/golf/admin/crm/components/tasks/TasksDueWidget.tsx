@@ -32,10 +32,10 @@ interface TasksDueWidgetProps {
 }
 
 const PRIORITY_DOT: Record<TaskPriority, string> = {
-  low: 'bg-warm-300',
-  normal: 'bg-blue-400',
-  high: 'bg-amber-500',
-  urgent: 'bg-red-500',
+  low: 'bg-border-strong',
+  normal: 'bg-text-tertiary',
+  high: 'bg-fw-warning',
+  urgent: 'bg-fw-danger',
 };
 
 export function TasksDueWidget({
@@ -90,21 +90,21 @@ export function TasksDueWidget({
   };
 
   return (
-    <div className="rounded-2xl border border-warm-200/60 bg-cream-50">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-warm-100">
+    <div className="rounded-card border border-border-subtle bg-surface">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
         <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
-            <IconClipboardList size={14} className="text-amber-600" />
+          <span className="w-7 h-7 rounded-fw-sm bg-fw-warning-bg flex items-center justify-center">
+            <IconClipboardList size={14} className="text-fw-warning-ink" />
           </span>
-          <h3 className="text-sm font-semibold text-warm-900">Tasks due today</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Tasks due today</h3>
           {!loading && tasks.length > 0 && (
-            <span className="text-eyebrow text-warm-400 tabular-nums">
+            <span className="text-eyebrow text-text-tertiary tabular-nums">
               {tasks.length}
             </span>
           )}
         </div>
         {buckets.overdue.length > 0 && (
-          <span className="inline-flex items-center gap-1 text-eyebrow font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+          <span className="inline-flex items-center gap-1 text-eyebrow font-semibold px-1.5 py-0.5 rounded-full bg-fw-danger-bg text-fw-danger-ink border border-fw-danger/25">
             <IconWarning size={9} />
             {buckets.overdue.length} overdue
           </span>
@@ -115,31 +115,31 @@ export function TasksDueWidget({
         {loading && (
           <div className="space-y-1.5">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-12 rounded-lg bg-warm-50/60 skeleton-shimmer" />
+              <div key={i} className="h-12 rounded-fw-sm bg-surface-sunken/70 skeleton-shimmer" />
             ))}
           </div>
         )}
 
         {!loading && error && (
-          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
             {error}
           </p>
         )}
 
         {!loading && !error && tasks.length === 0 && (
           <div className="py-8 text-center">
-            <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
-              <IconCheck size={18} className="text-primary-500" />
+            <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center mx-auto mb-2">
+              <IconCheck size={18} className="text-accent-600" />
             </div>
-            <p className="text-sm font-medium text-warm-700">All caught up</p>
-            <p className="text-xs text-warm-500 mt-1">
+            <p className="text-sm font-medium text-text-secondary">All caught up</p>
+            <p className="text-xs text-text-tertiary mt-1">
               Nothing due today — nice work.
             </p>
           </div>
         )}
 
         {!loading && !error && tasks.length > 0 && (
-          <ul className="divide-y divide-warm-100">
+          <ul className="divide-y divide-border-subtle">
             {[...buckets.overdue, ...buckets.today, ...buckets.noDate].map((task) => (
               <DueRow
                 key={task.id}
@@ -186,8 +186,8 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
           : undefined
       }
       className={cn(
-        'flex items-center gap-2.5 px-2 py-2 transition-colors rounded-lg',
-        onClick && 'cursor-pointer hover:bg-warm-50/60',
+        'flex items-center gap-2.5 px-2 py-2 transition-colors rounded-fw-sm',
+        onClick && 'cursor-pointer hover:bg-surface-sunken/60',
       )}
     >
       <IconButton variant="primary"
@@ -197,7 +197,7 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
           onComplete();
         }}
         aria-label="Mark complete"
-        className="w-4 h-4 rounded-md border border-warm-300 hover:border-primary-500 hover:bg-primary-50 flex items-center justify-center flex-shrink-0 transition-colors"
+        className="w-4 h-4 rounded-fw-sm border border-border-strong hover:border-accent-500 hover:bg-accent-50 flex items-center justify-center flex-shrink-0 transition-colors"
       >
         {/* Empty checkbox visual — the label lives in aria-label; see note below. */}
         <span aria-hidden="true" />
@@ -213,14 +213,14 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
       />
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-warm-900 truncate">
+        <p className="text-sm font-medium text-text-primary truncate">
           {task.title}
         </p>
         {dueLabel && (
           <p
             className={cn(
               'text-eyebrow inline-flex items-center gap-1 mt-0.5',
-              overdue ? 'text-red-600' : 'text-warm-500',
+              overdue ? 'text-fw-danger-ink' : 'text-text-tertiary',
             )}
           >
             {overdue ? <IconWarning size={9} /> : <IconClock size={9} />}

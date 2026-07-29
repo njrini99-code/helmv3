@@ -41,9 +41,9 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
     coach.next_follow_up_at && new Date(coach.next_follow_up_at) < new Date();
 
   return (
-    <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
-      <div className="px-5 py-4 border-b border-warm-100/60">
-        <h2 className="text-sm font-semibold text-warm-900">Coach Info</h2>
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
+      <div className="px-5 py-4 border-b border-border-subtle/60">
+        <h2 className="text-sm font-semibold text-text-primary">Coach Info</h2>
       </div>
 
       {/* ── Contact ── */}
@@ -52,7 +52,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
           {coach.email ? (
             <a
               href={`mailto:${coach.email}`}
-              className="text-blue-600 hover:text-blue-700 break-all"
+              className="text-accent-700 hover:text-text-secondary break-all"
             >
               {coach.email}
             </a>
@@ -64,7 +64,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
           {coach.phone ? (
             <a
               href={`tel:${coach.phone}`}
-              className="text-primary-700 hover:text-primary-800"
+              className="text-accent-700 hover:text-accent-800"
             >
               {coach.phone}
             </a>
@@ -86,7 +86,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
       {/* ── Notes ── */}
       <Section title="Notes">
         {coach.notes ? (
-          <p className="text-sm text-warm-700 whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
             {coach.notes}
           </p>
         ) : (
@@ -97,7 +97,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
       {/* ── Internal comments ── */}
       <Section title="Internal Comments">
         {coach.internal_comments ? (
-          <p className="text-sm text-warm-700 whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
             {coach.internal_comments}
           </p>
         ) : (
@@ -112,7 +112,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
             {coach.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded-md text-eyebrow font-medium"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-50 text-accent-700 rounded-fw-sm text-eyebrow font-medium"
               >
                 <IconHash size={10} />
                 {tag}
@@ -127,10 +127,10 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
       {/* ── Pain points ── */}
       <Section title="Pain Points">
         {coach.pain_points && coach.pain_points.length > 0 ? (
-          <ul className="space-y-1.5 text-sm text-warm-700">
+          <ul className="space-y-1.5 text-sm text-text-secondary">
             {coach.pain_points.map((p) => (
               <li key={p} className="flex items-start gap-2">
-                <span className="text-warm-300 mt-1">•</span>
+                <span className="text-text-tertiary mt-1">•</span>
                 <span>{p}</span>
               </li>
             ))}
@@ -170,7 +170,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
             <span
               className={cn(
                 'font-medium',
-                isOverdue ? 'text-red-600' : 'text-warm-700',
+                isOverdue ? 'text-fw-danger-ink' : 'text-text-secondary',
               )}
             >
               {nextFollowUp}
@@ -193,8 +193,8 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
 // ----------------------------------------------------------------------------
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="px-5 py-4 border-b border-warm-100/40 last:border-b-0">
-      <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wider mb-2">
+    <div className="px-5 py-4 border-b border-border-subtle last:border-b-0">
+      <h3 className="text-eyebrow font-semibold text-text-tertiary uppercase tracking-wider mb-2">
         {title}
       </h3>
       <div className="space-y-1.5">{children}</div>
@@ -213,15 +213,15 @@ function Row({
 }) {
   return (
     <div className="flex items-start gap-2 text-sm">
-      <span className="flex items-center gap-1.5 text-xs text-warm-400 w-24 flex-shrink-0 pt-0.5">
+      <span className="flex items-center gap-1.5 text-xs text-text-tertiary w-24 flex-shrink-0 pt-0.5">
         {icon}
         <span>{label}</span>
       </span>
-      <div className="flex-1 min-w-0 text-warm-700">{children}</div>
+      <div className="flex-1 min-w-0 text-text-secondary">{children}</div>
     </div>
   );
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <span className="text-warm-400 italic">{children}</span>;
+  return <span className="text-text-tertiary italic">{children}</span>;
 }

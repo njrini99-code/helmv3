@@ -80,7 +80,7 @@ export function TimelineItem({ item }: TimelineItemProps) {
       {/* Dot */}
       <span
         className={cn(
-          'absolute left-[-13px] top-0.5 w-[22px] h-[22px] rounded-full flex items-center justify-center bg-cream-50 ring-2',
+          'absolute left-[-13px] top-0.5 w-[22px] h-[22px] rounded-full flex items-center justify-center bg-surface ring-2',
           cfg.ringColor,
         )}
         aria-hidden="true"
@@ -91,22 +91,22 @@ export function TimelineItem({ item }: TimelineItemProps) {
       {/* Body */}
       <div className="ml-4">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-warm-800 truncate">
+          <span className="text-sm font-medium text-text-primary truncate">
             {item.title}
           </span>
-          <span className="text-xs text-warm-400 tabular-nums flex-shrink-0">
+          <span className="text-xs text-text-tertiary tabular-nums flex-shrink-0">
             {relTime}
           </span>
         </div>
 
         {item.body && (
-          <p className="text-xs text-warm-500 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">
+          <p className="text-xs text-text-tertiary mt-0.5 leading-relaxed whitespace-pre-wrap break-words">
             {item.body}
           </p>
         )}
 
         {(metaBits.length > 0 || meetingUrl) && (
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-eyebrow text-warm-500">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-eyebrow text-text-tertiary">
             {metaBits.map((bit, i) => (
               <span key={i}>{bit}</span>
             ))}
@@ -115,7 +115,7 @@ export function TimelineItem({ item }: TimelineItemProps) {
                 href={meetingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                className="inline-flex items-center gap-1 text-accent-700 hover:text-text-secondary"
               >
                 <IconExternalLink size={10} /> Join meeting
               </a>

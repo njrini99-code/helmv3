@@ -281,14 +281,14 @@ export function TodayQueue({
         <SignalsPanel onCoachClick={handleSignalCoachClick} onFollowUpSet={onFollowUpSet} />
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl glass-standard p-3">
+            <div key={i} className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-3">
               <div className="flex items-center gap-3">
-                <div className="h-7 w-7 flex-shrink-0 rounded-full bg-warm-200/60 skeleton-shimmer" />
+                <div className="h-7 w-7 flex-shrink-0 rounded-full bg-surface-sunken skeleton-shimmer" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 w-40 rounded bg-warm-200/60 skeleton-shimmer" />
-                  <div className="h-2.5 w-28 rounded bg-warm-100/60 skeleton-shimmer" />
+                  <div className="h-3.5 w-40 rounded bg-surface-sunken skeleton-shimmer" />
+                  <div className="h-2.5 w-28 rounded bg-surface-sunken skeleton-shimmer" />
                 </div>
-                <div className="h-8 w-20 rounded-xl bg-warm-100/60 skeleton-shimmer" />
+                <div className="h-8 w-20 rounded-fw-md bg-surface-sunken skeleton-shimmer" />
               </div>
             </div>
           ))}
@@ -301,12 +301,12 @@ export function TodayQueue({
     return (
       <div className="space-y-4">
         <SignalsPanel onCoachClick={handleSignalCoachClick} onFollowUpSet={onFollowUpSet} />
-        <div className="rounded-2xl glass-standard p-10 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
-            <IconCheckCircle2 size={26} className="text-primary-600" />
+        <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-10 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-card bg-accent-50">
+            <IconCheckCircle2 size={26} className="text-accent-700" />
           </div>
-          <h3 className="text-lg font-bold text-warm-900">All caught up</h3>
-          <p className="mt-1 text-sm text-warm-500">No fresh leads due today.</p>
+          <h3 className="text-lg font-bold text-text-primary">All caught up</h3>
+          <p className="mt-1 text-sm text-text-tertiary">No fresh leads due today.</p>
         </div>
       </div>
     );
@@ -317,11 +317,11 @@ export function TodayQueue({
       <SignalsPanel onCoachClick={handleSignalCoachClick} onFollowUpSet={onFollowUpSet} />
 
       {/* Header / count */}
-      <div className="flex items-center justify-between rounded-2xl glass-standard px-4 py-3">
+      <div className="flex items-center justify-between rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-4 py-3">
         <div className="flex items-center gap-2">
-          <IconCalendar size={16} className="text-primary-500" />
-          <h3 className="text-sm font-bold text-warm-900">Today&rsquo;s worklist</h3>
-          <span className="text-xs text-warm-500">
+          <IconCalendar size={16} className="text-accent-600" />
+          <h3 className="text-sm font-bold text-text-primary">Today&rsquo;s worklist</h3>
+          <span className="text-xs text-text-tertiary">
             {queue.length} school{queue.length === 1 ? '' : 's'} · one main contact each · Resend-enrolled hidden
           </span>
         </div>
@@ -331,11 +331,11 @@ export function TodayQueue({
       <ol className="space-y-2">
         {queue.map((coach, idx) => {
           const div = (coach.division ?? '').toString().toUpperCase();
-          const chip = DIVISION_CHIP[div] ?? 'bg-warm-100 text-warm-600 ring-warm-200';
+          const chip = DIVISION_CHIP[div] ?? 'bg-surface-sunken text-text-secondary ring-border-subtle';
           return (
             <li
               key={coach.id}
-              className="rounded-2xl glass-standard p-3 transition-colors hover:bg-cream-100"
+              className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-3 transition-colors hover:bg-surface-tint"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                 {/* Rank + identity */}
@@ -345,12 +345,12 @@ export function TodayQueue({
                   onClick={() => onCoachClick(coach)}
                   className="group flex flex-1 items-start justify-start gap-3 rounded-none px-0 py-0 text-left min-h-0"
                 >
-                  <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-warm-100 text-xs font-bold tabular-nums text-warm-600">
+                  <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-surface-sunken text-xs font-bold tabular-nums text-text-secondary">
                     {idx + 1}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="truncate font-semibold text-warm-900 group-hover:text-primary-700">
+                      <span className="truncate font-semibold text-text-primary group-hover:text-accent-800">
                         {coach.name}
                       </span>
                       <span
@@ -362,17 +362,17 @@ export function TodayQueue({
                         {div || '—'}
                       </span>
                       {coach.assigned_to && (
-                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-700 ring-1 ring-primary-200">
+                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-accent-50 px-2 py-0.5 text-caption font-medium text-accent-700 ring-1 ring-accent-200">
                           <IconUser size={11} />
                           {coach.assigned_to}
                         </span>
                       )}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs text-warm-500">
+                    <span className="mt-0.5 block truncate text-xs text-text-tertiary">
                       {coach.school}
                       {coach.title ? ` · ${coach.title}` : ''}
                     </span>
-                    <span className="mt-0.5 block truncate text-caption text-warm-400">
+                    <span className="mt-0.5 block truncate text-caption text-text-tertiary">
                       {fitReason(coach)}
                     </span>
                   </span>
@@ -394,8 +394,8 @@ export function TodayQueue({
                           aria-label={`Send via Gmail to ${coach.name}`}
                           title={armed ? 'Send via Gmail' : 'Arm a Gmail template first'}
                           className={cn(
-                            'inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors',
-                            armed ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-cream-50 text-warm-400',
+                            'inline-flex min-h-[44px] items-center gap-1.5 rounded-fw-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                            armed ? 'bg-accent-650 text-text-on-accent hover:bg-accent-700' : 'bg-surface text-text-tertiary',
                           )}
                         >
                           <IconSend size={14} /> Send
@@ -414,7 +414,7 @@ export function TodayQueue({
                         onClick={() => onOpenInGmail(coach)}
                         aria-label={`Open Gmail for ${coach.name}`}
                         title="Open in Gmail"
-                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors bg-primary-50 text-primary-700 hover:bg-primary-100"
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-fw-md px-3 py-1.5 text-xs font-medium transition-colors bg-accent-50 text-accent-700 hover:bg-accent-100"
                       >
                         <IconMail size={14} /> Gmail
                       </a>
@@ -425,7 +425,7 @@ export function TodayQueue({
                         disabled
                         aria-label={`Open Gmail for ${coach.name}`}
                         title="Arm a Gmail template first"
-                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium glass-subtle text-warm-400"
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-fw-md px-3 py-1.5 text-xs font-medium border border-border-subtle bg-surface-tint text-text-tertiary"
                       >
                         <IconMail size={14} /> Gmail
                       </Button>
@@ -437,7 +437,7 @@ export function TodayQueue({
                     onClick={() => onLogTouch(coach)}
                     aria-label={`Log a touch for ${coach.name}`}
                     title="Log touch"
-                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl glass-subtle px-3 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-fw-md border border-border-subtle bg-surface-tint px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary"
                   >
                     <IconMessageSquare size={14} /> Log touch
                   </Button>
@@ -446,7 +446,7 @@ export function TodayQueue({
                       <IconUser
                         size={13}
                         aria-hidden="true"
-                        className="pointer-events-none absolute left-2.5 text-warm-400"
+                        className="pointer-events-none absolute left-2.5 text-text-tertiary"
                       />
                       <NativeSelect
                         aria-label={`Assign ${coach.name}`}
@@ -457,7 +457,7 @@ export function TodayQueue({
                             e.target.value ? (e.target.value as CrmAssignee) : null,
                           )
                         }
-                        className="min-h-[44px] cursor-pointer rounded-xl border-warm-200/60 glass-subtle pl-7 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-cream-100 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                        className="min-h-[44px] cursor-pointer rounded-fw-md border-border-subtle border border-border-subtle bg-surface-tint pl-7 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-tint focus:outline-none focus:ring-2 focus:ring-border-focus/30"
                       >
                         <option value="">Unassigned</option>
                         {CRM_ASSIGNEES.map((a) => (
@@ -474,7 +474,7 @@ export function TodayQueue({
                     onClick={() => onCoachClick(coach)}
                     aria-label={`Open ${coach.name} details`}
                     title="Open details"
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl glass-subtle px-2.5 py-1.5 text-warm-500 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-fw-md border border-border-subtle bg-surface-tint px-2.5 py-1.5 text-text-tertiary transition-colors hover:bg-surface-sunken hover:text-text-primary"
                   >
                     <IconMaximize size={14} />
                   </Button>

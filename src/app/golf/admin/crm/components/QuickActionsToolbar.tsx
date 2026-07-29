@@ -102,15 +102,15 @@ export function QuickActionsToolbar({
   if (!allNewLeads) return null;
 
   return (
-    <div className="glass-standard rounded-2xl p-5 space-y-4">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5 space-y-4">
       {/* Coaching header */}
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-          <IconZap size={20} className="text-primary-600" />
+        <div className="w-10 h-10 rounded-fw-md bg-accent-100 flex items-center justify-center flex-shrink-0">
+          <IconZap size={20} className="text-accent-700" />
         </div>
         <div>
-          <h3 className="font-bold text-warm-900 text-base">Get Started with Your Pipeline</h3>
-          <p className="text-sm text-warm-600 mt-0.5">
+          <h3 className="font-bold text-text-primary text-base">Get Started with Your Pipeline</h3>
+          <p className="text-sm text-text-secondary mt-0.5">
             All {newLeadCount} coaches are in &quot;New Lead&quot;. Start by contacting your top prospects to move them through the pipeline.
           </p>
         </div>
@@ -122,60 +122,60 @@ export function QuickActionsToolbar({
           onClick={() => handleMoveToPipeline(10)}
           disabled={processing === 'research'}
           className={cn(
-            'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
-            'bg-cream-50 border border-warm-200/60 shadow-sm',
-            'hover:shadow-md hover:-translate-y-0.5',
+            'flex items-center gap-3 p-4 rounded-fw-md transition-all text-left',
+            'bg-surface border border-border-subtle shadow-flat',
+            'hover:shadow-soft hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <IconArrowRight size={18} className="text-blue-600" />
+          <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center flex-shrink-0">
+            <IconArrowRight size={18} className="text-accent-700" />
           </div>
           <div>
-            <div className="font-semibold text-warm-800 text-sm">Move 10 to Pipeline</div>
-            <div className="text-xs text-warm-500">Advance 10 leads to Contacted</div>
+            <div className="font-semibold text-text-primary text-sm">Move 10 to Pipeline</div>
+            <div className="text-xs text-text-tertiary">Advance 10 leads to Contacted</div>
           </div>
-          <IconArrowRight size={14} className="ml-auto text-warm-400" />
+          <IconArrowRight size={14} className="ml-auto text-text-tertiary" />
         </Button>
 
         <Button variant="ghost"
           onClick={() => handleMoveToPipeline(25)}
           disabled={processing === 'research'}
           className={cn(
-            'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
-            'bg-cream-50 border border-warm-200/60 shadow-sm',
-            'hover:shadow-md hover:-translate-y-0.5',
+            'flex items-center gap-3 p-4 rounded-fw-md transition-all text-left',
+            'bg-surface border border-border-subtle shadow-flat',
+            'hover:shadow-soft hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
-          <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <IconUsers size={18} className="text-violet-600" />
+          <div className="w-10 h-10 rounded-fw-md bg-accent-100 flex items-center justify-center flex-shrink-0">
+            <IconUsers size={18} className="text-accent-700" />
           </div>
           <div>
-            <div className="font-semibold text-warm-800 text-sm">Move 25 to Pipeline</div>
-            <div className="text-xs text-warm-500">Batch move 25 leads</div>
+            <div className="font-semibold text-text-primary text-sm">Move 25 to Pipeline</div>
+            <div className="text-xs text-text-tertiary">Batch move 25 leads</div>
           </div>
-          <IconArrowRight size={14} className="ml-auto text-warm-400" />
+          <IconArrowRight size={14} className="ml-auto text-text-tertiary" />
         </Button>
 
         <div className={cn(
-          'flex items-center gap-3 p-4 rounded-xl text-left',
-          'bg-cream-50 border border-warm-200/60 shadow-sm'
+          'flex items-center gap-3 p-4 rounded-fw-md text-left',
+          'bg-surface border border-border-subtle shadow-flat'
         )}>
-          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <IconTarget size={18} className="text-amber-600" />
+          <div className="w-10 h-10 rounded-fw-md bg-fw-warning-bg flex items-center justify-center flex-shrink-0">
+            <IconTarget size={18} className="text-fw-warning-ink" />
           </div>
           <div>
-            <div className="font-semibold text-warm-800 text-sm">Pipeline Stats</div>
-            <div className="text-xs text-warm-500">{stats.total} total &middot; {stats.contacted} contacted</div>
+            <div className="font-semibold text-text-primary text-sm">Pipeline Stats</div>
+            <div className="text-xs text-text-tertiary">{stats.total} total &middot; {stats.contacted} contacted</div>
           </div>
         </div>
       </div>
 
       {/* Tips */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-cream-50 rounded-xl border border-warm-200/60">
-        <IconAlertCircle size={14} className="text-blue-500 flex-shrink-0" />
-        <p className="text-xs text-warm-600">
+      <div className="flex items-center gap-2 px-3 py-2 bg-surface rounded-fw-md border border-border-subtle">
+        <IconAlertCircle size={14} className="text-text-tertiary flex-shrink-0" />
+        <p className="text-xs text-text-secondary">
           <strong>Tip:</strong> Star your top prospects first, then use &quot;Move to Pipeline&quot; to prioritize starred coaches. Use the list view to bulk-select and categorize.
         </p>
       </div>
@@ -244,28 +244,28 @@ function SingleCoachQuickAction({
 
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-nav-bg/40" onClick={onClose}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
-        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-clip"
+        className="rounded-card bg-elevated shadow-raise w-full max-w-md mx-4 overflow-clip"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-warm-800 to-warm-900 text-white px-5 py-4">
+        <div className="bg-surface-tint border-b border-border-subtle text-text-primary px-5 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-bold text-base">{coach.name}</h3>
-              <p className="text-warm-300 text-sm">{coach.school} &middot; {coach.conference}</p>
+              <p className="text-text-secondary text-sm">{coach.school} &middot; {coach.conference}</p>
             </div>
-            <IconButton variant="default" onClick={onClose} aria-label="Close" className="p-1.5 rounded-xl hover:bg-cream-50/10 transition-colors">
-              <IconX size={18} className="text-white/70" aria-hidden="true" />
+            <IconButton variant="default" onClick={onClose} aria-label="Close" className="p-1.5 rounded-fw-md hover:bg-surface/10 transition-colors">
+              <IconX size={18} className="text-text-secondary" aria-hidden="true" />
             </IconButton>
           </div>
         </div>
 
         {/* Log Contact Form */}
         <div className="p-5 space-y-4">
-          <h4 className="text-xs font-medium text-warm-600 uppercase tracking-wider">Log Contact</h4>
+          <h4 className="text-xs font-medium text-text-secondary uppercase tracking-wider">Log Contact</h4>
 
           <div className="flex flex-wrap gap-2">
             {CONTACT_TYPES.map((type) => (
@@ -273,10 +273,10 @@ function SingleCoachQuickAction({
                 key={type.value}
                 onClick={() => setLogForm(f => ({ ...f, type: type.value }))}
                 className={cn(
-                  'px-3 py-1.5 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5',
+                  'px-3 py-1.5 rounded-fw-md text-sm font-medium transition-all flex items-center gap-1.5',
                   logForm.type === type.value
-                    ? 'bg-primary-500 text-white shadow-sm'
-                    : 'bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50'
+                    ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                    : 'bg-surface border border-border-subtle text-text-secondary hover:bg-surface-sunken'
                 )}
               >
                 {type.icon} {type.label}
@@ -287,7 +287,7 @@ function SingleCoachQuickAction({
           <Textarea
             value={logForm.notes}
             onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
-            className="w-full bg-cream-50 border border-warm-200 rounded-xl px-4 py-2.5 text-sm resize-none outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="w-full bg-surface border border-border-subtle rounded-fw-md px-4 py-2.5 text-sm resize-none outline-none focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400"
             rows={3}
             placeholder="Notes about this contact..."
           />
@@ -295,14 +295,14 @@ function SingleCoachQuickAction({
           <div className="flex gap-3">
             <Button variant="ghost"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="flex-1 py-2.5 rounded-fw-md text-sm font-medium bg-surface border border-border-subtle text-text-secondary hover:bg-surface-sunken transition-colors"
             >
               Cancel
             </Button>
             <Button variant="primary"
               onClick={handleLogContact}
               disabled={submitting}
-              className="flex-1 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-bold hover:bg-primary-600 transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md text-sm font-bold hover:bg-accent-700 transition-colors disabled:opacity-50 shadow-flat flex items-center justify-center gap-1.5"
             >
               <IconCheck size={14} />
               {submitting ? 'Saving...' : 'Log Contact'}

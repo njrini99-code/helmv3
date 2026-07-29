@@ -45,9 +45,9 @@ export function WeeklyPulse() {
   // Loading — initial fetch still in flight.
   if (rows === null) {
     return (
-      <div className="glass-standard rounded-2xl p-5 shadow-glass">
+      <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5">
         <PulseHeader />
-        <div className="skeleton-shimmer block h-24 rounded-xl bg-warm-100/60 mt-4" />
+        <div className="skeleton-shimmer block h-24 rounded-fw-md bg-surface-sunken mt-4" />
       </div>
     );
   }
@@ -60,7 +60,7 @@ export function WeeklyPulse() {
   if (allZero) return null;
 
   return (
-    <div className="glass-standard rounded-2xl p-5 shadow-glass">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5">
       <PulseHeader />
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
         {METRICS.map(({ key, label }) => (
@@ -75,12 +75,12 @@ function PulseHeader() {
   return (
     <div className="flex items-start justify-between gap-3 flex-wrap">
       <div>
-        <p className="text-micro uppercase tracking-wider font-semibold text-warm-500">
+        <p className="text-micro uppercase tracking-wider font-semibold text-text-tertiary">
           Last 8 weeks
         </p>
-        <h3 className="text-sm font-semibold text-warm-900 mt-0.5">Weekly pulse</h3>
+        <h3 className="text-sm font-semibold text-text-primary mt-0.5">Weekly pulse</h3>
       </div>
-      <p className="text-micro text-warm-400 flex-shrink-0">This week so far</p>
+      <p className="text-micro text-text-tertiary flex-shrink-0">This week so far</p>
     </div>
   );
 }
@@ -100,18 +100,18 @@ function MetricTile({
 
   return (
     <div className="min-w-0">
-      <p className="text-micro uppercase tracking-wider font-semibold text-warm-500 truncate">
+      <p className="text-micro uppercase tracking-wider font-semibold text-text-tertiary truncate">
         {label}
       </p>
-      <p className="text-2xl font-semibold tabular-nums text-warm-900 mt-1">
+      <p className="text-2xl font-semibold tabular-nums text-text-primary mt-1">
         {delta.current}
       </p>
       <p
         className={cn(
           'text-micro tabular-nums mt-0.5',
-          delta.direction === 'up' && 'text-primary-700',
-          delta.direction === 'down' && 'text-warm-500',
-          delta.direction === 'flat' && 'text-warm-400',
+          delta.direction === 'up' && 'text-accent-700',
+          delta.direction === 'down' && 'text-text-tertiary',
+          delta.direction === 'flat' && 'text-text-tertiary',
         )}
       >
         {delta.direction === 'up' && `▲ ${diff} vs last full wk`}
@@ -136,7 +136,7 @@ function Sparkline({ points }: { points: string }) {
       width="100%"
       height={SPARK_HEIGHT}
       preserveAspectRatio="none"
-      className="mt-2 text-primary-600/60"
+      className="mt-2 text-accent-700/60"
       aria-hidden="true"
     >
       <polyline

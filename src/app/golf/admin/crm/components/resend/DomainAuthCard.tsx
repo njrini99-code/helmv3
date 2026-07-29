@@ -50,25 +50,25 @@ export function DomainAuthCard() {
   ];
 
   return (
-    <div className="glass-standard rounded-2xl p-6">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span
             className={cn(
               'p-1.5 rounded-full',
-              ok ? 'bg-primary-50 text-primary-600' : 'bg-amber-50 text-amber-600'
+              ok ? 'bg-accent-50 text-accent-700' : 'bg-fw-warning-bg text-fw-warning-ink'
             )}
           >
             <IconGlobe size={16} />
           </span>
           <div>
-            <p className="text-sm font-semibold text-warm-900">
+            <p className="text-sm font-semibold text-text-primary">
               Domain authentication (Gmail direct sends)
             </p>
             {/* This card verifies the Workspace/DNS records the Gmail-direct
                 path depends on. Resend verifies its own sending domain
                 separately (Resend dashboard) — this check cannot speak for it. */}
-            <p className="text-xs text-warm-500">
+            <p className="text-xs text-text-tertiary">
               {domain} · Resend&apos;s own domain status lives in the Resend dashboard
             </p>
           </div>
@@ -77,8 +77,8 @@ export function DomainAuthCard() {
           className={cn(
             'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
             ok
-              ? 'bg-primary-50 border-primary-200/60 text-primary-700'
-              : 'bg-amber-50 border-amber-200/60 text-amber-700'
+              ? 'bg-accent-50 border-accent-200/60 text-accent-700'
+              : 'bg-fw-warning-bg border-fw-warning-ring text-fw-warning-ink'
           )}
         >
           {ok ? (
@@ -99,20 +99,20 @@ export function DomainAuthCard() {
             key={label}
             title={check.detail}
             className={cn(
-              'flex items-center gap-2 rounded-xl border px-3 py-2 cursor-help',
+              'flex items-center gap-2 rounded-fw-md border px-3 py-2 cursor-help',
               check.ok
-                ? 'bg-primary-50/50 border-primary-200/60'
-                : 'bg-amber-50/50 border-amber-200/60'
+                ? 'bg-accent-50/50 border-accent-200/60'
+                : 'bg-fw-warning-bg/50 border-fw-warning-ring'
             )}
           >
             {check.ok ? (
-              <IconCheckCircle2 size={14} className="text-primary-600 shrink-0" />
+              <IconCheckCircle2 size={14} className="text-accent-700 shrink-0" />
             ) : (
-              <IconWarning size={14} className="text-amber-600 shrink-0" />
+              <IconWarning size={14} className="text-fw-warning-ink shrink-0" />
             )}
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-warm-900">{label}</p>
-              <p className="text-caption text-warm-500 truncate">{check.detail}</p>
+              <p className="text-xs font-semibold text-text-primary">{label}</p>
+              <p className="text-caption text-text-tertiary truncate">{check.detail}</p>
             </div>
           </div>
         ))}

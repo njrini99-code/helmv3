@@ -110,7 +110,7 @@ export function EmailDetailPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
-            className="fixed inset-0 bg-warm-900/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-nav-bg/25 backdrop-blur-sm z-40"
             onClick={onClose}
           />
 
@@ -120,20 +120,20 @@ export function EmailDetailPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 30, stiffness: 300 })}
-            className="fixed top-0 right-0 h-full w-full max-w-2xl z-50 glass-prominent shadow-2xl overflow-y-auto"
+            className="fixed top-0 right-0 h-full w-full max-w-2xl z-50 bg-elevated shadow-raise overflow-y-auto"
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 glass-standard px-6 py-4 border-b border-warm-100/60 flex items-center justify-between">
+            <div className="sticky top-0 z-10 border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-6 py-4 border-b border-border-subtle/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
+                <div className="p-2 rounded-fw-sm bg-accent-50 text-accent-700">
                   <IconMail size={16} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-warm-900">
+                  <p className="text-sm font-semibold text-text-primary">
                     Email details
                   </p>
                   {resendMessageId && (
-                    <p className="text-eyebrow text-warm-500 font-mono">
+                    <p className="text-eyebrow text-text-tertiary font-mono">
                       {resendMessageId.slice(0, 18)}…
                     </p>
                   )}
@@ -144,7 +144,7 @@ export function EmailDetailPanel({
                 {onSendFollowup && email && (email.to_addresses?.length ?? 0) > 0 && (
                   <Button variant="ghost"
                     onClick={handleSendFollowup}
-                    className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-fw-sm text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors"
                     title="Send follow-up email to this recipient"
                   >
                     <IconSend size={14} />
@@ -156,7 +156,7 @@ export function EmailDetailPanel({
                     href={`https://resend.com/emails/${resendMessageId}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+                    className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
                     title="Open in Resend"
                   >
                     <IconExternalLink size={14} />
@@ -164,7 +164,7 @@ export function EmailDetailPanel({
                 )}
                 <IconButton variant="default"
                   onClick={onClose}
-                  className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+                  className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
                   aria-label="Close"
                 >
                   <IconX size={14} />
@@ -202,14 +202,14 @@ function StatusBanner({ email }: { email: EmailRow }) {
   return (
     <div
       className={cn(
-        'rounded-xl p-4 flex items-start gap-3 border',
+        'rounded-fw-md p-4 flex items-start gap-3 border',
         status === 'bounced' || status === 'complained'
-          ? 'bg-red-50 border-red-200'
+          ? 'bg-fw-danger-bg border-fw-danger/25'
           : status === 'delayed'
-            ? 'bg-amber-50 border-amber-200'
+            ? 'bg-fw-warning-bg border-fw-warning-ring'
             : status === 'opened' || status === 'clicked' || status === 'delivered'
-              ? 'bg-primary-50 border-primary-200'
-              : 'bg-warm-50 border-warm-200'
+              ? 'bg-accent-50 border-accent-200'
+              : 'bg-surface-sunken border-border-subtle'
       )}
     >
       <div className={cn('mt-0.5', cfg.color)}>{cfg.icon}</div>
@@ -217,7 +217,7 @@ function StatusBanner({ email }: { email: EmailRow }) {
         <p className={cn('text-sm font-semibold', cfg.color)}>
           {cfg.label}
         </p>
-        <p className="text-xs text-warm-600 mt-0.5">
+        <p className="text-xs text-text-secondary mt-0.5">
           {describeStatus(email, status)}
         </p>
       </div>
@@ -249,15 +249,15 @@ function describeStatus(email: EmailRow, status: string): string {
 // ---------------------------------------------------------------------------
 function Metadata({ email }: { email: EmailRow }) {
   return (
-    <div className="glass-standard rounded-xl p-5 space-y-4">
+    <div className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5 space-y-4">
       <div className="grid grid-cols-[100px_1fr] gap-y-3 gap-x-4 text-sm">
         <Label>From</Label>
-        <div className="text-warm-900 break-all">
-          {email.from_address ?? <em className="text-warm-400">Unknown</em>}
+        <div className="text-text-primary break-all">
+          {email.from_address ?? <em className="text-text-tertiary">Unknown</em>}
         </div>
 
         <Label>To</Label>
-        <div className="text-warm-900 space-y-1">
+        <div className="text-text-primary space-y-1">
           {email.to_addresses?.length ? (
             email.to_addresses.map((addr) => (
               <div key={addr} className="flex items-center gap-1 group">
@@ -266,13 +266,13 @@ function Metadata({ email }: { email: EmailRow }) {
               </div>
             ))
           ) : (
-            <em className="text-warm-400">No recipients</em>
+            <em className="text-text-tertiary">No recipients</em>
           )}
         </div>
 
         <Label>Subject</Label>
-        <div className="text-warm-900">
-          {email.subject || <em className="text-warm-400">(no subject)</em>}
+        <div className="text-text-primary">
+          {email.subject || <em className="text-text-tertiary">(no subject)</em>}
         </div>
 
         <Label>Source</Label>
@@ -281,34 +281,34 @@ function Metadata({ email }: { email: EmailRow }) {
             className={cn(
               'inline-block text-eyebrow font-medium px-1.5 py-0.5 rounded uppercase tracking-wide',
               email.source === 'crm'
-                ? 'bg-blue-50 text-blue-700'
+                ? 'bg-surface-sunken text-text-secondary'
                 : email.source === 'transactional'
-                  ? 'bg-warm-100 text-warm-700'
-                  : 'bg-warm-50 text-warm-500'
+                  ? 'bg-surface-sunken text-text-secondary'
+                  : 'bg-surface-sunken text-text-tertiary'
             )}
           >
             {email.source}
           </span>
           {email.contact_log_id && (
-            <span className="ml-2 text-xs text-warm-500">
+            <span className="ml-2 text-xs text-text-tertiary">
               Contact log: {email.contact_log_id.slice(0, 8)}…
             </span>
           )}
         </div>
 
         <Label>Message ID</Label>
-        <div className="flex items-center gap-1 text-warm-700 font-mono text-xs break-all group">
+        <div className="flex items-center gap-1 text-text-secondary font-mono text-xs break-all group">
           {email.resend_message_id}
           <CopyButton text={email.resend_message_id} />
         </div>
 
         <Label>First seen</Label>
-        <div className="text-warm-700">
+        <div className="text-text-secondary">
           {formatFullTimestamp(email.first_seen_at)}
         </div>
 
         <Label>Last event</Label>
-        <div className="text-warm-700">
+        <div className="text-text-secondary">
           {formatFullTimestamp(email.last_event_at)}
         </div>
       </div>
@@ -318,7 +318,7 @@ function Metadata({ email }: { email: EmailRow }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-xs font-semibold text-warm-500 uppercase tracking-wide pt-0.5">
+    <div className="text-xs font-semibold text-text-tertiary uppercase tracking-wide pt-0.5">
       {children}
     </div>
   );
@@ -334,7 +334,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-warm-100 text-warm-400 hover:text-warm-700 transition-all"
+      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary transition-all"
       title={copied ? 'Copied!' : 'Copy'}
       aria-label="Copy to clipboard"
     >
@@ -349,23 +349,23 @@ function CopyButton({ text }: { text: string }) {
 function EventTimeline({ events }: { events: EmailEventRow[] }) {
   if (events.length === 0) {
     return (
-      <div className="glass-standard rounded-xl p-6 text-center">
-        <p className="text-sm text-warm-500">No events recorded yet.</p>
+      <div className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6 text-center">
+        <p className="text-sm text-text-tertiary">No events recorded yet.</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">
+      <h4 className="text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-3">
         Event timeline
       </h4>
-      <ol className="relative border-l-2 border-warm-100 ml-2 space-y-5">
+      <ol className="relative border-l-2 border-border-subtle ml-2 space-y-5">
         {events.map((ev) => {
           const cfg = EVENT_CONFIG[ev.event_type] ?? {
             label: ev.event_type,
-            color: 'text-warm-700',
-            dotColor: 'bg-warm-400',
+            color: 'text-text-secondary',
+            dotColor: 'bg-text-tertiary',
             icon: null,
           };
 
@@ -373,7 +373,7 @@ function EventTimeline({ events }: { events: EmailEventRow[] }) {
             <li key={ev.id} className="relative pl-6">
               <span
                 className={cn(
-                  'absolute -left-[7px] top-1 w-3 h-3 rounded-full ring-4 ring-white',
+                  'absolute -left-[7px] top-1 w-3 h-3 rounded-full ring-4 ring-surface',
                   cfg.dotColor
                 )}
               />
@@ -388,13 +388,13 @@ function EventTimeline({ events }: { events: EmailEventRow[] }) {
                   {cfg.label}
                 </span>
                 {ev.recipient_email && (
-                  <span className="text-xs text-warm-600 truncate">
+                  <span className="text-xs text-text-secondary truncate">
                     {ev.recipient_email}
                   </span>
                 )}
               </div>
               <p
-                className="text-xs text-warm-500 mt-0.5 tabular-nums"
+                className="text-xs text-text-tertiary mt-0.5 tabular-nums"
                 title={ev.occurred_at}
               >
                 {formatFullTimestamp(ev.occurred_at)}
@@ -435,11 +435,11 @@ function ClicksSection({
   if (clicks.length === 0) {
     return (
       <div>
-        <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">
+        <h4 className="text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-3">
           Clicks
         </h4>
-        <div className="glass-standard rounded-xl p-4">
-          <p className="text-xs text-warm-500">Click details not captured</p>
+        <div className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4">
+          <p className="text-xs text-text-tertiary">Click details not captured</p>
         </div>
       </div>
     );
@@ -448,20 +448,20 @@ function ClicksSection({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide">
+        <h4 className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
           Clicks
         </h4>
-        <span className="text-eyebrow text-warm-500 tabular-nums">
+        <span className="text-eyebrow text-text-tertiary tabular-nums">
           {clicks.length.toLocaleString()} recorded
         </span>
       </div>
-      <ul className="glass-standard rounded-xl divide-y divide-warm-100/60 overflow-hidden">
+      <ul className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] divide-y divide-border-subtle/60 overflow-hidden">
         {clicks.map((click) => {
           const device = parseDeviceLabel(click.user_agent);
           return (
             <li key={click.id} className="px-4 py-3">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs text-warm-700 truncate max-w-[40%]">
+                <span className="text-xs text-text-secondary truncate max-w-[40%]">
                   {click.recipient_email}
                 </span>
                 {click.clicked_url ? (
@@ -470,21 +470,21 @@ function ClicksSection({
                     target="_blank"
                     rel="noreferrer"
                     title={click.clicked_url}
-                    className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 truncate flex-1 min-w-0"
+                    className="inline-flex items-center gap-1 text-xs text-accent-700 hover:text-accent-800 truncate flex-1 min-w-0"
                   >
                     <IconExternalLink size={12} className="shrink-0" />
                     <span className="truncate">{click.clicked_url}</span>
                   </a>
                 ) : (
-                  <span className="text-xs text-warm-400 italic flex-1 min-w-0">
+                  <span className="text-xs text-text-tertiary italic flex-1 min-w-0">
                     (no URL)
                   </span>
                 )}
-                <span className="text-eyebrow px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 shrink-0">
+                <span className="text-eyebrow px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary shrink-0">
                   {device}
                 </span>
                 <span
-                  className="text-xs text-warm-500 tabular-nums shrink-0"
+                  className="text-xs text-text-tertiary tabular-nums shrink-0"
                   title={click.occurred_at}
                 >
                   {formatRelative(click.occurred_at)}
@@ -504,18 +504,18 @@ function ClicksSection({
 function DetailSkeleton() {
   return (
     <div className="p-6 space-y-6 animate-pulse">
-      <div className="h-16 bg-warm-100 rounded-xl" />
-      <div className="glass-standard rounded-xl p-5 space-y-3">
+      <div className="h-16 bg-surface-sunken rounded-fw-md" />
+      <div className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-5 space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="flex gap-4">
-            <div className="h-4 w-20 bg-warm-100 rounded" />
-            <div className="h-4 flex-1 bg-warm-100 rounded" />
+            <div className="h-4 w-20 bg-surface-sunken rounded" />
+            <div className="h-4 flex-1 bg-surface-sunken rounded" />
           </div>
         ))}
       </div>
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-12 bg-warm-100 rounded" />
+          <div key={i} className="h-12 bg-surface-sunken rounded" />
         ))}
       </div>
     </div>
@@ -525,11 +525,11 @@ function DetailSkeleton() {
 function NotFound() {
   return (
     <div className="py-20 flex flex-col items-center justify-center text-center px-6">
-      <div className="p-3 rounded-full bg-warm-100 mb-3">
-        <IconMail size={20} className="text-warm-400" />
+      <div className="p-3 rounded-full bg-surface-sunken mb-3">
+        <IconMail size={20} className="text-text-tertiary" />
       </div>
-      <p className="text-sm font-medium text-warm-700">Email not found</p>
-      <p className="text-xs text-warm-500 mt-1 max-w-xs">
+      <p className="text-sm font-medium text-text-secondary">Email not found</p>
+      <p className="text-xs text-text-tertiary mt-1 max-w-xs">
         This message isn&apos;t in our tracked set yet. It may be a newly sent
         email still propagating, or outside the backfill window.
       </p>

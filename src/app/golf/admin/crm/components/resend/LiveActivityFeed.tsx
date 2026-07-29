@@ -93,16 +93,16 @@ export function LiveActivityFeed({
   };
 
   return (
-    <div className="glass-standard rounded-2xl overflow-hidden">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/60">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle/60">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
+          <div className="p-2 rounded-fw-sm bg-accent-50 text-accent-700">
             <IconActivity size={16} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-warm-900">Live activity</p>
-            <p className="text-xs text-warm-500 mt-0.5">
+            <p className="text-sm font-semibold text-text-primary">Live activity</p>
+            <p className="text-xs text-text-tertiary mt-0.5">
               Real-time email events from Resend
             </p>
           </div>
@@ -113,11 +113,11 @@ export function LiveActivityFeed({
             <motion.span
               initial={prefersReducedMotion ? false : ({ scale: 0.9, opacity: 0 })}
               animate={{ scale: 1, opacity: 1 }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-50 text-accent-700 text-xs font-semibold"
             >
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-primary-500 opacity-75 animate-ping" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-500" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-accent-500 opacity-75 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-500" />
               </span>
               {liveCount} new
             </motion.span>
@@ -126,10 +126,10 @@ export function LiveActivityFeed({
           <Button variant="ghost"
             onClick={() => setIsPaused((p) => !p)}
             className={cn(
-              'text-xs font-medium px-2.5 py-1 rounded-md transition-colors',
+              'text-xs font-medium px-2.5 py-1 rounded-fw-sm transition-colors',
               isPaused
-                ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                ? 'bg-fw-warning-bg text-fw-warning-ink hover:bg-fw-warning-bg/70'
+                : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'
             )}
             title={isPaused ? 'Resume live updates' : 'Pause live updates'}
           >
@@ -138,7 +138,7 @@ export function LiveActivityFeed({
 
           <IconButton variant="default"
             onClick={handleRefresh}
-            className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+            className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
             title="Refresh"
             aria-label="Refresh feed"
           >
@@ -154,7 +154,7 @@ export function LiveActivityFeed({
         ) : events.length === 0 ? (
           <EmptyFeed />
         ) : (
-          <ul className="divide-y divide-warm-100/60">
+          <ul className="divide-y divide-border-subtle/60">
             <AnimatePresence initial={false}>
               {events.map((ev, idx) => (
                 <FeedRow
@@ -187,8 +187,8 @@ function FeedRow({
   const prefersReducedMotion = useReducedMotion();
   const cfg = EVENT_CONFIG[event.event_type] ?? {
     label: event.event_type,
-    color: 'text-warm-600',
-    dotColor: 'bg-warm-400',
+    color: 'text-text-secondary',
+    dotColor: 'bg-text-tertiary',
     icon: null,
   };
 
@@ -206,7 +206,7 @@ function FeedRow({
       transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 2 })}
       className={cn(
         'group relative px-6 py-3 flex items-start gap-3',
-        onSelect && 'cursor-pointer hover:bg-cream-100'
+        onSelect && 'cursor-pointer hover:bg-surface-tint'
       )}
       onClick={() => onSelect?.(event.resend_message_id)}
     >
@@ -214,7 +214,7 @@ function FeedRow({
       <div className="flex flex-col items-center pt-1">
         <span
           className={cn(
-            'w-2 h-2 rounded-full ring-4 ring-white',
+            'w-2 h-2 rounded-full ring-4 ring-surface',
             cfg.dotColor
           )}
         />
@@ -233,26 +233,26 @@ function FeedRow({
             {cfg.label}
           </span>
           {event.recipient_email && (
-            <span className="text-xs text-warm-700 truncate max-w-[200px]">
+            <span className="text-xs text-text-secondary truncate max-w-[200px]">
               {event.recipient_email}
             </span>
           )}
           {event.contact_log_id && (
-            <span className="text-eyebrow font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 uppercase tracking-wide">
+            <span className="text-eyebrow font-medium px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary uppercase tracking-wide">
               CRM
             </span>
           )}
         </div>
 
         {subject && (
-          <p className="text-sm text-warm-900 mt-0.5 truncate">{subject}</p>
+          <p className="text-sm text-text-primary mt-0.5 truncate">{subject}</p>
         )}
         {from && !subject && (
-          <p className="text-xs text-warm-500 mt-0.5 truncate">from {from}</p>
+          <p className="text-xs text-text-tertiary mt-0.5 truncate">from {from}</p>
         )}
 
         <p
-          className="text-eyebrow text-warm-400 mt-0.5 tabular-nums"
+          className="text-eyebrow text-text-tertiary mt-0.5 tabular-nums"
           title={formatFullTimestamp(event.occurred_at)}
         >
           {formatRelative(event.occurred_at)} · {event.resend_message_id.slice(0, 8)}
@@ -267,14 +267,14 @@ function FeedRow({
 // ---------------------------------------------------------------------------
 function FeedSkeleton() {
   return (
-    <ul className="divide-y divide-warm-100/60">
+    <ul className="divide-y divide-border-subtle/60">
       {Array.from({ length: 6 }).map((_, i) => (
         <li key={i} className="px-6 py-3 flex items-start gap-3 animate-pulse">
-          <div className="w-2 h-2 rounded-full bg-warm-200 mt-2" />
+          <div className="w-2 h-2 rounded-full bg-surface-sunken mt-2" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 w-24 bg-warm-100 rounded" />
-            <div className="h-3 w-3/4 bg-warm-100 rounded" />
-            <div className="h-2 w-20 bg-warm-100 rounded" />
+            <div className="h-3 w-24 bg-surface-sunken rounded" />
+            <div className="h-3 w-3/4 bg-surface-sunken rounded" />
+            <div className="h-2 w-20 bg-surface-sunken rounded" />
           </div>
         </li>
       ))}
@@ -285,11 +285,11 @@ function FeedSkeleton() {
 function EmptyFeed() {
   return (
     <div className="py-16 flex flex-col items-center justify-center text-center">
-      <div className="p-3 rounded-full bg-warm-100 mb-3">
-        <IconActivity size={20} className="text-warm-400" />
+      <div className="p-3 rounded-full bg-surface-sunken mb-3">
+        <IconActivity size={20} className="text-text-tertiary" />
       </div>
-      <p className="text-sm font-medium text-warm-700">No recent activity</p>
-      <p className="text-xs text-warm-500 mt-1 max-w-xs">
+      <p className="text-sm font-medium text-text-secondary">No recent activity</p>
+      <p className="text-xs text-text-tertiary mt-1 max-w-xs">
         Events will appear here in real time as Resend delivers them.
       </p>
     </div>

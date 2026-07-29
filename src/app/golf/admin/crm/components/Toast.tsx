@@ -42,23 +42,23 @@ const TOAST_CONFIG: Record<ToastType, {
 }> = {
   success: {
     icon: IconCheckCircle2,
-    containerClass: 'border-primary-200/50 bg-primary-50/80',
-    iconClass: 'text-primary-500',
+    containerClass: 'border-accent-200/50 bg-accent-50/80',
+    iconClass: 'text-accent-600',
   },
   error: {
     icon: IconXCircle,
-    containerClass: 'border-red-200/50 bg-red-50/80',
-    iconClass: 'text-red-500',
+    containerClass: 'border-fw-danger/25 bg-fw-danger-bg/80',
+    iconClass: 'text-fw-danger',
   },
   warning: {
     icon: IconWarning,
-    containerClass: 'border-amber-200/50 bg-amber-50/80',
-    iconClass: 'text-amber-500',
+    containerClass: 'border-fw-warning-ring bg-fw-warning-bg/80',
+    iconClass: 'text-fw-warning',
   },
   info: {
     icon: IconInfo,
-    containerClass: 'border-blue-200/50 bg-blue-50/80',
-    iconClass: 'text-blue-500',
+    containerClass: 'border-border-subtle/50 bg-surface-sunken/80',
+    iconClass: 'text-text-tertiary',
   },
 };
 
@@ -132,7 +132,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={item.id}
               className={cn(
-                'pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-xl',
+                'pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-fw-md border shadow-soft backdrop-blur-xl',
                 'transition-all duration-200 ease-out',
                 isRemoving
                   ? 'opacity-0 translate-x-4'
@@ -142,7 +142,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               style={{ minWidth: 260, maxWidth: 380 }}
             >
               <Icon size={16} className={cn('flex-shrink-0', config.iconClass)} />
-              <span className="text-sm font-medium text-warm-800 flex-1">{item.message}</span>
+              <span className="text-sm font-medium text-text-primary flex-1">{item.message}</span>
               <IconButton variant="default" aria-label="Close"
                 onClick={() => {
                   const existing = timersRef.current.get(item.id);
@@ -150,7 +150,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   timersRef.current.delete(item.id);
                   dismiss(item.id);
                 }}
-                className="flex-shrink-0 p-0.5 rounded-md text-warm-400 hover:text-warm-600 transition-colors"
+                className="flex-shrink-0 p-0.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary transition-colors"
               >
                 <IconX size={12} />
               </IconButton>

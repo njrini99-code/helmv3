@@ -28,21 +28,21 @@ const LEVEL_META: Record<
 > = {
   pass: {
     label: 'Compliant',
-    pillClass: 'bg-primary-50 border-primary-200 text-primary-700',
+    pillClass: 'bg-accent-50 border-accent-200 text-accent-700',
     Icon: IconCheckCircle2,
-    iconClass: 'text-primary-600',
+    iconClass: 'text-accent-700',
   },
   warn: {
     label: 'Warnings',
-    pillClass: 'bg-amber-50 border-amber-200 text-amber-700',
+    pillClass: 'bg-fw-warning-bg border-fw-warning-ring text-fw-warning-ink',
     Icon: IconWarning,
-    iconClass: 'text-amber-500',
+    iconClass: 'text-fw-warning',
   },
   fail: {
     label: 'Not compliant',
-    pillClass: 'bg-red-50 border-red-200 text-red-700',
+    pillClass: 'bg-fw-danger-bg border-fw-danger/25 text-fw-danger-ink',
     Icon: IconXCircle,
-    iconClass: 'text-red-500',
+    iconClass: 'text-fw-danger',
   },
 };
 
@@ -69,10 +69,10 @@ export function SpamCompliancePanel({
   const visible = expanded ? report.checks : problems;
 
   return (
-    <div className="rounded-2xl border border-warm-200/60 glass-standard overflow-clip">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-warm-200/60 bg-warm-50/40">
-        <IconShieldCheck size={14} className="text-primary-500" aria-hidden />
-        <span className="text-xs font-semibold uppercase tracking-wider text-warm-600">
+    <div className="rounded-card border border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-clip">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-surface-sunken/60">
+        <IconShieldCheck size={14} className="text-accent-600" aria-hidden />
+        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Spam compliance
         </span>
         <span
@@ -87,11 +87,11 @@ export function SpamCompliancePanel({
       </div>
 
       {visible.length === 0 ? (
-        <p className="px-4 py-3 text-xs text-warm-500">
+        <p className="px-4 py-3 text-xs text-text-tertiary">
           All checks pass — opt-out, postal address, honest subject, and healthy content.
         </p>
       ) : (
-        <ul className="divide-y divide-warm-100/80">
+        <ul className="divide-y divide-border-subtle/80">
           {visible.map((c) => {
             const meta = LEVEL_META[c.level];
             const CheckIcon = meta.Icon;
@@ -99,8 +99,8 @@ export function SpamCompliancePanel({
               <li key={c.id} className="flex items-start gap-2.5 px-4 py-2.5">
                 <CheckIcon size={14} className={cn('mt-0.5 flex-shrink-0', meta.iconClass)} aria-hidden />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-warm-800">{c.label}</p>
-                  <p className="text-xs text-warm-600 leading-relaxed">{c.detail}</p>
+                  <p className="text-xs font-semibold text-text-primary">{c.label}</p>
+                  <p className="text-xs text-text-secondary leading-relaxed">{c.detail}</p>
                 </div>
               </li>
             );
@@ -108,12 +108,12 @@ export function SpamCompliancePanel({
         </ul>
       )}
 
-      <div className="px-4 py-2 border-t border-warm-100/80">
+      <div className="px-4 py-2 border-t border-border-subtle">
         <Button
           type="button"
           variant="ghost"
           onClick={() => setExpanded((v) => !v)}
-          className="h-auto p-0 text-eyebrow text-warm-500 hover:text-warm-700 flex items-center gap-1"
+          className="h-auto p-0 text-eyebrow text-text-tertiary hover:text-text-secondary flex items-center gap-1"
         >
           <IconChevronDown
             size={12}
