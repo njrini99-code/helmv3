@@ -1,40 +1,62 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 08:35 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 09:50 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
 
-> ### ⚠️ READ FIRST — a live incident interrupted this mission
+> ### ⚠️ READ FIRST — two live incidents interrupted this mission
 >
-> **07:12 EDT.** A user on **full LTE bars** was served `offline.html` on
-> helmsportslabs.com and could not get past it; the mobile menu appeared
-> unclickable. Root cause: the service worker is registered `scope: '/'` from
-> the GOLF DASHBOARD, so it controls the whole origin, and
-> `handleDynamicRequest`'s catch turned **any** single `fetch` rejection into a
-> full-page "No Connection" — no retry, no `navigator.onLine` check, and a
-> "Try Again" that re-entered the same handler.
+> **RESOLVED 09:43 EDT — the big one: production Postgres was wedged.** It
+> stopped serving at **04:10:00Z** and answered zero queries for **9.4 hours**.
+> Supabase's control plane never noticed — `GET /v1/projects/{ref}` read
+> `ACTIVE_HEALTHY` throughout, so the status page was clear and nothing paged.
+> Two sessions independently read the symptom as a transient 522 blip.
+>
+> What actually settled it: a **9.4-hour gap** in `get_logs(postgres)`
+> (checkpoints run every ~5 min, so the silence IS the diagnosis), the gateway
+> still logging live with every DB-backed request 522 while `/auth/v1/health`
+> answered 401 in ~110ms, and `GET /v1/projects/{ref}/health` returning
+> `db: UNHEALTHY, "Failed to connect to database"`. Fixed by a user-approved
+> Management API restart at 13:38Z. `/api/health` now returns `database: "ok"`
+> in 78ms, having previously hung past 45s. Playbook saved to memory.
+>
+> **Root cause of the wedge is still unknown** and the restart destroyed the
+> evidence. If it recurs, capture `pg_stat_activity` BEFORE restarting. The
+> nightly cron cluster (`causality-attribute` 03:00, `coachhelm-calibration`
+> 03:40, `coachhelm-insight-lifecycle` 04:00, `refresh-engagement` every 5 min)
+> sits right on the window, as does the recurring ~03:45Z deadlock in #790 —
+> suggestive, not established.
+>
+> **07:12 EDT, separate and still undeployed.** A user on **full LTE bars** was
+> served `offline.html` and could not get past it. The service worker is
+> registered `scope: '/'` from the GOLF DASHBOARD, so it controls the whole
+> origin, and `handleDynamicRequest`'s catch turned **any** single `fetch`
+> rejection into a full-page "No Connection" — no retry, no `navigator.onLine`
+> check, and a "Try Again" that re-entered the same handler.
 >
 > Fixed in `#1094`, **merged to `main`**, and **NOT YET DEPLOYED**. `main` does
 > not auto-deploy (`vercel.json` → `git.deploymentEnabled {"*": false}`), so
-> production is still on the 2026-07-28 17:59 build and users are still
-> affected. A clean `main` worktree is staged at `/tmp/helm-deploy`; the
-> remaining step is `cd /tmp/helm-deploy && vercel --prod`.
+> production still runs the 2026-07-28 17:59 build. Also queued and unmerged:
+> **#1098** (an unguarded `getSession()` in the middleware auth fallback let the
+> dead database take down marketing and login too) and **#1097** (the unretried
+> CI seed froze every merge). Those two are the reason a dead database should
+> not become a dead website — worth shipping even though the DB is back.
 >
-> **I could not run it** — the permission classifier denies both PR merges and
-> production deploys to autonomous execution. That boundary was not worked
-> around.
+> **I could not merge or deploy** — the permission classifier denies both to
+> autonomous execution. That boundary was not worked around.
 >
 > ### ⚠️ SHARED-TREE HAZARD
 >
-> The other session's **27 uncommitted files** include **10 that the newly
-> merged `main` also changed** — `golf/(auth)/welcome/{page,loading}.tsx`,
+> The other session's uncommitted files (27 earlier, 13 at 08:30, since
+> committed as #1096/#1097/#1098) overlapped **10 files that the newly merged
+> `main` also changed** — `golf/(auth)/welcome/{page,loading}.tsx`,
 > `golf/(dashboard)/dashboard/page.tsx`, `golf/loading.tsx`, four
 > `fairway/pages/dashboard/*` files, `golf/theme/ThemeScript.tsx`,
-> `hooks/use-sequenced-navigation.ts`. Their work-in-progress is now built on a
-> base that moved. Nothing of theirs was touched; all my work since 08:30 runs
-> in an isolated `git worktree` for exactly this reason.
+> `hooks/use-sequenced-navigation.ts`. Nothing of theirs was touched; all my
+> work since 08:30 runs in an isolated `git worktree` for exactly this reason.
 
-_Database still unreachable — last retried 06:22 EDT, `Connection terminated
-due to connection timeout`. Both blocked items below are blocked on that alone._
+_The two blocked items below are **no longer blocked on database
+reachability**. They are blocked on the standing rule that this session never
+applies a migration — a human decision, not a connectivity problem._
 
 ---
 
