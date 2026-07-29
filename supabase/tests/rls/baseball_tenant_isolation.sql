@@ -463,8 +463,17 @@ RESET role;
 RESET request.jwt.claims;
 
 -- Deactivate recruiting on Player C1 -> no longer discoverable.
-UPDATE public.baseball_players SET recruiting_activated = false
- WHERE id = '00000000-0000-0000-0000-0000000bc202';
+--
+-- No UPDATE. `recruiting_activated` is write-protected by the
+-- baseball_players_recruiting_guard trigger (20260709010200), which raises
+-- "recruiting_activated can only be changed via the gated service-role server
+-- action path" — so the original setup here aborted the whole suite mid-run.
+--
+-- It is also unnecessary: the function takes the flag as an ARGUMENT (that is
+-- the recursion fix), so the deactivated case is expressed by passing `false`
+-- below. Simulating the state instead of mutating the row is closer to what
+-- the policy actually does, and does not fight a guard that exists for a
+-- reason.
 
 SET LOCAL role TO authenticated;
 SET LOCAL request.jwt.claims TO
@@ -483,9 +492,9 @@ SELECT is(
 RESET role;
 RESET request.jwt.claims;
 
--- Reactivate, then flip profile_visibility to 'private' -> hidden regardless.
-UPDATE public.baseball_players SET recruiting_activated = true
- WHERE id = '00000000-0000-0000-0000-0000000bc202';
+-- profile_visibility 'private' -> hidden regardless of an active flag.
+-- (No reactivation UPDATE needed: the row was never actually deactivated —
+-- see the note above — and the flag is passed as `true` below.)
 
 INSERT INTO public.baseball_player_settings (player_id, profile_visibility)
   VALUES ('00000000-0000-0000-0000-0000000bc202', 'private')
