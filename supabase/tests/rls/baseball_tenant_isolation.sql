@@ -398,6 +398,18 @@ RESET request.jwt.claims;
 -- helper function directly (mirrors how baseball_scope_player_ids_isolation.
 -- sql exercises can_view_baseball_player directly rather than only through
 -- a table SELECT).
+--
+-- player_type and recruiting_activated are passed as LITERALS matching the
+-- state each seed/UPDATE above established — never read back from
+-- baseball_players. Two reasons, and the first is disqualifying:
+--
+--   1. These calls run under `SET LOCAL role TO authenticated`, so a read-back
+--      would itself be filtered by the very policy under test. The test would
+--      be asking the policy what to feed the policy, and would pass or fail
+--      for reasons unrelated to the predicate.
+--   2. It is the accurate simulation. In production the POLICY supplies these
+--      columns from the row it is judging, so supplying them directly is what
+--      actually happens.
 -- ============================================================================
 
 -- College coach A can see recruiting-activated HS Player C1 (discoverable team).
@@ -408,8 +420,8 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000bc202'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+    'high_school'::public.baseball_player_type,
+    true
   ),
   true,
   'College coach A CAN see recruiting-activated HS Player C1 (discoverable team)'
@@ -429,8 +441,8 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000bc202'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+    'high_school'::public.baseball_player_type,
+    false
   ),
   false,
   'College coach A CANNOT see Player C1 once recruiting_activated is false'
@@ -454,8 +466,8 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000bc202'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+    'high_school'::public.baseball_player_type,
+    true
   ),
   false,
   'College coach A CANNOT see Player C1 once profile_visibility is private'
@@ -476,8 +488,8 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000bc202'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+    'high_school'::public.baseball_player_type,
+    true
   ),
   true,
   'JUCO coach D CAN see recruiting-activated HS Player C1'
@@ -487,8 +499,8 @@ SELECT is(
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000be202'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202')
+    'juco'::public.baseball_player_type,
+    true
   ),
   false,
   'JUCO coach D CANNOT see recruiting-activated JUCO Player E1 (coach_type/player_type mismatch)'
@@ -505,8 +517,8 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000be202'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000be202')
+    'juco'::public.baseball_player_type,
+    true
   ),
   true,
   'College coach A CAN see recruiting-activated JUCO Player E1'
@@ -523,8 +535,8 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000bc202'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000bc202')
+    'high_school'::public.baseball_player_type,
+    true
   ),
   false,
   'high_school coach_type CANNOT see any recruiting-activated player (coach_type gate)'
@@ -541,8 +553,8 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   public.is_baseball_player_recruiting_discoverable(
     '00000000-0000-0000-0000-0000000b7702'::uuid,
-    (SELECT player_type FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000b7702'),
-    (SELECT recruiting_activated FROM public.baseball_players WHERE id = '00000000-0000-0000-0000-0000000b7702')
+    'high_school'::public.baseball_player_type,
+    true
   ),
   false,
   'College coach A CANNOT see recruiting-activated Player G1, who has no team assignment'
