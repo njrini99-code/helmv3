@@ -1,6 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+// The Supabase client, `getUserResilient`, `resolveAdminPostLoginPath`,
+// `clearActiveTeam`, `isSafeInternalPath` and `Button` all left with the
+// client-side auth check — this page no longer touches auth at all. It renders
+// a form. `updateSession` decides who gets to see it.
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { LazyMotion, m, useReducedMotion } from 'framer-motion';
@@ -10,13 +14,7 @@ import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
-import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
-import { createClient } from '@/lib/supabase/client';
-import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { isNativeApp } from '@/lib/utils/capacitor';
-import { Button } from '@/components/ui/button';
-import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 function LoginContent() {
   const prefersReducedMotion = useReducedMotion();
@@ -33,57 +31,46 @@ function LoginContent() {
   const returnTo = searchParams.get('returnTo');
   const signupHref = returnTo ? `/golf/signup?returnTo=${encodeURIComponent(returnTo)}` : '/golf/signup';
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isNative, setIsNative] = useState(false);
   const [brandMountDone, setBrandMountDone] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  // `createClient()` returns a fresh browser client per call — memoize so the
-  // auth-check effect below doesn't treat it as a new dep on every render.
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     setIsNative(isNativeApp());
   }, []);
 
-  // Prefetch the welcome page bundle — if the user is already authed we'll
-  // replace() to it immediately, and we don't want to wait for JS.
+  // Prefetch the welcome page bundle — a successful sign-in goes straight there
+  // (golf-sign-in-form.tsx) and we don't want to wait on JS at that moment.
   useEffect(() => {
     router.prefetch('/golf/welcome');
   }, [router]);
 
-  useEffect(() => {
-    async function checkAuth() {
-      const { user } = await getUserResilient(supabase);
-      if (user) {
-        const { data } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
-        const admin = (data?.role as string) === 'admin';
-        setIsAdmin(admin);
-        setIsLoggedIn(true);
-        const dest = isSafeInternalPath(returnTo) ? returnTo : resolveAdminPostLoginPath(admin);
-        // Returning, already-authed user: straight to their destination. The
-        // ~3s /golf/welcome splash is reserved for FRESH sign-ins
-        // (golf-sign-in-form.tsx) — replaying it on every app open made the
-        // native cold start a five-shell cascade (#957 trace, fix 2/3).
-        router.replace(dest);
-        return;
-      }
-      setIsLoggedIn(false);
-      setCheckingAuth(false);
-    }
-    checkAuth();
-  }, [returnTo, router, supabase]);
-
-  async function handleSignOut() {
-    setIsLoggingOut(true);
-    await clearActiveTeam();
-    await supabase.auth.signOut();
-    setIsLoggedIn(false);
-    setIsLoggingOut(false);
-    router.refresh();
-  }
+  /*
+   * There is deliberately NO client-side auth check here any more.
+   *
+   * This page used to open with `checkingAuth = true`, run `getUserResilient`
+   * plus a `users.role` query, and only then decide what to render. Two costs,
+   * both visible:
+   *
+   *   · An ALREADY-SIGNED-IN user got the whole login screen — scene, brand
+   *     lockup entrance, form card entrance — and was then yanked away by
+   *     `router.replace` once the check resolved. A screen we already knew was
+   *     wrong, rendered anyway, then visibly corrected.
+   *   · A SIGNED-OUT user (the common case) sat behind three pulsing dots for a
+   *     full network round trip before the form appeared. The form needs no
+   *     session to render. It was waiting for an answer it never used.
+   *
+   * Both are now answered in `updateSession` before any HTML ships — see
+   * `isBounceWhenAuthedRoute` in `@/lib/auth/post-auth-destination`. An
+   * authenticated user never arrives here, so the form renders immediately and
+   * unconditionally.
+   *
+   * The one population that still reaches this page with a session is a
+   * `degraded` one — a local session the auth server could not verify. The
+   * middleware intentionally does not bounce those (bouncing a dead session
+   * loops it between here and the dashboard), and showing them the sign-in form
+   * is exactly the right recovery.
+   */
 
   return (
     <LazyMotion features={loadFeatures}>
@@ -234,62 +221,34 @@ function LoginContent() {
               </m.div>
             )}
 
+            {/*
+              Renders immediately. No auth gate, no pulsing-dots placeholder —
+              the middleware has already guaranteed that whoever reaches this
+              page needs the form.
+            */}
             <div className="mt-4">
-              {checkingAuth ? (
-                <div className="flex justify-center py-6">
-                  <span role="status" aria-label="Checking sign-in status" className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                  </span>
-                </div>
-              ) : isLoggedIn ? (
-                <div className="space-y-3">
-                  <div className="bg-primary-400/10 border border-primary-400/30 text-primary-700 px-4 py-3 rounded-xl text-sm text-center">
-                    You&apos;re already signed in
-                  </div>
-                  <Button variant="primary"
-                    onClick={() => router.push(isSafeInternalPath(returnTo) ? returnTo : resolveAdminPostLoginPath(isAdmin))}
-                    className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
-                    aria-label="Continue to dashboard"
-                  >
-                    {isSafeInternalPath(returnTo) ? 'Continue' : isAdmin ? 'Continue to Admin Dashboard' : 'Continue to Dashboard'}
-                  </Button>
-                  <Button variant="ghost"
-                    onClick={handleSignOut}
-                    disabled={isLoggingOut}
-                    className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-body tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
-                    aria-label="Sign out and use a different account"
-                  >
-                    {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
-                  </Button>
-                </div>
-              ) : (
-                <GolfSignInForm />
-              )}
+              <GolfSignInForm />
             </div>
 
             {/* Tiny caption below form: signup link (web) + legal (all) */}
-            {!isLoggedIn && !checkingAuth && (
-              <div
-                className="mt-4 pt-3 text-center"
-                style={{ borderTop: '0.5px solid rgba(120,113,108,0.14)' }}
-              >
-                {!isNative && (
-                  <p className="text-warm-600 text-caption">
-                    New to GolfHelm?{' '}
-                    <Link href={signupHref} className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
-                      Create an account
-                    </Link>
-                  </p>
-                )}
-                <div className="flex items-center justify-center gap-1.5 text-eyebrow text-warm-500 mt-1.5 tracking-[0.02em]">
-                  <Link href="/privacy" className="hover:text-warm-700 transition-colors">Privacy</Link>
-                  <span className="text-warm-400" aria-hidden="true">·</span>
-                  <Link href="/terms" className="hover:text-warm-700 transition-colors">Terms</Link>
-                </div>
+            <div
+              className="mt-4 pt-3 text-center"
+              style={{ borderTop: '0.5px solid rgba(120,113,108,0.14)' }}
+            >
+              {!isNative && (
+                <p className="text-warm-600 text-caption">
+                  New to GolfHelm?{' '}
+                  <Link href={signupHref} className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
+                    Create an account
+                  </Link>
+                </p>
+              )}
+              <div className="flex items-center justify-center gap-1.5 text-eyebrow text-warm-500 mt-1.5 tracking-[0.02em]">
+                <Link href="/privacy" className="hover:text-warm-700 transition-colors">Privacy</Link>
+                <span className="text-warm-400" aria-hidden="true">·</span>
+                <Link href="/terms" className="hover:text-warm-700 transition-colors">Terms</Link>
               </div>
-            )}
+            </div>
           </m.div>
 
           {/* Course scene decorates the remaining space below naturally — nothing else here */}
