@@ -112,6 +112,36 @@ export function AthleteRosterClient({ athletes, assignments, orgId, canEdit, loa
       ? athletes
       : athletes.filter((a) => a.sport === activeTab);
 
+  /**
+   * Say what the sync actually did.
+   *
+   * The old copy was a fixed "Athletes synced." — which read as success even
+   * when the sync targeted zero teams and inserted zero rows, and was in fact
+   * shown for months while the underlying RPC call was failing outright. The
+   * two zero cases below are the ones that matter: they look identical to the
+   * coach ("nothing appeared") but have completely different fixes, so they
+   * must not share a message.
+   */
+  function describeSyncResult(res: {
+    syncedCount?: number;
+    teamsSynced?: number;
+    athleteCount?: number;
+  }): string {
+    const synced = res.syncedCount ?? 0;
+    const teams = res.teamsSynced ?? 0;
+    const total = res.athleteCount ?? 0;
+
+    if (teams === 0) {
+      return 'No teams are assigned to Lift Lab yet — assign one in Settings, then sync.';
+    }
+    if (synced === 0) {
+      return total > 0
+        ? `Already up to date — ${total} athlete${total === 1 ? '' : 's'} across ${teams} team${teams === 1 ? '' : 's'}.`
+        : `Synced ${teams} team${teams === 1 ? '' : 's'}, but their rosters are empty — add players to the team roster first.`;
+    }
+    return `Added ${synced} athlete${synced === 1 ? '' : 's'} from ${teams} team${teams === 1 ? '' : 's'}. ${total} total.`;
+  }
+
   async function handleSync() {
     setSyncing(true);
     setSyncMsg(null);
@@ -119,7 +149,7 @@ export function AthleteRosterClient({ athletes, assignments, orgId, canEdit, loa
     setSyncing(false);
     setSyncMsg(
       res.success
-        ? { ok: true, msg: 'Athletes synced.' }
+        ? { ok: true, msg: describeSyncResult(res) }
         : { ok: false, msg: res.error ?? 'Sync failed.' },
     );
     if (res.success) {
