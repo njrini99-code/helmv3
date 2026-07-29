@@ -1,6 +1,6 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 01:25 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 03:25 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
 
 ---
@@ -54,14 +54,9 @@ deliberately, not missed. See `DATABASE_STATUS.md`.
 
 ## In progress
 
-| Workstream | Scope | State |
-|---|---|---|
-| RLS companion app | Repoint join-by-code → RPC, Discover/Compare → `baseball_teams_public_profile` view, roster search → exact-email RPC. Unblocks step 2 above. | 🔄 `w300nbjhy` |
-| Seed + UI | Seed gaps (Announcements/Travel/Documents/Post-Game Reviews/lifting), verifier honesty, `PlayerProfileClient` Fairway pass, Settings design unification. | 🔄 `wophbac3a` |
-
-Every packet goes through an independent adversarial reviewer whose default
-assumption is that the claim is overstated. All four reviewers on the first
-wave returned HOLDS UP with specific corroborating evidence.
+Nothing. Both parallel workstreams landed and their adversarial reviews were
+worked through — see Completed below. The heartbeat (`9234a858`, hourly at
+:11) picks up the Queued list.
 
 ---
 
@@ -80,6 +75,16 @@ wave returned HOLDS UP with specific corroborating evidence.
 | Roster status changes propagate to Lift Lab (`is_active`, never delete) | `8660e0579` |
 | RLS tenant-isolation fix authored as a safe 3-step deploy sequence | `9c4ad335e` |
 | Public scout-packet share link closed under the sunset | `f72731974` |
+| **P0 retracted** — the staff-invite RPC does check email ownership, at 3 layers | `1f9cc239a` |
+| Companion app changes so migration B can be applied (6 call sites, not 4) | `d6a8caffc` |
+| Roster "Add existing player": cross-tenant browse → exact-email lookup | `278313df3` |
+| **Seed's production guard allowlisted production** — now a deny, + 2 bypasses closed | `f7ffa28b9` |
+| **Withheld player data was in the public page's HTML**, not just hidden from it | `403a89f5e` |
+| Settings hub unified on one design system (28 files) + a11y contrast fix | `7f7528471` |
+| RLS recursion ×2, anon grants, pgTAP write-guard — **CI now PASSES 34/34** | `59037eb9…a61a9b0f` |
+
+All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
+(draft).
 
 ---
 
@@ -87,11 +92,12 @@ wave returned HOLDS UP with specific corroborating evidence.
 
 | Priority | Item | Note |
 |---|---|---|
-| P0 | Staff invite accept RPC has no email-ownership check | Any authenticated user holding a leaked invite token can join any team **as staff**. Combined with open self-signup the blast radius is large. Same review gate as the RLS work — author, do not apply. |
 | P1 | 35% of `baseball_*` tables have zero pgTAP RLS coverage | Messaging, tasks, travel, announcements, invitations, dev plans. A hole in any of them would not be caught. |
-| P1 | `vitest` `rls` project is declared (`vitest.config.ts:99`) but run by **no CI workflow** | So the RLS tests that do exist gate nothing. |
 | P1 | `helm_lifting_athletes.user_id` is write-once at seed time, never re-synced, verified stale in prod | Any player synced before their account is linked permanently fails the athlete-self gate at `/lifting/dashboard`. |
 | P1 | `baseball_team_invitations` uses the same unaudited `.eq('code', code)` shape | Sibling of the join_code exposure; never audited. |
+| P1 | **CI seeds PRODUCTION on every PR** | `seed:baseball:ci` creates auth users and deletes `login_attempts` rows in the production project. Now explicit (`--allow-prod` in package.json) rather than hidden behind a constant named "demo" — but it should probably target a local stack instead. Needs a decision. |
+| P1 | `public_profile_mode` DDL default is `'private'`; a 2026-07-09 live read recorded `'unlisted'` | If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. `select public_profile_mode, count(*) from baseball_teams group by 1`. |
+| P2 | The `integration` vitest project (5 files) runs in no CI workflow | Includes `coach-onboarding-staff-row` and `player-access-action-gate` — the auth/access tests that matter most. The `rls` project has zero files; pgTAP covers RLS and DOES run. |
 | P2 | Elite stat event model — 8 tables, ~10 migrations, **zero rows** in production | Dead schema. Decide: keep, or graveyard it. |
 
 ---
