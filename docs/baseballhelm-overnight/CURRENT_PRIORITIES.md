@@ -1,10 +1,17 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 06:40 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 09:50 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
 
-_Database still unreachable — last retried 06:22 EDT, `Connection terminated
-due to connection timeout`. Both blocked items below are blocked on that alone._
+_**Database is REACHABLE again as of 09:43 EDT / 13:43Z.** It was not "flaky
+overnight" — production Postgres was wedged from 04:10:00Z and served zero
+queries for 9.4 hours, while Supabase's project status still read
+`ACTIVE_HEALTHY`. Diagnosed from a 9.4-hour gap in `get_logs(postgres)` plus
+`GET /v1/projects/{ref}/health` reporting `db: UNHEALTHY`, and fixed by a
+Management API restart at 13:38Z (user-approved). `/api/health` now returns
+`database: "ok"` in 78ms. The two blocked items below are no longer blocked on
+reachability — they are blocked on the standing rule that **this session never
+applies a migration**, which is a human decision, not a connectivity problem._
 
 ---
 
