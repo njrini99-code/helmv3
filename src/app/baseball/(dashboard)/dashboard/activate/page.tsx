@@ -20,6 +20,7 @@
 import { redirect } from 'next/navigation';
 
 import { getSessionProfile } from '@/lib/auth/session';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { EditorsLetter } from '@/components/baseball/living-annual';
 import { ActivateRecruitingClient } from '@/components/baseball/player-access/ActivateRecruitingClient';
@@ -39,6 +40,21 @@ export default async function ActivateRecruitingPage() {
   // Coaches (and any non-player) have no business here — bounce to their home.
   if (!session.player) {
     redirect('/baseball/dashboard/command-center');
+  }
+
+  // Product-module gate. This is the most consequential of the sunset's
+  // direct-URL gaps: every other recruiting route only *displays* recruiting,
+  // while this one TURNS IT ON — it is the opt-in that flips
+  // baseball_players.recruiting_activated and makes a player discoverable to
+  // other programs. Leaving it reachable meant a bookmarked or guessed URL
+  // could enable a module the product is not currently shipping, and the
+  // resulting state would outlive the sunset.
+  //
+  // Placed after the non-player bounce so an unauthenticated or coach caller
+  // keeps its existing destination; a player is sent to the same surface the
+  // already-activated branch below uses.
+  if (!isRecruitingEnabled()) {
+    redirect('/baseball/player/today');
   }
 
   const player = session.player;

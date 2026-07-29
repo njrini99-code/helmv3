@@ -207,6 +207,25 @@ export const MODULE_ROUTE_PREFIXES: Readonly<Record<ProductModuleId, readonly st
     '/baseball/dashboard/comparisons',
     '/baseball/dashboard/compare',
     '/baseball/dashboard/journey',
+    // Added 2026-07-29. The middleware that consumes this list justifies doing
+    // so with "the local RECRUITING_ROUTES list ... omits /colleges, /journey,
+    // /scouting, /analytics and /activate, all of which are recruiting
+    // surfaces" — but /activate was never actually added here, so the central
+    // registry it deferred to did not cover it either. Nav hid it
+    // (module: 'recruiting'); nothing closed the door.
+    //
+    // It is the one that most needed closing. Every other route on this list
+    // only DISPLAYS recruiting; /activate turns it ON — it flips
+    // baseball_players.recruiting_activated and makes a player discoverable to
+    // other programs. A bookmarked or guessed URL could therefore enable a
+    // module the product is not shipping, and that state would outlive the
+    // sunset.
+    //
+    // /analytics and /watchlist are deliberately NOT added: both call
+    // requireRecruiting*Route, which carries the same module gate and redirects
+    // to the same place, so listing them here would duplicate an existing
+    // control rather than close a gap.
+    '/baseball/dashboard/activate',
   ],
 } as const;
 
