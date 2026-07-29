@@ -137,3 +137,56 @@ describe('Select', () => {
     expect(trigger).toHaveClass('w-28', 'shrink-0', 'text-sm');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The clear affordance. It used to render INSIDE the trigger <button>, which
+// is invalid HTML: the browser's parser splits the outer button when it meets
+// the inner one, so server-rendered markup reparses into a different tree than
+// React expects and hydration mismatches. It is now a sibling positioned over
+// the trigger, which changes two things that must not regress — click
+// isolation, and the disabled case.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Select — clear affordance', () => {
+  it('renders the clear control OUTSIDE the trigger button', () => {
+    render(<Select options={OPTIONS} value="a" clearable onChange={vi.fn()} />);
+
+    const trigger = screen.getByRole('button', { name: /alpha/i });
+    const clear = screen.getByRole('button', { name: /clear selection/i });
+
+    // The whole point: not a descendant. A nested interactive element is
+    // invalid HTML and a hydration-crash class.
+    expect(trigger.contains(clear)).toBe(false);
+  });
+
+  it('clears the value without also opening the dropdown', async () => {
+    const onChange = vi.fn();
+    const { user } = render(
+      <Select options={OPTIONS} value="a" clearable onChange={onChange} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /clear selection/i }));
+
+    expect(onChange).toHaveBeenCalledWith('');
+    // The control now sits visually on top of the trigger rather than inside
+    // it, so stopPropagation is still doing real work — without it the click
+    // would fall through and toggle the listbox open.
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('does not offer clear on a disabled select', () => {
+    // Regression guard for a bug the refactor could have introduced. While the
+    // control lived inside the trigger, a `disabled` button suppressed pointer
+    // events across its whole subtree, so this was free. As a sibling nothing
+    // suppresses it, and a disabled select would have become clearable.
+    render(<Select options={OPTIONS} value="a" clearable disabled onChange={vi.fn()} />);
+
+    expect(screen.queryByRole('button', { name: /clear selection/i })).not.toBeInTheDocument();
+  });
+
+  it('shows no clear control when there is nothing to clear', () => {
+    render(<Select options={OPTIONS} clearable placeholder="Pick one" onChange={vi.fn()} />);
+
+    expect(screen.queryByRole('button', { name: /clear selection/i })).not.toBeInTheDocument();
+  });
+});
