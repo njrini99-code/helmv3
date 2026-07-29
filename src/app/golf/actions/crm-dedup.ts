@@ -50,6 +50,19 @@ const COACH_CHILD_TABLES = [
   'crm_replies',
   'crm_notes',
   'crm_tasks',
+  // crm_stage_transitions was MISSING until 2026-07-29, so merging a duplicate
+  // stranded its pipeline history: the rows kept pointing at the merged coach,
+  // who is then soft-archived and therefore invisible, so the surviving record
+  // showed a stage timeline with a hole in it. Measured at the time of the fix:
+  // 2,401 transitions exist and 83 of them sit on archived coaches. (No column
+  // records WHICH archive was a merge — crm_coaches has is_archived/archived_at
+  // /archived_by but no merged_into — so how many of the 83 are merge damage
+  // versus ordinary archiving cannot be determined from the data. That missing
+  // provenance is its own gap.)
+  //
+  // Written by the log_crm_stage_transition trigger on every crm_coaches.status
+  // change, keyed by coach_id, which is exactly the shape this loop re-points.
+  'crm_stage_transitions',
 ] as const;
 
 // Supabase typed client can't always narrow dynamic `.from(table)` calls; cast
