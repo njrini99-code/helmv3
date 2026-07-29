@@ -241,6 +241,13 @@ Recorded so a wrong claim never gets promoted by repetition.
   `/baseball/dashboard/scout-packets` were already in `MODULE_ROUTE_PREFIXES`
   and already enforced at `src/lib/supabase/middleware.ts:408`. Both edits were
   reverted rather than shipped with comments describing gaps that did not exist.
+- **The E2E wall of red would have landed on `main`, not on a PR.** I wrote in
+  `a694f24d7` that "the first PR touching an E2E-relevant path inherits" it.
+  `playwright.yml` runs `Playwright (chromium)` on **push to `main`** or manual
+  dispatch only; PRs get the advisory a11y smoke from `pr-smoke.yml`. So the
+  breakage had no PR signal at all and would have appeared post-merge — and CI
+  cannot verify the fix before merge either, which is why it was verified
+  locally against a dead base URL instead.
 - **A regex nested-`<button>` detector reported 27 hits; all 27 were false.**
   `<button\b[^>]*/>` cannot match a self-closing button whose attributes contain
   `>` (`onClick={() => x}`), so it never closes and every later button looks

@@ -60,7 +60,7 @@ All are verified by execution in CI (six pgTAP suites, 93 assertions) and
 **2. Nothing in this run touched a database.** No migration applied, no
 `supabase db push`, no `psql`. The only writes were to files and to git.
 Production Postgres was unreachable all night in any case — last retried
-05:30 EDT.
+06:22 EDT, still `Connection terminated due to connection timeout`.
 
 **3. Do not demo against a prospect's own data until (1) is applied.** A demo
 org is fine.
@@ -169,9 +169,20 @@ Each has tests, and the tests assert behaviour rather than existence.
 - **Seven E2E specs stopped driving routes that redirect.** 46 tests skip with a
   reason naming the cause, one is repointed at live routes, and two assertions
   that were passing on the *redirect target* (both `/camps` and `/journey` land
-  on pages that also have an `<h1>`) are now conditional. It had not surfaced
-  because the Playwright job is path-gated; the first unrelated PR touching an
-  E2E path would have inherited the whole wall of red.
+  on pages that also have an `<h1>`) are now conditional.
+
+  **Correction to how I first described this.** I wrote in the commit message
+  that "the first PR touching an E2E-relevant path inherits a wall of red".
+  That is wrong, and the truth is worse: `playwright.yml` runs
+  `Playwright (chromium)` on **push to `main`** or manual dispatch only — never
+  on a pull request. PRs get the cheap advisory a11y smoke from `pr-smoke.yml`.
+  So nothing would have gone red until #1092 **merged**, on main, after review,
+  with no PR signal at any point beforehand.
+
+  It also means CI cannot verify this fix before merge. The evidence is a local
+  run against a deliberately dead base URL (`http://127.0.0.1:9`), where all 46
+  tests in the five gated specs report "skipped" — nothing could have passed by
+  reaching a real page.
 - **A guard against the next one.** `no-inbound-links-to-disabled-modules`
   fails when a file outside a module links into it without consulting the gate.
   Its first draft failed on the five sites just fixed — the markup is still
