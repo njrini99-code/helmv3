@@ -67,7 +67,8 @@ describe('PipelineCard priority signal', () => {
 
   it('renders no priority dot at Normal priority (0)', () => {
     const { container } = render(<PipelineCard coach={makeCoach({ priority: 0 })} />);
-    expect(container.querySelector('.rounded-full.bg-amber-500, .rounded-full.bg-orange-500')).toBeNull();
+    // Fairway tokens: High = fw-warning (amber), Hot = fw-danger (red).
+    expect(container.querySelector('.rounded-full.bg-fw-warning, .rounded-full.bg-fw-danger')).toBeNull();
   });
 
   it('renders an amber dot for High priority (1)', () => {

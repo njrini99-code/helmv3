@@ -89,7 +89,10 @@ describe('ConferenceGroupView', () => {
 
     // The labeled bucket exists and holds both blank/whitespace coaches.
     expect(screen.getByText('No Conference')).toBeInTheDocument();
-    const noConferenceGroup = screen.getByText('No Conference').closest('div[class*="glass-standard"]');
+    // The group shell is the Fairway matte card recipe (bg-surface +
+    // rounded-card + hairline) — it was `glass-standard` before the CRM moved
+    // onto the Fairway design system.
+    const noConferenceGroup = screen.getByText('No Conference').closest('div[class*="bg-surface"]');
     expect(noConferenceGroup).not.toBeNull();
     expect(noConferenceGroup).toHaveTextContent('2');
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
+import { getMarketingScroller } from '@/lib/motion/gsap/scroller-handle';
 import { prefersReducedMotion, useScrollFrame } from './motion';
 
 /**
@@ -94,17 +95,36 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
 
   const lens = scrolled ? LENS_SCROLLED : LENS_REST;
   const resetForRoute = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (
-      e.defaultPrevented ||
-      e.button !== 0 ||
-      e.metaKey ||
-      e.ctrlKey ||
-      e.shiftKey ||
-      e.altKey ||
-      pathname === href
-    ) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
       return;
     }
+
+    // ALREADY ON THIS ROUTE — the active nav item used to be a dead button.
+    // Three no-ops stacked up: this branch returned early, the provider's own
+    // reset also bails on a same-pathname click (MarketingScrollProvider's
+    // `destination.pathname === current.pathname` guard), and Next's <Link> to
+    // the current route does nothing by design. Verified: clicking "Products"
+    // on /products at scrollY 5000 left BOTH scrollY and pathname untouched.
+    // At the top of the page that reads as fine — nothing needed to change —
+    // which is why it only ever gets reported as "I can't click it when I'm
+    // scrolled down". Take the reader back to the masthead instead, which is
+    // what clicking the section you are already in is asking for.
+    if (pathname === href) {
+      e.preventDefault();
+      // Through Lenis when it is running: it owns the scroll position on / and
+      // /products, and a bare window.scrollTo would be a second writer.
+      const scroller = getMarketingScroller();
+      if (scroller) scroller.scrollTo(0);
+      else {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        });
+      }
+      return;
+    }
+
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
@@ -161,6 +181,9 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
               href={route.href}
               scroll
               onClick={(e) => resetForRoute(e, route.href)}
+              // The active item was distinguished by colour alone, which says
+              // nothing to a screen reader.
+              aria-current={pathname === route.href ? 'page' : undefined}
               className={`rounded-full px-3.5 py-2 text-body-sm font-medium transition-colors hover:bg-[oklch(1_0_0/0.5)] hover:text-text-primary ${
                 pathname === route.href ? 'text-text-primary' : 'text-text-secondary'
               }`}
@@ -222,6 +245,7 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
                   resetForRoute(e, route.href);
                   setMenuOpen(false);
                 }}
+                aria-current={pathname === route.href ? 'page' : undefined}
                 className="rounded-2xl px-4 py-3 text-body font-medium text-text-primary transition-colors hover:bg-[oklch(1_0_0/0.5)]"
               >
                 {route.label}

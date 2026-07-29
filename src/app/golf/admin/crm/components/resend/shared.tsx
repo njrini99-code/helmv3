@@ -51,26 +51,34 @@ export const STATUS_CONFIG: Record<
   EmailStatus,
   { label: string; color: string; bgColor: string; icon: React.ReactNode }
 > = {
-  pending:    { label: 'Pending',    color: 'text-warm-500',    bgColor: 'bg-warm-100',    icon: <IconClock size={14} /> },
-  delayed:    { label: 'Delayed',    color: 'text-amber-600',   bgColor: 'bg-amber-50',    icon: <IconWarning size={14} /> },
-  delivered:  { label: 'Delivered',  color: 'text-primary-600', bgColor: 'bg-primary-50',  icon: <IconCheckCircle2 size={14} /> },
-  opened:     { label: 'Opened',     color: 'text-blue-600',    bgColor: 'bg-blue-50',     icon: <IconEye size={14} /> },
-  clicked:    { label: 'Clicked',    color: 'text-violet-600',  bgColor: 'bg-violet-50',   icon: <MousePointerClick size={14} /> },
-  bounced:    { label: 'Bounced',    color: 'text-red-600',     bgColor: 'bg-red-50',      icon: <Ban size={14} /> },
-  complained: { label: 'Complained', color: 'text-red-700',     bgColor: 'bg-red-100',     icon: <ShieldAlert size={14} /> },
+  // Fairway is green-forward with amber + red as the only off-green hues, so
+  // the funnel reads as an ESCALATING ACCENT RAMP rather than four unrelated
+  // hues: neutral (sent/pending) → accent-50 wash (delivered) → accent-100
+  // (opened) → the deepest accent (clicked, the strongest buying signal).
+  // Failure states break off to warning/danger. Icons + labels carry the
+  // meaning too, so the ramp is reinforcement, never the only channel.
+  pending:    { label: 'Pending',    color: 'text-text-tertiary',  bgColor: 'bg-surface-sunken', icon: <IconClock size={14} /> },
+  delayed:    { label: 'Delayed',    color: 'text-fw-warning-ink', bgColor: 'bg-fw-warning-bg',  icon: <IconWarning size={14} /> },
+  delivered:  { label: 'Delivered',  color: 'text-accent-700',     bgColor: 'bg-accent-50',      icon: <IconCheckCircle2 size={14} /> },
+  opened:     { label: 'Opened',     color: 'text-accent-800',     bgColor: 'bg-accent-100',     icon: <IconEye size={14} /> },
+  clicked:    { label: 'Clicked',    color: 'text-text-on-accent', bgColor: 'bg-accent-650',     icon: <MousePointerClick size={14} /> },
+  bounced:    { label: 'Bounced',    color: 'text-fw-danger-ink',  bgColor: 'bg-fw-danger-bg',   icon: <Ban size={14} /> },
+  complained: { label: 'Complained', color: 'text-fw-danger-ink',  bgColor: 'bg-fw-danger-bg',   icon: <ShieldAlert size={14} /> },
 };
 
 export const EVENT_CONFIG: Record<
   string,
   { label: string; color: string; dotColor: string; icon: React.ReactNode }
 > = {
-  'email.sent':             { label: 'Sent',      color: 'text-warm-600',   dotColor: 'bg-warm-400',    icon: <IconSend size={12} /> },
-  'email.delivered':        { label: 'Delivered', color: 'text-primary-600', dotColor: 'bg-primary-500', icon: <IconCheckCircle2 size={12} /> },
-  'email.delivery_delayed': { label: 'Delayed',   color: 'text-amber-600',  dotColor: 'bg-amber-500',   icon: <IconWarning size={12} /> },
-  'email.opened':           { label: 'Opened',    color: 'text-blue-600',   dotColor: 'bg-blue-500',    icon: <IconEye size={12} /> },
-  'email.clicked':          { label: 'Clicked',   color: 'text-violet-600', dotColor: 'bg-violet-500',  icon: <MousePointerClick size={12} /> },
-  'email.bounced':          { label: 'Bounced',   color: 'text-red-600',    dotColor: 'bg-red-500',     icon: <Ban size={12} /> },
-  'email.complained':       { label: 'Complained', color: 'text-red-700',   dotColor: 'bg-red-600',     icon: <ShieldAlert size={12} /> },
+  // Same escalating accent ramp as STATUS_CONFIG above — the dot deepens as
+  // the recipient engages: tertiary → accent-300 → accent-500 → accent-700.
+  'email.sent':             { label: 'Sent',       color: 'text-text-secondary', dotColor: 'bg-text-tertiary', icon: <IconSend size={12} /> },
+  'email.delivered':        { label: 'Delivered',  color: 'text-accent-700',     dotColor: 'bg-accent-300',    icon: <IconCheckCircle2 size={12} /> },
+  'email.delivery_delayed': { label: 'Delayed',    color: 'text-fw-warning-ink', dotColor: 'bg-fw-warning',    icon: <IconWarning size={12} /> },
+  'email.opened':           { label: 'Opened',     color: 'text-accent-700',     dotColor: 'bg-accent-500',    icon: <IconEye size={12} /> },
+  'email.clicked':          { label: 'Clicked',    color: 'text-accent-800',     dotColor: 'bg-accent-700',    icon: <MousePointerClick size={12} /> },
+  'email.bounced':          { label: 'Bounced',    color: 'text-fw-danger-ink',  dotColor: 'bg-fw-danger',     icon: <Ban size={12} /> },
+  'email.complained':       { label: 'Complained', color: 'text-fw-danger-ink',  dotColor: 'bg-fw-danger',     icon: <ShieldAlert size={12} /> },
 };
 
 // ---------------------------------------------------------------------------

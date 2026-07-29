@@ -270,10 +270,10 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-warm-900 tracking-tight">
+          <h2 className="text-xl font-bold text-text-primary tracking-tight">
             Demo activity
           </h2>
-          <p className="text-sm text-warm-500 mt-1">
+          <p className="text-sm text-text-tertiary mt-1">
             Two separate intents, tracked separately: coaches who walked into the live demo,
             and coaches who asked for one from the landing page.
           </p>
@@ -297,22 +297,22 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
           ===================================================================== */}
       <section aria-labelledby="demo-tours-heading">
         <div className="flex items-center gap-2 mb-3">
-          <IconPlay size={13} className="text-warm-400" aria-hidden="true" />
+          <IconPlay size={13} className="text-text-tertiary" aria-hidden="true" />
           <h3
             id="demo-tours-heading"
-            className="text-micro font-semibold uppercase tracking-wide text-warm-500"
+            className="text-micro font-semibold uppercase tracking-wide text-text-tertiary"
           >
             Toured the self-serve demo
           </h3>
           {!gateLoading && gateSessions.length > 0 && (
-            <span className="text-micro text-warm-400 tabular-nums">
+            <span className="text-micro text-text-tertiary tabular-nums">
               ({gateSessions.length})
             </span>
           )}
         </div>
 
         {gateError && (
-          <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          <div className="mb-3 text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-md px-3 py-2">
             {gateError}
           </div>
         )}
@@ -320,56 +320,56 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
         <div
           id="demo-gate-sessions-list"
           aria-live="polite"
-          className="glass-standard rounded-2xl overflow-hidden"
+          className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden"
         >
           {gateLoading ? (
             <div className="p-6 space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 animate-pulse">
-                  <div className="w-10 h-10 rounded-xl bg-warm-100" />
+                  <div className="w-10 h-10 rounded-fw-md bg-surface-sunken" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-48 bg-warm-100 rounded" />
-                    <div className="h-3 w-32 bg-warm-50 rounded" />
+                    <div className="h-4 w-48 bg-surface-sunken rounded" />
+                    <div className="h-3 w-32 bg-surface-sunken rounded" />
                   </div>
                 </div>
               ))}
             </div>
           ) : gateSessions.length === 0 ? (
             <div className="py-16 px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-4">
-                <IconPlay size={24} className="text-warm-300" aria-hidden="true" />
+              <div className="w-14 h-14 rounded-card bg-surface-sunken flex items-center justify-center mx-auto mb-4">
+                <IconPlay size={24} className="text-text-tertiary" aria-hidden="true" />
               </div>
-              <p className="text-sm font-semibold text-warm-900">
+              <p className="text-sm font-semibold text-text-primary">
                 No demo tours yet
               </p>
-              <p className="text-xs text-warm-500 mt-1 max-w-sm mx-auto">
+              <p className="text-xs text-text-tertiary mt-1 max-w-sm mx-auto">
                 Invites link coaches straight into the live demo.
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-warm-100/60">
+            <ul className="divide-y divide-border-subtle/60">
               {gateSessions.map((session) => (
                 <li
                   key={session.id}
                   className="flex items-center gap-4 px-6 py-4"
                 >
                   <div
-                    className="w-10 h-10 rounded-xl bg-cream-100 flex items-center justify-center flex-shrink-0"
+                    className="w-10 h-10 rounded-fw-md bg-canvas flex items-center justify-center flex-shrink-0"
                     aria-hidden="true"
                   >
-                    <IconPlay size={16} className="text-warm-400" />
+                    <IconPlay size={16} className="text-text-tertiary" />
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-medium text-warm-900 truncate">
+                      <p className="text-sm font-medium text-text-primary truncate">
                         {session.name}
                       </p>
-                      <span className="text-xs text-warm-500 truncate">
+                      <span className="text-xs text-text-tertiary truncate">
                         {session.email}
                       </span>
                     </div>
-                    <div className="flex items-center gap-x-3 gap-y-0.5 mt-1 flex-wrap text-xs text-warm-500">
+                    <div className="flex items-center gap-x-3 gap-y-0.5 mt-1 flex-wrap text-xs text-text-tertiary">
                       {session.school && <span>{session.school}</span>}
                       <span
                         className="flex items-center gap-1 tabular-nums"
@@ -407,10 +407,10 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
           ===================================================================== */}
       <section aria-labelledby="demo-requests-heading" className="space-y-5">
         <div className="flex items-center gap-2">
-          <IconMail size={13} className="text-warm-400" aria-hidden="true" />
+          <IconMail size={13} className="text-text-tertiary" aria-hidden="true" />
           <h3
             id="demo-requests-heading"
-            className="text-micro font-semibold uppercase tracking-wide text-warm-500"
+            className="text-micro font-semibold uppercase tracking-wide text-text-tertiary"
           >
             Requested a demo (homepage form)
           </h3>
@@ -420,30 +420,30 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={<IconMail size={20} />}
-            iconBg="bg-blue-50"
-            iconColor="text-blue-600"
+            iconBg="bg-surface-sunken"
+            iconColor="text-accent-700"
             label="Total Requests"
             value={allStats.total}
           />
           <StatCard
             icon={<IconMail size={20} />}
-            iconBg="bg-amber-50"
-            iconColor="text-amber-600"
+            iconBg="bg-fw-warning-bg"
+            iconColor="text-fw-warning-ink"
             label="New / Uncontacted"
             value={allStats.new}
             highlight={allStats.new > 0}
           />
           <StatCard
             icon={<IconCheckCircle2 size={20} />}
-            iconBg="bg-violet-50"
-            iconColor="text-violet-600"
+            iconBg="bg-accent-50"
+            iconColor="text-accent-700"
             label="Contacted"
             value={allStats.contacted}
           />
           <StatCard
             icon={<IconUserPlus size={20} />}
-            iconBg="bg-primary-50"
-            iconColor="text-primary-600"
+            iconBg="bg-accent-50"
+            iconColor="text-accent-700"
             label="Added to CRM"
             value={allStats.converted}
           />
@@ -477,8 +477,8 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                   className={cn(
                     'px-1.5 py-0.5 rounded-full text-eyebrow font-semibold tabular-nums',
                     f === 'new' && count > 0
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-warm-100 text-warm-600',
+                      ? 'bg-fw-warning-bg text-fw-warning-ink'
+                      : 'bg-surface-sunken text-text-secondary',
                   )}
                 >
                   {count}
@@ -493,39 +493,39 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
           id="inbound-leads-list"
           role="tabpanel"
           aria-live="polite"
-          className="glass-standard rounded-2xl overflow-hidden"
+          className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden"
         >
           {loading ? (
             <div className="p-6 space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 animate-pulse">
-                  <div className="w-10 h-10 rounded-xl bg-warm-100" />
+                  <div className="w-10 h-10 rounded-fw-md bg-surface-sunken" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-48 bg-warm-100 rounded" />
-                    <div className="h-3 w-32 bg-warm-50 rounded" />
+                    <div className="h-4 w-48 bg-surface-sunken rounded" />
+                    <div className="h-3 w-32 bg-surface-sunken rounded" />
                   </div>
-                  <div className="h-8 w-24 bg-warm-100 rounded-lg" />
+                  <div className="h-8 w-24 bg-surface-sunken rounded-fw-sm" />
                 </div>
               ))}
             </div>
           ) : requests.length === 0 ? (
             <div className="py-16 px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-4">
-                <IconMail size={24} className="text-warm-300" aria-hidden="true" />
+              <div className="w-14 h-14 rounded-card bg-surface-sunken flex items-center justify-center mx-auto mb-4">
+                <IconMail size={24} className="text-text-tertiary" aria-hidden="true" />
               </div>
-              <p className="text-sm font-semibold text-warm-900">
+              <p className="text-sm font-semibold text-text-primary">
                 {filter === 'all'
                   ? 'No demo requests yet'
                   : `No ${FILTER_LABELS[filter].toLowerCase()} leads`}
               </p>
-              <p className="text-xs text-warm-500 mt-1 max-w-sm mx-auto">
+              <p className="text-xs text-text-tertiary mt-1 max-w-sm mx-auto">
                 {filter === 'all'
                   ? 'Requests submitted from the landing page will appear here in real time.'
                   : 'Adjust the filter above to see other leads.'}
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-warm-100/60">
+            <ul className="divide-y divide-border-subtle/60">
               {requests.map((request) => {
                 const rowIsNew = isNewRequest(request);
                 const rowIsContacted = isContactedRequest(request);
@@ -543,36 +543,36 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                     key={request.id}
                     className={cn(
                       'flex flex-col items-stretch gap-3 px-4 py-4 transition-colors sm:flex-row sm:items-center sm:gap-4 sm:px-6',
-                      rowIsNew && 'bg-amber-50/30',
+                      rowIsNew && 'bg-fw-warning-bg/30',
                     )}
                   >
                     {/* Status indicator */}
                     <div
                       className={cn(
-                        'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                        rowIsNew && 'bg-amber-100',
+                        'w-10 h-10 rounded-fw-md flex items-center justify-center flex-shrink-0',
+                        rowIsNew && 'bg-fw-warning-bg',
                         rowIsContacted && 'bg-accent-50',
                         rowIsScheduled && 'bg-surface-tint',
                         rowIsConverted && 'bg-fw-success-bg',
-                        rowIsDeclined && 'bg-warm-100',
+                        rowIsDeclined && 'bg-surface-sunken',
                       )}
                       aria-hidden="true"
                     >
-                      {rowIsNew && <IconMail size={18} className="text-amber-600" />}
+                      {rowIsNew && <IconMail size={18} className="text-fw-warning-ink" />}
                       {rowIsContacted && <IconCheckCircle2 size={18} className="text-accent-700" />}
                       {rowIsScheduled && <IconCalendar size={18} className="text-text-secondary" />}
                       {rowIsConverted && <IconUserPlus size={18} className="text-fw-success-ink" />}
-                      {rowIsDeclined && <IconXCircle size={18} className="text-warm-500" />}
+                      {rowIsDeclined && <IconXCircle size={18} className="text-text-tertiary" />}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-sm font-medium text-warm-900 truncate">
+                        <p className="text-sm font-medium text-text-primary truncate">
                           {request.email}
                         </p>
                         {rowIsNew && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-eyebrow font-semibold uppercase tracking-wide">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink text-eyebrow font-semibold uppercase tracking-wide">
                             New
                           </span>
                         )}
@@ -585,16 +585,16 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                           />
                         ) : (
                           <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-warm-200/80 bg-warm-50 text-warm-500 text-eyebrow font-medium"
+                            className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-border-subtle/80 bg-surface-sunken text-text-tertiary text-eyebrow font-medium"
                             title="This lead is not yet in the CRM"
                           >
                             Not in CRM
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-x-3 gap-y-0.5 mt-1 flex-wrap text-xs text-warm-500">
+                      <div className="flex items-center gap-x-3 gap-y-0.5 mt-1 flex-wrap text-xs text-text-tertiary">
                         {request.name && (
-                          <span className="text-warm-600">{request.name}</span>
+                          <span className="text-text-secondary">{request.name}</span>
                         )}
                         {request.organization && (
                           <span>{request.organization}</span>
@@ -611,13 +611,13 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                         )}
                       </div>
                       {request.message && (
-                        <p className="text-xs text-warm-500 mt-1 truncate max-w-md italic">
+                        <p className="text-xs text-text-tertiary mt-1 truncate max-w-md italic">
                           &ldquo;{request.message}&rdquo;
                         </p>
                       )}
                       {request.notes && (
-                        <p className="text-xs text-warm-600 mt-1 max-w-md">
-                          <span className="font-medium text-warm-700">Notes:</span> {request.notes}
+                        <p className="text-xs text-text-secondary mt-1 max-w-md">
+                          <span className="font-medium text-text-secondary">Notes:</span> {request.notes}
                         </p>
                       )}
                     </div>
@@ -634,7 +634,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                             onChange={(e) => setDeclineReason(e.target.value)}
                             placeholder="Reason (optional)"
                             aria-label={`Decline reason for ${request.email}`}
-                            className="min-h-11 w-full rounded-lg px-2.5 py-1.5 text-xs sm:w-40"
+                            className="min-h-11 w-full rounded-fw-sm px-2.5 py-1.5 text-xs sm:w-40"
                           />
                           <Button variant="danger"
                             type="button"
@@ -705,7 +705,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                           )}
                           {rowIsConverted && (
                             <span
-                              className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium"
+                              className="inline-flex items-center gap-1 text-xs text-accent-700 font-medium"
                               aria-label="Already in CRM"
                             >
                               <IconCheckCircle2 size={12} aria-hidden="true" />
@@ -714,7 +714,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                           )}
                           {rowIsDeclined && (
                             <span
-                              className="inline-flex items-center gap-1 text-xs text-warm-500 font-medium"
+                              className="inline-flex items-center gap-1 text-xs text-text-tertiary font-medium"
                               aria-label="Declined"
                             >
                               <IconXCircle size={12} aria-hidden="true" />
@@ -757,15 +757,15 @@ function StatCard({
 }) {
   return (
     <div className={cn(
-      'glass-standard rounded-2xl shadow-glass p-4 lg:p-5 transition-all',
-      highlight && 'border-amber-200/60 ring-1 ring-amber-200/40',
+      'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 lg:p-5 transition-all',
+      highlight && 'border-fw-warning-ring ring-1 ring-fw-warning-ring/40',
     )}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">{label}</p>
-          <p className="text-3xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
+          <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{label}</p>
+          <p className="text-3xl font-bold text-text-primary tabular-nums tracking-tight mt-1">{value}</p>
         </div>
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', iconBg, iconColor)} aria-hidden="true">
+        <div className={cn('w-10 h-10 rounded-fw-md flex items-center justify-center', iconBg, iconColor)} aria-hidden="true">
           {icon}
         </div>
       </div>

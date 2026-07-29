@@ -31,6 +31,7 @@
 import { gsap } from '@/lib/motion/gsap/register';
 import { DUR, EASE, STAGGER, SCRUB, DIST } from '@/lib/motion/gsap/tokens';
 import { maskedLines, prepareDraw } from '@/lib/motion/gsap/primitives';
+import { markAllAnimReady, unmarkAllAnimReady } from '@/lib/motion/anim-gate';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
 /** Stable hooks the component stamps; no brittle class selectors. */
@@ -61,11 +62,18 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
   const arc = (q(HERO.arc) as unknown as SVGPathElement[]).find(rendered);
   const ball = arc?.ownerSVGElement?.querySelector<SVGGElement>(HERO.ball) ?? undefined;
 
+  // The first-paint entrance gate (lib/motion/anim-gate.ts) is hiding the four
+  // arrival targets right now so the server's settled hero cannot be painted and
+  // then torn back down in front of the reader. Whichever branch runs below, it
+  // is this scene that owns their visibility from here on.
+  const gated = [headline, sub, actions, plate];
+
   // ── Reduced motion: everything settled, nothing scrubbed, arc fully drawn ──
   if (reduced) {
     if (arc) gsap.set(arc, { strokeDasharray: 'none', strokeDashoffset: 0, opacity: 1 });
     if (ball) gsap.set(ball, { opacity: 1 });
-    return;
+    markAllAnimReady(gated);
+    return () => unmarkAllAnimReady(gated);
   }
 
   // ── 1. Arrival ────────────────────────────────────────────────────────────
@@ -100,8 +108,28 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
     enter.to(plate, { scale: 1, opacity: 1, duration: DUR.long }, 0.06);
   }
 
+  // Headline split behind its masks, sub/actions/plate at opacity 0 — every
+  // arrival target now carries its own hidden state, so the CSS gate can let go.
+  // Released here rather than at the top of the scene: releasing before the
+  // gsap.set calls above would expose one settled frame, which is the entire
+  // bug this gate exists to prevent.
+  markAllAnimReady(gated);
+
+  /**
+   * Undo BOTH things this scene owns: the SplitText rewrite, and the gate
+   * release. The second matters as much as the first — `useScene`'s cleanup is
+   * `mm.revert()`, which restores GSAP's inline styles and therefore leaves the
+   * hero SETTLED AND VISIBLE. Re-gating here is what stops that settled frame
+   * from being painted between a teardown and the next mount (StrictMode's
+   * double-invoke in dev, and any real remount).
+   */
+  const cleanup = () => {
+    revertSplit?.();
+    unmarkAllAnimReady(gated);
+  };
+
   // ── 2. The tee shot ───────────────────────────────────────────────────────
-  if (!arc) return revertSplit;
+  if (!arc) return cleanup;
 
   const length = prepareDraw(arc);
   if (ball) gsap.set(ball, { opacity: 0 });
@@ -143,5 +171,5 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
     0,
   );
 
-  return revertSplit;
+  return cleanup;
 }

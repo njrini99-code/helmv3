@@ -236,7 +236,13 @@ export async function fetchOverviewSnapshot() {
     ...computeBannerState({
       criticalCount: criticalIncidentGroups24h + featureHealthCriticalCount,
       attentionCount: attentionFromDeploy + featureHealthAttentionCount,
-      anyFeedStale: incidentFeed24h.sentry.status === 'error' || watcher.some((w) => w.stale) || featureHealth.degraded,
+      // `!== 'ok'` (not `=== 'error'`) — AdminFetchStatus is a TRI-state
+      // ('ok' | 'unconfigured' | 'error', fetch-result.ts:6). Testing only the
+      // 'error' branch let an UNCONFIGURED Sentry (missing SENTRY_READ_TOKEN /
+      // SENTRY_ORG / SENTRY_PROJECT — a state check-helm-bridge-env.mjs:35
+      // already treats as real) render "All systems nominal" while the Bridge
+      // was completely blind to Sentry-origin incidents.
+      anyFeedStale: incidentFeed24h.sentry.status !== 'ok' || watcher.some((w) => w.stale) || featureHealth.degraded,
     }),
     checkedAt: now.toISOString(),
     // Single-line banner detail per N6 (never a wall of routine noise) —

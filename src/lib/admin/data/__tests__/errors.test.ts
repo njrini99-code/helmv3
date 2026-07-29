@@ -31,8 +31,21 @@ describe('parseErrorsFilters', () => {
 });
 
 describe('describeErrorsFilters', () => {
-  it('always includes the window and nothing else when no other filters are set', () => {
-    expect(describeErrorsFilters({ windowHours: 24 })).toBe('window=24h');
+  // `kind` is stated UNCONDITIONALLY, including at its default. The default
+  // hides every non-actionable incident (~60% of the July feed), so an export
+  // header that omitted it would let a reader believe a curated slice was the
+  // whole feed — the same false-completeness trap as an un-flagged row cap.
+  it('always includes the window and the kind filter when nothing else is set', () => {
+    expect(describeErrorsFilters({ windowHours: 24 })).toBe('window=24h; kind=actionable only');
+  });
+
+  it('names the kind explicitly when one is selected', () => {
+    expect(describeErrorsFilters({ windowHours: 24, kind: 'telemetry' })).toBe(
+      'window=24h; kind=Telemetry',
+    );
+    expect(describeErrorsFilters({ windowHours: 24, kind: 'all' })).toBe(
+      'window=24h; kind=all (including non-actionable)',
+    );
   });
 
   it('appends every active filter, feature resolved to its human label', () => {
@@ -44,7 +57,9 @@ describe('describeErrorsFilters', () => {
         source: 'rls_denial',
         feature: 'round_tracking',
       }),
-    ).toBe('window=168h; sport=golf; severity=critical; source=rls_denial; feature=Round Tracking (round_tracking)');
+    ).toBe(
+      'window=168h; kind=actionable only; sport=golf; severity=critical; source=rls_denial; feature=Round Tracking (round_tracking)',
+    );
   });
 });
 
@@ -55,13 +70,15 @@ describe('buildFilteredIncidentsReport', () => {
     firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T00:00:00Z',
     permalink: null, eventIds: ['e1'], substatus: null,
     source: 'server_action', feature: 'round_tracking', actionName: 'savePartialRound', route: '/api/golf/rounds',
+    klass: 'defect', actionable: true, klassReason: 'Unexpected failure (severity-derived)',
+    hasDegradedMessage: false,
     report: '# Incident report: savePartialRound failed',
     ...over,
   });
 
   it('reuses each incident\'s own pre-built report and describes the active filters in the header', () => {
     const doc = buildFilteredIncidentsReport([item({})], { windowHours: 24, sport: 'golf' });
-    expect(doc).toContain('filters: window=24h; sport=golf');
+    expect(doc).toContain('filters: window=24h; kind=actionable only; sport=golf');
     expect(doc).toContain('# Incident report: savePartialRound failed');
     expect(doc).toContain('incident count: 1');
   });

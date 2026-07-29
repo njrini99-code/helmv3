@@ -101,14 +101,14 @@ function TemplateSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {[1, 2, 3, 4].map(i => (
-        <div key={i} className="glass-standard rounded-xl p-4 animate-pulse">
+        <div key={i} className="rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 animate-pulse">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-20 h-5 bg-warm-100 rounded-full" />
-            <div className="w-28 h-4 bg-warm-100 rounded" />
+            <div className="w-20 h-5 bg-surface-sunken rounded-full" />
+            <div className="w-28 h-4 bg-surface-sunken rounded" />
           </div>
-          <div className="w-3/4 h-3.5 bg-warm-50 rounded mb-2" />
-          <div className="w-full h-3 bg-warm-50 rounded mb-1" />
-          <div className="w-2/3 h-3 bg-warm-50 rounded" />
+          <div className="w-3/4 h-3.5 bg-surface-sunken rounded mb-2" />
+          <div className="w-full h-3 bg-surface-sunken rounded mb-1" />
+          <div className="w-2/3 h-3 bg-surface-sunken rounded" />
         </div>
       ))}
     </div>
@@ -164,9 +164,9 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
   };
 
   return (
-    <div className="glass-standard rounded-xl border border-primary-200 p-4 space-y-3">
+    <div className="rounded-fw-md border border-accent-200 bg-surface [box-shadow:var(--fw-shadow-card)] p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-warm-800">Create Template</h4>
+        <h4 className="text-sm font-semibold text-text-primary">Create Template</h4>
         <IconButton variant="default" onClick={onCancel} aria-label="Cancel" className={CRM_ICON_ACTION_CLASS}>
           <IconX size={16} aria-hidden="true" />
         </IconButton>
@@ -178,14 +178,14 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Template name"
-          className="bg-cream-50/60"
+          className="bg-surface/80"
         />
 
         <Select
           value={category}
           onChange={value => setCategory(value as TemplateCategory)}
           options={CATEGORY_OPTIONS.filter(c => c.key !== 'all').map(c => ({ value: c.key, label: c.label }))}
-          className="bg-cream-50/60"
+          className="bg-surface/80"
         />
 
         {/* Format selector — closes G1 (UI templates can be text/html/plain) */}
@@ -207,7 +207,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
             );
           })}
         </div>
-        <p className="text-eyebrow text-warm-400 leading-relaxed">
+        <p className="text-eyebrow text-text-tertiary leading-relaxed">
           {FORMAT_OPTIONS.find(f => f.key === format)?.help}
         </p>
 
@@ -216,7 +216,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
           value={subject}
           onChange={e => setSubject(e.target.value)}
           placeholder="Subject line"
-          className="bg-cream-50/60"
+          className="bg-surface/80"
         />
 
         <Textarea
@@ -224,11 +224,11 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
           onChange={e => setBody(e.target.value)}
           placeholder="Email body..."
           rows={4}
-          className="bg-cream-50/60 resize-none"
+          className="bg-surface/80 resize-none"
         />
       </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-fw-danger-ink">{error}</p>}
 
       <div className="flex justify-end gap-2">
         <Button variant="ghost"
@@ -331,8 +331,8 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
     <div className="space-y-4">
       {/* Header row: icon + search */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-warm-700">
-          <IconFileText size={16} className="text-warm-500" />
+        <div className="flex items-center gap-2 text-text-secondary">
+          <IconFileText size={16} className="text-text-tertiary" />
           <span className="text-sm font-semibold">Templates</span>
         </div>
         <div className="relative flex-1 max-w-xs">
@@ -344,7 +344,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
             leftIcon={<IconSearch size={14} />}
             clearable
             onClear={() => setSearch('')}
-            className="min-h-11 bg-cream-50/60 py-1.5"
+            className="min-h-11 bg-surface/80 py-1.5"
           />
         </div>
       </div>
@@ -372,7 +372,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {filtered.length === 0 && !showNewForm ? (
-            <div className="col-span-full py-8 text-center text-sm text-warm-400">
+            <div className="col-span-full py-8 text-center text-sm text-text-tertiary">
               {search ? 'No templates match your search' : 'No templates in this category'}
             </div>
           ) : (
@@ -385,30 +385,30 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                   onClick={() => handleSelect(template)}
                   aria-pressed={isSelected}
                   className={cn(
-                    'w-full text-left glass-standard rounded-xl p-4 cursor-pointer transition-all duration-200 hover:bg-cream-100 hover:shadow-sm',
+                    'w-full text-left rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 cursor-pointer transition-all duration-200 hover:bg-surface-tint hover:shadow-flat',
                     isSelected && 'border-accent-300 ring-2 ring-accent-500'
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="font-semibold text-sm text-warm-800 truncate">
+                    <span className="font-semibold text-sm text-text-primary truncate">
                       {template.name}
                     </span>
                     <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', colors?.bg, colors?.text)}>
                       {CATEGORY_LABELS[template.category] ?? template.category}
                     </span>
                     {template.format === 'html' && (
-                      <span className="shrink-0 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-warm-900 text-white">
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-nav-bg text-nav-text">
                         HTML
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-warm-500 truncate leading-relaxed">
+                  <p className="text-sm text-text-tertiary truncate leading-relaxed">
                     {template.subject}
                   </p>
-                  <p className="text-xs text-warm-400 line-clamp-2 mt-1 leading-relaxed">
+                  <p className="text-xs text-text-tertiary line-clamp-2 mt-1 leading-relaxed">
                     {template.format === 'html' ? 'Full HTML email — replaces the standard greeting + signature shell.' : template.body}
                   </p>
-                  <p className="text-eyebrow text-warm-400 mt-2">
+                  <p className="text-eyebrow text-text-tertiary mt-2">
                     Used {template.usage_count ?? 0} times
                   </p>
                 </Button>
@@ -427,10 +427,10 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
           ) : (
             <Button variant="ghost"
               onClick={() => setShowNewForm(true)}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-warm-200/50 p-4 cursor-pointer transition-all duration-200 hover:border-warm-300 hover:bg-warm-50/30 min-h-[120px]"
+              className="flex flex-col items-center justify-center gap-2 rounded-fw-md border-2 border-dashed border-border-subtle p-4 cursor-pointer transition-all duration-200 hover:border-border-strong hover:bg-surface-sunken/60 min-h-[120px]"
             >
-              <IconPlus size={20} className="text-warm-400" />
-              <span className="text-sm font-medium text-warm-500">Create Template</span>
+              <IconPlus size={20} className="text-text-tertiary" />
+              <span className="text-sm font-medium text-text-tertiary">Create Template</span>
             </Button>
           )}
         </div>
@@ -439,21 +439,21 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
       {/* Selected template's merge-tag chip set — reflects what THIS template
           substitutes, sourced from its persisted merge_tags (not a fixed list). */}
       {selectedTemplate && selectedMergeTags.length > 0 && (
-        <div className="rounded-xl border border-primary-200/60 bg-primary-50/40 p-3">
-          <p className="text-eyebrow uppercase tracking-wider text-warm-500 mb-2">
+        <div className="rounded-fw-md border border-accent-200/60 bg-accent-50/40 p-3">
+          <p className="text-eyebrow uppercase tracking-wider text-text-tertiary mb-2">
             Merge tags in “{selectedTemplate.name}”
           </p>
           <div className="flex flex-wrap gap-1.5">
             {selectedMergeTags.map(tag => (
               <span
                 key={tag}
-                className="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-cream-50 border border-primary-200 text-primary-700"
+                className="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-surface border border-accent-200 text-accent-700"
               >
                 {`{${tag}}`}
               </span>
             ))}
           </div>
-          <p className="text-eyebrow text-warm-400 mt-2">
+          <p className="text-eyebrow text-text-tertiary mt-2">
             Auto-filled per recipient on send.
           </p>
         </div>
@@ -461,7 +461,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
 
       {/* Footer */}
       {!loading && filtered.length > 0 && (
-        <p className="text-eyebrow text-warm-400 text-center">
+        <p className="text-eyebrow text-text-tertiary text-center">
           {filtered.length} template{filtered.length !== 1 ? 's' : ''} &middot; Merge tags auto-filled on select
         </p>
       )}

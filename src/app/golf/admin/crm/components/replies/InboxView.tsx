@@ -136,7 +136,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
           })}
         </div>
         {unreadCount > 0 && section === 'replies' && (
-          <span className="rounded-lg border border-accent-200 bg-accent-50 px-2.5 py-1.5 text-xs font-semibold text-accent-800">
+          <span className="rounded-fw-sm border border-accent-200 bg-accent-50 px-2.5 py-1.5 text-xs font-semibold text-accent-800">
             {unreadCount} unread
           </span>
         )}
@@ -145,7 +145,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
       {section === 'demos' && <InboundLeadsView onOpenCoach={onCoachClick} />}
 
       {section === 'replies' && error && (
-        <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+        <div className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-md px-3 py-2">
           {error}
         </div>
       )}
@@ -153,7 +153,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
       {section === 'replies' && (loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-96 rounded-2xl glass-standard border-warm-200/60 skeleton-shimmer" />
+            <div key={i} className="h-96 rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] skeleton-shimmer" />
           ))}
         </div>
       ) : (
@@ -161,20 +161,20 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
           {/* Replies column — pinned height + internal scroll below lg so a
               long list can't push the (visually second, on mobile) Detail
               column off-screen. */}
-          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col max-h-64 lg:max-h-none order-2 lg:order-none">
-            <header className="px-4 py-3 border-b border-warm-100">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
+          <aside className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden flex flex-col max-h-64 lg:max-h-none order-2 lg:order-none">
+            <header className="px-4 py-3 border-b border-border-subtle">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
                 <IconMail size={12} /> Replies
               </h3>
             </header>
             {replies.length === 0 ? (
-              <p className="px-4 py-8 text-caption text-warm-500 text-center leading-relaxed">
+              <p className="px-4 py-8 text-caption text-text-tertiary text-center leading-relaxed">
                 No replies captured yet. Reply capture reads the admin@ Gmail
                 inbox and needs the one-time gmail.readonly scope grant —
                 until then this stays empty.
               </p>
             ) : (
-              <ul className="divide-y divide-warm-100 overflow-y-auto flex-1">
+              <ul className="divide-y divide-border-subtle overflow-y-auto flex-1">
                 {replies.map((r) => {
                   const active =
                     selection?.kind === 'reply' && selection.reply.id === r.id;
@@ -186,27 +186,27 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
                         className={cn(
                           'w-full text-left px-4 py-3 transition-colors',
                           active
-                            ? 'bg-primary-50/60'
-                            : 'hover:bg-warm-50/60',
+                            ? 'bg-accent-50/60'
+                            : 'hover:bg-surface-sunken/60',
                         )}
                       >
                         <div className="flex items-center gap-2 mb-0.5">
                           {!r.is_read && (
-                            <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />
+                            <span className="w-2 h-2 rounded-full bg-accent-500 flex-shrink-0" />
                           )}
                           <span
                             className={cn(
                               'text-sm truncate',
-                              r.is_read ? 'text-warm-700 font-medium' : 'font-semibold text-warm-900',
+                              r.is_read ? 'text-text-secondary font-medium' : 'font-semibold text-text-primary',
                             )}
                           >
                             {r.from_address}
                           </span>
                         </div>
                         {r.subject && (
-                          <p className="text-xs text-warm-600 truncate">{r.subject}</p>
+                          <p className="text-xs text-text-secondary truncate">{r.subject}</p>
                         )}
-                        <p className="text-eyebrow text-warm-500 mt-0.5">
+                        <p className="text-eyebrow text-text-tertiary mt-0.5">
                           {relTime(r.received_at)}
                         </p>
                       </Button>
@@ -220,9 +220,9 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
           {/* Detail column — order-1 on mobile so the selected reply/task is
               visible immediately below the tab header, ahead of both list
               columns; reverts to natural (source) order at lg. */}
-          <section className="rounded-2xl glass-subtle border-warm-200/60 overflow-hidden flex flex-col order-1 lg:order-none">
-            <header className="px-4 py-3 border-b border-warm-100">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600">
+          <section className="rounded-card border border-border-subtle bg-surface-tint border-border-subtle overflow-hidden flex flex-col order-1 lg:order-none">
+            <header className="px-4 py-3 border-b border-border-subtle">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 Detail
               </h3>
             </header>
@@ -230,10 +230,10 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
               {!selection && (
                 <div className="h-full flex items-center justify-center text-center">
                   <div>
-                    <span className="inline-flex w-10 h-10 rounded-full bg-warm-100 items-center justify-center mb-2">
-                      <IconMail size={18} className="text-warm-500" />
+                    <span className="inline-flex w-10 h-10 rounded-full bg-surface-sunken items-center justify-center mb-2">
+                      <IconMail size={18} className="text-text-tertiary" />
                     </span>
-                    <p className="text-sm text-warm-600">Select an item to view details.</p>
+                    <p className="text-sm text-text-secondary">Select an item to view details.</p>
                   </div>
                 </div>
               )}
@@ -241,26 +241,26 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
                 <ReplyThread reply={selection.reply} onRead={handleReplyRead} onOpenCoach={onCoachClick} />
               )}
               {selection?.kind === 'task' && (
-                <article className="rounded-xl border border-warm-200/60 glass-standard px-4 py-3">
+                <article className="rounded-fw-md border border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-4 py-3">
                   <header className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-semibold text-warm-900">
+                      <h4 className="text-sm font-semibold text-text-primary">
                         {selection.task.title}
                       </h4>
-                      <p className="text-eyebrow text-warm-500 mt-0.5">
+                      <p className="text-eyebrow text-text-tertiary mt-0.5">
                         Due {relTime(selection.task.due_at)} · {selection.task.priority}
                       </p>
                     </div>
                     <Button variant="primary"
                       type="button"
                       onClick={() => handleCompleteTask(selection.task)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-fw-sm bg-accent-650 text-text-on-accent text-xs font-semibold hover:bg-accent-700 transition-colors"
                     >
                       <IconCheckCircle2 size={12} /> Complete
                     </Button>
                   </header>
                   {selection.task.description && (
-                    <p className="text-sm text-warm-700 whitespace-pre-wrap mt-2">
+                    <p className="text-sm text-text-secondary whitespace-pre-wrap mt-2">
                       {selection.task.description}
                     </p>
                   )}
@@ -271,18 +271,18 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
 
           {/* Tasks column — same bounded-height + reorder treatment as the
               Replies column above. */}
-          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col max-h-64 lg:max-h-none order-3 lg:order-none">
-            <header className="px-4 py-3 border-b border-warm-100">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
+          <aside className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden flex flex-col max-h-64 lg:max-h-none order-3 lg:order-none">
+            <header className="px-4 py-3 border-b border-border-subtle">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
                 <IconCheckCircle2 size={12} /> Due today
               </h3>
             </header>
             {dueTasks.length === 0 ? (
-              <p className="px-4 py-8 text-xs text-warm-500 text-center">
+              <p className="px-4 py-8 text-xs text-text-tertiary text-center">
                 No tasks due today.
               </p>
             ) : (
-              <ul className="divide-y divide-warm-100 overflow-y-auto flex-1">
+              <ul className="divide-y divide-border-subtle overflow-y-auto flex-1">
                 {dueTasks.map((t) => {
                   const active =
                     selection?.kind === 'task' && selection.task.id === t.id;
@@ -293,13 +293,13 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
                         onClick={() => setSelection({ kind: 'task', task: t })}
                         className={cn(
                           'w-full text-left px-4 py-3 transition-colors',
-                          active ? 'bg-primary-50/60' : 'hover:bg-warm-50/60',
+                          active ? 'bg-accent-50/60' : 'hover:bg-surface-sunken/60',
                         )}
                       >
-                        <p className="text-sm font-medium text-warm-900 truncate">
+                        <p className="text-sm font-medium text-text-primary truncate">
                           {t.title}
                         </p>
-                        <p className="text-eyebrow text-warm-500 mt-0.5">
+                        <p className="text-eyebrow text-text-tertiary mt-0.5">
                           {t.due_at ? `Due ${relTime(t.due_at)}` : 'No due date'} · {t.priority}
                         </p>
                       </Button>

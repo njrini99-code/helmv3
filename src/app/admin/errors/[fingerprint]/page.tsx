@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
-import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
+import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
 import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
@@ -80,7 +80,7 @@ export default async function FingerprintDetailPage({
   const fingerprint = decodeURIComponent(rawFingerprint);
 
   async function Body() {
-    const { events, report } = await fetchFingerprintDetail(rawFingerprint);
+    const { events, report, summary } = await fetchFingerprintDetail(rawFingerprint);
 
     if (events.length === 0) {
       return (
@@ -94,9 +94,64 @@ export default async function FingerprintDetailPage({
     return (
       <>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-warm-600">{events.length} events · affected users link to Users & Teams</p>
+          <p className="text-sm text-warm-600">
+            {summary.truncated
+              ? `${summary.totalCount} occurrences · showing the ${events.length} most recent`
+              : `${summary.totalCount} occurrence${summary.totalCount === 1 ? '' : 's'}`}
+            {' · affected users link to Users & Teams'}
+          </p>
           <CopyReportButton report={report} label="Copy full report" size="md" />
         </div>
+
+        {/* Rollup the data layer already computed but previously discarded —
+            an operator had to Copy the report and paste it elsewhere to see
+            first-seen, unique users, or which deploys bracket the incident. */}
+        <Surface padding="sm" className="mt-3">
+          <StatStrip count={4} mdColumns={4} edgeBleedClassName="-mx-4 px-4" ariaLabel="Incident rollup">
+            <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
+              <p className="text-caption uppercase tracking-widest text-warm-500">Occurrences</p>
+              <p className="font-fw-mono text-xl font-semibold tabular-nums text-warm-900">{summary.totalCount}</p>
+              <p className="text-caption text-warm-500">
+                {summary.truncated ? `${events.length} inspected` : 'all inspected'}
+              </p>
+            </div>
+            <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
+              <p className="text-caption uppercase tracking-widest text-warm-500">Affected users</p>
+              <p className="font-fw-mono text-xl font-semibold tabular-nums text-warm-900">
+                {summary.affectedUserCount}
+                {summary.truncated ? '+' : ''}
+              </p>
+              <p className="text-caption text-warm-500">
+                {summary.truncated ? 'lower bound' : 'distinct'}
+              </p>
+            </div>
+            <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
+              <p className="text-caption uppercase tracking-widest text-warm-500">First seen</p>
+              <p className="font-fw-mono text-sm font-semibold tabular-nums text-warm-900">
+                {summary.firstSeen ? <LocalTime iso={summary.firstSeen} variant="datetime" /> : '—'}
+              </p>
+              <p className="text-caption text-warm-500">exact</p>
+            </div>
+            <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
+              <p className="text-caption uppercase tracking-widest text-warm-500">Last seen</p>
+              <p className="font-fw-mono text-sm font-semibold tabular-nums text-warm-900">
+                {summary.lastSeen ? <LocalTime iso={summary.lastSeen} variant="datetime" /> : '—'}
+              </p>
+              <p className="text-caption text-warm-500">
+                {summary.nearbyDeploys.length > 0
+                  ? `${summary.nearbyDeploys.length} deploy${summary.nearbyDeploys.length === 1 ? '' : 's'} nearby`
+                  : 'no nearby deploys'}
+              </p>
+            </div>
+          </StatStrip>
+          {summary.nearbyDeploys.length > 0 ? (
+            <p className="mt-2 break-words font-fw-mono text-caption text-warm-500 [overflow-wrap:anywhere]">
+              Bracketing deploys:{' '}
+              {summary.nearbyDeploys.map((d) => d.sha ?? 'unknown-sha').join(' · ')}
+            </p>
+          ) : null}
+        </Surface>
+
         <ul className="mt-3 space-y-3">
           {events.map((e) => (
             <Surface as="li" key={e.id} padding="sm" className="min-w-0">

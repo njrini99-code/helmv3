@@ -8,6 +8,7 @@ import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { CoachInfoBlock } from '../../components/coach/CoachInfoBlock';
 import { CoachAttachmentsBlock } from '../../components/coach/CoachAttachmentsBlock';
 import { CoachTimeline } from '../../components/timeline/CoachTimeline';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 // ============================================================================
 // /golf/admin/crm/coach/[id]
@@ -106,7 +107,9 @@ export default async function CoachDetailPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-dvh bg-cream-100">
+    // `.fairway-ds` + `font-fw-sans` mirror the CRM shell (../../page.tsx) so
+    // navigating rail → coach detail doesn't change type or token scope.
+    <main className={fairwayScope('min-h-dvh bg-canvas font-fw-sans text-text-primary')}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
         <Breadcrumb
           items={[
@@ -126,10 +129,10 @@ export default async function CoachDetailPage({ params }: PageProps) {
 
           {/* ── Right column: timeline ── */}
           <div className="lg:col-span-2">
-            <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
-              <div className="px-5 py-4 border-b border-warm-100/60">
-                <h2 className="text-sm font-semibold text-warm-900">Timeline</h2>
-                <p className="text-xs text-warm-500 mt-0.5">
+            <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
+              <div className="px-5 py-4 border-b border-border-subtle/60">
+                <h2 className="text-sm font-semibold text-text-primary">Timeline</h2>
+                <p className="text-xs text-text-tertiary mt-0.5">
                   Combined activity from outreach, email events, notes, tasks,
                   and scheduled events.
                 </p>

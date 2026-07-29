@@ -71,6 +71,13 @@ function trackDenialStorm(key: string): boolean {
   return false;
 }
 
+/**
+ * Returns true when `error` was classified as an RLS denial (and a capture
+ * was fired), false otherwise. Callers use this to gate their OWN generic
+ * error logging — an RLS denial should produce exactly one admin_events
+ * row (this capture), not one from here PLUS a second, generic one from
+ * the caller. See savePartialRound in golf.ts for the canonical caller.
+ */
 export function maybeCaptureRlsDenial(
   error: { code?: string | null; message?: string | null } | null | undefined,
   ctx: {
@@ -82,8 +89,8 @@ export function maybeCaptureRlsDenial(
     /** Defaults via featureForTable(ctx.table) from the registry when omitted. */
     feature?: FeatureKey;
   },
-): void {
-  if (!isRlsDenial(error)) return;
+): boolean {
+  if (!isRlsDenial(error)) return false;
   try {
     const table = resolveDenialTable(ctx.table, error?.message);
     const feature = ctx.feature ?? featureForTable(table) ?? undefined;
@@ -108,4 +115,5 @@ export function maybeCaptureRlsDenial(
   } catch {
     // Never break the caller.
   }
+  return true;
 }

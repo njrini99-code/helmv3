@@ -52,9 +52,9 @@ export function resolveStepPreview(
 // Format chip labels — mirror TemplateManager's FORMAT_META wording exactly
 // so the same format reads identically in both surfaces.
 const STEP_FORMAT_META: Record<TemplateFormat, { label: string; badge: string }> = {
-  text: { label: 'Plain text', badge: 'bg-sky-900 text-white' },
-  plain: { label: 'Branded shell', badge: 'bg-warm-900 text-white' },
-  html: { label: 'Full HTML', badge: 'bg-violet-900 text-white' },
+  text: { label: 'Plain text', badge: 'bg-surface-sunken text-text-secondary border border-border-subtle' },
+  plain: { label: 'Branded shell', badge: 'bg-nav-bg text-nav-text' },
+  html: { label: 'Full HTML', badge: 'bg-accent-50 text-accent-700 border border-accent-200' },
 };
 
 // Mirrors TemplateManager's SAMPLE_RECIPIENT so a step's preview renders
@@ -91,8 +91,8 @@ function StepPreviewPane({
   const fmt = STEP_FORMAT_META[format];
 
   return (
-    <div className="rounded-xl border border-warm-200/60 glass-standard overflow-clip">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-warm-200/60 bg-warm-50/40">
+    <div className="rounded-fw-md border border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-clip">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle bg-surface-sunken/60">
         <span
           className={cn(
             'px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider',
@@ -101,34 +101,34 @@ function StepPreviewPane({
         >
           {fmt.label}
         </span>
-        <span className="ml-auto text-eyebrow text-warm-400">
+        <span className="ml-auto text-eyebrow text-text-tertiary">
           rendered for {PREVIEW_COACH.name}
         </span>
       </div>
-      <div className="px-3 py-2.5 border-b border-warm-100/80">
-        <p className="text-eyebrow uppercase tracking-wider text-warm-400 mb-0.5">Subject</p>
-        <p className="text-sm font-semibold text-warm-900 break-words">
-          {mergedSubject || <span className="text-warm-300 italic">No subject</span>}
+      <div className="px-3 py-2.5 border-b border-border-subtle">
+        <p className="text-eyebrow uppercase tracking-wider text-text-tertiary mb-0.5">Subject</p>
+        <p className="text-sm font-semibold text-text-primary break-words">
+          {mergedSubject || <span className="text-text-tertiary italic">No subject</span>}
         </p>
       </div>
-      <div className="p-3 max-h-64 overflow-auto bg-cream-100/40">
+      <div className="p-3 max-h-64 overflow-auto bg-canvas/50">
         {format === 'html' ? (
           mergedBody.trim() ? (
             <iframe
               title="Step email preview"
               sandbox=""
               srcDoc={mergedBody}
-              className="w-full min-h-[14rem] rounded-lg border border-warm-200 bg-cream-50"
+              className="w-full min-h-[14rem] rounded-fw-sm border border-border-subtle bg-surface"
             />
           ) : (
-            <p className="text-sm text-warm-300 italic">No HTML body yet</p>
+            <p className="text-sm text-text-tertiary italic">No HTML body yet</p>
           )
         ) : mergedBody.trim() ? (
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-warm-700">
+          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-text-secondary">
             {mergedBody}
           </pre>
         ) : (
-          <p className="text-sm text-warm-300 italic">No body yet</p>
+          <p className="text-sm text-text-tertiary italic">No body yet</p>
         )}
       </div>
     </div>
@@ -270,7 +270,7 @@ export function SequenceStepEditor({
   return (
     <form
       onSubmit={handleSave}
-      className="glass-standard border border-warm-200/60 rounded-xl p-4 space-y-3"
+      className="border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] rounded-fw-md p-4 space-y-3"
     >
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -281,7 +281,7 @@ export function SequenceStepEditor({
             min={1}
             value={stepOrder}
             onChange={(e) => setStepOrder(Number.parseInt(e.target.value, 10) || 1)}
-            className="px-3 py-2 text-sm rounded-lg"
+            className="px-3 py-2 text-sm rounded-fw-sm"
           />
         </div>
         <div>
@@ -294,7 +294,7 @@ export function SequenceStepEditor({
             onChange={(e) =>
               setDelayHours(Math.max(0, Number.parseInt(e.target.value, 10) || 0))
             }
-            className="px-3 py-2 text-sm rounded-lg"
+            className="px-3 py-2 text-sm rounded-fw-sm"
           />
         </div>
       </div>
@@ -319,7 +319,7 @@ export function SequenceStepEditor({
           value={subjectOverride}
           onChange={(e) => setSubjectOverride(e.target.value)}
           placeholder="Leave blank to use template subject"
-          className="px-3 py-2 text-sm rounded-lg"
+          className="px-3 py-2 text-sm rounded-fw-sm"
         />
       </div>
 
@@ -331,29 +331,29 @@ export function SequenceStepEditor({
           value={bodyOverride}
           onChange={(e) => setBodyOverride(e.target.value)}
           placeholder="Leave blank to use template body"
-          className="px-3 py-2 text-sm rounded-lg resize-none"
+          className="px-3 py-2 text-sm rounded-fw-sm resize-none"
         />
       </div>
 
       {/* Preview — resolved subject/body/format, exactly what the cron sends */}
       {hasPreviewContent && (
-        <div className="pt-1 border-t border-warm-100">
+        <div className="pt-1 border-t border-border-subtle">
           <Button
             type="button"
             variant="ghost"
             onClick={() => setShowPreview((v) => !v)}
             aria-expanded={showPreview}
-            className="w-full flex items-center justify-between px-2 py-2 min-h-0 text-xs font-semibold text-warm-600 hover:text-warm-800 hover:bg-cream-50 transition-colors"
+            className="w-full flex items-center justify-between px-2 py-2 min-h-0 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface transition-colors"
           >
             <span className="flex items-center gap-1.5">
-              <IconEye size={13} className="text-primary-500" aria-hidden />
+              <IconEye size={13} className="text-accent-600" aria-hidden />
               Preview
             </span>
             <IconChevronDown
               size={14}
               aria-hidden
               className={cn(
-                'text-warm-400 transition-transform duration-200',
+                'text-text-tertiary transition-transform duration-200',
                 showPreview && 'rotate-180',
               )}
             />
@@ -370,7 +370,7 @@ export function SequenceStepEditor({
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-fw-danger-ink">{error}</p>}
 
       <div className="flex items-center justify-between gap-2">
         <div>
@@ -380,8 +380,8 @@ export function SequenceStepEditor({
               onClick={handleDelete}
               disabled={deleting}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm',
-                'text-red-600 hover:bg-red-50 transition-colors',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm',
+                'text-fw-danger-ink hover:bg-fw-danger-bg/50 transition-colors',
                 'disabled:opacity-50',
               )}
             >
@@ -400,7 +400,7 @@ export function SequenceStepEditor({
               type="button"
               onClick={onCancel}
               disabled={submitting}
-              className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
             >
               Cancel
             </Button>
@@ -409,8 +409,8 @@ export function SequenceStepEditor({
             type="submit"
             disabled={submitting}
             className={cn(
-              'flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-xl shadow-sm',
-              'bg-primary-600 text-white hover:bg-primary-700 transition-colors',
+              'flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-fw-md shadow-flat',
+              'bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >

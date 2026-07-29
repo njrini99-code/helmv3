@@ -37,19 +37,19 @@ export function BulkActionsBar({
       // Mobile: full-width above the browser toolbar, actions wrap to fit.
       // Desktop (sm+): centered floating pill on a single row.
       'left-3 right-3 bottom-20 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-6',
-      'flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 sm:gap-3 px-4 py-2.5 rounded-2xl',
-      'glass-prominent text-warm-800 shadow-2xl',
+      'flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 sm:gap-3 px-4 py-2.5 rounded-card',
+      'bg-elevated shadow-raise text-text-primary shadow-raise',
       'animate-slide-up'
     )}>
       {/* Count */}
-      <span className="text-sm font-medium tabular-nums text-warm-900">{selectedCount} selected</span>
+      <span className="text-sm font-medium tabular-nums text-text-primary">{selectedCount} selected</span>
 
-      <div className="hidden sm:block w-px h-5 bg-warm-200" />
+      <div className="hidden sm:block w-px h-5 bg-surface-sunken" />
 
       {/* Move to Status */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors">
+          <Button variant="ghost" className="flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium text-text-secondary hover:bg-surface-sunken transition-colors">
             <IconArrowRight size={14} /> Move to
             <IconChevronUp size={12} className="transition-transform data-[state=open]:rotate-180" />
           </Button>
@@ -71,7 +71,7 @@ export function BulkActionsBar({
       {/* Email */}
       <Button variant="ghost"
         onClick={() => onAction('email')}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium text-text-secondary hover:bg-surface-sunken transition-colors"
       >
         <IconMail size={14} /> Email
       </Button>
@@ -79,7 +79,7 @@ export function BulkActionsBar({
       {/* Star */}
       <Button variant="ghost"
         onClick={() => onAction('star')}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium text-text-secondary hover:bg-surface-sunken transition-colors"
       >
         <IconStar size={14} /> Star
       </Button>
@@ -87,33 +87,33 @@ export function BulkActionsBar({
       {/* Unstar */}
       <Button variant="ghost"
         onClick={() => onAction('unstar')}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium text-text-secondary hover:bg-surface-sunken transition-colors"
       >
-        <IconStar size={14} className="text-warm-400" /> Unstar
+        <IconStar size={14} className="text-text-tertiary" /> Unstar
       </Button>
 
-      <div className="hidden sm:block w-px h-5 bg-warm-200" />
+      <div className="hidden sm:block w-px h-5 bg-surface-sunken" />
 
       {/* Archive — soft archive (recoverable), never a hard delete. See page.tsx handleBulkAction('delete'). */}
       {confirmDelete ? (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
-          <span className="text-sm font-medium text-red-700">Archive {selectedCount}?</span>
+        <div className="flex items-center gap-2 bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-1.5">
+          <span className="text-sm font-medium text-fw-danger-ink">Archive {selectedCount}?</span>
           <Button variant="danger" onClick={() => { onAction('delete'); setConfirmDelete(false); }}
-            className="px-2 py-0.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-sm font-bold">Yes</Button>
+            className="px-2 py-0.5 rounded-fw-sm bg-fw-danger text-text-on-accent hover:bg-fw-danger/85 text-sm font-bold">Yes</Button>
           <Button variant="ghost" onClick={() => setConfirmDelete(false)}
-            className="px-2 py-0.5 rounded-lg bg-warm-100 text-warm-600 hover:bg-warm-200 text-sm">No</Button>
+            className="px-2 py-0.5 rounded-fw-sm bg-surface-sunken text-text-secondary hover:bg-surface-sunken text-sm">No</Button>
         </div>
       ) : (
         <Button variant="danger" onClick={() => setConfirmDelete(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium text-fw-danger-ink hover:bg-fw-danger-bg/50 transition-colors">
           <IconTrash size={14} /> Archive
         </Button>
       )}
 
-      <div className="hidden sm:block w-px h-5 bg-warm-200" />
+      <div className="hidden sm:block w-px h-5 bg-surface-sunken" />
 
       {/* Dismiss */}
-      <IconButton variant="default" onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
+      <IconButton variant="default" onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-fw-sm hover:bg-surface-sunken transition-colors text-text-tertiary hover:text-text-primary">
         <IconX size={14} aria-hidden="true" />
       </IconButton>
     </div>

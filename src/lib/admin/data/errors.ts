@@ -16,6 +16,12 @@ import {
 import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
 import { FEATURE_REGISTRY, type FeatureKey } from '@/lib/admin/feature-registry';
 import {
+  isIncidentClass,
+  INCIDENT_CLASS_ORDER,
+  INCIDENT_CLASS_LABEL,
+  type IncidentClass,
+} from '@/lib/admin/incident-classification';
+import {
   buildIncidentReport,
   buildCombinedIncidentReport,
   extractActionName,
@@ -33,6 +39,17 @@ export interface ErrorsTabFilters {
    *  admin_events.feature = <key>. */
   feature?: FeatureKey;
   windowHours: number;
+  /**
+   * Kind filter, layered on top of the existing severity/source/sport chips.
+   * - undefined (DEFAULT) → actionable only. The July feed was ~60% routine
+   *   telemetry, empty states and expected access denials; showing all of it
+   *   by default put `gateMetrics` (575 unresolved, not a bug) at the top of
+   *   triage while real defects ranked below it.
+   * - 'all' → nothing filtered (the escape hatch — noise is never DELETED,
+   *   only defaulted out of view).
+   * - a specific IncidentClass → just that kind.
+   */
+  kind?: IncidentClass | 'all';
 }
 
 const SPORTS = new Set(['golf', 'baseball', 'shared']);
@@ -74,13 +91,56 @@ export function parseErrorsFilters(
   if (feature && FEATURE_KEYS.has(feature as FeatureKey)) filters.feature = feature as FeatureKey;
   const window = Number(first(searchParams.window));
   if (Number.isFinite(window) && window > 0 && window <= 720) filters.windowHours = window;
+  const kind = first(searchParams.kind);
+  if (kind === 'all' || (kind && isIncidentClass(kind))) filters.kind = kind;
   return filters;
+}
+
+/**
+ * Apply the kind filter. Split out (and exported) so it is unit-testable
+ * without a database, and so the "how many did we hide" count below is
+ * provably computed from the same predicate that does the hiding.
+ */
+export function applyKindFilter(
+  incidents: readonly TriageItem[],
+  kind: ErrorsTabFilters['kind'],
+): TriageItem[] {
+  if (kind === 'all') return [...incidents];
+  if (kind) return incidents.filter((i) => i.klass === kind);
+  return incidents.filter((i) => i.actionable);
+}
+
+/** Per-class tallies for the chip row, computed BEFORE the kind filter runs
+ *  so each chip can show what it would reveal. */
+export function countByKind(incidents: readonly TriageItem[]): {
+  byClass: Record<IncidentClass, number>;
+  actionable: number;
+  suppressed: number;
+} {
+  const byClass = Object.fromEntries(
+    INCIDENT_CLASS_ORDER.map((k) => [k, 0]),
+  ) as Record<IncidentClass, number>;
+  let actionable = 0;
+  for (const i of incidents) {
+    byClass[i.klass] = (byClass[i.klass] ?? 0) + 1;
+    if (i.actionable) actionable += 1;
+  }
+  return { byClass, actionable, suppressed: incidents.length - actionable };
 }
 
 /** Human-readable active-filter summary for the "Copy all (filtered)" doc
  *  header — so a pasted export is self-describing about what it covers. */
 export function describeErrorsFilters(filters: ErrorsTabFilters): string {
   const parts = [`window=${filters.windowHours}h`];
+  parts.push(
+    `kind=${
+      filters.kind === 'all'
+        ? 'all (including non-actionable)'
+        : filters.kind
+          ? INCIDENT_CLASS_LABEL[filters.kind]
+          : 'actionable only'
+    }`,
+  );
   if (filters.sport) parts.push(`sport=${filters.sport}`);
   if (filters.severity) parts.push(`severity=${filters.severity}`);
   if (filters.source) parts.push(`source=${filters.source}`);
@@ -108,6 +168,8 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   deployMarkers: number[];
   incidents: TriageItem[];
   counts: IncidentFeedCounts;
+  /** Per-class tallies across the UNFILTERED feed — drives the chip row. */
+  kindCounts: ReturnType<typeof countByKind>;
   rlsDenials24h: number;
   widerWindowUnresolved: number | null;
   widerWindowUntagged: number | null;
@@ -172,8 +234,9 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
     hourly,
     deployments: deploys,
     deployMarkers,
-    incidents: feed.incidents,
+    incidents: applyKindFilter(feed.incidents, filters.kind),
     counts: feed.counts,
+    kindCounts: countByKind(feed.incidents),
     rlsDenials24h: rlsRes.count ?? 0,
     widerWindowUnresolved: widerRes ? widerRes.count ?? 0 : null,
     widerWindowUntagged: widerUntaggedRes ? widerUntaggedRes.count ?? 0 : null,
@@ -182,24 +245,58 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
 
 const SEVERITY_RANK: Record<string, number> = { critical: 0, error: 1, warning: 2, info: 3 };
 
+/** Per-fingerprint rollup rendered above the event list. Every field is
+ *  labelled at the call site with whether it is exact or window-limited —
+ *  see `truncated`. */
+export interface FingerprintSummary {
+  /** TRUE total occurrences for this fingerprint (exact count query), which
+   *  may exceed the `EVENT_PAGE_SIZE` rows actually fetched. */
+  totalCount: number;
+  /** True when totalCount > the fetched page — the UI must say so rather
+   *  than presenting `events.length` as the occurrence count. */
+  truncated: boolean;
+  /** TRUE earliest occurrence, from its own ascending query — NOT the oldest
+   *  of the fetched page. Previously this was `first.created_at` off a
+   *  DESC-ordered 100-row page, so for any incident with >100 occurrences it
+   *  reported a recent timestamp as "first seen" — and, worse, fed that wrong
+   *  start time into selectNearbyDeploys(), mis-attributing which deploy
+   *  introduced exactly the high-volume errors you most want to attribute. */
+  firstSeen: string | null;
+  lastSeen: string | null;
+  /** Distinct user_ids WITHIN the fetched page — a lower bound when
+   *  `truncated` is true. Labelled as such in the UI. */
+  affectedUserCount: number;
+  nearbyDeploys: ReturnType<typeof selectNearbyDeploys>;
+}
+
+const EVENT_PAGE_SIZE = 100;
+
 export async function fetchFingerprintDetail(rawFingerprint: string) {
   const admin = createAdminClient();
   // Route params arrive URL-encoded (`row%3A<id>`); events without a stored
   // fingerprint carry a synthetic `row:<id>` key from the triage merge —
   // those resolve by primary key, not by the fingerprint column.
   const fingerprint = decodeURIComponent(rawFingerprint);
+  const isRowKey = fingerprint.startsWith('row:');
+  const rowId = isRowKey ? fingerprint.slice('row:'.length) : null;
+
+  const scoped = <T>(q: { eq: (col: string, val: string) => T }): T =>
+    isRowKey ? q.eq('id', rowId!) : q.eq('fingerprint', fingerprint);
+
   const base = admin
     .from('admin_events')
     .select(
       'id, title, message, severity, created_at, user_email, user_id, team_id, url, stack_trace, source, feature, sport, metadata',
     );
-  const [{ data, error }, deploys] = await Promise.all([
-    (fingerprint.startsWith('row:')
-      ? base.eq('id', fingerprint.slice('row:'.length))
-      : base.eq('fingerprint', fingerprint))
-      .order('created_at', { ascending: false })
-      .limit(100),
+  const [{ data, error }, deploys, totalRes, earliestRes] = await Promise.all([
+    scoped(base).order('created_at', { ascending: false }).limit(EVENT_PAGE_SIZE),
     fetchVercelDeployments(20),
+    // Exact occurrence count — head:true so no rows travel, only the count.
+    scoped(admin.from('admin_events').select('id', { count: 'exact', head: true })),
+    // TRUE first-seen, independent of the DESC page above.
+    scoped(admin.from('admin_events').select('created_at'))
+      .order('created_at', { ascending: true })
+      .limit(1),
   ]);
   // Throw (rather than silently degrading to []) so PanelBoundary's error
   // boundary catches a real query failure and renders PanelStale — a
@@ -209,8 +306,29 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
     throw new Error(`fetchFingerprintDetail(${fingerprint}): ${error.message}`);
   }
   const events = data ?? [];
-  const report = buildFingerprintIncidentReport(fingerprint, events, deploys.data ?? []);
-  return { events, report };
+
+  const totalCount = totalRes.count ?? events.length;
+  const trueFirstSeen =
+    (earliestRes.data?.[0]?.created_at as string | null | undefined) ??
+    events[events.length - 1]?.created_at ??
+    null;
+  const lastSeen = events[0]?.created_at ?? null;
+
+  const summary: FingerprintSummary = {
+    totalCount,
+    truncated: totalCount > events.length,
+    firstSeen: trueFirstSeen,
+    lastSeen,
+    affectedUserCount: new Set(events.filter((e) => e.user_id).map((e) => e.user_id)).size,
+    nearbyDeploys: selectNearbyDeploys(
+      (deploys.data ?? []).map((d) => ({ sha: d.commitSha, time: d.createdAt })),
+      trueFirstSeen,
+      lastSeen,
+    ),
+  };
+
+  const report = buildFingerprintIncidentReport(fingerprint, events, summary);
+  return { events, report, summary };
 }
 
 /** Copy-for-Claude report for the fingerprint detail page — aggregates every
@@ -232,7 +350,7 @@ function buildFingerprintIncidentReport(
     sport?: string | null;
     metadata?: unknown;
   }[],
-  deploysRaw: readonly { commitSha: string | null; createdAt: number }[],
+  summary: FingerprintSummary,
 ): string {
   if (events.length === 0) {
     return buildIncidentReport({
@@ -245,7 +363,6 @@ function buildFingerprintIncidentReport(
 
   // events arrives most-recent-first (query orders created_at desc).
   const last = events[0]!;
-  const first = events[events.length - 1]!;
   const worst = events.reduce(
     (acc, e) => ((SEVERITY_RANK[e.severity] ?? 3) < (SEVERITY_RANK[acc] ?? 3) ? e.severity : acc),
     'info',
@@ -253,12 +370,6 @@ function buildFingerprintIncidentReport(
   const actionName = events.map((e) => extractActionName(e.metadata)).find((a) => a !== null) ?? null;
   const stackTrace = events.map((e) => e.stack_trace).find((s) => !!s) ?? null;
   const collapsedCount = events.reduce((sum, e) => sum + extractCollapsedCount(e.metadata), 0);
-  const affectedUserCount = new Set(events.filter((e) => e.user_id).map((e) => e.user_id)).size;
-  const nearbyDeploys = selectNearbyDeploys(
-    deploysRaw.map((d) => ({ sha: d.commitSha, time: d.createdAt })),
-    first.created_at,
-    last.created_at,
-  );
 
   return buildIncidentReport({
     title: last.title,
@@ -269,18 +380,23 @@ function buildFingerprintIncidentReport(
     sport: last.sport ?? null,
     featureKey: last.feature ?? null,
     actionName,
-    eventCount: events.length,
+    // Exact total, not the fetched-page length — a copied report that says
+    // "47 events" when the true count is 312 sends the reader (often Claude)
+    // down a wrong severity assessment.
+    eventCount: summary.totalCount,
     collapsedCount,
-    affectedUserCount,
-    firstSeen: first.created_at,
-    lastSeen: last.created_at,
-    windowLabel: `most recent ${events.length} event${events.length === 1 ? '' : 's'} captured (unbounded lookback, 100-row cap)`,
+    affectedUserCount: summary.affectedUserCount,
+    firstSeen: summary.firstSeen,
+    lastSeen: summary.lastSeen,
+    windowLabel: summary.truncated
+      ? `${summary.totalCount} total occurrences; deepest ${events.length} inspected (affected-user count is a lower bound)`
+      : `all ${summary.totalCount} occurrence${summary.totalCount === 1 ? '' : 's'} inspected`,
     stackTrace,
     occurrences: events.slice(0, 20).map((e) => ({
       timestamp: e.created_at ?? 'unknown',
       route: e.url ?? extractRoute(e.metadata),
       userId: e.user_id,
     })),
-    deployMarkers: nearbyDeploys,
+    deployMarkers: summary.nearbyDeploys,
   });
 }

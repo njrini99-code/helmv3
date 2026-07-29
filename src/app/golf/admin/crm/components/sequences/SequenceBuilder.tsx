@@ -240,8 +240,8 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
 
   if (loading) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
-        <div className="flex items-center gap-2 text-sm text-warm-500">
+      <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6">
+        <div className="flex items-center gap-2 text-sm text-text-tertiary">
           <IconLoader size={14} className="animate-spin" />
           Loading sequence…
         </div>
@@ -251,20 +251,20 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
 
   if (error || !sequence) {
     return (
-      <div className="bg-cream-50 backdrop-blur-xl border border-red-200 rounded-2xl p-6">
-        <p className="text-sm text-red-700">{error ?? 'Sequence not found'}</p>
+      <div className="bg-surface backdrop-blur-xl border border-fw-danger/25 rounded-card p-6">
+        <p className="text-sm text-fw-danger-ink">{error ?? 'Sequence not found'}</p>
       </div>
     );
   }
 
   return (
-    <div className="glass-standard rounded-2xl shadow-glass p-6 space-y-6">
+    <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-warm-900">{sequence.name}</h2>
+          <h2 className="text-xl font-bold text-text-primary">{sequence.name}</h2>
           {sequence.description && (
-            <p className="text-sm text-warm-600 mt-1 max-w-2xl">
+            <p className="text-sm text-text-secondary mt-1 max-w-2xl">
               {sequence.description}
             </p>
           )}
@@ -273,9 +273,9 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
           type="button"
           onClick={() => setEnrollDialogOpen(true)}
           className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-cream-50 border border-warm-200/60 text-warm-700',
-            'hover:bg-warm-50 active:bg-warm-100 transition-colors',
+            'flex items-center gap-2 px-3 py-2 rounded-fw-md text-sm font-medium',
+            'bg-surface border border-border-subtle text-text-secondary',
+            'hover:bg-surface-sunken active:bg-surface-sunken transition-colors',
           )}
         >
           <IconBookmark size={14} /> Enroll segment
@@ -311,7 +311,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
       {/* Steps */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-warm-900">Steps</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Steps</h3>
           <Button variant="primary"
             type="button"
             onClick={() => {
@@ -320,8 +320,8 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
             }}
             disabled={adding}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium',
-              'bg-primary-600 text-white hover:bg-primary-700 transition-colors',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium',
+              'bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
@@ -330,8 +330,8 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
         </div>
 
         {steps.length === 0 && !adding && (
-          <div className="py-10 text-center bg-warm-50/40 rounded-xl border border-warm-100">
-            <p className="text-sm text-warm-500">
+          <div className="py-10 text-center bg-surface-sunken/60 rounded-fw-md border border-border-subtle">
+            <p className="text-sm text-text-tertiary">
               No steps yet. Click <strong>Add step</strong> to define the first
               email in this sequence.
             </p>
@@ -361,21 +361,21 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                     }}
                     className={cn(
                       'group w-full text-left flex items-center gap-3 p-4',
-                      'bg-cream-50 border border-warm-200/60 rounded-xl',
-                      'hover:bg-cream-100 hover:shadow-sm transition-all',
+                      'bg-surface border border-border-subtle rounded-fw-md',
+                      'hover:bg-surface-tint hover:shadow-flat transition-all',
                     )}
                   >
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-bold text-sm flex items-center justify-center">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-accent-50 text-accent-700 font-bold text-sm flex items-center justify-center">
                       {step.step_order}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-warm-900 truncate">
+                      <p className="text-sm font-medium text-text-primary truncate">
                         {step.subject_override ??
                           (step.template_id
                             ? '(uses template subject)'
                             : 'Untitled step')}
                       </p>
-                      <p className="text-xs text-warm-500 mt-0.5">
+                      <p className="text-xs text-text-tertiary mt-0.5">
                         Wait {step.delay_hours}h before sending
                         {step.template_id ? ' • template attached' : ''}
                       </p>
@@ -385,7 +385,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                         />
                       )}
                     </div>
-                    <span className="text-xs text-warm-400 group-hover:text-warm-600 transition-colors">
+                    <span className="text-xs text-text-tertiary group-hover:text-text-secondary transition-colors">
                       Edit
                     </span>
                   </Button>
@@ -408,23 +408,23 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
       {/* Enrollments */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-warm-900">Enrollments</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Enrollments</h3>
           {enrollments.length > 0 && (
-            <span className="text-xs text-warm-400">
+            <span className="text-xs text-text-tertiary">
               {enrollments.length} shown
             </span>
           )}
         </div>
 
         {enrollmentActionError && (
-          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-2">
+          <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2 mb-2">
             {enrollmentActionError}
           </p>
         )}
 
         {enrollments.length === 0 ? (
-          <div className="py-8 text-center bg-warm-50/40 rounded-xl border border-warm-100">
-            <p className="text-sm text-warm-500">
+          <div className="py-8 text-center bg-surface-sunken/60 rounded-fw-md border border-border-subtle">
+            <p className="text-sm text-text-tertiary">
               No coaches enrolled yet. Use <strong>Enroll segment</strong>{' '}
               above to add some.
             </p>
@@ -482,24 +482,24 @@ function StatCard({
   return (
     <div
       className={cn(
-        'rounded-xl px-4 py-3',
+        'rounded-fw-md px-4 py-3',
         tone === 'primary'
-          ? 'bg-primary-50 border border-primary-100'
-          : 'bg-warm-50/60 border border-warm-100',
+          ? 'bg-accent-50 border border-accent-100'
+          : 'bg-surface-sunken/70 border border-border-subtle',
       )}
     >
       <div className="flex items-center justify-between">
         <span
           className={cn(
             'text-xs font-medium uppercase tracking-wider',
-            tone === 'primary' ? 'text-primary-700' : 'text-warm-500',
+            tone === 'primary' ? 'text-accent-700' : 'text-text-tertiary',
           )}
         >
           {label}
         </span>
         <span
           className={cn(
-            tone === 'primary' ? 'text-primary-600' : 'text-warm-400',
+            tone === 'primary' ? 'text-accent-700' : 'text-text-tertiary',
           )}
         >
           {icon}
@@ -508,7 +508,7 @@ function StatCard({
       <p
         className={cn(
           'text-2xl font-bold tabular-nums mt-1',
-          tone === 'primary' ? 'text-primary-900' : 'text-warm-900',
+          tone === 'primary' ? 'text-accent-800' : 'text-text-primary',
         )}
       >
         {value}
@@ -521,10 +521,10 @@ function StatCard({
 // EnrollmentStatusBadge — small pill for an enrollment's lifecycle status.
 // ============================================================================
 const ENROLLMENT_STATUS_STYLES: Record<SequenceEnrollmentStatus, string> = {
-  active: 'bg-primary-50 text-primary-700 border-primary-100',
-  paused: 'bg-amber-50 text-amber-700 border-amber-100',
-  completed: 'bg-warm-100 text-warm-600 border-warm-200',
-  stopped: 'bg-red-50 text-red-600 border-red-100',
+  active: 'bg-accent-50 text-accent-700 border-accent-100',
+  paused: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring/60',
+  completed: 'bg-surface-sunken text-text-secondary border-border-subtle',
+  stopped: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/20',
 };
 
 function EnrollmentStatusBadge({ status }: { status: SequenceEnrollmentStatus }) {
@@ -572,16 +572,16 @@ function EnrollmentRow({
   const canStop = enrollment.status === 'active' || enrollment.status === 'paused';
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-cream-50 border border-warm-200/60 rounded-xl">
+    <div className="flex items-center gap-3 p-3 bg-surface border border-border-subtle rounded-fw-md">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-warm-900 truncate">
+        <p className="text-sm font-medium text-text-primary truncate">
           {coach?.name ?? 'Loading…'}
         </p>
-        <p className="text-xs text-warm-500 truncate">
+        <p className="text-xs text-text-tertiary truncate">
           {coach?.email ?? enrollment.coach_id}
         </p>
       </div>
-      <span className="text-xs text-warm-500 tabular-nums flex-shrink-0">
+      <span className="text-xs text-text-tertiary tabular-nums flex-shrink-0">
         Step {enrollment.current_step}
       </span>
       <EnrollmentStatusBadge status={enrollment.status} />
@@ -593,8 +593,8 @@ function EnrollmentRow({
               onClick={onPause}
               disabled={busy}
               className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium',
-                'text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors',
+                'flex items-center gap-1 px-2 py-1 rounded-fw-sm text-xs font-medium',
+                'text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
@@ -607,8 +607,8 @@ function EnrollmentRow({
               onClick={onResume}
               disabled={busy}
               className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium',
-                'text-primary-700 hover:bg-primary-50 transition-colors',
+                'flex items-center gap-1 px-2 py-1 rounded-fw-sm text-xs font-medium',
+                'text-accent-700 hover:bg-accent-50 transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
@@ -621,8 +621,8 @@ function EnrollmentRow({
               onClick={onStop}
               disabled={busy}
               className={cn(
-                'px-2 py-1 rounded-lg text-xs font-medium',
-                'text-red-600 hover:bg-red-50 transition-colors',
+                'px-2 py-1 rounded-fw-sm text-xs font-medium',
+                'text-fw-danger-ink hover:bg-fw-danger-bg/50 transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
@@ -642,9 +642,9 @@ function EnrollmentRow({
 //   < 2%   → warm-500 (cold)
 // ============================================================================
 function replyRateClass(rate: number): string {
-  if (rate >= 5) return 'text-primary-600';
-  if (rate >= 2) return 'text-amber-600';
-  return 'text-warm-500';
+  if (rate >= 5) return 'text-accent-700';
+  if (rate >= 2) return 'text-fw-warning-ink';
+  return 'text-text-tertiary';
 }
 
 // ============================================================================
@@ -663,8 +663,8 @@ function PerformanceSummary({
 
   if (totals.sent === 0) {
     return (
-      <div className="rounded-xl px-4 py-3 bg-warm-50/60 border border-warm-100">
-        <p className="text-sm text-warm-500">
+      <div className="rounded-fw-md px-4 py-3 bg-surface-sunken/70 border border-border-subtle">
+        <p className="text-sm text-text-tertiary">
           No sends yet — reply metrics appear once this drip starts sending.
         </p>
       </div>
@@ -672,21 +672,21 @@ function PerformanceSummary({
   }
 
   return (
-    <div className="rounded-xl px-4 py-3 bg-warm-50/60 border border-warm-100 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-      <span className="text-xs font-medium uppercase tracking-wider text-warm-500">
+    <div className="rounded-fw-md px-4 py-3 bg-surface-sunken/70 border border-border-subtle flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      <span className="text-xs font-medium uppercase tracking-wider text-text-tertiary">
         TRUE reply
       </span>
       <span className={cn('font-bold tabular-nums', replyRateClass(totals.reply_rate))}>
         {totals.reply_rate}%
       </span>
-      <span className="text-warm-400">·</span>
-      <span className="text-warm-600">
-        delivered <span className="font-semibold tabular-nums text-warm-900">{totals.delivered}</span>
+      <span className="text-text-tertiary">·</span>
+      <span className="text-text-secondary">
+        delivered <span className="font-semibold tabular-nums text-text-primary">{totals.delivered}</span>
       </span>
-      <span className="text-warm-400">·</span>
-      <span className={cn(bounceHot ? 'text-red-600 font-semibold' : 'text-warm-600')}>
+      <span className="text-text-tertiary">·</span>
+      <span className={cn(bounceHot ? 'text-fw-danger-ink font-semibold' : 'text-text-secondary')}>
         {bounceHot && '⚠ '}bounced{' '}
-        <span className={cn('tabular-nums', bounceHot ? 'font-bold' : 'font-semibold text-warm-900')}>
+        <span className={cn('tabular-nums', bounceHot ? 'font-bold' : 'font-semibold text-text-primary')}>
           {totals.bounced}
         </span>
         {bounceHot && <span className="ml-1 text-xs">({bounceRate}% — over 4% AUP line)</span>}
@@ -705,17 +705,17 @@ function StepPerformanceLine({
   metrics: SequencePerformanceStep | undefined;
 }) {
   if (!metrics || metrics.sent === 0) {
-    return <p className="text-xs text-warm-400 mt-0.5">No sends yet</p>;
+    return <p className="text-xs text-text-tertiary mt-0.5">No sends yet</p>;
   }
   return (
-    <p className="text-xs text-warm-500 mt-0.5 tabular-nums">
+    <p className="text-xs text-text-tertiary mt-0.5 tabular-nums">
       <span className="tabular-nums">{metrics.sent}</span> sent ·{' '}
       <span className="tabular-nums">{metrics.delivered}</span> delivered ·{' '}
       <span className={cn('font-semibold', replyRateClass(metrics.reply_rate))}>
         {metrics.reply_rate}% reply
       </span>
       {metrics.bounced > 0 && (
-        <span className="text-red-600"> · ⚠ bounce {metrics.bounced}</span>
+        <span className="text-fw-danger-ink"> · ⚠ bounce {metrics.bounced}</span>
       )}
     </p>
   );

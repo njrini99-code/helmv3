@@ -17,6 +17,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { SequenceEnrollmentBadge } from './badges/SequenceEnrollmentBadge';
 import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { groupBy } from './group-coaches';
+import { EmptyState, Surface } from '@/components/fairway';
 
 interface ConferenceGroupViewProps {
   coaches: Coach[];
@@ -173,14 +174,14 @@ export function ConferenceGroupView({
     return (
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="glass-standard rounded-2xl p-4">
+          <div key={i} className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4">
             <div className="flex items-center gap-4">
-              <div className="w-6 h-6 rounded bg-warm-200/60 skeleton-shimmer" />
+              <div className="w-6 h-6 rounded bg-surface-sunken skeleton-shimmer" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-4 w-40 bg-warm-200/60 rounded skeleton-shimmer" />
-                <div className="h-3 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
+                <div className="h-4 w-40 bg-surface-sunken rounded skeleton-shimmer" />
+                <div className="h-3 w-24 bg-surface-sunken rounded skeleton-shimmer" />
               </div>
-              <div className="h-6 w-10 bg-warm-100/60 rounded-full skeleton-shimmer" />
+              <div className="h-6 w-10 bg-surface-sunken rounded-full skeleton-shimmer" />
             </div>
           </div>
         ))}
@@ -190,22 +191,18 @@ export function ConferenceGroupView({
 
   if (coaches.length === 0) {
     return (
-      <div className="py-16 text-center glass-standard rounded-2xl">
-        <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
-          <IconUsers size={24} className="text-warm-300" />
-        </div>
-        {error ? (
-          <>
-            <h3 className="text-base font-semibold text-warm-700 mb-1">Failed to load coaches</h3>
-            <p className="text-sm text-warm-500 max-w-xs mx-auto">Something went wrong fetching this data. Please retry.</p>
-          </>
-        ) : (
-          <>
-            <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
-            <p className="text-sm text-warm-500 max-w-xs mx-auto">Try adjusting your filters.</p>
-          </>
-        )}
-      </div>
+      <Surface padding="none">
+        <EmptyState
+          variant={error ? 'subtle' : 'search'}
+          icon={<IconUsers size={24} className={error ? 'text-fw-danger' : undefined} />}
+          title={error ? 'Failed to load coaches' : 'No coaches found'}
+          description={
+            error
+              ? 'Something went wrong fetching this data. Please retry.'
+              : 'Try adjusting your filters.'
+          }
+        />
+      </Surface>
     );
   }
 
@@ -213,19 +210,19 @@ export function ConferenceGroupView({
     <div className="space-y-3">
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-warm-500">
-          <span className="font-semibold text-warm-700">{conferenceGroups.length}</span> conferences &middot;{' '}
-          <span className="font-semibold text-warm-700">{coaches.length}</span> coaches
+        <p className="text-sm text-text-tertiary">
+          <span className="font-semibold text-text-secondary">{conferenceGroups.length}</span> conferences &middot;{' '}
+          <span className="font-semibold text-text-secondary">{coaches.length}</span> coaches
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="ghost"
             type="button"
             onClick={toggleSelectAllFiltered}
             className={cn(
-              'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
+              'px-3 py-1.5 text-xs font-semibold rounded-fw-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30',
               allFilteredSelected
-                ? 'text-primary-700 bg-primary-50 hover:bg-primary-100'
-                : 'text-primary-700 hover:bg-primary-50'
+                ? 'text-accent-700 bg-accent-50 hover:bg-accent-100'
+                : 'text-accent-700 hover:bg-accent-50'
             )}
           >
             {allFilteredSelected ? `Clear selection` : `Select all ${coaches.length}`}
@@ -233,14 +230,14 @@ export function ConferenceGroupView({
           <Button variant="ghost"
             type="button"
             onClick={expandAll}
-            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+            className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30"
           >
             Expand All
           </Button>
           <Button variant="ghost"
             type="button"
             onClick={collapseAll}
-            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+            className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30"
           >
             Collapse All
           </Button>
@@ -259,7 +256,7 @@ export function ConferenceGroupView({
         return (
           <div
             key={group.conference}
-            className="glass-standard rounded-2xl"
+            className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]"
           >
             {/* Conference Header — checkbox + toggle button are siblings (no nested interactives) */}
             <div className="flex items-center gap-3 p-4">
@@ -269,7 +266,7 @@ export function ConferenceGroupView({
                 checked={allSelected}
                 ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
                 onChange={() => toggleGroupSelection(group)}
-                className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                className="w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer"
               />
 
               <Button variant="ghost"
@@ -277,19 +274,19 @@ export function ConferenceGroupView({
                 onClick={() => toggleConference(group.conference)}
                 aria-expanded={isExpanded}
                 aria-controls={panelId}
-                className="flex-1 min-w-0 flex items-center gap-3 -m-2 p-2 rounded-lg hover:bg-warm-50/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 transition-colors text-left"
+                className="flex-1 min-w-0 flex items-center gap-3 -m-2 p-2 rounded-fw-sm hover:bg-surface-sunken/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30 transition-colors text-left"
               >
-                <span className="text-warm-400 flex-shrink-0" aria-hidden="true">
+                <span className="text-text-tertiary flex-shrink-0" aria-hidden="true">
                   {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                 </span>
 
                 <span className="flex-1 min-w-0 flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-warm-900 truncate">{group.conference}</h3>
-                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-warm-100 text-label font-bold text-warm-600 tabular-nums">
+                  <h3 className="text-sm font-semibold text-text-primary truncate">{group.conference}</h3>
+                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-surface-sunken text-label font-bold text-text-secondary tabular-nums">
                     {group.coaches.length}
                   </span>
                   {activeCount > 0 && (
-                    <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-primary-50 text-label font-bold text-primary-700 tabular-nums">
+                    <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-accent-50 text-label font-bold text-accent-700 tabular-nums">
                       {activeCount} active
                     </span>
                   )}
@@ -302,7 +299,7 @@ export function ConferenceGroupView({
                     .map(([division, count]) => (
                       <span
                         key={division}
-                        className="px-2 py-0.5 rounded-lg bg-blue-50 text-micro font-bold text-blue-700 tabular-nums"
+                        className="px-2 py-0.5 rounded-fw-sm bg-surface-sunken text-micro font-bold text-text-secondary tabular-nums"
                       >
                         {division}: {count}
                       </span>
@@ -335,18 +332,18 @@ export function ConferenceGroupView({
                 id={panelId}
                 role="region"
                 aria-label={`${group.conference} coaches`}
-                className="border-t border-warm-100/50"
+                className="border-t border-border-subtle"
               >
                 <table className="w-full table-fixed">
                   <thead>
-                    <tr className="border-b border-warm-100/30">
+                    <tr className="border-b border-border-subtle">
                       <th className="w-10 px-4 py-2" />
                       <th className="w-8 px-2 py-2" />
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Coach</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">School</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider w-14 hidden sm:table-cell">Div</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider hidden lg:table-cell">Last Contact</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Coach</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">School</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider w-14 hidden sm:table-cell">Div</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider hidden lg:table-cell">Last Contact</th>
                       <th className="w-10 px-4 py-2" />
                     </tr>
                   </thead>
@@ -357,9 +354,9 @@ export function ConferenceGroupView({
                         <tr
                           key={coach.id}
                           className={cn(
-                            'border-b border-warm-50/50 transition-all duration-150 cursor-pointer group',
-                            isSelected && 'bg-primary-50/50',
-                            !isSelected && 'hover:bg-primary-50/20'
+                            'border-b border-border-subtle/50 transition-all duration-150 cursor-pointer group',
+                            isSelected && 'bg-accent-50/50',
+                            !isSelected && 'hover:bg-accent-50/20'
                           )}
                           onClick={() => onCoachClick(coach)}
                         >
@@ -374,7 +371,7 @@ export function ConferenceGroupView({
                                 else next.add(coach.id);
                                 onSelectionChange(next);
                               }}
-                              className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                              className="w-4 h-4 rounded-fw-sm border-border-strong text-accent-700 focus:ring-border-focus/20 cursor-pointer"
                             />
                           </td>
                           <td className="px-2 py-2.5" onClick={e => e.stopPropagation()}>
@@ -384,16 +381,16 @@ export function ConferenceGroupView({
                               aria-label={coach.is_starred ? `Unstar ${coach.name}` : `Star ${coach.name}`}
                               aria-pressed={coach.is_starred}
                               className={cn(
-                                'transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 rounded',
+                                'transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30 rounded',
                                 coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50'
                               )}
                             >
-                              <IconStar size={14} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300')} />
+                              <IconStar size={14} className={cn(coach.is_starred ? 'fill-fw-warning text-fw-warning' : 'text-text-tertiary')} />
                             </IconButton>
                           </td>
                           <td className="px-4 py-2.5">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+                              <p className="text-sm font-medium text-text-primary truncate">{coach.name}</p>
                               {/* Priority dot — same idiom as the desktop CoachTable priority
                                   column (colored pill + dot + icon), relocated next to the name
                                   so this compact conference-grouped row doesn't need its own
@@ -407,21 +404,21 @@ export function ConferenceGroupView({
                                   )}
                                   title={priorityConfig[coach.priority]?.label}
                                 >
-                                  <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500')} />
+                                  <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-fw-danger' : 'bg-fw-warning')} />
                                   <span className="flex items-center">{priorityConfig[coach.priority]?.iconLabel}</span>
                                 </span>
                               )}
                             </div>
-                            {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
+                            {coach.title && <p className="text-label text-text-tertiary truncate">{coach.title}</p>}
                             <div className="mt-1"><SequenceEnrollmentBadge summary={coachEnrollments?.[coach.id]} /></div>
                           </td>
                           <td className="px-4 py-2.5">
-                            <p className="text-sm text-warm-700 truncate">{coach.school}</p>
+                            <p className="text-sm text-text-secondary truncate">{coach.school}</p>
                           </td>
                           <td className="hidden sm:table-cell px-4 py-2.5">
                             <span className={cn(
                               'text-micro font-bold uppercase px-1.5 py-0.5 rounded',
-                              coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
+                              coach.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-700'
                             )}>
                               {coach.division}
                             </span>
@@ -435,10 +432,10 @@ export function ConferenceGroupView({
                                 aria-expanded={openStatusDropdown === coach.id}
                                 aria-label={`Change status for ${coach.name}`}
                                 className={cn(
-                                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-micro font-medium transition-all',
+                                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-fw-sm text-micro font-medium transition-all',
                                   statusConfig[coach.status]?.bgColor,
                                   statusConfig[coach.status]?.color,
-                                  'hover:ring-1 hover:ring-warm-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30'
+                                  'hover:ring-1 hover:ring-border-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30'
                                 )}
                               >
                                 {statusConfig[coach.status]?.icon}
@@ -447,7 +444,7 @@ export function ConferenceGroupView({
                               {openStatusDropdown === coach.id && (
                                 <div
                                   role="menu"
-                                  className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto glass-standard rounded-xl shadow-xl"
+                                  className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto rounded-fw-md bg-elevated shadow-raise"
                                 >
                                   {ALL_STATUSES.map(status => (
                                     <Button variant="primary"
@@ -456,7 +453,7 @@ export function ConferenceGroupView({
                                       key={status}
                                       onClick={() => { onStatusChange(coach.id, status); setOpenStatusDropdown(null); }}
                                       className={cn('w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
-                                        coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
+                                        coach.status === status ? 'bg-accent-50 font-semibold text-accent-700' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken'
                                       )}>
                                       {statusConfig[status]?.icon}
                                       <span>{statusConfig[status]?.label}</span>
@@ -469,7 +466,7 @@ export function ConferenceGroupView({
                           <td className="hidden lg:table-cell px-4 py-2.5">
                             <span className={cn(
                               'text-xs tabular-nums',
-                              !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500'
+                              !coach.last_contacted_at ? 'text-fw-danger font-medium' : 'text-text-tertiary'
                             )}>
                               {formatRelativeDate(coach.last_contacted_at)}
                             </span>
@@ -482,20 +479,20 @@ export function ConferenceGroupView({
                                 aria-haspopup="menu"
                                 aria-expanded={openActionMenu === coach.id}
                                 aria-label={`More actions for ${coach.name}`}
-                                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 transition-all"
+                                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30 transition-all"
                               >
                                 <IconMoreHorizontal size={14} />
                               </IconButton>
                               {openActionMenu === coach.id && (
                                 <div
                                   role="menu"
-                                  className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-xl glass-standard shadow-xl"
+                                  className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-fw-md bg-elevated shadow-raise"
                                 >
                                   <Button variant="ghost"
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
-                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                                   >
                                     <IconMessageSquare size={14} /> Log Contact
                                   </Button>
@@ -504,7 +501,7 @@ export function ConferenceGroupView({
                                       role="menuitem"
                                       href={`mailto:${coach.email}`}
                                       onClick={() => setOpenActionMenu(null)}
-                                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                                      className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                                     >
                                       <IconMail size={14} /> Send Email
                                     </a>
@@ -513,7 +510,7 @@ export function ConferenceGroupView({
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { onStatusChange(coach.id, 'contacted'); setOpenActionMenu(null); }}
-                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                                   >
                                     <IconArrowRight size={14} /> Move to Contacted
                                   </Button>
@@ -521,7 +518,7 @@ export function ConferenceGroupView({
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
-                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                                    className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                                   >
                                     <IconStar size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
                                   </Button>

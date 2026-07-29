@@ -41,6 +41,8 @@
 import { useEffect, useLayoutEffect } from 'react';
 import Lenis from 'lenis';
 import { gsap, ScrollTrigger } from './register';
+import { setMarketingScroller } from './scroller-handle';
+import { beginExternalScrollFrame, pumpScrollFrame } from '@/components/landing/motion';
 
 export interface MarketingScrollProviderProps {
   /** Smooth-scroll same-page hash links through Lenis (Products has anchors). */
@@ -152,11 +154,30 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
       },
     });
     scrollDriver.current = lenis;
+    // Publish the owner so chrome that needs to MOVE the page (the header's
+    // active nav item) goes through Lenis instead of racing it.
+    setMarketingScroller(lenis);
+
+    // The legacy motion.tsx loop is the THIRD scroll loop on this page, and
+    // until now it was still reading the raw native `scroll` event — arriving
+    // after the frame Lenis painted, and coalesced by the browser on top of
+    // that. Its subscribers (the dashboard settle, the team assembly, parallax,
+    // the header's scrolled flag) updated on 54% of the frames the scroll
+    // actually moved, so they stepped while the page glided. Claim that loop
+    // and drive it from the callback below instead.
+    const releaseExternalFrame = beginExternalScrollFrame();
 
     // 1. Lenis publishes scroll → ScrollTrigger recomputes. Without this,
     //    ScrollTrigger samples window.scrollY on its own schedule and drifts
     //    from the interpolated position Lenis is actually painting.
-    lenis.on('scroll', ScrollTrigger.update);
+    //    `pumpScrollFrame` rides along in the SAME callback, so motion.tsx's
+    //    subscribers read the position Lenis just wrote rather than the last
+    //    one the browser got round to announcing.
+    const onLenisScroll = () => {
+      ScrollTrigger.update();
+      pumpScrollFrame();
+    };
+    lenis.on('scroll', onLenisScroll);
 
     // 2. GSAP's ticker drives Lenis — ONE loop, not two. Ticker time arrives in
     //    seconds; Lenis.raf expects milliseconds.
@@ -206,7 +227,11 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
       document.removeEventListener('click', onRouteClick, true);
       if (onAnchorClick) document.removeEventListener('click', onAnchorClick);
       if (onHashChange) window.removeEventListener('hashchange', onHashChange);
-      lenis.off('scroll', ScrollTrigger.update);
+      lenis.off('scroll', onLenisScroll);
+      // Hand the shared frame loop back to its native scroll listener BEFORE
+      // Lenis goes away, or nothing drives it on the next page.
+      releaseExternalFrame();
+      setMarketingScroller(undefined);
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33); // restore GSAP's documented default
       lenis.stop();

@@ -183,11 +183,11 @@ export function SavedSegmentsRail({
 
   if (collapsed) {
     return (
-      <div className="px-3 py-2 border-t border-white/10">
+      <div className="px-3 py-2 border-t border-nav-text/10">
         <IconButton variant="default"
           onClick={() => setDialogOpen(true)}
           aria-label="Save current filters as segment"
-          className="w-full flex items-center justify-center p-2.5 rounded-md text-warm-400 hover:bg-cream-50/5 hover:text-white transition-all duration-200"
+          className="w-full flex items-center justify-center p-2.5 rounded-fw-sm text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition-all duration-200"
         >
           <IconBookmark size={16} />
         </IconButton>
@@ -202,15 +202,15 @@ export function SavedSegmentsRail({
   }
 
   return (
-    <div className="px-3 py-2 border-t border-white/10">
+    <div className="px-3 py-2 border-t border-nav-text/10">
       <div className="flex items-center justify-between px-3 mb-2">
-        <span className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500">
+        <span className="text-eyebrow font-semibold uppercase tracking-wider text-nav-text-dim">
           Segments
         </span>
         <IconButton variant="default"
           onClick={() => setDialogOpen(true)}
           aria-label="Save current filters as segment"
-          className="p-1 rounded-md text-warm-400 hover:text-white hover:bg-cream-50/10 transition-colors"
+          className="p-1 rounded-fw-sm text-nav-text-dim hover:text-nav-text hover:bg-nav-surface transition-colors"
           title="Save current filters as segment"
         >
           <IconPlus size={14} />
@@ -220,17 +220,17 @@ export function SavedSegmentsRail({
       {loading && (
         <div className="px-3 py-2 space-y-1">
           {[0, 1].map((i) => (
-            <div key={i} className="h-7 rounded-md bg-cream-50/5 skeleton-shimmer" />
+            <div key={i} className="h-7 rounded-fw-sm bg-nav-surface skeleton-shimmer" />
           ))}
         </div>
       )}
 
       {!loading && error && (
-        <p className="px-3 text-eyebrow text-red-400">{error}</p>
+        <p className="px-3 text-eyebrow text-fw-danger/80">{error}</p>
       )}
 
       {!loading && !error && ordered.length === 0 && (
-        <p className="px-3 py-2 text-eyebrow text-warm-500">
+        <p className="px-3 py-2 text-eyebrow text-nav-text-dim">
           No segments yet — apply filters and click <IconBookmark size={10} className="inline" /> to save one.
         </p>
       )}
@@ -265,16 +265,16 @@ export function SavedSegmentsRail({
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents context menu from closing when clicking menu items
           <div
             ref={contextRef}
-            className="fixed z-modal min-w-[180px] py-1 rounded-xl glass-standard shadow-2xl"
+            className="fixed z-modal min-w-[180px] py-1 rounded-fw-md bg-elevated shadow-raise"
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={(e) => e.stopPropagation()}
           >
             <Button variant="ghost"
               type="button"
               onClick={() => handleTogglePin(segment)}
-              className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors flex items-center gap-2"
+              className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors flex items-center gap-2"
             >
-              <IconBookmark size={14} className="text-warm-400" />
+              <IconBookmark size={14} className="text-text-tertiary" />
               {segment.pin_order === null || segment.pin_order === undefined
                 ? 'Pin to rail'
                 : 'Unpin from rail'}
@@ -284,7 +284,7 @@ export function SavedSegmentsRail({
               onClick={() => handleDelete(segment)}
               className={cn(
                 'w-full px-3 py-2 text-left text-sm transition-colors flex items-center gap-2',
-                'text-red-600 hover:bg-red-50',
+                'text-fw-danger-ink hover:bg-fw-danger-bg/50',
               )}
             >
               <IconX size={14} />

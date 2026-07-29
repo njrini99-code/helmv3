@@ -158,7 +158,7 @@ export function CreateTaskDialog({
     <>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog */}
       <div
-        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-nav-bg/35"
         onClick={() => onOpenChange(false)}
       />
 
@@ -167,15 +167,15 @@ export function CreateTaskDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-task-title"
-          className="w-full max-w-md bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
+          className="w-full max-w-md bg-surface rounded-card border border-border-subtle shadow-raise pointer-events-auto"
         >
           <form onSubmit={handleSubmit}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-                  <IconClipboardList size={16} className="text-primary-600" />
+                <span className="w-8 h-8 rounded-fw-sm bg-accent-50 flex items-center justify-center">
+                  <IconClipboardList size={16} className="text-accent-700" />
                 </span>
-                <h2 id="create-task-title" className="text-base font-semibold text-warm-900">
+                <h2 id="create-task-title" className="text-base font-semibold text-text-primary">
                   New task
                 </h2>
               </div>
@@ -183,7 +183,7 @@ export function CreateTaskDialog({
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close"
-                className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-primary hover:bg-surface-sunken transition-colors"
               >
                 <IconX size={14} />
               </IconButton>
@@ -191,8 +191,8 @@ export function CreateTaskDialog({
 
             <div className="px-5 py-4 space-y-4">
               <div>
-                <label htmlFor="task-title" className="block text-xs font-medium text-warm-700 mb-1">
-                  Title <span className="text-red-500">*</span>
+                <label htmlFor="task-title" className="block text-xs font-medium text-text-secondary mb-1">
+                  Title <span className="text-fw-danger">*</span>
                 </label>
                 {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
                 <Input autoFocus
@@ -207,8 +207,8 @@ export function CreateTaskDialog({
               </div>
 
               <div>
-                <label htmlFor="task-description" className="block text-xs font-medium text-warm-700 mb-1">
-                  Description <span className="text-warm-400 font-normal">(optional)</span>
+                <label htmlFor="task-description" className="block text-xs font-medium text-text-secondary mb-1">
+                  Description <span className="text-text-tertiary font-normal">(optional)</span>
                 </label>
                 <Textarea
                   id="task-description"
@@ -241,8 +241,8 @@ export function CreateTaskDialog({
               </div>
 
               <div>
-                <label htmlFor="task-due" className="block text-xs font-medium text-warm-700 mb-1">
-                  Due <span className="text-warm-400 font-normal">(optional)</span>
+                <label htmlFor="task-due" className="block text-xs font-medium text-text-secondary mb-1">
+                  Due <span className="text-text-tertiary font-normal">(optional)</span>
                 </label>
                 <Input
                   id="task-due"
@@ -252,23 +252,23 @@ export function CreateTaskDialog({
                 />
               </div>
 
-              <p className="text-eyebrow text-warm-400">
+              <p className="text-eyebrow text-text-tertiary">
                 Assigned to you — appears in your Inbox &quot;Due today&quot; list.
               </p>
 
               {error && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <p className="text-xs text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-3 py-2">
                   {error}
                 </p>
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-warm-100 bg-warm-50/40 rounded-b-2xl">
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border-subtle bg-surface-sunken/60 rounded-b-card">
               <Button variant="ghost"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
-                className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
               >
                 Cancel
               </Button>
@@ -276,8 +276,8 @@ export function CreateTaskDialog({
                 type="submit"
                 disabled={submitting || !title.trim()}
                 className={cn(
-                  'px-4 py-1.5 text-sm font-semibold rounded-xl shadow-sm transition-colors',
-                  'bg-primary-600 text-white hover:bg-primary-700',
+                  'px-4 py-1.5 text-sm font-semibold rounded-fw-md shadow-flat transition-colors',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >

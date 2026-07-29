@@ -139,9 +139,15 @@ export function buildIncidentFeedFromSources(
   sentryIssues: readonly SentryIssue[],
   windowHours: number,
   sentryTagHint?: SentryTagHint,
+  priorResolutions?: Map<string, string>,
 ): { incidents: TriageItem[]; counts: IncidentFeedCounts } {
   const sentryInWindow = filterSentryIssuesByWindow(sentryIssues, windowHours);
-  const incidents = mergeTriage({ sentryIssues: sentryInWindow, appEvents: [...appEvents], sentryTagHint });
+  const incidents = mergeTriage({
+    sentryIssues: sentryInWindow,
+    appEvents: [...appEvents],
+    sentryTagHint,
+    priorResolutions,
+  });
   return { incidents, counts: summarizeIncidentFeed(incidents) };
 }
 
@@ -179,6 +185,59 @@ export async function queryAppErrorEvents(
   });
 
   return (data ?? []) as unknown as AppTriageEventRow[];
+}
+
+/**
+ * How far back to look for a prior resolution when deciding "did this come
+ * back?". Bounded so an incident resolved a year ago and legitimately
+ * reoccurring today reads as new rather than as a regression of ancient
+ * history — 90 days is well past any realistic fix-verification window.
+ */
+export const REGRESSION_LOOKBACK_DAYS = 90;
+
+/**
+ * Latest `resolved_at` per fingerprint, for fingerprints that currently have
+ * UNRESOLVED rows in the feed.
+ *
+ * This is the missing half of "did my fix actually hold?". Sentry-origin rows
+ * get `substatus: 'regressed'` natively from Sentry's own API, and
+ * TriageQueue has rendered a REGRESSED tag for it all along — but the
+ * app-origin branch of mergeTriage hardcoded `substatus: null`, so the tag
+ * could never fire for the majority-volume half of the feed. An operator who
+ * resolved an incident last week had no way to see it return: the new row is
+ * inserted with `resolved` defaulting to false and carries NO link back to
+ * the fact this exact fingerprint was previously closed.
+ *
+ * Deliberately a SECOND query rather than a join: it needs the fingerprints
+ * of the current unresolved buckets, which are only known after the feed
+ * query has run. Cheap — bounded by `IN (…)` on an indexed column.
+ */
+export async function queryPriorResolutions(
+  fingerprints: readonly string[],
+): Promise<Map<string, string>> {
+  const latest = new Map<string, string>();
+  if (fingerprints.length === 0) return latest;
+
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - REGRESSION_LOOKBACK_DAYS * 24 * 3600_000).toISOString();
+
+  const { data } = await admin
+    .from('admin_events')
+    .select('fingerprint, resolved_at')
+    .eq('resolved', true)
+    .in('fingerprint', [...fingerprints])
+    .gte('resolved_at', since)
+    .order('resolved_at', { ascending: false });
+
+  for (const row of data ?? []) {
+    const fp = row.fingerprint;
+    const at = row.resolved_at;
+    if (!fp || !at) continue;
+    // Rows arrive newest-first, so the FIRST sighting of a fingerprint is its
+    // most recent resolution — later ones are older and must not overwrite it.
+    if (!latest.has(fp)) latest.set(fp, at);
+  }
+  return latest;
 }
 
 /**
@@ -225,6 +284,19 @@ export async function fetchIncidentFeed(
   // deliberately un-windowed "Sentry unresolved (org-wide)" panel.
   const releaseFilteredSentry = filterSentryIssuesByDeploy(mergeSentrySource.data ?? [], deploy.deployAt);
 
+  // Runs AFTER queryAppErrorEvents because it is scoped to the fingerprints
+  // that actually appear in this feed — a bounded IN(…) on an indexed column
+  // rather than a table scan.
+  const priorResolutions = await queryPriorResolutions(
+    Array.from(
+      new Set(
+        appEvents
+          .map((row) => row.fingerprint)
+          .filter((fp): fp is string => typeof fp === 'string' && fp.length > 0),
+      ),
+    ),
+  );
+
   const { incidents, counts } = buildIncidentFeedFromSources(
     appEvents,
     releaseFilteredSentry,
@@ -233,6 +305,7 @@ export async function fetchIncidentFeed(
     // by that tag — an unfiltered view still can't know per-issue sport/
     // feature (the list endpoint doesn't return tags), so it stays null.
     { sport: filters.sport ?? null, feature: filters.feature ?? null },
+    priorResolutions,
   );
 
   return { incidents, appEvents, sentry, counts };

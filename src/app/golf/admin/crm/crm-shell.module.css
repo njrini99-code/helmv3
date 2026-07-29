@@ -1,13 +1,24 @@
 .shell {
   /*
-   * CRM-local bridge from the legacy primary-* utilities to Fairway's
-   * AA-safe turf range. A large amount of older CRM code still uses
-   * bg-primary-500/600 with cream or white text. Scoping the channel override
-   * here upgrades every live tab and modal without changing other products.
+   * CRM-local bridge from the legacy primary-* utilities to Fairway's AA-safe
+   * turf range. The CRM's OWN markup no longer ships a single primary-* class
+   * (it is all `accent-*` / `fw-*` semantic tokens now), but the SHARED
+   * `@/components/ui` primitives it mounts — Button variant="primary",
+   * toggle-group, checkbox, select — still paint `bg-primary-600 text-white`
+   * and are used across baseball/admin/auth too, so they cannot be retoned
+   * globally from here.
+   *
+   * Pinning the channels to the exact Fairway accent steps makes every shared
+   * primitive inside the shell render the same green as a native Fairway CTA:
+   *   500 → accent-650  (#248342 — the ONE solid-fill green; 4.69:1 vs cream)
+   *   600 → accent-650  (ui/button's primary fill lands on the same step)
+   *   700 → accent-700  (#177337 — the hover/pressed step)
+   * Values are the sRGB resolutions of --fw-color-accent-650/700 in
+   * src/styles/design-tokens.css; keep them in sync if those tokens move.
    */
   --c-primary-500: 36 131 66;
-  --c-primary-600: 21 128 61;
-  --c-primary-700: 22 101 52;
+  --c-primary-600: 36 131 66;
+  --c-primary-700: 23 115 55;
 }
 
 .shell :global(button),
