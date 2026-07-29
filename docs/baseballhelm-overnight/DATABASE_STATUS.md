@@ -1,6 +1,6 @@
 # DATABASE STATUS
 
-_Updated 2026-07-29 05:05 EDT._
+_Updated 2026-07-29 05:35 EDT._
 
 _Findings are verified from **migration source**; live `pg_policies` state is
 still unconfirmed. Migration source is authoritative for what was applied but
@@ -361,7 +361,7 @@ each about thirty seconds of grep.
 
 ---
 
-## 🟡 `baseball_notifications` — any authenticated user can write a notification to anyone
+## ✅ `baseball_notifications` — any authenticated user could write a notification to anyone (FIXED)
 
 _Found 2026-07-29 05:45 by sweeping baseball tables for permissive **write**
 policies (`WITH CHECK (true)` / `USING (true)` on INSERT/UPDATE/DELETE/ALL).
@@ -400,14 +400,31 @@ to self-only silently stops practice-publish and coach lift messages — a
 "quietly stopped working" failure of exactly the kind this document warns
 about elsewhere.
 
-**What the real fix looks like:** a definer helper along the lines of
-`can_notify_baseball_user(target_user_id)` — true when the caller is staff on
-a team the target belongs to, or when target = self — and
-`WITH CHECK (auth.uid() = user_id OR public.can_notify_baseball_user(user_id))`.
-That is a new helper plus verification of every notification write path, which
-is more than should be bolted onto an already-large migration pair overnight.
-**Not fixed. Left with the analysis done so the next person starts from the
-design rather than from the trap.**
+**FIXED in `bcbba306b`** (migration A SECTION 8 + B SECTION 6). I deferred
+this at 05:45 as "needs design"; it needed verification instead, and the
+verification is what made it safe to do:
+
+- **Those two are the only inserters**, established two ways rather than
+  assumed. `from('baseball_notifications')` across `src` returns exactly the
+  two inserts above plus `notifications.ts`, which only SELECTs and
+  marks-read. `INSERT INTO … baseball_notifications` across every migration
+  returns nothing, so no trigger or RPC writes them either — and a definer
+  one would bypass RLS regardless.
+- The rule that matches the product is therefore *"notify yourself, or a
+  player on a team you are staff on"*, expressed as one definer call:
+  `WITH CHECK (public.can_notify_baseball_user(user_id))`. No inline subquery,
+  so no recursion path.
+- **Staff→staff and player→coach are deliberately excluded.** Neither has a
+  call site, and the second is the direction an attacker benefits from most —
+  a coach acting on a fake notification is worth more than a player doing so.
+  Both fail closed; adding either later is a deliberate edit, not an accident.
+- `TO authenticated` is now explicit. The baseline policy having no `TO`
+  clause is how it covered `anon` in the first place.
+
+10 pgTAP assertions, and the **permitted** cases carry more weight than the
+denials: a self-only policy would pass every denial in that suite while
+silently disabling practice-publish, so the suite asserts that a coach can
+still notify their own player.
 
 ---
 

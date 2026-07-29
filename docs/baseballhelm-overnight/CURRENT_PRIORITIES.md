@@ -1,18 +1,21 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 05:10 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 05:35 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
 
 ---
 
 ## 🔴 THE #1 ITEM FOR THE MORNING (human decision required)
 
-**Six live cross-tenant exposures.** Five are the same mistake — an over-broad
-SELECT policy on a table whose rows belong to somebody. The sixth is a typo
-that turns a correct rule into `true`, and it is the worst of them. All live in
-prod since the 2026-05-27 baseline, all verified from migration source. A
-seventh (`baseball_coaches`) is confirmed but deliberately left for a product
-decision — see below.
+**Six live cross-tenant read exposures, plus one write hole.** Five of the six
+are the same mistake — an over-broad SELECT policy on a table whose rows belong
+to somebody. The sixth is a typo that turns a correct rule into `true`, and it
+is the worst of them. All live in prod since the 2026-05-27 baseline, all
+verified from migration source.
+
+Two more are confirmed and **deliberately left for a decision**, not fixed:
+`baseball_coaches` (below) and `golf_coaches` (out of scope, live product —
+`DATABASE_STATUS.md`). The write hole, `baseball_notifications`, **is** fixed.
 
 | Table | Policy | What leaks |
 |---|---|---|
@@ -63,9 +66,9 @@ single step can take production down:
 
 | Step | File | Blast radius |
 |---|---|---|
-| 1 | `20260729000100_..._a_additive.sql` | **None.** Creates six functions, grants EXECUTE. No policy, no revoke, no ALTER. |
+| 1 | `20260729000100_..._a_additive.sql` | **None.** Creates seven functions, grants EXECUTE. No policy, no revoke, no ALTER. |
 | 2 | *(deploy the companion app changes)* | Works under both old and new policies. |
-| 3 | `20260729000200_..._b_policies.sql` | Swaps the four policies. **This is the one that closes the leaks and the one that can break things.** |
+| 3 | `20260729000200_..._b_policies.sql` | Replaces five policies and drops three broken ones outright. **This is the one that closes the leaks and the one that can break things.** |
 
 The invitation fix was folded into these two files rather than added as a new
 pair, deliberately: a separate A′/B′ would have made the apply sequence five
@@ -161,7 +164,7 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 |---|---|---|
 | ~~P1~~ **DONE** | ~~34% of `baseball_*` tables have zero pgTAP RLS coverage~~ | Closed. Invitations (`2c2c939cf`), messaging (`e1011f50b`), and tasks/travel/announcements/dev-plans (`4e0b96ccb`) all have suites now. Writing them found **two P0s** — the invitation-code leak and the `baseball_messages` typo. Two findings across five previously-untested tables is the evidence for the claim that an untested policy is an unverified claim. |
 | P1 | **CI seeds PRODUCTION on every PR** | `seed:baseball:ci` creates auth users and deletes `login_attempts` rows in the production project. Now explicit (`--allow-prod` in package.json) rather than hidden behind a constant named "demo" — but it should probably target a local stack instead. Needs a decision. |
-| P1 | `baseball_notifications_insert` is `WITH CHECK (true)` — any authenticated user can write a notification to anyone | In-app phishing, not a leak (reads are correctly self-scoped). **The obvious fix breaks the product:** practice-publish and coach lift messages legitimately write notifications to *other* users through the caller's own session (`practice.ts:516`, `lifting-v11.ts:2411`, both `createClient()` not admin), so `auth.uid() = user_id` would silently stop them. Needs a `can_notify_baseball_user()` definer helper. Analysis done in `DATABASE_STATUS.md`; deliberately not bolted onto the pending migration pair. |
+| ~~P1~~ **DONE** | ~~`baseball_notifications_insert` is `WITH CHECK (true)`~~ | In-app phishing, not a leak (reads are correctly self-scoped). **The obvious fix breaks the product:** practice-publish and coach lift messages legitimately write notifications to *other* users through the caller's own session (`practice.ts:516`, `lifting-v11.ts:2411`, both `createClient()` not admin), so `auth.uid() = user_id` would silently stop them. Needs a `can_notify_baseball_user()` definer helper. **Fixed in `bcbba306b`** — a definer `can_notify_baseball_user()` gating on "self, or a player on a team you are staff on", after verifying two ways that those two call sites are the only inserters. 10 pgTAP assertions, weighted toward the PERMITTED cases so a future self-only tightening cannot pass. |
 | P1 **BLOCKED** | `public_profile_mode` DDL default is `'private'`; a 2026-07-09 live read recorded `'unlisted'` | If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. Blocked on nothing but database reachability — retried 05:30 EDT, still `Connection terminated due to connection timeout`. One query settles it: `select public_profile_mode, count(*) from baseball_teams group by 1`. |
 | ~~P2~~ **DONE** | ~~The `integration` vitest project (5 files) runs in no CI workflow~~ | **The item was right about the gap and wrong about the cause, and the real cause was worse.** `vitest.config.ts` set a root-level `include`, and `extends: true` MERGES array options rather than replacing them — so every project inherited the broad root glob. `integration`, `rls` and `business` set `include` but not `exclude`, so each matched **~870 files instead of 5, 0 and 7**. `unit` looked fine only because it also overrides `exclude`. Consequences: CI's "Business contracts" job was re-running the entire unit suite under a name claiming to check 7 contract files (~170s → 3s once fixed), and the integration tests *were* running — by accident, inside that job. Root `include` removed, integration given its own CI step so nothing is lost. Verified by counting: unit 861 (unchanged), integration 5, business 7, rls 0. |
 | P2 | Elite stat event model — 8 tables, ~10 migrations, **zero rows** in production | Dead schema. Decide: keep, or graveyard it. |
