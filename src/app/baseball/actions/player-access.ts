@@ -32,6 +32,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { withBaseballAction, BaseballActionError } from '@/lib/baseball/with-baseball-action';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 
 const ACTIVATE_PATH = '/baseball/dashboard/activate';
 const DASHBOARD_PATH = '/baseball/dashboard';
@@ -58,6 +59,30 @@ export const activateRecruitingExposure = withBaseballAction(
   'activateRecruitingExposure',
   { featureArea: 'baseball-recruiting', requiredPlayerAccess: 'recruiting_exposure_enabled' },
   async (ctx): Promise<PlayerAccessActionResult> => {
+    // PRODUCT-MODULE GATE. Checked first, before role or player-access,
+    // because a disabled module is unavailable to everyone.
+    //
+    // The sunset closed /baseball/dashboard/activate — added to
+    // MODULE_ROUTE_PREFIXES, plus a redirect in the page itself. Neither
+    // touches THIS, and this is the door: a server action is a POST endpoint
+    // with a stable id, reachable without ever loading the page that renders
+    // its button. Closing the page and leaving the action open is the same
+    // mistake as hiding a nav link and leaving the route open, one layer down.
+    //
+    // It matters more here than for a read: every other recruiting surface
+    // only displays, while this one WRITES recruiting_activated = true — the
+    // flag that makes a player publicly named and discoverable — and that row
+    // state outlives the sunset.
+    //
+    // The pre-existing `requiredPlayerAccess: 'recruiting_exposure_enabled'`
+    // gate is not a substitute. It defaults to TRUE for high-school, showcase
+    // and JUCO program variants, and the coach-facing toggle that could turn it
+    // off is itself hidden while the module is sunset — so the only surviving
+    // gate is one nobody can reach.
+    if (!isRecruitingEnabled()) {
+      throw new BaseballActionError('Recruiting is not available right now.');
+    }
+
     if (!ctx.activePlayerId) {
       throw new BaseballActionError('Only a player can activate recruiting exposure.');
     }
@@ -110,6 +135,12 @@ export const activateRecruitingExposure = withBaseballAction(
  * A player withdraws from recruiting exposure. Intentionally NOT gated on the
  * toggle: a player must always be able to opt OUT, even after the program turns
  * exposure off (the gate only blocks turning exposure ON). Self-write only.
+ *
+ * Also intentionally NOT gated on the recruiting product module, for the same
+ * reason one level up. Players who activated BEFORE the sunset still carry
+ * recruiting_activated = true; blocking this would trap them in an exposed
+ * state with no way out, which is the worst outcome of the three. A module
+ * gate belongs on the door in, never on the door out.
  */
 export const deactivateRecruitingExposure = withBaseballAction(
   'deactivateRecruitingExposure',
