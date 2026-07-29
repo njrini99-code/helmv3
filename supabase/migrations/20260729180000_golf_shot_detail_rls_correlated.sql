@@ -133,10 +133,10 @@
 --
 -- ⚠️ WHY THIS IS NOT APPLIED YET
 -- ----------------------------------------------------------------------------
--- This is the LIVE GOLF product's RLS. Unlike the baseball tenant-isolation
--- pair applied earlier today, this change has:
---   - no pgTAP coverage yet, and
---   - no prior review.
+-- This is the LIVE GOLF product's RLS. pgTAP coverage now ships alongside it
+-- (supabase/tests/rls/golf_shot_detail_rls_correlated.sql, 14 assertions), so
+-- the remaining gap is review: CLAUDE.md mandates db-migration-reviewer for any
+-- RLS change, and this has not had one.
 -- The baseball pair's CI pgTAP run caught two recursion cycles that had already
 -- survived two line-by-line human reviews, either of which would have taken the
 -- whole product down on apply. A perf fix does not justify skipping the gate
@@ -206,7 +206,7 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION public.can_view_golf_shot(uuid) IS
-  'True when the caller may read the shot with this id: they own the round it belongs to, or they coach an organization one of whose teams rosters that player. Exists so putt_details / approach_miss_details can test one shot id against an index instead of materializing every shot id visible to the caller across their whole organization — measured at 3413ms -> 515ms for a 500-shot read. SECURITY DEFINER on purpose: it also skips the layered per-row RLS on golf_shots/holes/rounds/players, which was the bulk of the cost.';
+  'True when the caller may read the shot with this id: they own the round it belongs to, or they coach an organization one of whose teams rosters that player. Exists so putt_details / approach_miss_details can test one shot id against an index instead of materializing every shot id visible to the caller across their whole organization — measured at 3413ms -> 515ms for a 500-shot read. Definer rights are deliberate: they also skip the layered per-row RLS on golf_shots/holes/rounds/players, which was the bulk of the cost. Search path is pinned on the function itself.';
 
 REVOKE ALL ON FUNCTION public.can_view_golf_shot(uuid) FROM PUBLIC;
 -- Supabase default-grants EXECUTE to anon on new public functions; REVOKE FROM
