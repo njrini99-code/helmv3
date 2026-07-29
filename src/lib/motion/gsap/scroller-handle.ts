@@ -26,6 +26,23 @@ export interface MarketingScroller {
     target: number | string | HTMLElement,
     options?: Record<string, unknown>,
   ) => void;
+  /**
+   * Pause / resume scroll handling.
+   *
+   * Optional because this interface is deliberately STRUCTURAL — it describes
+   * the slice of Lenis the marketing chrome uses, not Lenis itself. The real
+   * instance registered by `MarketingScrollProvider` always has both (the
+   * provider calls `lenis.stop()` in its own teardown), so `?.` here is type
+   * hygiene rather than a runtime doubt.
+   *
+   * Anything locking scroll MUST call `stop()` and not merely set
+   * `overflow: hidden`. Lenis drives the page with programmatic `scrollTo`,
+   * which `overflow: hidden` does not block — measured on production
+   * 2026-07-29: with the document element locked, a wheel gesture still moved
+   * the page from scrollY 2200 to 2499.
+   */
+  stop?: () => void;
+  start?: () => void;
 }
 
 let active: MarketingScroller | undefined;
