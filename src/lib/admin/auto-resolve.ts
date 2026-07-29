@@ -29,6 +29,31 @@
  *   regardless of deploy data. Runs even when Vercel is unconfigured/erroring
  *   (Rule A fails soft and is simply skipped in that case).
  *
+ *   Rule C (legacy, no fingerprint): rows with `fingerprint IS NULL` older
+ *   than the same 14-day quiet window.
+ *
+ * WHY RULE C EXISTS. Rules A and B are both keyed on fingerprint — the
+ * snapshot read carried `.not('fingerprint', 'is', null)` and the UPDATE
+ * matches `.in('fingerprint', batch)`, which cannot match NULL in SQL under
+ * any circumstances. So every row written before fingerprinting shipped was
+ * permanently invisible to auto-resolution. Measured 2026-07-29: 87,653 of
+ * 88,782 unresolved error rows (99%) had no fingerprint, every one of them
+ * created before 2026-07-11, and the nightly job had been running for months
+ * without ever being able to touch them.
+ *
+ * They are also the rows that make the Bridge's own numbers meaningless,
+ * because `buildIncidentFeedFromSources` falls back to `row:${id}` when the
+ * fingerprint is null — so those 87,653 rows are not one incident, they are
+ * 87,653 separate incident groups.
+ *
+ * Aging them out is safe in a way it would NOT be for a fingerprinted row:
+ * there is nothing to regress. A fingerprint is how a recurrence is
+ * recognised, and these have none, so a "return" of one of these is by
+ * definition a brand-new row that arrives unresolved on its own. Rule C is
+ * bounded by the same 14-day cutoff as Rule B rather than a looser one, so it
+ * is a strict extension of an already-accepted policy to the rows that policy
+ * could not reach — not a new, more aggressive one.
+ *
  * Metadata tagging ({ autoResolved: { at, rule, deploySha? } }) is NOT
  * applied: each candidate row carries its own pre-existing metadata JSON, so
  * tagging it would require either an N-row loop of individual UPDATEs (the
@@ -52,6 +77,13 @@ import { fetchVercelDeployments, type VercelDeployment } from '@/lib/admin/verce
 export const RELEASE_GRACE_MS = 24 * 3600_000;
 const QUIET_MS = 14 * 86400_000;
 const FINGERPRINT_CHUNK_SIZE = 200;
+/** Rule C runs as bounded batches for the same reason log-retention's purge
+ *  does: a single UPDATE over tens of thousands of rows holds locks on a table
+ *  shared with live Golf traffic. 2,000 x 25 clears up to 50k per nightly run,
+ *  so even the full historical backlog drains in a couple of nights without
+ *  one long-running statement. */
+const LEGACY_BATCH = 2000;
+const LEGACY_MAX_BATCHES = 25;
 /** Short cache — mirrors vercel-api.ts's own REVALIDATE_SECONDS. Both the
  *  cron (one call/run) and the Errors-tab read path (one call per admin
  *  page load) resolve the same deploy anchor; caching avoids a redundant
@@ -61,6 +93,8 @@ const DEPLOY_AT_CACHE_TTL_MS = 60_000;
 export interface AutoResolveResult {
   resolvedRelease: number;
   resolvedQuiet: number;
+  /** Rule C — rows with NO fingerprint, aged out. See the module doc. */
+  resolvedLegacy: number;
   fingerprints: number;
   /** Present when Rule A did not run this pass — Vercel deploy data was
    *  unavailable, or the newest production deploy isn't 24h old yet. Rule B
@@ -164,6 +198,56 @@ async function resolveFingerprints(
   return total;
 }
 
+/**
+ * Rule C — bulk-resolve aged rows that carry no fingerprint at all.
+ *
+ * Batched by primary key rather than one predicate-wide UPDATE (see
+ * LEGACY_BATCH). The `created_at < cutoff` bound is carried on BOTH the select
+ * and the update for the same snapshot-race reason documented on
+ * resolveFingerprints: re-evaluating `resolved = false` at UPDATE time could
+ * otherwise catch a row inserted mid-run. In practice nothing writes
+ * null-fingerprint rows any more, but the guard costs nothing and the day it
+ * stops being true is not the day anyone will re-read this function.
+ */
+async function resolveLegacyUnfingerprinted(
+  admin: AdminClient,
+  cutoffIso: string,
+  resolvedAtIso: string,
+): Promise<number> {
+  let total = 0;
+  for (let i = 0; i < LEGACY_MAX_BATCHES; i++) {
+    const { data, error } = await admin
+      .from('admin_events')
+      .select('id')
+      .eq('resolved', false)
+      .eq('event_type', 'error')
+      .is('fingerprint', null)
+      .lt('created_at', cutoffIso)
+      .order('created_at', { ascending: true })
+      .limit(LEGACY_BATCH);
+    if (error) throw new Error(`autoResolveFixedIncidents: legacy select failed: ${error.message}`);
+
+    const ids = (data ?? []).map((row) => (row as { id: string }).id);
+    if (ids.length === 0) return total;
+
+    const { error: updateError, count } = await admin
+      .from('admin_events')
+      .update({ resolved: true, resolved_at: resolvedAtIso }, { count: 'exact' })
+      .eq('resolved', false)
+      .lt('created_at', cutoffIso)
+      .in('id', ids);
+    if (updateError) {
+      throw new Error(`autoResolveFixedIncidents: legacy update failed: ${updateError.message}`);
+    }
+
+    total += count ?? 0;
+    // A short page means the backlog is drained; anything else and we stop at
+    // MAX_BATCHES and pick up the remainder tomorrow night.
+    if (ids.length < LEGACY_BATCH) return total;
+  }
+  return total;
+}
+
 export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   const admin = createAdminClient();
   const now = Date.now();
@@ -233,9 +317,16 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
     resolvedAtIso,
   );
 
+  const resolvedLegacy = await resolveLegacyUnfingerprinted(
+    admin,
+    new Date(quietCutoff).toISOString(),
+    resolvedAtIso,
+  );
+
   return {
     resolvedRelease,
     resolvedQuiet,
+    resolvedLegacy,
     fingerprints: releaseFingerprints.length + quietFingerprints.length,
     ...(releaseFingerprints.length === 0 && releaseSkippedReason ? { releaseSkippedReason } : {}),
     deploySha: deploy.deploySha,

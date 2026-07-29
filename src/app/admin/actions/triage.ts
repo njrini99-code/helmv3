@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from 'next/cache';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { describeResolveFailure } from '@/lib/admin/resolve-failure';
 import { BRIDGE_INCIDENT_CACHE_TAG } from '@/lib/admin/data/overview';
 
 /**
@@ -25,7 +26,7 @@ async function resolveTriageEventsImpl(
   ) => Promise<{ data: number | null; error: { message: string } | null }>;
 
   const { data, error } = await rpc('resolve_admin_event', { p_event_ids: eventIds });
-  if (error) throw new Error(`resolve_admin_event failed: ${error.message}`);
+  if (error) throw new Error(describeResolveFailure(error.message));
 
   revalidatePath('/admin');
   revalidatePath('/admin/errors');
