@@ -165,7 +165,9 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               <tbody className="divide-y divide-warm-50">
                 {filteredBatting.length === 0 ? (
                   <tr>
-                    <td colSpan={18} className="px-4 py-6 text-center text-warm-400">No batting stats</td>
+                    {/* 16 = the header's real column count (Date, Opponent, Type,
+                        11 stat columns, AVG, OPS). Was 18. */}
+                    <td colSpan={16} className="px-4 py-6 text-center text-warm-400">No batting stats</td>
                   </tr>
                 ) : filteredBatting.map((row) => {
                   const singles = row.h - row.doubles - row.triples - row.hr;
@@ -229,10 +231,19 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.rbi}</td>
                     <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.bb}</td>
                     <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.k}</td>
-                    <td colSpan={3} />
+                    {/* Spans SB + HBP — the two stat columns with no season total.
+                        This was colSpan={3}, which also swallowed AVG and pushed
+                        the season batting average one cell right, so it printed
+                        under the OPS heading while AVG sat empty: a coach read a
+                        .312 average as a .312 OPS. The row was also 17 cells wide
+                        in a 16-column table. The pitching TOTALS row below spans
+                        2 correctly for the same reason — 11 stat columns here vs
+                        9 totals means 2 to span, not 3. */}
+                    <td colSpan={2} />
                     <td className="px-3 py-2.5 text-center font-annual tabular-nums font-bold">
                       {fmtAvg(battingTotals.h, battingTotals.ab)}
                     </td>
+                    {/* OPS: no season total (it is not additive across games). */}
                     <td />
                   </tr>
                 </tfoot>
@@ -263,7 +274,9 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               <tbody className="divide-y divide-warm-50">
                 {filteredPitching.length === 0 ? (
                   <tr>
-                    <td colSpan={16} className="px-4 py-6 text-center text-warm-400">No pitching stats</td>
+                    {/* 14 = Date, Opponent, Type, 8 stat columns, ERA, WHIP, Dec.
+                        Was 16. */}
+                    <td colSpan={14} className="px-4 py-6 text-center text-warm-400">No pitching stats</td>
                   </tr>
                 ) : filteredPitching.map((row) => (
                   <tr key={row.id} className="hover:bg-warm-50/40 transition-colors">

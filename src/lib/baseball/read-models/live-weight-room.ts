@@ -30,6 +30,7 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { todayIsoInTz, resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import { computeReadiness } from '@/lib/baseball/lifting/readiness-compute';
 import { getFullName } from '@/lib/utils';
 import {
@@ -62,10 +63,6 @@ interface RosterRow {
   primary_position: string | null;
 }
 
-function todayYmd(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function isRiskBand(band: BaseballReadinessBand | null): boolean {
   return band === 'red' || band === 'orange_lower' || band === 'orange_upper';
 }
@@ -84,7 +81,11 @@ export async function getLiveWeightRoomData(
   groupFilter?: string | null,
 ): Promise<BaseballLiveWeightRoomData> {
   const supabase = (await createClient()) as Db;
-  const today = todayYmd();
+  // TEAM wall-clock day, not UTC's. `todayYmd()` (UTC) rolls over at 8pm
+  // Eastern / 5pm Pacific — i.e. during evening lifts — so the Live Weight Room
+  // would start querying TOMORROW's sessions while a session was in progress in
+  // front of the coach, emptying the board mid-lift.
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
   const generatedAt = new Date().toISOString();
 
   // ---- Roster (RLS-scoped to viewable players) ----------------------------

@@ -791,9 +791,25 @@ export interface BaseballWeightRoomBoardRow {
   group_names: string[];
   readiness_band: BaseballReadinessBand | null;
   soreness_overall: number | null;
+  /**
+   * Change in bodyweight over the last 7 days, or null when fewer than two
+   * weigh-ins exist inside that window. The name is load-bearing: the −3 lb
+   * alert threshold downstream is a 7-day acute-loss flag, and the same number
+   * over a longer window means something much less urgent.
+   */
   bodyweight_delta_7d: number | null;
   prescribed_main_lift: string | null;
-  actual_main_load: number | null;
+  /**
+   * The load the athlete was PRESCRIBED for the main lift — not what they lifted.
+   *
+   * This field was named `actual_main_load` and rendered as "Actual load", while
+   * being populated from `helm_lifting_session_exercises.prescribed_load`. A
+   * coach reading it believed the set had been performed at that weight when it
+   * had only been assigned, which is exactly the number they then progress from.
+   * Performed load lives in set_results and is not part of this board payload;
+   * if it is ever added, add it as a separate field rather than widening this one.
+   */
+  prescribed_main_load: number | null;
   main_rpe: number | null;
 }
 

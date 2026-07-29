@@ -338,7 +338,17 @@ export function StaffDecisionRoomFairway({
         <RuledStatLine label="Decisions made" value={data.decisionCount} ink="pursuit" size="row" />
         <RuledStatLine label="Active staff" value={data.staffCount} ink="pursuit" size="row" />
         <RuledStatLine label="Open insights" value={data.openInsightCount} ink="pursuit" size="row" />
-        <RuledStatLine label="Availability" value={data.availabilityConcerns.length} ink="pursuit" size="row" />
+        {/* `ghost` when readiness was withheld — a 0 here would report "no
+            availability concerns" from a feed this coach is not permitted to
+            read. RuledStatLine's ghost renders the em-dash and drops the
+            filled rule, which is exactly the "unfilled measurable" case. */}
+        <RuledStatLine
+          label="Availability"
+          value={data.availabilityConcerns.length}
+          ink="pursuit"
+          size="row"
+          ghost={data.readinessWithheld}
+        />
         <RuledStatLine label="Conflicts" value={data.conflicts.length} ink="pursuit" size="row" />
       </div>
 
@@ -594,7 +604,18 @@ export function StaffDecisionRoomFairway({
             Availability concerns
           </Eyebrow>
         </div>
-        {data.availabilityConcerns.length === 0 ? (
+        {/* "All players are ready" is a claim about player health. It must only
+            be made from a feed that was actually read: when the caller lacks
+            can_view_readiness the concerns array is empty BY GATE, not by fact,
+            and this asserted a clean bill of health for the whole roster from
+            data the viewer was never shown. */}
+        {data.readinessWithheld ? (
+          <EditorsLetter
+            ink="pursuit"
+            title="Availability isn't shared with your role"
+            body="Readiness and availability need the can_view_readiness permission. Ask a head coach if you need it for staff meetings — this is not a statement that every player is cleared."
+          />
+        ) : data.availabilityConcerns.length === 0 ? (
           <EditorsLetter ink="pursuit" title="No current availability concerns — all players are ready." />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">

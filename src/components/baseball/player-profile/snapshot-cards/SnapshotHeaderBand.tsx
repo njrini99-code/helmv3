@@ -107,7 +107,17 @@ export function SnapshotHeaderBand({
 
       {/* Operating fields grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4 px-5 py-4">
-        {/* Today's availability */}
+        {/* Today's availability.
+            THREE states, not two. `present: false` means no availability row
+            exists for this player — it previously rendered as "Cleared (no
+            flag)", which turns the ABSENCE of a medical/availability record into
+            an affirmative clearance. A coach reads that as "checked, and fine".
+            Nobody checked.
+            The status chip two rows above already handles this correctly (it
+            appends "· assumed" when !present); this cell simply never got the
+            same treatment. `readFailed` splits out the third case, because the
+            read model collapses a query error to the same null as an absent row
+            — so a failed database read was also rendering as a clearance. */}
         <HeaderCell icon={<IconShieldCheck size={14} />} label="Availability">
           {header.availability.present ? (
             <span className="inline-flex items-center gap-1.5">
@@ -118,8 +128,10 @@ export function SnapshotHeaderBand({
                 </span>
               )}
             </span>
+          ) : header.availability.readFailed ? (
+            <span className="text-warm-400 font-normal">Couldn&rsquo;t load</span>
           ) : (
-            <span className="text-warm-400 font-normal">Cleared (no flag)</span>
+            <span className="text-warm-400 font-normal">Not recorded</span>
           )}
         </HeaderCell>
 

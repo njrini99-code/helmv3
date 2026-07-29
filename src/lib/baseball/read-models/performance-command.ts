@@ -18,6 +18,11 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeReadiness } from '@/lib/baseball/lifting/readiness-compute';
 import {
+  todayIsoInTz,
+  resolveTeamTimezone,
+  isoMinusDays,
+} from '@/lib/baseball/daily-contract/contract-day';
+import {
   resolveBaseballLiftingOrg,
   resolveBaseballAthleteIds,
 } from '@/lib/lifting/resolve-baseball-context';
@@ -57,16 +62,24 @@ interface RosterRow {
   primary_position: string | null;
 }
 
-function todayYmd(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export async function getPerformanceCommandData(
   teamId: string,
   canViewReadiness: boolean,
 ): Promise<PerformanceCommandData> {
   const supabase = (await createClient()) as Db;
-  const today = todayYmd();
+  // "Today" is the TEAM's wall-clock day, not UTC's.
+  //
+  // This was `new Date().toISOString().slice(0, 10)`. UTC rolls over at 8pm
+  // Eastern / 5pm Pacific, so for the entire evening — the hours a team is most
+  // likely to be in the weight room — every "today" query here asked about
+  // TOMORROW. Sessions scheduled for the actual current day dropped out of the
+  // KPIs and the board, so a coach watching a live lift saw a page insisting
+  // nothing was scheduled.
+  //
+  // resolveTeamTimezone falls back to America/New_York (the schema default) and
+  // todayIsoInTz falls back to the UTC slice on an invalid tz, so a
+  // misconfigured team is never worse off than before this fix.
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
   // ---- Roster (RLS-scoped to viewable players) ----------------------------
   const { data: members } = await supabase
@@ -251,10 +264,26 @@ export async function getPerformanceCommandData(
         bwByPlayer.set(pid, arr);
       }
     }
+    // 7-day delta, measured over 7 days.
+    //
+    // This took the newest and oldest weigh-in across the WHOLE fetch window,
+    // which is 14 days (`since` above is shared with the readiness feeds), and
+    // published the result as `bodyweight_delta_7d` — rendered as "7-day change"
+    // and alerted on at −3 lb. A 3 lb acute loss inside a week is a genuine
+    // strength-and-conditioning flag; the same 3 lb spread across two weeks is
+    // ordinary fluctuation. The alert was firing on the second and reporting it
+    // as the first.
+    //
+    // The 14-day fetch stays (readiness needs it) and the window is narrowed
+    // here. Fewer than two weigh-ins inside 7 days yields null rather than a
+    // longer-window substitute: "no 7-day change can be computed" is the honest
+    // answer, and null is already the type's not-available value.
+    const bw7SinceYmd = isoMinusDays(today, 7);
     for (const [pid, list] of bwByPlayer) {
-      const newest = list[0];
-      const oldest = list[list.length - 1];
-      if (newest && oldest && list.length >= 2) {
+      const inWindow = list.filter((e) => e.date >= bw7SinceYmd);
+      const newest = inWindow[0];
+      const oldest = inWindow[inWindow.length - 1];
+      if (newest && oldest && inWindow.length >= 2) {
         const delta = newest.w - oldest.w;
         bwDeltaByPlayer.set(pid, Math.round(delta * 10) / 10);
       }
@@ -323,7 +352,7 @@ export async function getPerformanceCommandData(
       soreness_overall: sorenessByPlayer.get(pid) ?? null,
       bodyweight_delta_7d: bwDeltaByPlayer.get(pid) ?? null,
       prescribed_main_lift: main?.name ?? null,
-      actual_main_load: main?.load ?? null,
+      prescribed_main_load: main?.load ?? null,
       main_rpe: null,
     };
   });

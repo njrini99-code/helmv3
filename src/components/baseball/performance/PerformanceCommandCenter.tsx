@@ -143,7 +143,7 @@ function WeightRoomRow({
   const delta = row.bodyweight_delta_7d;
   const deltaTone = delta != null && delta <= -3 ? GRADE_TEXT_CLASS.low : undefined;
   const mainLift = row.prescribed_main_lift
-    ? `${row.prescribed_main_lift}${row.actual_main_load != null ? ` · ${row.actual_main_load} lb` : ''}`
+    ? `${row.prescribed_main_lift}${row.prescribed_main_load != null ? ` · ${row.prescribed_main_load} lb` : ''}`
     : '—';
 
   return (

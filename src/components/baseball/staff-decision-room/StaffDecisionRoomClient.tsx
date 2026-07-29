@@ -145,12 +145,24 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
     });
     lines.push('');
     lines.push('AVAILABILITY CONCERNS');
-    if (data.availabilityConcerns.length === 0) lines.push('  (none)');
+    // This export gets pasted into staff notes and read later out of context, so
+    // "(none)" must never stand in for a withheld feed. When the exporter lacks
+    // can_view_readiness the array is empty by gate, and both this section and
+    // the attendance line below would otherwise read as measured zeros.
+    if (data.readinessWithheld) {
+      lines.push('  (not available to your role — requires can_view_readiness)');
+    } else if (data.availabilityConcerns.length === 0) {
+      lines.push('  (none)');
+    }
     data.availabilityConcerns.forEach((a) =>
       lines.push(`  • ${a.playerName ?? 'Unknown'} — ${a.status}${a.reasonCategory ? ` (${a.reasonCategory})` : ''}`)
     );
     lines.push('');
-    lines.push(`PRACTICE ATTENDANCE (last 14 days): ${data.attendanceSummary.totalAttended} present / ${data.attendanceSummary.totalMissed} missed`);
+    lines.push(
+      data.readinessWithheld
+        ? 'PRACTICE ATTENDANCE (last 14 days): not available to your role (requires can_view_readiness)'
+        : `PRACTICE ATTENDANCE (last 14 days): ${data.attendanceSummary.totalAttended} present / ${data.attendanceSummary.totalMissed} missed`,
+    );
     if (data.attendanceSummary.concernedPlayers.length > 0) {
       data.attendanceSummary.concernedPlayers.forEach((p) =>
         lines.push(`  • ${p.playerName ?? 'Unknown'}: ${p.missedCount} missed`)
