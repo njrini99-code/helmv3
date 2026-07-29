@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { GLASS_BEZEL, GLASS_CARD } from './glass';
+import { GLASS_BEZEL } from './glass';
 import { FitEmbed } from './MockViewport';
 import { TeamMock } from './mockups/TeamMock';
 import { Reveal, ScaledEmbed, clamp01, prefersReducedMotion, useIsDesktop, useParallax, useScrollFrame } from './motion';
@@ -25,20 +25,33 @@ function rand(n: number): number {
   return x - Math.floor(x);
 }
 
+/**
+ * One "8 / Players on roster" tile. The card chrome and the mobile grouping
+ * live in landing.css (`.team-stats` / `.team-stat-tile`) because the treatment
+ * has to change at `sm` and GLASS_CARD is a shared inline-style object that
+ * cannot carry a media query. See that block for the measurements.
+ */
 function StatCard({ icon, value, label }: { icon: ReactNode; value: string; label: string }) {
   return (
-    <div
-      className="flex h-full min-w-0 flex-col items-center gap-1.5 overflow-clip rounded-2xl px-3 py-[15px] text-center backdrop-blur-xl sm:flex-row sm:items-center sm:gap-3 sm:px-[17px] sm:text-left"
-      style={GLASS_CARD}
-    >
+    <div className="team-stat-tile flex h-full min-w-0 flex-col items-center justify-center gap-1 overflow-clip px-2 py-[18px] text-center sm:flex-row sm:items-center sm:justify-start sm:gap-3 sm:px-[17px] sm:py-[15px] sm:text-left sm:backdrop-blur-xl">
       <span className="hidden h-[34px] w-[34px] flex-none items-center justify-center rounded-md bg-accent-50 shadow-[inset_0_1px_0_oklch(1_0_0/0.6),0_2px_6px_oklch(0.18_0.01_60/0.1)] sm:inline-flex">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--fw-color-accent-700)" strokeWidth="2" aria-hidden="true">
           {icon}
         </svg>
       </span>
       <div className="min-w-0">
-        <div className="font-fw-mono text-[1.1875rem] font-semibold text-text-primary">{value}</div>
-        <div className="text-caption font-normal leading-tight text-text-tertiary">{label}</div>
+        {/* Bigger on a phone than in the card: with no tile chrome around it the
+            figure has to carry the tile on its own. */}
+        <div className="font-fw-mono text-[1.5rem] font-semibold leading-none text-text-primary sm:text-[1.1875rem] sm:leading-normal">
+          {value}
+        </div>
+        {/* `balance` splits a two-word label evenly instead of orphaning a word,
+            and the reserved two-line box keeps all three figures on one baseline
+            whichever way each label happens to break at a given device width —
+            the raggedness that made this row look different on every phone. */}
+        <div className="mt-1.5 min-h-[2.5em] text-[0.6875rem] font-normal leading-tight text-text-tertiary [text-wrap:balance] sm:mt-0 sm:min-h-0 sm:text-caption">
+          {label}
+        </div>
       </div>
     </div>
   );
@@ -60,7 +73,7 @@ function SectionHeading() {
           program moves on a system, not a group chat.
         </p>
       </Reveal>
-      <div className="mb-[26px] grid w-full max-w-[660px] grid-cols-3 gap-3.5">
+      <div className="team-stats mb-[26px] grid w-full max-w-[660px] grid-cols-3">
         <Reveal data-team-stat className="min-w-0" delay={0}>
           <StatCard
             icon={

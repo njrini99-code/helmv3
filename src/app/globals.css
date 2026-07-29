@@ -2937,3 +2937,44 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active {
 html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
   color: var(--baseball-brand-accent, #4ade80);
 }
+
+/* ============================================================================
+ * MARKETING ENTRANCE GATE
+ * ----------------------------------------------------------------------------
+ * The one job here: make the entrance HIDDEN STATE part of the first painted
+ * frame, instead of a correction applied after hydration.
+ *
+ * Every entrance system on the marketing pages hides its targets from a layout
+ * effect — heroScene's `gsap.set(sub, {opacity: 0})`, useProductsEffects'
+ * `el.style.opacity = '0'`, Reveal's `clipPath`. All three run at HYDRATION,
+ * which is hundreds of milliseconds after the server HTML has already painted
+ * the finished page. The reader therefore sees the page, then sees it blank out
+ * and replay. Measured on a production build: 176ms of that on `/` and 112ms on
+ * `/products` on a fast desktop, 413ms and 382ms at 4x CPU.
+ *
+ * `marketing-anim-gate` is stamped on <html> by a blocking script in the root
+ * <head> (see components/landing/MarketingAnimGate.tsx) and removed by
+ * MarketingShell once its children have applied their own inline hidden state.
+ * Between those two points the page is hidden by THIS rule, so there is never a
+ * visible settled frame to lose.
+ *
+ * WHY `visibility` AND NOT `opacity`. Each system writes a different inline
+ * property to hide with (opacity here, clip-path there, GSAP's autoAlpha
+ * elsewhere). `visibility` is orthogonal to all of them, so lifting the gate can
+ * never fight, override or double-apply a value the animation code owns — the
+ * repo's own "one owner per property" rule.
+ *
+ * Scoped to `no-preference`: under reduced motion every one of those systems
+ * renders its SETTLED end state and hides nothing, so gating there would hide
+ * content that is never going to be animated back in.
+ * ========================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-anim-gate [data-reveal]:not([data-anim-ready]),
+  .marketing-anim-gate [data-fw-reveal]:not([data-anim-ready]),
+  .marketing-anim-gate [data-hero='headline']:not([data-anim-ready]),
+  .marketing-anim-gate [data-hero='sub']:not([data-anim-ready]),
+  .marketing-anim-gate [data-hero='actions']:not([data-anim-ready]),
+  .marketing-anim-gate [data-hero='plate']:not([data-anim-ready]) {
+    visibility: hidden;
+  }
+}
