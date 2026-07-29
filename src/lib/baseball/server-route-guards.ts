@@ -8,6 +8,10 @@ import {
   BASEBALL_PROGRAM_TYPES,
   type BaseballProgramType,
 } from '@/lib/types/baseball-settings';
+// Product-module gate (recruiting sunset — src/lib/baseball/product-modules.ts).
+// Value import: the gate runs at call time. product-modules.ts is pure (no
+// Supabase, no React, no env reads), safe to call from this server-only module.
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 
 const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'college',
@@ -101,11 +105,28 @@ export async function requireRecruitingCoachRoute(
   redirectTo = '/baseball/dashboard/command-center',
   session?: SessionProfile,
 ) {
+  const resolvedSession = session !== undefined ? session : ((await getSessionProfile()) ?? undefined);
+
+  // Product-module gate — consulted FIRST, before any coach-type/program-type
+  // check below. Recruiting is sunset for the commercial release
+  // (product-modules.ts): a direct URL to a recruiting route must be refused
+  // for EVERY coach while the module is disabled, including a college/JUCO/
+  // showcase coach who would otherwise pass the program-type allow list.
+  // Still routes through requireBaseballCoachRoute (no type gates) first so
+  // the existing unauthenticated -> /baseball/login and non-coach ->
+  // redirectTo behavior is byte-for-byte unchanged; a confirmed coach session
+  // is then redirected to the SAME `redirectTo` the program-type gate below
+  // would have used on denial — no new failure mode.
+  if (!isRecruitingEnabled()) {
+    await requireBaseballCoachRoute({ redirectTo, session: resolvedSession });
+    redirect(redirectTo);
+  }
+
   return requireBaseballCoachRoute({
     allowedCoachTypes: ['college', 'juco', 'showcase'],
     allowedProgramTypes: [...RECRUITING_PROGRAM_TYPES],
     redirectTo,
-    session,
+    session: resolvedSession,
   });
 }
 
@@ -185,6 +206,24 @@ export async function requireRecruitingPlayerRoute(options?: {
   redirectTo?: string;
 }) {
   const session = await requireBaseballPlayerRoute(options);
+
+  // Product-module gate — consulted FIRST, before the player_type check
+  // below. Recruiting is sunset for the commercial release
+  // (product-modules.ts): a direct URL to a recruiting route must be refused
+  // for EVERY player while the module is disabled, not just college players.
+  // The recruiting nav entries are already hidden (nav-registry.ts's
+  // `module` gate + BaseballFairwayShell's player hub gate), so a signed-in
+  // player can only land here via a stale link/bookmark. Unlike the
+  // player_type gate below (an intentionally silent, caller-rendered "not
+  // available" state per the doc comment above), this redirects outright —
+  // the SAME existing redirect-based failure mode requireBaseballPlayerRoute
+  // above already uses (unauthenticated -> login, coach -> coachRedirect),
+  // rather than rendering that gate's college-player-specific copy ("isn't
+  // for college players") for a player it would not accurately describe.
+  if (!isRecruitingEnabled()) {
+    redirect('/baseball/player/today');
+  }
+
   const isCollegePlayer = session.player?.player_type === 'college';
   return { session, isCollegePlayer };
 }

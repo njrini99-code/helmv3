@@ -31,6 +31,12 @@ import type { HubSubNavTab } from './hub-sub-nav';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 import type { BaseballCapability } from '@/lib/baseball/capabilities';
 import type { BaseballNavHub } from '@/lib/baseball/nav-registry';
+// Product-module gate (recruiting sunset — src/lib/baseball/product-modules.ts).
+// Value import (not type-only): the gate runs at call time, same contract as
+// nav-registry.ts's own use of this module. product-modules.ts is pure/
+// isomorphic (no Supabase, React, or env reads), matching this file's own
+// "PURE. No React, no Supabase." contract above.
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 
 const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'college',
@@ -99,7 +105,7 @@ function coachHubs(opts: { showRecruiting: boolean }): HubDef[] {
 }
 
 function playerHubs(): HubDef[] {
-  return [
+  const hubs: HubDef[] = [
     {
       id: 'stats',
       label: 'Stats',
@@ -121,14 +127,23 @@ function playerHubs(): HubDef[] {
       tabs: PLAYER_TEAM_TABS,
       ownedPrefixes: PLAYER_TEAM_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
     },
-    {
+  ];
+  // Product-module gate: recruiting is sunset for the commercial release
+  // (product-modules.ts). While disabled, no route owns the player Recruiting
+  // hub's prefixes — resolveActiveHub falls through to `best === null` for
+  // any /journey, /colleges, /analytics pathname, exactly like any other
+  // unowned route (no sub-nav strip). The routes themselves are independently
+  // closed by requireRecruitingPlayerRoute (server-route-guards.ts).
+  if (isRecruitingEnabled()) {
+    hubs.push({
       id: 'recruiting',
       label: 'Recruiting',
       ariaLabel: 'Recruiting sections',
       tabs: PLAYER_RECRUITING_TABS,
       ownedPrefixes: PLAYER_RECRUITING_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    },
-  ];
+    });
+  }
+  return hubs;
 }
 
 export interface ResolveActiveHubArgs {
@@ -190,7 +205,11 @@ export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null
   const hubs =
     role === 'coach'
       ? coachHubs({
-          showRecruiting: Boolean(programType && RECRUITING_PROGRAM_TYPES.has(programType)),
+          // Product-module gate FIRST: recruiting is sunset for the
+          // commercial release (product-modules.ts), independent of program
+          // type — a recruiting-eligible program (e.g. college) must still
+          // not resolve the hub while the module is disabled.
+          showRecruiting: isRecruitingEnabled() && Boolean(programType && RECRUITING_PROGRAM_TYPES.has(programType)),
         })
       : playerHubs();
 

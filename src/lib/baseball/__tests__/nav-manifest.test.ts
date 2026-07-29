@@ -28,6 +28,7 @@ import {
   type BaseballNavHub,
 } from '../nav-registry';
 import { BASEBALL_CAPABILITY_KEYS, type BaseballCapabilityMap } from '../capabilities';
+import { isHubDisabled } from '../product-modules';
 import { BASEBALL_PROGRAM_TYPES, type BaseballProgramType } from '@/lib/types/baseball-settings';
 import {
   COACH_HUB_ORDER,
@@ -355,7 +356,13 @@ describe('BASEBALL_NAV_MANIFEST', () => {
     });
 
     it('(d) every foldedUnder destination still resolves to its owning hub via resolve-active-hub', () => {
-      const folded = BASEBALL_NAV_REGISTRY.filter((e) => e.foldedUnder);
+      // Entries belonging to a sunset product module (recruiting — see
+      // src/lib/baseball/product-modules.ts) are deliberately excluded: while
+      // the module is disabled no hub owns their prefixes, so resolveActiveHub
+      // correctly returns null for them. Their fold relationship is still
+      // asserted by the other checks in this file; re-enabling the module
+      // brings them back into this loop automatically.
+      const folded = BASEBALL_NAV_REGISTRY.filter((e) => e.foldedUnder && !isHubDisabled(e.hub));
       expect(folded.length, 'sanity: at least one entry should be folded').toBeGreaterThan(0);
 
       const allCaps = BASEBALL_CAPABILITY_KEYS.reduce((acc, key) => {

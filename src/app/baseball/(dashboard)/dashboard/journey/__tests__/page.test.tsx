@@ -17,6 +17,27 @@ import { render, screen } from '@testing-library/react';
 const getSessionProfileMock = vi.hoisted(() => vi.fn());
 const journeyClientMock = vi.hoisted(() => vi.fn((_props: unknown) => null));
 
+// Recruiting sunset (src/lib/baseball/product-modules.ts): while the module is
+// disabled this route is closed for EVERY player, so the player_type gate
+// below never runs in production. The gate is preserved, not deleted — its
+// assertions run under a mock-enabled module so the restoration path stays
+// covered.
+const moduleFlags = vi.hoisted(() => ({ recruitingEnabled: false }));
+
+vi.mock('@/lib/baseball/product-modules', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/baseball/product-modules')>();
+  return { ...actual, isRecruitingEnabled: () => moduleFlags.recruitingEnabled };
+});
+
+async function withRecruitingEnabled<T>(fn: () => Promise<T>): Promise<T> {
+  moduleFlags.recruitingEnabled = true;
+  try {
+    return await fn();
+  } finally {
+    moduleFlags.recruitingEnabled = false;
+  }
+}
+
 vi.mock('@/lib/auth/session', () => ({
   getSessionProfile: getSessionProfileMock,
 }));
@@ -36,9 +57,24 @@ import JourneyPage from '../page';
 describe('JourneyPage — player_type gate', () => {
   afterEach(() => {
     vi.clearAllMocks();
+    moduleFlags.recruitingEnabled = false;
   });
 
-  it('renders an honest "not available" state for a college player, WITHOUT rendering JourneyClient', async () => {
+  it('is closed for EVERY player type while the recruiting module is sunset', async () => {
+    for (const player_type of ['college', 'high_school', 'juco', 'showcase']) {
+      getSessionProfileMock.mockResolvedValue({
+        userId: 'u1',
+        role: 'player',
+        coach: null,
+        player: { id: 'p1', player_type },
+      });
+
+      await expect(JourneyPage(), player_type).rejects.toThrow('REDIRECT:/baseball/player/today');
+    }
+    expect(journeyClientMock).not.toHaveBeenCalled();
+  });
+
+  it('renders an honest "not available" state for a college player, WITHOUT rendering JourneyClient — restoration path', async () => {
     getSessionProfileMock.mockResolvedValue({
       userId: 'u1',
       role: 'player',
@@ -46,14 +82,14 @@ describe('JourneyPage — player_type gate', () => {
       player: { id: 'p1', player_type: 'college' },
     });
 
-    const element = await JourneyPage();
+    const element = await withRecruitingEnabled(() => JourneyPage());
     render(element);
 
     expect(screen.getByText("My Journey isn't for college players")).toBeTruthy();
     expect(journeyClientMock).not.toHaveBeenCalled();
   });
 
-  it('renders the real JourneyClient for a high_school player', async () => {
+  it('renders the real JourneyClient for a high_school player — restoration path', async () => {
     getSessionProfileMock.mockResolvedValue({
       userId: 'u1',
       role: 'player',
@@ -61,7 +97,7 @@ describe('JourneyPage — player_type gate', () => {
       player: { id: 'p1', player_type: 'high_school' },
     });
 
-    const element = await JourneyPage();
+    const element = await withRecruitingEnabled(() => JourneyPage());
     render(element);
 
     expect(journeyClientMock).toHaveBeenCalledTimes(1);
