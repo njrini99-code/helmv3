@@ -11,6 +11,7 @@ import { Metadata } from 'next';
 import Image from 'next/image';
 import { HelmMark } from '@/components/brand/HelmMark';
 import { resolveRecruitingViewerAccess } from '@/lib/baseball/recruiting-viewer-access';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import { cn } from '@/lib/utils';
 import {
   PaperCard,
@@ -752,13 +753,25 @@ export default async function TeamProfilePage({ params }: PageProps) {
               <PaperCard className="p-6">
                 <Eyebrow as="h3" ink="muted" className="mb-4">Roster Legend</Eyebrow>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <InkBadge label="Verified" tone="team" />
-                    <span className="text-xs text-text-tertiary">Recruiting active</span>
-                  </div>
+                  {/* The "Verified / Recruiting active" row explains a state no
+                      player can be in while the module is sunset — activation
+                      redirects — so it would sit in the legend describing a
+                      badge that never appears above it. Masking itself is
+                      untouched: every public name stays initials-only, which is
+                      the correct default and not something to relax for a demo. */}
+                  {isRecruitingEnabled() && (
+                    <div className="flex items-center gap-3">
+                      <InkBadge label="Verified" tone="team" />
+                      <span className="text-xs text-text-tertiary">Recruiting active</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-text-tertiary">J.S****</span>
-                    <span className="text-xs text-text-tertiary">Privacy protected</span>
+                    <span className="text-xs text-text-tertiary">
+                      {isRecruitingEnabled()
+                        ? 'Privacy protected'
+                        : 'Names are private on public pages'}
+                    </span>
                   </div>
                 </div>
               </PaperCard>
