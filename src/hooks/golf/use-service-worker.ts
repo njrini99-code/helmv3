@@ -328,8 +328,45 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
     navigator.serviceWorker.controller.postMessage(message);
   }, []);
 
+  /*
+   * DEV: never register, and tear down anything already registered.
+   *
+   * `CACHE_VERSION` in public/sw.js is only stamped with a real build id by
+   * scripts/stamp-sw.mjs on an actual Vercel build (deliberately — see that
+   * file's generated-file policy note). On a dev machine it stays the literal
+   * placeholder `golfhelm-vsource` forever, so the install/activate cache-bust
+   * never triggers and a dev cache NEVER invalidates. Combined with the old
+   * navigation handler, that served pre-migration HTML on back-navigation
+   * indefinitely — pages that hadn't existed in that form for weeks.
+   *
+   * A service worker earns nothing in dev (there is no offline story to test on
+   * localhost that is worth a permanently poisoned cache), so we both skip
+   * registration and unregister + drop caches for any SW a previous dev session
+   * left installed. Without that cleanup the fix would only help machines that
+   * had never run the app before.
+   */
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    void (async () => {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((r) => r.unregister()));
+        if (typeof caches !== 'undefined') {
+          const keys = await caches.keys();
+          await Promise.all(keys.filter((k) => k.startsWith('golfhelm-')).map((k) => caches.delete(k)));
+        }
+      } catch {
+        // Best effort — a browser that refuses either call just keeps its SW.
+      }
+    })();
+  }, []);
+
   // Auto-register on mount if immediate is true
   useEffect(() => {
+    // Production only: see the dev teardown effect above.
+    if (process.env.NODE_ENV !== 'production') return;
     if (immediate && state.isSupported && !state.isRegistered && state.status === 'idle') {
       register();
     }
