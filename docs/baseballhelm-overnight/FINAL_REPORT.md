@@ -1,9 +1,9 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 06:05 EDT. Branch
+_2026-07-28 23:35 → 2026-07-29 06:40 EDT. Branch
 `baseball/overnight-completion`, draft PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 60 commits ahead
-of `main`.
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 80 commits ahead
+of `main`. Full unit suite green at 06:37: **868 files, 8,221 tests**.
 CI is green except `BaseballHelm authenticated smoke` (and the CI aggregate
 that depends on it), which fails on a Cloudflare 522 from the production
 Supabase — red before this branch existed, unrelated to the diff, and the
@@ -152,6 +152,33 @@ Each has tests, and the tests assert behaviour rather than existence.
 - **No hardcoded baseball link points at a route that does not exist.** 283
   routes resolved against 2,739 files: zero dead links, proven by a probe that
   makes the sweep fail on demand rather than by trusting a green run.
+- **The demo seed stopped writing a recruiting board into production.** Every
+  reseed created 3 fictional organizations and teams, 8 `baseball_players` with
+  emails, GPAs and measurables — each `recruiting_activated = true`, which is
+  the flag that makes a player publicly NAMED rather than masked to initials —
+  and 8 watchlist rows for a pipeline no coach can open. The verifier that runs
+  immediately afterwards already asserted "the demo must not carry a recruiting
+  board"; the seed and its own verifier were contradicting each other inside a
+  single `npm run seed:baseball:demo`.
+- **Two rule-engine rules stopped nagging players about recruiting.** They gate
+  on the player's opt-in, which was sufficient until the sunset — a player who
+  activated *before* it still carries `recruiting_activated = true`, so both
+  kept firing and kept telling them to finish a recruiting profile, as a task in
+  their inbox. Gated on rule `ownerRole`, so a future recruiting rule is covered
+  the day it is written.
+- **Seven E2E specs stopped driving routes that redirect.** 46 tests skip with a
+  reason naming the cause, one is repointed at live routes, and two assertions
+  that were passing on the *redirect target* (both `/camps` and `/journey` land
+  on pages that also have an `<h1>`) are now conditional. It had not surfaced
+  because the Playwright job is path-gated; the first unrelated PR touching an
+  E2E path would have inherited the whole wall of red.
+- **A guard against the next one.** `no-inbound-links-to-disabled-modules`
+  fails when a file outside a module links into it without consulting the gate.
+  Its first draft failed on the five sites just fixed — the markup is still
+  there, inside a conditional a source scan cannot see — and satisfying that
+  draft would have meant deleting the links instead of gating them. The rule
+  became "consult the gate", and the header states the residual gap rather
+  than implying more coverage than exists.
 
 ## Verified, and the answer was "already fine"
 

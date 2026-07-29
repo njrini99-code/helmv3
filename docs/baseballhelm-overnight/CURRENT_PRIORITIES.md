@@ -1,7 +1,10 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 05:45 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 06:40 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
+
+_Database still unreachable — last retried 06:22 EDT, `Connection terminated
+due to connection timeout`. Both blocked items below are blocked on that alone._
 
 ---
 
@@ -163,6 +166,13 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | Public program page stopped addressing its readers as "recruits" (incl. the meta description that IS the search result) | `d68eeaac0` |
 | **Zero dead baseball links, proven** — 283 routes × 2,739 files, with a probe test showing the sweep can fail | `c0e90b958` |
 | The nav sweep and the route sweep now check **each other** — the seam `/activate` hid in | `3192ac28f` |
+| Two rule-engine rules kept telling players to finish a recruiting profile — a pre-sunset opt-in outlives the sunset | `2654446ec` |
+| Public roster stopped blaming players ("haven't activated yet") for a door the product closed | `e6c9ac6fb` |
+| Roster legend dropped a "Recruiting active" badge no player can earn | `a15ecb9c5` |
+| **The demo seed was still writing a recruiting board into production** — 3 fictional orgs, 8 publicly-named players, 8 watchlist rows | `1e6312168` |
+| Seven E2E specs still drove sunset routes; 46 tests now skip, 1 repointed, 2 silent-pass assertions gated | `a694f24d7` |
+| Settings hid a "Recruiting / exposure" toggle that no longer changes anything | `8cfecf50c` |
+| **A guard against the next inbound link** into a disabled module — the class that produced 5 of tonight's fixes | `60d719507` |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).
