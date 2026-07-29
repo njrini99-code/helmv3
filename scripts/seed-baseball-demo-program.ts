@@ -82,6 +82,7 @@ import {
   type HitterSkill,
   type PitcherSkill,
 } from '../src/lib/baseball/seed/demo-program-sim';
+import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
 
 // ---------------------------------------------------------------------------
 // CI guard (mirrors scripts/seed-baseball-demo.ts) — fail loudly before any
@@ -508,9 +509,16 @@ async function main() {
   }
 
   // ==========================================================================
-  // SECTION B — Risk flags: 3 open (status='active') coach insights.
+  // SECTION B — Risk flags: open (status='active') coach insights.
+  //
+  // The third one is a RECRUITING insight ("Two recruits have gone quiet",
+  // citing baseball_watchlists). It is filtered out while the module is
+  // sunset — otherwise the demo coach's insight feed, a surface a buyer is
+  // walked through, opens with an alert about a pipeline the product does not
+  // ship and the coach cannot act on. The row is kept in this array rather
+  // than deleted so re-enabling recruiting restores it unchanged.
   // ==========================================================================
-  await upsert('baseball_coach_insights', [
+  const insightRows = [
     {
       id: detId('insight:workload'),
       team_id: TEAM_ID,
@@ -574,11 +582,37 @@ async function main() {
       last_generated_at: isoDaysAgo(0),
       metadata: {},
     },
-  ]);
+  ];
+  await upsert(
+    'baseball_coach_insights',
+    insightRows.filter((row) => isRecruitingEnabled() || row.insight_type !== 'recruiting'),
+  );
 
   // ==========================================================================
   // SECTION C — Recruiting board: 3 feeder programs + 8 recruits + watchlist.
+  //
+  // SUNSET GATE. verify-baseball-demo-coverage.ts already asserts "the demo
+  // must not carry a recruiting board" while the module is off, and this
+  // script was still building one — the seed and its own verifier disagreed.
+  //
+  // What it was writing into a PRODUCTION project: 3 fictional organizations
+  // and teams (with join codes), 8 baseball_players rows carrying real-looking
+  // emails, GPAs and measurables, every one flagged recruiting_activated = true
+  // — which is what makes a player publicly named on a team page — plus
+  // watchlist rows for a pipeline no coach can open. All of it invisible to
+  // the product and none of it removable through the UI.
+  //
+  // Preserved rather than deleted, like every other sunset gate: flip
+  // PRODUCT_MODULES.recruiting.enabled and the board comes back unchanged.
   // ==========================================================================
+  const seedRecruitingBoard = isRecruitingEnabled();
+  if (!seedRecruitingBoard) {
+    console.log(
+      `${DRY ? '[DRY RUN] ' : ''}  · Section C skipped — the recruiting module is sunset, so the ` +
+        'demo does not carry a recruiting board (feeder orgs, recruit players, watchlist).',
+    );
+  }
+  if (seedRecruitingBoard) {
   const feederOrgId: Record<FeederOrgKey, string> = {
     hs: detId('org:feeder-hs'),
     sc: detId('org:feeder-sc'),
@@ -676,6 +710,7 @@ async function main() {
   await upsert('baseball_players', recruitPlayerRows);
   await upsert('baseball_team_members', recruitMemberRows);
   await upsert('baseball_watchlists', watchlistRows, 'coach_id,player_id');
+  }
 
   // ==========================================================================
   // SECTION D — Rolling lifting-session history (reuses Phase-1's exercises).
