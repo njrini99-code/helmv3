@@ -139,7 +139,7 @@ export function AthleteRosterClient({ athletes, assignments, orgId, canEdit, loa
         ? `Already up to date — ${total} athlete${total === 1 ? '' : 's'} across ${teams} team${teams === 1 ? '' : 's'}.`
         : `Synced ${teams} team${teams === 1 ? '' : 's'}, but their rosters are empty — add players to the team roster first.`;
     }
-    return `Added ${synced} athlete${synced === 1 ? '' : 's'} from ${teams} team${teams === 1 ? '' : 's'}. ${total} total.`;
+    return `Updated ${synced} athlete${synced === 1 ? '' : 's'} from ${teams} team${teams === 1 ? '' : 's'}. ${total} total in Lift Lab.`;
   }
 
   async function handleSync() {

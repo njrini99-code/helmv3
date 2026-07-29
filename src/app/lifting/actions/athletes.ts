@@ -31,7 +31,7 @@ export interface SyncAthletesResult {
   error?: string;
   /** Total helm_lifting_athletes rows now present for the org (seeded + pre-existing). */
   athleteCount?: number;
-  /** Rows newly inserted by THIS sync call — 0 on a genuine no-op, never a fixed string. */
+  /** Rows the RPC inserted or updated on this call — 0 on a genuine no-op. See assignments.ts for why "or updated". */
   syncedCount?: number;
   /** How many active team assignments were targeted by this sync. */
   teamsSynced?: number;

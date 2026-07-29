@@ -19,9 +19,13 @@
 //     This wrapper resolves every ACTIVE helm_lifting_coach_assignments row
 //     for the org (optionally narrowed to one sport and/or one team), calls
 //     the RPC once per distinct (sport, team_id) pair, and sums the results.
-//     Idempotent — the RPC does ON CONFLICT DO NOTHING on the UNIQUE
-//     (organization_id, sport, sport_player_id) constraint, and re-running
-//     this wrapper simply re-targets the same team set.
+//     Idempotent — the RPC upserts on the UNIQUE
+//     (organization_id, sport, sport_player_id) constraint, so re-running this
+//     wrapper re-targets the same team set without duplicating anyone. Since
+//     20260729000300 that conflict action REFRESHES identity fields (user_id,
+//     names, position) instead of DO NOTHING, so a re-sync repairs an athlete
+//     seeded before their account was linked. It still never touches
+//     is_active, so a sync cannot resurrect a player a coach cut.
 //
 // ROOT-CAUSE NOTE (2026-07-29 Team C fix): both this file's original
 // syncOrgAthletes AND the sibling athletes.ts syncOrgAthletes called the RPC
@@ -78,7 +82,16 @@ export interface SyncAthletesResult {
   error?: string;
   /** Total helm_lifting_athletes rows now present for the org (seeded + pre-existing). */
   athleteCount?: number;
-  /** Rows newly inserted by THIS sync call — 0 on a genuine no-op, never a fixed string. */
+  /**
+   * Rows the RPC inserted OR updated on this call — 0 on a genuine no-op,
+   * never a fixed string.
+   *
+   * "or updated" since 20260729000300: the sync upserts identity fields now
+   * (it used to be ON CONFLICT DO NOTHING), so a re-sync that repairs a
+   * player's account link counts as work done rather than reporting zero.
+   * That is the honest reading — something did change — but it does mean a
+   * non-zero value no longer implies NEW athletes appeared.
+   */
   syncedCount?: number;
   /** How many active team assignments were targeted by this sync. */
   teamsSynced?: number;
@@ -258,9 +271,11 @@ interface ActiveAssignmentTarget {
  * (optionally narrowed by `sport`/`teamId`), de-dupes them to distinct
  * (sport, team_id) pairs, and calls the RPC once per pair, summing results.
  *
- * Safe to call repeatedly — the RPC uses ON CONFLICT DO NOTHING on the
- * UNIQUE (organization_id, sport, sport_player_id) constraint, so re-syncing
- * never duplicates an athlete row.
+ * Safe to call repeatedly — the RPC upserts on the UNIQUE
+ * (organization_id, sport, sport_player_id) constraint, so re-syncing never
+ * duplicates an athlete row, and since 20260729000300 it also repairs a
+ * user_id that was NULL at first sync (the state that used to lock a player
+ * out of /lifting/dashboard permanently).
  *
  * Reports what actually happened rather than a fixed success string:
  *   - `syncedCount`  — rows newly inserted by THIS call (0 on a no-op)
