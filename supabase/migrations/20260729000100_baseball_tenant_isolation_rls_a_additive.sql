@@ -46,9 +46,20 @@
 -- (email, phone, GPA, SAT/ACT) and every team's secret join_code. Live since
 -- 2026-05-27; no later migration replaces either policy.
 --
--- ⚠️ NOT APPLIED BY THIS FILE. No migration in this pair has been executed
--- against any database by the authoring session. A human applies them, in the
--- order above.
+-- ✅ APPLIED TO PRODUCTION 2026-07-29, on the owner's explicit instruction.
+-- Verified after applying: all seven functions present, `prosecdef = true`,
+-- `has_function_privilege('anon', …, 'EXECUTE')` false on every one — the
+-- last of those being the defect that took two CI rounds to find, since
+-- `REVOKE … FROM PUBLIC` does not remove Supabase's role-specific default
+-- grant to `anon`.
+--
+-- Applying this file was more urgent than the pair's sequencing implied: the
+-- companion app changes were ALREADY deployed (production commit bd1e625d4,
+-- #1092) and call these functions at eight sites, so with the functions absent
+-- `/baseball/join/[code]` was logging `invitation code resolver failed (is
+-- migration 20260729000100 applied?)` in production. Deploying step 2 before
+-- step 1 inverts the intended order and breaks join-by-code until step 1
+-- lands — worth remembering next time a pair like this is sequenced.
 --
 -- ROLLBACK for this file (safe at any time — nothing depends on these until
 -- migration B is applied, and after that only B's policies do):

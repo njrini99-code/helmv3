@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_allowlist: {
@@ -20003,6 +19978,10 @@ export type Database = {
         Args: { p_group_id: string; p_team_id: string }
         Returns: boolean
       }
+      can_notify_baseball_user: {
+        Args: { p_target_user_id: string }
+        Returns: boolean
+      }
       can_view_baseball_player:
         | { Args: { p_player_id: string }; Returns: boolean }
         | { Args: { p_player_id: string; p_team_id: string }; Returns: boolean }
@@ -20012,6 +19991,16 @@ export type Database = {
       }
       current_coach_id: { Args: never; Returns: string }
       current_player_id: { Args: never; Returns: string }
+      find_baseball_player_by_email_for_roster: {
+        Args: { p_email: string; p_team_id: string }
+        Returns: {
+          first_name: string
+          grad_year: number
+          id: string
+          last_name: string
+          primary_position: string
+        }[]
+      }
       get_active_sessions: { Args: { p_user_id?: string }; Returns: Json }
       get_admin_analytics_rollup: {
         Args: { p_ago12w: string; p_ago30d: string; p_ago7d: string }
@@ -20090,6 +20079,16 @@ export type Database = {
       get_baseball_public_player_stats: {
         Args: { p_player_id: string; p_season_year?: number }
         Returns: Json
+      }
+      get_baseball_team_join_context: {
+        Args: { p_team_id: string }
+        Returns: {
+          id: string
+          invite_policy: string
+          name: string
+          require_coach_approval: boolean
+          team_type: Database["public"]["Enums"]["baseball_coach_type"]
+        }[]
       }
       get_coach_effectiveness_metrics: {
         Args: never
@@ -20378,6 +20377,10 @@ export type Database = {
       }
       get_users_with_auth: { Args: never; Returns: Json }
       golf_normalize_name: { Args: { p: string }; Returns: string }
+      has_any_baseball_team_membership: {
+        Args: { p_team_id: string }
+        Returns: boolean
+      }
       has_baseball_staff_capability: {
         Args: { p_capability: string; p_team_id: string }
         Returns: boolean
@@ -20421,6 +20424,14 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
+      is_baseball_player_recruiting_discoverable: {
+        Args: {
+          p_activated: boolean
+          p_player_id: string
+          p_player_type: Database["public"]["Enums"]["baseball_player_type"]
+        }
+        Returns: boolean
+      }
       is_baseball_primary_coach: {
         Args: { p_team_id: string }
         Returns: boolean
@@ -20514,6 +20525,32 @@ export type Database = {
         Returns: undefined
       }
       resolve_admin_event: { Args: { p_event_ids: string[] }; Returns: number }
+      resolve_baseball_team_by_join_code: {
+        Args: { p_join_code: string }
+        Returns: {
+          id: string
+          name: string
+          organization_id: string
+          team_type: Database["public"]["Enums"]["baseball_coach_type"]
+        }[]
+      }
+      resolve_baseball_team_invitation_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          is_active: boolean
+          max_uses: number
+          organization_city: string
+          organization_logo_url: string
+          organization_name: string
+          organization_state: string
+          team_id: string
+          team_name: string
+          team_type: Database["public"]["Enums"]["baseball_coach_type"]
+          used_count: number
+        }[]
+      }
       revoke_user_sessions: { Args: { p_user_id: string }; Returns: number }
       run_integrity_checks: { Args: never; Returns: Json }
       save_baseball_full_box_score: {
@@ -20578,6 +20615,10 @@ export type Database = {
       try_redeem_baseball_team_invitation: {
         Args: { p_invitation_id: string }
         Returns: boolean
+      }
+      unresolve_admin_event: {
+        Args: { p_event_ids: string[] }
+        Returns: number
       }
       update_player_distance_proximity: {
         Args: { p_player_id: string }
@@ -20828,9 +20869,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       admin_event_severity: ["info", "warning", "error", "critical"],

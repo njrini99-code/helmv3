@@ -4,7 +4,54 @@
 -- 🔴 THIS IS THE FILE THAT CLOSES THE LEAKS. It is also the only one of the
 -- pair that can break production, so read the preconditions before applying.
 --
--- ⛔ DO NOT APPLY UNTIL BOTH ARE TRUE:
+-- ✅ APPLIED TO PRODUCTION 2026-07-29 ~17:45Z, on the owner's explicit
+--    instruction, after both preconditions below were satisfied and verified by
+--    execution rather than by reading. Evidence, so the claim is checkable:
+--
+--    Precondition 1 — migration A applied the same day; all seven helpers
+--    present, `prosecdef = true`, `has_function_privilege('anon', …)` false.
+--
+--    Precondition 2 — the companion app changes are DEPLOYED, not merely
+--    merged: production is dpl_B9mv3SVZ / commit bd1e625d4 (#1092), and every
+--    repointed call site is present in that commit (join/[code]/page.tsx:68,138;
+--    actions/teams.ts:90,334,598,971; actions/roster.ts:663; discover.ts:103,484;
+--    recruitability.ts:46; compare/actions.ts:222).
+--
+--    The file's own instruction was to EXERCISE the flows, not read the diff.
+--    That was done against production by assuming the `authenticated` role
+--    inside a transaction and setting request.jwt.claims to a real user's id,
+--    which runs the policies exactly as that user would:
+--
+--                                    before  after
+--      player (non-member of target)
+--        teams visible                  13      1
+--        join_codes visible             13      1     <- the secret, now scoped
+--        players visible                35      1
+--        own player row                  1      1     ✓ preserved
+--        resolve_by_join_code(DEMOHS1)   1      1     ✓ join-by-code still works
+--        get_baseball_team_join_context  1      1     ✓ pre-membership read OK
+--      coach with an 8-player roster
+--        teams visible                  13      1
+--        players visible                35     16
+--        own roster visible              8      8     ✓ preserved
+--      owner account, 14-player roster
+--        players visible                35     22
+--        own roster visible             14     14     ✓ preserved
+--
+--    Cross-org player visibility does not fall to zero because the recruiting
+--    backstop admits players who have OPTED IN (recruiting_activated = true —
+--    9 of 35; all 26 college players correctly excluded). That is the product's
+--    consent model working, not the leak persisting.
+--
+--    Also verified after applying: anon holds zero privileges on all five
+--    tables; the anon-facing public.baseball_teams_public_profile still returns
+--    all 13 rows and still carries no join_code (columns: id, organization_id,
+--    name, team_type, logo_url, description); no RLS-denial or recursion error
+--    appears in the postgres log.
+--
+-- ⛔ ORIGINAL PRECONDITIONS — DO NOT APPLY UNTIL BOTH ARE TRUE (kept because
+--    they are the reason this was safe, and because a fresh database built from
+--    migrations still applies them in order):
 --   1. Migration A (20260729000100_..._a_additive.sql) is applied. It creates
 --      the three functions this file's policies and the app depend on.
 --   2. The companion app changes are DEPLOYED, not merely merged. They are:
@@ -77,9 +124,11 @@
 -- every authenticated user sees every column of every player regardless of
 -- role or recruiting eligibility.
 --
--- ⚠️ NOT APPLIED BY THIS FILE.
+-- ✅ APPLIED 2026-07-29 ~17:45Z — see the banner at the top of this file for
+-- the before/after measurements taken as three real users.
 --
--- ROLLBACK (restores the pre-migration state exactly):
+-- ROLLBACK (restores the pre-migration state exactly — and note that doing so
+-- REOPENS the leaks this file closed):
 --   DROP POLICY IF EXISTS "baseball_players_select" ON public.baseball_players;
 --   CREATE POLICY "baseball_players_select" ON public.baseball_players
 --     FOR SELECT TO authenticated USING (true);
