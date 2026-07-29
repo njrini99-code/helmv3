@@ -218,7 +218,15 @@ export function CalendarView({
     }
 
     return (
-      <div className="flex flex-col flex-1">
+      /*
+       * Seven columns do not compress below roughly 80px without the event pills
+       * truncating to a single character, so the grid keeps a 560px floor and
+       * scrolls horizontally on a phone instead. Scrolling a month grid is a
+       * legible trade; a 50px column is not. Day view is the single-column
+       * reading mode for narrow screens.
+       */
+      <div className="flex flex-1 flex-col overflow-x-auto">
+      <div className="flex flex-col flex-1 min-w-[560px]">
         {/* Day Headers */}
         <div className="grid grid-cols-7 border-b border-border-subtle">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
@@ -238,17 +246,43 @@ export function CalendarView({
                 const isCurrentDay = isToday(date);
 
                 return (
-                  <Button
-                    variant="ghost"
+                  /*
+                   * The day cell is a DIV with a full-bleed overlay button, not a
+                   * button itself. It used to be `<Button>` wrapping the event
+                   * pills, which are also `<Button>` — a <button> inside a
+                   * <button>. That is invalid HTML, so the browser's parser
+                   * relocates the inner one and React's hydration finds a DOM it
+                   * did not render (the #418/#423 class). It never surfaced only
+                   * because nothing rendered this component until 2026-07-29.
+                   *
+                   * The overlay sits at z-0 and takes clicks on empty space; the
+                   * content layer above it is pointer-events-none so gaps fall
+                   * through to the overlay, with pointer-events-auto restored on
+                   * the pills themselves. Same two behaviours as before, one
+                   * flat layer of siblings.
+                   */
+                  <div
                     key={date.toISOString()}
-                    onClick={() => onSlotClick?.(date)}
                     className={cn(
-                      'block h-auto min-h-0 items-stretch justify-start text-left border-r border-border-subtle last:border-r-0 p-1.5 rounded-none cursor-pointer transition-colors',
+                      'relative border-r border-border-subtle last:border-r-0 p-1.5 transition-colors',
                       !isCurrentMonth && 'bg-surface-sunken/20',
                       isCurrentMonth && 'hover:bg-surface-sunken/40',
                       isCurrentDay && 'bg-accent-50/30'
                     )}
                   >
+                    {/* `cn` is tailwind-merge, so `absolute` here correctly
+                        replaces the shared Button's base `relative` rather than
+                        fighting it, and p-0/min-h-0 drop its default padding and
+                        44px floor — the cell sets its own height. */}
+                    <Button
+                      variant="ghost"
+                      onClick={() => onSlotClick?.(date)}
+                      className="absolute inset-0 z-0 block h-full w-full min-h-0 rounded-none p-0"
+                    >
+                      <span className="sr-only">Schedule on {format(date, 'EEEE, MMMM d')}</span>
+                    </Button>
+
+                    <div className="pointer-events-none relative z-10">
                     <div className={cn(
                       'text-xs font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full transition-colors',
                       isCurrentDay && 'bg-accent-650 text-text-on-accent',
@@ -257,7 +291,7 @@ export function CalendarView({
                     )}>
                       {format(date, 'd')}
                     </div>
-                    
+
                     <div className="space-y-0.5">
                       {dayEvents.slice(0, 3).map((event) => {
                         const config = EVENT_TYPE_CONFIG[event.event_type];
@@ -269,7 +303,7 @@ export function CalendarView({
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'flex h-auto min-h-0 items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-fw-sm truncate cursor-pointer transition-all font-medium w-full text-left justify-start',
+                              'pointer-events-auto relative z-10 flex h-auto min-h-0 items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-fw-sm truncate cursor-pointer transition-all font-medium w-full text-left justify-start',
                               config.pillBg,
                               config.pillText,
                               hoveredEvent === event.id && 'ring-1 ring-offset-1 ring-border-strong shadow-flat'
@@ -286,12 +320,14 @@ export function CalendarView({
                         </div>
                       )}
                     </div>
-                  </Button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
           ))}
         </div>
+      </div>
       </div>
     );
   };
@@ -310,9 +346,15 @@ export function CalendarView({
     const hours = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
 
     return (
-      <div className="flex flex-col flex-1 overflow-hidden">
+      /*
+       * Was `overflow-hidden`, which silently CLIPPED the last weekdays on any
+       * screen under ~700px (64px time gutter + seven columns) — the days were
+       * unreachable, not merely small. Scrolls horizontally now, header and grid
+       * together in one scroll container so the columns stay aligned.
+       */
+      <div className="flex flex-col flex-1 overflow-x-auto">
         {/* Day Headers */}
-        <div className="flex border-b border-border-subtle sticky top-0 border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] z-10">
+        <div className="flex min-w-[720px] border-b border-border-subtle sticky top-0 border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] z-10">
           <div className="w-16 shrink-0" />
           {days.map((date) => (
             <div
@@ -335,7 +377,7 @@ export function CalendarView({
 
         {/* Time Grid */}
         <div className="flex-1 overflow-y-auto">
-          <div className="flex">
+          <div className="flex min-w-[720px]">
             {/* Time Labels */}
             <div className="w-16 shrink-0">
               {hours.map((hour) => (
@@ -430,9 +472,9 @@ export function CalendarView({
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Day Header */}
-        <div className="p-5 border-b border-border-subtle border border-border-subtle bg-surface-tint">
+        <div className="p-3 sm:p-5 border-b border-border-subtle border border-border-subtle bg-surface-tint">
           <div className={cn(
-            'text-2xl font-bold',
+            'text-lg sm:text-2xl font-bold',
             isToday(currentDate) ? 'text-accent-700' : 'text-text-primary'
           )}>
             {format(currentDate, 'EEEE, MMMM d, yyyy')}
@@ -531,16 +573,20 @@ export function CalendarView({
   // ============================================================================
   return (
     <div className={cn(
-      'flex flex-col h-[calc(100dvh-220px)] min-h-[500px]',
+      // Shorter floor + tighter padding on a phone: 500px of calendar plus the
+      // CRM's fixed bottom tab bar and page chrome does not fit a 667px viewport.
+      'flex flex-col h-[calc(100dvh-220px)] min-h-[420px] sm:min-h-[500px]',
       'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]',
-      'rounded-card p-5',
+      'rounded-card p-3 sm:p-5',
       'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
     )}>
-      {/* Header */}
-      <div className="flex items-center justify-between pb-4 mb-4 border-b border-border-subtle">
-        <div className="flex items-center gap-4">
+      {/* Header — stacks below sm. Packed into one justify-between row it was
+          ~620px of intrinsic content (period label + nav + 3-way toggle + Google
+          button + 4-item legend), which overflows every phone width. */}
+      <div className="flex flex-col gap-3 pb-4 mb-4 border-b border-border-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-4">
           {/* Current Period Label */}
-          <h2 className="text-lg font-bold text-text-primary tracking-tight">
+          <h2 className="text-base font-bold text-text-primary tracking-tight sm:text-lg">
             {viewMode === 'month' && format(currentDate, 'MMMM yyyy')}
             {viewMode === 'week' && `Week of ${format(dateRange.start, 'MMM d')} - ${format(dateRange.end, 'MMM d, yyyy')}`}
             {viewMode === 'day' && format(currentDate, 'MMMM d, yyyy')}
@@ -569,7 +615,7 @@ export function CalendarView({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* View Toggle */}
           <div className={cn(
             'flex items-center p-0.5 rounded-fw-sm',
@@ -617,12 +663,16 @@ export function CalendarView({
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              <span>Connect Google</span>
+              {/* Icon-only below sm; the label is what makes this button wide. */}
+              <span className="hidden sm:inline">Connect Google</span>
+              <span className="sr-only sm:hidden">Connect Google</span>
             </Button>
           )}
 
-          {/* Legend */}
-          <div className="flex items-center gap-3 px-3 py-1.5 bg-surface-sunken/60 rounded-fw-sm border border-border-subtle">
+          {/* Legend — purely a colour key, and the event pills carry their own
+              labels, so it is the first thing to drop on narrow screens rather
+              than something to squeeze. */}
+          <div className="hidden items-center gap-3 px-3 py-1.5 bg-surface-sunken/60 rounded-fw-sm border border-border-subtle lg:flex">
             {(['demo', 'follow_up', 'call', 'meeting'] as const).map((type) => {
               const config = EVENT_TYPE_CONFIG[type];
               return (

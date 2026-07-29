@@ -9,6 +9,7 @@ import {
   IconActivity,
   IconLayers,
   IconSettings,
+  IconCalendar,
   IconClipboardList as ClipboardList,
   IconLayoutGrid as LayoutDashboard,
   IconBuilding as Building2,
@@ -46,6 +47,16 @@ export const TABS = [
   { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '3', description: 'Every coach — table, board or by conference', section: 'work' },
   { id: 'inbox', label: 'Inbox', Icon: IconMessageSquare, shortcut: '4', description: 'Replies, demo requests & tasks due', section: 'work' },
   { id: 'outreach', label: 'Outreach', Icon: IconMail, shortcut: '5', description: 'Email tracking, deliverability & analytics', section: 'work' },
+  // 2026-07-29: the CRM had no calendar. CalendarView, the only surface that
+  // renders crm_events as a schedule, was never mounted, and the two event modals
+  // had no external opener (see the Calendar block in page.tsx). Events were
+  // creatable via QuickActionsPanel and readable per-coach via getCoachTimeline —
+  // what was missing was the schedule itself and any way to open an event.
+  // Shortcut is the mnemonic 'C' rather than '6' on purpose: the digits are bound
+  // to existing ids, and renumbering Sequences 6→7 would silently re-point a key
+  // someone already has in muscle memory — exactly what the id-bound-shortcut
+  // rule above exists to prevent.
+  { id: 'calendar', label: 'Calendar', Icon: IconCalendar, shortcut: 'C', description: 'Demos, calls & follow-ups on a month/week/day grid', section: 'work' },
   // ── AUTOMATE ──
   { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '6', description: 'Drip campaigns & enrollments', section: 'automate' },
   { id: 'templates', label: 'Templates', Icon: IconFileText, shortcut: '7', description: 'Author, preview & test reusable emails', section: 'automate' },
@@ -123,7 +134,7 @@ export type InboxSectionId = (typeof INBOX_SECTIONS)[number]['id'];
 export const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'inbox'] as const;
 // Destinations that live behind the "More" sheet (everything not on the bar).
 // Must cover every TABS id not already on the bar.
-export const MOBILE_MORE_TABS = ['dashboard', 'sequences', 'templates', 'settings'] as const;
+export const MOBILE_MORE_TABS = ['dashboard', 'calendar', 'sequences', 'templates', 'settings'] as const;
 
 // ── Segmented-control spec ──
 // ONE visual spec for every horizontal switcher in the CRM shell (Outreach

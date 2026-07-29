@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   isSuppressedEmailStatus,
@@ -57,6 +59,65 @@ describe('mobile navigation coverage', () => {
     expect(MOBILE_BAR_TABS).toEqual(['today', 'list', 'outreach', 'inbox']);
     expect(MOBILE_BAR_TABS).not.toContain('sequences');
     expect(MOBILE_MORE_TABS).toContain('sequences');
+  });
+});
+
+// ============================================================================
+// 2026-07-29 — the Calendar destination.
+//
+// crm_events was a write-only table. ScheduleEventModal and EventDetailModal
+// were both mounted in page.tsx, so an admin could schedule a demo and it landed
+// in the table — but CalendarView, the only component that LISTS events, was
+// never rendered anywhere. Its sole importers pulled the CRMEvent/CRMEventType
+// TYPES out of it, which is why every "is it used?" grep came back positive and
+// the orphan survived.
+//
+// Two halves, because a contract test cannot see the actual defect: the ids and
+// mobile reachability below, plus a source-text assertion that the component is
+// really rendered. The second one is the one that would have caught this.
+// ============================================================================
+describe('calendar destination (2026-07-29)', () => {
+  it('exists as a top-level destination', () => {
+    const calendar = TABS.find((t) => t.id === 'calendar');
+    expect(calendar, 'crm_events has no read surface without this tab').toBeDefined();
+    expect(calendar!.section).toBe('work');
+  });
+
+  it('is reachable on mobile', () => {
+    const reachable = new Set<string>([...MOBILE_BAR_TABS, ...MOBILE_MORE_TABS]);
+    expect(reachable.has('calendar')).toBe(true);
+  });
+
+  /**
+   * The shortcut is 'C', not '6'. Inserting Calendar into the digit run would
+   * have meant renumbering Sequences 6→7 and Templates 7→8, silently re-pointing
+   * two keys — the exact failure the "shortcuts are bound to ids, not array
+   * position" rule in page-contracts.ts exists to prevent.
+   */
+  it('takes a new shortcut instead of renumbering the existing digits', () => {
+    expect(TABS.find((t) => t.id === 'calendar')!.shortcut).toBe('C');
+    expect(TABS.find((t) => t.id === 'sequences')!.shortcut).toBe('6');
+    expect(TABS.find((t) => t.id === 'templates')!.shortcut).toBe('7');
+  });
+
+  /**
+   * The orphan itself. page.tsx is a ~2400-line client component that pulls in
+   * the whole CRM surface, so rendering it in a unit test is not viable — this
+   * reads the source instead and asserts the component is imported as a VALUE
+   * and actually rendered. A type-only import is what the bug looked like, so
+   * `import type { CRMEvent }` must not satisfy it.
+   */
+  it('renders CalendarView — not just its types', () => {
+    const src = readFileSync(join(process.cwd(), 'src/app/golf/admin/crm/page.tsx'), 'utf8');
+
+    const importsComponent = /import\s*\{[^}]*\bCalendarView\b[^}]*\}\s*from\s*'\.\/components\/CalendarView'/.test(src);
+    expect(importsComponent, 'CalendarView must be imported as a value').toBe(true);
+    expect(
+      /import\s+type\s*\{[^}]*\}\s*from\s*'\.\/components\/CalendarView'/.test(src),
+      'a type-only import is the bug, not the fix',
+    ).toBe(false);
+    expect(/<CalendarView\b/.test(src), 'CalendarView must be rendered').toBe(true);
+    expect(/activeTab === 'calendar'/.test(src), 'gated on the calendar tab').toBe(true);
   });
 });
 
