@@ -1,0 +1,129 @@
+# BaseballHelm Overnight Completion — MISSION STATE
+
+> **This file is the hub.** It is updated continuously during the run, not just
+> at the end. If you are a fresh agent picking this up after a context
+> compaction, read `RESUME_INSTRUCTIONS.md` first, then this file.
+
+- **Mission start:** 2026-07-28 23:29 EDT (2026-07-29 03:29 UTC)
+- **Branch:** `baseball/overnight-completion` (branched from `main`)
+- **Goal:** BaseballHelm demonstrable to a college baseball program by morning,
+  without apologising for unfinished screens.
+
+---
+
+## Current phase
+
+**Phase 1 — RECON (in progress).**
+
+A 10-worker read-only reconnaissance workflow is establishing product truth
+before any code is written. Writing code before knowing what is real would be
+the single fastest way to waste the night.
+
+| Phase | State |
+|---|---|
+| 0. Hazard containment | ✅ done |
+| 1. Recon (10 parallel readers + adversarial verify + plan) | 🔄 running |
+| 2. Serial foundations (flag architecture, identity model, schema) | ⬜ blocked on 1 |
+| 3. Parallel implementation teams | ⬜ blocked on 2 |
+| 4. Integration | ⬜ |
+| 5. Test + verify | ⬜ |
+| 6. Visual / responsive review | ⬜ |
+| 7. Seed + demo walkthrough | ⬜ |
+| 8. Release assessment | ⬜ |
+
+---
+
+## Baseline (measured, not assumed)
+
+Captured on this branch at mission start:
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` | **0 errors** |
+| `npx eslint src` | **clean** |
+| `vitest --project unit` | **843 files / 7,964 passed, 13 skipped** |
+| `npm run build` | (captured — see `docs/baseballhelm-overnight/TEST_STATUS.md`) |
+
+**The tree is green at baseline.** That matters: every failure appearing later
+in this run is one WE introduced, and must be fixed rather than explained away.
+
+---
+
+## Scale of the surface (measured)
+
+| Thing | Count |
+|---|---|
+| `src/app/baseball/**` page.tsx | **107** |
+| Baseball-related TS/TSX files | **~1,043** |
+| Lift Lab files | **~198** |
+| Files referencing "recruit" | **~151** |
+
+This is a large product, not a prototype. Any plan that assumes a small surface
+is wrong.
+
+---
+
+## Environmental hazards (identified up front)
+
+### H1 — Shared working tree with another live session ⚠️ ACTIVE
+Another Claude session is working in the SAME directory on golf CRM + landing
+(~107 uncommitted files, last write ~2h before mission start, messaged at
+23:12 EDT). Their files are in `src/app/golf/admin/crm/**` and
+`src/components/landing/**` — disjoint from baseball, but the git index is
+shared.
+
+**Guard:** never `git add -A` / `git commit -a`. Stage explicitly by path,
+every time. Verify with `git diff --cached --name-only` before every commit.
+A commit that sweeps in their work would corrupt someone else's night.
+
+### H2 — `.env.local` points at PRODUCTION ⚠️ ACTIVE
+`NEXT_PUBLIC_SUPABASE_URL=https://qmnssrrolpinvwjjnufo.supabase.co` — the live
+Golf+Baseball production project.
+
+**Assessment:** seeding a *dedicated demo organisation* into prod is this
+team's established, sanctioned pattern (`seed-baseball-demo.ts` describes its
+org as "safe to ignore in production lists"; cf. the Pat Edwards golf demo
+clone). That is legitimate.
+
+**Guard:** demo seeds must be org-scoped and idempotent. Never `DELETE`/
+`TRUNCATE` unscoped. Never touch a row outside the demo org. Any destructive
+statement must be reviewed before execution. Schema changes go through
+migrations, never ad-hoc SQL.
+
+### H3 — Heartbeat durability is limited ⚠️ KNOWN
+`CronCreate` is explicitly session-only ("nothing is written to disk, and the
+job is gone when Claude exits"). A genuinely durable OS-level scheduler was not
+assumed. See `RESUME_INSTRUCTIONS.md` for exactly what was created and what it
+does and does not guarantee. **This is stated honestly rather than claimed.**
+
+---
+
+## Active workers
+
+| Worker | Scope | State |
+|---|---|---|
+| recon workflow (10 readers + verify + plan) | product truth, read-only | 🔄 running |
+
+---
+
+## Next actions
+
+1. Consume recon output; write `FEATURE_STATUS`, `DATABASE_STATUS`, `AUTH_STATUS`, `UI_STATUS`, `SEED_STATUS`, `ISSUE_LEDGER`.
+2. Land the serial foundations (recruiting flag architecture + identity model) BEFORE fanning out writers.
+3. Launch implementation teams with strict non-overlapping file ownership.
+
+---
+
+## Standing rules for every worker on this mission
+
+1. **Verify, never assume.** A route existing, a table existing, a button
+   rendering, or a doc claiming completion is not evidence a feature works.
+2. **No unsupported completion claims.** Every "done" needs command output or a
+   file:line citation.
+3. **Strict file ownership.** Parallel writers that share files corrupt each
+   other. Never edit outside your assigned paths — report instead.
+4. **Never weaken RLS** to make something work.
+5. **No mock data in a primary workflow.** Hiding an unfinished surface behind
+   the capability flag is legitimate; faking it is not.
+6. **Green stays green.** Baseline is 0 type errors / 0 lint / 7,964 tests
+   passing. Do not regress it.
