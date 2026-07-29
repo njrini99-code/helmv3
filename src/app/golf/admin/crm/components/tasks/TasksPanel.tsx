@@ -50,6 +50,8 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // The task being edited, or null for create mode. One dialog serves both.
+  const [editingTask, setEditingTask] = useState<CrmTask | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -87,6 +89,22 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
     setTasks((prev) => prev.map((t) => (t.id === next.id ? next : t)));
   };
 
+  // Same merge as completion — the server returns the full row, so replacing in
+  // place keeps due_at/priority sorting correct without a refetch.
+  const handleUpdated = (next: CrmTask) => {
+    setTasks((prev) => prev.map((t) => (t.id === next.id ? next : t)));
+  };
+
+  const openCreate = () => {
+    setEditingTask(null);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (t: CrmTask) => {
+    setEditingTask(t);
+    setDialogOpen(true);
+  };
+
   return (
     <div className="space-y-3">
       {/* Header */}
@@ -104,7 +122,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
         </div>
         <Button variant="primary"
           type="button"
-          onClick={() => setDialogOpen(true)}
+          onClick={openCreate}
           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-fw-sm bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors"
         >
           <IconPlus size={12} /> New task
@@ -146,7 +164,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
           </h4>
           <div className="space-y-1.5">
             {open.map((task) => (
-              <TaskCard key={task.id} task={task} onCompleted={handleCompleted} />
+              <TaskCard key={task.id} task={task} onCompleted={handleCompleted} onEdit={openEdit} />
             ))}
           </div>
         </section>
@@ -167,9 +185,16 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       <CreateTaskDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={(next) => {
+          setDialogOpen(next);
+          // Drop the edit target on close so the next "New task" is not
+          // pre-filled with the task that was last edited.
+          if (!next) setEditingTask(null);
+        }}
         coachId={coachId}
+        task={editingTask}
         onCreated={handleCreated}
+        onUpdated={handleUpdated}
       />
     </div>
   );
