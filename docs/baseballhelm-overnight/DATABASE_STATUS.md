@@ -33,6 +33,42 @@ reading. See "The SQL HAS now been executed" below._
 
 ---
 
+## § A trap in this table: `fingerprint` is NULL for most historical rows
+
+Recorded first because it invalidated two of my own measurements before I
+caught it, the second time after I had already been burned once.
+
+`admin_events.fingerprint` was added on 2026-07-02. Every error row written
+before 2026-07-11 has `fingerprint IS NULL` — 87,653 of 88,782 unresolved rows.
+
+That breaks the obvious query in a way that looks like a real answer:
+
+    SELECT count(DISTINCT fingerprint) ...          -- collapses ALL nulls to 1
+    SELECT ... GROUP BY fingerprint ORDER BY ...    -- one giant bogus "group"
+
+SQL buckets NULLs together. **The application does the exact opposite** —
+`buildIncidentFeedFromSources` falls back to `row:${id}`, so each null row is
+its OWN incident group. Any query that groups by raw `fingerprint` therefore
+reports the inverse of what the product does.
+
+Two wrong claims came out of this, both stated confidently before being caught:
+
+1. "one fingerprint accounts for 87,653 rows" — no; that was every
+   null-fingerprint row in one SQL bucket. They are 87,653 separate groups.
+2. "the single largest error is 82,088 occurrences of `get_admin_errors_rollup`
+   timing out" — no. 82,088 was again the null bucket's total, and `min(title)`
+   just picked the alphabetically-first title in it. Counting **by title**, the
+   rollup timeout's last occurrence was **2026-04-24** with **0 in the last 30
+   days** — it is not an open problem at all. The genuine largest unresolved
+   error is `Client error: network error`, **71,660 rows**, 2026-04-08 →
+   2026-06-25, also historical.
+
+**Rule for anything querying this table: group by
+`coalesce(fingerprint, 'row:'||id::text)`, or group by `title`. Never by
+`fingerprint` alone.**
+
+---
+
 ## § Live verification — read against production, 2026-07-29 10:40 EDT
 
 Everything in this document was previously inferred from migration source.

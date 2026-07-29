@@ -40,6 +40,61 @@ stated next to it rather than in a footnote.
 
 ---
 
+## Status at 2026-07-29 12:30 EDT
+
+The mission's own deliverable is **merged and deployed**. Everything below the
+next heading is the overnight record and still stands. This block is what
+happened after it.
+
+| Thing | State |
+|---|---|
+| #1092 — the mission PR, 93 commits | **Merged + deployed.** All CI green, incl. `BaseballHelm authenticated smoke` |
+| #1094 service-worker fix, #1095, #1096, #1097, #1098 | **Merged + deployed** in the same one-shot `vercel --prod` |
+| Production Postgres wedged 04:10Z–13:38Z | **Resolved** by an owner-approved Management API restart. Root cause of the wedge unknown; the restart destroyed the evidence |
+| Six RLS exposures | **Confirmed live against production `pg_policies`**, not inferred from migration source. Fixes authored, still applied to nothing |
+| #1099 — follow-ups | Open, `MERGEABLE/CLEAN`, nothing failing |
+
+### What #1099 carries
+
+- **Landing hamburger** opened 2,000px above the viewport when scrolled. The
+  scroll lock used the `overflow` shorthand on `<body>`, which sets
+  `overflow-x` too and promotes body to a scroll container — defeating
+  `position: sticky` on the header, exactly as `globals.css:173-188` warns.
+  Measured before/after in a real browser.
+- **Bridge user-detail** unreadable on a phone (four-line meta block, log lines
+  clipped mid-word). Not re-measured after the fix — no authenticated Bridge
+  session available; stated in the commit rather than implied.
+- **Bridge incident counts** disagreed across three surfaces (4 / 3 / up to 9)
+  because they counted rows vs groups vs kind-filtered groups. All three now
+  read one field.
+- **Bridge Resolve** did nothing for the founder's account: `requireSuperAdmin()`
+  gates on an env var, the `resolve_admin_event` RPC gates on the
+  `admin_allowlist` TABLE, and the account was in one and not the other.
+  Unblocked by adding the row (owner-approved). The two gates still read
+  different sources of truth — **open**.
+- **Auto-resolve Rule C.** Auto-resolve already existed and ran nightly, but
+  both its rules key on fingerprint and so could never touch the 87,653
+  null-fingerprint rows that are 99% of the backlog.
+- **`unresolve_admin_event`** authored as a migration file, **not applied**.
+
+### Corrections to earlier versions of this report
+
+Stated plainly because each was asserted confidently before being checked:
+
+- The "last successful resolve" was **not** a human on the `admin@` account —
+  it was the nightly auto-resolve cron, which uses the service role and bypasses
+  the RPC gate entirely.
+- "One fingerprint accounts for 87,653 rows" and "the largest error is 82,088
+  rollup timeouts" were both artifacts of `GROUP BY fingerprint` bucketing NULLs
+  together. See `DATABASE_STATUS.md` § A trap in this table. The rollup timeout
+  last fired **2026-04-24** and is not an open problem; the real largest is
+  `Client error: network error` at 71,660 rows, also historical.
+- An earlier heartbeat reported the service worker as "a very likely culprit"
+  for the mobile-menu report, then tested it and it passed. The eventual cause
+  was the body scroll lock.
+
+---
+
 ## Read this first
 
 **1. Seven live security findings in production, all predating this branch.**
