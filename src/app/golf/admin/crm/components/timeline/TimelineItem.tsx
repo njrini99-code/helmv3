@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   IconMessageSquare,
+  IconMessage,
   IconMail,
   IconCalendar,
   IconFileText,
@@ -19,6 +20,7 @@ import { TIMELINE_CONFIG, type TimelineIconKey } from './timeline-config';
 // from server contexts if ever needed.
 const ICON_MAP: Record<TimelineIconKey, typeof IconMail> = {
   IconMessageSquare,
+  IconMessage,
   IconMail,
   IconCalendar,
   IconFileText,
@@ -68,6 +70,15 @@ export function TimelineItem({ item }: TimelineItemProps) {
     }
   } else if (item.source === 'note') {
     if (meta.is_pinned === true) metaBits.push('pinned');
+  } else if (item.source === 'reply') {
+    // Who actually replied matters — a reply can arrive from an assistant or a
+    // secondary address rather than the coach's address of record.
+    if (typeof meta.from_address === 'string' && meta.from_address) {
+      metaBits.push(meta.from_address);
+    }
+    // Unread is the state a rep is scanning for, so it is said explicitly. Read
+    // is the resting state and needs no label.
+    if (meta.is_read === false) metaBits.push('unread');
   }
 
   const meetingUrl =
