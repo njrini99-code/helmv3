@@ -42,6 +42,20 @@ const checks = [
   { label: 'Sentry project', ok: hasUsableValue('SENTRY_PROJECT'), required: 'SENTRY_PROJECT' },
   { label: 'Vercel API token', ok: hasUsableSecret('VERCEL_API_TOKEN'), required: 'VERCEL_API_TOKEN' },
   { label: 'Vercel project id', ok: hasUsableValue('VERCEL_PROJECT_ID'), required: 'VERCEL_PROJECT_ID' },
+  {
+    // Shared secret the EDGE-side error paths use to post into the Bridge:
+    // instrumentation.ts:280, proxy.ts:119, and middleware.ts:342/656 each
+    // do `const key = process.env.INTERNAL_LOG_KEY; if (!key) return;`.
+    // That bail-out is deliberate (fail-soft), but it is also TOTALLY
+    // SILENT — with the var unset, every edge-origin error stops reaching
+    // admin_events across all four sites and the Bridge simply shows fewer
+    // errors, which is indistinguishable from things going well. Checking
+    // it here means the failure surfaces at deploy time instead of being
+    // discovered retroactively during an actual edge incident.
+    label: 'Internal log key (edge → Bridge error path)',
+    ok: hasUsableSecret('INTERNAL_LOG_KEY'),
+    required: 'INTERNAL_LOG_KEY',
+  },
 ];
 
 const failures = checks.filter((check) => !check.ok);
