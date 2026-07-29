@@ -25,9 +25,14 @@
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { requireBaseballCapability } from '@/lib/baseball/capabilities';
 import { appendRosterTimelineEvent } from '@/lib/baseball/timeline-writer';
+import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // -----------------------------------------------------------------------------
 // Result shape (mirrors golf roster.ts)
@@ -56,6 +61,122 @@ function playerDisplayName(
   if (!p) return 'Player';
   const name = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim();
   return name || 'Player';
+}
+
+// -----------------------------------------------------------------------------
+// Lift Lab propagation (roster status -> helm_lifting_athletes.is_active)
+// -----------------------------------------------------------------------------
+//
+// LINKING COLUMN: helm_lifting_athletes.sport_player_id = baseball_players.id,
+// scoped by (organization_id, sport = 'baseball'). organization_id comes from
+// baseball_teams.organization_id for the acting team (ctx.targetTeamId), via
+// resolveBaseballLiftingOrg — the same helper every other baseball Lift Lab
+// surface (live-weight-room.ts, lifting-v11.ts, lift-onboarding.ts) already
+// uses to bridge baseball_players.id <-> helm_lifting_athletes.id.
+//
+// THE BUG THIS CLOSES (docs/baseballhelm-overnight/ISSUE_LEDGER.md #9):
+// helm_lifting_sync_org_athletes() (supabase/migrations/
+// 20260625000030_helm_lifting_accept_invite_rpc.sql) is an idempotent
+// `INSERT ... ON CONFLICT (organization_id, sport, sport_player_id) DO
+// NOTHING` — it only ever CREATES an athlete row and never flips is_active
+// back off when the player later leaves baseball_team_members. A cut
+// player's helm_lifting_athletes row stayed is_active=true forever: still
+// eligible for dynamic group membership, still visible in the Live Weight
+// Room, still counted in coach compliance views (every one of those reads
+// gates ONLY on `.eq('is_active', true)`, nothing roster-aware).
+//
+// DEACTIVATE, NEVER DELETE: helm_lifting_sessions / _set_results /
+// _readiness_checkins / _maxes / _prs all FK to helm_lifting_athletes.id —
+// deleting the athlete row would orphan or cascade-destroy a real training
+// history. A cut player's training history is still real, still theirs;
+// is_active is a roster-visibility flag, not the row's identity, and it is
+// the only column this helper ever writes.
+//
+// SERVICE-ROLE CLIENT IS INTENTIONAL, NOT A SHORTCUT: helm_lifting_athletes'
+// RLS UPDATE policy (hla_update, supabase/migrations/
+// 20260625000000_helm_lifting_identity.sql) is gated on
+// helm_lifting_can_edit_org(), which requires the caller to be an ACTIVE
+// helm_lifting_coaches row (or a can_edit org viewer) — a DIFFERENT identity
+// than the baseball can_manage_roster capability this file's actions already
+// require via withBaseballAction. Lift Lab is opt-in, so a baseball coach who
+// never onboarded into it would have this write silently match 0 rows under
+// RLS despite being fully authorized to manage the roster. Because
+// can_manage_roster has ALREADY been enforced server-side before any call
+// site below runs, the admin client here is a narrowly-scoped propagation of
+// an already-authorized decision across a bounded-context boundary — not a
+// bypass of a check that still needed to happen.
+//
+// REACTIVATION (judgment call): a player re-added to the roster after being
+// removed (assignPlayerToTeam's brand-new-membership branch) or whose
+// pending join is approved (approvePendingMember) has their Lift Lab seat
+// symmetrically restored (is_active -> true). A coach re-adding a player
+// expects every other team surface to work again immediately (calendar,
+// tasks, messaging); leaving Lift Lab as a silent, undocumented exception
+// would be a confusing trap, and reactivating is exactly as safe as the
+// original activation (same capability gate, same org scope) — training
+// history is untouched by is_active either way. A player never seeded into
+// Lift Lab matches zero rows and this is a harmless no-op.
+//
+// NEVER THROWS: every call site below awaits this as a best-effort
+// side-effect AFTER the primary roster mutation has already succeeded. A
+// Lift Lab outage, a team with no organization_id, or a service-role
+// misconfiguration must never fail (or roll back) a legitimate roster edit.
+// -----------------------------------------------------------------------------
+
+async function setLiftLabAthleteActive(
+  teamId: string,
+  playerId: string,
+  isActive: boolean,
+): Promise<void> {
+  try {
+    const liftCtx = await resolveBaseballLiftingOrg(teamId);
+    if (!liftCtx) return; // Team has no organization_id — no Lift Lab presence is possible.
+
+    const admin = createAdminClient();
+    const { error } = await fromUntyped(admin, 'helm_lifting_athletes')
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq('organization_id', liftCtx.organizationId)
+      .eq('sport', 'baseball')
+      .eq('sport_player_id', playerId);
+
+    // A zero-row match (player was never seeded into Lift Lab — the common
+    // case, since it's opt-in per org) returns { error: null }, not an
+    // error, so this is already idempotent for "most players have none".
+    if (error) {
+      await logServerError(
+        `Failed to ${isActive ? 're' : 'de'}activate Lift Lab athlete row for baseball player ${playerId}: ${describeError(error)}`,
+        {
+          action: 'roster.setLiftLabAthleteActive',
+          featureArea: 'baseball-roster',
+          teamId,
+          sport: 'baseball',
+        },
+      );
+    }
+  } catch (err) {
+    // createAdminClient() throws synchronously if service-role env vars are
+    // missing/misconfigured — caught here so that alone can never fail a
+    // roster edit either.
+    await logServerError(
+      `Lift Lab athlete ${isActive ? 'reactivation' : 'deactivation'} threw for baseball player ${playerId}: ${describeError(err)}`,
+      {
+        action: 'roster.setLiftLabAthleteActive',
+        featureArea: 'baseball-roster',
+        teamId,
+        sport: 'baseball',
+      },
+    );
+  }
+}
+
+/** Deactivate (never delete) a player's Lift Lab athlete row, if one exists. */
+function deactivateLiftLabAthlete(teamId: string, playerId: string): Promise<void> {
+  return setLiftLabAthleteActive(teamId, playerId, false);
+}
+
+/** Reactivate a player's Lift Lab athlete row, if one exists. See judgment-call note above. */
+function reactivateLiftLabAthlete(teamId: string, playerId: string): Promise<void> {
+  return setLiftLabAthleteActive(teamId, playerId, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -151,6 +272,12 @@ export const assignPlayerToTeam = withBaseballAction(
       if (insertError) {
         throw insertError;
       }
+
+      // Best-effort: a brand-new membership is treated as a (re)activation —
+      // if this player previously had their Lift Lab seat deactivated by
+      // removePlayerFromTeam, restore it. See the Lift Lab propagation
+      // comment block above for the reactivation judgment call.
+      await reactivateLiftLabAthlete(teamId, playerId);
     }
 
     // Best-effort timeline side-effect — never rolls back the roster change.
@@ -221,6 +348,12 @@ export const removePlayerFromTeam = withBaseballAction(
     if (deleteError) {
       throw deleteError;
     }
+
+    // Best-effort: propagate the removal to the player's Lift Lab athlete row
+    // (if one exists) — deactivates it (never deletes) so they drop out of
+    // dynamic group membership, the Live Weight Room, and compliance views.
+    // Never rolls back the roster change (see Lift Lab propagation block above).
+    await deactivateLiftLabAthlete(teamId, playerId);
 
     // Best-effort timeline side-effect.
     await appendRosterTimelineEvent({
@@ -393,6 +526,11 @@ export const approvePendingMember = withBaseballAction(
       baseball_players: { first_name: string | null; last_name: string | null } | null;
     }).baseball_players;
 
+    // Best-effort: approval is a (re)activation onto the active roster —
+    // symmetrically restore the Lift Lab seat if one exists. See the Lift
+    // Lab propagation comment block above for the reactivation judgment call.
+    await reactivateLiftLabAthlete(membership.team_id, membership.player_id);
+
     // Best-effort timeline side-effect — never rolls back the approval.
     await appendRosterTimelineEvent({
       teamId: membership.team_id,
@@ -451,6 +589,11 @@ export const rejectPendingMember = withBaseballAction(
     if (deleteError) {
       throw deleteError;
     }
+
+    // Best-effort: a declined pending join is a removal from the roster —
+    // deactivate (never delete) the Lift Lab seat if one exists. Never rolls
+    // back the decline (see Lift Lab propagation block above).
+    await deactivateLiftLabAthlete(membership.team_id, membership.player_id);
 
     // Best-effort timeline side-effect.
     await appendRosterTimelineEvent({
