@@ -5,6 +5,7 @@ import {
   failed,
   ok,
 } from '@/lib/admin/fetch-result';
+import { reportIntegrationFault } from '@/lib/admin/integration-health';
 
 /**
  * Helm Bridge — server-only Sentry REST client (READ side; SDK ingest is a
@@ -147,7 +148,11 @@ export async function fetchSentryIssues(opts?: {
       if (!res.ok) {
         const retryAfter = res.headers.get('retry-after');
         return failed(
-          `Sentry issues fetch failed: ${res.status}${retryAfter ? ` (retry-after ${retryAfter}s)` : ''}`,
+          reportIntegrationFault(
+            'sentry',
+            'issues fetch',
+            `Sentry issues fetch failed: ${res.status}${retryAfter ? ` (retry-after ${retryAfter}s)` : ''}`,
+          ),
         );
       }
       const rows = (await res.json()) as RawIssue[];
@@ -162,7 +167,13 @@ export async function fetchSentryIssues(opts?: {
     // instead of presenting it as the complete unresolved list.
     return { ...ok(issues), truncated: cursor !== null };
   } catch (err) {
-    return failed(`Sentry issues fetch threw: ${err instanceof Error ? err.message : String(err)}`);
+    return failed(
+      reportIntegrationFault(
+        'sentry',
+        'issues fetch',
+        `Sentry issues fetch threw: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
   }
 }
 
@@ -184,7 +195,9 @@ export async function fetchSentryHourlyStats(): Promise<AdminFetchResult<SentryS
       category: 'error',
     });
     const res = await sentryGet(`/organizations/${cfg.org}/stats_v2/`, params, cfg.token);
-    if (!res.ok) return failed(`Sentry stats fetch failed: ${res.status}`);
+    if (!res.ok) {
+      return failed(reportIntegrationFault('sentry', 'stats fetch', `Sentry stats fetch failed: ${res.status}`));
+    }
     const body = (await res.json()) as {
       intervals: string[];
       groups: Array<{ by: { outcome: string }; series: { 'sum(quantity)': number[] } }>;
@@ -196,7 +209,13 @@ export async function fetchSentryHourlyStats(): Promise<AdminFetchResult<SentryS
     });
     return ok(points);
   } catch (err) {
-    return failed(`Sentry stats fetch threw: ${err instanceof Error ? err.message : String(err)}`);
+    return failed(
+      reportIntegrationFault(
+        'sentry',
+        'stats fetch',
+        `Sentry stats fetch threw: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
   }
 }
 
