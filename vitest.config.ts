@@ -77,6 +77,13 @@ export default defineConfig({
             // this P0 fix. Only the #516 secrets guard is promoted to vitest
             // here, since it previously never ran under any mechanism at all.
             'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
+            // The demo-seed guards. Same rationale as the secrets guard above:
+            // they were written for `node --test` and so ran under nothing, and
+            // what they protect — a script that creates auth users and deletes
+            // rows against a live project — is exactly the kind of thing that
+            // must not be guarded by a test nobody executes.
+            'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
+            'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts',
           ],
           exclude: [
             'node_modules',
