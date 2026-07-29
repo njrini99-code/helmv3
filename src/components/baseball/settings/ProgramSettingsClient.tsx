@@ -88,6 +88,7 @@ import type {
   BaseballNotificationType,
 } from '@/lib/types/baseball-settings';
 import { BASEBALL_NOTIFICATION_TYPES } from '@/lib/types/baseball-settings';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 import type {
   BaseballProgramIdentityUpdate,
   BaseballPublicProfileMode,
@@ -543,13 +544,25 @@ export function ProgramSettingsClient({ data }: Props) {
             disabled={!canEdit}
             onChange={(v) => patch('travel_module_enabled', v)}
           />
-          <ToggleRow
-            label="Recruiting / exposure"
-            description={term.exposureNoun}
-            checked={settings.recruiting_exposure_enabled}
-            disabled={!canEdit}
-            onChange={(v) => patch('recruiting_exposure_enabled', v)}
-          />
+          {/* Recruiting / exposure. Hidden while the module is sunset — the
+              toggle would still write recruiting_exposure_enabled, but every
+              surface that reads it (player-access-policy.ts) belongs to
+              recruiting, so flipping it changes nothing anyone can see. A
+              control that does nothing is worse than an absent one: on a
+              settings page it reads as broken, and it is exactly the kind of
+              thing a coach files a ticket about.
+
+              The stored value is untouched, so a program's existing choice
+              survives and comes back with the module. */}
+          {isRecruitingEnabled() && (
+            <ToggleRow
+              label="Recruiting / exposure"
+              description={term.exposureNoun}
+              checked={settings.recruiting_exposure_enabled}
+              disabled={!canEdit}
+              onChange={(v) => patch('recruiting_exposure_enabled', v)}
+            />
+          )}
           <ToggleRow
             label="Public player profiles"
             checked={settings.public_profiles_enabled}
