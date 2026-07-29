@@ -217,7 +217,59 @@ CREATE POLICY "baseball_team_invitations_select" ON public.baseball_team_invitat
   USING (public.has_baseball_staff_capability(team_id, 'can_manage_roster'));
 
 -- ----------------------------------------------------------------------------
--- SECTION 4 — defense in depth: anon has no matching policy on any of these
+-- SECTION 4 — baseball_player_percentiles: the fourth USING(true)
+-- ----------------------------------------------------------------------------
+-- Found by sweeping the baseline for the whole family rather than stopping at
+-- the reported cases. Five baseball SELECT policies shipped as `USING (true)`
+-- in 20260527000000; `baseball_coaches_select_all` was replaced by
+-- 20260701014000 and `baseball_team_coach_staff_select` by 20260624000050.
+-- Two are SECTION 2 above. This is the fifth, and nothing has ever replaced it:
+--
+--     -- 20260527000000_prod_public_baseline.sql:16710
+--     CREATE POLICY "Anyone can view percentiles"
+--       ON "public"."baseball_player_percentiles"
+--       FOR SELECT TO "authenticated" USING (true);
+--
+-- The name reads like reference data. The table is not: `player_id uuid NOT
+-- NULL`, one row per player, carrying percentile_gpa, composite_academic,
+-- composite_athletic, exit velocity, pitch velocity and sixty time. So every
+-- authenticated user can read every player in the database ranked
+-- academically and athletically. Derived rather than raw — a percentile, not
+-- the GPA — which is why this is a notch below SECTION 2 and not a notch below
+-- nothing.
+--
+-- The gate is the same one baseball_players_select uses, so a percentile row
+-- is visible exactly when the player row behind it is: own row, or a roster
+-- the caller coaches. One definer call, no subquery.
+--
+-- ⚠️ RESTORATION NOTE for the recruiting sunset. baseball_players_select has a
+-- third clause — is_baseball_player_recruiting_discoverable — that this policy
+-- deliberately does NOT mirror, because that helper takes player_type and
+-- recruiting_activated as arguments (to avoid the recursion cycle documented
+-- in migration A SECTION 1) and a percentiles row carries neither; supplying
+-- them would mean an inline subquery over baseball_players, which is the exact
+-- shape banned in SECTION 3. Consequence: when recruiting is switched back on,
+-- a coach browsing a discoverable player will see the player and NOT their
+-- percentiles. That is fail-closed and intentional. Widening it is a
+-- deliberate follow-up (most cleanly: a definer
+-- `is_baseball_player_percentiles_discoverable(player_id)` that does the
+-- lookup inside its own body), not something to bolt on under time pressure.
+-- Recorded as step (6) of PRODUCT_MODULES.recruiting.restore in
+-- src/lib/baseball/product-modules.ts, which is the checklist someone actually
+-- reads when switching recruiting back on.
+--
+-- The only app readers are recruiting-philosophy.ts's percentile lookups, both
+-- of which pass explicit player ids they already hold, so this filters their
+-- results rather than breaking their shape — and both sit behind the sunset,
+-- so no active surface reads this table today.
+DROP POLICY IF EXISTS "Anyone can view percentiles" ON public.baseball_player_percentiles;
+DROP POLICY IF EXISTS "baseball_player_percentiles_select" ON public.baseball_player_percentiles;
+CREATE POLICY "baseball_player_percentiles_select" ON public.baseball_player_percentiles
+  FOR SELECT TO authenticated
+  USING (public.can_view_baseball_player(player_id));
+
+-- ----------------------------------------------------------------------------
+-- SECTION 5 — defense in depth: anon has no matching policy on any of these
 -- tables today (before or after this migration — RLS-enabled-with-no-matching-
 -- policy already denies anon all rows), so this REVOKE is a no-op on live
 -- behavior. It closes the blanket `GRANT ALL ... TO anon` (including
@@ -229,6 +281,7 @@ CREATE POLICY "baseball_team_invitations_select" ON public.baseball_team_invitat
 REVOKE ALL ON public.baseball_players FROM anon;
 REVOKE ALL ON public.baseball_teams FROM anon;
 REVOKE ALL ON public.baseball_team_invitations FROM anon;
+REVOKE ALL ON public.baseball_player_percentiles FROM anon;
 
 -- ============================================================================
 -- END migration B. Leaks closed. NOT applied to any DB by this file.

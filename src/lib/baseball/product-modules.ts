@@ -86,7 +86,18 @@ export const PRODUCT_MODULES: Readonly<Record<ProductModuleId, ProductModule>> =
       'were not exercised while disabled, so policy drift is likely; ' +
       '(4) recruiting seed data exists, since the demo seeds stopped producing ' +
       'it; (5) re-enable the recruiting nav tests that assert it is hidden ' +
-      '(they will correctly fail once it is visible again).',
+      '(they will correctly fail once it is visible again); ' +
+      '(6) baseball_player_percentiles is now gated on can_view_baseball_player ' +
+      '(migration 20260729000200 SECTION 4, closing a baseline USING(true) that ' +
+      'exposed every player\'s academic/athletic ranking). That policy ' +
+      'deliberately does NOT mirror baseball_players_select\'s ' +
+      'recruiting-discoverability clause, because the discoverability helper ' +
+      'takes player_type/recruiting_activated as arguments and a percentiles ' +
+      'row carries neither. So a coach browsing a DISCOVERABLE player will see ' +
+      'the player and not their percentiles. Fail-closed and intentional; the ' +
+      'clean widening is a definer ' +
+      'is_baseball_player_percentiles_discoverable(player_id) that does the ' +
+      'lookup inside its own body rather than an inline subquery in the policy.',
   },
 } as const;
 
