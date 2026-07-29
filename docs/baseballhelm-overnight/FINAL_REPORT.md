@@ -1,8 +1,8 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 04:20 EDT. Branch
+_2026-07-28 23:35 → 2026-07-29 04:30 EDT. Branch
 `baseball/overnight-completion`, draft PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 30 commits.
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 32 commits.
 CI is green except `BaseballHelm authenticated smoke`, which fails on a
 Cloudflare 522 from the production Supabase — red before this branch existed,
 unrelated to the diff._
@@ -16,13 +16,22 @@ stated next to it rather than in a footnote.
 
 ## Read this first
 
-**1. Two live cross-tenant data exposures are still open in production.** Any
+**1. Three live cross-tenant data exposures are still open in production.** Any
 authenticated user on any team can read every other program's roster PII —
-email, phone, GPA, SAT/ACT — and every team's secret `join_code`. Live since
-2026-05-27. The fix is written, executed in CI, and **applied to nothing**.
-Applying it is the first thing to do, and it is a three-step sequence:
-`DATABASE_STATUS.md` has the reasoning, `CURRENT_PRIORITIES.md` has the
-checklist.
+email, phone, GPA, SAT/ACT — every team's secret `join_code`, and every live
+invitation `code`. Live since 2026-05-27. The fix is written, executed in CI,
+and **applied to nothing**. Applying it is the first thing to do, and it is a
+three-step sequence: `DATABASE_STATUS.md` has the reasoning,
+`CURRENT_PRIORITIES.md` has the checklist.
+
+All three are one mistake repeated: a secret in a column, guarded by a policy
+that cannot see the query filtering on it. RLS never sees a WHERE-clause
+literal, so "you may read this row if you already know its code" always
+degrades to "you may read this row". The third — `baseball_team_invitations`,
+policy literally named *"Anyone can view active invitations by code"*, which
+checks no code — had been noticed **twice** by earlier migrations
+(`20260701000000:173`, `20260708141000:86`), described accurately, and left
+open both times as out of scope.
 
 **2. Nothing in this run touched a database.** No migration was applied, no
 `supabase db push`, no `psql`. The only writes were to files and to git.
@@ -78,6 +87,11 @@ Each has tests, and the tests assert behaviour rather than existence.
 - **Roster "Add existing player" is a lookup, not a browse.** Typing `sm`
   returned strangers' names and email addresses from every program in the
   database — the tenant-isolation leak shipped as a feature.
+- **Invite codes stopped being world-readable**, and the join screen tells the
+  truth on the way through. A deactivated or expired invitation used to be
+  indistinguishable from a fake one — the old policy filtered `is_active`
+  itself, so the code's own error branches were unreachable and a player with
+  a real-but-switched-off link was told it was invalid.
 - **Three bottom bars stopped rendering 3 tabs instead of 4.**
 - **The public player profile withholds at the server**, not just at the
   renderer.
@@ -90,8 +104,9 @@ Each has tests, and the tests assert behaviour rather than existence.
 ## Production-usable, but not proven
 
 - **The RLS migrations.** CI applies both to a fresh Postgres and passes
-  34/34 pgTAP assertions. That proves they are correct against a database built
-  from migrations — **not** against production's actual state, which may have
+  34/34 pgTAP assertions, plus 9/9 for the Lift Lab sync and 18 more for the
+  invitation fix. That proves they are correct against a database built from
+  migrations — **not** against production's actual state, which may have
   drifted and could not be read overnight (see the ops note below).
 - **The companion app changes.** They work under both the old and new policies
   by construction, but the second half of that is only exercised once migration
@@ -139,7 +154,7 @@ Each has tests, and the tests assert behaviour rather than existence.
 | **CI seeds PRODUCTION on every PR — confirmed from CI's own log** | `seed:baseball:ci` creates auth users, force-resets two passwords and deletes `login_attempts` rows in the production project. It has always done this. The strengthened guard makes it say so out loud now: `⚠ SEEDING PRODUCTION (qmnssrrolpinvwjjnufo) — allowed only because --allow-prod was passed`. Surfaced, not changed — flipping a working deployment behaviour unattended is not mine to do — but it should almost certainly target a local stack instead. |
 | **Production Supabase was intermittently failing all night** | REST and auth answered 401 in ~0.1s while direct Postgres connections timed out on every attempt from 00:30 to 03:00 EDT. CI's seed step hit a **Cloudflare 522** from `qmnssrrolpinvwjjnufo.supabase.co` at 06:03 UTC and again at 07:46, both ending `createUser failed for demo-coach@baseballhelmdemo.com`. Reads as connection-pool exhaustion or compute pressure rather than a hard outage. It is why live `pg_policies` could not be confirmed, and it is the sole reason the `BaseballHelm authenticated smoke` check is red on #1092 — it was red before any of this work and the cause is unrelated to the diff. |
 | **`public_profile_mode` semantics are unsettled** | DDL default is `'private'` (`20260624000091:23`); a 2026-07-09 live read recorded `'unlisted'`. If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. One query settles it. |
-| **35% of `baseball_*` tables have no pgTAP RLS coverage** | Messaging, tasks, travel, announcements, invitations, dev plans. |
+| **~34% of `baseball_*` tables have no pgTAP RLS coverage** | Messaging, tasks, travel, announcements, dev plans. Invitations came off this list tonight — and the first test written against that table found a two-month-old P0 that two prior migrations had noticed and skipped. That is the argument for finishing the list, and it is not hypothetical. |
 | **`helm_lifting_athletes.user_id` is stale in production** | Write-once at seed time, never re-synced. Any player synced before their account was linked permanently fails the athlete-self gate at `/lifting/dashboard`. |
 
 ---

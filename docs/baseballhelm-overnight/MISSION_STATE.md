@@ -13,39 +13,38 @@
 
 ## Current phase
 
-**Phase 1 — RECON (in progress).**
-
-A 10-worker read-only reconnaissance workflow is establishing product truth
-before any code is written. Writing code before knowing what is real would be
-the single fastest way to waste the night.
+**Phase 8 — hardening past the release assessment.** _(Updated 2026-07-29
+04:25 EDT. The phase table below was left reading "Phase 1 RECON — running"
+until 04:20, five hours after recon finished; a stale in-progress marker is
+indistinguishable from a stalled worker, which is the exact failure the
+resume protocol looks for. Corrected, and worth not repeating.)_
 
 | Phase | State |
 |---|---|
 | 0. Hazard containment | ✅ done |
-| 1. Recon (10 parallel readers + adversarial verify + plan) | 🔄 running |
-| 2. Serial foundations (flag architecture, identity model, schema) | ⬜ blocked on 1 |
-| 3. Parallel implementation teams | ⬜ blocked on 2 |
-| 4. Integration | ⬜ |
-| 5. Test + verify | ⬜ |
-| 6. Visual / responsive review | ⬜ |
-| 7. Seed + demo walkthrough | ⬜ |
-| 8. Release assessment | ⬜ |
+| 1. Recon (10 parallel readers + adversarial verify + plan) | ✅ done — 75 findings, 1 P0 later retracted |
+| 2. Serial foundations (flag architecture, identity model, schema) | ✅ done |
+| 3. Parallel implementation teams | ✅ done — 12 subagents / 4 workflows, each packet adversarially reviewed |
+| 4. Integration | ✅ done |
+| 5. Test + verify | ✅ done — see the gate table below |
+| 6. Visual / responsive review | 🟡 partial — Settings hub unified, `PlayerProfileClient` improved but not a finished Fairway migration |
+| 7. Seed + demo walkthrough | 🟡 partial — seeds hardened and broadened; NOT verified end-to-end against a live DB, because none was reachable |
+| 8. Release assessment | ✅ written (`FINAL_REPORT.md`), now iterating on what it exposed |
 
 ---
 
-## Baseline (measured, not assumed)
+## Gates (measured, not assumed)
 
-Captured on this branch at mission start:
+| Gate | Mission start | Now (2026-07-29 04:20) |
+|---|---|---|
+| `npx tsc --noEmit` | 0 errors | **0 errors** |
+| `npx eslint` on changed files | clean | **clean** |
+| `vitest --project unit` | 843 files / 7,964 passed | **860 files / 8,170 passed, 13 skipped, exit 0** |
+| pgTAP (CI, fresh Postgres) | n/a | **34/34** + **9/9** passing; **18** more added, first run in flight |
 
-| Gate | Result |
-|---|---|
-| `npx tsc --noEmit` | **0 errors** |
-| `npx eslint src` | **clean** |
-| `vitest --project unit` | **843 files / 7,964 passed, 13 skipped** |
-| `npm run build` | (captured — see `docs/baseballhelm-overnight/TEST_STATUS.md`) |
-
-**The tree is green at baseline.** That matters: every failure appearing later
-in this run is one WE introduced, and must be fixed rather than explained away.
+The suite grew rather than shrank, and no baseline test was flipped to
+accommodate a change. **Green stayed green** — which is the point of having
+measured it at the start: any red appearing now is ours.
 
 ---
 
@@ -100,17 +99,45 @@ does and does not guarantee. **This is stated honestly rather than claimed.**
 
 ## Active workers
 
-| Worker | Scope | State |
-|---|---|---|
-| recon workflow (10 readers + verify + plan) | product truth, read-only | 🔄 running |
+None. All 4 workflows and 12 subagents have completed and their output has been
+integrated or explicitly rejected. Work is now serial in this session.
 
 ---
 
 ## Next actions
 
-1. Consume recon output; write `FEATURE_STATUS`, `DATABASE_STATUS`, `AUTH_STATUS`, `UI_STATUS`, `SEED_STATUS`, `ISSUE_LEDGER`.
-2. Land the serial foundations (recruiting flag architecture + identity model) BEFORE fanning out writers.
-3. Launch implementation teams with strict non-overlapping file ownership.
+1. **Human decision, first thing:** review and apply the RLS migration pair.
+   Three live cross-tenant exposures, a 3-step sequence; `CURRENT_PRIORITIES.md`
+   has the checklist and `DATABASE_STATUS.md` the reasoning.
+   `db-migration-reviewer` is mandated by CLAUDE.md for this shared production
+   database.
+2. Decide whether CI should keep seeding **production** on every PR. It always
+   has; the hardened guard now says so out loud instead of hiding it behind a
+   constant named "demo". Surfaced deliberately rather than changed unattended.
+3. Finish pgTAP coverage on the `baseball_*` tables that still have none
+   (messaging, tasks, travel, announcements, dev plans). The invitation-code
+   leak is the argument: it sat in plain sight for two months in a table no
+   test touched, and was twice noticed and twice deferred.
+
+---
+
+## The through-line of this run
+
+**Reading is not verifying.** Four of the most serious findings were invisible
+to inspection — including to two rounds of adversarial line-by-line review —
+and surfaced only by executing something:
+
+- Two RLS recursion cycles that would have taken the whole product down on
+  apply (found by CI running the SQL).
+- Five functions left anon-callable, because `REVOKE ... FROM PUBLIC` does not
+  remove Supabase's role-specific grant to `anon` (same).
+- Withheld player PII shipping inside the page's HTML while the client hid it
+  in JSX (found by asserting the serialized payload, not the DOM).
+- A seed "production guard" that **allowlisted** production (found by running
+  it).
+
+It cuts both ways: recon reported a P0 that did not exist. It was retracted in
+place and pinned by a test rather than quietly deleted.
 
 ---
 

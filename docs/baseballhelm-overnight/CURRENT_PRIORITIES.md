@@ -1,36 +1,60 @@
 # CURRENT PRIORITIES
 
-_Updated 2026-07-29 03:25 EDT. Worked strictly in order. A priority marked
+_Updated 2026-07-29 04:20 EDT. Worked strictly in order. A priority marked
 **in progress** with no corresponding commit has STALLED — restart it._
 
 ---
 
 ## 🔴 THE #1 ITEM FOR THE MORNING (human decision required)
 
-**Two live cross-tenant data exposures.** `baseball_players_select` and
-`baseball_teams_select` are both `USING (true)` — any authenticated user reads
-every program's roster PII (email, phone, GPA, SAT/ACT) and every team's secret
-`join_code`. Verified from migration source; live in prod since 2026-05-27.
+**Three live cross-tenant data exposures**, all the same mistake: a secret
+stored in a column, guarded by a policy that cannot see the query filtering on
+it. All live in prod since the 2026-05-27 baseline, all verified from migration
+source.
 
-The fix is **written and committed as files, applied to nothing** (`9c4ad335e`).
-It ships as a sequenced pair so no single step can take production down:
+| Table | Policy | What leaks |
+|---|---|---|
+| `baseball_players` | `USING (true)` | Every program's roster PII — email, phone, GPA, SAT/ACT |
+| `baseball_teams` | `USING (true)` | Every team's secret `join_code` |
+| `baseball_team_invitations` | `USING (is_active = true)` | Every live invitation `code`, with its `team_id` |
+
+The third is named "Anyone can view active invitations by code" and never
+checks the code. One authenticated account could enumerate every live invite
+code in the database and join any team. It was seen twice before and left:
+`20260701000000:173` recorded it as deliberately "untouched"; `20260708141000:86`
+described the exploit path exactly, narrowed the redemption RPCs, and closed
+with *"This narrows but does not fully close the surface."* Closing the read
+closes it — invitation ids stop being discoverable, so the parameter change
+that migration called for is unnecessary.
+
+The fix is **written and committed as files, applied to nothing**
+(`9c4ad335e`, extended by `2c2c939cf`). It ships as a sequenced pair so no
+single step can take production down:
 
 | Step | File | Blast radius |
 |---|---|---|
-| 1 | `20260729000100_..._a_additive.sql` | **None.** Creates three functions, grants EXECUTE. No policy, no revoke, no ALTER. |
+| 1 | `20260729000100_..._a_additive.sql` | **None.** Creates six functions, grants EXECUTE. No policy, no revoke, no ALTER. |
 | 2 | *(deploy the companion app changes)* | Works under both old and new policies. |
-| 3 | `20260729000200_..._b_policies.sql` | Swaps the two policies. **This is the one that closes the leak and the one that can break things.** |
+| 3 | `20260729000200_..._b_policies.sql` | Swaps the three policies. **This is the one that closes the leaks and the one that can break things.** |
 
-Doing 3 before 2 is an outage — join-by-code, Discover/Compare and roster
-"Add existing player" all return **empty results, not errors**, so the symptom
-is "the product quietly stopped working."
+The invitation fix was folded into these two files rather than added as a new
+pair, deliberately: a separate A′/B′ would have made the apply sequence five
+steps with two deploy barriers, and the extra ordering is exactly what gets
+mis-executed at 09:00 with a demo waiting.
 
-**✅ The SQL is now verified by execution.** CI on PR #1092 applies both
-migrations to a fresh Postgres and runs the pgTAP suite: **`Result: PASS`,
-34/34**. It failed three times first — two independent recursion cycles that
-would have made *every* query against `baseball_players` fail on apply, plus
-five functions left anon-callable. None was visible to reading; two
-adversarial line-by-line reviews had already missed them.
+Doing 3 before 2 is an outage — join-by-code, join-by-invitation,
+Discover/Compare and roster "Add existing player" all return **empty results,
+not errors**, so the symptom is "the product quietly stopped working."
+
+**✅ The SQL is verified by execution.** CI on PR #1092 applies both migrations
+to a fresh Postgres and runs the pgTAP suites: **34/34** (tenant isolation) and
+**9/9** (Lift Lab sync identity), with **18** more added for the invitation fix
+(`2c2c939cf` — awaiting its first CI run). The tenant-isolation suite failed
+three times first: two independent recursion cycles that would have made
+*every* query against `baseball_players` fail on apply, plus five functions
+left anon-callable. None was visible to reading; two adversarial line-by-line
+reviews had already missed them. That is why the invitation policy carries an
+explicit "USING clause contains no inline subquery" assertion.
 
 **Action on waking:**
 1. `db-migration-reviewer` on both files (CLAUDE.md mandates it; this is the
@@ -82,6 +106,8 @@ worked through — see Completed below. The heartbeat (`9234a858`, hourly at
 | **Withheld player data was in the public page's HTML**, not just hidden from it | `403a89f5e` |
 | Settings hub unified on one design system (28 files) + a11y contrast fix | `7f7528471` |
 | RLS recursion ×2, anon grants, pgTAP write-guard — **CI now PASSES 34/34** | `59037eb9…a61a9b0f` |
+| Lift Lab account links repair on re-sync (was write-once, permanently stale) | `30f343e2a` and its migration |
+| **Cross-tenant invitation-code exposure closed** — the third `USING`-can't-see-the-query leak, seen and skipped by two earlier migrations | `2c2c939cf` |
 
 All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 (draft).
@@ -92,9 +118,7 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 
 | Priority | Item | Note |
 |---|---|---|
-| P1 | 35% of `baseball_*` tables have zero pgTAP RLS coverage | Messaging, tasks, travel, announcements, invitations, dev plans. A hole in any of them would not be caught. |
-| P1 | `helm_lifting_athletes.user_id` is write-once at seed time, never re-synced, verified stale in prod | Any player synced before their account is linked permanently fails the athlete-self gate at `/lifting/dashboard`. |
-| P1 | `baseball_team_invitations` uses the same unaudited `.eq('code', code)` shape | Sibling of the join_code exposure; never audited. |
+| P1 | 34% of `baseball_*` tables have zero pgTAP RLS coverage | Messaging, tasks, travel, announcements, dev plans. Invitations came off this list with `2c2c939cf`; the others are still uncovered, and a hole in any of them would not be caught. The invitation leak is the argument for finishing this — it sat in plain sight for two months in a table nothing tested. |
 | P1 | **CI seeds PRODUCTION on every PR** | `seed:baseball:ci` creates auth users and deletes `login_attempts` rows in the production project. Now explicit (`--allow-prod` in package.json) rather than hidden behind a constant named "demo" — but it should probably target a local stack instead. Needs a decision. |
 | P1 | `public_profile_mode` DDL default is `'private'`; a 2026-07-09 live read recorded `'unlisted'` | If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. `select public_profile_mode, count(*) from baseball_teams group by 1`. |
 | P2 | The `integration` vitest project (5 files) runs in no CI workflow | Includes `coach-onboarding-staff-row` and `player-access-action-gate` — the auth/access tests that matter most. The `rls` project has zero files; pgTAP covers RLS and DOES run. |

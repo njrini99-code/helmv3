@@ -26,12 +26,22 @@ See "The SQL HAS now been executed" below._
 
 ---
 
-## 🔴 P0 — TWO LIVE CROSS-TENANT DATA EXPOSURES
+## 🔴 P0 — THREE LIVE CROSS-TENANT DATA EXPOSURES
 
-The most serious findings of the entire run. Both were introduced in the
+The most serious findings of the entire run. All three were introduced in the
 `20260527000000_prod_public_baseline.sql` baseline and **no subsequent
-migration replaces either** (verified: grepping `baseball_players_select` and
-`baseball_teams_select` across every later migration returns nothing).
+migration replaces any of them** (verified: grepping `baseball_players_select`
+and `baseball_teams_select` across every later migration returns nothing; the
+invitation policy is explicitly recorded as left in place — see #3).
+
+They are one mistake made three times: **a secret stored in a column, guarded
+by a policy that cannot see the query filtering on it.** RLS evaluates a
+predicate per row; it never sees the WHERE-clause literal. So "you may read
+this row if you already know its code" is not expressible as a policy, and
+every attempt to write it as one collapses into "you may read this row" —
+which is what all three did. The fix in each case is the same shape: the
+secret becomes an *argument* to a definer-rights function that compares it
+server-side.
 
 ### 1. `baseball_players` — every program's roster PII is readable by any logged-in user
 
@@ -65,6 +75,55 @@ CREATE POLICY "baseball_teams_select" ON "public"."baseball_teams"
 `join_code` is the secret gating team membership. World-readable to any
 authenticated user, it defeats the invitation model entirely: anyone with an
 account can enumerate codes and join any program.
+
+### 3. `baseball_team_invitations` — every live invite code is readable by any logged-in user
+
+_Found 2026-07-29 04:00, after the first two were already fixed. It is the
+same leak in the table whose entire purpose is the secret._
+
+```sql
+-- supabase/migrations/20260527000000_prod_public_baseline.sql:16699
+CREATE POLICY "Anyone can view active invitations by code"
+  ON "public"."baseball_team_invitations"
+  FOR SELECT TO "authenticated" USING (("is_active" = true));
+```
+
+The policy is *named* for a check it never performs. `code` is
+`character varying(8)` — a secret in a column — so any authenticated user
+could run
+
+```sql
+SELECT code, team_id FROM baseball_team_invitations WHERE is_active;
+```
+
+and take every live invitation code for every program, then redeem them.
+
+**This was seen twice and left both times**, which is the part worth
+remembering:
+
+- `20260701000000_baseball_rls_legacy_policy_cleanup.sql:173` replaced the
+  INSERT/UPDATE/DELETE policies with `has_baseball_staff_capability` gates and
+  recorded that the SELECT policy "is untouched."
+- `20260708141000_gate_secdef_ownership_and_redemption.sql:86` described the
+  exploit path exactly — *"an arbitrary authenticated caller can already
+  discover any active invitation's id via the permissive ... SELECT policy
+  ... and then call either RPC directly"* — gated those RPCs to player
+  accounts, and closed with *"This narrows but does not fully close the
+  surface ... a complete fix needs the invitation `code` ... threaded through
+  as a second parameter, which ... is out of scope for this additive pass."*
+
+Closing the **read** closes it from the opposite end: once ids are no longer
+discoverable they are unguessable v4 UUIDs, so the signature change that
+migration asked for is unnecessary. The replacement policy is
+`has_baseball_staff_capability(team_id, 'can_manage_roster')` — the same gate
+its own write policies have used since 20260701000000, so the read finally
+matches the writes.
+
+**Fixed in `2c2c939cf`**, folded into the same two migration files rather
+than a new pair, so the apply sequence stays three steps instead of five.
+18 pgTAP assertions; the load-bearing ones are negative (a coach cannot read
+another program's invitation; a rostered non-staff player sees zero while two
+are active).
 
 ### ~~3. Staff-invite accept RPC has no email-ownership check~~ — **FALSE. Retracted 2026-07-29 01:20.**
 
@@ -223,7 +282,7 @@ BaseballHelm smoke job is red on the PR for reasons unrelated to the diff.
 
 | Gap | Detail |
 |---|---|
-| RLS test coverage | **35% of `baseball_*` tables have zero pgTAP coverage** — including messaging, tasks, travel, announcements, invitations, dev plans. A cross-tenant hole in any of them would not be caught. |
+| RLS test coverage | **~34% of `baseball_*` tables have zero pgTAP coverage** — messaging, tasks, travel, announcements, dev plans. Invitations came off this list with `2c2c939cf`, and finding a two-month-old P0 there the moment it got a test is the whole argument for closing the rest: a cross-tenant hole in any of them would not be caught today. |
 | Lift Lab RLS | `helm_lifting_*` (the real Lift Lab schema — **not** `baseball_*`) is largely untested, **including `helm_lifting_set_results`** (the actual weight/rep data an athlete writes) and `helm_lifting_readiness_checkins`. |
 | `vitest` rls project | Declared at `vitest.config.ts:99` but **never run in any CI workflow** — so the RLS tests that do exist gate nothing. |
 
