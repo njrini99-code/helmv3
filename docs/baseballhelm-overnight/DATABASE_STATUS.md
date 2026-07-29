@@ -341,6 +341,56 @@ rather than fixes.
 
 ---
 
+## 🟡 `baseball_notifications` — any authenticated user can write a notification to anyone
+
+_Found 2026-07-29 05:45 by sweeping baseball tables for permissive **write**
+policies (`WITH CHECK (true)` / `USING (true)` on INSERT/UPDATE/DELETE/ALL).
+Exactly one hit in the whole schema — the sweep is otherwise clean, which is
+the good news._
+
+```sql
+-- supabase/migrations/20260527000000_prod_public_baseline.sql:18078
+CREATE POLICY "baseball_notifications_insert"
+  ON "public"."baseball_notifications" FOR INSERT WITH CHECK (true);
+```
+
+Note there is no `TO` clause, so it applied to every role including `anon` —
+but `20260626000030_baseball_notifications_revoke_anon.sql` already revoked
+anon's table grant, so the reachable surface is `authenticated` only.
+
+What remains: **any logged-in user can insert a notification row addressed to
+any other user**, with attacker-chosen `type`, `title`, `body` and `data`.
+Reads are correctly scoped (`_select` is `auth.uid() = user_id`), so this is
+not a leak — it is in-app phishing. A convincing "Coach Davis from Texas A&M
+viewed your profile — tap to view" lands in a real user's notification feed,
+rendered by the product's own UI.
+
+**The obvious fix is wrong, and that is the useful part of this entry.**
+`WITH CHECK (auth.uid() = user_id)` would break the product: notifications are
+legitimately written *to other people*, through the caller's own session
+rather than a service-role client —
+
+| Call site | Writes to |
+|---|---|
+| `practice.ts:516` | every rostered player, on practice publish |
+| `lifting-v11.ts:2411` | one player, coach lift message |
+
+Both use `createClient()` (user-scoped), not `createAdminClient()`. Narrowing
+to self-only silently stops practice-publish and coach lift messages — a
+"quietly stopped working" failure of exactly the kind this document warns
+about elsewhere.
+
+**What the real fix looks like:** a definer helper along the lines of
+`can_notify_baseball_user(target_user_id)` — true when the caller is staff on
+a team the target belongs to, or when target = self — and
+`WITH CHECK (auth.uid() = user_id OR public.can_notify_baseball_user(user_id))`.
+That is a new helper plus verification of every notification write path, which
+is more than should be bolted onto an already-large migration pair overnight.
+**Not fixed. Left with the analysis done so the next person starts from the
+design rather than from the trap.**
+
+---
+
 ## 🟠 CROSS-PRODUCT — `golf_coaches` PII is readable by any authenticated user
 
 _Found 2026-07-29 05:40. **Outside this mission's scope** (BaseballHelm), on
