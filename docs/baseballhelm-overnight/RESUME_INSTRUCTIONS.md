@@ -19,10 +19,28 @@ Then re-establish ground truth — **do not trust the status files over the
 machine**:
 
 ```bash
-npx tsc --noEmit -p tsconfig.json 2>&1 | grep -c "error TS"   # baseline: 0
-npx vitest run --project unit 2>&1 | tail -5                  # baseline: 843 files / 7,964 passed
+npx tsc --noEmit -p tsconfig.json 2>&1 | grep -c "error TS"   # expect: 0
+npx vitest run --project unit 2>&1 | tail -5                  # expect: 861 files / 8,181 passed
+npm run test:integration 2>&1 | tail -4                       # expect: 5 files / 25 passed
+npm run test:business 2>&1 | tail -4                          # expect: 7 files / 52 passed
 npm run build 2>&1 | tail -5
 ```
+
+Mission start was 843 files / 7,964 tests; the suite has grown, not shrunk,
+and no baseline test was flipped to accommodate a change.
+
+**Run these one at a time.** Several concurrent full-suite runs starve
+timing-sensitive tests and produce failures that look exactly like a
+regression — that happened during this run and cost a round of A/B
+investigation to disprove. If you see a small number of unexplained failures,
+check `ps aux | grep -c '[v]itest'` before believing them.
+
+**Database work is verified by CI, not locally.** Push and read
+`Supabase lint + RLS tests` on PR #1092 — it applies every migration to a
+fresh Postgres and runs the pgTAP suites in `supabase/tests/rls/`. That job has
+caught, in this run alone: two RLS recursion cycles, five anon-callable
+functions, a miscounted pgTAP plan, and a fixture using the wrong id family.
+None was visible to reading.
 
 ## The two hazards you must respect
 
