@@ -69,6 +69,7 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
 
 // ---------------------------------------------------------------------------
 // Stable E2E identity — must match e2e/helpers/auth.ts TEST_USERS exactly.
@@ -355,6 +356,15 @@ async function main() {
   await upsert('baseball_team_members', memberRows);
 
   // --- 3. Pipeline candidate (off-roster recruiting target) -----------------
+  //
+  // SUNSET GATE. The only consumer is e2e/baseball-pipeline.spec.ts, which now
+  // skips while the recruiting module is off — so without this gate every push
+  // to main writes a baseball_players row flagged
+  // recruiting_activated = true (the flag that makes a player publicly NAMED
+  // rather than masked to initials) plus a watchlist entry, into the same
+  // project this workflow's other seed step targets, to satisfy a spec that
+  // does not run. Same finding as the demo seed's Section C.
+  if (isRecruitingEnabled()) {
   const candidateId = detId(`player:${PIPELINE_CANDIDATE.key}`);
   await upsert('baseball_players', [{
     id: candidateId,
@@ -381,6 +391,12 @@ async function main() {
     source: 'e2e-seed',
     added_at: isoDaysAgo(10),
   }]);
+  } else {
+    console.log(
+      `${DRY ? '[DRY RUN] ' : ''}  · Pipeline candidate skipped — recruiting module is sunset ` +
+        '(its only spec, e2e/baseball-pipeline.spec.ts, skips too).',
+    );
+  }
 
   // --- 4. Games: one scheduled, one completed with a full box score --------
   const scheduledGameId = detId('game:scheduled');
@@ -493,6 +509,13 @@ async function main() {
   counts['baseball_player_season_stats (via RPC)'] = battingRows.length + pitchingRows.length > 0 ? new Set([...battingRows.map((r) => r.player_id), ...pitchingRows.map((r) => r.player_id)]).size : 0;
 
   // --- 5. Camp + one registration (bench1) -----------------------------------
+  //
+  // SUNSET GATE, same reasoning as Section 3: /baseball/dashboard/camps is a
+  // recruiting route and e2e/camps.spec.ts skips, so this seeds a camp and a
+  // registration nothing reads. Less sensitive than Section 3 (no player rows,
+  // no recruiting_activated), but writing rows for a spec that cannot run is
+  // how a fixture quietly becomes indistinguishable from real data.
+  if (isRecruitingEnabled()) {
   const campId = detId('camp');
   await upsert('baseball_camps', [{
     id: campId,
@@ -529,6 +552,12 @@ async function main() {
   // The shared test-player must always start UNREGISTERED so the
   // register/unregister spec has a clean, idempotent starting state.
   await resetTestPlayerCampRegistration(campId, playerIdByKey[TEST_PLAYER_KEY] as string);
+  } else {
+    console.log(
+      `${DRY ? '[DRY RUN] ' : ''}  · Camp + registration skipped — recruiting module is sunset ` +
+        '(e2e/camps.spec.ts skips too).',
+    );
+  }
 
   // --- Report -----------------------------------------------------------
   console.log(`\n${DRY ? '[DRY RUN] would seed' : 'Seeded'} rows:`);
@@ -541,7 +570,12 @@ async function main() {
   console.log(`  COACH : ${COACH_EMAIL} / ${COACH_PASSWORD}${coachUser.created ? ' (created)' : ' (existing, password enforced)'}`);
   console.log(`  PLAYER: ${PLAYER_EMAIL} / ${PLAYER_PASSWORD}${playerUsers[TEST_PLAYER_KEY]?.created ? ' (created)' : ' (existing, password enforced)'}`);
   console.log(`  Team  : E2E Test University Baseball (${TEAM_ID})`);
-  console.log(`  Set PLAYWRIGHT_BASEBALL_SEEDED=1 before running the Camps/Pipeline/Box Score specs.`);
+  console.log(
+    isRecruitingEnabled()
+      ? '  Set PLAYWRIGHT_BASEBALL_SEEDED=1 before running the Camps/Pipeline/Box Score specs.'
+      : '  Set PLAYWRIGHT_BASEBALL_SEEDED=1 before running the Box Score specs. ' +
+        '(Camps/Pipeline skip while recruiting is sunset — the env var will not un-skip them.)',
+  );
 }
 
 main().catch((e) => {
