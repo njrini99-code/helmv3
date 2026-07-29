@@ -29,6 +29,7 @@ import {
 } from '@/components/icons';
 import Image from 'next/image';
 import { formatHeight, cn } from '@/lib/utils';
+import { resolvePrivateProfileDisclosure } from '@/lib/baseball/recruiting-activation';
 import { toggleWatchlistPlayer } from '@/app/baseball/actions/watchlist';
 import { toast } from '@/components/ui/sonner';
 import { Modal } from '@/components/ui/modal';
@@ -295,6 +296,10 @@ export function PlayerProfileClient({
       router.push('/');
     }
   };
+
+  // Copy + CTA for the self-view privacy notice below, resolved through the
+  // recruiting module gate rather than hardcoded here.
+  const selfViewDisclosure = resolvePrivateProfileDisclosure();
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: IconUser },
@@ -622,15 +627,24 @@ export function PlayerProfileClient({
           <EditorsLetter
             ink="pursuit"
             title="Only you can see this page right now"
-            body="You're viewing your own public profile. Recruiting exposure is off, so college coaches can't actually find or open this link yet."
+            // Unlike the other three activation surfaces this notice is NOT
+            // hidden by the sunset — the fact it discloses stays true, and
+            // stays load-bearing, because the self-bypass above means a player
+            // would otherwise take this page for what recruiters see. Only the
+            // explanation and the call to action change: the old body said
+            // exposure "is off", which invites the reader to go turn it on, and
+            // that is not a choice available to them right now.
+            body={selfViewDisclosure.body}
             action={
-              <Link
-                href="/baseball/dashboard/activate"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-pursuit px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
-              >
-                Activate Recruiting
-                <IconChevronRight size={16} />
-              </Link>
+              selfViewDisclosure.showActivateCta ? (
+                <Link
+                  href="/baseball/dashboard/activate"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-pursuit px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+                >
+                  Activate Recruiting
+                  <IconChevronRight size={16} />
+                </Link>
+              ) : undefined
             }
           />
         </div>

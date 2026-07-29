@@ -40,6 +40,8 @@ import {
 } from '@/components/baseball/passport';
 import { EditorsLetter, pressableClass } from '@/components/baseball/living-annual';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
+import { showRecruitingActivationPrompt } from '@/lib/baseball/recruiting-activation';
 import { cn } from '@/lib/utils';
 import { IconArrowLeft, IconChevronRight } from '@/components/icons';
 import { createClient } from '@/lib/supabase/server';
@@ -72,8 +74,12 @@ export default async function PlayerPassportPage() {
   // persistent-surface rationale as Player Today: the nav entry has no rail
   // slot by design, so the daily/identity surfaces carry the one-time nudge
   // instead). Honest degrade: a failed read just hides the banner.
+  //
+  // Skipped entirely while the module is off — this is a per-request round trip
+  // whose only consumer is a banner the sunset hides, so running it would be
+  // paying for an answer nothing can use.
   let recruitingActivation: { activated: boolean } | null = null;
-  if (settings.playerId) {
+  if (settings.playerId && isRecruitingEnabled()) {
     try {
       const supabase = await createClient();
       const { data: recruitingRow } = await supabase
@@ -107,8 +113,12 @@ export default async function PlayerPassportPage() {
         </Link>
 
         {/* Activate Recruiting nudge — see the module-header comment on the
-            recruitingActivation fetch above. */}
-        {recruitingActivation && !recruitingActivation.activated && (
+            recruitingActivation fetch above. The read-time gate is repeated
+            here rather than left implicit in `recruitingActivation === null`,
+            so the sunset is visible at the surface a reader is looking at. */}
+        {showRecruitingActivationPrompt(
+          Boolean(recruitingActivation && !recruitingActivation.activated),
+        ) && (
           <EditorsLetter
             className="mb-6"
             ink="team"

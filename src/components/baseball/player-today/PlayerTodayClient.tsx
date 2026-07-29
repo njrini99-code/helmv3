@@ -77,6 +77,7 @@ import type {
   PlayerTodayCoachNote,
 } from '@/lib/baseball/read-models/player-today';
 import type { ActiveBaseballRole } from '@/lib/baseball/active-context-shared';
+import { showRecruitingActivationPrompt } from '@/lib/baseball/recruiting-activation';
 import PlayerLiftToday from '@/components/baseball/performance/PlayerLiftToday';
 import type { DailyContractReadModel } from '@/lib/baseball/read-models/player-daily-contract';
 import type { PassportReadModel } from '@/lib/baseball/read-models/player-passport';
@@ -1525,8 +1526,15 @@ export function PlayerTodayClient({
             permanent rail slot by design (see hub-definitions.ts), so this is
             the persistent surface that keeps an eligible, not-yet-activated
             player from never discovering the feature exists. Placed after
-            the real schedule content above (#484) rather than before it. */}
-        {recruitingActivation && !recruitingActivation.activated && (
+            the real schedule content above (#484) rather than before it.
+            Wrapped in showRecruitingActivationPrompt so the sunset removes it
+            at read time: this is the FIRST screen a player sees after login,
+            and its button now targets a module-gated route. The eligibility
+            expression is unchanged and still correct for the day recruiting
+            returns — `null` here means "not fetched", which must not prompt. */}
+        {showRecruitingActivationPrompt(
+          Boolean(recruitingActivation && !recruitingActivation.activated),
+        ) && (
           <EditorsLetter
             className="mt-6"
             ink="team"
