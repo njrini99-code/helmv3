@@ -101,6 +101,7 @@
  */
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createRetryingFetch, describeFetchError } from './lib/retrying-fetch';
 import { createHash } from 'node:crypto';
 
 // ---------------------------------------------------------------------------
@@ -443,6 +444,15 @@ const FORCE_PASSWORD_RESET_EMAILS = new Set(
   [DEMO_COACH_EMAIL, DEMO_PLAYER_EMAIL].map((e) => e.toLowerCase()),
 );
 
+// ---------------------------------------------------------------------------
+// Transient-failure resilience
+// ---------------------------------------------------------------------------
+// Every Supabase request this script makes goes through `retryingFetch` (wired
+// into the client in main()). See scripts/lib/retrying-fetch.ts for the full
+// rationale — in short, this seed gates a REQUIRED CI check, so one unretried
+// request turns a ten-second Supabase blip into a repo-wide merge freeze.
+const retryingFetch = createRetryingFetch();
+
 async function ensureAuthUser(email: string): Promise<{ userId: string | null; created: boolean }> {
   const { data: existing } = await supabase
     .from('users')
@@ -471,7 +481,24 @@ async function ensureAuthUser(email: string): Promise<{ userId: string | null; c
     password: DEMO_PASSWORD,
     email_confirm: true,
   });
-  if (error || !data?.user) throw new Error(`createUser failed for ${email}: ${error?.message}`);
+  if (error || !data?.user) {
+    // `createUser` is a POST, and retryingFetch above may replay it. A 522
+    // fails the RESPONSE, not necessarily the write — so the origin can have
+    // created the user and then timed out answering. The replay then comes
+    // back "already registered", which for a SEED is success wearing a
+    // failure's clothes: the row we wanted exists. Re-resolve and carry on
+    // rather than failing a required check over our own retry.
+    const message = describeFetchError(error);
+    if (/already (been )?registered|already exists|duplicate key/i.test(message)) {
+      const { data: found } = await supabase
+        .from('users')
+        .select('id')
+        .ilike('email', email)
+        .maybeSingle();
+      if (found?.id) return { userId: found.id as string, created: false };
+    }
+    throw new Error(`createUser failed for ${email}: ${message}`);
+  }
   return { userId: data.user.id, created: true };
 }
 
@@ -494,7 +521,13 @@ async function main() {
   );
   if (!DRY) assertWriteTargetAllowed(target);
 
-  supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  // `global.fetch` carries the transient-retry wrapper, so EVERY request this
+  // client makes — auth admin, PostgREST, storage — survives a Supabase blip
+  // instead of red-lining a required CI check. See retryingFetch above.
+  supabase = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: retryingFetch },
+  });
 
   if (DRY) {
     console.log('[DRY RUN] No flag passed — printing the seed plan, writing NOTHING.');

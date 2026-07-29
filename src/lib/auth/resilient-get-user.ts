@@ -228,7 +228,31 @@ export async function getUserResilient(
   } catch {
     // Non-fatal: worst case the warn logs.
   }
-  const { data: { session } } = await supabase.auth.getSession();
+  // `getSession()` is documented as a local cookie read, but supabase-js will
+  // attempt a token REFRESH when the stored access token has expired — and a
+  // refresh is a network call to the very auth server we already know is
+  // unreachable. So the last line of the degraded fallback could throw the
+  // exact error the fallback exists to absorb, and it was not guarded.
+  //
+  // In middleware that is not a local failure. Middleware runs in front of
+  // EVERY request, so an escaping AuthRetryableFetchError takes down the whole
+  // site — including the marketing pages and the login screen, which need no
+  // auth at all. That is what happened on 2026-07-29: a degraded Supabase
+  // project produced 292 `AuthRetryableFetchError: The operation was aborted
+  // due to timeout` errors on `/middleware` across nine hours, and
+  // helmsportslabs.com stopped serving anything.
+  //
+  // Treating an unreadable session as "no session" is the right trade. It is
+  // strictly better than a total outage, and it is not a security relaxation:
+  // returning null only ever DENIES access. `degraded: false` is deliberate —
+  // we could not read a session at all, so there is no local identity to carry
+  // forward, and callers must not be told there is one.
+  let session: { user: User; access_token?: string } | null = null;
+  try {
+    ({ data: { session } } = await supabase.auth.getSession());
+  } catch {
+    return { user: null, degraded: false };
+  }
   const user = localSessionLooksAuthentic(session) ? session!.user : null;
   return { user, degraded: user !== null };
 }

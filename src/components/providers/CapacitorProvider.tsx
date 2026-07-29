@@ -1,10 +1,55 @@
 'use client';
 
 import { useEffect } from 'react';
-import { initCapacitor, isNativeApp, hideSplashScreen, setStatusBarStyle } from '@/lib/utils/capacitor';
-import { initPushListeners } from '@/lib/utils/push-registration';
+import { useRouter } from 'next/navigation';
+import { initCapacitor, isNativeApp, hideSplashScreen, syncStatusBarToTheme } from '@/lib/utils/capacitor';
+import {
+  initPushListeners,
+  PUSH_NAVIGATE_EVENT,
+  PUSH_RECEIVED_EVENT,
+  type PushNavigateDetail,
+  type PushReceivedDetail,
+} from '@/lib/utils/push-registration';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 
 export function CapacitorProvider() {
+  const router = useRouter();
+
+  /**
+   * Bridge the push listeners (plain module, registered once at boot) to the
+   * Next router and the toast stack, which only exist inside React.
+   *
+   * Calling preventDefault() tells the emitter a listener handled the event,
+   * so it skips its `window.location.href` fallback and we keep the SPA alive
+   * instead of cold-starting it on every notification tap.
+   */
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+
+    const onNavigate = (event: Event) => {
+      const { url } = (event as CustomEvent<PushNavigateDetail>).detail;
+      event.preventDefault();
+      router.push(url);
+    };
+
+    const onReceived = (event: Event) => {
+      const { title, body, data } = (event as CustomEvent<PushReceivedDetail>).detail;
+      event.preventDefault();
+      const url = typeof data.url === 'string' ? data.url : null;
+      fairwayToast(title || 'New notification', {
+        description: body || undefined,
+        ...(url ? { action: { label: 'View', onClick: () => router.push(url) } } : {}),
+      });
+    };
+
+    window.addEventListener(PUSH_NAVIGATE_EVENT, onNavigate);
+    window.addEventListener(PUSH_RECEIVED_EVENT, onReceived);
+    return () => {
+      window.removeEventListener(PUSH_NAVIGATE_EVENT, onNavigate);
+      window.removeEventListener(PUSH_RECEIVED_EVENT, onReceived);
+    };
+  }, [router]);
+
   useEffect(() => {
     initCapacitor();
 
@@ -13,8 +58,18 @@ export function CapacitorProvider() {
       // momentum scroll) can target `body.capacitor`.
       document.body.classList.add('capacitor', 'capacitor-ios');
 
-      // Set status bar to dark content (dark text on light background)
-      setStatusBarStyle('dark');
+      // Match the status bar to the active theme, then keep it matched.
+      // `useGolfTheme` toggles `.dark` on <html> for an explicit choice, an OS
+      // `prefers-color-scheme` change under `system`, and a cross-tab sync —
+      // observing the class covers all three without duplicating that logic.
+      void syncStatusBarToTheme();
+      const themeObserver = new MutationObserver(() => {
+        void syncStatusBarToTheme();
+      });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
 
       // Hide splash screen once the login content has actually painted.
       let innerRaf = 0;
@@ -59,6 +114,7 @@ export function CapacitorProvider() {
         cancelled = true;
         cancelAnimationFrame(rafId);
         if (innerRaf) cancelAnimationFrame(innerRaf);
+        themeObserver.disconnect();
         cleanupKeyboard?.();
       };
     }
