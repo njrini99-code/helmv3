@@ -1,17 +1,17 @@
 # DATABASE STATUS
 
-_Updated 2026-07-29 05:35 EDT._
+_Updated 2026-07-29 10:45 EDT._
 
-_Findings are verified from **migration source**; live `pg_policies` state is
-still unconfirmed. Migration source is authoritative for what was applied but
-cannot rule out an out-of-band hotfix, so re-verify live before acting._
+_**Findings are now verified against LIVE production `pg_policies`, not just
+migration source.** The database became reachable at 13:43Z after the wedged
+instance was restarted (see the ops note below), and both questions this
+document was blocked on have been answered. Every exposure below was
+confirmed present in production exactly as the migration-source analysis
+predicted — no out-of-band hotfix had quietly closed any of them, and none
+had drifted._
 
-_**Production Postgres was unreachable for the entire run.** Last retried
-05:30 EDT — `Connection terminated due to connection timeout`, the same cause
-as the Cloudflare 522 that keeps `BaseballHelm authenticated smoke` red. Two
-questions in this document are blocked on it and on nothing else: the live
-`pg_policies` cross-check, and the `public_profile_mode` distribution. Both
-are one query each once the database answers._
+_See **§ Live verification** below for the read-only queries, the row counts,
+and the two claims the live read CORRECTED._
 
 _The **fixes**, unlike the findings, are verified by execution: CI on PR
 [#1092](https://github.com/njrini99-code/helmv3/pull/1092) applies both
@@ -30,6 +30,120 @@ _Four of these needed more than one CI run to get there — two RLS recursion
 cycles, five anon-callable functions, a miscounted plan, and a fixture using
 auth user ids where coach ids were required. None of those was visible to
 reading. See "The SQL HAS now been executed" below._
+
+---
+
+## § A trap in this table: `fingerprint` is NULL for most historical rows
+
+Recorded first because it invalidated two of my own measurements before I
+caught it, the second time after I had already been burned once.
+
+`admin_events.fingerprint` was added on 2026-07-02. Every error row written
+before 2026-07-11 has `fingerprint IS NULL` — 87,653 of 88,782 unresolved rows.
+
+That breaks the obvious query in a way that looks like a real answer:
+
+    SELECT count(DISTINCT fingerprint) ...          -- collapses ALL nulls to 1
+    SELECT ... GROUP BY fingerprint ORDER BY ...    -- one giant bogus "group"
+
+SQL buckets NULLs together. **The application does the exact opposite** —
+`buildIncidentFeedFromSources` falls back to `row:${id}`, so each null row is
+its OWN incident group. Any query that groups by raw `fingerprint` therefore
+reports the inverse of what the product does.
+
+Two wrong claims came out of this, both stated confidently before being caught:
+
+1. "one fingerprint accounts for 87,653 rows" — no; that was every
+   null-fingerprint row in one SQL bucket. They are 87,653 separate groups.
+2. "the single largest error is 82,088 occurrences of `get_admin_errors_rollup`
+   timing out" — no. 82,088 was again the null bucket's total, and `min(title)`
+   just picked the alphabetically-first title in it. Counting **by title**, the
+   rollup timeout's last occurrence was **2026-04-24** with **0 in the last 30
+   days** — it is not an open problem at all. The genuine largest unresolved
+   error is `Client error: network error`, **71,660 rows**, 2026-04-08 →
+   2026-06-25, also historical.
+
+**Rule for anything querying this table: group by
+`coalesce(fingerprint, 'row:'||id::text)`, or group by `title`. Never by
+`fingerprint` alone.**
+
+---
+
+## § Live verification — read against production, 2026-07-29 10:40 EDT
+
+Everything in this document was previously inferred from migration source.
+Migration source tells you what *was applied*; it cannot tell you whether
+someone hotfixed a policy by hand afterwards. That gap stayed open all night
+because the database was unreachable. It is now closed.
+
+All queries below are **read-only** (`pg_policies`, `information_schema`,
+`count(*)`). No migration was applied, no policy altered, no row written.
+
+### Every exposure is live, and matches the source exactly
+
+| Table | Live policy | Predicate in production | Granted to |
+|---|---|---|---|
+| `baseball_messages` | `Users can view baseball messages` (SELECT) | `cp.conversation_id = cp.conversation_id` | `authenticated` |
+| `baseball_messages` | `Users can send baseball messages` (INSERT) | same self-comparison | `authenticated` |
+| `baseball_messages` | `Users can update baseball message read status` (UPDATE) | same self-comparison | `authenticated` |
+| `baseball_players` | `baseball_players_select` | `true` | `authenticated` |
+| `baseball_teams` | `baseball_teams_select` | `true` | `authenticated` |
+| `baseball_team_invitations` | `Anyone can view active invitations by code` | `is_active = true` | `authenticated` |
+| `baseball_player_percentiles` | `Anyone can view percentiles` | `true` | `authenticated` |
+| `baseball_coaches` | `baseball_coaches_select` | `auth.uid() = user_id OR get_my_coach_id() IS NOT NULL` | `authenticated` |
+
+The correctly-correlated twins (`baseball_messages_select` / `_insert` /
+`_update`) are confirmed present alongside the broken three, which is what
+makes the three `DROP POLICY` statements safe with no `CREATE`: dropping them
+leaves working policies behind. **That is now verified against production, not
+assumed from the migration file.**
+
+### Two things the live read CORRECTED
+
+**1. Nothing here is exposed to `anon`.** Every policy above is granted to
+`authenticated` only. This is not an open-internet leak — it requires an
+account. Baseball signup is open self-serve, so the real bar is "anyone who
+registers", which is still a genuine cross-tenant confidentiality failure and
+still worth fixing today. But the honest severity is *any registered user*,
+not *anyone on the internet*, and this document previously did not say which.
+
+**2. `baseball_player_percentiles` has a second policy,
+`System can manage percentiles`, which is `FOR ALL USING (true)`** — and on
+first read that looks like an unrestricted write hole on top of the read leak.
+It is not: it is granted to **`service_role` only**, which bypasses RLS
+regardless. Recorded here because the shape is alarming and the next person to
+grep for `USING (true)` will find it and reach for the alarm, as I did.
+
+### Blast radius, measured
+
+| Table | Rows exposed |
+|---|---|
+| `baseball_messages` | **80** across 13 conversation participants |
+| `baseball_players` | **35** — with `email`, `phone`, `gpa`, `sat_score`, `act_score` columns confirmed present |
+| `baseball_teams` | **13** join codes |
+| `baseball_coaches` | **10** email + phone |
+| `baseball_team_invitations` | **0** active — the policy is broken, the table is currently empty |
+| `baseball_player_percentiles` | **0** — same: real bug, zero rows today |
+
+This sharpens the ordering rather than changing it. `baseball_messages` stays
+first: it is the only write hole, it holds 80 real messages, and its fix is
+the only one that needs no deploy barrier. The invitations and percentiles
+policies are real defects with a currently-empty blast radius — fix them with
+the pair, not tonight.
+
+### The blocked P1 is answered
+
+`public_profile_mode`: the live column default is **`'unlisted'::text`**, not
+`'private'` as the DDL in the migration file reads, and **all 13 teams are
+`unlisted`** with zero `private`. So `baseball_teams_public_profile` is *not*
+default-deny and cross-org discovery is not zeroed. The feared impact was
+nil.
+
+Worth noting separately: production's column default **drifted** from the
+committed DDL. Impact today is zero and recruiting is sunset, so this is a
+note, not an action — but it is a second, independent instance of "production
+does not necessarily match the migration that created it", which is the entire
+reason this section exists.
 
 ---
 
@@ -613,17 +727,43 @@ it is now pinned rather than remembered.
   migrations. It does not prove it is correct against **production's actual
   state**, which may have drifted. Re-verify live `pg_policies` before
   applying.
-- Live `pg_policies` remains unconfirmed: Supabase MCP timed out on every
-  attempt through the night, and CI's own seed step hit a Cloudflare 522
-  against the production project at 06:03 UTC. See the ops note below.
+- ~~Live `pg_policies` remains unconfirmed~~ — **confirmed 2026-07-29 10:40
+  EDT against production.** All six exposures are live and match migration
+  source. See § Live verification.
 - Verify step 2 is **deployed**, not merely merged. A merged-but-undeployed
   change looks identical in `git` and fails identically to no change at all.
 
 ---
 
-## ⚠️ OPS: production Postgres was intermittently unreachable overnight
+## ⚠️ OPS: production Postgres was WEDGED — resolved 13:38Z
 
-Not caused by this work, and worth checking before anything is applied.
+**Resolved.** This was not intermittency, connection-pool pressure, or "the
+edge is healthy so it's just connections" — all of which this section
+previously guessed, and all of which were wrong. **Postgres stopped serving
+entirely at 04:10:00Z and answered zero queries for 9.4 hours.**
+
+What made it read as flakiness: Supabase's control plane never noticed.
+`GET /v1/projects/{ref}` reported `ACTIVE_HEALTHY` throughout, so the status
+page was clear and nothing paged. Meanwhile `GET /v1/projects/{ref}/health`
+— the per-service endpoint — said `db: UNHEALTHY, "Failed to connect to
+database"`, and `get_logs(postgres)` had a 9.4-hour gap where checkpoints
+normally appear every ~5 minutes. **The gap is the diagnosis.** Kong answers
+`/auth/v1/health` and `/rest/v1/` root without touching Postgres, which is
+exactly why probing those two "proved" the edge was fine and proved nothing.
+
+Fixed by `POST https://api.supabase.com/v1/projects/{ref}/restart` (owner-
+approved); `db` flipped UNHEALTHY → ACTIVE_HEALTHY in ~3 minutes.
+
+**Root cause of the wedge is still unknown, and the restart destroyed the
+evidence** — Postgres logs stop cleanly at 04:10 with no error, no OOM, no
+deadlock line. The nightly cron cluster sits on that window
+(`v3/causality-attribute` 03:00, `coachhelm-calibration` 03:40,
+`coachhelm-insight-lifecycle` 04:00, `refresh-engagement` every 5 min), as
+does the recurring ~03:45Z deadlock in #790. Suggestive, not established. **If
+this recurs, capture `pg_stat_activity` BEFORE restarting.**
+
+The historical record of the outage follows, kept because the reasoning it
+contains is wrong in an instructive way.
 
 - `mcp__supabase__execute_sql` timed out on **every** attempt between 00:30 and
   03:00 EDT — five or more, each "Connection terminated due to connection

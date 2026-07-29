@@ -2767,6 +2767,7 @@ export type Database = {
       }
       baseball_demo_sessions: {
         Row: {
+          crm_coach_id: string | null
           email: string
           entered_at: string
           id: string
@@ -2774,10 +2775,13 @@ export type Database = {
           metadata: Json
           name: string
           program: string | null
+          quality_reason: string | null
           referrer: string | null
+          traffic_quality: string | null
           user_agent: string | null
         }
         Insert: {
+          crm_coach_id?: string | null
           email: string
           entered_at?: string
           id?: string
@@ -2785,10 +2789,13 @@ export type Database = {
           metadata?: Json
           name: string
           program?: string | null
+          quality_reason?: string | null
           referrer?: string | null
+          traffic_quality?: string | null
           user_agent?: string | null
         }
         Update: {
+          crm_coach_id?: string | null
           email?: string
           entered_at?: string
           id?: string
@@ -2796,10 +2803,34 @@ export type Database = {
           metadata?: Json
           name?: string
           program?: string | null
+          quality_reason?: string | null
           referrer?: string | null
+          traffic_quality?: string | null
           user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "baseball_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "baseball_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       baseball_developmental_plans: {
         Row: {
@@ -9918,53 +9949,166 @@ export type Database = {
           },
         ]
       }
+      crm_unmatched_inbound: {
+        Row: {
+          body_html: string | null
+          body_text: string | null
+          created_at: string
+          from_address: string
+          id: string
+          message_id: string
+          promoted_coach_id: string | null
+          raw_payload: Json
+          received_at: string
+          reviewed: boolean
+          subject: string | null
+          thread_id: string | null
+          to_addresses: string[] | null
+        }
+        Insert: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          from_address: string
+          id?: string
+          message_id: string
+          promoted_coach_id?: string | null
+          raw_payload?: Json
+          received_at: string
+          reviewed?: boolean
+          subject?: string | null
+          thread_id?: string | null
+          to_addresses?: string[] | null
+        }
+        Update: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          from_address?: string
+          id?: string
+          message_id?: string
+          promoted_coach_id?: string | null
+          raw_payload?: Json
+          received_at?: string
+          reviewed?: boolean
+          subject?: string | null
+          thread_id?: string | null
+          to_addresses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_unmatched_inbound_promoted_coach_id_fkey"
+            columns: ["promoted_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_unmatched_inbound_promoted_coach_id_fkey"
+            columns: ["promoted_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_unmatched_inbound_promoted_coach_id_fkey"
+            columns: ["promoted_coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_requests: {
         Row: {
+          city: string | null
           contacted_at: string | null
           contacted_by: string | null
+          country: string | null
           created_at: string | null
+          crm_coach_id: string | null
           email: string
           id: string
           interest_type: string | null
+          ip: string | null
           message: string | null
           name: string | null
           notes: string | null
           organization: string | null
           phone: string | null
+          referer: string | null
+          source: string | null
           status: string | null
           updated_at: string | null
+          user_agent: string | null
         }
         Insert: {
+          city?: string | null
           contacted_at?: string | null
           contacted_by?: string | null
+          country?: string | null
           created_at?: string | null
+          crm_coach_id?: string | null
           email: string
           id?: string
           interest_type?: string | null
+          ip?: string | null
           message?: string | null
           name?: string | null
           notes?: string | null
           organization?: string | null
           phone?: string | null
+          referer?: string | null
+          source?: string | null
           status?: string | null
           updated_at?: string | null
+          user_agent?: string | null
         }
         Update: {
+          city?: string | null
           contacted_at?: string | null
           contacted_by?: string | null
+          country?: string | null
           created_at?: string | null
+          crm_coach_id?: string | null
           email?: string
           id?: string
           interest_type?: string | null
+          ip?: string | null
           message?: string | null
           name?: string | null
           notes?: string | null
           organization?: string | null
           phone?: string | null
+          referer?: string | null
+          source?: string | null
           status?: string | null
           updated_at?: string | null
+          user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "demo_requests_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "demo_requests_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_requests_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       device_tokens: {
         Row: {
@@ -10066,6 +10210,7 @@ export type Database = {
       }
       email_events: {
         Row: {
+          coach_id: string | null
           contact_log_id: string | null
           created_at: string | null
           event_type: string
@@ -10076,6 +10221,7 @@ export type Database = {
           resend_message_id: string
         }
         Insert: {
+          coach_id?: string | null
           contact_log_id?: string | null
           created_at?: string | null
           event_type: string
@@ -10086,6 +10232,7 @@ export type Database = {
           resend_message_id: string
         }
         Update: {
+          coach_id?: string | null
           contact_log_id?: string | null
           created_at?: string | null
           event_type?: string
@@ -10101,6 +10248,27 @@ export type Database = {
             columns: ["contact_log_id"]
             isOneToOne: false
             referencedRelation: "crm_contact_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "email_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
         ]
@@ -12123,39 +12291,70 @@ export type Database = {
       }
       golf_demo_sessions: {
         Row: {
+          crm_coach_id: string | null
           email: string
           entered_at: string
           id: string
           ip: string | null
           metadata: Json
           name: string
+          quality_reason: string | null
           referrer: string | null
           school: string | null
+          traffic_quality: string | null
           user_agent: string | null
         }
         Insert: {
+          crm_coach_id?: string | null
           email: string
           entered_at?: string
           id?: string
           ip?: string | null
           metadata?: Json
           name: string
+          quality_reason?: string | null
           referrer?: string | null
           school?: string | null
+          traffic_quality?: string | null
           user_agent?: string | null
         }
         Update: {
+          crm_coach_id?: string | null
           email?: string
           entered_at?: string
           id?: string
           ip?: string | null
           metadata?: Json
           name?: string
+          quality_reason?: string | null
           referrer?: string | null
           school?: string | null
+          traffic_quality?: string | null
           user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "golf_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "golf_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       golf_document_versions: {
         Row: {

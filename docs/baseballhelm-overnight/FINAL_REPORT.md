@@ -1,24 +1,37 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 08:35 EDT. Branch
-`baseball/overnight-completion`, draft PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 91 commits ahead
-of `main` (now merged up to date with it). Full unit suite green: **868 files,
-8,221 tests**._
+_2026-07-28 23:35 → 2026-07-29 10:45 EDT. Branch
+`baseball/overnight-completion`, PR
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092) — **merged to
+`main` and deployed to production**. Full unit suite green on the merged
+tree: **875 files, 8,338 tests, 0 failures**; every CI check green including
+`BaseballHelm authenticated smoke`, which passed for the first time this run
+once the database was restored._
 
-> **The run was interrupted at 07:12 by a live production incident** — a user
-> on full LTE bars served `offline.html` and unable to use the site. It is
-> diagnosed, fixed, and merged to `main` as
-> [#1094](https://github.com/njrini99-code/helmv3/pull/1094), but **not
-> deployed**: `main` does not auto-deploy and the permission classifier denies
-> production deploys to autonomous execution. Until someone runs
-> `cd /tmp/helm-deploy && vercel --prod`, users remain affected. Details in
-> `CURRENT_PRIORITIES.md`.
+> **The run was interrupted by two live production incidents. Both are now
+> resolved and shipped.**
+>
+> **07:12 — the service worker.** A user on full LTE bars was served
+> `offline.html` and could not get past it. Fixed in
+> [#1094](https://github.com/njrini99-code/helmv3/pull/1094).
+>
+> **04:10Z–13:38Z — the real one: production Postgres was wedged**, serving
+> zero queries for 9.4 hours while Supabase's control plane still reported
+> `ACTIVE_HEALTHY`. That is what had the site erroring on every route, what
+> kept `BaseballHelm authenticated smoke` red, and what blocked every live
+> database question in this report. Fixed by an owner-approved Management API
+> restart. Root cause of the wedge remains unknown — the restart destroyed the
+> evidence. See `DATABASE_STATUS.md` → OPS.
+>
+> **Deployed 14:30Z.** `main` does not auto-deploy, so this was a deliberate
+> one-shot `vercel --prod` after five PRs landed (#1098, #1097, #1095, #1096,
+> #1092). Verified live: `sw.js` carries the fix, `/api/health` returns
+> `database: "ok"`.
 
-_CI is green except `BaseballHelm authenticated smoke` (and the aggregate that
-depends on it), which fails against the production Supabase — red before this
-branch existed, unrelated to the diff, and the same outage that blocked every
-live database question below._
+_The earlier caveat here — "CI is green except `BaseballHelm authenticated
+smoke`, red for reasons unrelated to the diff" — is resolved. That job was red
+because production Postgres was wedged, not because of anything in the branch.
+Once the database was restarted it passed, and with it the `all` aggregate._
 
 The brief asked for an honest split between complete, production-usable,
 improved-but-incomplete, blocked, intentionally-hidden, and out-of-scope. That
@@ -27,20 +40,91 @@ stated next to it rather than in a footnote.
 
 ---
 
+## Status at 2026-07-29 12:30 EDT
+
+The mission's own deliverable is **merged and deployed**. Everything below the
+next heading is the overnight record and still stands. This block is what
+happened after it.
+
+| Thing | State |
+|---|---|
+| #1092 — the mission PR, 93 commits | **Merged + deployed.** All CI green, incl. `BaseballHelm authenticated smoke` |
+| #1094 service-worker fix, #1095, #1096, #1097, #1098 | **Merged + deployed** in the same one-shot `vercel --prod` |
+| Production Postgres wedged 04:10Z–13:38Z | **Resolved** by an owner-approved Management API restart. Root cause of the wedge unknown; the restart destroyed the evidence |
+| Six RLS exposures | **Confirmed live against production `pg_policies`**, not inferred from migration source. Fixes authored, still applied to nothing |
+| #1099 — follow-ups | Open, `MERGEABLE/CLEAN`, nothing failing |
+
+### What #1099 carries
+
+- **Landing hamburger** opened 2,000px above the viewport when scrolled. The
+  scroll lock used the `overflow` shorthand on `<body>`, which sets
+  `overflow-x` too and promotes body to a scroll container — defeating
+  `position: sticky` on the header, exactly as `globals.css:173-188` warns.
+  Measured before/after in a real browser.
+- **Bridge user-detail** unreadable on a phone (four-line meta block, log lines
+  clipped mid-word). Not re-measured after the fix — no authenticated Bridge
+  session available; stated in the commit rather than implied.
+- **Bridge incident counts** disagreed across three surfaces (4 / 3 / up to 9)
+  because they counted rows vs groups vs kind-filtered groups. All three now
+  read one field.
+- **Bridge Resolve** did nothing for the founder's account: `requireSuperAdmin()`
+  gates on an env var, the `resolve_admin_event` RPC gates on the
+  `admin_allowlist` TABLE, and the account was in one and not the other.
+  Unblocked by adding the row (owner-approved). The two gates still read
+  different sources of truth — **open**.
+- **Auto-resolve Rule C.** Auto-resolve already existed and ran nightly, but
+  both its rules key on fingerprint and so could never touch the 87,653
+  null-fingerprint rows that are 99% of the backlog.
+- **`unresolve_admin_event`** authored as a migration file, **not applied**.
+
+### Corrections to earlier versions of this report
+
+Stated plainly because each was asserted confidently before being checked:
+
+- The "last successful resolve" was **not** a human on the `admin@` account —
+  it was the nightly auto-resolve cron, which uses the service role and bypasses
+  the RPC gate entirely.
+- "One fingerprint accounts for 87,653 rows" and "the largest error is 82,088
+  rollup timeouts" were both artifacts of `GROUP BY fingerprint` bucketing NULLs
+  together. See `DATABASE_STATUS.md` § A trap in this table. The rollup timeout
+  last fired **2026-04-24** and is not an open problem; the real largest is
+  `Client error: network error` at 71,660 rows, also historical.
+- An earlier heartbeat reported the service worker as "a very likely culprit"
+  for the mobile-menu report, then tested it and it passed. The eventual cause
+  was the body scroll lock.
+
+---
+
 ## Read this first
 
 **1. Seven live security findings in production, all predating this branch.**
 Every one is in the 2026-05-27 baseline. None was introduced by this work.
 
-| | Table | What is exposed | State |
-|---|---|---|---|
-| 🔴 | `baseball_messages` | **Every private coach↔player message in the database — read AND write** | Fix written |
-| 🔴 | `baseball_players` | Every program's roster PII — email, phone, GPA, SAT/ACT | Fix written |
-| 🔴 | `baseball_teams` | Every team's secret `join_code` | Fix written |
-| 🔴 | `baseball_team_invitations` | Every live invitation `code` | Fix written |
-| 🟠 | `baseball_player_percentiles` | Every player's academic + athletic ranking | Fix written |
-| 🟠 | `baseball_coaches` | Every coach's email + phone, to any coach | **Not fixed** — product decision |
-| 🟠 | `golf_coaches` | Every golf coach's email + phone, to *any* logged-in user | **Not fixed** — out of scope, live product |
+**All six baseball findings were re-verified directly against production
+`pg_policies` at 10:40 EDT** — not inferred from migration source. Every one
+is live and unmodified. Rows are the measured blast radius.
+
+| | Table | What is exposed | Rows | State |
+|---|---|---|---|---|
+| 🔴 | `baseball_messages` | **Every private coach↔player message in the database — read AND write** | 80 | Confirmed live · fix written |
+| 🔴 | `baseball_players` | Every program's roster PII — email, phone, GPA, SAT/ACT | 35 | Confirmed live · fix written |
+| 🔴 | `baseball_teams` | Every team's secret `join_code` | 13 | Confirmed live · fix written |
+| 🟡 | `baseball_team_invitations` | Every live invitation `code` | **0** | Confirmed live · fix written · empty today |
+| 🟡 | `baseball_player_percentiles` | Every player's academic + athletic ranking | **0** | Confirmed live · fix written · empty today |
+| 🟠 | `baseball_coaches` | Every coach's email + phone, to any coach | 10 | Confirmed live · **not fixed** — product decision |
+| 🟠 | `golf_coaches` | Every golf coach's email + phone, to *any* logged-in user | — | **Not fixed** — out of scope, live product |
+
+Two of these were downgraded 🔴→🟡 by the live read: the invitation and
+percentile policies are genuinely broken but currently hold **zero rows**, so
+they are correctness bugs with no present exposure. They ship with the pair;
+they are not tonight's emergency. Nothing was downgraded on the strength of
+being hard to fix.
+
+Also from the live read: **every policy above is granted to `authenticated`,
+none to `anon`.** The exposure requires an account. Baseball signup is open
+self-serve so the practical bar is "anyone who registers" — a real
+cross-tenant failure — but it is not readable from the open internet, and the
+earlier version of this table did not distinguish those.
 
 Plus one write hole: `baseball_notifications` let any authenticated user post a
 notification into anyone's feed (in-app phishing, not a leak). **Fix written**
@@ -68,10 +152,15 @@ The other five fixes ship as a **sequenced pair** of migrations —
 All are verified by execution in CI (six pgTAP suites, 93 assertions) and
 **applied to nothing**.
 
-**2. Nothing in this run touched a database.** No migration applied, no
-`supabase db push`, no `psql`. The only writes were to files and to git.
-Production Postgres was unreachable all night in any case — last retried
-06:22 EDT, still `Connection terminated due to connection timeout`.
+**2. Nothing in this run applied a migration.** No `apply_migration`, no
+`supabase db push`, no `psql`. Once the database came back at 13:43Z it was
+read — `pg_policies`, `information_schema`, `count(*)` — and **every one of
+the six exposures above was confirmed live in production**, matching migration
+source exactly. That upgrades this table from "verified from migration source"
+to "verified against the running database", which is the difference between a
+claim and a fact. Read-only throughout; the only writes this run made were to
+files and to git. Detail, including two corrections the live read forced:
+`DATABASE_STATUS.md` → § Live verification.
 
 **3. Do not demo against a prospect's own data until (1) is applied.** A demo
 org is fine.
@@ -323,8 +412,11 @@ tomorrow is waste:
   34/34 pgTAP assertions for tenant isolation, 19/19 for invitation codes and
   9/9 for the Lift Lab sync, with 9 more for player percentiles. That proves
   they are correct against a database built from migrations — **not** against
-  production's actual state, which may have drifted and could not be read
-  overnight (see the ops note below).
+  production's actual state — which **has now been read**, at 10:40 EDT, and
+  matches on every one of the six policies (§ Live verification in
+  `DATABASE_STATUS.md`). One genuine drift was found elsewhere: the live
+  `public_profile_mode` column default is `'unlisted'`, not the `'private'`
+  the committed DDL declares.
 - **The companion app changes.** They work under both the old and new policies
   by construction, but the second half of that is only exercised once migration
   B is applied somewhere.

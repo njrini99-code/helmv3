@@ -28,6 +28,20 @@ export interface IncidentFeedCounts {
   appGroups: number;
   sentryGroups: number;
   highSeverityGroups: number;
+  /**
+   * Groups the kind classifier calls actionable — i.e. exactly what the Errors
+   * tab lists by default. THE number Bridge should lead with: the bottom-nav
+   * badge, Overview's KPI strip and the Errors tab header all read this one
+   * field, so they cannot drift apart again.
+   *
+   * They did drift. Reported 2026-07-29 as "the errors don't match from the
+   * page that loads in, to the errors tab", and measured against production the
+   * same hour: 4 on the badge (raw ROWS, critical+error), 3 on Overview
+   * (fingerprint GROUPS, critical+error), and up to 9 in the tab (GROUPS,
+   * everything but info, then kind-filtered). Three surfaces, three units,
+   * three severity sets, one dataset.
+   */
+  actionableGroups: number;
   affectedUsers: number;
 }
 
@@ -112,12 +126,14 @@ export function summarizeIncidentFeed(incidents: readonly TriageItem[]): Inciden
   const highSeverityGroups = incidents.filter(
     (item) => item.severity === 'critical' || item.severity === 'error',
   ).length;
+  const actionableGroups = incidents.filter((item) => item.actionable).length;
   const affectedUsers = incidents.reduce((sum, item) => sum + item.affectedUsers, 0);
   return {
     totalGroups: incidents.length,
     appGroups,
     sentryGroups,
     highSeverityGroups,
+    actionableGroups,
     affectedUsers,
   };
 }

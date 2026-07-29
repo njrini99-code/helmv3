@@ -3,6 +3,7 @@ import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { VercelDeployment } from '@/lib/admin/vercel-api';
 
 interface MockRow {
+  id?: string;
   fingerprint: string | null;
   created_at: string;
 }
@@ -10,6 +11,9 @@ interface MockRow {
 const mocks = vi.hoisted(() => ({
   rows: [] as MockRow[],
   updates: [] as Array<{ fingerprints: string[]; patch: Record<string, unknown> }>,
+  /** Rule C updates, keyed by row id rather than fingerprint. Kept separate so
+   *  the Rule A/B assertions above stay exactly as strict as they were. */
+  legacyUpdates: [] as Array<{ ids: string[]; patch: Record<string, unknown> }>,
   deployResult: { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' } as AdminFetchResult<VercelDeployment[]>,
 }));
 
@@ -17,18 +21,54 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {
       if (table !== 'admin_events') throw new Error(`unexpected table ${table}`);
-      const selectChain = {
-        select: () => selectChain,
-        eq: () => selectChain,
-        not: () => selectChain,
-        order: () => selectChain,
-        // fetchAllRows calls .range(from, to) as the terminal call — a single
-        // page is enough since these tests stay well under 1000 rows.
-        range: (from: number, to: number) =>
-          Promise.resolve({ data: mocks.rows.slice(from, to + 1), error: null }),
-      };
+
+      // One builder serving two different reads: the Rule A/B snapshot
+      // (`.not('fingerprint','is',null)` … `.range()`) and Rule C's legacy
+      // sweep (`.is('fingerprint', null)` … `.limit()`). The mock tracks which
+      // fingerprint predicate was applied so it can answer each correctly —
+      // a mock that ignored the difference would let Rule C "pass" while
+      // selecting fingerprinted rows, which is the exact bug being fixed.
+      function makeSelectChain() {
+        let nullFingerprintOnly = false;
+        let cutoffIso: string | null = null;
+        const chain = {
+          select: () => chain,
+          eq: () => chain,
+          not: () => chain,
+          is: (_col: string, _value: null) => {
+            nullFingerprintOnly = true;
+            return chain;
+          },
+          lt: (_col: string, value: string) => {
+            cutoffIso = value;
+            return chain;
+          },
+          order: () => chain,
+          range: (from: number, to: number) =>
+            Promise.resolve({ data: mocks.rows.filter((r) => r.fingerprint !== null).slice(from, to + 1), error: null }),
+          limit: (n: number) => {
+            const matched = mocks.rows.filter(
+              (r) =>
+                (nullFingerprintOnly ? r.fingerprint === null : true) &&
+                (cutoffIso === null || r.created_at < cutoffIso) &&
+                !resolvedIds.has(r.id ?? ''),
+            );
+            return Promise.resolve({
+              data: matched.slice(0, n).map((r) => ({ id: r.id ?? '' })),
+              error: null,
+            });
+          },
+        };
+        return chain;
+      }
+
+      // Rule C re-issues its select each batch and expects already-updated
+      // rows to fall out of the next page — model that, or the loop would
+      // spin on the same ids until MAX_BATCHES.
+      const resolvedIds = mockResolvedIds;
+
       return {
-        select: selectChain.select,
+        select: (...args: unknown[]) => makeSelectChain().select(...(args as [])),
         update: (patch: Record<string, unknown>) => {
           let cutoffIso: string | null = null;
           const updateChain = {
@@ -37,7 +77,18 @@ vi.mock('@/lib/supabase/admin', () => ({
               cutoffIso = value;
               return updateChain;
             },
-            in: (_col: string, values: string[]) => {
+            in: (col: string, values: string[]) => {
+              if (col === 'id') {
+                mocks.legacyUpdates.push({ ids: values, patch });
+                for (const id of values) resolvedIds.add(id);
+                const count = mocks.rows.filter(
+                  (r) =>
+                    r.id !== undefined &&
+                    values.includes(r.id) &&
+                    (cutoffIso === null || r.created_at < cutoffIso),
+                ).length;
+                return Promise.resolve({ data: null, error: null, count });
+              }
               mocks.updates.push({ fingerprints: values, patch });
               const count = mocks.rows.filter(
                 (r) =>
@@ -54,6 +105,10 @@ vi.mock('@/lib/supabase/admin', () => ({
     },
   }),
 }));
+
+/** Ids Rule C has already flipped this test, so the mocked re-select drops
+ *  them the way PostgREST would. */
+const mockResolvedIds = new Set<string>();
 
 vi.mock('@/lib/admin/vercel-api', () => ({
   fetchVercelDeployments: vi.fn(async () => mocks.deployResult),
@@ -88,6 +143,8 @@ describe('autoResolveFixedIncidents', () => {
     vi.resetModules();
     mocks.rows = [];
     mocks.updates = [];
+    mocks.legacyUpdates = [];
+    mockResolvedIds.clear();
     mocks.deployResult = { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' };
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
@@ -160,6 +217,77 @@ describe('autoResolveFixedIncidents', () => {
     expect(result.resolvedQuiet).toBe(1);
     expect(mocks.updates).toHaveLength(1);
     expect(mocks.updates[0]!.fingerprints).toEqual(['fp-14d-quiet']);
+  });
+
+  // ── Rule C ────────────────────────────────────────────────────────────────
+  // Rules A and B are keyed on fingerprint: the snapshot read carries
+  // `.not('fingerprint','is',null)` and the UPDATE matches
+  // `.in('fingerprint', batch)`, which cannot match NULL in SQL. Every row
+  // written before fingerprinting shipped was therefore permanently invisible
+  // to auto-resolution. Measured on production 2026-07-29: 87,653 of 88,782
+  // unresolved error rows had no fingerprint, all created before 2026-07-11,
+  // while the nightly job had been running for months unable to touch them.
+
+  it('Rule C: ages out rows that have no fingerprint at all', async () => {
+    mocks.rows = [
+      { id: 'legacy-1', fingerprint: null, created_at: new Date(NOW - 30 * 86400_000).toISOString() },
+      { id: 'legacy-2', fingerprint: null, created_at: new Date(NOW - 60 * 86400_000).toISOString() },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedLegacy).toBe(2);
+    expect(mocks.legacyUpdates).toHaveLength(1);
+    expect(mocks.legacyUpdates[0]!.ids.sort()).toEqual(['legacy-1', 'legacy-2']);
+    // Rules A/B must not have fired — there are no fingerprints to fire on.
+    expect(mocks.updates).toHaveLength(0);
+  });
+
+  it('Rule C: spares an unfingerprinted row inside the 14-day window', async () => {
+    // Same cutoff as Rule B, deliberately: Rule C extends an already-accepted
+    // policy to the rows it could not reach, it does not loosen it.
+    mocks.rows = [
+      { id: 'legacy-old', fingerprint: null, created_at: new Date(NOW - 30 * 86400_000).toISOString() },
+      { id: 'legacy-fresh', fingerprint: null, created_at: new Date(NOW - 3 * 86400_000).toISOString() },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedLegacy).toBe(1);
+    expect(mocks.legacyUpdates[0]!.ids).toEqual(['legacy-old']);
+  });
+
+  it('Rule C: leaves fingerprinted rows to Rules A and B', async () => {
+    // The two paths must not double-count or cross over. A fingerprinted row
+    // that is 14d quiet belongs to Rule B; Rule C must not also claim it.
+    mocks.rows = [
+      { id: 'fp-row', fingerprint: 'fp-quiet', created_at: new Date(NOW - 30 * 86400_000).toISOString() },
+      { id: 'legacy-row', fingerprint: null, created_at: new Date(NOW - 30 * 86400_000).toISOString() },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedQuiet).toBe(1);
+    expect(mocks.updates[0]!.fingerprints).toEqual(['fp-quiet']);
+    expect(result.resolvedLegacy).toBe(1);
+    expect(mocks.legacyUpdates[0]!.ids).toEqual(['legacy-row']);
+  });
+
+  it('Rule C reports 0 when there is no legacy backlog (non-vacuity)', async () => {
+    // Guards against a Rule C that reports work it did not do — every
+    // assertion above would still pass if it always claimed rows.
+    mocks.rows = [
+      { id: 'fp-row', fingerprint: 'fp-quiet', created_at: new Date(NOW - 30 * 86400_000).toISOString() },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedLegacy).toBe(0);
+    expect(mocks.legacyUpdates).toHaveLength(0);
   });
 
   it('never resolves a fingerprint with a recent event under either rule (regression-safe)', async () => {

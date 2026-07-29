@@ -72,12 +72,48 @@ export function LandingHeader({ onRequestDemo }: LandingHeaderProps) {
       if ((t as Element).closest?.('[aria-controls="landing-mobile-menu"]')) return;
       setMenuOpen(false);
     };
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    // SCROLL LOCK — on the document element, never on <body>.
+    //
+    // This used to be `document.body.style.overflow = 'hidden'`, and it made
+    // the menu unusable anywhere except the very top of the page. Reported as
+    // "when I click the hamburger while scrolled it doesn't drop down"; what
+    // actually happened is that it DID open, 2,000px above the viewport.
+    //
+    // Measured on production at scrollY 2200 (2026-07-29): with the body lock
+    // applied the header's bounding box went to y = -2200 and the open menu to
+    // y = -2014. Removing the lock, or moving it to the document element, both
+    // hold the header at y = 0.
+    //
+    // The mechanism is written up in globals.css:173-188, which fixed this
+    // exact class of bug in CSS and which this line then undid at runtime:
+    // `overflow-x: hidden` forces overflow-y to compute to `auto`, turning the
+    // element into a scroll container — so those rules deliberately use `clip`
+    // instead, "so no scroll container is created and sticky works". Setting
+    // the `overflow` SHORTHAND on body sets overflow-x too, re-creating the
+    // scroll container that comment exists to prevent. `position: sticky`
+    // resolves against its nearest scrolling ancestor, so the header stopped
+    // sticking to the viewport and stuck to the top of body's scrollport — the
+    // document top. At scrollY 0 that is the same place, which is exactly why
+    // it looked fine at the top and only ever broke once scrolled.
+    //
+    // Locking the document element is correct because it IS the scroller here
+    // (`document.scrollingElement === document.documentElement`, verified with
+    // htmlScrollTop 2200 / bodyScrollTop 0), so no NEW scroll container is
+    // introduced and stickiness is preserved.
+    const scroller = getMarketingScroller();
+    const root = document.documentElement;
+    const prevOverflow = root.style.overflow;
+    root.style.overflow = 'hidden';
+    // ...and overflow:hidden alone is not a lock while Lenis is mounted: it
+    // scrolls programmatically, which the property does not block (measured —
+    // a wheel gesture still went 2200 -> 2499). `/` and `/products` mount the
+    // provider; `/about` and `/pricing` scroll natively and get `undefined`.
+    scroller?.stop?.();
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onPointer);
     return () => {
-      document.body.style.overflow = prevOverflow;
+      root.style.overflow = prevOverflow;
+      scroller?.start?.();
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onPointer);
     };

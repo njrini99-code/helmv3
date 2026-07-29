@@ -156,9 +156,17 @@ policy on that table may compare a column to itself.
 1. `db-migration-reviewer` on both files (CLAUDE.md mandates it; this is the
    shared Golf + Baseball production database). CI proves the SQL is correct
    against a *fresh* database — not against production's actual state.
-2. Re-verify live `pg_policies`. It could not be read overnight; Supabase's
-   Postgres connections timed out on every attempt and CI's own seed step got
-   a Cloudflare 522. See `DATABASE_STATUS.md` → ops note.
+2. ~~Re-verify live `pg_policies`~~ — **DONE, 10:40 EDT.** The database came
+   back at 13:43Z and every one of the six exposures was confirmed live in
+   production, matching migration source exactly; no out-of-band hotfix had
+   closed any of them. Two corrections came out of the live read: nothing is
+   exposed to `anon` (all `authenticated`-only, so the bar is "any registered
+   user", not "anyone on the internet"), and `baseball_player_percentiles`'
+   alarming-looking `FOR ALL USING (true)` policy is `service_role`-only and
+   therefore not a write hole. Measured blast radius: 80 messages, 35 players
+   with email/phone/GPA/SAT/ACT, 13 join codes, 10 coach records — and **0**
+   rows behind both the invitation and percentile policies. Full detail:
+   `DATABASE_STATUS.md` → § Live verification.
 3. Apply step 1. Verify step 2 is deployed by **exercising** it — join a team
    by code, search a transfer by full email — not by reading the diff;
    merged-but-undeployed looks identical in git. Apply step 3.
@@ -245,7 +253,7 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 | ~~P1~~ **DONE** | ~~34% of `baseball_*` tables have zero pgTAP RLS coverage~~ | Closed. Invitations (`2c2c939cf`), messaging (`e1011f50b`), and tasks/travel/announcements/dev-plans (`4e0b96ccb`) all have suites now. Writing them found **two P0s** — the invitation-code leak and the `baseball_messages` typo. Two findings across five previously-untested tables is the evidence for the claim that an untested policy is an unverified claim. |
 | P1 | **CI seeds PRODUCTION on every PR** | `seed:baseball:ci` creates auth users and deletes `login_attempts` rows in the production project. Now explicit (`--allow-prod` in package.json) rather than hidden behind a constant named "demo" — but it should probably target a local stack instead. Needs a decision. |
 | ~~P1~~ **DONE** | ~~`baseball_notifications_insert` is `WITH CHECK (true)`~~ | In-app phishing, not a leak (reads are correctly self-scoped). **The obvious fix breaks the product:** practice-publish and coach lift messages legitimately write notifications to *other* users through the caller's own session (`practice.ts:516`, `lifting-v11.ts:2411`, both `createClient()` not admin), so `auth.uid() = user_id` would silently stop them. Needs a `can_notify_baseball_user()` definer helper. **Fixed in `bcbba306b`** — a definer `can_notify_baseball_user()` gating on "self, or a player on a team you are staff on", after verifying two ways that those two call sites are the only inserters. 10 pgTAP assertions, weighted toward the PERMITTED cases so a future self-only tightening cannot pass. |
-| P1 **BLOCKED** | `public_profile_mode` DDL default is `'private'`; a 2026-07-09 live read recorded `'unlisted'` | If the DDL is what is live, `baseball_teams_public_profile` is default-**deny** and zeroes cross-org discovery. Recruiting is sunset so impact today is zero. Blocked on nothing but database reachability — retried 05:30 EDT, still `Connection terminated due to connection timeout`. One query settles it: `select public_profile_mode, count(*) from baseball_teams group by 1`. |
+| ~~P1 **BLOCKED**~~ **DONE** | ~~`public_profile_mode` DDL default is `'private'`~~ | **Answered 10:40 EDT once the database came back.** Live column default is `'unlisted'::text` and **all 13 teams are `unlisted`, zero `private`** — so `baseball_teams_public_profile` is NOT default-deny and cross-org discovery is not zeroed. Feared impact was nil. Separately worth knowing: production's column default **drifted** from the committed DDL, a second independent case of production not matching the migration that created it. Zero impact today, recorded not actioned. |
 | ~~P2~~ **DONE** | ~~The `integration` vitest project (5 files) runs in no CI workflow~~ | **The item was right about the gap and wrong about the cause, and the real cause was worse.** `vitest.config.ts` set a root-level `include`, and `extends: true` MERGES array options rather than replacing them — so every project inherited the broad root glob. `integration`, `rls` and `business` set `include` but not `exclude`, so each matched **~870 files instead of 5, 0 and 7**. `unit` looked fine only because it also overrides `exclude`. Consequences: CI's "Business contracts" job was re-running the entire unit suite under a name claiming to check 7 contract files (~170s → 3s once fixed), and the integration tests *were* running — by accident, inside that job. Root `include` removed, integration given its own CI step so nothing is lost. Verified by counting: unit 861 (unchanged), integration 5, business 7, rls 0. |
 | P2 | Elite stat event model — 8 tables, ~10 migrations, **zero rows** in production | Dead schema. Decide: keep, or graveyard it. |
 
