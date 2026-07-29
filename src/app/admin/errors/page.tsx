@@ -279,9 +279,11 @@ export default async function ErrorsPage({
                 </p>
               </div>
               <div>
-                <p className="text-eyebrow uppercase text-warm-500">high severity</p>
-                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.highSeverityGroups}</p>
-                <p className="text-caption text-warm-500">critical and error groups</p>
+                <p className="text-eyebrow uppercase text-warm-500">actionable</p>
+                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.actionableGroups}</p>
+                <p className="text-caption text-warm-500">
+                  {counts.highSeverityGroups} high severity · matches the nav badge
+                </p>
               </div>
               <div>
                 <p className="text-eyebrow uppercase text-warm-500">affected users</p>

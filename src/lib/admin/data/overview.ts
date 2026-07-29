@@ -1,12 +1,13 @@
 import 'server-only';
+import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
 import type { AppTriageEventRow, TriageItem } from '@/lib/admin/data/triage';
-import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import {
   fetchIncidentFeed,
   DEFAULT_INCIDENT_WINDOW_HOURS,
   buildIncidentFeedFromSources,
+  queryAppErrorEvents,
 } from '@/lib/admin/data/incident-feed';
 import {
   fetchFeatureHealth,
@@ -102,41 +103,51 @@ export function activeAppErrorGroups(rows: AppTriageEventRow[]): TriageItem[] {
   return buildIncidentFeedFromSources(rows, [], DEFAULT_INCIDENT_WINDOW_HOURS).incidents;
 }
 
+/** Cache tag busted by the resolve action, so the badge drops the moment an
+ *  incident is actually resolved rather than up to a minute later. */
+export const BRIDGE_INCIDENT_CACHE_TAG = 'bridge-incidents';
+
 /**
- * Bridge chrome badge (M1 bridge-chrome, docs/MOBILE_DOCTRINE.md performance
- * floor: "never add a heavy per-route fetch for chrome"). Deliberately NOT
- * `fetchOverviewSnapshot` (an 11-way `Promise.all` — deploys, feature health,
- * activity-today ×3, watcher signals — paid once per Overview render) and NOT
- * `fetchIncidentFeed` (a Sentry API round-trip + a 500-row, many-column
- * `admin_events` fetch + per-row `buildIncidentReport` text generation,
- * ALSO already paid once per Overview render). Bridge's root layout re-runs
- * on EVERY navigation across a dozen tabs — reusing either of those there
- * would multiply an expensive query set by 12.
+ * Bridge chrome badge — the count of ACTIONABLE incident groups, which is the
+ * exact set the Errors tab lists by default and the exact number Overview's
+ * KPI strip shows. One predicate, three surfaces.
  *
- * Instead: a single `head: true` COUNT against the SAME `admin_events`
- * table/window/severity split the Errors tab and Overview KPI already use,
- * with NO Sentry call (an external network round-trip on every route change
- * is not "cheap" chrome) and NO per-row report building. Trade-off: this is
- * a raw high-severity ROW count, not the fingerprint-deduped GROUP count
- * `IncidentFeedCounts.highSeverityGroups` reports elsewhere in Bridge — an
- * honest approximation for a badge whose only job is "is there something to
- * look at", and the bottom-nav caps display at "9+" regardless. Honest-only:
- * a query error degrades to 0 (no badge) rather than guessing.
+ * It used to be a `head: true` COUNT of raw high-severity ROWS, chosen so the
+ * root layout — which re-runs on EVERY navigation across a dozen tabs — never
+ * paid for the incident feed. That kept it cheap and made it wrong: measured
+ * against production on 2026-07-29 the badge said 4 while the tab listed up to
+ * 9, because rows are not groups and `critical+error` is not `everything but
+ * info`, and neither had heard of the kind classifier. A number in permanent
+ * chrome that disagrees with the screen it links to is worse than no number.
+ *
+ * The perf concern behind the original design is real and is answered rather
+ * than ignored:
+ *   - `queryAppErrorEvents` only — NO Sentry round-trip (an external network
+ *     hop on every route change is not "cheap chrome"), so this stays a single
+ *     paginated Supabase read plus in-memory grouping.
+ *   - wrapped in `unstable_cache` with a 60s TTL, so a dozen navigations in a
+ *     minute cost ONE query instead of twelve — strictly fewer round-trips
+ *     than the old uncached per-navigation COUNT.
+ *   - tagged, so `resolveTriageEvents` can bust it immediately. Without that
+ *     the badge would sit on a stale count for up to a minute right after you
+ *     resolved something, which is precisely the "it doesn't go away" the
+ *     resolve fix exists to end.
+ *
+ * Honest-only: a query failure degrades to 0 (no badge) rather than guessing.
  */
-export async function fetchBridgeErrorBadge(): Promise<number> {
-  const admin = createAdminClient();
-  const since = isoHoursAgo(24);
-  let query = admin
-    .from('admin_events')
-    .select('id', { count: 'exact', head: true })
-    .eq('event_type', 'error')
-    .eq('resolved', false)
-    .in('severity', ['critical', 'error'])
-    .gte('created_at', since);
-  query = excludeAuthNoise(query);
-  const { count, error } = await query;
-  return error || count == null ? 0 : count;
-}
+export const fetchBridgeErrorBadge = unstable_cache(
+  async (): Promise<number> => {
+    try {
+      const rows = await queryAppErrorEvents({ windowHours: DEFAULT_INCIDENT_WINDOW_HOURS });
+      const { counts } = buildIncidentFeedFromSources(rows, [], DEFAULT_INCIDENT_WINDOW_HOURS);
+      return counts.actionableGroups;
+    } catch {
+      return 0;
+    }
+  },
+  ['bridge-error-badge'],
+  { revalidate: 60, tags: [BRIDGE_INCIDENT_CACHE_TAG] },
+);
 
 /** CALLER must have passed requireSuperAdmin() (service-role reads). */
 export async function fetchOverviewSnapshot() {

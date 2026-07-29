@@ -425,8 +425,8 @@ async function TriagePanel() {
         </p>
         <div className="mt-3 grid divide-y divide-warm-200 overflow-hidden rounded-lg border border-warm-200 md:grid-cols-4 md:divide-x md:divide-y-0">
           {[
+            ['Actionable', counts.actionableGroups, 'same number as the badge + Errors tab'],
             ['Total groups', counts.totalGroups, 'coalesced incidents'],
-            ['High severity', counts.highSeverityGroups, 'critical and error'],
             ['App groups', counts.appGroups, 'Supabase admin_events'],
             ['Sentry groups', counts.sentryGroups, sentry.status === 'ok' ? 'active in 24h' : sentry.status],
           ].map(([label, value, caption]) => (
