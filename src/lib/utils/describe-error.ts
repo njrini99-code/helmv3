@@ -33,12 +33,63 @@ export function describeError(err: unknown): string {
   ].filter(Boolean);
   if (parts.length > 0) return parts.join(' ');
 
-  // Fallback: JSON.stringify. Wrap in try/catch for circular references.
+  // Fallback: JSON.stringify — but NEVER `String(err)`, which is the exact
+  // `[object Object]` this whole module exists to eliminate. The previous
+  // version's circular-reference catch did precisely that, so the safety net
+  // had the original bug inside it.
+  //
+  // Found 2026-07-29 in production: `[recurring_events.editRecurringEvent]
+  // [editRecurringEvent Error]: [object Object]` — logged from a call site
+  // that DOES use describeError, twice, while a coach failed to edit a
+  // recurring event. Two occurrences, zero information about why.
+  //
+  // Three reachable ways to get here, all verified in node:
+  //   - circular reference        JSON.stringify throws  -> was "[object Object]"
+  //   - BigInt anywhere inside    JSON.stringify throws  -> was "[object Object]"
+  //   - a function/symbol value   JSON.stringify RETURNS undefined -> was "undefined"
+  // The last one never even reached the catch, so a try/catch alone would not
+  // have fixed it.
   try {
-    return JSON.stringify(err);
+    const json = JSON.stringify(err);
+    // `undefined` for functions/symbols; `{}` for an object whose own
+    // properties are all non-serializable. Neither tells you anything, so fall
+    // through to the shape description instead.
+    if (json !== undefined && json !== '{}') return json;
   } catch {
-    return String(err);
+    // fall through
   }
+
+  return describeShape(e);
+}
+
+/**
+ * Last resort: say what the value IS when its contents cannot be serialized.
+ *
+ * A constructor name plus the list of own keys is not the error text, but it is
+ * enough to recognise the shape and find the throw site — which is infinitely
+ * more than `[object Object]`, and is the difference between a one-line grep
+ * and an unreproducible ticket.
+ */
+function describeShape(e: Record<string, unknown>): string {
+  const name =
+    typeof e.constructor === 'function' && e.constructor.name && e.constructor.name !== 'Object'
+      ? e.constructor.name
+      : 'object';
+
+  let keys: string[] = [];
+  try {
+    keys = Object.keys(e);
+  } catch {
+    // Exotic proxies can throw on ownKeys.
+  }
+
+  // A `message`-like field is worth surfacing even when the whole value would
+  // not serialize — it is the one field most likely to name the cause.
+  const message = typeof e.message === 'string' && e.message.length > 0 ? ` msg=${e.message}` : '';
+
+  return keys.length > 0
+    ? `unserializable ${name} keys=[${keys.join(',')}]${message}`
+    : `unserializable ${name}${message}`;
 }
 
 /**

@@ -2,6 +2,59 @@ import { describe, it, expect } from 'vitest';
 import { describeError } from '@/lib/utils/describe-error';
 
 describe('describeError', () => {
+  // ── The safety net had the original bug inside it ────────────────────────
+  // Production, 2026-07-29: `[recurring_events.editRecurringEvent]
+  // [editRecurringEvent Error]: [object Object]`, logged twice while a coach
+  // failed to edit a recurring event — from a call site that DOES use
+  // describeError. The circular-reference catch fell back to `String(err)`,
+  // which is exactly the value this module exists to eliminate.
+
+  it('never returns "[object Object]" for a CIRCULAR object', () => {
+    const circular: Record<string, unknown> = { code: '', message: '' };
+    circular.self = circular;
+
+    const described = describeError(circular);
+
+    expect(described).not.toBe('[object Object]');
+    expect(described).toContain('keys=');
+  });
+
+  it('never returns "[object Object]" when a BigInt makes the value unserializable', () => {
+    // JSON.stringify throws TypeError on BigInt, same catch, same old outcome.
+    const described = describeError({ attempted: BigInt(10), retries: BigInt(3) });
+    expect(described).not.toBe('[object Object]');
+    expect(described).toContain('attempted');
+  });
+
+  it('does not return the string "undefined" when JSON.stringify yields undefined', () => {
+    // A function/symbol serializes to `undefined`, which never reached the
+    // catch at all — so a try/catch alone would not have fixed this one.
+    const described = describeError({ handler: () => {} } as unknown);
+    expect(described).not.toBe('undefined');
+    expect(described).not.toBe('[object Object]');
+    expect(described).toContain('handler');
+  });
+
+  it('surfaces a message field even when the value cannot be serialized', () => {
+    const circular: Record<string, unknown> = { message: 'update failed' };
+    circular.self = circular;
+    expect(describeError(circular)).toContain('update failed');
+  });
+
+  it('names the constructor when it falls through to the shape describer', () => {
+    // No message/code/details/hint, so it does NOT take the Postgrest branch —
+    // an earlier draft of this test gave the class a `message` and then
+    // asserted the constructor name, which fails correctly: a value WITH a
+    // message should report the message, not its shape.
+    class WeirdTransportError {
+      retries = BigInt(10);
+      self?: unknown;
+    }
+    const e = new WeirdTransportError();
+    e.self = e;
+    expect(describeError(e)).toContain('WeirdTransportError');
+  });
+
   it('unwraps a real Error instance to its message', () => {
     expect(describeError(new Error('boom'))).toBe('boom');
   });

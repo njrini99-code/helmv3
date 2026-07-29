@@ -1155,12 +1155,37 @@ async function fetchShotDriversByCategory(
   const controller = new AbortController();
   const budgetTimer = setTimeout(() => controller.abort(), BEST_EFFORT_QUERY_TIMEOUT_MS);
   try {
-    // Query shape (tables/filters/order) — logged here for the index-review
-    // this warning intentionally does NOT escalate to: golf_rounds filtered by
-    // (player_id, status='completed'), ordered by round_date desc, capped 200;
-    // then golf_shots filtered by round_id IN (<=200 ids), NO .order(), capped
-    // 25000, with 1:1 joins to putt_details + approach_miss_details. The
-    // unordered, high-cap, joined golf_shots scan is the likely 57014 source.
+    // THE HYPOTHESIS THAT USED TO BE HERE WAS WRONG — measured against
+    // production 2026-07-29. It read: "the unordered, high-cap, joined
+    // golf_shots scan is the likely 57014 source." It is not. That scan is
+    // FAST:
+    //
+    //   golf_rounds (player_id, status='completed') LIMIT 200
+    //     + golf_shots (round_id IN …) LIMIT 25000
+    //   -> 68ms, Index Only Scan on idx_golf_shots_round_id_covering
+    //
+    // The cost is the RLS on the two EMBEDDED tables, which a service-role
+    // EXPLAIN cannot see because service_role bypasses RLS entirely — which is
+    // precisely why the original guess landed on the visible query shape.
+    //
+    // `putt_details_select_team` and `approach_miss_details_select_team` are
+    // six- and seven-table joins that materialize EVERY shot id visible to the
+    // caller across their whole ORGANIZATION, uncorrelated to the <=200 rounds
+    // actually being asked for. Both tables also carry a second `_select_own`
+    // policy, and permissive policies are all evaluated. Measured on today's
+    // small dataset: 103ms for 6,699 ids, with the planner estimating 62 rows —
+    // a 100x underestimate, which is the part that does not stay benign as the
+    // data grows.
+    //
+    // Consistent with the observed shape of the failures: aborts arrive in
+    // BURSTS (21 in one hour on 07-22; 8+6 across two hours on 07-28), not as a
+    // steady trickle. One call is ~100-200ms; several concurrently, each
+    // rebuilding an org-wide id set, is what crosses the 5s budget.
+    //
+    // The real fix is to correlate those policies rather than materialize an
+    // org-wide set — a pure performance rewrite with identical semantics, not a
+    // relaxation. That is an RLS change, so it belongs in a reviewed migration
+    // and is deliberately NOT made here.
     const { data: rounds, error: roundsError } = await supabase
       .from('golf_rounds')
       .select('id')
