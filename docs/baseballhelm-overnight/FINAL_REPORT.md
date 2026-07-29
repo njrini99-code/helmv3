@@ -1,8 +1,11 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → 2026-07-29 03:30 EDT. Branch
+_2026-07-28 23:35 → 2026-07-29 04:20 EDT. Branch
 `baseball/overnight-completion`, draft PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 24 commits._
+[#1092](https://github.com/njrini99-code/helmv3/pull/1092), 30 commits.
+CI is green except `BaseballHelm authenticated smoke`, which fails on a
+Cloudflare 522 from the production Supabase — red before this branch existed,
+unrelated to the diff._
 
 The brief asked for an honest split between complete, production-usable,
 improved-but-incomplete, blocked, intentionally-hidden, and out-of-scope. That
@@ -79,6 +82,10 @@ Each has tests, and the tests assert behaviour rather than existence.
 - **The public player profile withholds at the server**, not just at the
   renderer.
 - **The demo seed refuses production** unless explicitly told otherwise.
+- **Re-syncing repairs an athlete's Lift Lab account link.** It was write-once,
+  so every athlete the demo seed wrote directly (`user_id: null`) was locked
+  out of `/lifting/dashboard` permanently — the one mechanism that could have
+  supplied the id was the one declining to write it.
 
 ## Production-usable, but not proven
 
