@@ -339,6 +339,69 @@ rather than fixes.
 
 ---
 
+---
+
+## 🟠 CROSS-PRODUCT — `golf_coaches` PII is readable by any authenticated user
+
+_Found 2026-07-29 05:40. **Outside this mission's scope** (BaseballHelm), on
+the **live revenue product**, and **deliberately not changed**. Reported
+because it is the same finding as #5, one product over, and worse._
+
+After fixing `baseball_messages` I re-ran both sweeps across **every** table
+rather than only `baseball_*`, on the theory that a shared baseline shares its
+mistakes. Two results:
+
+**The self-comparison typo is contained.** `cp.conversation_id =
+cp.conversation_id` appears only in the three `baseball_messages` policies.
+No golf equivalent exists. That is a real negative result and worth recording
+so nobody re-runs the search.
+
+**But `USING (true)` is not contained:**
+
+```sql
+-- supabase/migrations/20260527000000_prod_public_baseline.sql:18937
+CREATE POLICY "golf_coaches_select_all" ON "public"."golf_coaches"
+  FOR SELECT TO "authenticated" USING (true);
+```
+
+`golf_coaches` carries `full_name`, `email`, `phone`. This is the **only**
+SELECT policy on the table, so there is nothing narrowing it: **any
+authenticated user on the project can read every golf coach's contact
+details.** Baseball and Golf share one Supabase project and one `authenticated`
+role, so a BaseballHelm account can read them too.
+
+**The exact twin of this policy was already recognised as a problem and fixed
+— for baseball only.** `20260701014000_baseball_coaches_narrow_select.sql`
+dropped `baseball_coaches_select_all` on 2026-07-01, with the reasoning
+spelled out: *"let ANY authenticated user read EVERY coach row, including PII
+columns (email, phone). Drop it."* Every word of that applies verbatim to
+`golf_coaches`. The migration was written narrowly for baseball and the golf
+half was never done.
+
+That also makes golf **worse than baseball is today**: baseball at least
+retains `baseball_coaches_select` (`auth.uid() = user_id OR
+get_my_coach_id() IS NOT NULL`), which requires the reader to be a coach.
+Golf requires only being logged in.
+
+**Why it is not fixed here.** GolfHelm is live with real users and is not this
+mission's scope; a mis-scoped policy there is a production outage on the
+revenue product, decided at 05:40 by an agent that was asked to work on
+baseball. The fix is likely small — mirror `20260701014000`, then repoint any
+call site that needs cross-org coach identity at a public view, exactly as the
+baseball change did — but "likely small" is not the standard for touching a
+live product unattended.
+
+**One prerequisite, already checked:** the baseball fix worked because
+`20260701011000` had *first* created `public.baseball_coaches_public`, a
+definer view exposing non-PII coach identity, and moved the player-facing call
+sites (messaging, calendar roster panel, email greetings) onto it. **There is
+no `golf_coaches_public`** — grep across migrations and `src` returns nothing.
+So the golf fix is two migrations, not one: create the view and move its call
+sites, *then* narrow the policy. Dropping `golf_coaches_select_all` on its own
+would break every golf surface that renders a coach's name.
+
+---
+
 ### ~~3. Staff-invite accept RPC has no email-ownership check~~ — **FALSE. Retracted 2026-07-29 01:20.**
 
 **This finding was wrong.** The check is present and always has been. Verified

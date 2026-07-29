@@ -194,6 +194,22 @@ Each has tests, and the tests assert behaviour rather than existence.
 
 ## Out of scope
 
+- **`golf_coaches` PII is readable by any authenticated user.** Found while
+  re-running the baseball sweeps across *every* table on the theory that a
+  shared baseline shares its mistakes. `golf_coaches_select_all` is
+  `USING (true)`, it is the only SELECT policy on a table holding `full_name`,
+  `email` and `phone`, and it has never been touched. The identical baseball
+  policy was recognised and dropped on 2026-07-01 with the reasoning written
+  out — the migration was scoped to baseball and the golf half never happened.
+  Golf is therefore *less* protected than baseball is even today.
+
+  **Not changed.** GolfHelm is live, is not this mission's scope, and the fix
+  is two migrations rather than one: there is no `golf_coaches_public` view to
+  absorb the legitimate reads, so dropping the policy alone would break every
+  golf surface that renders a coach's name. `DATABASE_STATUS.md` has the
+  detail. Flagging it is in scope; changing the revenue product at 05:40
+  unattended is not.
+
 - **The Elite stat event model** — 8 tables, ~10 dedicated migrations, **zero
   rows** in production. Real schema investment behind a pitch-by-pitch
   analytics model that has never received a single row. Keep or graveyard is a
