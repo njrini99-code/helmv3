@@ -137,7 +137,18 @@ export interface CommandCenterReadModel {
     openRisks: number;
     criticalRisks: number;
     rosterSize: number;
-    playersWithData: number;
+    /**
+     * Players with an official record this season, or NULL when that could not
+     * be determined — the Stats Center read returned an unauthorized envelope.
+     *
+     * Nullable ON PURPOSE. This was a plain `number` defaulting to 0 when the
+     * sub-read failed, and the coach home rendered it as "ON THE RECORD 0" with
+     * the same weight as a measured figure: a team whose stats the viewer simply
+     * could not read was indistinguishable from a team that has played no games.
+     * The type now makes "unknown" impossible to spell as zero, so a consumer
+     * has to decide (the KPI strip ghosts it — see `KPIContentsItem.ghost`).
+     */
+    playersWithData: number | null;
     eventsToday: number;
   };
   /** Honest error string when a sub-read failed; arrays are still safe ([]). */
@@ -622,9 +633,15 @@ export async function getCommandCenter(
   // box-score events only (batting/pitching/catching/fielding/baserunning),
   // which is what "on the record" is meant to convey; that's the one
   // definition both surfaces now share.
+  // null, not 0, when the Stats Center envelope came back unauthorized: "we
+  // could not read this team's stats" and "this team has played no games" are
+  // different facts, and only one of them is a zero.
   const playersWithData = statsCenterModel.authorized
     ? statsCenterModel.summary.playersWithData
-    : 0;
+    : null;
+  if (!statsCenterModel.authorized) {
+    error = error ?? 'Official-record counts could not be loaded.';
+  }
   const criticalRisks = riskFeed.filter((r) => r.severity === 'critical').length;
 
   return {

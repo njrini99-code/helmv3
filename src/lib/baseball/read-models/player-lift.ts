@@ -32,6 +32,7 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { todayIsoInTz, resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import {
   resolveBaseballLiftingOrg,
   resolveMyBaseballAthleteId,
@@ -60,10 +61,6 @@ export interface PlayerLiftHome {
   recent: BaseballLiftSessionRow[];
   /** Whether today's readiness check-in has been submitted. */
   readinessSubmittedToday: boolean;
-}
-
-function todayYmd(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,7 +154,15 @@ export async function getPlayerLiftHome(playerId: string): Promise<PlayerLiftHom
   }
 
   const { organizationId, teamId, athleteId, athleteToPlayer } = ctx;
-  const today = todayYmd();
+  // TEAM wall-clock day, not UTC's. This value drives BOTH the `gte
+  // scheduled_date` filter for "upcoming" AND the `checkin_date` equality for
+  // `readinessSubmittedToday`, so the UTC version had two evening symptoms at
+  // once: a session scheduled for the current day fell out of `upcoming`
+  // entirely, and the readiness prompt reappeared for an athlete who had already
+  // checked in. PlayerLiftHomeClient anchors on the DEVICE day for the same
+  // reason; anchoring the server on the team day keeps the prompt and the
+  // session list agreeing for anyone in the program's own timezone.
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
   const [upcomingRes, recentRes, checkinRes] = await Promise.all([
     // Upcoming / in-progress sessions: today and forward, active statuses.

@@ -56,6 +56,24 @@ export default async function PracticeEffectivenessPage() {
     );
   }
 
+  if (data.readFailed) {
+    // The reviews query failed. Rendering the client here would paint an
+    // all-zeros summary — 0 improved, 0 worse, 0 stable — which on THIS screen
+    // reads as "none of your practice plan moved anything". That verdict is the
+    // whole product of this page, so it must never be synthesised from a failed
+    // read. Same EditorsLetter treatment as the gate above, different cause.
+    return (
+      <div className={fairwayScope('min-h-full')}>
+        <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+          <EditorsLetter
+            title="Measurements couldn't be loaded"
+            body="Your practice-effectiveness reviews didn't come back this time. Nothing has changed and nothing has been lost — reload in a moment. (An empty page here would have read as 'nothing worked', which is not what happened.)"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={fairwayScope('min-h-full')}>
       <PracticeEffectivenessClient

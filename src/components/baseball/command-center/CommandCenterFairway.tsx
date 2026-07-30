@@ -82,7 +82,8 @@ export interface CommandCenterFairwayProps {
     openRisks: number;
     criticalRisks: number;
     rosterSize: number;
-    playersWithData: number;
+    /** null = the Stats Center read was unauthorized, so the count is unknown. */
+    playersWithData: number | null;
     eventsToday: number;
   };
   loadState?: ReadModelLoadState;
@@ -217,11 +218,22 @@ export function CommandCenterFairway({
   const kpis: KPIContentsItem[] = [];
   if (summary) {
     kpis.push({ label: 'Roster', value: summary.rosterSize, ghost: hasLoadError });
+    // `playersWithData` is null when the Stats Center read came back
+    // unauthorized. Ghosting on that (not just on the client's own load error)
+    // is the difference between "this team has no official record" and "we could
+    // not read this team's official record" — printing 0 for the second is the
+    // coach home stating a fact it does not have. `emphasis` additionally
+    // requires a real number, so an unknown figure can never render as the
+    // green "whole roster is on the record" celebration.
+    const recordUnknown = summary.playersWithData === null;
     kpis.push({
       label: 'On the Record',
-      value: summary.playersWithData,
-      emphasis: summary.rosterSize > 0 && summary.playersWithData === summary.rosterSize,
-      ghost: hasLoadError,
+      value: summary.playersWithData ?? 0,
+      emphasis:
+        !recordUnknown &&
+        summary.rosterSize > 0 &&
+        summary.playersWithData === summary.rosterSize,
+      ghost: hasLoadError || recordUnknown,
     });
     kpis.push({ label: 'Open Risks', value: summary.openRisks, ghost: hasLoadError });
     kpis.push({ label: 'Today', value: summary.eventsToday, ghost: hasLoadError });

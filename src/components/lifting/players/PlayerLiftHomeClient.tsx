@@ -55,6 +55,28 @@ const STATUS_LABEL: Record<string, string> = {
   excused: 'Excused',
 };
 
+/**
+ * The athlete's own wall-clock date as YYYY-MM-DD.
+ *
+ * `new Date().toISOString().slice(0, 10)` — what this used — is the UTC date.
+ * UTC rolls over at 8pm Eastern / 5pm Pacific, so from early evening onward
+ * "today" resolved to TOMORROW and a player with a session scheduled for the
+ * actual current day was told "No lift today", right through the hours they were
+ * most likely to be lifting.
+ *
+ * Built from the local getters rather than Intl so it cannot depend on locale
+ * ordering. `scheduled_date` is a plain calendar date with no zone, and
+ * `formatDate` below already renders it in the device's timezone — so the device
+ * day is both the honest anchor for an athlete on their own phone and the one
+ * that makes this component agree with the label it prints beside the answer.
+ */
+function localYmd(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function formatDate(d: string): string {
   return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
     weekday: 'short',
@@ -73,7 +95,7 @@ export function PlayerLiftHomeClient({
   readinessSubmittedToday,
   basePath,
 }: Props) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localYmd();
   const todaysSession = upcoming.find((s) => s.scheduled_date === today) ?? null;
   const prefersReducedMotion = useReducedMotion();
   const base = basePath.replace(/\/$/, '');

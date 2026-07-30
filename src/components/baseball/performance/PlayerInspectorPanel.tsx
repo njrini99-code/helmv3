@@ -8,8 +8,11 @@
 // Slide-in right-side drawer triggered by clicking a player row in the
 // readiness queue. Shows:
 //   • Today plan (session title, prescribed main lift, session status)
-//   • Last session summary (actual load + RPE when available)
-//   • Soreness mini-preview (read-only SorenessBodyMap)
+//   • Prescribed main load + RPE when available. NOT actual load: the board
+//     payload carries session_exercises.prescribed_load, and performed load
+//     lives in set_results. This was labelled "Actual load" for both.
+//   • Soreness OVERALL severity only — no body map. See the note at that section
+//     for why drawing an empty map here was a false all-clear.
 //   • Bodyweight delta (7-day trend from board row)
 //   • Readiness flags + suggested action (from computation)
 //   • ActionRail: Modify Lift, Add Note, Follow-up (gated on capabilities)
@@ -19,9 +22,11 @@
 // Uses the same spring animation as peek-panel/PeekPanel.tsx. Backdrop click
 // + Escape key close the panel. Focus is trapped for keyboard navigation.
 //
-// Soreness body map renders with readOnly={true} and an empty SorenessMapState
-// because region-level soreness data is not part of the board-row payload; the
-// overall severity number is displayed as a compact badge above the map.
+// The soreness section shows the overall severity badge and NO body map. It used
+// to render one with an empty SorenessMapState, because region-level data is not
+// part of the board-row payload — but a body map with no regions highlighted
+// reads as "nothing hurts", not as "not loaded", and could sit directly beneath
+// an "Overall severity: 8/10" badge contradicting it.
 // =============================================================================
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -29,12 +34,10 @@ import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
-import { SorenessBodyMap } from '@/components/lifting/soreness/SorenessBodyMap';
 import { ActionRail } from '@/components/baseball/ui/ActionRail';
 import type { ActionRailAction } from '@/components/baseball/ui/ActionRail';
 import { readinessBandLabel, readinessBandTone } from '@/lib/baseball/lifting/readiness-compute';
 import { Button } from '@/components/ui/button';
-import { PaperCard } from '@/components/baseball/living-annual';
 import {
   IconX,
   IconDumbbell,
@@ -290,10 +293,15 @@ export function PlayerInspectorPanel({
                 {boardRow?.prescribed_main_lift && (
                   <InfoRow label="Main lift" value={boardRow.prescribed_main_lift} />
                 )}
-                {boardRow?.actual_main_load != null && (
+                {/* "Prescribed", not "Actual" — this value comes from
+                    session_exercises.prescribed_load, i.e. what the athlete was
+                    told to lift. Performed load is in set_results and is not in
+                    the board payload. Labelling a plan as an outcome misreads
+                    exactly the number a coach progresses load from. */}
+                {boardRow?.prescribed_main_load != null && (
                   <InfoRow
-                    label="Actual load"
-                    value={`${boardRow.actual_main_load} lb`}
+                    label="Prescribed load"
+                    value={`${boardRow.prescribed_main_load} lb`}
                   />
                 )}
                 {boardRow?.main_rpe != null && (
@@ -338,17 +346,23 @@ export function PlayerInspectorPanel({
                   </span>
                 </div>
               )}
-              {/* Read-only body map — shows region highlights from check-in data.
-                  An empty value ({}) renders the neutral body silhouette shape.
-                  Region-level data requires a dedicated per-player fetch
-                  (not available in the board-row payload). */}
-              <PaperCard className="rounded-xl">
-                <SorenessBodyMap
-                  value={{}}
-                  onChange={() => {}}
-                  readOnly={true}
-                />
-              </PaperCard>
+              {/* NO BODY MAP HERE — deliberately.
+                  This rendered `<SorenessBodyMap value={{}} readOnly />`, and the
+                  comment that stood here admitted why the value was empty:
+                  "Region-level data requires a dedicated per-player fetch (not
+                  available in the board-row payload)."
+                  A body map with zero regions highlighted does not read as "not
+                  loaded" — it reads as "nothing hurts anywhere", which is a
+                  clinical-looking claim drawn from data that was never fetched.
+                  Worse, it could sit directly under an "Overall severity: 8/10"
+                  chip and contradict it on the same screen.
+                  The overall severity above IS real, so it stays. Region detail
+                  is named as absent instead of drawn as absent. Restore the map
+                  here only together with the per-player region fetch. */}
+              <p className="text-xs text-warm-400">
+                Region-level detail isn&rsquo;t loaded on this panel. Open the
+                player&rsquo;s readiness check-in for the body map.
+              </p>
               {sorenessOverall == null && (
                 <p className="mt-2 text-center text-xs text-warm-400 italic">
                   No soreness check-in recorded today.

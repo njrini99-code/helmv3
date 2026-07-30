@@ -89,6 +89,19 @@ export type EffectivenessDashboardData =
       reviews: EffectivenessReviewView[];
       focusRollup: EffectivenessFocusRollupView[];
       summary: EffectivenessSummary;
+      /**
+       * True when the reviews query FAILED, so the empty arrays and zeroed
+       * summary mean "unknown", not "nothing".
+       *
+       * The failure branch used to return the plain empty envelope with a
+       * comment calling it "honest empty (authorized but no data)". It is not:
+       * this surface exists to tell a coach whether their practice plan moved
+       * the needle, and an all-zeros summary is read as "none of it worked".
+       * Turning a database or RLS failure into that verdict is the most
+       * expensive possible misread of this particular screen. Not leaking the DB
+       * error text is right; asserting a result instead is not.
+       */
+      readFailed: boolean;
     };
 
 // -----------------------------------------------------------------------------
@@ -182,8 +195,16 @@ export async function getPracticeEffectivenessData(): Promise<EffectivenessDashb
     .limit(500);
 
   if (error) {
-    // Honest empty (authorized but no data) rather than leaking the DB error.
-    return { authorized: true, reviews: [], focusRollup: [], summary: emptySummary() };
+    // Empty shapes so nothing downstream has to null-check, but flagged as a
+    // FAILED read — the caller must not present the zeroed summary as a verdict.
+    // Still no DB error text in the envelope.
+    return {
+      authorized: true,
+      reviews: [],
+      focusRollup: [],
+      summary: emptySummary(),
+      readFailed: true,
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -223,7 +244,7 @@ export async function getPracticeEffectivenessData(): Promise<EffectivenessDashb
     open: reviews.filter((r) => r.disposition === 'new').length,
   };
 
-  return { authorized: true, reviews, focusRollup, summary };
+  return { authorized: true, reviews, focusRollup, summary, readFailed: false };
 }
 
 function emptySummary(): EffectivenessSummary {

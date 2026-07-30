@@ -243,6 +243,19 @@ export interface DecisionRoomData {
   recentGameResults: DecisionRoomGameResult[];
   availabilityConcerns: DecisionRoomAvailabilityConcern[];
   attendanceSummary: DecisionRoomAttendanceSummary;
+  /**
+   * True when `availabilityConcerns` and `attendanceSummary` were WITHHELD
+   * because the caller lacks `can_view_readiness` — not because there is nothing
+   * to report.
+   *
+   * Without this, both feeds are indistinguishable from a genuinely clean team:
+   * an empty concerns array rendered as "No current availability concerns — all
+   * players are ready", which is a confident claim about player health assembled
+   * from data the viewer was never allowed to see. Consumers MUST branch on this
+   * before reading either field as a measurement. Mirrors
+   * `PerformanceCommandData.readinessWithheld`, which already does this.
+   */
+  readinessWithheld: boolean;
   liftSummary: DecisionRoomLiftSummary;
   openTasks: DecisionRoomOpenTask[];
   conflicts: DecisionRoomConflict[];
@@ -436,6 +449,7 @@ export async function getDecisionRoomData(): Promise<DecisionRoomData> {
         recentGameResults,
         availabilityConcerns,
         attendanceSummary,
+        readinessWithheld: !canViewReadiness,
         liftSummary,
         openTasks,
         conflicts,

@@ -122,9 +122,22 @@ export interface SnapshotLatestSignal {
 export interface SnapshotHeader {
   /** Program standing. `present:false` when no availability record exists. */
   status: { present: boolean; value: SnapshotPlayerStatus; note: string | null };
-  /** Today's availability (from the active availability_statuses row). */
+  /**
+   * Today's availability (from the active availability_statuses row).
+   *
+   * `present: false` means NO ROW — nobody has recorded this player's
+   * availability. It does NOT mean "cleared to play", and a consumer must not
+   * render it as one: absence of a medical/availability record and an
+   * affirmative clearance are different facts about a player's body.
+   *
+   * `readFailed` separates the third case. The query result is collapsed to null
+   * on error, so without this flag "the row could not be read" is
+   * indistinguishable from "the row does not exist" — and a coach would be shown
+   * a confident state derived from a failed database read.
+   */
   availability: {
     present: boolean;
+    readFailed: boolean;
     status: string | null;
     reason: string | null;
   };
@@ -314,7 +327,7 @@ export interface PlayerSnapshotCardsReadModel {
 function emptyHeader(role: SnapshotRole = 'utility'): SnapshotHeader {
   return {
     status: { present: false, value: 'active', note: null },
-    availability: { present: false, status: null, reason: null },
+    availability: { present: false, readFailed: false, status: null, reason: null },
     readiness: { present: false, band: null, label: null, tone: null, stale: false, checkDate: null },
     nextEvent: { present: false, id: null, title: null, eventType: null, startTime: null, location: null },
     latestSignal: { present: false, id: null, title: null, category: null, severity: null, confidence: null, createdAt: null },
@@ -923,6 +936,11 @@ export async function getPlayerSnapshotCards(
   const avail = (availRes?.error ? null : availRes?.data ?? null) as null | {
     status: string | null; reason_category: string | null; starts_at: string | null;
   };
+  // Kept separately because `avail` folds an error and a genuine absence into
+  // the same null. Downstream, absence renders as "not recorded" and a failed
+  // read renders as "couldn't load" — neither may render as a clearance.
+  const availReadFailed = Boolean(availRes?.error);
+  if (availReadFailed) note('Availability could not be loaded.');
 
   const bwRows = (bwRes?.error ? [] : bwRes?.data ?? []) as Array<{ entry_date: string; weight_lbs: number }>;
   const liftDone = (liftDoneRes?.error ? [] : liftDoneRes?.data ?? []) as Array<{
@@ -1200,8 +1218,8 @@ export async function getPlayerSnapshotCards(
   const header: SnapshotHeader = {
     status,
     availability: avail
-      ? { present: true, status: avail.status, reason: avail.reason_category }
-      : { present: false, status: null, reason: null },
+      ? { present: true, readFailed: false, status: avail.status, reason: avail.reason_category }
+      : { present: false, readFailed: availReadFailed, status: null, reason: null },
     readiness,
     nextEvent,
     latestSignal,

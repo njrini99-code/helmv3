@@ -375,12 +375,33 @@ export default function AcademicsPage() {
   }
 
   // ── Summary stats (only count rows with real data) ─────────────────────
+  //
+  // "Only count rows with real data" is the rule, and Eligible used to break it:
+  // `students.filter((s) => s.is_eligible)` treated `null` — which means NO
+  // RECORD ON FILE, exactly as `eligibilityLabel()` below states — as `false`.
+  // A roster of 14 athletes with nothing entered yet therefore reported
+  // "ELIGIBLE 0", which a coach reads as "none of my players are eligible"
+  // rather than "I haven't entered any grades". Same class of error as the At
+  // Risk line, which already guards on `!== null`.
+  //
+  // Each metric now carries its own denominator of KNOWN rows, and renders an
+  // em-dash when that denominator is zero — the treatment Team GPA already
+  // used. `RuledStatLine`'s contract puts honest-null formatting on the caller.
   const withGpa = students.filter((s) => s.gpa !== null);
   const avgGpa = withGpa.length > 0
     ? withGpa.reduce((sum, s) => sum + (s.gpa ?? 0), 0) / withGpa.length
     : null;
-  const eligibleCount = students.filter((s) => s.is_eligible).length;
-  const atRiskCount = students.filter((s) => s.academic_standing !== null && s.academic_standing !== 'good').length;
+
+  const withEligibility = students.filter((s) => s.is_eligible !== null);
+  const eligibleCount = withEligibility.filter((s) => s.is_eligible).length;
+
+  const withStanding = students.filter((s) => s.academic_standing !== null);
+  const atRiskCount = withStanding.filter((s) => s.academic_standing !== 'good').length;
+
+  /** "OF 12 ON FILE" — shown only when the denominator is a PARTIAL roster, so a
+   *  coach can tell "3 eligible of 3 recorded" from "3 eligible of 14 players". */
+  const partialNote = (knownRows: number) =>
+    knownRows > 0 && knownRows < students.length ? `of ${knownRows} on file` : undefined;
 
   // ── Credits display helper ─────────────────────────────────────────────
   const creditsDisplay = (student: StudentAthlete) => {
@@ -455,22 +476,49 @@ export default function AcademicsPage() {
 
         {/* Summary — RuledStatLine, not gray icon-tile cards: the number carries
             the contrast, not chrome-colored circles (spec §4.2 founder addendum). */}
+        {/* `ghost` is the kit's own "unfilled measurable" state — it renders the
+            em-dash AND swaps the green rule for a faint hairline. Passing a
+            hand-written '—' with `ghost` unset (as Team GPA did) produced an
+            empty figure still sitting on a full green rule, which is why every
+            blank stat looked measured. Each line below is ghosted from its OWN
+            denominator of recorded rows, so an unmeasured metric can no longer
+            masquerade as a real zero. */}
         <div className="grid grid-cols-2 gap-x-6 gap-y-7 lg:grid-cols-4 lg:gap-x-8">
           <RuledStatLine label="Total Athletes" value={students.length} ink="team" size="row" />
           <RuledStatLine
             label="Team GPA"
-            value={avgGpa !== null ? avgGpa.toFixed(2) : '—'}
+            value={avgGpa !== null ? avgGpa.toFixed(2) : 0}
+            ghost={avgGpa === null}
+            unit={partialNote(withGpa.length)}
             ink="team"
             size="row"
           />
           <RuledStatLine
             label="Eligible"
             value={eligibleCount}
+            ghost={withEligibility.length === 0}
+            unit={partialNote(withEligibility.length)}
             ink="team"
             size="row"
-            emphasis={students.length > 0 && eligibleCount === students.length}
+            // "All eligible" is only a claim worth emphasising when eligibility
+            // is on file for the WHOLE roster — previously this compared the
+            // count against students.length while the count itself silently
+            // excluded unknowns, so it could never fire on a partial roster
+            // and would have been misleading if it had.
+            emphasis={
+              withEligibility.length > 0 &&
+              withEligibility.length === students.length &&
+              eligibleCount === students.length
+            }
           />
-          <RuledStatLine label="At Risk" value={atRiskCount} ink="team" size="row" />
+          <RuledStatLine
+            label="At Risk"
+            value={atRiskCount}
+            ghost={withStanding.length === 0}
+            unit={partialNote(withStanding.length)}
+            ink="team"
+            size="row"
+          />
         </div>
 
         {/* Student table */}
