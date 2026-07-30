@@ -19,12 +19,22 @@ const mocks = vi.hoisted(() => ({
   getActiveBaseballContext: vi.fn(),
   resolveBaseballCapabilities: vi.fn(),
   getScoutPacketRoster: vi.fn(),
+  requireRecruitingCoachRoute: vi.fn(),
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
 }));
 
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
+
+// The page now opens with the recruiting module gate. Mocked so the assertions
+// below keep exercising the session-expiry logic they were written for — that
+// logic is still correct and is what the documented restore path needs the day
+// the module flag flips. The gate's own behaviour is asserted separately at the
+// bottom of this file.
+vi.mock('@/lib/baseball/server-route-guards', () => ({
+  requireRecruitingCoachRoute: mocks.requireRecruitingCoachRoute,
+}));
 
 vi.mock('@/lib/baseball/active-context', () => ({
   getActiveBaseballContext: mocks.getActiveBaseballContext,
@@ -73,6 +83,8 @@ const COACH_CONTEXT = {
 describe('ScoutPacketsHubPage — BaseballUnauthorizedError redirects instead of raw-throwing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Module OPEN by default — see the mock note above.
+    mocks.requireRecruitingCoachRoute.mockResolvedValue({});
     mocks.getActiveBaseballContext.mockResolvedValue(COACH_CONTEXT);
     mocks.resolveBaseballCapabilities.mockResolvedValue({
       can_export_reports: true,
@@ -101,5 +113,21 @@ describe('ScoutPacketsHubPage — BaseballUnauthorizedError redirects instead of
     const element = await ScoutPacketsHubPage();
     expect(element).toBeTruthy();
     expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  // This page was the only recruiting surface in the module with no gate of its
+  // own, relying entirely on two lists in middleware.ts continuing to agree.
+  it('consults the recruiting module gate BEFORE reading any data', async () => {
+    mocks.requireRecruitingCoachRoute.mockRejectedValue(
+      new Error('REDIRECT:/baseball/dashboard/command-center'),
+    );
+
+    await expect(ScoutPacketsHubPage()).rejects.toThrow(
+      'REDIRECT:/baseball/dashboard/command-center',
+    );
+    // The point of "before": a withheld module must not spend a capability
+    // lookup or a roster read on a request it is going to refuse.
+    expect(mocks.resolveBaseballCapabilities).not.toHaveBeenCalled();
+    expect(mocks.getScoutPacketRoster).not.toHaveBeenCalled();
   });
 });

@@ -15,6 +15,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { requireRecruitingCoachRoute } from '@/lib/baseball/server-route-guards';
 import {
   listScoutPacketLinks,
   getScoutPacketPreview,
@@ -39,6 +40,18 @@ interface PageProps {
 export default async function CoachScoutPacketPage({ params }: PageProps) {
   const { id } = await params;
   if (!id) notFound();
+
+  // PRODUCT-MODULE gate, first — recruiting is sunset (product-modules.ts).
+  //
+  // This page sat OUTSIDE every existing door. It is not in
+  // MODULE_ROUTE_PREFIXES (the only prefix that would match it is
+  // `/baseball/dashboard/players`, which would take the live roster, profile,
+  // stats and passport routes down with it), it is not in the middleware's
+  // RECRUITING_ROUTES or STAFF_CAPABILITY_ROUTES lists, and unlike all six of
+  // its sibling recruiting pages it carried no guard of its own. The result was
+  // a fully functional share-link minting surface for a withdrawn module,
+  // reachable by anyone who knew or guessed the URL.
+  await requireRecruitingCoachRoute();
 
   const context = await getActiveBaseballContext();
   if (!context) redirect('/baseball/dashboard/command-center');
