@@ -151,28 +151,57 @@ export default async function PlayerPassportPage() {
             className="mb-6"
             ink="team"
             title="Your passport is internal-only"
-            body="College coaches and scouts can't see it yet. Use the Visibility Controls below to set your exposure level when you're ready."
+            body={
+              // The "set your exposure level below" instruction is only
+              // actionable while an exposure tile exists to set. With recruiting
+              // sunset, PassportVisibilityControls withholds the public_profile
+              // and scout_packet tiles entirely, so this copy sent the player
+              // hunting for a control that is not rendered — and framed a
+              // permanent product state ("can't see it YET") as a pending task.
+              isRecruitingEnabled()
+                ? "College coaches and scouts can't see it yet. Use the Visibility Controls below to set your exposure level when you're ready."
+                : 'Your passport stays inside your program — your coaches and staff can open it, nobody outside can. Use the Visibility Controls below to choose what your staff sees.'
+            }
           />
         ) : null}
+        {/* Exposure CONFIRMATION. Only true while there is an outside audience
+            to be exposed to. A player who set public_profile/scout_packet before
+            the sunset still has that value stored, and this banner asserted
+            "available to anyone with the link" / "your program can share your
+            passport with college coaches" — both false once the packet route and
+            public discovery are closed. Telling a player their personal data is
+            public when it is not is the more alarming direction of that error,
+            so state what is actually true instead. */}
         {settings.playerId &&
         (settings.visibilityState === 'public_profile' ||
           settings.visibilityState === 'scout_packet') ? (
-          <EditorsLetter
-            className="mb-6"
-            ink="team"
-            live
-            liveLabel={settings.visibilityState === 'scout_packet' ? 'Scout packet ready' : 'Public'}
-            title={
-              settings.visibilityState === 'scout_packet'
-                ? 'Exposed & scout-packet-ready'
-                : 'Your passport is public'
-            }
-            body={
-              settings.visibilityState === 'scout_packet'
-                ? 'Your program can share your passport with college coaches.'
-                : 'Your profile fields are available to anyone with the link.'
-            }
-          />
+          isRecruitingEnabled() ? (
+            <EditorsLetter
+              className="mb-6"
+              ink="team"
+              live
+              liveLabel={
+                settings.visibilityState === 'scout_packet' ? 'Scout packet ready' : 'Public'
+              }
+              title={
+                settings.visibilityState === 'scout_packet'
+                  ? 'Exposed & scout-packet-ready'
+                  : 'Your passport is public'
+              }
+              body={
+                settings.visibilityState === 'scout_packet'
+                  ? 'Your program can share your passport with college coaches.'
+                  : 'Your profile fields are available to anyone with the link.'
+              }
+            />
+          ) : (
+            <EditorsLetter
+              className="mb-6"
+              ink="team"
+              title="Your passport stays inside your program"
+              body="You set this passport to be shared outside the program earlier. Outside sharing isn't part of BaseballHelm right now, so nobody beyond your coaches and staff can open it. Your setting is kept as-is."
+            />
+          )
         ) : null}
 
         <PlayerPassportFairway model={passport} />

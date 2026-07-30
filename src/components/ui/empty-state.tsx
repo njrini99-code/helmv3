@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   IconUsers, IconCalendar, IconChart, IconMessage, IconGolf,
   IconFlag, IconBook, IconAirplane, IconPlus, IconSearch, IconVideo,
-  IconStar, IconTarget, IconClipboardList,
+  IconClipboardList,
 } from '@/components/icons';
 
 // ============================================================================
@@ -24,8 +24,12 @@ type EmptyStateType =
   | 'announcements'
   | 'travel'
   | 'search'
-  | 'watchlist'
-  | 'pipeline'
+  // 'watchlist' and 'pipeline' were REMOVED with the recruiting sunset
+  // (2026-07-29, product-modules.ts). Both had zero call sites and both shipped
+  // an action button linking to /baseball/dashboard/discover, a route the sunset
+  // closes — so restoring either would have put a dead-end CTA on screen. The
+  // camps preset is kept: it carries no href, so it is inert rather than wrong,
+  // and the camps route itself comes back with the module.
   | 'camps'
   | 'videos'
   | 'generic';
@@ -121,24 +125,6 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
     icon: <IconSearch size={40} />,
     title: 'No matches found',
     description: 'Tweak your search or clear a filter to widen the results.',
-  },
-  watchlist: {
-    icon: <IconStar size={40} />,
-    title: 'Your watchlist is empty',
-    description: 'Star players you are tracking to build your recruiting board.',
-    action: {
-      label: 'Discover Players',
-      href: '/baseball/dashboard/discover',
-    },
-  },
-  pipeline: {
-    icon: <IconTarget size={40} />,
-    title: 'Your pipeline is empty',
-    description: 'Add recruits to follow each prospect through every stage.',
-    action: {
-      label: 'Find Recruits',
-      href: '/baseball/dashboard/discover',
-    },
   },
   camps: {
     icon: <IconCalendar size={40} />,

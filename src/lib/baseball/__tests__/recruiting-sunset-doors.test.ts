@@ -26,7 +26,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BASEBALL_PROGRAM_TYPES, type BaseballProgramType } from '@/lib/types/baseball-settings';
 import { BASEBALL_NAV_REGISTRY, getVisibleBaseballNav, type BaseballNavContext } from '../nav-registry';
-import { isPathnameModuleDisabled, isRecruitingEnabled, MODULE_ROUTE_PREFIXES } from '../product-modules';
+import {
+  isPathnameModuleDisabled,
+  isRecruitingEnabled,
+  moduleForPathname,
+  MODULE_ROUTE_PREFIXES,
+} from '../product-modules';
 import { BASEBALL_CAPABILITY_KEYS, type BaseballCapability } from '../capabilities';
 import { resolveActiveHub } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
 
@@ -217,6 +222,39 @@ describe('recruiting sunset — route layer is closed regardless of role/program
     for (const prefix of MODULE_ROUTE_PREFIXES.recruiting) {
       expect(isPathnameModuleDisabled(prefix), prefix).toBe(true);
       expect(isPathnameModuleDisabled(`${prefix}/some-id`), `${prefix}/some-id`).toBe(true);
+    }
+  });
+
+  // Dynamic-segment module routes. A string prefix cannot describe
+  // /baseball/dashboard/players/<id>/scout-packet: the only prefix that matches
+  // it is /baseball/dashboard/players, and adding that would withdraw the live
+  // roster, profile, stats and passport routes too. MODULE_ROUTE_PATTERNS exists
+  // for exactly this shape, and Scout Packet is why — it was a fully working
+  // share-link minting surface for months of sunset because nothing could name it.
+  it('scout-packet routes under the LIVE players subtree are module-disabled', () => {
+    expect(isPathnameModuleDisabled('/baseball/dashboard/players/abc-123/scout-packet')).toBe(true);
+    expect(
+      isPathnameModuleDisabled('/baseball/dashboard/players/abc-123/scout-packet/preview'),
+    ).toBe(true);
+    expect(moduleForPathname('/baseball/dashboard/players/abc-123/scout-packet')).toBe(
+      'recruiting',
+    );
+  });
+
+  it('the scout-packet pattern does NOT withdraw its live siblings', () => {
+    // The whole reason this is a pattern and not a prefix. If any of these ever
+    // go true, the sunset has started eating the product it was carved out of.
+    for (const live of [
+      '/baseball/dashboard/players',
+      '/baseball/dashboard/players/abc-123',
+      '/baseball/dashboard/players/abc-123/passport',
+      '/baseball/dashboard/players/abc-123/game',
+      '/baseball/dashboard/players/abc-123/stats',
+      // A path that merely CONTAINS the segment name later on must not match the
+      // anchored pattern either.
+      '/baseball/dashboard/roster/abc-123/scout-packet',
+    ]) {
+      expect(isPathnameModuleDisabled(live), live).toBe(false);
     }
   });
 
