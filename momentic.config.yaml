@@ -1,0 +1,40 @@
+name: helm
+include:
+  - "tests/**/*.test.yaml"
+  - "tests/**/*.module.yaml"
+gitMainBranch: main
+fileFormat: v2
+retries: 0
+parallel: 1
+recordVideo: on-fail
+environments:
+  - name: production-qa
+    baseUrl: ${HELM_QA_BASE_URL}
+    envVariables:
+      OWNER_EMAIL: ${HELM_QA_OWNER_EMAIL}
+      OWNER_PASSWORD: ${HELM_QA_OWNER_PASSWORD}
+      HEAD_COACH_EMAIL: ${HELM_QA_HEAD_COACH_EMAIL}
+      HEAD_COACH_PASSWORD: ${HELM_QA_HEAD_COACH_PASSWORD}
+      ASSISTANT_COACH_EMAIL: ${HELM_QA_ASSISTANT_COACH_EMAIL}
+      ASSISTANT_COACH_PASSWORD: ${HELM_QA_ASSISTANT_COACH_PASSWORD}
+      PLAYER_ONE_EMAIL: ${HELM_QA_PLAYER_ONE_EMAIL}
+      PLAYER_ONE_PASSWORD: ${HELM_QA_PLAYER_ONE_PASSWORD}
+      PLAYER_TWO_EMAIL: ${HELM_QA_PLAYER_TWO_EMAIL}
+      PLAYER_TWO_PASSWORD: ${HELM_QA_PLAYER_TWO_PASSWORD}
+      ORG_B_COACH_EMAIL: ${HELM_QA_ORG_B_COACH_EMAIL}
+      ORG_B_COACH_PASSWORD: ${HELM_QA_ORG_B_COACH_PASSWORD}
+browser:
+  defaultBrowserType: Chromium
+  timezone: America/New_York
+  smartWaitingTimeoutMs: 7000
+  pageLoadTimeoutMs: 15000
+  disableSecondaryCacheResolution: true
+ai:
+  useMemory: true
+  failureRecovery: true
+  agentConfig:
+    locator: v4.2
+    assertion: v4.1
+    visual-assertion: v4.0
+    text-extraction: v3.0
+    failure-recovery: v2.1
