@@ -126,26 +126,169 @@ function assertRequiredSeedEnv(): void {
 assertRequiredSeedEnv();
 
 // ---------------------------------------------------------------------------
-// PRODUCTION-TARGET GUARD — now shared, see scripts/lib/seed-target-guard.ts.
+// PRODUCTION-TARGET GUARD.
 //
-// The rules and the reasoning behind them (production is a DENY, not an ALLOW;
-// `.local` is not a loopback suffix; a foreign project must be named back) live
-// in that module's header. It was extracted from this file because
-// scripts/seed-baseball-e2e.ts had NO target guard at all while CI ran it
-// against production on every push — a safety rule only one of its callers
-// enforces is not a safety rule. Extracting it also made the rules executable:
-// scripts/lib/__tests__/seed-target-guard.test.ts now asserts them by calling
-// them instead of grepping this file for the string "HELM_PROD_PROJECT_REF".
+// `--confirm` answers "did you mean to write?". It does NOT answer "did you
+// mean to write HERE" — and that second question is the dangerous one. This
+// script reads its target from NEXT_PUBLIC_SUPABASE_URL, so a stale .env.local,
+// a copied shell, or a `vercel env pull` from the wrong project silently
+// redirects a full demo seed (10 auth users, a fake "Demo University" org, a
+// password force-reset, a login_attempts DELETE) into someone else's database.
+//
+// ⚠️ THE PRODUCTION REF IS A DENY, NOT AN ALLOW. An earlier version of this
+// guard treated `qmnssrrolpinvwjjnufo` as the expected demo project and let it
+// through on `--confirm` alone. That ref is PRODUCTION — the same one
+// `.env.local` points at, and the same one scripts/seed-baseball-stats.mjs:85
+// and scripts/seed-baseball-box-scores.mjs:36 both REFUSE by name. A guard
+// that allowlists the one target it exists to protect is worse than no guard,
+// because it reads as protection.
+//
+// The rules, in order:
+//   * A local stack (127.0.0.1 / localhost / an explicit .local host on the
+//     loopback set) -> allowed. Nothing outside the machine can be hurt.
+//   * PRODUCTION -> refused unless BOTH --confirm AND --allow-prod are given.
+//     Same escape hatch, same name, as the sibling seed scripts.
+//   * ANY other project -> refused unless the operator types that project's
+//     own ref back via --allow-project=<ref>. Naming it is the point: you
+//     cannot hit a foreign project by accident, only on purpose.
+//
+// The ref below is NOT a credential. It is the public sub-domain of
+// NEXT_PUBLIC_SUPABASE_URL, a value every browser that loads the app already
+// has, committed for the same reason the sibling scripts commit it: a guard
+// that lives in an env var is absent exactly when the env is wrong.
 // ---------------------------------------------------------------------------
-import {
-  assertWriteTargetAllowed,
-  describeSeedTarget,
-} from './lib/seed-target-guard';
+const HELM_PROD_PROJECT_REF = 'qmnssrrolpinvwjjnufo';
+
+/**
+ * Hostnames that are unambiguously this machine.
+ *
+ * `.local` is NOT accepted as a suffix. `https://totally-not-ours.local` is a
+ * routable mDNS name on the operator's LAN, not loopback — trusting the suffix
+ * meant any host on the network could be seeded silently.
+ */
+const LOCAL_SUPABASE_HOSTS = new Set([
+  'localhost',
+  '127.0.0.1',
+  '[::1]',
+  '::1',
+  'host.docker.internal',
+  'kong',
+  'localhost.local',
+]);
+
+/** Domains under which the first hostname label really is a Supabase project ref. */
+const SUPABASE_DOMAINS = ['.supabase.co', '.supabase.in', '.supabase.net'];
+
+interface SeedTarget {
+  host: string;
+  /** Supabase project ref (first label), '' when the host is local or unrecognised. */
+  ref: string;
+  isLocal: boolean;
+}
+
+function describeSeedTarget(rawUrl: string): SeedTarget {
+  let host: string;
+  try {
+    host = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    // An unparseable URL cannot be proven safe, so it is treated as foreign.
+    return { host: rawUrl, ref: '', isLocal: false };
+  }
+  if (LOCAL_SUPABASE_HOSTS.has(host)) {
+    return { host, ref: '', isLocal: true };
+  }
+  // The first label is only a project ref if the host is actually a Supabase
+  // domain. Without this check `https://<prodref>.example.invalid` resolved to
+  // the production ref and was waved through — a typo-squat or an internal
+  // proxy sharing the first label was trusted on the strength of a substring.
+  const domain = SUPABASE_DOMAINS.find((d) => host.endsWith(d));
+  if (!domain) {
+    return { host, ref: '', isLocal: false };
+  }
+  return { host, ref: host.slice(0, host.length - domain.length), isLocal: false };
+}
+
+function hasFlag(flag: string): boolean {
+  return process.argv.includes(flag);
+}
+
+function readFlagValue(flag: string): string {
+  const prefix = `${flag}=`;
+  const hit = process.argv.find((a) => a.startsWith(prefix));
+  return hit ? hit.slice(prefix.length).trim() : '';
+}
 
 const DESTRUCTIVE_WARNING = [
   'This script creates a fake "Demo University" org and 10 auth users,',
   'force-resets two passwords, and deletes login_attempts rows.',
 ].join('\n');
+
+/** Exits non-zero unless this run is allowed to WRITE to `target`. */
+function assertWriteTargetAllowed(target: SeedTarget): void {
+  if (target.isLocal) return;
+
+  if (target.ref === HELM_PROD_PROJECT_REF) {
+    if (hasFlag('--allow-prod')) {
+      console.warn(
+        `  ⚠ SEEDING PRODUCTION (${target.ref}) — allowed only because --allow-prod was passed.`,
+      );
+      return;
+    }
+    console.error(
+      [
+        '',
+        'REFUSING TO SEED — the target Supabase project is PRODUCTION.',
+        '',
+        `  NEXT_PUBLIC_SUPABASE_URL host : ${target.host}`,
+        `  resolved project ref          : ${target.ref}`,
+        '',
+        DESTRUCTIVE_WARNING,
+        '',
+        'Seed a local stack instead (supabase start), or, if you genuinely mean',
+        'production, say so explicitly:',
+        '  ... scripts/seed-baseball-demo.ts --confirm --allow-prod',
+        '',
+      ].join('\n'),
+    );
+    process.exit(1);
+  }
+
+  const acknowledged =
+    readFlagValue('--allow-project') ||
+    (process.env.BASEBALL_DEMO_SEED_ALLOW_PROJECT_REF ?? '').trim();
+
+  if (target.ref && acknowledged && acknowledged === target.ref) {
+    console.warn(
+      `  ⚠ writing to Supabase project "${target.ref}" — allowed only because you named it explicitly.`,
+    );
+    return;
+  }
+
+  console.error(
+    [
+      '',
+      'REFUSING TO SEED — the target is neither a local stack nor a project you named.',
+      '',
+      `  NEXT_PUBLIC_SUPABASE_URL host : ${target.host}`,
+      `  resolved project ref          : ${target.ref || '(not a recognised Supabase host)'}`,
+      '',
+      DESTRUCTIVE_WARNING,
+      '',
+      target.ref
+        ? [
+            'If this really is the project you want, name it back to the script:',
+            `  ... scripts/seed-baseball-demo.ts --confirm --allow-project=${target.ref}`,
+          ].join('\n')
+        : [
+            'The host is not a *.supabase.co project, so no ref could be resolved and',
+            'nothing can be verified about it. Point NEXT_PUBLIC_SUPABASE_URL at a local',
+            'stack or a real Supabase project.',
+          ].join('\n'),
+      '',
+    ].join('\n'),
+  );
+  process.exit(1);
+}
 
 import type { BaseballPlayerTimelineEventInsert } from '../src/lib/types/baseball-extended';
 import type { BaseballEventAcknowledgementInsert } from '../src/lib/types/baseball-acknowledgements';
@@ -376,13 +519,7 @@ async function main() {
   console.log(
     `Target Supabase: ${target.host}${target.isLocal ? ' (local stack)' : ` (project ${target.ref || 'unresolvable'})`}`,
   );
-  if (!DRY) {
-    assertWriteTargetAllowed({
-      url,
-      destructiveWarning: DESTRUCTIVE_WARNING,
-      scriptPath: 'scripts/seed-baseball-demo.ts',
-    });
-  }
+  if (!DRY) assertWriteTargetAllowed(target);
 
   // `global.fetch` carries the transient-retry wrapper, so EVERY request this
   // client makes — auth admin, PostgREST, storage — survives a Supabase blip
@@ -458,6 +595,72 @@ async function main() {
     description: 'BaseballHelm demo team — seeded across all Phase-1 surfaces.',
     created_by: COACH_ID,
   }]);
+
+  // --- 1b-ii. The coach's STAFF MEMBERSHIP on that team --------------------
+  //
+  // Without this row the demo coach is a coach who belongs to no team, and the
+  // whole dashboard is unreachable: `getActiveBaseballContext`
+  // (src/lib/baseball/active-context.ts:83) resolves the active team by reading
+  // `baseball_team_coach_staff`, and with no row `getBaseballNavContext` returns
+  // null. `DashboardSessionGuard` then sits on `BaseballDashboardBootstrap`
+  // ("Opening your command center") and redirects to /baseball/coach-onboarding —
+  // so every authenticated coach surface renders no heading at all.
+  //
+  // WHY IT WAS MISSING FOR A MONTH. Production HAS this row
+  // (`fb71679b-d02d-4504-b389-ee24f1a0dfbc`), created 2026-06-25 13:30 — a full
+  // day AFTER the coach row this seed writes (2026-06-24 19:26). It was added
+  // out-of-band, by hand, and the seed never learned to create it. That stayed
+  // invisible because the seed only ever ran against production, where the row
+  // already existed, so `ensureAuthUser` and every downstream read found a
+  // complete graph. The gap surfaced the first time the seed ran against a fresh
+  // database (the local-stack CI rewire): auth succeeded, the anonymous specs
+  // passed, and every authenticated page failed to render.
+  //
+  // Values are copied from that production row rather than invented: role
+  // head_coach, is_primary, is_head_coach, status active, title 'Head Coach',
+  // `capabilities` left as the `{}` default, and all 18 `can_*` grants true.
+  // A head coach with a partial grant set would make the demo silently
+  // inconsistent with what a real head coach sees.
+  //
+  // ⚠️ CONFLICT TARGET IS `team_id,coach_id`, NOT `id` — the one place in this
+  // seed where that matters. The table carries
+  // `UNIQUE (team_id, coach_id)` alongside its `id` primary key, and
+  // production's existing row has a RANDOM id (uuid_generate_v4, since it was
+  // inserted by hand) rather than this seed's deterministic one. Conflicting on
+  // `id` would therefore try to INSERT a second row for the same
+  // (team, coach) against production and fail the unique constraint — which
+  // `playwright.yml` would hit on every push to `main`. Conflicting on the
+  // unique pair updates the row that is actually there, whatever its id, and
+  // creates one where there is none. No `id` is supplied at all, so the column
+  // default fills it on insert and the existing value is preserved on update.
+  await upsert('baseball_team_coach_staff', [{
+    team_id: TEAM_ID,
+    coach_id: COACH_ID,
+    role: 'head_coach',
+    is_primary: true,
+    is_head_coach: true,
+    status: 'active',
+    title: 'Head Coach',
+    visible_to_players: true,
+    can_manage_roster: true,
+    can_manage_practice: true,
+    can_manage_lifting: true,
+    can_view_academics: true,
+    can_manage_imports: true,
+    can_manage_stats: true,
+    can_invite_staff: true,
+    can_manage_settings: true,
+    can_view_medical: true,
+    can_message_team: true,
+    can_manage_calendar: true,
+    can_manage_documents: true,
+    can_manage_lineups: true,
+    can_view_readiness: true,
+    can_modify_availability: true,
+    can_view_private_notes: true,
+    can_message_players: true,
+    can_export_reports: true,
+  }], 'team_id,coach_id');
 
   // --- 1c. Activate demo mode on the seeded team's settings document ------
   // Issue #392: makes the dormant `demo_mode_enabled` flag explicit/discoverable
