@@ -1,20 +1,160 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → **2026-07-29 20:30 EDT** (the window was originally 10:45;
-an afternoon session continued it, then an evening one — there are now **two**
-addenda below, newest first, and both supersede claims in the body). Branch
-`baseball/overnight-completion`, PR
-[#1092](https://github.com/njrini99-code/helmv3/pull/1092) — **merged to
-`main` and deployed to production**. Full unit suite green on the merged
-tree: **877 files, 8,359 tests, 0 failures**; every CI check green including
-`BaseballHelm authenticated smoke`, which passed for the first time this run
-once the database was restored._
+_2026-07-28 23:35 → **2026-07-30 02:30 EDT** (the window was originally 10:45;
+afternoon, evening and overnight sessions continued it — there are now **three**
+addenda below, newest first, and each supersedes claims in the body and in its
+predecessors). Work now lands on **`main` via PRs**, not on
+`baseball/overnight-completion` — that branch is **superseded and must not be
+merged**; see Addendum 3 and the stop box at the top of `RESUME_INSTRUCTIONS.md`.
+Full unit suite green on `main`: **885 files, 8,447 tests, 0 failures**, up from
+843 / 7,964 at mission start — the suite has only grown, and no baseline test was
+flipped to accommodate a change._
+
+_**All six cross-tenant P0s are now closed in production.** The last one,
+`baseball_coaches`, went in on 2026-07-30 — see Addendum 3._
 
 ---
 
-## ⚡ ADDENDUM 2 — the evening of 2026-07-29, 19:30 → 20:30 EDT (newest; read first)
+## ⚡ ADDENDUM 3 — the night of 2026-07-29 → 30, 20:30 EDT → 02:30 EDT (newest; read first)
 
-_Both addenda supersede the body. This one supersedes the first where they differ._
+_Three addenda now supersede the body, newest first. Where they disagree, the newer
+one wins._
+
+### The headline: the last cross-tenant P0 is closed in production
+
+`baseball_coaches` — any coach could read every coach's email — is **fixed and
+live** (`20260729200000`, applied on the owner's explicit instruction). It had been
+held as "a product decision plus a 75-call-site audit, not a policy swap." The
+audit answered the product question by itself: of 74 reads, 66 are self-scoped, 2
+are INSERTs, 1 uses the service-role client, and the last 5 are same-org by
+construction. **Nothing needed a cross-org read**, so there was no decision left.
+
+Verified by role impersonation as **all ten** live coach accounts: `sees_self = 1`
+for every one, nobody sees outside their own org, and the NULL-`organization_id`
+internal account sees only itself — exactly as the pre-apply warning predicted.
+
+**No unclosed P0 remains in this document.** `golf_coaches` is still open and still
+out of scope.
+
+In the same apply window, the golf lane's `20260728030000` landed: **4403ms →
+323ms** (13.6×) on the shot-detail read path, with row counts **identical to the
+pre-change control**, and the read/write asymmetry it was designed for holding — a
+same-org coach reads another player's shot detail (2211 rows) and **cannot** write
+it.
+
+### Complete and verified
+
+| What | PR | Evidence |
+|---|---|---|
+| The nested-interactive guard could not see the bug it was written for (`<Button>` inside `<Button>`) | #1122 | Extended to component-level nesting with `asChild` awareness; ratchet keyed on file+shape, not line number |
+| Three **severe** hydration-crash nestings — invalid HTML the parser splits | #1126 | Inner control made a sibling in each; proven non-vacuous by re-adding a fixed entry and watching the stale-entry test fail |
+| `asChild` added to `ui/button`; 17 link-in-button sites unwrapped; **ratchet entirely empty** | #1127 | 21 sites / 20 files; re-wrapping one makes the guard report it by file:line |
+| main went red at 8pm — two "today" fixtures anchored to UTC | #1123 | Time-independence checked across 4 timezones; originals fail 3/5 under Pacific/Midway |
+| Mission docs recorded both migrations as pending after they were applied | #1124 | — |
+| The resume doc's first command pointed at a branch that would **revert production** | #1128 | Two-dot diff: `-21,617 / +1,070`, every file branch-older-than-main |
+
+### The most valuable thing found, and it was found by execution
+
+Pointing the required smoke gate at a local Supabase stack (#1125) surfaced a hole
+that had been open for months and was **invisible against production**:
+
+> **The `on_auth_user_created` trigger on `auth.users` is in no tracked migration.**
+
+Production has it. The active baseline `20260527000000_prod_public_baseline.sql` is
+a **public-schema-only** dump — its first DDL is `CREATE SCHEMA IF NOT EXISTS
+"public"` and it emits nothing for `auth` — so it captured
+`public.handle_new_user()`, a public function, but **structurally could not**
+capture a trigger on an auth table. The function has been tracked all along; the
+thing that fires it has not.
+
+Consequence: on any database built from `supabase/migrations/` — `supabase start`,
+a Supabase preview branch, a restore drill — inserting into `auth.users` did **not**
+create the `public.users` row. Signup was silently broken there, and every FK into
+`public.users` failed.
+
+Two reasons nothing caught it:
+
+- **The pgTAP suites run against a database that already had the defect.** They
+  assert behaviour *given* a schema; the schema itself was what was missing.
+- **The demo seed has run on every PR for months without exercising its own
+  user-creation path.** Against production those demo users already existed, so
+  `ensureAuthUser` always took its lookup branch. The code that creates a user had
+  never once executed in CI.
+
+The migration is authored as a **conditional create** (checks `pg_trigger`, no
+`DROP`), so applying it to production cannot change production. **Not applied** —
+production already has the object. A source-text test
+(`src/test/schema/auth-schema-objects-tracked.test.ts`) now asserts the migration
+*set* is complete, because a database test cannot catch a missing schema object: it
+runs against the database that is missing it.
+
+### Production-usable, but not proven
+
+**#1125 itself** — the required gate no longer seeds production on every PR. The
+composite action, credential export and loopback assertion are all green in CI;
+the seed step is fixed and re-running. Two things ride on that run rather than on
+local evidence, because **this machine has no Docker** and `supabase start` cannot
+be run here: whether the seed completes against a fresh local schema, and whether
+the smoke suite passes against it. Stated plainly rather than implied.
+
+Also in #1125, found while doing it: **`scripts/seed-baseball-e2e.ts` had no target
+guard at all** while `playwright.yml` ran it against production on every push to
+`main`, creating auth users and DELETEing camp registrations. The demo seed has
+refused unnamed non-local targets since `f7ffa28b9` — but the rule was ~130 lines
+*inline in that one file*, so its sibling never got it. A safety rule only one of
+its callers enforces is not a safety rule. It is now
+`scripts/lib/seed-target-guard.ts`, used by both, with **21 executable** assertions
+replacing a test that only grepped for the string `HELM_PROD_PROJECT_REF`.
+
+### Blocked on the owner, not on work
+
+**The required check named `all` is ambiguous.** `ci.yml` and `review-gate.yml`
+both define a job called `all`, and `all` is one of only three required contexts.
+PR #1125 reported `all → success` on its head commit while the
+`BaseballHelm authenticated smoke` job that CI's `all` *needs* was still
+`in_progress` — the green was Review Gate's. That smoke job then **failed**. This
+is very likely how a PR with failing unit tests merged earlier in the run.
+
+Not fixed unilaterally, and the reason is specific: renaming a job changes its
+check-run name, so branch protection would then wait forever for a context named
+`all` that no longer exists — **blocking every PR**. The rename and the
+`required_status_checks` update have to land together, and the second half needs
+repo-settings access.
+
+### Still out of scope / still open
+
+- `playwright.yml`'s `e2e` job **still seeds production**, deliberately: it runs the
+  full chromium suite including golf specs that authenticate against real golf
+  data, and a job has one `NEXT_PUBLIC_SUPABASE_URL`. Rehoming it needs a golf
+  local-stack fixture first. It runs on push to `main` and manual dispatch, never
+  on a PR. Its seed steps now carry an explicit `--allow-prod` so the write is
+  stated in the workflow file rather than implied by an env block.
+- The elite stat event model (P2) still needs the owner's call: build the ingest, or
+  remove the read surfaces too. ~20 live readers, zero write paths — deleting the
+  tables alone breaks production.
+- `process-sequences` remains off by design; 1,188 past-due enrollments would send
+  real email.
+- **The static nesting walk cannot see runtime nesting** — a component that
+  *renders* a button, placed inside a `<Button>`. Open, and not addressed by #1127.
+- **None of the 20 nesting surfaces was visually verified in a browser.** Several
+  are behind auth, two are sunset recruiting surfaces. The safety argument is
+  structural (the same class string moves onto the same visual element; the one site
+  that could not be done that way uses a zero-layout-impact overlay), not
+  observational.
+
+### Repo state
+
+37 stale remote branches deleted (SHAs recorded first) and 41 stale issues closed,
+on the owner's instruction. GitHub now carries `main` plus only in-flight PR
+branches. **The deploy is deliberately held** — `main` does not auto-deploy, so
+tonight's work is on `main` and not in production except for the two migrations,
+which were applied directly.
+
+---
+
+## ⚡ ADDENDUM 2 — the evening of 2026-07-29, 19:30 → 20:30 EDT
+
+_Superseded by Addendum 3 above where they differ._
 
 The evening was not BaseballHelm feature work — the owner redirected it to the golf
 CRM, then to getting the repo's branches, PRs and issues into a clean state. What
