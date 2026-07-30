@@ -50,11 +50,19 @@ Checked and NOT a bug, recorded so nobody else chases it: the action reads
 `access.authorized` while the shared helper returns `{ allowed }`. A local wrapper at
 `intelligence-dashboard.ts:124` performs the translation.
 
-## Plan 02 deferred — fake-supabase migration
+## ~~Plan 02 deferred — fake-supabase migration~~ RESOLVED 2026-07-30
 
-Single-chain mock can't return different shapes for select vs delete in the same call. Migrate the file to `src/test/fixtures/fake-supabase.ts` then un-skip.
+~~Single-chain mock can't return different shapes for select vs delete in the same call. Migrate the file to `src/test/fixtures/fake-supabase.ts` then un-skip.~~
 
-- `src/app/golf/actions/__tests__/travel.test.ts` — `returns error when delete fails` (under `deleteGolfTravelItinerary`)
+- ~~`src/app/golf/actions/__tests__/travel.test.ts` — `returns error when delete fails` (under `deleteGolfTravelItinerary`)~~
+  — **RESOLVED without the migration.** The blocker was real but the stated remedy
+  was heavier than the requirement: what the spec needed was *per-operation results*,
+  not that specific fixture. `createChainableMock` in that file now takes an optional
+  `perOperation` map (~15 lines), so one table can return a found row for `select`
+  while `delete` fails. Migrating 447 lines and 32 specs to a different fixture would
+  have risked the 31 that already pass in order to enable one.
+  Also added a paired negative — `reports not-found before attempting a delete` — so
+  the error path can only be reached *after* the existence check succeeds.
 
 ## User WIP — a11y / design-system sweep (in-progress on `main`)
 
