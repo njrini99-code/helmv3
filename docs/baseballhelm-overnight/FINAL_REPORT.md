@@ -88,14 +88,39 @@ production already has the object. A source-text test
 *set* is complete, because a database test cannot catch a missing schema object: it
 runs against the database that is missing it.
 
-### Production-usable, but not proven
+### Complete and proven — #1125 landed
 
-**#1125 itself** — the required gate no longer seeds production on every PR. The
-composite action, credential export and loopback assertion are all green in CI;
-the seed step is fixed and re-running. Two things ride on that run rather than on
-local evidence, because **this machine has no Docker** and `supabase start` cannot
-be run here: whether the seed completes against a fresh local schema, and whether
-the smoke suite passes against it. Stated plainly rather than implied.
+_This section previously read "Production-usable, but not proven", because the run
+that would settle it had not finished. It has. Corrected in place rather than left
+standing._
+
+**#1125 is MERGED.** The required gate no longer seeds production on any PR: it
+stands up a throwaway Supabase stack, seeds that, and runs **18 tests in 1.3
+minutes with all 16 authenticated renders passing** — read from the run log, not
+inferred from a green tick. The two things that rode on that run (does the seed
+complete against a fresh schema; does the smoke pass against it) are both answered
+yes.
+
+**It took five CI rounds, and that is the part worth keeping.** The first three
+diagnoses were inference. The two blockers that actually mattered were both
+invisible to the assertion message — which said only `element(s) not found` on a
+heading — and both were sitting in the Playwright trace's console the whole time:
+
+1. **Our own CSP** refused every `supabase-js` call to the local stack
+   (`connect-src` allowed `ws://127.0.0.1:*` for HMR but no `http://` loopback
+   origin). It presented as a hang, so the dashboard sat on "Opening your command
+   center" forever. It also means `supabase start` + `npm run dev` had **never**
+   been able to authenticate in a browser.
+2. **An infinitely-recursive RLS policy** that the migrations create and production
+   does not have.
+
+The lesson is not "read traces sometimes" — it is that a hang has no useful
+assertion message *by construction*, so when a UI test times out waiting for an
+element, the browser's own error stream is the first place to look, not the last.
+
+**Side effect worth more than the CI fix itself:** three of these seven defects
+made the local stack unusable, which is plausibly why nobody used it, which is why
+the other four survived for months. Fixing the gate fixed the feedback loop.
 
 Also in #1125, found while doing it: **`scripts/seed-baseball-e2e.ts` had no target
 guard at all** while `playwright.yml` ran it against production on every push to
@@ -107,6 +132,27 @@ its callers enforces is not a safety rule. It is now
 replacing a test that only grepped for the string `HELM_PROD_PROJECT_REF`.
 
 ### Blocked on the owner, not on work
+
+_Five decisions now, not one. Each is filed with its evidence in `ISSUE_LEDGER.md`
+so the choice is a reading rather than an investigation. None was made
+unilaterally, and the reason is the same in every case: they are product, privacy
+or repo-settings calls, not mechanical repairs._
+
+| Decision | Why it is not mine |
+|---|---|
+| Rename one of the two `all` jobs | The rename and the `required_status_checks` update must land together — apart, protection waits forever for a context that no longer exists and **every PR blocks** |
+| `golf-attachments` / `expense-receipts` (N.5) | Needs NEW RLS designed for a shared production database. Hand-written RLS here has already produced two recursion cycles and five anon-callable functions **in this run alone** |
+| PostHog's CSP origin (N.7) | Allowing a third-party analytics origin is a decision about sending user data off-platform |
+| `baseball_team_coach_staff_select` (N.9) | Whether players may see their team's coaching staff is a product rule |
+| Elite stat event model | Build the ingest, or remove the ~20 read surfaces too — deleting the tables alone breaks production |
+
+**Three migrations are authored and deliberately unapplied** (`20260730020000`
+auth trigger, `20260730030000` avatars bucket, `20260730040000` RLS recursion
+repair). Each is written so applying it to production **cannot change
+production** — conditional creates and guarded replaces, never a bare `DROP`. All
+three are proven to work on a fresh database, because #1125's green run applied
+them via `supabase start` and passed the smoke against them. What is unproven is
+only their effect on production, which is the decision being left open.
 
 **The required check named `all` is ambiguous.** `ci.yml` and `review-gate.yml`
 both define a job called `all`, and `all` is one of only three required contexts.
@@ -125,10 +171,36 @@ repo-settings access.
 
 - `playwright.yml`'s `e2e` job **still seeds production**, deliberately: it runs the
   full chromium suite including golf specs that authenticate against real golf
-  data, and a job has one `NEXT_PUBLIC_SUPABASE_URL`. Rehoming it needs a golf
-  local-stack fixture first. It runs on push to `main` and manual dispatch, never
-  on a PR. Its seed steps now carry an explicit `--allow-prod` so the write is
-  stated in the workflow file rather than implied by an env block.
+  data, and a job has one `NEXT_PUBLIC_SUPABASE_URL`. It runs on push to `main` and
+  manual dispatch, never on a PR. Its seed steps now carry an explicit
+  `--allow-prod` so the write is stated in the workflow file rather than implied by
+  an env block.
+
+  **Scoped 2026-07-30, and the shape is not what "needs a golf fixture first"
+  implied.** All four golf specs — `golf-dashboard` (7 tests), `golf-round` (7),
+  `golf-qualifier` (6), `course-library` (6) — are gated on `E2E_GOLF_EMAIL` /
+  `E2E_GOLF_PASSWORD` and **`test.skip` themselves when those are unset**. So there
+  are three real options, not one blocked path:
+
+  1. **Repoint the job at a local stack today and set no golf credentials.** The
+     baseball half works (proven by #1125) and the **26 golf tests silently skip**.
+     This gets `playwright.yml` off production immediately — but a silent coverage
+     loss is exactly the failure mode this run has been fixing everywhere else, so
+     it should not be done quietly, if at all.
+  2. **Split the job**: baseball against a local stack, golf against production.
+     Costs a second `npm ci` + build; keeps all coverage; no new fixture needed.
+     Probably the right answer.
+  3. **Write a golf local-stack seed** so option 1 loses nothing. There is
+     **no golf seed script in the repo at all** (`scripts/` has only
+     `seed:baseball:*`), so this is a new script covering a coach, a player, a
+     team, and whatever `golf_rounds` / `golf_qualifiers` / course-library
+     fixtures those four specs assert. Real work, and the only option that ends
+     with nothing in CI writing to production.
+
+  Not started, and deliberately not half-started: option 3 is a new seed for a
+  product surface whose fixtures I have not read, and an unattended half-written
+  seed is worse than none. Recorded so the next session picks an option rather than
+  re-deriving them.
 - The elite stat event model (P2) still needs the owner's call: build the ingest, or
   remove the read surfaces too. ~20 live readers, zero write paths — deleting the
   tables alone breaks production.
