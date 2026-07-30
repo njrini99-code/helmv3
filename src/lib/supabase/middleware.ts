@@ -14,6 +14,10 @@ import {
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
+import {
+  isBounceWhenAuthedRoute,
+  resolvePostAuthDestination,
+} from '@/lib/auth/post-auth-destination';
 import { isDemoMetadataUser, type ProbedUser } from '@/lib/demo/gate-probe';
 import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { isBaseballDemoCoachEmail } from '@/lib/demo/baseball-config.server';
@@ -84,6 +88,39 @@ function isDemoContextUser(user: ProbedUser, sport: 'baseball' | 'golf' | 'lifti
   return sport === 'golf'
     ? isDemoCoachEmail(user.email)
     : isBaseballDemoCoachEmail(user.email);
+}
+
+/**
+ * The single definition of "this session has been idle too long".
+ *
+ * Extracted because TWO decisions now depend on it and they must never drift:
+ * the idle-reauth gate further down, and the authed-user-on-a-sign-in-page
+ * bounce. Getting the second one wrong is a redirect loop rather than a cosmetic
+ * bug — an idle session bounced to the dashboard gets bounced straight back to
+ * login, on the one page that could have fixed it (see #730).
+ *
+ * `sessionYoungerThanWindow` is load-bearing and easy to drop when reimplementing
+ * this: sb_last_activity is a 30-day cookie that survives sign-out and sign-in,
+ * so a stale marker from a PREVIOUS session otherwise reads as "idle" minutes
+ * after a fresh login (2026-07-20 incident: repeated "signed out after ~2
+ * minutes" on the admin CRM).
+ */
+function isIdleExpiredSession(args: {
+  user: ProbedUser & { last_sign_in_at?: string | null };
+  sport: 'baseball' | 'golf' | 'lifting' | null;
+  lastActivity: number | null;
+  now: number;
+}): boolean {
+  const { user, sport, lastActivity, now } = args;
+  // Demo visitors get the longer window so a prospect can evaluate the app,
+  // switch to another task, and return without being bounced to the gate.
+  const idleTimeoutMs = isDemoContextUser(user, sport)
+    ? DEMO_SESSION_IDLE_TIMEOUT_MS
+    : SESSION_IDLE_TIMEOUT_MS;
+  const lastSignInMs = user.last_sign_in_at ? Date.parse(user.last_sign_in_at) : NaN;
+  const sessionYoungerThanWindow =
+    Number.isFinite(lastSignInMs) && now - lastSignInMs < idleTimeoutMs;
+  return !sessionYoungerThanWindow && isSessionIdleExpired(lastActivity, now, idleTimeoutMs);
 }
 
 /**
@@ -600,6 +637,48 @@ export async function updateSession(request: NextRequest) {
   }
   // 'pass' and 'not-admin-path' fall through to the existing logic.
 
+  // ── Signed-in user on a sign-in page: decide it HERE, before any HTML ─────
+  //
+  // This is the fix for the "login screen flashes then disappears" jitter.
+  // `/golf/login` is a client component: it painted the scene, ran the brand
+  // lockup's 0.6s entrance and the form card's 0.7s entrance, and only then did
+  // an async `getUserResilient` resolve and `router.replace` the user away. The
+  // session was knowable here, one hop earlier, for free — we already have
+  // `user` in hand from the call above. Deciding it in the browser meant
+  // rendering a screen we already knew was wrong, then visibly correcting it.
+  //
+  // `!degraded` is load-bearing. A degraded result is a LOCAL session whose
+  // signature the auth server never verified (see resilient-get-user.ts). If
+  // that session is in fact dead and we bounce it to the dashboard, the
+  // dashboard's own gate bounces it straight back here — an infinite redirect
+  // on exactly the page the user needs to recover. Unverified sessions keep
+  // seeing the sign-in form, which is the safe failure.
+  //
+  // The `dest !== pathname` guard is belt-and-braces against the same loop:
+  // never answer a request for X with a redirect to X.
+  // The idle check is NOT optional here, and reordering cannot replace it:
+  // `isPublicRoute` deliberately marks every (auth) route public, so the
+  // idle-reauth gate below never runs on /login at all. An idle session
+  // therefore reaches this point looking perfectly authenticated. Bounce it and
+  // the dashboard's own gate bounces it right back — an infinite loop on the
+  // page that exists to let them sign in again (#730). Two of the existing
+  // idle-timeout tests catch precisely this.
+  if (user && !degraded && isBounceWhenAuthedRoute(pathname, sport)) {
+    const stillActive = !isIdleExpiredSession({
+      user,
+      sport,
+      lastActivity: parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value),
+      now: Date.now(),
+    });
+    const dest = resolvePostAuthDestination({
+      sport,
+      returnTo: request.nextUrl.searchParams.get('returnTo'),
+    });
+    if (stillActive && dest !== pathname) {
+      return NextResponse.redirect(new URL(dest, request.url));
+    }
+  }
+
   // Dashboard routes require full authentication (not onboarding routes)
   const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||
                            pathname.startsWith('/golf/dashboard') ||
@@ -675,22 +754,11 @@ export async function updateSession(request: NextRequest) {
   if (user && isIdleGatedRoute) {
     const lastActivity = parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value);
     const now = Date.now();
-    // Demo visitors get the longer window so a prospect can evaluate the app,
-    // switch to another task, and return without being bounced to the gate.
-    const idleTimeoutMs = isDemoContextUser(user, sport)
-      ? DEMO_SESSION_IDLE_TIMEOUT_MS
-      : SESSION_IDLE_TIMEOUT_MS;
 
-    // A session YOUNGER than its idle window can never be idle-expired — the
-    // sb_last_activity marker is a 30-day cookie that survives sign-out and
-    // sign-in, so without this guard a stale marker from a PREVIOUS session
-    // bounced users to login minutes after a fresh sign-in (2026-07-20
-    // incident: repeated "signed out after ~2 minutes" on the admin CRM).
-    const lastSignInMs = user.last_sign_in_at ? Date.parse(user.last_sign_in_at) : NaN;
-    const sessionYoungerThanWindow =
-      Number.isFinite(lastSignInMs) && now - lastSignInMs < idleTimeoutMs;
-
-    if (!sessionYoungerThanWindow && isSessionIdleExpired(lastActivity, now, idleTimeoutMs)) {
+    // Demo-window selection and the stale-marker guard now live in
+    // `isIdleExpiredSession` so the sign-in-page bounce above evaluates
+    // idleness identically. Two call sites, one definition.
+    if (isIdleExpiredSession({ user, sport, lastActivity, now })) {
       try {
         // Local scope: clear cookies without a GoTrue round-trip — middleware
         // must stay fast and must not depend on auth-server reachability.

@@ -76,7 +76,7 @@ import { SequenceBuilder } from './components/sequences/SequenceBuilder';
 import { TemplateManager } from './components/TemplateManager';
 import { AutomationsList } from './components/automations/AutomationsList';
 import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAdminPanel';
-import type { CRMEvent } from './components/CalendarView';
+import { CalendarView, type CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import {
   getCoachSequenceEnrollmentStatuses,
@@ -1791,6 +1791,31 @@ export default function CRMPage() {
               onCoachClick={(coachId) => {
                 const coach = allCoaches.find((c) => c.id === coachId);
                 if (coach) handleCoachClick(coach);
+              }}
+            />
+          )}
+
+          {/* ── Calendar Tab ── the schedule surface for crm_events.
+
+              The CRM had no calendar before this. Events could be created
+              (QuickActionsPanel inserts them from a coach row) and read one coach
+              at a time (getCoachTimeline unions them as source='crm_event'), but
+              nothing rendered the schedule itself, and the two event modals below
+              — though mounted — had no external opener: on main the only code
+              setting showScheduleModal/selectedEvent lived inside those modals.
+
+              Clicking an event opens the same EventDetailModal the rest of the
+              CRM uses; clicking an empty slot opens ScheduleEventModal pre-filled
+              with that date. This is what makes both modals reachable. It reuses
+              the existing state rather than adding a parallel path — `refreshData`
+              is already the onSuccess for both, and CalendarView refetches on its
+              own range changes. */}
+          {activeTab === 'calendar' && (
+            <CalendarView
+              onEventClick={(event) => setSelectedEvent(event)}
+              onSlotClick={(date) => {
+                setScheduleModalDate(date);
+                setShowScheduleModal(true);
               }}
             />
           )}

@@ -29,7 +29,10 @@ export type TimelineIconKey =
   | 'IconMail'
   | 'IconCalendar'
   | 'IconFileText'
-  | 'IconCheckCircle2';
+  | 'IconCheckCircle2'
+  // Distinct from contact_log's IconMessageSquare on purpose — an inbound reply
+  // must not look like our own logged outreach at a glance.
+  | 'IconMessage';
 
 export const TIMELINE_CONFIG: Record<TimelineSource, TimelineSourceConfig> = {
   contact_log: {
@@ -66,5 +69,15 @@ export const TIMELINE_CONFIG: Record<TimelineSource, TimelineSourceConfig> = {
     bgColor: 'bg-accent-500',
     iconKey: 'IconCheckCircle2',
     label: 'Task',
+  },
+  // The only INBOUND source on the timeline, so it gets the strongest treatment
+  // in the accent ramp — a coach replying is the event a rep most needs to spot
+  // while scanning. Stays inside the one accent language (no rainbow).
+  reply: {
+    color: 'text-accent-800',
+    ringColor: 'ring-accent-300',
+    bgColor: 'bg-accent-650',
+    iconKey: 'IconMessage',
+    label: 'Reply',
   },
 };

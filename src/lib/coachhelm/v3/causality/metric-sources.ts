@@ -368,6 +368,60 @@ const LEGACY_V2_INTENTIONAL_NULL: MetricSourceDef = {
 };
 
 /**
+ * Insight-CATEGORY ids, which are not metrics at all.
+ *
+ * `/api/cron/v3/causality-attribute` logs a `warning` for every
+ * `evidence.metric` this registry cannot resolve, and these families were the
+ * entire remaining volume of the highest-count Sentry issue
+ * (JAVASCRIPT-NEXTJS-2K — handled, 0 users, never crashed).
+ *
+ * They look like metric ids but are `<insight_type>_<focus_area>` pairs:
+ * `determineInsightType` in src/app/golf/actions/insights.ts returns one of the
+ * `InsightType` union members (src/lib/coachhelm/insight-types.ts) and the area
+ * is appended — hence `bubble_player_putting`, `pattern_detected_scoring`,
+ * `recurring_weakness_putting`. `pattern_detected` is included because
+ * insights.ts writes it as a DB-allowed `insight_type` even though it is absent
+ * from the TS union.
+ *
+ * So there is no column, cache or shot table behind them, and no per-round
+ * series to correlate — a causal-lift number for "this insight was categorised
+ * as a bubble-player warning" would be meaningless. `intentional-null` with a
+ * distinct reason is the honest classification, and keeping the reason separate
+ * from `v2-mining-needs-shot-level-graduation` matters: that family is waiting
+ * on shot-level graduation and will one day become attributable, whereas these
+ * never will.
+ *
+ * PREFIXES, not an enumeration. The observed set was seven ids, but the shape is
+ * a cross-product of ~13 categories and a growing list of focus areas — every
+ * new pairing (`bubble_player_tee`, `plateau_approach`, …) would silently
+ * reopen the same Sentry issue. Matching the family closes it for good.
+ *
+ * Safe against shadowing: `lookupMetricSource` consults the canonical registry
+ * and the alias table BEFORE any prefix, and a test asserts no real metric id
+ * starts with one of these.
+ */
+const INSIGHT_CATEGORY_METRIC_PREFIXES: readonly string[] = [
+  'pattern_detected_',
+  'scoring_decline_',
+  'stat_regression_',
+  'tournament_pressure_',
+  'plateau_',
+  'bubble_player_',
+  'surge_player_',
+  'streak_',
+  'recurring_weakness_',
+  'closing_holes_',
+  'par_3_issues_',
+  'team_trend_',
+  'roster_recommendation_',
+];
+
+const INSIGHT_CATEGORY_INTENTIONAL_NULL: MetricSourceDef = {
+  kind: 'intentional-null',
+  reason: 'insight-category-not-a-metric',
+};
+
+/**
  * Returns the source definition for any metric id, including the
  * `score_to_par` alias and the v2-mining legacy prefixes. Returns null
  * when the id is completely unknown (which the cron treats as a different
@@ -383,5 +437,14 @@ export function lookupMetricSource(metricId: string): MetricSourceDef | null {
   if (LEGACY_V2_METRIC_PREFIXES.some((p) => metricId.startsWith(p))) {
     return LEGACY_V2_INTENTIONAL_NULL;
   }
+  if (INSIGHT_CATEGORY_METRIC_PREFIXES.some((p) => metricId.startsWith(p))) {
+    return INSIGHT_CATEGORY_INTENTIONAL_NULL;
+  }
   return null;
 }
+
+/**
+ * Exported for the shadowing test only — see
+ * INSIGHT_CATEGORY_METRIC_PREFIXES. Not part of the runtime contract.
+ */
+export const __INSIGHT_CATEGORY_METRIC_PREFIXES = INSIGHT_CATEGORY_METRIC_PREFIXES;

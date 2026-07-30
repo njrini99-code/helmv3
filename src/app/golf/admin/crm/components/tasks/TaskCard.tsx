@@ -7,10 +7,11 @@ import {
   IconCheck,
   IconCheckCheck,
   IconClock,
+  IconPencil,
   IconWarning,
 } from '@/components/icons';
 import { completeCrmTask } from '@/app/golf/actions/crm-foundations';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import type {
   CrmTask,
   TaskKind,
@@ -27,6 +28,11 @@ interface TaskCardProps {
   onClick?: (task: CrmTask) => void;
   /** Fired with the updated task after a successful complete. */
   onCompleted?: (task: CrmTask) => void;
+  /**
+   * Opens the edit dialog for this task. Omit to hide the affordance — completed
+   * cards pass nothing, since editing a finished task is not a workflow we want.
+   */
+  onEdit?: (task: CrmTask) => void;
   /** Hides the complete checkbox (e.g. for already-completed cards). */
   readOnly?: boolean;
 }
@@ -67,6 +73,7 @@ export function TaskCard({
   task,
   onClick,
   onCompleted,
+  onEdit,
   readOnly,
 }: TaskCardProps) {
   const [busy, setBusy] = useState(false);
@@ -177,14 +184,34 @@ export function TaskCard({
             >
               {task.title}
             </p>
-            {assigneeInitials && (
-              <span
-                title={`Assigned to ${task.assignee_id}`}
-                className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-sunken text-eyebrow font-semibold text-text-secondary flex items-center justify-center"
-              >
-                {assigneeInitials}
-              </span>
-            )}
+            <div className="flex flex-shrink-0 items-center gap-1">
+              {assigneeInitials && (
+                <span
+                  title={`Assigned to ${task.assignee_id}`}
+                  className="w-5 h-5 rounded-full bg-surface-sunken text-eyebrow font-semibold text-text-secondary flex items-center justify-center"
+                >
+                  {assigneeInitials}
+                </span>
+              )}
+              {/* Always rendered rather than revealed on group-hover: hover does
+                  not exist on touch, and an edit affordance that only appears to
+                  mouse users is the same "unreachable on mobile" bug in a
+                  smaller package. Low-contrast at rest, strengthens on hover. */}
+              {onEdit && !completed && (
+                <IconButton
+                  variant="default"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(task);
+                  }}
+                  aria-label={`Edit task: ${task.title}`}
+                  className="h-7 w-7 rounded-fw-sm p-0 text-text-tertiary hover:bg-surface-sunken hover:text-text-primary"
+                >
+                  <IconPencil size={12} />
+                </IconButton>
+              )}
+            </div>
           </div>
 
           {task.description && (

@@ -36,8 +36,14 @@
 -- so it applies cleanly on the CI shadow DB (from migration 0) and on prod.
 -- Purely additive — two new tables, no changes to existing objects.
 --
--- STATUS: DRAFT for db-migration-reviewer. NOT applied. Do not apply to the
--- shared production DB until reviewed.
+-- STATUS: APPLIED to production 2026-07-29.
+--
+-- Pre-apply verification run against prod before touching it:
+--   · public.organizations                  EXISTS  (both FKs resolve)
+--   · public.billing_customers / _invoices  ABSENT  (clean create, no clash)
+--   · service_role has BYPASSRLS            TRUE    (FORCE RLS cannot lock out
+--                                                    createAdminClient)
+--   · public.set_updated_at()               ABSENT  <- draft defect, see §3
 -- ============================================================================
 
 -- ── 1. org -> Stripe customer mapping ───────────────────────────────────────
@@ -87,19 +93,34 @@ CREATE INDEX IF NOT EXISTS billing_invoices_status_idx
 CREATE INDEX IF NOT EXISTS billing_invoices_stripe_customer_id_idx
   ON public.billing_invoices (stripe_customer_id);
 
--- ── 3. updated_at triggers (repo convention: public.set_updated_at) ──────────
+-- ── 3. updated_at triggers ───────────────────────────────────────────────────
+-- The draft referenced `public.set_updated_at()`, which DOES NOT EXIST in this
+-- database — verified before applying. Because the block was guarded on
+-- to_regprocedure(), it would have silently skipped and left `updated_at`
+-- frozen at insert time forever, on a table whose whole job is to mirror a
+-- changing remote status. The real repo convention is
+-- `public.update_updated_at_column()` (no args, RETURNS trigger, 24 existing
+-- triggers use it).
+--
+-- The guard is kept — it is what makes this replay-safe on a CI shadow DB built
+-- from migration 0, where the function may not exist yet — but it now raises a
+-- NOTICE instead of failing silently, so a future environment missing the
+-- function is visible in the apply log rather than discovered months later via
+-- stale timestamps.
 DO $$
 BEGIN
-  IF to_regprocedure('public.set_updated_at()') IS NOT NULL THEN
+  IF to_regprocedure('public.update_updated_at_column()') IS NOT NULL THEN
     DROP TRIGGER IF EXISTS set_billing_customers_updated_at ON public.billing_customers;
     CREATE TRIGGER set_billing_customers_updated_at
       BEFORE UPDATE ON public.billing_customers
-      FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
     DROP TRIGGER IF EXISTS set_billing_invoices_updated_at ON public.billing_invoices;
     CREATE TRIGGER set_billing_invoices_updated_at
       BEFORE UPDATE ON public.billing_invoices
-      FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  ELSE
+    RAISE NOTICE 'public.update_updated_at_column() not found — billing updated_at triggers SKIPPED; updated_at will not self-maintain.';
   END IF;
 END $$;
 

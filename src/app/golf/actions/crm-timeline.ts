@@ -3,14 +3,21 @@
 /**
  * Server actions powering the CRM coach activity timeline.
  *
- * `getCoachTimeline` performs a UNION-ALL across 5 sources:
+ * `getCoachTimeline` performs a UNION-ALL across 6 sources:
  *   1. crm_contact_log     -> source='contact_log'
  *   2. email_events        -> source='email_event' (joined via contact_log)
  *   3. crm_events          -> source='crm_event'
  *   4. crm_notes           -> source='note'
  *   5. crm_tasks           -> source='task'
+ *   6. crm_replies         -> source='reply'
  *
- * Implementation runs the 5 reads in parallel via Promise.all and merges the
+ * 2026-07-29: crm_replies was the missing sixth. Every other source is outbound
+ * activity (what we sent, scheduled, or logged) or internal record-keeping — so a
+ * coach's timeline could show six touches from us and give no indication that
+ * they had written back. That is the one event a rep most needs to see, and it
+ * was the only one absent.
+ *
+ * Implementation runs the reads in parallel via Promise.all and merges the
  * results in TypeScript. This avoids needing a Postgres RPC + leans on the
  * per-table RLS Stream A applies in its migrations (admin-only reads).
  *
@@ -101,6 +108,18 @@ interface CrmTaskRow {
   created_at: string;
 }
 
+interface CrmReplyRow {
+  id: string;
+  from_address: string;
+  subject: string | null;
+  body_text: string | null;
+  received_at: string;
+  is_read: boolean;
+  thread_id: string | null;
+  message_id: string;
+  contact_log_id: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // getCoachTimeline — merged DESC list of activity events for one coach.
 // ---------------------------------------------------------------------------
@@ -114,7 +133,7 @@ export async function getCoachTimeline(
   const limit = opts?.limit ?? 100;
   const since = opts?.since ?? new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Run all 5 source queries in parallel. We don't fail the whole timeline if
+  // Run all 6 source queries in parallel. We don't fail the whole timeline if
   // a single source errors — just log and continue with an empty bucket.
   const [
     contactLogRes,
@@ -122,6 +141,7 @@ export async function getCoachTimeline(
     crmEventsRes,
     crmNotesRes,
     crmTasksRes,
+    crmRepliesRes,
   ] = await Promise.all([
     // 1. Contact log entries (email/call/demo/meeting/note actions)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -173,6 +193,16 @@ export async function getCoachTimeline(
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(limit),
+
+    // 6. Inbound replies from the coach (Gmail poll / Resend inbound)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('crm_replies')
+      .select('id, from_address, subject, body_text, received_at, is_read, thread_id, message_id, contact_log_id')
+      .eq('coach_id', coachId)
+      .gte('received_at', since)
+      .order('received_at', { ascending: false })
+      .limit(limit),
   ]);
 
   // Surface errors via logServerError but never throw — partial timelines are
@@ -183,6 +213,7 @@ export async function getCoachTimeline(
     ['crm_events', crmEventsRes],
     ['crm_notes', crmNotesRes],
     ['crm_tasks', crmTasksRes],
+    ['crm_replies', crmRepliesRes],
   ] as const) {
     if (res?.error) {
       await logServerError(
@@ -290,6 +321,35 @@ export async function getCoachTimeline(
         priority: r.priority,
         due_at: r.due_at,
         completed_at: r.completed_at,
+      },
+    });
+  }
+
+  // ---- crm_replies ---------------------------------------------------------
+  for (const r of (crmRepliesRes?.data ?? []) as CrmReplyRow[]) {
+    if (!r.received_at) continue;
+    items.push({
+      id: `reply-${r.id}`,
+      source: 'reply',
+      // Unread is the actionable state, so it belongs in the sub-type where the
+      // UI can style on it, not buried in metadata.
+      type: r.is_read ? 'read' : 'unread',
+      occurred_at: r.received_at,
+      title: r.subject ? `Reply: ${r.subject}` : 'Reply',
+      // body_text can be a full quoted thread; the timeline clamps display, and
+      // truncating here would throw away text a rep may want to expand.
+      body: r.body_text,
+      // Deliberately null: the coach wrote this, and actor_id resolves against
+      // `users` (our internal staff). Attributing an inbound reply to a staff
+      // member would be wrong in exactly the way that matters.
+      actor_id: null,
+      metadata: {
+        from_address: r.from_address,
+        subject: r.subject,
+        is_read: r.is_read,
+        thread_id: r.thread_id,
+        message_id: r.message_id,
+        contact_log_id: r.contact_log_id,
       },
     });
   }
