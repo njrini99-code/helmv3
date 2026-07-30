@@ -352,7 +352,7 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 | Priority | Item | Note |
 |---|---|---|
 | ~~P1~~ **DONE** | ~~34% of `baseball_*` tables have zero pgTAP RLS coverage~~ | Closed. Invitations (`2c2c939cf`), messaging (`e1011f50b`), and tasks/travel/announcements/dev-plans (`4e0b96ccb`) all have suites now. Writing them found **two P0s** — the invitation-code leak and the `baseball_messages` typo. Two findings across five previously-untested tables is the evidence for the claim that an untested policy is an unverified claim. |
-| ~~P1~~ **DONE** | ~~**CI seeds PRODUCTION on every PR**~~ | **Fixed 2026-07-30.** The required gate (`baseball-auth-smoke`) now stands up a throwaway Supabase stack on the runner and seeds that. Three things came out of doing it that the notes below did not predict — see "What the fix actually found" under the table. |
+| ~~P1~~ **DONE** | ~~**CI seeds PRODUCTION on every PR**~~ | **Fixed and MERGED 2026-07-30 (#1125).** The required gate (`baseball-auth-smoke`) now stands up a throwaway Supabase stack on the runner and seeds that — **18 tests in 1.3 minutes, all 16 authenticated renders passing**, read from the run log rather than inferred from a green tick. Doing it surfaced **seven** defects, each live for a month or more; see "What the fix actually found" under the table. |
 | ~~P1~~ **DONE** | ~~`baseball_notifications_insert` is `WITH CHECK (true)`~~ | In-app phishing, not a leak (reads are correctly self-scoped). **The obvious fix breaks the product:** practice-publish and coach lift messages legitimately write notifications to *other* users through the caller's own session (`practice.ts:516`, `lifting-v11.ts:2411`, both `createClient()` not admin), so `auth.uid() = user_id` would silently stop them. Needs a `can_notify_baseball_user()` definer helper. **Fixed in `bcbba306b`** — a definer `can_notify_baseball_user()` gating on "self, or a player on a team you are staff on", after verifying two ways that those two call sites are the only inserters. 10 pgTAP assertions, weighted toward the PERMITTED cases so a future self-only tightening cannot pass. |
 | ~~P1 **BLOCKED**~~ **DONE** | ~~`public_profile_mode` DDL default is `'private'`~~ | **Answered 10:40 EDT once the database came back.** Live column default is `'unlisted'::text` and **all 13 teams are `unlisted`, zero `private`** — so `baseball_teams_public_profile` is NOT default-deny and cross-org discovery is not zeroed. Feared impact was nil. Separately worth knowing: production's column default **drifted** from the committed DDL, a second independent case of production not matching the migration that created it. Zero impact today, recorded not actioned. |
 | ~~P2~~ **DONE** | ~~The `integration` vitest project (5 files) runs in no CI workflow~~ | **The item was right about the gap and wrong about the cause, and the real cause was worse.** `vitest.config.ts` set a root-level `include`, and `extends: true` MERGES array options rather than replacing them — so every project inherited the broad root glob. `integration`, `rls` and `business` set `include` but not `exclude`, so each matched **~870 files instead of 5, 0 and 7**. `unit` looked fine only because it also overrides `exclude`. Consequences: CI's "Business contracts" job was re-running the entire unit suite under a name claiming to check 7 contract files (~170s → 3s once fixed), and the integration tests *were* running — by accident, inside that job. Root `include` removed, integration given its own CI step so nothing is lost. Verified by counting: unit 861 (unchanged), integration 5, business 7, rls 0. |
@@ -385,7 +385,12 @@ Needs an owner decision on sequencing.
 **What the fix actually found (2026-07-30, owner-directed):** the standing-up-a-
 stack part was the easy half — `supabase start` was already doing exactly that in
 ci.yml's `Supabase lint + RLS tests` job, so the mechanism was proven and one
-composite action away. Three things the investigation above had not turned up:
+composite action away. **Seven** things the investigation above had not turned up,
+all sharing one cause: **every check in this repo had only ever run against a
+database that already had the missing piece.** It took five CI rounds, and the two
+blockers that actually mattered (6 and 7) were both invisible to the assertion
+messages and both sat in the Playwright trace's console the whole time — I read
+`element(s) not found` twice before reading the browser errors.
 
 1. **`scripts/seed-baseball-e2e.ts` had no target guard at all.** The demo seed
    has refused unnamed non-local targets since `f7ffa28b9`; its sibling — which
@@ -407,6 +412,49 @@ composite action away. Three things the investigation above had not turned up:
    Extracting it made the rules callable, so they are now asserted by execution —
    21 cases, verified non-vacuous by re-injecting all three historical bugs and
    confirming each one turns the suite red.
+4. **The `on_auth_user_created` trigger on `auth.users` is in NO tracked
+   migration**, so signup never created the `public.users` row on any database
+   built from them. The active baseline is a PUBLIC-SCHEMA-ONLY dump and
+   structurally cannot carry an object on an auth table. Migration authored
+   (`20260730020000`), conditional so applying it to production cannot change
+   production, **not applied**.
+5. **The `avatars` bucket + its 4 storage policies are likewise untracked** — and
+   it is on the GOLF ONBOARDING path (`avatar-upload.tsx` defaults to it, rendered
+   in coach onboarding, player onboarding and Fairway settings). Found by
+   deliberately sweeping the class after 4. `20260730030000`, **not applied**.
+6. **Our own CSP blocked the local stack.** `connect-src` allowed
+   `ws://127.0.0.1:*` (Next's HMR socket) but no `http://` loopback origin, so the
+   browser refused every `supabase-js` call. It presented as a HANG, never an auth
+   error — the client `getUser()` fetch was refused, so `DashboardSessionGuard` sat
+   on "Opening your command center" forever. **It also means `supabase start` +
+   `npm run dev` had never been able to authenticate in a browser**, which is
+   plausibly part of why nobody used the local stack — the same blind spot that let
+   4 and 5 survive. Fixed, scoped so production's CSP is byte-identical.
+7. **The migrations create an infinitely-recursive RLS policy.**
+   `baseball_team_members_select` from the baseline does a subquery over the table
+   the policy is ON, so Postgres rejects EVERY select against it. Production has a
+   definer call instead, applied out of band and never committed. **This breaks any
+   restore or rebuild of production from migrations** — the disaster-recovery path.
+   `20260729000200`'s own comments trace that exact cycle and cite the baseline's
+   line numbers; its author escaped it for `baseball_players_select` and left the
+   other half. Repair authored (`20260730040000`), guarded on the live predicate,
+   **not applied**.
+
+**Five guards now hold the class shut** (`src/test/schema/`): auth-schema objects,
+storage buckets (derived from source so the list cannot rot), RPC targets, the
+seed's dashboard-context coverage, and self-referencing RLS policies. All are
+source-text on purpose — a database test cannot catch a missing object, because it
+runs against the database that is missing it, which is exactly why the pgTAP suites
+saw none of 4-7. `seed:baseball:ci` also lost `--allow-prod`, so if production
+credentials ever leak back into that job the seed refuses rather than seeding prod.
+
+**Two findings filed rather than fixed**, because both are product/owner calls
+rather than mechanical repairs: `golf-attachments` and `expense-receipts` exist
+nowhere, so golf message attachments and travel expense receipts have never worked
+(zero rows in both backing tables — broken-and-unused, not users hitting errors);
+and `baseball_team_coach_staff_select` differs between production and the
+migrations, so a rebuilt database would hide coaching staff from players. Both in
+`ISSUE_LEDGER.md` (N.5, N.9) with the evidence.
 
 **Also worth recording: `playwright.yml` still seeds production, deliberately.**
 It runs the full chromium suite including golf specs that authenticate against
