@@ -155,23 +155,25 @@ reason this section exists.
 | 2 | `baseball_teams` join_code world-readable | ✅ **CLOSED.** Same migration. Join codes visible to a non-member: 13 → 1. |
 | 3 | `baseball_team_invitations` — every live invite code readable | ✅ **CLOSED** (`2c2c939cf`). Gated to `can_manage_roster`. Table is empty in production today, so this is a fix ahead of the exposure rather than after it. |
 | 4 | `baseball_player_percentiles` — every player's academic/athletic ranking readable | ✅ **CLOSED** (`2855a0646`). Also empty in production today. |
-| 5 | `baseball_coaches` — every coach's email readable by any coach | ⚠️ **STILL OPEN, but AUDITED and a fix is written** (`20260729200000_baseball_coaches_org_scope.sql`, not applied). The "75-call-site audit" is **done and collapses to zero**: of 74 reads, 66 are self-scoped, 2 are INSERTs, 1 uses the service-role client, and the remaining 5 are same-org by construction. **No call site needs a cross-org read.** Measured exposure: 10 coaches across 8 orgs, 10 with email, **0 with phone** — the long-standing "email + phone" wording overstated it. See §5. **Still the only unclosed P0.** |
+| 5 | `baseball_coaches` — every coach's email readable by any coach | ✅ **CLOSED IN PRODUCTION 2026-07-30 ~01:20Z** (`20260729200000_baseball_coaches_org_scope.sql`, applied on the owner's explicit instruction). The "75-call-site audit" that was the blocker is **done and collapsed to zero**: of 74 reads, 66 are self-scoped, 2 are INSERTs, 1 uses the service-role client, and the remaining 5 are same-org by construction. **No call site needed a cross-org read**, so the row-level fix went in without repointing anything. Verified by role impersonation as all 10 coaches: each keeps their own row, and each now sees only their own org. Measured exposure before the fix: 10 coaches across 8 orgs, 10 with email, **0 with phone** — the long-standing "email + phone" wording overstated it. See §5. |
 | **6** | **`baseball_messages` — every private conversation in the database, READ AND WRITE** | ✅ **CLOSED** (`e1011f50b`). The three self-comparing policies are gone; only the four correctly-correlated ones remain. See §6. |
 | — | Staff-invite accept RPC missing email-ownership check | **RETRACTED — the finding was false.** See the retraction section. |
 
-> **Five of the six are now closed in production.** They were applied on the
-> owner's explicit instruction on 2026-07-29, after the preconditions were
-> satisfied by execution rather than by reading — see
-> "§ DECISION … APPLIED 2026-07-29" below for the before/after measurements
-> taken as three real users.
+> **All six are now closed in production.** Five went in on the owner's
+> explicit instruction on 2026-07-29, after the preconditions were satisfied by
+> execution rather than by reading — see "§ DECISION … APPLIED 2026-07-29"
+> below for the before/after measurements taken as three real users.
 >
-> **#5 is the one left.** Unlike the others it has no authored fix, because
-> tightening it is a product decision (which coaches may see which coaches'
-> contact details). **The 75-call-site audit that was the other half of the
-> blocker is now DONE, and it removes itself as an obstacle:** not one of the 74
-> reads needs cross-organization access. The fix is written and measured
-> (`20260729200000_baseball_coaches_org_scope.sql`) but deliberately not
-> applied — see that file's header and § finding 5.
+> **#5, the last one, closed late on 2026-07-29 (~01:20Z on the 30th).** It had
+> been held back because tightening it looked like a product decision (which
+> coaches may see which coaches' contact details) — but the 75-call-site audit
+> answered that question empirically: not one of the 74 reads needs
+> cross-organization access, so there was nothing left to decide. The owner
+> authorized the apply and `20260729200000_baseball_coaches_org_scope.sql` went
+> in, verified as all ten live coach accounts. The two apply-time caveats
+> recorded below (the NULL-`organization_id` row, and `schema_migrations` being
+> useless as an apply check on this project) both held up in practice and are
+> kept as-is — they are still the right warnings for the next migration.
 
 ---
 
@@ -394,10 +396,21 @@ the existing `baseball_coaches_public` view. If yes, the policy should at
 minimum stop exposing `email`/`phone` — a column-level grant or a narrowed
 view, not a row-level fix.
 
-#### ⚠️ Two things to know before applying `20260729200000`
+#### ✅ APPLIED — and the two things that mattered when applying it
 
-_Added 2026-07-29 23:55Z, from re-verifying the live database. Neither changes the
-decision; both change how the apply should be done._
+_Written 2026-07-29 23:55Z as pre-apply warnings; the migration went in ~01:20Z
+and both warnings proved out, so they are kept verbatim below. Read them before
+the next RLS apply — the second one especially._
+
+**Outcome, verified by role impersonation as all ten live coach accounts**
+(`SET LOCAL ROLE authenticated` + `request.jwt.claims`, inside a rolled-back
+transaction): every coach still sees their own row (`sees_self = 1` for all ten),
+and no coach sees outside their own organization. Coach Demo and Demo Strength
+Coach see 2 rows each (they share an org); the seven single-coach orgs see 1; the
+NULL-org internal `admin` account sees 1 — itself — exactly as warning 1 predicted.
+The helper is `SECURITY DEFINER` with `search_path` pinned and `EXECUTE` revoked
+from `anon` (a plain `REVOKE ... FROM PUBLIC` is not enough — Supabase issues a
+direct grant to `anon`, which has to be revoked by name).
 
 **1. One coach row's visibility changes, and it is not obvious from the diff.**
 One of the 10 coaches has `organization_id IS NULL`. The new helper opens with
@@ -431,11 +444,21 @@ from pg_policies where schemaname='public' and tablename='baseball_coaches';
 ```
 
 Confirmed unapplied that way as of 23:40Z: this section's `20260729200000`
-(`shares_my_baseball_organization` absent, live policy still carries
+(`shares_my_baseball_organization` absent, live policy still carried
 `OR get_my_coach_id() IS NOT NULL`), and — separate lane —
 `20260728030000_shot_detail_rls_correlated.sql` for golf, where
-`can_read_golf_shot_detail` and `owns_golf_shot` are both absent. That one is worth
-**3413ms → 515ms** on the shot-detail read path.
+`can_read_golf_shot_detail` and `owns_golf_shot` were both absent.
+
+**Both were applied ~01:20Z on 2026-07-30, and both are verified by object
+existence + live `pg_policies.qual`, not by `schema_migrations`.**
+
+The golf one delivered **4403ms → 323ms** on the shot-detail read path — a 13.6×
+win — with **identical row counts to the pre-change control** (506 putt-detail /
+167 approach-miss rows for the measured player; four players see 506 / 477 / 398 /
+359 of the 3428 total). It also preserves the read/write asymmetry it was designed
+for: a same-org coach gets `can_read = true` on another player's shot detail (2211
+rows visible) and `can_write = false`, because `owns_golf_shot` is deliberately a
+separate, owner-only predicate rather than a reuse of the read helper.
 
 ---
 

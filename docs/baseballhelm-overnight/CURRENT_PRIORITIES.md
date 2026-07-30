@@ -79,18 +79,21 @@ _Updated 2026-07-29 09:50 EDT. Worked strictly in order. A priority marked
 
 ---
 
-## ✅ RESOLVED 2026-07-29 ~17:45Z — the #1 item is DONE
+## ✅ RESOLVED 2026-07-29 — the #1 item is DONE, all six exposures closed
 
 **The owner gave the instruction ("fix all code and database fixes" → "Go do
-it"), and five of the six exposures below are now closed in production.** The
-section that follows is kept as the record of what they were; the table's
-"what leaks" column is now past tense for every row except `baseball_coaches`.
+it") and, later that night, authorized the last one — so all six of the
+exposures below are now closed in production.** The section that follows is kept
+as the record of what they were; the table's "what leaks" column is past tense
+for every row.
 
 | Applied | What it closed |
 |---|---|
 | `20260729000100` (A) | the seven definer helpers the policies and app need |
 | `20260729000200` (B) | `baseball_players`, `baseball_teams`, `baseball_team_invitations`, `baseball_player_percentiles`, `baseball_messages`, `baseball_notifications` |
 | `20260729000300` | Lift Lab identity sync — plus the repair itself was run: 21 of 22 athletes were locked out of `/lifting/dashboard`, now 0 |
+| `20260729200000` (~01:20Z on the 30th) | `baseball_coaches` — the last P0. Every coach could read every coach's email; now scoped to own-org via `shares_my_baseball_organization()`. Verified as **all ten** live coach accounts. |
+| `20260728030000` (same apply window, **golf lane**) | not a security fix — the correlated-RLS rewrite of `putt_details` / `approach_miss_details`. **4403ms → 323ms** (13.6×) with row counts identical to the pre-change control. |
 
 Verified by executing the policies as three real users via role impersonation
 (`SET LOCAL ROLE authenticated` + `request.jwt.claims` in a rolled-back
@@ -100,10 +103,13 @@ the roster email search, and the anon-facing public view were each exercised
 through the exact RPC the app calls. Full before/after tables in
 `DATABASE_STATUS.md`; PR **#1102**.
 
-**What is still open: finding #5, `baseball_coaches`.** Any coach reads every
-coach's email and phone. It has no authored fix because tightening it is a
-product decision plus a 75-call-site audit, not a policy swap. It is now the
-only unclosed P0 in this document.
+**Finding #5, `baseball_coaches`, closed later the same night.** It had been
+held as "a product decision plus a 75-call-site audit, not a policy swap" — but
+the audit came back and answered the product question by itself: of 74 reads, 66
+are self-scoped, 2 are INSERTs, 1 uses the service-role client, and the last 5
+are same-org by construction. **Nothing needed a cross-org read**, so there was
+no decision left to make and the fix was a policy swap after all. **No unclosed
+P0 remains in this document.**
 
 ### Post-deploy verification — what was and was NOT confirmed
 
@@ -154,8 +160,9 @@ to somebody. The sixth is a typo that turns a correct rule into `true`, and it
 is the worst of them. All live in prod since the 2026-05-27 baseline, all
 verified from migration source.
 
-Two more are confirmed and **deliberately left for a decision**, not fixed:
-`baseball_coaches` (below) and `golf_coaches` (out of scope, live product —
+Two more were confirmed and **deliberately left for a decision**, not fixed:
+`baseball_coaches` (below — since **closed**, `20260729200000`) and
+`golf_coaches` (**still open**: out of scope for this run, live product —
 `DATABASE_STATUS.md`). The write hole, `baseball_notifications`, **is** fixed.
 
 | Table | Policy | What leaks |
@@ -201,9 +208,10 @@ The question to answer: with recruiting sunset, does any surface still need a
 coach to see coaches outside their own organization? Details in
 `DATABASE_STATUS.md` §5.
 
-The fix is **written and committed as files, applied to nothing**
-(`9c4ad335e`, extended by `2c2c939cf`). It ships as a sequenced pair so no
-single step can take production down:
+The fix was **written and committed as files, applied to nothing**
+(`9c4ad335e`, extended by `2c2c939cf`) at the time this was written. **It has
+since been applied in full** — see the RESOLVED section at the top. It shipped as
+a sequenced pair so no single step could take production down:
 
 | Step | File | Blast radius |
 |---|---|---|
@@ -263,6 +271,13 @@ converting a confidentiality bug into an outage. The exposure has been live
 ~2 months — the marginal risk reduction from applying at 01:00 unattended
 versus 09:00 with the owner present does not justify that. Deferred
 deliberately, not missed. See `DATABASE_STATUS.md`.
+
+**How it actually went, for the record:** every one of these applies happened
+**with the owner present and instructing**, never unattended, and each was
+verified by executing the new policies as the real affected users (role
+impersonation in a rolled-back transaction) rather than by reading the diff. The
+"applying blind is the risk" reasoning above was right; the fix was to stop
+applying blind, not to keep waiting.
 
 ---
 
