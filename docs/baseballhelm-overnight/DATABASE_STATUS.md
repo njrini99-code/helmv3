@@ -394,6 +394,49 @@ the existing `baseball_coaches_public` view. If yes, the policy should at
 minimum stop exposing `email`/`phone` — a column-level grant or a narrowed
 view, not a row-level fix.
 
+#### ⚠️ Two things to know before applying `20260729200000`
+
+_Added 2026-07-29 23:55Z, from re-verifying the live database. Neither changes the
+decision; both change how the apply should be done._
+
+**1. One coach row's visibility changes, and it is not obvious from the diff.**
+One of the 10 coaches has `organization_id IS NULL`. The new helper opens with
+`SELECT p_org_id IS NOT NULL AND EXISTS (...)`, so it returns false for a NULL
+org — meaning after applying, that row is visible **only to itself** via the
+`auth.uid() = user_id` clause, and that coach likewise sees only themselves.
+
+That is fail-closed and correct, and it is safe *here* because the row is an
+internal account: `644a2cfa-7b2d-4607-bc16-8de078660a6f`, an
+`@helmsportslabs.com` address, `coach_type = 'college'`, created 2026-07-03, auth
+user attached. **But confirm no customer coach has a NULL `organization_id` before
+applying**, or they silently lose sight of their colleagues — which presents as
+"the roster page went blank", not as an error.
+
+**2. `supabase_migrations.schema_migrations` cannot tell you whether any of this is
+applied.** All six of `20260728030000`, `20260729000100`, `20260729000200`,
+`20260729000300`, `20260729120000`, `20260729200000` return **zero rows** from that
+table — yet A and B are demonstrably applied, since their helper functions exist and
+the policies they rewrote show the new `qual`. Migrations applied through the
+Supabase MCP `apply_migration` tool do not record a `schema_migrations` row the way
+the CLI does, and most of this project's recent migrations went in that way.
+
+An empty result there is evidence of nothing. Check the objects instead:
+
+```sql
+-- helpers
+select to_regprocedure('public.shares_my_baseball_organization(uuid)') is not null;
+-- policies: read the live predicate rather than inferring it from files
+select policyname, cmd, roles::text, qual
+from pg_policies where schemaname='public' and tablename='baseball_coaches';
+```
+
+Confirmed unapplied that way as of 23:40Z: this section's `20260729200000`
+(`shares_my_baseball_organization` absent, live policy still carries
+`OR get_my_coach_id() IS NOT NULL`), and — separate lane —
+`20260728030000_shot_detail_rls_correlated.sql` for golf, where
+`can_read_golf_shot_detail` and `owns_golf_shot` are both absent. That one is worth
+**3413ms → 515ms** on the shot-detail read path.
+
 ---
 
 ⚠️ **Known, deliberate gap** (on #4's policy): it does not mirror
