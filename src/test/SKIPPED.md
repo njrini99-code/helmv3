@@ -22,9 +22,17 @@ Single-chain mock can't return different shapes for select vs delete in the same
 
 These component tests drifted because the user's uncommitted WIP modified component behavior (e.g. Button now renders children alongside loading spinner for accessibility). The user is expected to update these specs as part of finalizing the sweep. Skip them now so CI is green; the user's next commit on the sweep should re-enable them with updated assertions.
 
-_Updated 2026-07-09: 5 of the original 9 entries are resolved and removed from this list — `stat-card-sparkline.test.tsx`, `team-pulse-card.test.tsx`, `today-timeline.test.tsx`, and `PlayerCoachHelmDashboard.test.tsx` were deleted (components consolidated away) during the production-readiness mission; `CoachInsightCard.test.tsx`'s skipped spec was superseded by a rewritten `InsightsFeed (coach)` describe block with no remaining `it.skip`. The 4 below are still genuinely pending._
+_Updated 2026-07-09: 5 of the original 9 entries are resolved and removed from this list — `stat-card-sparkline.test.tsx`, `team-pulse-card.test.tsx`, `today-timeline.test.tsx`, and `PlayerCoachHelmDashboard.test.tsx` were deleted (components consolidated away) during the production-readiness mission; `CoachInsightCard.test.tsx`'s skipped spec was superseded by a rewritten `InsightsFeed (coach)` describe block with no remaining `it.skip`. Of the 4 below, `button.test.tsx` was resolved 2026-07-30 (struck through); **3 remain genuinely pending**._
 
-- `src/components/ui/button.test.tsx` — `shows loading state` (children no longer hidden under spinner)
+- ~~`src/components/ui/button.test.tsx` — `shows loading state`~~ — **RESOLVED 2026-07-30.**
+  The open question was "whether children render alongside the spinner", and the
+  component itself had already answered it: its comment keeps the label
+  DELIBERATELY, because replacing it with a placeholder "causes layout shift and
+  loses context for the user". Un-skipped with the assertions inverted to that
+  decided behaviour — label present, `aria-busy="true"`, a real `svg.animate-spin`,
+  `pointer-events-none cursor-wait` — plus a paired negative test proving a merely
+  `disabled` button is NOT aria-busy and has no spinner, so the pair cannot pass
+  for the wrong reason.
 - `src/test/golf/components/EvidencePanel.test.tsx` — `compact mode renders the four key facts in a single row`
 - `src/test/golf/components/InsightCard.test.tsx` — `fires coach actions including create_focus_area`, `renders different action buttons for player vs coach`
 - ~~`src/test/golf/components/RoundTakeaway.test.tsx`~~ — deleted 2026-07-20: `RoundTakeaway` was retired by the Round Review filmstrip rebuild (Task 10) — its one narrative replaces the separate hero card.
