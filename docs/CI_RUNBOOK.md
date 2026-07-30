@@ -157,9 +157,16 @@ your diff — `main` itself was already red when you branched.
 - **Don't misread intentional skips as failures**: Lighthouse skips
   `docs/*` and `*-noop` branches by design; Playwright specs self-skip when
   their env vars aren't set (`PLAYWRIGHT_BASEBALL_SEEDED`, `E2E_GOLF_*`,
-  `GOLFHELM_*`). `CI / all`'s `baseball-auth-smoke` job (#372) similarly
-  skips (not fails) on fork/Dependabot `pull_request` runs, which never
-  receive repo secrets. A skip is not a failure.
+  `GOLFHELM_*`). A skip is not a failure.
+
+  **But `baseball-auth-smoke` (#372) no longer skips, and that is deliberate.**
+  It used to skip on fork/Dependabot `pull_request` runs because those never
+  receive repo secrets. As of PR #1125 it needs no secrets — it seeds a
+  throwaway stack on the runner — so it runs everywhere. If you see it skipped
+  now, that is *not* expected: check the job's `if:` condition rather than
+  waving it through. A **required** gate that silently skipped for a whole class
+  of PR was a hole in the gate, which is why the skip was removed rather than
+  documented.
 
 ---
 
