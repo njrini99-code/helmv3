@@ -66,6 +66,7 @@ import { useToast } from '@/components/ui/sonner';
 import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
 import { createCoachNote } from '@/app/baseball/actions/coach-notes';
 import { removePlayerFromTeam } from '@/app/baseball/actions/roster';
+import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
 
 // =============================================================================
 // PlayerProfileClient — MIGRATED to "The Living Annual" kit
@@ -1390,7 +1391,13 @@ export function PlayerProfileClient({
               </div>
             </PaperCard>
 
-            {/* Scout Packet entry — links into the dedicated share surface */}
+            {/* Scout Packet entry — links into the dedicated share surface.
+                Gated on the recruiting module (product-modules.ts): the packet
+                surface is sunset, and this card sold it in the present tense
+                ("Mint revocable share links for college scouts") while every
+                action behind it refused. isRecruitingEnabled is pure and
+                isomorphic by design, so a client component may call it. */}
+            {isRecruitingEnabled() && (
             <PaperCard className="p-6 sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -1417,11 +1424,16 @@ export function PlayerProfileClient({
                 </Link>
               </div>
             </PaperCard>
+            )}
 
-            {/* Visibility hint */}
+            {/* Visibility hint. Names share links only while there are share
+                links to name — with recruiting sunset there is no packet to
+                mint, so promising that "changes take effect across all active
+                share links" would describe a mechanism that cannot run. */}
             <p className="px-4 text-center font-annual text-eyebrow text-text-tertiary">
-              Passport visibility and scout-packet sharing are managed on the full passport surface.
-              Changes take effect immediately across all active share links.
+              {isRecruitingEnabled()
+                ? 'Passport visibility and scout-packet sharing are managed on the full passport surface. Changes take effect immediately across all active share links.'
+                : 'Passport visibility is managed on the full passport surface. This passport stays inside your program.'}
             </p>
           </div>
         </motion.div>

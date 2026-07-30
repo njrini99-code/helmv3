@@ -356,8 +356,34 @@ async function checkRouteAuthorization(
   const isAcademicsRoute = pathStartsWithAny(pathname, ACADEMICS_ROUTES);
   const isLegacyTeamRoute = pathStartsWithAny(pathname, LEGACY_TEAM_ROUTES);
   const requiredCapability = routeCapability(pathname);
+  const moduleClosed = isPathnameModuleDisabled(pathname);
 
-  if (!isRecruitingRoute && !isOrgRoute && !isAcademicsRoute && !isLegacyTeamRoute && !requiredCapability) {
+  // `moduleClosed` MUST be part of this early-return condition, or the
+  // product-module gate further down this function is unreachable for exactly
+  // the routes its own comment says it exists to cover.
+  //
+  // The local RECRUITING_ROUTES list above is deliberately narrower than the
+  // central registry: it omits /colleges, /journey, /scouting and /activate. Any
+  // route that is module-owned but appears in NEITHER that list NOR
+  // STAFF_CAPABILITY_ROUTES therefore satisfied every `!` below and returned
+  // `authorized: true` — the module check at line ~415 never ran for a single
+  // one of them. Those four doors happened to stay shut only because each page
+  // carries its own guard, so this was a dead second layer, not an open door.
+  //
+  // Deliberately NOT hoisted to a `return` of its own here. Refusing before the
+  // baseball_coaches lookup below is cheaper, but it is also seat-blind: a
+  // PLAYER on /colleges, /journey or /activate (all player surfaces) would be
+  // sent to COACH_HOME. Falling through means the lookup separates the seats
+  // first — a player gets PLAYER_HOME, a coach reaches the module gate and gets
+  // COACH_HOME — which is what each page's own guard already does today.
+  if (
+    !isRecruitingRoute &&
+    !isOrgRoute &&
+    !isAcademicsRoute &&
+    !isLegacyTeamRoute &&
+    !requiredCapability &&
+    !moduleClosed
+  ) {
     return { authorized: true };
   }
 
@@ -441,8 +467,11 @@ async function checkRouteAuthorization(
   // recruiting surfaces. Hiding a nav link is not closing a door: a buyer
   // typing a URL must not reach a withdrawn module.
   //
-  // Scoped by pathname, so golf/admin/lifting routes are unaffected.
-  if (isPathnameModuleDisabled(pathname)) {
+  // Scoped by pathname, so golf/admin/lifting routes are unaffected. Reached
+  // for module-owned routes because `moduleClosed` is now part of the
+  // early-return condition at the top of this function — see the note there for
+  // why the check lives HERE, after the seat is known, rather than up front.
+  if (moduleClosed) {
     return {
       authorized: false,
       redirectTo: COACH_HOME,

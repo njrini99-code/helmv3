@@ -148,6 +148,38 @@ export class BaseballDemoReadOnlyError extends Error {
   }
 }
 
+/**
+ * Thrown when an action belongs to a product module the app is not currently
+ * shipping (`product-modules.ts` — recruiting is sunset as of 2026-07-29).
+ * Carries HTTP-403.
+ *
+ * WHY THIS IS ITS OWN CLASS and not one of the four above. A withheld module is
+ * a fourth kind of refusal, and every existing class states something untrue
+ * about it:
+ *
+ * - `BaseballUnauthorizedError` (401, "You must be signed in") makes callers
+ *   that branch on it bounce the user to /baseball/login. The scout-packet
+ *   preview page does exactly that, so reusing it would send a correctly
+ *   signed-in head coach to a login screen.
+ * - `BaseballCapabilityError` blames the coach's permissions for a product
+ *   decision. It is also structurally wrong: a head coach holds every
+ *   capability unconditionally, which is why capability gates could never have
+ *   expressed the sunset in the first place (see product-modules.ts).
+ * - `BaseballNoActiveTeamError` asserts a broken team context that is fine.
+ * - `BaseballDemoReadOnlyError` says the opposite of what is true — the live
+ *   demo is not the restriction.
+ *
+ * Listed in the expected-throw allowlist below, so a closed door is logged as a
+ * handled warning rather than paging someone with a Sentry error.
+ */
+export class BaseballModuleDisabledError extends Error {
+  readonly status = 403;
+  constructor(message = "This isn't part of BaseballHelm right now.") {
+    super(message);
+    this.name = 'BaseballModuleDisabledError';
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Options + context shapes
 // -----------------------------------------------------------------------------
@@ -629,7 +661,8 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           error instanceof BaseballCapabilityError ||
           error instanceof PlayerAccessError ||
           error instanceof BaseballDisabledSourceError ||
-          error instanceof BaseballDemoReadOnlyError
+          error instanceof BaseballDemoReadOnlyError ||
+          error instanceof BaseballModuleDisabledError
         ) {
           await logServerException(
             error,

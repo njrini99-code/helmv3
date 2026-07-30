@@ -157,6 +157,7 @@ function FieldRow({
   label,
   effective,
   exposureEnabled,
+  recruitingEnabled,
   disabled,
   onChange,
 }: {
@@ -164,6 +165,12 @@ function FieldRow({
   label: string;
   effective: PassportFieldVisibility;
   exposureEnabled: boolean;
+  /**
+   * False while the recruiting module is sunset. `public` and `scout` widen a
+   * field to an audience the product no longer has, so they are shown but not
+   * selectable — the same honesty the exposure tiles above already apply.
+   */
+  recruitingEnabled: boolean;
   disabled: boolean;
   onChange: (key: string, next: PassportFieldVisibility) => void;
 }) {
@@ -175,9 +182,17 @@ function FieldRow({
     if (base === 'staff_only' && PASSPORT_VISIBILITY_RANK[opt] > PASSPORT_VISIBILITY_RANK[base]) {
       return true;
     }
+    // Outside-the-program audiences do not exist while recruiting is sunset.
+    // Selectable only when the value is ALREADY stored, so a pre-sunset choice
+    // still renders as the current selection instead of an empty control.
+    if (!recruitingEnabled && (opt === 'public' || opt === 'scout') && effective !== opt) {
+      return true;
+    }
     return false;
   };
   const isClamped = base === 'staff_only';
+  const strandedBySunset =
+    !recruitingEnabled && (effective === 'public' || effective === 'scout');
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-1 py-2.5">
@@ -185,9 +200,16 @@ function FieldRow({
         <p className="text-sm font-medium text-warm-800">{label}</p>
         <p className="text-eyebrow text-warm-400">
           {isOverridden ? 'Custom' : 'Default'}
-          {(effective === 'public' || effective === 'scout') && !exposureEnabled
-            ? ' · only applies once exposure is on'
-            : ''}
+          {/* Two different reasons a wide setting is inert, and they must not
+              share one sentence. "Once exposure is on" is an instruction the
+              player can act on — but only while there is an exposure tile to
+              turn on. With recruiting sunset there is not, so that copy sends
+              them looking for a control that is no longer rendered. */}
+          {strandedBySunset
+            ? ' · stays inside your program'
+            : (effective === 'public' || effective === 'scout') && !exposureEnabled
+              ? ' · only applies once exposure is on'
+              : ''}
           {/* Hover-only `title` tooltips don't work on touch — the clamp reason
               (also) reads inline here so it survives on mobile, not just desktop. */}
           {isClamped ? ' · staff-private, cannot be exposed' : ''}
@@ -253,6 +275,17 @@ export function PassportVisibilityControls({
     : STATE_OPTIONS.filter(
         (opt) => opt.value !== 'public_profile' && opt.value !== 'scout_packet',
       );
+  // The PER-FIELD options needed the same treatment and did not get it. With the
+  // exposure tiles withheld above, `exposureEnabled` is permanently false — so
+  // every field still offered "Public" and "Scout", two settings that could
+  // never take effect, annotated with a hint ("only applies once exposure is
+  // on") pointing at a control no longer on the screen.
+  //
+  // DISABLED rather than filtered out. A player who set a field to public/scout
+  // BEFORE the sunset still has that value persisted; dropping the option from
+  // the list would hand `Segmented` a value it has no option for and render the
+  // row with nothing selected — losing the honest read of what is stored. Keep
+  // both visible, make neither selectable, and say why below.
 
   const exposureEnabled = state === 'public_profile' || state === 'scout_packet';
   // The SERVER-CONFIRMED equivalent of exposureEnabled — gates the live "Copy
@@ -503,6 +536,7 @@ export function PassportVisibilityControls({
                     label={def.label}
                     effective={overrides[def.key] ?? (PASSPORT_FIELD_BASE[def.key] ?? 'player_visible')}
                     exposureEnabled={exposureEnabled}
+                    recruitingEnabled={recruitingEnabled}
                     disabled={!canEdit || pending}
                     onChange={onFieldChange}
                   />
