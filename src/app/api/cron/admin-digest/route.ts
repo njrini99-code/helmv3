@@ -60,9 +60,24 @@ export async function GET(req: NextRequest) {
     const admin = createAdminClient();
     const ago24h = new Date(Date.now() - 86400_000).toISOString();
     const now = new Date();
+    const in24h = new Date(Date.now() + 86400_000).toISOString();
 
-    const [errors24h, signups, golf, baseball, lifts, integrityFails, jobRows, regressed, triage, demoNew, demoPending] =
-      await Promise.all([
+    const [
+      errors24h,
+      signups,
+      golf,
+      baseball,
+      lifts,
+      integrityFails,
+      jobRows,
+      regressed,
+      triage,
+      demoNew,
+      demoPending,
+      coachReplies,
+      demoWaiting,
+      tasksDue,
+    ] = await Promise.all([
         admin
           .from('admin_events')
           .select(
@@ -85,7 +100,44 @@ export async function GET(req: NextRequest) {
         fetchSentryIssues({ query: 'is:regressed', limit: 25 }),
         fetchTriageQueue(),
         admin.from('demo_requests').select('id', { count: 'exact', head: true }).gte('created_at', ago24h),
-        admin.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        // "Awaiting reply" must match the CRM's own definition of a new lead —
+        // demo-request-status.ts's isNewRequest() is `!status || status ===
+        // 'pending'`. An .eq('status','pending') here silently dropped every
+        // row inserted with a NULL status, i.e. the newest leads, which is the
+        // exact set the digest exists to surface.
+        admin
+          .from('demo_requests')
+          .select('id', { count: 'exact', head: true })
+          .or('status.is.null,status.eq.pending'),
+        // Inbound coach email. crm_replies is populated by the
+        // ingest-gmail-replies cron every 30 minutes, so this is "what coaches
+        // sent" without this route needing Gmail credentials of its own. The
+        // count is every unread reply; the rows are the five most recent.
+        admin
+          .from('crm_replies')
+          .select('from_address, subject, received_at', { count: 'exact' })
+          .eq('is_read', false)
+          .order('received_at', { ascending: false })
+          .limit(5),
+        // The specific leads still waiting, oldest first — same predicate as
+        // the count above so the list can never contradict the number.
+        admin
+          .from('demo_requests')
+          .select('name, organization, email, created_at')
+          .or('status.is.null,status.eq.pending')
+          .order('created_at', { ascending: true })
+          .limit(5),
+        // CRM follow-ups due inside the next 24h, plus anything already past
+        // due. Undated tasks are excluded: without a due date there is nothing
+        // to say it belongs in *this* morning's briefing.
+        admin
+          .from('crm_tasks')
+          .select('title, due_at')
+          .in('status', ['pending', 'in_progress'])
+          .not('due_at', 'is', null)
+          .lte('due_at', in24h)
+          .order('due_at', { ascending: true })
+          .limit(5),
       ]);
 
     // Outside the Promise.all above so a GitHub hiccup cannot reject the batch.
@@ -96,12 +148,70 @@ export async function GET(req: NextRequest) {
       if (!latestByJob.has(row.job_type)) latestByJob.set(row.job_type, row);
     }
     const demoPendingCount = demoPending.count ?? 0;
+
+    /**
+     * Inbound coach mail. `null` on a failed read, never `{unread: 0}` — a
+     * zero here would tell the owner no coach wrote in, which is a claim we
+     * cannot make when the query itself failed.
+     */
+    const coachMail: DigestData['coachMail'] = coachReplies.error
+      ? null
+      : {
+          unread: coachReplies.count ?? 0,
+          recent: (
+            (coachReplies.data ?? []) as Array<{
+              from_address: string | null;
+              subject: string | null;
+              received_at: string | null;
+            }>
+          ).map((r) => ({
+            from: r.from_address ?? 'unknown sender',
+            subject: r.subject ?? '(no subject)',
+            ageHours: r.received_at
+              ? Math.max(0, (now.getTime() - new Date(r.received_at).getTime()) / 3_600_000)
+              : 0,
+          })),
+        };
+
+    const waiting = (
+      (demoWaiting.data ?? []) as Array<{
+        name: string | null;
+        organization: string | null;
+        email: string | null;
+        created_at: string | null;
+      }>
+    ).map((r) => ({
+      name: r.name,
+      organization: r.organization,
+      email: r.email ?? 'unknown',
+      waitingDays: r.created_at
+        ? Math.max(0, Math.round((now.getTime() - new Date(r.created_at).getTime()) / 86400_000))
+        : 0,
+    }));
+
+    const openTasks = ((tasksDue.data ?? []) as Array<{ title: string | null; due_at: string | null }>).map((r) => {
+      const due = r.due_at ? new Date(r.due_at) : null;
+      return {
+        title: r.title ?? 'Untitled task',
+        dueLabel: due ? due.toISOString().slice(0, 10) : 'no date',
+        overdue: due ? due.getTime() < now.getTime() : false,
+      };
+    });
+
     const reds: string[] = [
       // A lead awaiting reply is the most actionable item in the whole digest —
       // it stays red until someone moves it out of 'pending' in the CRM.
       ...(demoPendingCount > 0
         ? [`${demoPendingCount} demo request${demoPendingCount === 1 ? '' : 's'} awaiting reply`]
         : []),
+      // A coach who wrote in and got no answer is a person waiting on a person.
+      ...(coachMail && coachMail.unread > 0
+        ? [`${coachMail.unread} unread coach repl${coachMail.unread === 1 ? 'y' : 'ies'} in the CRM inbox`]
+        : []),
+      ...(() => {
+        const overdue = openTasks.filter((t) => t.overdue).length;
+        return overdue > 0 ? [`${overdue} CRM follow-up${overdue === 1 ? '' : 's'} past due`] : [];
+      })(),
       ...((integrityFails.data ?? []) as Array<{ title: string }>).map((r) => r.title),
       ...CRON_REGISTRY
         .filter((e) => e.jobType !== 'admin-digest')
@@ -125,7 +235,9 @@ export async function GET(req: NextRequest) {
         regressed: regressed.status === 'ok' ? (regressed.data?.length ?? 0) : null,
       },
       signups24h: ((signups.data ?? []) as Array<{ email: string; role: string }>),
-      demoRequests: { new24h: demoNew.count ?? 0, pendingTotal: demoPendingCount },
+      demoRequests: { new24h: demoNew.count ?? 0, pendingTotal: demoPendingCount, waiting },
+      coachMail,
+      openTasks,
       activity24h: {
         golfRounds: golf.count ?? 0,
         baseballGames: baseball.count ?? 0,

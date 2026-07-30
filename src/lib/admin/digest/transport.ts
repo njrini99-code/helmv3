@@ -32,6 +32,22 @@ export interface SendOpsDigestResult {
 
 const DEFAULT_FROM = 'Cup of Helm <bridge@helmsportslabs.com>';
 
+/**
+ * Recipients, parsed from a comma-separated OPS_DIGEST_TO.
+ *
+ * The briefing goes to more than one inbox (owner, 2026-07-30: the admin alias
+ * AND a personal address). Resend's `to` takes an array; handing it the raw
+ * "a@x.com, b@y.com" string instead is rejected as one malformed address, so
+ * the split is required rather than cosmetic. Blank entries from a trailing
+ * comma are dropped, and an all-blank value is treated as unconfigured.
+ */
+function opsRecipients(): string[] {
+  return (process.env.OPS_DIGEST_TO ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
 export interface OpsAlert {
   subject: string;
   text: string;
@@ -47,8 +63,8 @@ export async function sendOpsAlert(alert: OpsAlert): Promise<SendOpsDigestResult
   const client = getOpsClient();
   if (!client) return { sent: false, skipped: true, reason: 'ops-transport-not-configured' };
 
-  const to = (process.env.OPS_DIGEST_TO ?? '').trim();
-  if (!to) return { sent: false, skipped: true, reason: 'missing-recipient' };
+  const to = opsRecipients();
+  if (to.length === 0) return { sent: false, skipped: true, reason: 'missing-recipient' };
 
   const { data, error } = await client.emails.send({
     from: process.env.OPS_DIGEST_FROM || DEFAULT_FROM,
