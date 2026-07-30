@@ -337,11 +337,35 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 | Priority | Item | Note |
 |---|---|---|
 | ~~P1~~ **DONE** | ~~34% of `baseball_*` tables have zero pgTAP RLS coverage~~ | Closed. Invitations (`2c2c939cf`), messaging (`e1011f50b`), and tasks/travel/announcements/dev-plans (`4e0b96ccb`) all have suites now. Writing them found **two P0s** — the invitation-code leak and the `baseball_messages` typo. Two findings across five previously-untested tables is the evidence for the claim that an untested policy is an unverified claim. |
-| P1 | **CI seeds PRODUCTION on every PR** | `seed:baseball:ci` creates auth users and deletes `login_attempts` rows in the production project. Now explicit (`--allow-prod` in package.json) rather than hidden behind a constant named "demo" — but it should probably target a local stack instead. Needs a decision. |
+| P1 | **CI seeds PRODUCTION on every PR** | Still true, but **narrower than this row implied** — investigated 2026-07-29 23:45Z; read the notes under the table before rewriting anything. |
 | ~~P1~~ **DONE** | ~~`baseball_notifications_insert` is `WITH CHECK (true)`~~ | In-app phishing, not a leak (reads are correctly self-scoped). **The obvious fix breaks the product:** practice-publish and coach lift messages legitimately write notifications to *other* users through the caller's own session (`practice.ts:516`, `lifting-v11.ts:2411`, both `createClient()` not admin), so `auth.uid() = user_id` would silently stop them. Needs a `can_notify_baseball_user()` definer helper. **Fixed in `bcbba306b`** — a definer `can_notify_baseball_user()` gating on "self, or a player on a team you are staff on", after verifying two ways that those two call sites are the only inserters. 10 pgTAP assertions, weighted toward the PERMITTED cases so a future self-only tightening cannot pass. |
 | ~~P1 **BLOCKED**~~ **DONE** | ~~`public_profile_mode` DDL default is `'private'`~~ | **Answered 10:40 EDT once the database came back.** Live column default is `'unlisted'::text` and **all 13 teams are `unlisted`, zero `private`** — so `baseball_teams_public_profile` is NOT default-deny and cross-org discovery is not zeroed. Feared impact was nil. Separately worth knowing: production's column default **drifted** from the committed DDL, a second independent case of production not matching the migration that created it. Zero impact today, recorded not actioned. |
 | ~~P2~~ **DONE** | ~~The `integration` vitest project (5 files) runs in no CI workflow~~ | **The item was right about the gap and wrong about the cause, and the real cause was worse.** `vitest.config.ts` set a root-level `include`, and `extends: true` MERGES array options rather than replacing them — so every project inherited the broad root glob. `integration`, `rls` and `business` set `include` but not `exclude`, so each matched **~870 files instead of 5, 0 and 7**. `unit` looked fine only because it also overrides `exclude`. Consequences: CI's "Business contracts" job was re-running the entire unit suite under a name claiming to check 7 contract files (~170s → 3s once fixed), and the integration tests *were* running — by accident, inside that job. Root `include` removed, integration given its own CI step so nothing is lost. Verified by counting: unit 861 (unchanged), integration 5, business 7, rls 0. |
-| P2 | Elite stat event model — 8 tables, ~10 migrations, **zero rows** in production | Dead schema. Decide: keep, or graveyard it. |
+| P2 | Elite stat event model — **13** tables (11 exist), ~10 migrations, **zero rows** | **Re-verified 23:50Z: "dead schema, graveyard it" is the WRONG framing.** ~20 live readers depend on these tables; the missing piece is **ingest** (zero write paths for pitch/batted-ball/catching/fielding/baserunning/workload). Decision is "build the ingest, or remove the read surfaces too" — deleting the tables alone breaks production. Detail: `ISSUE_LEDGER.md` → P1.14. |
+
+**Notes on the P1 above — what "CI seeds production" actually does (verified 2026-07-29 23:45Z):**
+`seed:baseball:ci` = `tsx scripts/seed-baseball-demo.ts --confirm --allow-prod`, run
+from `ci.yml:466` and `playwright.yml:163` in the `baseball-auth-smoke` job, whose
+`env:` passes the production `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.
+So yes, it writes to production on every PR — but three of the scarier readings are
+wrong:
+
+- **The `login_attempts` DELETE is scoped, not a table wipe:**
+  `.in('email', [DEMO_COACH_EMAIL, DEMO_PLAYER_EMAIL])` (`seed-baseball-demo.ts:550`),
+  with a comment citing the 2026-07-02 forensics where both demo accounts sat at
+  10/10 and bricked every later run. Real users' lockout protection is untouched.
+- **Fork and Dependabot PRs get no secrets.** Both workflows use `pull_request`, not
+  `pull_request_target`, and `ci.yml`'s env block has a documented dummy fallback for
+  exactly that case. No service-role key reaches an untrusted PR.
+- **The writes are idempotent upserts** into a known demo tenant the script itself
+  describes as "safe to ignore in production lists".
+
+**Why it was not simply repointed at a local stack:** `BaseballHelm authenticated
+smoke` is a **required** merge gate, and rewiring it means standing up Postgres +
+auth + migrations + seeded users in CI. Landing that wrong blocks every PR in the
+repo — which already happened once on 2026-07-29 when an unretried CI seed froze all
+merges (#1097/#1098). Right eventual change, wrong unattended-at-midnight change.
+Needs an owner decision on sequencing.
 
 ---
 

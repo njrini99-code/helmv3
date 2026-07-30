@@ -16,6 +16,7 @@
 import { redirect } from 'next/navigation';
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { requireRecruitingCoachRoute } from '@/lib/baseball/server-route-guards';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { getScoutPacketRoster } from '@/app/baseball/actions/scout-packet';
 import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
@@ -27,6 +28,14 @@ export const metadata = {
 };
 
 export default async function ScoutPacketsHubPage() {
+  // PRODUCT-MODULE gate, first — matching all six sibling recruiting pages.
+  // The middleware does close this route today (it is in both
+  // MODULE_ROUTE_PREFIXES and STAFF_CAPABILITY_ROUTES, so it reaches the
+  // module check), but this was the only recruiting page relying on that alone.
+  // A page-level guard means the door does not depend on two lists in a
+  // different file continuing to agree.
+  await requireRecruitingCoachRoute();
+
   const context = await getActiveBaseballContext();
   if (!context) redirect('/baseball/dashboard/command-center');
   if (context.activeRole !== 'coach') redirect('/baseball/player/passport');

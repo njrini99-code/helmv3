@@ -275,6 +275,17 @@ priority order.
 - **Evidence:** Live COUNT(*) via mcp__supabase__execute_sql: baseball_plate_appearances=0, baseball_pitch_events=0, baseball_batted_ball_events=0, baseball_baserunning_events=0, baseball_catching_events=0, baseball_fielding_events=0, baseball_swing_events=0, baseball_workload_events=0. Meanwhile the coarser stat tables are populated: baseball_box_score_batting=179, baseball_box_score_pitching=53, baseball_player_stats=268, baseball_player_season_stats=26.
 - **Impact:** Significant schema/RLS/index investment across ~10 migrations backs a pitch-by-pitch/PA-by-PA analytics model that has never received a single row in production. Any coach-facing surface built on top of these tables will always render an empty state, including in front of a buyer demo.
 
+**UPDATE 2026-07-29 23:50Z — re-verified. The zero-rows finding holds; `state: dead` is wrong and points at the one action that would break production.**
+
+- **13 tables, not 8**, and only **11 exist** — `baseball_stat_facts` and `baseball_import_field_mappings` were **never created in production**, a third independent case here of prod not matching the migration that declared it. All 11 that exist are at **exactly 0 rows** by `count(*)` (not `reltuples`, which is -1 across the board — never ANALYZEd, consistent with never written but not proof).
+- **`baseball_stat_facts` is harmless despite being absent:** its only appearance in `src/` is a comment at `src/lib/types/baseball-stat-events.ts:467`. Nothing queries it, so no PostgREST 400.
+- **The schema is NOT dead — ~20 live `.from()` read sites depend on it**, across `read-models/stats-center.ts`, `read-models/stat-visuals.ts`, `read-models/player-snapshot-cards.ts`, `coachhelm/engine-run.ts`, `coachhelm/engine-event-derived.ts`, `admin/data/users.ts`. Dropping these tables breaks all of them. "dead" reads as "safe to remove"; it is the opposite.
+- **The gap is ingest, not schema.** Of the granular event tables — pitch, batted-ball, catching, fielding, baserunning, workload — **not one has a write path** anywhere in `src/`. The only two written at all are `baseball_video_events` (4 write calls) and `baseball_stat_sources` (1). The reads were built; the collection never was.
+
+**So the decision is "build the ingest, or remove the read surfaces along with the tables"** — not "keep or graveyard", where graveyarding alone is the single clearly-wrong option.
+
+_Empty-state handling was spot-checked and the limit is stated rather than implied: `buildPitcherWorkload` (`stat-visuals.ts:428`) degrades honestly to `[]` with no fabricated zeros. That is **one** of ~20 sites; whether every consumer shows an honest empty state instead of a confident `0.00` is **unverified** and worth a sweep. Note `read-models/player-snapshot-cards.ts` was carrying another session's uncommitted work at the time and was deliberately not touched._
+
 **P1.15 — Signals -> Actions -> Decision-Log -> AI-Audit pipeline and staff/team invitations are empty in production**
 
 - **Anchor:** `supabase/migrations/20260624000092_baseball_signals_and_actions.sql`

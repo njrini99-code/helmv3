@@ -78,9 +78,16 @@ export default function ProfilePage() {
             title="Edit Profile"
             ink="team"
             actions={
+              // "Public" is a claim about the audience, and it is wrong while
+              // recruiting is sunset: /baseball/player/[id] is readable by the
+              // player and their own staff, nobody else. The destination is
+              // still useful (it is how a player checks what their profile looks
+              // like assembled), so relabel rather than remove — a player who
+              // clicks "View Public Profile" and sees their own page has been
+              // told their data is public when it is not.
               <Button asChild variant="secondary" size="sm" leftIcon={<IconGlobe size={14} />}>
                 <Link href={`/baseball/player/${player.id}`} target="_blank">
-                  View Public Profile
+                  {isRecruitingEnabled() ? 'View Public Profile' : 'Preview my profile'}
                 </Link>
               </Button>
             }

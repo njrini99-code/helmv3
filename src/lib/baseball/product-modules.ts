@@ -88,21 +88,32 @@ export const PRODUCT_MODULES: Readonly<Record<ProductModuleId, ProductModule>> =
       'Section C (3 feeder orgs, 8 recruits, 8 watchlist rows) and its ' +
       'stale-outreach coach insight are BOTH gated on this flag, so they come ' +
       'back automatically; re-run `npm run seed:baseball:demo`; ' +
-      '(5) EXPECT 54 UNIT TESTS TO FAIL, IN 7 FILES, AND DO NOT DELETE THEM. ' +
-      'This was measured on 2026-07-29 by actually flipping the flag and running ' +
-      'the full suite, because "one line brings it back" had been asserted in ' +
-      'four documents and verified by nobody. Every failure is a test asserting ' +
-      'recruiting is currently HIDDEN — they are the proof the sunset works and ' +
-      'they are supposed to go red the moment it does not. The files, with ' +
-      'failure counts at the time of measuring: ' +
-      'recruiting-sunset-doors.test.ts (36), bottom-nav.test.ts (8), ' +
+      '(5) EXPECT 58 TESTS TO FAIL, IN 8 FILES, AND DO NOT DELETE THEM. ' +
+      'Every failure is a test asserting recruiting is currently HIDDEN — they ' +
+      'are the proof the sunset works and they are supposed to go red the moment ' +
+      'it does not. RE-MEASURED 2026-07-29 (leak-closure pass) by flipping this ' +
+      'flag and running `npx vitest run` across ALL projects, because "one line ' +
+      'brings it back" had been asserted in four documents and verified by ' +
+      'nobody. The files, with failure counts: ' +
+      'recruiting-sunset-doors.test.ts (37), bottom-nav.test.ts (8), ' +
       'product-modules.test.ts (4), recruiting-activate-door.test.ts (3), ' +
+      'src/app/baseball/actions/__tests__/' +
+      'recruiting-activation-module-gate.integration.test.ts (3), ' +
       'operational-rule-engine.test.ts (1 — the rule-engine module gate), ' +
       'src/test/routes/no-inbound-links-to-disabled-modules.test.ts (1 — its ' +
       'own non-vacuity probe), and ' +
       'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts (1 — it ' +
       'says so in its own assertion message: "this guard assumes the sunset is ' +
-      'still in force"). Typecheck stays clean at 0 errors either way. ' +
+      'still in force"). ' +
+      'NOTE ON THE PREVIOUS NUMBER: this said "54 in 7 files". Two corrections. ' +
+      'The integration file above was never counted — the first measurement ran ' +
+      '`npm test`, which is the UNIT project only, so an integration test ' +
+      'asserting the same sunset was invisible to it. Use `npx vitest run` (all ' +
+      'projects) when re-measuring. The remaining +1 is a new door: ' +
+      'MODULE_ROUTE_PATTERNS below, added because /baseball/dashboard/players/' +
+      '<id>/scout-packet could not be expressed as a prefix and so was reachable ' +
+      'and fully functional through the sunset. Typecheck stays clean at 0 ' +
+      'errors either way. ' +
       'The E2E specs gated in e2e/helpers/product-modules.ts un-skip themselves ' +
       'with the flag — 46 tests across 5 files — and have not run against a ' +
       'live app since the sunset, so budget time for them; ' +
@@ -116,7 +127,20 @@ export const PRODUCT_MODULES: Readonly<Record<ProductModuleId, ProductModule>> =
       'the player and not their percentiles. Fail-closed and intentional; the ' +
       'clean widening is a definer ' +
       'is_baseball_player_percentiles_discoverable(player_id) that does the ' +
-      'lookup inside its own body rather than an inline subquery in the policy.',
+      'lookup inside its own body rather than an inline subquery in the policy; ' +
+      '(7) SCOUT PACKET was sealed in a later pass and has the most gates of any ' +
+      'recruiting surface — re-check all of them together or it comes back half ' +
+      'open. Six staff server actions in app/baseball/actions/scout-packet.ts ' +
+      '(mint/list/revoke/relabel/roster/preview) each call ' +
+      'assertRecruitingShipped(); resolveScoutPacketByToken gates the public ' +
+      'share-link and CSV paths separately; both page routes call ' +
+      'requireRecruitingCoachRoute(); MODULE_ROUTE_PATTERNS closes them at the ' +
+      'middleware; and two inbound links are gated at their call sites ' +
+      '(players/[id]/passport/page.tsx SectionMasthead action, ' +
+      'PlayerProfileClient.tsx passport tab). The capability gate on those ' +
+      'actions (can_export_reports) is NOT a substitute for any of it — a head ' +
+      'coach holds every capability unconditionally, which is the whole reason ' +
+      'this registry exists.',
   },
 } as const;
 
@@ -208,6 +232,10 @@ export function isNavKeyDisabled(key: string | null | undefined): boolean {
  * unreachable by direct URL — hiding a link is not the same as closing a door,
  * and a buyer typing a URL must not land on a half-built screen.
  *
+ * NOTE ON WHAT A PREFIX CANNOT SAY: a module route with a dynamic segment in
+ * the MIDDLE of it has no usable prefix — see `MODULE_ROUTE_PATTERNS` below,
+ * added for `/baseball/dashboard/players/<id>/scout-packet`.
+ *
  * NOTE ON SCOPE: `/baseball/dashboard/academics` is deliberately ABSENT.
  * Academics reads as recruiting-adjacent (eligibility, transcripts, GPA) but is
  * a compliance surface a non-recruiting college program still needs, so it
@@ -249,8 +277,41 @@ export const MODULE_ROUTE_PREFIXES: Readonly<Record<ProductModuleId, readonly st
 } as const;
 
 /**
+ * Route PATTERNS owned by each module — for module routes that a static prefix
+ * cannot express because a dynamic segment sits in the middle of them.
+ *
+ * WHY THIS EXISTS. `MODULE_ROUTE_PREFIXES` above is a string-prefix match, which
+ * is the right shape for every recruiting route that lives at its own top-level
+ * path. It cannot describe
+ * `/baseball/dashboard/players/<playerId>/scout-packet`, because the only prefix
+ * that matches it is `/baseball/dashboard/players`, and adding THAT would take
+ * the live roster, player-profile, stats and passport routes down with it.
+ *
+ * The consequence was not theoretical. Scout Packet — the surface that mints
+ * revocable share links to a player's measurables, video and season line — was
+ * outside the prefix registry, outside the middleware's own RECRUITING_ROUTES
+ * list, outside STAFF_CAPABILITY_ROUTES, and (unlike all six of its sibling
+ * recruiting pages) carried no guard of its own. It stayed fully functional
+ * through the sunset. Its own page guard now closes it; this list is what lets
+ * the OUTERMOST gate close it too, so the door does not depend on one file.
+ *
+ * Keep these anchored (`^`) and narrow. A loose pattern here silently withdraws
+ * live product, which is the one failure mode this registry exists to prevent.
+ */
+export const MODULE_ROUTE_PATTERNS: Readonly<Record<ProductModuleId, readonly RegExp[]>> = {
+  recruiting: [
+    // /baseball/dashboard/players/<id>/scout-packet and its /preview child.
+    /^\/baseball\/dashboard\/players\/[^/]+\/scout-packet(?:\/|$)/,
+  ],
+} as const;
+
+/**
  * The module owning `pathname`, or null. Longest-prefix wins so a future
  * nested module route cannot be shadowed by a shorter sibling.
+ *
+ * Patterns are consulted only when no prefix matched. A prefix is the more
+ * specific statement (it names a whole subtree the module owns), and checking it
+ * first keeps the existing longest-wins precedence exactly as it was.
  */
 export function moduleForPathname(pathname: string): ProductModuleId | null {
   let best: { id: ProductModuleId; len: number } | null = null;
@@ -264,7 +325,14 @@ export function moduleForPathname(pathname: string): ProductModuleId | null {
       }
     }
   }
-  return best?.id ?? null;
+  if (best) return best.id;
+
+  for (const id of PRODUCT_MODULE_IDS) {
+    for (const pattern of MODULE_ROUTE_PATTERNS[id] ?? []) {
+      if (pattern.test(pathname)) return id;
+    }
+  }
+  return null;
 }
 
 /**

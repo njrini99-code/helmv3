@@ -77,12 +77,24 @@ const MODULE_OWNED_PATHS: readonly string[] = [
   'src/app/baseball/(dashboard)/dashboard/compare/',
   'src/app/baseball/(dashboard)/dashboard/journey/',
   'src/app/baseball/(dashboard)/dashboard/activate/',
+  // Nested under a LIVE route family, so it cannot be a prefix in the registry —
+  // it is matched by MODULE_ROUTE_PATTERNS instead. The directory is entirely
+  // recruiting: a scout-packet page linking to its own /preview child is a
+  // within-module link and must keep working when the module returns.
+  'src/app/baseball/(dashboard)/dashboard/players/[id]/scout-packet/',
   // Closed by requireRecruiting*Route rather than by the prefix registry, but
   // recruiting surfaces all the same.
   'src/app/baseball/(dashboard)/dashboard/watchlist/',
   'src/app/baseball/(dashboard)/dashboard/analytics/',
   'src/app/baseball/(public)/packet/',
   // Component directories that exist only to render recruiting.
+  //
+  // `passport/ScoutPacket` is a FILE-name prefix, not a directory: the passport
+  // folder is mixed. ScoutPacket{Manager,RosterList,sFairway,View,CsvButton} are
+  // recruiting-only, while PassportVisibilityControls and PlayerPassportFairway
+  // render the roster-evaluation passport that survives the sunset and must stay
+  // under the check. Naming the prefix keeps the live half honest.
+  'src/components/baseball/passport/ScoutPacket',
   'src/components/coach/discover/',
   'src/components/baseball/recruiting-philosophy/',
   'src/components/baseball/position-planner/',
@@ -104,8 +116,39 @@ function isModuleOwned(repoRelative: string): boolean {
   return MODULE_OWNED_PATHS.some((owned) => normalised.startsWith(owned));
 }
 
+/**
+ * Fully-literal targets: `href="/x"`, `redirect('/x')`, `router.push(`/x`)`.
+ */
 const LINK_RE =
   /(?:href|router\.(?:push|replace|prefetch)\(|redirect\(|permanentRedirect\()\s*[=(]?\s*["'`](\/[^"'`\s${]*)["'`]/g;
+
+/**
+ * INTERPOLATED targets — the gap that let two real leaks through.
+ *
+ * `LINK_RE`'s character class excludes `$` and `{`, so a template literal
+ * carrying an interpolation matches nothing at all. Both scout-packet links
+ * found live on coach surfaces looked exactly like this:
+ *
+ *     href={`/baseball/dashboard/players/${player.id}/scout-packet`}
+ *
+ * Capturing only the static head (`/baseball/dashboard/players/`) would not have
+ * caught them either — that is a live route, and the recruiting part of the path
+ * is the SUFFIX. So capture the whole template body and rebuild a testable path
+ * by standing a placeholder in for each interpolation, which lets the normal
+ * `isPathnameModuleDisabled` answer exactly, dynamic segment and all.
+ *
+ * `[^`]*` deliberately refuses to cross a backtick, so a nested template inside
+ * an interpolation (`${cond ? `/a` : `/b`}`) is skipped rather than mis-parsed.
+ * That is the same "literal targets only" limitation this file already declares,
+ * narrowed to a much smaller residue.
+ */
+const TEMPLATE_LINK_RE =
+  /(?:href|router\.(?:push|replace|prefetch)\(|redirect\(|permanentRedirect\()\s*[=(]?\s*\{?\s*`(\/[^`]*)`/g;
+
+/** `/players/${id}/scout-packet` -> `/players/_id_/scout-packet`. */
+function resolvableTemplatePath(body: string): string {
+  return body.replace(/\$\{[^{}]*\}/g, '_id_');
+}
 
 function collectSourceFiles(dir: string, out: string[]): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -160,19 +203,28 @@ function findInboundLeaks(files: string[]): Leak[] {
     const src = readFileSync(file, 'utf8');
     if (consultsModuleGate(src)) continue;
 
-    LINK_RE.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = LINK_RE.exec(src)) !== null) {
-      const captured = m[1];
-      if (!captured) continue;
-      const href = captured.split('?')[0]?.split('#')[0]?.replace(/\/$/, '') || '/';
-      if (!isPathnameModuleDisabled(href)) continue;
-      const line = src.slice(0, m.index).split('\n').length;
-      leaks.push({
-        href,
-        module: moduleForPathname(href) ?? 'unknown',
-        site: `${repoRelative}:${line}`,
-      });
+    for (const [re, normalise] of [
+      [LINK_RE, (s: string) => s],
+      [TEMPLATE_LINK_RE, resolvableTemplatePath],
+    ] as const) {
+      re.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(src)) !== null) {
+        const captured = m[1];
+        if (!captured) continue;
+        const resolved = normalise(captured);
+        // A template body that still holds an interpolation could not be
+        // rebuilt (nested braces) — skip rather than test a broken path.
+        if (resolved.includes('${')) continue;
+        const href = resolved.split('?')[0]?.split('#')[0]?.replace(/\/$/, '') || '/';
+        if (!isPathnameModuleDisabled(href)) continue;
+        const line = src.slice(0, m.index).split('\n').length;
+        leaks.push({
+          href,
+          module: moduleForPathname(href) ?? 'unknown',
+          site: `${repoRelative}:${line}`,
+        });
+      }
     }
   }
   return leaks;
