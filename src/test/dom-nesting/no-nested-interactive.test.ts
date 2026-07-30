@@ -33,8 +33,28 @@ const SRC = path.resolve(__dirname, '../..');
 
 /** Intrinsic elements that may not contain other interactive content. */
 const INTERACTIVE_INTRINSIC = new Set(['button', 'a']);
-/** Components that render an interactive element. */
-const INTERACTIVE_COMPONENTS = new Set(['Link']);
+/**
+ * Components that render an interactive element.
+ *
+ * 2026-07-29: this was `{ 'Link' }` only, and that gap let the exact bug this
+ * file exists to prevent ship undetected. `src/app/golf/admin/crm/components/
+ * CalendarView.tsx` had a month day cell that was `<Button>` wrapping event pills
+ * that are also `<Button>` — a <button> inside a <button> — and this guard walked
+ * straight past it, because the set is case-sensitive so 'Button' matched neither
+ * INTERACTIVE_INTRINSIC's 'button' nor a one-entry component list. Found by
+ * reading the DOM when the component was finally mounted (#1111), not by the
+ * check that was supposed to catch it.
+ *
+ * All three of these render a real `<button>`: Button (button.tsx:81),
+ * IconButton (:176), ButtonGroupOption (:212). If another wrapper is added there,
+ * add it here too — the guard is only as complete as this list.
+ */
+const INTERACTIVE_COMPONENTS = new Set([
+  'Link',
+  'Button',
+  'IconButton',
+  'ButtonGroupOption',
+]);
 
 function isInteractive(name: string): boolean {
   return INTERACTIVE_INTRINSIC.has(name) || INTERACTIVE_COMPONENTS.has(name);
@@ -62,9 +82,125 @@ function tagNameOf(node: ts.JsxElement | ts.JsxSelfClosingElement): string {
   return tag.getText();
 }
 
-function findNestedInteractive(file: string): string[] {
-  const source = readFileSync(file, 'utf8');
-  const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+/**
+ * `asChild` means the component renders NO wrapper of its own.
+ *
+ * This repo has two Button components and only one of them is a wrapper:
+ *   - `@/components/fairway/controls/button` — `const Comp = asChild ? Slot : 'button'`
+ *     (button.tsx:157). With `asChild`, Radix's Slot merges the props onto the
+ *     child, so `<Button asChild><Link/></Button>` emits ONE `<a>`. Valid.
+ *   - `@/components/ui/button` — always emits a real `<button>`.
+ *
+ * Without this, adding 'Button' to the interactive set reported ~35 violations
+ * and every `<Link> inside <Button>` among them was a false positive on the Slot
+ * pattern — which is used at 167 call sites. A guard that cries wolf at 167 valid
+ * call sites gets deleted, so it must understand the escape hatch.
+ *
+ * Precision note: a bare `asChild` or `asChild={true}` is definitely a Slot. A
+ * computed `asChild={expr}` is only conditionally a Slot, and this treats it as
+ * one. That is a deliberate false-negative — the alternative is flagging valid
+ * code, and the shape this guard exists to catch (#1111's month cell) passes no
+ * asChild at all.
+ */
+function rendersNoWrapper(node: ts.JsxElement | ts.JsxSelfClosingElement): boolean {
+  const attrs = ts.isJsxElement(node) ? node.openingElement.attributes : node.attributes;
+  for (const attr of attrs.properties) {
+    if (!ts.isJsxAttribute(attr)) continue;
+    if (attr.name.getText() !== 'asChild') continue;
+    // Bare `asChild` has no initializer.
+    if (!attr.initializer) return true;
+    if (ts.isJsxExpression(attr.initializer)) {
+      const expr = attr.initializer.expression;
+      // `asChild={false}` really is a wrapper.
+      if (expr && expr.kind === ts.SyntaxKind.FalseKeyword) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Ratchet key: file + shape, deliberately WITHOUT the line number.
+ *
+ * Keying on the line was the first attempt and it is unusable: inserting a line
+ * anywhere above a known violation shifts it, so the recorded entry goes stale AND
+ * the shifted one reads as new -- two spurious failures from an edit that changed
+ * nothing about the nesting. Verified by injecting one violation into
+ * app/not-found.tsx: it produced 3 failures, only 1 of them real. That file and
+ * app/baseball/page.tsx each hold several, so this would have fired constantly, and
+ * a guard that cries wolf on unrelated edits gets disabled rather than fixed.
+ *
+ * Cost of dropping the line: two violations of the same shape in the same file
+ * collapse to one key, so fixing one of a pair will not trip the stale check until
+ * both are fixed. Acceptable -- the job is to stop NEW files and NEW shapes, and the
+ * line-accurate list is still printed on failure.
+ */
+function ratchetKey(violation: string): string {
+  const sep = violation.indexOf(' \u2014 ');
+  if (sep === -1) return violation;
+  const fileline = violation.slice(0, sep);
+  const shape = violation.slice(sep + 3);
+  return `${fileline.replace(/:\d+$/, '')} \u2014 ${shape}`;
+}
+
+/**
+ * KNOWN VIOLATIONS — a ratchet, not an amnesty.
+ *
+ * Extending INTERACTIVE_COMPONENTS to the repo's own Button wrappers (2026-07-29)
+ * exposed 25 pre-existing violations. They are listed rather than fixed for one
+ * reason: fixing 25 files across baseball, lifting, golf and the marketing page in
+ * a single unattended pass is a worse risk than recording them, and CI already uses
+ * this idiom ("Import-cycle ratchet"). The guard FAILS on anything not listed here,
+ * so the count can only go down.
+ *
+ * Do NOT add an entry to make a build pass. Fix the nesting: the correct form for a
+ * link-shaped button is `<Button asChild><Link/></Button>`, which renders ONE
+ * element. Fixing one also requires deleting its line, enforced by the
+ * stale-entries test below.
+ */
+const KNOWN_VIOLATIONS = new Set<string>([
+  // -- SEVERE: interactive inside a <button>. The parser SPLITS the outer button,
+  // so the server DOM and the React tree disagree and hydration throws (#418/#425).
+  // This is the shape that shipped in CalendarView (#1111) and in select.tsx.
+  // Fix these first. Two are in sunset recruiting surfaces, one is live.
+  'app/lifting/(dashboard)/dashboard/settings/settings-client.tsx — <Button> nested inside <Button>',
+  'components/coach/discover/FilterPanel.tsx — <IconButton> nested inside <Button>',
+  'components/coach/discover/PlayerCard.tsx — <Button> nested inside <Button>',
+  // -- INVALID, but the parser does not split: interactive content inside an <a>.
+  // It renders, but nests two focusable elements -- keyboard and screen-reader
+  // users get a control inside a control and the click target is ambiguous.
+  'app/baseball/(auth)/forgot-password/page.tsx — <Button> nested inside <Link>',
+  'app/baseball/(auth)/reset-password/page.tsx — <Button> nested inside <Link>',
+  'app/baseball/(dashboard)/dashboard/camps/[id]/CampDetailClient.tsx — <Button> nested inside <Link>',
+  'app/baseball/(dashboard)/dashboard/camps/CampsClient.tsx — <Button> nested inside <Link>',
+  'app/baseball/(dashboard)/dashboard/dev-plans/[id]/page.tsx — <Button> nested inside <Link>',
+  'app/baseball/(dashboard)/dashboard/dev-plans/DevPlansClient.tsx — <Button> nested inside <Link>',
+  'app/baseball/(dashboard)/dashboard/program/ProgramClient.tsx — <Button> nested inside <Link>',
+  'app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx — <Button> nested inside <Link>',
+  'app/baseball/page.tsx — <Button> nested inside <Link>',
+  'app/lifting/(auth)/forgot-password/page.tsx — <Button> nested inside <Link>',
+  'app/lifting/(auth)/reset-password/page.tsx — <Button> nested inside <Link>',
+  'app/not-found.tsx — <Button> nested inside <Link>',
+  'components/baseball/position-planner/PlayerQuickView.tsx — <Button> nested inside <Link>',
+  'components/features/college-card.tsx — <IconButton> nested inside <Link>',
+  'components/golf/dashboard/premium-components.tsx — <Button> nested inside <Link>',
+  'components/lifting/sessions/SessionListClient.tsx — <Button> nested inside <Link>',
+  'components/ui/empty-state.tsx — <Button> nested inside <Link>',
+]);
+
+/**
+ * Core detector, over source TEXT rather than a path.
+ *
+ * Split out so the fixture test can exercise the real walk without writing a
+ * temp file. The first version of that test wrote to
+ * `path.join(tmpdir(), 'nest-fixture-<pid>.tsx')`, which CodeQL correctly flagged
+ * as `js/insecure-temporary-file` (high): a predictable name in a world-writable
+ * directory is a symlink/TOCTOU vector. Passing the source in removes the file,
+ * the alert, and the fs dependency from that test in one move.
+ */
+function findNestedInteractiveInSource(label: string, source: string): string[] {
+  const sf = ts.createSourceFile(label, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const file = label;
   const violations: string[] = [];
 
   const walk = (node: ts.Node, ancestor: string | null): void => {
@@ -72,13 +208,17 @@ function findNestedInteractive(file: string): string[] {
     if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
       const name = tagNameOf(node);
       if (isInteractive(name)) {
-        if (ancestor) {
+        const slot = rendersNoWrapper(node);
+        // A Slot emits no element of its own, so it is neither a violation
+        // when inside another interactive element nor an ancestor for what
+        // it contains.
+        if (ancestor && !slot) {
           const { line } = sf.getLineAndCharacterOfPosition(node.getStart());
           violations.push(
             `${path.relative(SRC, file)}:${line + 1} — <${name}> nested inside <${ancestor}>`,
           );
         }
-        next = name;
+        if (!slot) next = name;
       }
     }
     ts.forEachChild(node, (child) => walk(child, next));
@@ -86,6 +226,10 @@ function findNestedInteractive(file: string): string[] {
 
   walk(sf, null);
   return violations;
+}
+
+function findNestedInteractive(file: string): string[] {
+  return findNestedInteractiveInSource(file, readFileSync(file, 'utf8'));
 }
 
 /**
@@ -126,15 +270,74 @@ function findBlockInParagraph(file: string): string[] {
 }
 
 describe('DOM nesting: interactive elements are never nested', () => {
-  it('finds no <button>/<a>/<Link> inside another interactive element', () => {
+  it('introduces no NEW interactive nesting', () => {
     const files = collectTsx(SRC);
     // Guard the guard: if the walk silently stopped matching anything, an
     // empty file list would make this pass for the wrong reason.
     expect(files.length).toBeGreaterThan(500);
 
     const violations = files.flatMap(findNestedInteractive);
-    expect(violations).toEqual([]);
+    const fresh = violations.filter((v) => !KNOWN_VIOLATIONS.has(ratchetKey(v)));
+    expect(fresh).toEqual([]);
   }, 120000);
+
+  /**
+   * The other half of a ratchet. Without this, the known-list only ever grows
+   * stale: a violation gets fixed, its entry stays, and the entry then silently
+   * licenses the same nesting being reintroduced at that exact line later.
+   * Fixing one must force removing it here.
+   */
+  it('keeps the known-violation list free of stale entries', () => {
+    const files = collectTsx(SRC);
+    expect(files.length).toBeGreaterThan(500);
+
+    const live = new Set(files.flatMap(findNestedInteractive).map(ratchetKey));
+    const stale = [...KNOWN_VIOLATIONS].filter((k) => !live.has(k));
+    expect(
+      stale,
+      'these are fixed or moved — delete them from KNOWN_VIOLATIONS',
+    ).toEqual([]);
+  }, 120000);
+
+
+  /**
+   * The asChild escape hatch, exercised through the REAL detector rather than a
+   * re-implementation — the previous vacuity test inlined its own copy of the
+   * walk, which would not have caught a bug in `rendersNoWrapper`.
+   *
+   * This is the assertion that keeps the guard honest in both directions: too
+   * eager and it flags 167 valid Slot call sites and gets deleted; too lax and it
+   * misses the CalendarView shape it exists for.
+   */
+  it('suppresses the Slot pattern but still catches a real wrapper', () => {
+    const fixture = `
+      export function F() {
+        return (
+          <div>
+            {/* valid: Slot renders ONE <a> */}
+            <Button asChild><Link href="/a">ok</Link></Button>
+            <Button asChild={true}><Link href="/b">ok</Link></Button>
+            {/* invalid: a real <button> wrapping a real <a> */}
+            <Button><Link href="/c">bad</Link></Button>
+            {/* invalid: asChild explicitly off */}
+            <Button asChild={false}><Button>bad</Button></Button>
+            {/* invalid: the CalendarView shape */}
+            <Button><Button>bad</Button></Button>
+            {/* valid: siblings, which is how CalendarView was fixed */}
+            <div><Button>a</Button><Button>b</Button></div>
+          </div>
+        );
+      }
+    `;
+    const found = findNestedInteractiveInSource('fixture.tsx', fixture).map((v) =>
+      v.replace(/^.*? \u2014 /, ''),
+    );
+    expect(found).toEqual([
+      '<Link> nested inside <Button>',
+      '<Button> nested inside <Button>',
+      '<Button> nested inside <Button>',
+    ]);
+  });
 
   it('actually detects nesting when it exists (the detector is not vacuous)', () => {
     // A checker that reports zero is worthless until it is shown to report
