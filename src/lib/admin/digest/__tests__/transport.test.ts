@@ -40,8 +40,36 @@ describe('sendOpsDigest', () => {
     const res = await sendOpsDigest(email);
     expect(res).toMatchObject({ sent: true, messageId: 'msg-1' });
     expect(mocks.send).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'njrini99@gmail.com', subject: 's' }),
+      expect.objectContaining({ to: ['njrini99@gmail.com'], subject: 's' }),
     );
+  });
+
+  /**
+   * The briefing goes to more than one inbox (owner, 2026-07-30). Resend needs
+   * an ARRAY: handed the raw "a@x.com,b@y.com" string it treats the whole thing
+   * as one address and rejects it, so this asserts the split rather than just
+   * that something was passed through.
+   */
+  it('splits a comma-separated OPS_DIGEST_TO into separate recipients', async () => {
+    vi.stubEnv('OPS_DIGEST_TO', 'admin@helmsportslabs.com,njrini99@gmail.com');
+    await sendOpsDigest(email);
+    expect(mocks.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: ['admin@helmsportslabs.com', 'njrini99@gmail.com'] }),
+    );
+  });
+
+  it('tolerates whitespace and a trailing comma in the recipient list', async () => {
+    vi.stubEnv('OPS_DIGEST_TO', ' admin@helmsportslabs.com , njrini99@gmail.com ,');
+    await sendOpsDigest(email);
+    expect(mocks.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: ['admin@helmsportslabs.com', 'njrini99@gmail.com'] }),
+    );
+  });
+
+  it('treats an all-whitespace recipient list as unconfigured', async () => {
+    vi.stubEnv('OPS_DIGEST_TO', ' , , ');
+    await expect(sendOpsDigest(email)).resolves.toMatchObject({ skipped: true, reason: 'missing-recipient' });
+    expect(mocks.send).not.toHaveBeenCalled();
   });
 
   it('sendOpsAlert sends text-only alerts without an html field', async () => {
