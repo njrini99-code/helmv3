@@ -156,44 +156,92 @@ it('the demo seed is deterministic — no randomness, no id-shifting clock reads
   assert.match(source, /const NOW = new Date\(\)/);
 });
 
-it('the demo seed is dry-run by default and treats PRODUCTION as a deny, not an allow', async () => {
+// The guard's RULES moved to scripts/lib/seed-target-guard.ts and are now
+// asserted by EXECUTION in scripts/lib/__tests__/seed-target-guard.test.ts
+// (21 cases, including the two typo-squat classes a grep cannot see: a
+// look-alike domain resolving to the prod ref, and `.local` accepted as a
+// loopback suffix). What is left here is the part only source text can check —
+// that each seed script actually WIRES the guard up, ahead of its first write.
+// A perfect guard nobody calls is the failure mode this file still covers.
+it('the demo seed is dry-run by default and gates writes before the first one', async () => {
   const source = await readSeed();
   assert.match(source, /DRY = !confirmed/, 'must be dry-run unless --confirm is passed');
-  assert.match(source, /assertWriteTargetAllowed/, 'must gate writes on the resolved project ref');
-  assert.match(source, /--allow-project/, 'must offer an explicit, typed-out override');
-
-  // THE thing this test exists for. An earlier version of the guard named the
-  // production ref HELM_DEMO_PROJECT_REF and let it through on --confirm alone
-  // — an allowlist on the one target the guard exists to protect, which reads
-  // as protection while being its opposite. The sibling scripts
-  // (seed-baseball-stats.mjs:85, seed-baseball-box-scores.mjs:36) treat the
-  // same ref as a deny requiring --allow-prod; this must match them.
-  assert.doesNotMatch(
+  assert.match(
     source,
-    /HELM_DEMO_PROJECT_REF/,
-    'production must not be described as the expected demo project',
+    /from '\.\/lib\/seed-target-guard'/,
+    'must use the shared target guard, not a private copy that can drift from it',
   );
-  assert.match(source, /HELM_PROD_PROJECT_REF/, 'must name production to refuse it');
-  assert.match(source, /--allow-prod/, 'production must require its own explicit flag');
-  const prodRefAt = source.indexOf('HELM_PROD_PROJECT_REF)');
-  const allowProdAt = source.indexOf("hasFlag('--allow-prod')");
-  assert.ok(prodRefAt > 0 && allowProdAt > prodRefAt, 'the prod branch must gate on --allow-prod');
+  assert.match(source, /assertWriteTargetAllowed\(\{/, 'must gate writes on the resolved project ref');
 
-  // A ref is only a ref if the host is really a Supabase domain. Without this,
-  // `https://<prodref>.example.invalid` resolved to the production ref and was
-  // waved through on a first-label substring match.
-  assert.match(source, /SUPABASE_DOMAINS/, 'must verify the host is a Supabase domain before trusting its first label');
-  assert.doesNotMatch(
-    source,
-    /host\.endsWith\('\.local'\)/,
-    "a routable .local mDNS name on the operator's LAN is not loopback",
-  );
   // The gate has to run before the first write, not after it.
-  const gateAt = source.indexOf('if (!DRY) assertWriteTargetAllowed(target)');
+  const gateAt = source.indexOf('assertWriteTargetAllowed({');
   const firstUpsertAt = source.indexOf("await upsert('organizations'");
   assert.ok(gateAt > 0, 'assertWriteTargetAllowed must be called from main()');
   assert.ok(firstUpsertAt > 0, 'expected the organizations upsert to still exist');
   assert.ok(gateAt < firstUpsertAt, 'the write gate must run before the first write');
+
+  // The gate must be inside the `!DRY` branch — a dry run has to stay runnable
+  // against any target, since printing a plan is how you find out the target is
+  // wrong in the first place.
+  assert.match(source, /if \(!DRY\) \{\s*\n\s*assertWriteTargetAllowed/);
+});
+
+// EVERY baseball seed that CI runs, not just the demo one. seed-baseball-e2e.ts
+// shipped with NO target guard at all while .github/workflows/playwright.yml ran
+// it against PRODUCTION on every push to main — the demo seed's guard had been
+// in place since f7ffa28b9 and simply never reached its sibling. That is the
+// failure mode a per-script inline guard has, so the list is asserted here.
+it('every CI-invoked baseball seed wires up the shared target guard', async () => {
+  const CI_SEEDS = ['seed-baseball-demo.ts', 'seed-baseball-e2e.ts'];
+  for (const name of CI_SEEDS) {
+    const source = await readFile(join(REPO_ROOT, 'scripts', name), 'utf8');
+    assert.match(
+      source,
+      /from '\.\/lib\/seed-target-guard'/,
+      `${name}: must import the shared target guard`,
+    );
+    assert.match(
+      source,
+      /assertWriteTargetAllowed\(\{/,
+      `${name}: importing the guard is not calling it`,
+    );
+    assert.match(source, /DRY = !confirmed/, `${name}: must be dry-run unless --confirm is passed`);
+  }
+});
+
+// An earlier version of the guard named the production ref
+// HELM_DEMO_PROJECT_REF and let it through on --confirm alone — an allowlist on
+// the one target the guard exists to protect, which reads as protection while
+// being its opposite. The name must not come back anywhere in the seed lane.
+it('production is never described as the expected demo project', async () => {
+  const files = [
+    join(REPO_ROOT, 'scripts', 'seed-baseball-demo.ts'),
+    join(REPO_ROOT, 'scripts', 'seed-baseball-e2e.ts'),
+    join(REPO_ROOT, 'scripts', 'lib', 'seed-target-guard.ts'),
+  ];
+  for (const file of files) {
+    const source = await readFile(file, 'utf8');
+    assert.doesNotMatch(source, /HELM_DEMO_PROJECT_REF/, `${file}: production is not the demo project`);
+  }
+});
+
+// The CI seed must not carry --allow-prod. Since 2026-07-30 the baseball smoke
+// gate seeds a LOCAL Supabase stack (.github/workflows/ci.yml,
+// .github/workflows/playwright.yml), where the guard allows the write with no
+// flag at all. Keeping --allow-prod in the npm script would mean that if the
+// production credentials ever leak back into that job's env — the exact
+// regression this change exists to prevent — the seed would silently write to
+// production again instead of refusing.
+it('the CI seed script cannot write to production', async () => {
+  const pkg = JSON.parse(await readFile(join(REPO_ROOT, 'package.json'), 'utf8'));
+  const ciSeed = pkg.scripts['seed:baseball:ci'];
+  assert.ok(ciSeed, 'expected a seed:baseball:ci script');
+  assert.doesNotMatch(
+    ciSeed,
+    /--allow-prod/,
+    'seed:baseball:ci must not carry the production escape hatch',
+  );
+  assert.match(ciSeed, /--confirm/, 'seed:baseball:ci still has to actually write');
 });
 
 it('the demo seed still upserts only — no delete-then-insert of seeded rows', async () => {

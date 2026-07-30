@@ -126,169 +126,26 @@ function assertRequiredSeedEnv(): void {
 assertRequiredSeedEnv();
 
 // ---------------------------------------------------------------------------
-// PRODUCTION-TARGET GUARD.
+// PRODUCTION-TARGET GUARD — now shared, see scripts/lib/seed-target-guard.ts.
 //
-// `--confirm` answers "did you mean to write?". It does NOT answer "did you
-// mean to write HERE" — and that second question is the dangerous one. This
-// script reads its target from NEXT_PUBLIC_SUPABASE_URL, so a stale .env.local,
-// a copied shell, or a `vercel env pull` from the wrong project silently
-// redirects a full demo seed (10 auth users, a fake "Demo University" org, a
-// password force-reset, a login_attempts DELETE) into someone else's database.
-//
-// ⚠️ THE PRODUCTION REF IS A DENY, NOT AN ALLOW. An earlier version of this
-// guard treated `qmnssrrolpinvwjjnufo` as the expected demo project and let it
-// through on `--confirm` alone. That ref is PRODUCTION — the same one
-// `.env.local` points at, and the same one scripts/seed-baseball-stats.mjs:85
-// and scripts/seed-baseball-box-scores.mjs:36 both REFUSE by name. A guard
-// that allowlists the one target it exists to protect is worse than no guard,
-// because it reads as protection.
-//
-// The rules, in order:
-//   * A local stack (127.0.0.1 / localhost / an explicit .local host on the
-//     loopback set) -> allowed. Nothing outside the machine can be hurt.
-//   * PRODUCTION -> refused unless BOTH --confirm AND --allow-prod are given.
-//     Same escape hatch, same name, as the sibling seed scripts.
-//   * ANY other project -> refused unless the operator types that project's
-//     own ref back via --allow-project=<ref>. Naming it is the point: you
-//     cannot hit a foreign project by accident, only on purpose.
-//
-// The ref below is NOT a credential. It is the public sub-domain of
-// NEXT_PUBLIC_SUPABASE_URL, a value every browser that loads the app already
-// has, committed for the same reason the sibling scripts commit it: a guard
-// that lives in an env var is absent exactly when the env is wrong.
+// The rules and the reasoning behind them (production is a DENY, not an ALLOW;
+// `.local` is not a loopback suffix; a foreign project must be named back) live
+// in that module's header. It was extracted from this file because
+// scripts/seed-baseball-e2e.ts had NO target guard at all while CI ran it
+// against production on every push — a safety rule only one of its callers
+// enforces is not a safety rule. Extracting it also made the rules executable:
+// scripts/lib/__tests__/seed-target-guard.test.ts now asserts them by calling
+// them instead of grepping this file for the string "HELM_PROD_PROJECT_REF".
 // ---------------------------------------------------------------------------
-const HELM_PROD_PROJECT_REF = 'qmnssrrolpinvwjjnufo';
-
-/**
- * Hostnames that are unambiguously this machine.
- *
- * `.local` is NOT accepted as a suffix. `https://totally-not-ours.local` is a
- * routable mDNS name on the operator's LAN, not loopback — trusting the suffix
- * meant any host on the network could be seeded silently.
- */
-const LOCAL_SUPABASE_HOSTS = new Set([
-  'localhost',
-  '127.0.0.1',
-  '[::1]',
-  '::1',
-  'host.docker.internal',
-  'kong',
-  'localhost.local',
-]);
-
-/** Domains under which the first hostname label really is a Supabase project ref. */
-const SUPABASE_DOMAINS = ['.supabase.co', '.supabase.in', '.supabase.net'];
-
-interface SeedTarget {
-  host: string;
-  /** Supabase project ref (first label), '' when the host is local or unrecognised. */
-  ref: string;
-  isLocal: boolean;
-}
-
-function describeSeedTarget(rawUrl: string): SeedTarget {
-  let host: string;
-  try {
-    host = new URL(rawUrl).hostname.toLowerCase();
-  } catch {
-    // An unparseable URL cannot be proven safe, so it is treated as foreign.
-    return { host: rawUrl, ref: '', isLocal: false };
-  }
-  if (LOCAL_SUPABASE_HOSTS.has(host)) {
-    return { host, ref: '', isLocal: true };
-  }
-  // The first label is only a project ref if the host is actually a Supabase
-  // domain. Without this check `https://<prodref>.example.invalid` resolved to
-  // the production ref and was waved through — a typo-squat or an internal
-  // proxy sharing the first label was trusted on the strength of a substring.
-  const domain = SUPABASE_DOMAINS.find((d) => host.endsWith(d));
-  if (!domain) {
-    return { host, ref: '', isLocal: false };
-  }
-  return { host, ref: host.slice(0, host.length - domain.length), isLocal: false };
-}
-
-function hasFlag(flag: string): boolean {
-  return process.argv.includes(flag);
-}
-
-function readFlagValue(flag: string): string {
-  const prefix = `${flag}=`;
-  const hit = process.argv.find((a) => a.startsWith(prefix));
-  return hit ? hit.slice(prefix.length).trim() : '';
-}
+import {
+  assertWriteTargetAllowed,
+  describeSeedTarget,
+} from './lib/seed-target-guard';
 
 const DESTRUCTIVE_WARNING = [
   'This script creates a fake "Demo University" org and 10 auth users,',
   'force-resets two passwords, and deletes login_attempts rows.',
 ].join('\n');
-
-/** Exits non-zero unless this run is allowed to WRITE to `target`. */
-function assertWriteTargetAllowed(target: SeedTarget): void {
-  if (target.isLocal) return;
-
-  if (target.ref === HELM_PROD_PROJECT_REF) {
-    if (hasFlag('--allow-prod')) {
-      console.warn(
-        `  ⚠ SEEDING PRODUCTION (${target.ref}) — allowed only because --allow-prod was passed.`,
-      );
-      return;
-    }
-    console.error(
-      [
-        '',
-        'REFUSING TO SEED — the target Supabase project is PRODUCTION.',
-        '',
-        `  NEXT_PUBLIC_SUPABASE_URL host : ${target.host}`,
-        `  resolved project ref          : ${target.ref}`,
-        '',
-        DESTRUCTIVE_WARNING,
-        '',
-        'Seed a local stack instead (supabase start), or, if you genuinely mean',
-        'production, say so explicitly:',
-        '  ... scripts/seed-baseball-demo.ts --confirm --allow-prod',
-        '',
-      ].join('\n'),
-    );
-    process.exit(1);
-  }
-
-  const acknowledged =
-    readFlagValue('--allow-project') ||
-    (process.env.BASEBALL_DEMO_SEED_ALLOW_PROJECT_REF ?? '').trim();
-
-  if (target.ref && acknowledged && acknowledged === target.ref) {
-    console.warn(
-      `  ⚠ writing to Supabase project "${target.ref}" — allowed only because you named it explicitly.`,
-    );
-    return;
-  }
-
-  console.error(
-    [
-      '',
-      'REFUSING TO SEED — the target is neither a local stack nor a project you named.',
-      '',
-      `  NEXT_PUBLIC_SUPABASE_URL host : ${target.host}`,
-      `  resolved project ref          : ${target.ref || '(not a recognised Supabase host)'}`,
-      '',
-      DESTRUCTIVE_WARNING,
-      '',
-      target.ref
-        ? [
-            'If this really is the project you want, name it back to the script:',
-            `  ... scripts/seed-baseball-demo.ts --confirm --allow-project=${target.ref}`,
-          ].join('\n')
-        : [
-            'The host is not a *.supabase.co project, so no ref could be resolved and',
-            'nothing can be verified about it. Point NEXT_PUBLIC_SUPABASE_URL at a local',
-            'stack or a real Supabase project.',
-          ].join('\n'),
-      '',
-    ].join('\n'),
-  );
-  process.exit(1);
-}
 
 import type { BaseballPlayerTimelineEventInsert } from '../src/lib/types/baseball-extended';
 import type { BaseballEventAcknowledgementInsert } from '../src/lib/types/baseball-acknowledgements';
@@ -519,7 +376,13 @@ async function main() {
   console.log(
     `Target Supabase: ${target.host}${target.isLocal ? ' (local stack)' : ` (project ${target.ref || 'unresolvable'})`}`,
   );
-  if (!DRY) assertWriteTargetAllowed(target);
+  if (!DRY) {
+    assertWriteTargetAllowed({
+      url,
+      destructiveWarning: DESTRUCTIVE_WARNING,
+      scriptPath: 'scripts/seed-baseball-demo.ts',
+    });
+  }
 
   // `global.fetch` carries the transient-retry wrapper, so EVERY request this
   // client makes — auth admin, PostgREST, storage — survives a Supabase blip

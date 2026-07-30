@@ -70,6 +70,21 @@ import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
+import {
+  assertWriteTargetAllowed,
+  describeSeedTarget,
+} from './lib/seed-target-guard';
+
+// This script had NO target guard until 2026-07-30, while CI ran it against
+// PRODUCTION on every push to main (.github/workflows/playwright.yml). Its
+// sibling seed-baseball-demo.ts has refused unnamed non-local targets since
+// f7ffa28b9; the rule simply never reached here, which is exactly how a
+// safety rule that lives inline in one caller fails. Rules and reasoning:
+// scripts/lib/seed-target-guard.ts.
+const DESTRUCTIVE_WARNING = [
+  'This script creates a fake E2E org/team, 5 auth users with force-set',
+  'passwords, and DELETEs the test player\'s camp registrations.',
+].join('\n');
 
 // ---------------------------------------------------------------------------
 // Stable E2E identity — must match e2e/helpers/auth.ts TEST_USERS exactly.
@@ -234,6 +249,22 @@ async function main() {
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
   if (!url || !key) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
+
+  // Print the target in BOTH modes — a dry run whose plan looks right but whose
+  // target is wrong is the exact failure this banner exists to catch — then gate
+  // the writes.
+  const target = describeSeedTarget(url);
+  console.log(
+    `Target Supabase: ${target.host}${target.isLocal ? ' (local stack)' : ` (project ${target.ref || 'unresolvable'})`}`,
+  );
+  if (!DRY) {
+    assertWriteTargetAllowed({
+      url,
+      destructiveWarning: DESTRUCTIVE_WARNING,
+      scriptPath: 'scripts/seed-baseball-e2e.ts',
+    });
+  }
+
   supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
   if (DRY) {

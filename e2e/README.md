@@ -273,36 +273,71 @@ itself — it just navigates as an already-authenticated coach or player
 (tests are tagged `@coach` / `@player` so each project only runs its own
 half of the file).
 
+### Where CI runs this, and against which database
+
+**The required per-PR gate needs no secrets and never touches production.**
+`.github/workflows/ci.yml`'s `baseball-auth-smoke` job stands up a throwaway
+Supabase stack on the runner (`.github/actions/local-supabase-stack`), seeds
+*that*, and runs the smoke against it. Two things follow:
+
+- **It runs on every PR, including forks and Dependabot.** The old fork skip
+  existed only because external PRs receive no repo secrets; with no secrets
+  needed, a required gate that silently skipped on forks was just a hole in it.
+- **It tests the schema this PR proposes.** `supabase start` applies everything
+  under `supabase/migrations/`, so a migration that breaks a smoke path fails on
+  the PR that introduces it rather than after merge.
+
+`.github/workflows/playwright.yml`'s `e2e` job **still seeds production**, and
+this is deliberate rather than overlooked: it runs the full chromium suite,
+including golf specs that authenticate against real golf data, and a job has one
+`NEXT_PUBLIC_SUPABASE_URL`. Pointing the baseball half at loopback would point
+the golf half there too, where no golf fixture exists. That job runs on push to
+`main` and manual dispatch — never on a PR — and its two seed steps now carry an
+explicit `--allow-prod` so the production write is visible in the workflow file
+instead of implied by the env block.
+
 ### Required env vars
 
 | Env var | Purpose |
 |---|---|
-| `E2E_BASEBALL_COACH_EMAIL` / `E2E_BASEBALL_COACH_PASSWORD` | Seeded coach login used by the `setup` project. |
-| `E2E_BASEBALL_PLAYER_EMAIL` / `E2E_BASEBALL_PLAYER_PASSWORD` | Seeded player login used by the `setup` project. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Used by `npm run seed:baseball:ci` to upsert the demo team/accounts. |
+| `E2E_BASEBALL_COACH_EMAIL` / `E2E_BASEBALL_COACH_PASSWORD` | Seeded coach login used by the `setup` project. **Not secrets in the per-PR gate** — it hardcodes the demo values below, because the seed creates those accounts itself on a database that is destroyed when the job ends. |
+| `E2E_BASEBALL_PLAYER_EMAIL` / `E2E_BASEBALL_PLAYER_PASSWORD` | Seeded player login used by the `setup` project. Same. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Used by `npm run seed:baseball:ci` to upsert the demo team/accounts. In the per-PR gate this is the **local stack's** key, exported by the composite action, not a repo secret. |
 | `PLAYWRIGHT_BASEBALL_REQUIRED` | Optional. Set to `1`/`true` locally to opt into the same "throw on missing creds" behavior CI gets automatically (CI is detected via the `CI` env var). |
 
-Register the first three (well, four counting the two coach/player email +
-password pairs) as **GitHub Secrets** on the repo
-(`Settings → Secrets and variables → Actions`) — the workflow injects them
-into the `e2e` job's `env:` block. Trusted PRs with these secrets run
-`npm run seed:baseball:ci` and the mandatory BaseballHelm smoke as hard gates.
-Dependabot and fork `pull_request` runs do not receive repo secrets from
-GitHub, so the workflow skips only the secret-backed seed/smoke path and keeps
-running the rest of the Playwright job. If a trusted run invokes the setup
-without credentials, `playwright/baseball-auth.setup.ts` still throws
+The repo secrets are still what `playwright.yml`'s production-targeted `e2e` job
+uses, so keep them registered under
+`Settings → Secrets and variables → Actions`. If that job invokes the setup
+without credentials, `playwright/baseball-auth.setup.ts` throws
 ``Baseball seeded auth missing — set E2E_BASEBALL_*_EMAIL /
 E2E_BASEBALL_*_PASSWORD and run `npm run seed:baseball:ci` ``.
 
 ### Seeding / resetting the fixture
 
 ```bash
-# Dry run first (prints the plan, writes nothing):
-DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts
+# Start a local stack first — this is now the default target.
+supabase start
+
+# Dry run (prints the plan AND the resolved target, writes nothing):
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 npx tsx scripts/seed-baseball-demo.ts
 
 # Actually seed (idempotent — safe to re-run any time, upserts by deterministic id):
 npm run seed:baseball:ci
 ```
+
+**`seed:baseball:ci` no longer carries `--allow-prod`.** Both baseball seeds go
+through `scripts/lib/seed-target-guard.ts`, which allows a loopback target with
+no flag at all, **refuses production** unless you type `--allow-prod`, and
+refuses any other project unless you name its ref back
+(`--allow-project=<ref>`). Read the target line the script prints before
+reaching for a flag — a dry run whose plan looks right but whose target is wrong
+is exactly what that banner exists to catch.
+
+Rules are asserted by execution in `scripts/lib/__tests__/seed-target-guard.test.ts`,
+including the two ways this guard has been wrong before: a look-alike domain
+(`https://<prodref>.example.invalid`) resolving to the production ref, and
+`.local` accepted as a loopback *suffix* when a routable mDNS name on the
+operator's LAN is not loopback.
 
 This creates/upserts **Demo University Baseball** with a coach
 (`demo-coach@baseballhelmdemo.com`) and player (`demo-player@baseballhelmdemo.com`),
