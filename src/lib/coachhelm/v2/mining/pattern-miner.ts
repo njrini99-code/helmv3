@@ -125,24 +125,34 @@ export const ABSOLUTE_MIN_ROUNDS = 4;
 /**
  * Scale `minSampleSize` to the player's round count.
  *
- * Rationale: a fixed `minSampleSize=6` over 11 rounds means a pattern needs
- * to appear in >50% of all available rounds, which (combined with
- * `minSupport`) starves output for any player who hasn't golfed dozens of
- * rounds. Instead:
- *   - For roundCount >= 16, use the full 6-round bar (well-calibrated).
- *   - Below 16 rounds, scale down: max(3, ceil(roundCount * 0.25)).
+ * Rationale: a fixed `minSampleSize=6` over 11 rounds means a pattern needs to
+ * appear in >50% of all available rounds, which (combined with `minSupport`)
+ * starves output for any player who hasn't golfed dozens of rounds.
  *
- * Caps at THRESHOLDS.minSampleSize so we never exceed the configured ceiling.
+ * ⚠️ THIS DOCBLOCK USED TO DESCRIBE A DIFFERENT SCHEME THAN THE CODE BELOW IT, and
+ * every one of its worked examples was wrong. It claimed "for roundCount >= 16, use
+ * the full 6-round bar" and "below 16, max(3, ceil(roundCount * 0.25))", with
+ * examples 14→4, 15→4, 16→6, 28→6. The implementation returns 3, 3, 3 and 4 for
+ * those inputs. The inline comment inside the function is the accurate one — it
+ * documents the deliberate move to 15%-throughout scaling and says so explicitly
+ * ("was a flat 6-round cap above 16"). Corrected 2026-07-30 from values read by
+ * EXECUTING the function, not from either comment.
  *
- * Examples:
- *   roundCount = 6  → 3
- *   roundCount = 8  → 3
- *   roundCount = 11 → 3
- *   roundCount = 12 → 3
- *   roundCount = 14 → 4
- *   roundCount = 15 → 4
- *   roundCount = 16 → 6 (full bar)
- *   roundCount = 28 → 6 (full bar)
+ * Two contradictory docblocks stacked here is what parked four specs in
+ * `pattern-miner.test.ts` (see the TODO(plan-03) notes there). Those specs encoded
+ * the stale scheme above, so un-skipping them as written would have failed.
+ *
+ * ACTUAL BEHAVIOUR, verified by execution across 0..60 and 100 —
+ * the transition points are:
+ *   roundCount  0..5  → 2   (below the mining floor entirely)
+ *   roundCount  6..23 → 3
+ *   roundCount 24..29 → 4
+ *   roundCount 30..36 → 5
+ *   roundCount 37+    → 6   (full bar, capped at THRESHOLDS.minSampleSize)
+ *
+ * So the full 6-round bar is reached organically around 37 rounds, NOT at 16.
+ * Whether that is the canonical scheme remains Plan 03's call; this docblock only
+ * stops the file contradicting itself.
  */
 export function effectiveMinSampleSize(roundCount: number): number {
   // Scale at 15% of round count throughout (was a flat 6-round cap above 16).

@@ -73,16 +73,47 @@ describe('joinConditionLabels', () => {
 });
 
 describe('effectiveMinSampleSize (threshold scaling for low-round players)', () => {
-  // TODO(plan-03): un-skip when Plan 03 (CoachHelm evidence contract) finalizes
-  // the threshold scheme. The audit (2026-05-17 final report Finding 1) found
-  // two contradictory docblocks stacked on this function — one says full bar
-  // at 16+, the other says 15% of round count returning 2 below 6 rounds.
-  // The implementation currently emits values that disagree with these fixture
-  // expectations. Plan 03 decides the canonical scheme + updates these specs.
-  it.skip('uses the full minSampleSize (6) when roundCount >= 16', () => {
-    expect(effectiveMinSampleSize(16)).toBe(6);
-    expect(effectiveMinSampleSize(28)).toBe(6);
+  // ---------------------------------------------------------------------------
+  // CHARACTERISATION, not endorsement.
+  //
+  // Four specs here were parked on TODO(plan-03) because "two contradictory
+  // docblocks stacked on this function — one says full bar at 16+, the other says
+  // 15% of round count". That was accurate, and they encoded the STALE scheme, so
+  // un-skipping them as written would have failed: they expected 16→6 and 28→6,
+  // and the function returns 3 and 4.
+  //
+  // Resolved by EXECUTING the function across 0..60 and 100 rather than trusting
+  // either comment. The transition points below are measured. The function's own
+  // INNER comment matches them and documents the move to 15%-throughout scaling as
+  // deliberate ("was a flat 6-round cap above 16", citing 18 starvation events
+  // across 5 players in 24h); the outer docblock described the superseded scheme
+  // and has been corrected.
+  //
+  // These now pin WHAT SHIPS, so a future change surfaces as a failing test to be
+  // updated on purpose instead of a dormant spec nobody runs. That does NOT decide
+  // the canonical scheme — Plan 03 still owns that, and when it lands these
+  // expectations should change with it.
+  // ---------------------------------------------------------------------------
+  it('reaches the full 6-round bar around 37 rounds — NOT at 16', () => {
+    // The stale docblock's central claim was "roundCount >= 16 → 6". It is not.
+    expect(effectiveMinSampleSize(16)).toBe(3);
+    expect(effectiveMinSampleSize(28)).toBe(4);
+    // Full bar, reached organically and then capped.
+    expect(effectiveMinSampleSize(37)).toBe(6);
     expect(effectiveMinSampleSize(100)).toBe(6);
+  });
+
+  it('has these exact transition points (measured 0..60)', () => {
+    // Each pair is the last value of one band and the first of the next, so a
+    // one-off shift in the scaling shows up here rather than passing silently.
+    expect(effectiveMinSampleSize(5)).toBe(2);
+    expect(effectiveMinSampleSize(6)).toBe(3);
+    expect(effectiveMinSampleSize(23)).toBe(3);
+    expect(effectiveMinSampleSize(24)).toBe(4);
+    expect(effectiveMinSampleSize(29)).toBe(4);
+    expect(effectiveMinSampleSize(30)).toBe(5);
+    expect(effectiveMinSampleSize(36)).toBe(5);
+    expect(effectiveMinSampleSize(37)).toBe(6);
   });
 
   it('scales down to a floor of 3 for very-low-round players', () => {
@@ -96,12 +127,9 @@ describe('effectiveMinSampleSize (threshold scaling for low-round players)', () 
     expect(effectiveMinSampleSize(6)).toBe(3);
   });
 
-  // TODO(plan-03): un-skip after Plan 03 finalizes threshold scheme.
-  it.skip('scales linearly between the floor and the full bar', () => {
-    // 14 → ceil(3.5) = 4
-    expect(effectiveMinSampleSize(14)).toBe(4);
-    // 15 → ceil(3.75) = 4
-    expect(effectiveMinSampleSize(15)).toBe(4);
+  it('does not step up at 14/15, where the stale docblock claimed 4', () => {
+    expect(effectiveMinSampleSize(14)).toBe(3);
+    expect(effectiveMinSampleSize(15)).toBe(3);
   });
 
   it('never exceeds the configured ceiling of 6', () => {
@@ -109,28 +137,34 @@ describe('effectiveMinSampleSize (threshold scaling for low-round players)', () 
     expect(effectiveMinSampleSize(500)).toBeLessThanOrEqual(6);
   });
 
-  // TODO(plan-03): un-skip after Plan 03 finalizes threshold scheme.
-  // The docblock at lines 80-100 of pattern-miner.ts says one thing, the
-  // inline table at 110-116 says another. Plan 03 picks one.
-  it.skip('returns the floor (3) for trivial roundCount inputs (0, 1, 2, 3)', () => {
-    expect(effectiveMinSampleSize(0)).toBe(3);
-    expect(effectiveMinSampleSize(1)).toBe(3);
-    expect(effectiveMinSampleSize(2)).toBe(3);
-    expect(effectiveMinSampleSize(3)).toBe(3);
+  it('returns 2 — not 3 — for trivial roundCount inputs', () => {
+    // The parked spec expected 3 here. The real low end is 2, which matters
+    // because it is BELOW THRESHOLDS.minSampleSize and below the 3-floor the
+    // stale docblock described.
+    expect(effectiveMinSampleSize(0)).toBe(2);
+    expect(effectiveMinSampleSize(1)).toBe(2);
+    expect(effectiveMinSampleSize(2)).toBe(2);
+    expect(effectiveMinSampleSize(3)).toBe(2);
   });
 
-  // TODO(plan-03): un-skip after Plan 03 finalizes the boundary behavior.
-  it.skip('jumps from 4 to 6 between roundCount=15 and roundCount=16 (intentional)', () => {
-    expect(effectiveMinSampleSize(15)).toBe(4);
-    expect(effectiveMinSampleSize(16)).toBe(6);
+  it('has no 15→16 jump at all — the scale is continuous through there', () => {
+    // The parked spec called a 4→6 jump at 15/16 "intentional". There is no jump:
+    // both sit inside the 6..23 band.
+    expect(effectiveMinSampleSize(15)).toBe(3);
+    expect(effectiveMinSampleSize(16)).toBe(3);
   });
 
   // --------------------------------------------------------------------
-  // THRESHOLDS export — guards the new `minSupport = 0.05` value (down
-  // from 0.08) so loosening doesn't silently drift back. THRESHOLDS is
-  // a module-private constant in pattern-miner.ts at time of writing,
-  // so we skip rather than assert against an undefined import. If/when
-  // it's exported, flip this to `it(...)` and assert the value.
+  // THRESHOLDS export — guards the `minSupport = 0.05` value (down from
+  // 0.08) so loosening doesn't silently drift back.
+  //
+  // STILL CORRECTLY SKIPPED, re-verified 2026-07-30: `THRESHOLDS` is
+  // declared `const THRESHOLDS = {` at pattern-miner.ts:96 with no
+  // `export`, and there is no `export { THRESHOLDS }`. Importing it here
+  // yields `undefined`, which is how a probe of mine silently printed
+  // nothing for it. Deliberately NOT exporting a module-private constant
+  // just to assert on it — that widens the production surface for a test.
+  // If it is ever exported for a real reason, flip this to `it(...)`.
   // --------------------------------------------------------------------
   it.skip('exports THRESHOLDS.minSupport === 0.05 (when exported)', () => {
     // TODO: pattern-miner.ts does not currently export `THRESHOLDS` or
