@@ -7,6 +7,88 @@ release-blocking claims were adversarially verified by an independent skeptic._
 doc claims. P0 = blocks a sellable demo or exposes data. Work strictly in
 priority order.
 
+---
+
+## ➕ ADDED 2026-07-30 — found by pointing CI at a fresh database
+
+_These are not from the reconnaissance workflow. They came out of repointing the
+required smoke gate off production (PR #1125), which is why nothing above caught
+them: **every check in this repo had only ever run against a database that already
+had the missing piece.**_
+
+### Fixed in the same pass
+
+| # | Finding | State | Anchor |
+|---|---|---|---|
+| N.1 | `on_auth_user_created` on `auth.users` is in **no tracked migration** — on any DB built from migrations, signup never creates the `public.users` row, so every FK into it fails | `missing` | `supabase/migrations/20260730020000_auth_user_created_trigger.sql` |
+| N.2 | The `avatars` storage bucket + its 4 `storage.objects` policies are in **no tracked migration** — avatar upload dead on every local stack / preview branch, and it is on the **golf onboarding** path | `missing` | `supabase/migrations/20260730030000_avatars_storage_bucket_rls.sql` |
+| N.3 | The demo seed never wrote `baseball_team_coach_staff` — the demo coach belonged to no team, so **every authenticated page** sat on "Opening your command center" | `renders_but_inert` | `scripts/seed-baseball-demo.ts` |
+| N.4 | `scripts/seed-baseball-e2e.ts` had **no production-target guard at all** while `playwright.yml` ran it against prod on every push to `main`, creating auth users and DELETEing camp registrations | `insecure` | `scripts/lib/seed-target-guard.ts` |
+
+N.1 and N.2 share one structural cause: the active baseline
+`20260527000000_prod_public_baseline.sql` is a **public-schema-only** dump, so
+nothing in `auth`, `storage`, `cron` or `realtime` could ever have been captured by
+it. N.2 was found by deliberately sweeping for the class after N.1.
+
+### 🔴 OPEN — two golf features have never worked, anywhere
+
+**N.5 — `golf-attachments` and `expense-receipts` buckets do not exist**
+
+- **Anchor:** `src/lib/storage/attachments.ts:11`, `src/app/golf/actions/travel.ts:885`
+- **State:** `renders_but_inert`
+- **Evidence:** Verified by read-only SQL against production 2026-07-30: neither id
+  is in `storage.buckets`, `storage.objects` holds **zero** rows for either, and
+  both backing tables are empty (`golf_message_attachments` 0,
+  `golf_travel_expenses` 0). No migration creates them either. Both upload paths
+  are genuinely reachable, checked past the import: `expense-receipts` ←
+  `uploadExpenseReceipt` ← `FairwayExpenseForm.tsx:164` ← `FairwayTravel.tsx:478`;
+  `golf-attachments` ← `sendGolfMessageWithAttachments` ←
+  `use-message-attachments.ts` ← `FairwayMessages.tsx:117`.
+- **Impact:** Golf message attachments and travel expense receipts have **never
+  worked** — every upload fails at the storage call. Severity is tempered by the
+  zero rows: this is **broken-and-unused**, not users hitting errors. Nobody has
+  ever successfully attached a file or a receipt.
+- **Why not fixed in that pass:** creating them means designing **new RLS** for the
+  shared production database — conversation-membership scoping for attachments,
+  team-staff scoping for receipts (which also needs `public = true`, since the code
+  calls `getPublicUrl`). Hand-written RLS on this database produced two recursion
+  cycles and five anon-callable functions earlier in this same run, none of which
+  was visible to reading. Needs a deliberate reviewed pass, and creating buckets in
+  production is an owner action.
+- **Not lost:** recorded as `KNOWN_MISSING_BUCKETS` in
+  `src/test/schema/storage-buckets-tracked.test.ts`, with a stale-entry assertion
+  that forces the lines out once they are fixed.
+
+**N.6 — two `.rpc()` targets exist nowhere (dormant)**
+
+- **Anchor:** `src/app/baseball/actions/recruiting-philosophy.ts:344,398`
+- **State:** `missing`
+- **Evidence:** `calculate_grad_year_percentiles` and
+  `calculate_player_match_score` are created by no migration, and `pg_proc` returns
+  **zero rows** for both in production in any schema. Both sit in exported functions
+  nothing calls; the module's one consumer imports only
+  `saveRecruitingPhilosophy`.
+- **Impact:** Dormant. They would fail if reached, and they are not reachable —
+  sunset recruiting surface. **Deliberately not fixed either way:** authoring them
+  builds out an intentionally-hidden feature; deleting the call sites deletes
+  recruiting code.
+
+### Swept and clean — recorded so nobody re-runs it
+
+- **Tables and views: 255 relation names addressed from `src/`, all created by
+  tracked migrations.** The only three misses were false positives — `documents` and
+  `logos` are storage *buckets* reached via `supabase.storage.from(...)`, and `t` is
+  a variable.
+- **RPCs: 63 of 65 tracked** (the 2 above are the exception).
+- **Non-public schemas:** production's one `pg_cron` job
+  (`purge-admin-event-telemetry`) is tracked (`20260703043000`), 7 of 8 storage
+  buckets were tracked before N.2, and 23 of 27 storage policies.
+
+Four guards under `src/test/schema/` now hold this class shut. All are
+**source-text**, on purpose: a database test cannot catch a missing object, because
+it runs against the database that is missing it — which is exactly why the pgTAP
+suites saw none of N.1–N.4.
+
 
 ## P0 (16)
 
