@@ -100,6 +100,13 @@ export default defineConfig({
             // unretried Supabase call took main and every open PR red on
             // 2026-07-29. A regression here is a repo-wide merge freeze.
             'scripts/lib/__tests__/retrying-fetch.test.ts',
+            // The shared "did you mean to write HERE?" guard for the baseball
+            // seeds. Named here rather than swept in by a glob for the same
+            // reason as its neighbours. Unlike the source-text contract test
+            // below, this one EXECUTES the rules — the two typo-squat classes it
+            // covers (a look-alike domain resolving to the prod ref, `.local`
+            // accepted as a loopback suffix) both passed a grep happily.
+            'scripts/lib/__tests__/seed-target-guard.test.ts',
             // The demo-seed guards. Same rationale as the secrets guard above:
             // they were written for `node --test` and so ran under nothing, and
             // what they protect — a script that creates auth users and deletes

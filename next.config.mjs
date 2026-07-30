@@ -3,8 +3,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
+import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
 
 // `--localstorage-file` is a Node 22+ flag (experimental webstorage).
 // Node 20 — which the GitHub Actions `build` job currently uses — exits
@@ -304,7 +306,7 @@ const nextConfig = {
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
-              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*;
+              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*${localSupabaseConnectSrc()};
               media-src 'self' data:;
               worker-src 'self' blob:;
               frame-src 'self' https://*.supabase.co blob: data:;

@@ -1,0 +1,101 @@
+name: Local Supabase stack
+description: >-
+  Start a throwaway Supabase stack on the runner and export its URL + keys as
+  NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY /
+  SUPABASE_SERVICE_ROLE_KEY, so a job can build, seed and exercise the app
+  without touching the production project.
+
+# WHY THIS EXISTS
+#
+# The BaseballHelm authenticated smoke gate used to run `npm run seed:baseball:ci`
+# with the PRODUCTION Supabase URL + service-role key in its env, on every pull
+# request. The seed is idempotent and scoped to a demo tenant, so the practical
+# damage was small — but "every PR writes to production" is not a property a
+# required merge gate should have, and the blast radius was one bad seed commit
+# wide.
+#
+# `supabase start` applies everything under supabase/migrations/ to a fresh
+# Postgres, which is the same mechanism the `Supabase lint + RLS tests` job in
+# ci.yml already relies on. That makes the local stack a strictly better target
+# for a smoke gate: the schema is the schema this PR proposes, not whatever
+# production currently has, so a migration that breaks a smoke path fails on the
+# PR that introduces it rather than after merge.
+#
+# Kept as a composite action rather than copied into each job because three
+# call sites need exactly this sequence, and the failure mode of a copy is that
+# one of them drifts back to production credentials without anyone noticing —
+# which is how this whole class of problem started.
+
+inputs:
+  cli-version:
+    description: Supabase CLI version. Keep in step with the `supabase` job in ci.yml.
+    required: false
+    default: 2.101.0
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+      with:
+        version: ${{ inputs.cli-version }}
+
+    - name: Start local Supabase stack
+      shell: bash
+      run: supabase start
+
+    - name: Export local stack credentials
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # `--override-name` renames the emitted variables at the source, so
+        # nothing here has to know the CLI's default names (API_URL / ANON_KEY /
+        # SERVICE_ROLE_KEY). Values arrive double-quoted; GITHUB_ENV takes them
+        # raw, so the quotes are stripped.
+        supabase status -o env \
+          --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
+          --override-name auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY \
+          --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+          > /tmp/supabase-local.env
+
+        for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+          value="$(grep -E "^${name}=" /tmp/supabase-local.env | head -n1 | cut -d= -f2- | tr -d '"')"
+          if [ -z "$value" ]; then
+            # Fail here rather than later. An empty value would fall through to
+            # the seed script, which resolves an unparseable URL as a FOREIGN
+            # target and refuses — a correct but very confusing failure several
+            # minutes downstream of the real cause.
+            # No backticks in this string: inside double quotes bash would run
+            # the contents as a command substitution.
+            echo "::error::supabase status did not report ${name} — did 'supabase start' succeed?"
+            echo "--- supabase status -o env ---"
+            sed -E 's/=.*/=<redacted>/' /tmp/supabase-local.env
+            exit 1
+          fi
+          echo "${name}=${value}" >> "$GITHUB_ENV"
+        done
+
+        # The URL is not a secret and is the one value worth seeing in the log:
+        # it is the proof that this job is pointed at the runner, not at prod.
+        echo "Local stack API URL: $(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' /tmp/supabase-local.env | cut -d= -f2- | tr -d '"')"
+        rm -f /tmp/supabase-local.env
+
+    - name: Assert the stack is local, not production
+      shell: bash
+      env:
+        RESOLVED_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+      run: |
+        set -euo pipefail
+        # Belt and braces. The seed scripts refuse a non-local target on their
+        # own (scripts/lib/seed-target-guard.ts), but the Next.js build and the
+        # Playwright run happen either side of that check and would happily talk
+        # to whatever this URL points at. Assert it here, once, in the open.
+        case "$RESOLVED_URL" in
+          http://127.0.0.1:*|http://localhost:*) ;;
+          *)
+            echo "::error::Expected a loopback Supabase URL, got: ${RESOLVED_URL}"
+            exit 1
+            ;;
+        esac
+        echo "Confirmed: this job targets a loopback Supabase stack."

@@ -154,13 +154,33 @@ jobs:
       - name: Build (the suite serves this build via `next start`)
         run: npm run build
 
-      - name: Seed BaseballHelm E2E fixtures (issue 375)
+      # ⚠️ THESE TWO STEPS STILL WRITE TO PRODUCTION, and now say so out loud.
+      #
+      # The per-PR required gate (.github/workflows/ci.yml's
+      # `baseball-auth-smoke`) was moved to a throwaway local stack on
+      # 2026-07-30. This job was NOT, and the reason is specific: it runs the
+      # full chromium suite, including the golf specs that authenticate as
+      # E2E_GOLF_EMAIL against real golf data. A job has one
+      # NEXT_PUBLIC_SUPABASE_URL, so pointing the baseball half at loopback would
+      # point the golf half there too, where no golf fixture exists. Rehoming
+      # this job means seeding golf locally first — a separate piece of work.
+      #
+      # What changed here is honesty, not target: `scripts/seed-baseball-e2e.ts`
+      # had NO target guard at all, so this was a silent production write. Both
+      # scripts now refuse a non-local target unless it is named, which is why
+      # `--allow-prod` appears below. If these steps ever start failing with
+      # "REFUSING TO SEED", that is the guard working — check the URL before
+      # adding a flag.
+      #
+      # This job runs on push to main and manual dispatch, never on a PR, so
+      # nothing here writes to production on behalf of an unreviewed change.
+      - name: Seed BaseballHelm E2E fixtures into PRODUCTION (issue 375)
         if: env.SUPABASE_SERVICE_ROLE_KEY != ''
-        run: npm run seed:baseball:e2e -- --confirm
+        run: npm run seed:baseball:e2e -- --confirm --allow-prod
 
-      - name: Seed BaseballHelm CI accounts
+      - name: Seed BaseballHelm CI accounts into PRODUCTION
         if: steps.baseball-auth-ready.outputs.ready == 'true'
-        run: npm run seed:baseball:ci
+        run: npm run seed:baseball:ci -- --allow-prod
 
       # One invocation = one webServer lifecycle (CI serves the production
       # build via `next start` — see playwright.config.ts). The mobile viewport

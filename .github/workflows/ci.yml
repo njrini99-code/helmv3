@@ -370,39 +370,58 @@ jobs:
     # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
     # (.github/workflows/playwright.yml's `e2e` job) into a required PR gate —
     # the same mechanism that promoted Supabase RLS tests into `all` (#517)
-    # and the import-cycle ratchet (#808). Steps below are copied verbatim
-    # from playwright.yml's readiness-check + fail-loud pattern, not moved:
-    # the push/manual job keeps running the full mandatory suite (plus the
-    # mobile-viewport regression) unchanged.
+    # and the import-cycle ratchet (#808).
     #
-    # Skips (does not fail) on fork/Dependabot pull_request runs, which
-    # receive no repo secrets from GitHub by design — `all`'s aggregate step
-    # only treats 'failure'/'cancelled' as blocking, so a skipped job here
-    # never blocks an external contribution that structurally cannot supply
-    # these secrets. Same-repo, non-Dependabot pushes and PRs still hard-fail
-    # on missing secrets, same as the push-triggered version always has.
-    # Dependabot PRs are opened against this repo (not a fork), so the
-    # same-repo check alone does not exclude them — `github.actor` is
-    # checked explicitly for that reason.
+    # ── 2026-07-30: THIS JOB NO LONGER TOUCHES PRODUCTION ──────────────────
+    # It used to run `npm run seed:baseball:ci` with the production Supabase URL
+    # and service-role key in its env, on every pull request. It now stands up a
+    # throwaway Supabase stack on the runner
+    # (.github/actions/local-supabase-stack) and seeds that instead.
+    #
+    # Three consequences worth knowing:
+    #
+    # 1. NO SECRETS ARE NEEDED, so the readiness-check / fail-loud steps that
+    #    used to sit here are gone, and the fork + Dependabot `if:` skip went
+    #    with them. That skip existed only because external PRs "structurally
+    #    cannot supply these secrets" — with the secrets gone the reason is gone,
+    #    and a required gate that silently skips on forks was a hole in it.
+    #
+    # 2. THE STEP ORDER MATTERS. `supabase start` must run BEFORE `npm run
+    #    build`, because Next.js inlines NEXT_PUBLIC_* at build time — a build
+    #    made before the local URL exists would ship the old value into the
+    #    client bundle and the smoke run would authenticate against it.
+    #
+    # 3. IT TESTS THIS PR'S SCHEMA, not production's. `supabase start` applies
+    #    everything under supabase/migrations/, so a migration that breaks a
+    #    smoke path now fails on the PR that introduces it.
     #
     # COST NOTE: this doubles Playwright-browser-install + a full `npm run
-    # build` on every PR from this repo, on top of the existing next-build /
-    # Smoke-checks builds — a real, ongoing CI-minutes tradeoff the repo had
-    # previously avoided by scoping full E2E to push-only. Revisit if PR
-    # wall-clock time becomes a problem.
-    if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+    # build` on every PR, on top of the existing next-build / Smoke-checks
+    # builds, and adds ~1-2min of `supabase start` — a real, ongoing CI-minutes
+    # tradeoff. Revisit if PR wall-clock time becomes a problem.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45, not 30. Measured on this branch: a CLEAN run is ~17 min (supabase start
+    # ~1m45s, build ~9-10 min under container contention, seed ~1 min, the smoke
+    # itself ~1m30s). A run where the smoke FAILS costs ~24 min, because every spec
+    # retries twice — which left only ~6 min of head-room against 30.
+    #
+    # That head-room is what produces a diagnosable failure. When the JOB timeout
+    # fires first, GitHub cancels the job outright and the `if: always()`
+    # report-upload step never runs: exactly how #953 produced three consecutive
+    # `cancelled` runs with nothing to debug from (see the note in
+    # playwright.yml's `e2e` job). A red run that uploads its Playwright report is
+    # worth far more than a cancelled one that finishes 15 minutes sooner.
+    timeout-minutes: 45
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
-      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
-      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
-      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+      # NOT secrets, and deliberately not read from any. The seed script creates
+      # exactly these two accounts on the local stack with exactly these values
+      # (scripts/seed-baseball-demo.ts — DEMO_COACH_EMAIL / DEMO_PLAYER_EMAIL /
+      # DEMO_PASSWORD, whose own header names this as the intended wiring). They
+      # are credentials for a database that is destroyed when the job ends.
+      E2E_BASEBALL_COACH_EMAIL: demo-coach@baseballhelmdemo.com
+      E2E_BASEBALL_COACH_PASSWORD: BaseballDemo2026
+      E2E_BASEBALL_PLAYER_EMAIL: demo-player@baseballhelmdemo.com
+      E2E_BASEBALL_PLAYER_PASSWORD: BaseballDemo2026
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - name: Checkout
@@ -419,34 +438,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Compute BaseballHelm auth readiness
-        id: baseball-auth-ready
-        run: |
-          missing=()
-          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing+=("SUPABASE_SERVICE_ROLE_KEY")
-          [ -z "$E2E_BASEBALL_COACH_EMAIL" ] && missing+=("E2E_BASEBALL_COACH_EMAIL")
-          [ -z "$E2E_BASEBALL_COACH_PASSWORD" ] && missing+=("E2E_BASEBALL_COACH_PASSWORD")
-          [ -z "$E2E_BASEBALL_PLAYER_EMAIL" ] && missing+=("E2E_BASEBALL_PLAYER_EMAIL")
-          [ -z "$E2E_BASEBALL_PLAYER_PASSWORD" ] && missing+=("E2E_BASEBALL_PLAYER_PASSWORD")
-
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            printf 'missing=%s\n' "${missing[*]}" >> "$GITHUB_OUTPUT"
-            echo "BaseballHelm auth secrets unavailable: ${missing[*]}"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "missing=" >> "$GITHUB_OUTPUT"
-            echo "BaseballHelm auth secrets available."
-          fi
-
-      - name: Fail missing BaseballHelm secrets
-        if: steps.baseball-auth-ready.outputs.ready != 'true'
-        env:
-          MISSING_BASEBALL_SECRETS: ${{ steps.baseball-auth-ready.outputs.missing }}
-        run: |
-          echo "::error::Missing required secret(s): ${MISSING_BASEBALL_SECRETS}"
-          echo "BaseballHelm authenticated smoke (#372) is a required PR gate on this repo and needs these secrets configured."
-          exit 1
+      # Everything below this point talks to the runner's own Postgres. See the
+      # action for why, and for the loopback assertion it ends with.
+      - name: Start local Supabase stack
+        uses: ./.github/actions/local-supabase-stack
 
       - name: Cache Playwright browsers
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -459,10 +454,16 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # MUST come after the stack is up: Next.js inlines NEXT_PUBLIC_* into the
+      # client bundle at build time, so building first would bake in whatever the
+      # env held before the local URL existed.
       - name: Build (so dev server boots fast)
         run: npm run build
 
-      - name: Seed BaseballHelm CI accounts
+      # No --allow-prod (see package.json). Against a loopback URL the target
+      # guard allows the write with no flag; if production credentials ever leak
+      # back into this job's env, the guard refuses instead of seeding prod.
+      - name: Seed BaseballHelm CI accounts into the local stack
         run: npm run seed:baseball:ci
 
       - name: Run BaseballHelm mandatory smoke (blocking)
@@ -482,6 +483,10 @@ jobs:
           path: playwright-report/
           retention-days: 3
           if-no-files-found: ignore
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop || true
 
   all:
     name: all

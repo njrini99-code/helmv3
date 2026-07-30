@@ -352,7 +352,7 @@ All work is on PR [#1092](https://github.com/njrini99-code/helmv3/pull/1092)
 | Priority | Item | Note |
 |---|---|---|
 | ~~P1~~ **DONE** | ~~34% of `baseball_*` tables have zero pgTAP RLS coverage~~ | Closed. Invitations (`2c2c939cf`), messaging (`e1011f50b`), and tasks/travel/announcements/dev-plans (`4e0b96ccb`) all have suites now. Writing them found **two P0s** — the invitation-code leak and the `baseball_messages` typo. Two findings across five previously-untested tables is the evidence for the claim that an untested policy is an unverified claim. |
-| P1 | **CI seeds PRODUCTION on every PR** | Still true, but **narrower than this row implied** — investigated 2026-07-29 23:45Z; read the notes under the table before rewriting anything. |
+| ~~P1~~ **DONE** | ~~**CI seeds PRODUCTION on every PR**~~ | **Fixed 2026-07-30.** The required gate (`baseball-auth-smoke`) now stands up a throwaway Supabase stack on the runner and seeds that. Three things came out of doing it that the notes below did not predict — see "What the fix actually found" under the table. |
 | ~~P1~~ **DONE** | ~~`baseball_notifications_insert` is `WITH CHECK (true)`~~ | In-app phishing, not a leak (reads are correctly self-scoped). **The obvious fix breaks the product:** practice-publish and coach lift messages legitimately write notifications to *other* users through the caller's own session (`practice.ts:516`, `lifting-v11.ts:2411`, both `createClient()` not admin), so `auth.uid() = user_id` would silently stop them. Needs a `can_notify_baseball_user()` definer helper. **Fixed in `bcbba306b`** — a definer `can_notify_baseball_user()` gating on "self, or a player on a team you are staff on", after verifying two ways that those two call sites are the only inserters. 10 pgTAP assertions, weighted toward the PERMITTED cases so a future self-only tightening cannot pass. |
 | ~~P1 **BLOCKED**~~ **DONE** | ~~`public_profile_mode` DDL default is `'private'`~~ | **Answered 10:40 EDT once the database came back.** Live column default is `'unlisted'::text` and **all 13 teams are `unlisted`, zero `private`** — so `baseball_teams_public_profile` is NOT default-deny and cross-org discovery is not zeroed. Feared impact was nil. Separately worth knowing: production's column default **drifted** from the committed DDL, a second independent case of production not matching the migration that created it. Zero impact today, recorded not actioned. |
 | ~~P2~~ **DONE** | ~~The `integration` vitest project (5 files) runs in no CI workflow~~ | **The item was right about the gap and wrong about the cause, and the real cause was worse.** `vitest.config.ts` set a root-level `include`, and `extends: true` MERGES array options rather than replacing them — so every project inherited the broad root glob. `integration`, `rls` and `business` set `include` but not `exclude`, so each matched **~870 files instead of 5, 0 and 7**. `unit` looked fine only because it also overrides `exclude`. Consequences: CI's "Business contracts" job was re-running the entire unit suite under a name claiming to check 7 contract files (~170s → 3s once fixed), and the integration tests *were* running — by accident, inside that job. Root `include` removed, integration given its own CI step so nothing is lost. Verified by counting: unit 861 (unchanged), integration 5, business 7, rls 0. |
@@ -381,6 +381,43 @@ auth + migrations + seeded users in CI. Landing that wrong blocks every PR in th
 repo — which already happened once on 2026-07-29 when an unretried CI seed froze all
 merges (#1097/#1098). Right eventual change, wrong unattended-at-midnight change.
 Needs an owner decision on sequencing.
+
+**What the fix actually found (2026-07-30, owner-directed):** the standing-up-a-
+stack part was the easy half — `supabase start` was already doing exactly that in
+ci.yml's `Supabase lint + RLS tests` job, so the mechanism was proven and one
+composite action away. Three things the investigation above had not turned up:
+
+1. **`scripts/seed-baseball-e2e.ts` had no target guard at all.** The demo seed
+   has refused unnamed non-local targets since `f7ffa28b9`; its sibling — which
+   `playwright.yml` ran against production on every push to `main`, creating auth
+   users and DELETEing camp registrations — never got the rule. The guard was
+   ~130 lines inline in one caller, which is precisely how a safety rule reaches
+   only one of the scripts that needs it. It is now
+   `scripts/lib/seed-target-guard.ts`, used by both.
+2. **Removing the secrets removed the fork skip's only justification.** The job
+   skipped on fork and Dependabot PRs because they "structurally cannot supply
+   these secrets". With the local stack there are no secrets, so the skip is gone
+   — a *required* gate that silently skipped for a whole class of PR was a hole
+   in the gate, not a kindness to contributors.
+3. **The guard's rules were only ever checked by grep.** The old contract test
+   asserted the strings `HELM_PROD_PROJECT_REF` and `--allow-prod` appear in the
+   seed's source. That catches deletion; it cannot catch the guard being *wrong*,
+   and this guard has been wrong twice in ways a grep passes happily (a look-alike
+   domain resolving to the prod ref; `.local` accepted as a loopback suffix).
+   Extracting it made the rules callable, so they are now asserted by execution —
+   21 cases, verified non-vacuous by re-injecting all three historical bugs and
+   confirming each one turns the suite red.
+
+**Also worth recording: `playwright.yml` still seeds production, deliberately.**
+It runs the full chromium suite including golf specs that authenticate against
+real golf data, and a job has one `NEXT_PUBLIC_SUPABASE_URL` — pointing the
+baseball half at loopback points the golf half there too, where no golf fixture
+exists. It runs on push to `main` and manual dispatch, never on a PR, so no
+unreviewed change writes to production through it. Its two seed steps now carry an
+explicit `--allow-prod`, so the production write is stated in the workflow file
+rather than implied by an env block. **Rehoming that job needs a golf local-stack
+fixture first** — that is the remaining piece of this item, and it is not blocking
+anything.
 
 ---
 
