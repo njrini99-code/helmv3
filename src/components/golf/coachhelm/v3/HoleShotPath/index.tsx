@@ -117,7 +117,10 @@ const SIZES = {
     className: 'w-[112px] h-[240px] md:w-[124px] md:h-[264px]',
     showShotNumbers: true,
     showScore: true,
-    showHeader: true,
+    // ReviewHero already supplies the hole/par/score header beside the
+    // preview. Repeating it inside a 112px strip caused the score label to
+    // collide with the hole label at real production widths.
+    showHeader: false,
     showFlag: true,
     interactive: true,
     showEmptyLabel: true,

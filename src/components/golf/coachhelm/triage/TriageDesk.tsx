@@ -46,6 +46,7 @@ import {
 import { BriefBand } from './BriefBand';
 import { ViewSwitch } from './ViewSwitch';
 import { SignalQueue } from './SignalQueue';
+import { TeamSignalSummary } from './TeamSignalSummary';
 import { SignalDossier } from './SignalDossier';
 import { EffectivenessScoreboard } from './EffectivenessScoreboard';
 import {
@@ -498,6 +499,19 @@ export function TriageDesk({
                 </div>
               ) : null}
             </div>
+
+            {/* Per-category signal pressure, above the queue it summarises.
+                Distinct from Team diagnostics above it: that panel reads shot
+                analysis, this one aggregates the SIGNAL GROUPS themselves —
+                count, high-priority share, freshness and impact per category —
+                which nothing else on this surface does. `SignalQueue` shows a
+                severity chip per group and trailing filter counts, but never
+                the shape of the whole queue at a glance. */}
+            <TeamSignalSummary
+              groups={groups}
+              playerHref={(playerId) => hrefFor({ view: 'players', player: playerId, playersTab: 'areas' })}
+              onOpenPlayer={(playerId) => navigate({ view: 'players', player: playerId, playersTab: 'areas' })}
+            />
 
             <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
               <div className={cn(isSignalSelected && 'hidden min-[940px]:block')}>
