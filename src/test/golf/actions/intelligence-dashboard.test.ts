@@ -144,25 +144,60 @@ describe('intelligence-dashboard actions', () => {
     vi.clearAllMocks();
   });
 
-  // TODO(plan-03 / plan-07): un-skip after intelligence-dashboard action is
-  // confirmed to use the post-refactor schema. See src/test/SKIPPED.md.
-  it.skip('generateTeamCorrelations uses golf_team_members (not golf_players.team_id)', async () => {
-    const sb = buildSupabase({
-      teamMembers: [
-        { player_id: 'p-1', golf_players: { id: 'p-1', first_name: 'A', last_name: 'B' } },
-      ],
-    });
-
-    // Spy on the table dispatcher so we can assert which tables were touched.
+  // ---------------------------------------------------------------------------
+  // The spec that used to live here — "generateTeamCorrelations uses
+  // golf_team_members (not golf_players.team_id)" — was parked on
+  // TODO(plan-03 / plan-07) pending confirmation that the action used the
+  // post-refactor schema. Its PREMISE IS OBSOLETE, established by reading the
+  // action rather than by re-running the spec:
+  //
+  //   `generateTeamCorrelationsImpl` reads NO TABLES. It was gutted on
+  //   2026-04-27 ("hardcoded defaults removed; real correlations from
+  //   team_correlations.ts not yet wired into a UI surface that needs them.
+  //   Returns [] so consumers hide the tab."). It does an auth check and
+  //   returns an empty array.
+  //
+  // So there is no table choice left to assert, and the spec could never pass
+  // as written — `fromSpy` would record `golf_coaches` (from the auth wrapper)
+  // and nothing else. Separately, `golf_players` no longer HAS a `team_id`
+  // column at all (18 columns, none of them team_id), so the thing the spec was
+  // guarding against is now structurally impossible.
+  //
+  // Replaced with the contract the function actually has, so that whoever wires
+  // up real correlations sees a failing test and updates it deliberately —
+  // rather than finding a skipped spec whose premise stopped applying 3 months
+  // earlier.
+  // ---------------------------------------------------------------------------
+  it('generateTeamCorrelations returns an empty set for an authorized coach', async () => {
+    const sb = buildSupabase({});
     const fromSpy = vi.spyOn(sb, 'from');
     createClientMock.mockResolvedValue(sb);
 
     const result = await generateTeamCorrelations('team-1');
+
     expect(result.success).toBe(true);
-    const calls = fromSpy.mock.calls.map((c) => c[0]);
-    expect(calls).toContain('golf_team_members');
-    // Must not query golf_players with .eq('team_id', ...)
-    // (it's fine if golf_players is NOT read at all, since we use inner join)
+    expect(result.correlations).toEqual([]);
+    // Pins the "reads no data tables" property: the only table touched is the
+    // auth wrapper's coach lookup. If real correlations get wired up, this is
+    // the assertion that fires.
+    expect(fromSpy.mock.calls.map((c) => c[0])).toEqual(['golf_coaches']);
+  });
+
+  it('generateTeamCorrelations denies a coach without team access', async () => {
+    // The local wrapper translates the shared helper's `{ allowed }` into
+    // `{ authorized }` — verified, and NOT the shape mismatch it looks like at a
+    // glance. Drive the denial through the shared helper so the wrapper's
+    // translation stays covered.
+    const { verifyTeamAccess } = await import('@/lib/auth/verify-player-access');
+    vi.mocked(verifyTeamAccess).mockResolvedValueOnce({ allowed: false, reason: 'denied' });
+
+    createClientMock.mockResolvedValue(buildSupabase({}));
+
+    const result = await generateTeamCorrelations('team-1');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Not authorized to access this team');
+    expect(result.correlations).toBeUndefined();
   });
 
   it('getTeamInsightsSummary queries golf_patterns_v2 by player_id (not team_id, no pattern_name)', async () => {
