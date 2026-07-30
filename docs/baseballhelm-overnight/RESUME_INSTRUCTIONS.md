@@ -4,12 +4,46 @@ You are picking up an in-flight overnight mission to make BaseballHelm
 sellable. This file exists because the run is expected to outlive any single
 agent context.
 
+> ## 🛑 STOP — `baseball/overnight-completion` IS SUPERSEDED. DO NOT MERGE IT.
+>
+> _Measured 2026-07-30 02:20Z._ **Work on this mission moved to `main` via PRs.**
+> The mission branch still exists locally and still shows **94 commits "not on
+> main"** — that number is a **squash-merge ancestry artifact, not content.**
+> Merging the branch would **revert production fixes.**
+>
+> Verify it yourself the right way — `git diff A...B` (three dots) re-counts
+> everything the squash already landed; `git diff A B` (two dots) gives the true
+> delta:
+>
+> ```bash
+> git diff --stat main baseball/overnight-completion   # 2-dot: -21,617 / +1,070
+> ```
+>
+> Every file comes back **branch-older-than-main**. Three proofs, each read from
+> the machine rather than inferred:
+>
+> | File | main | branch |
+> |---|---|---|
+> | `golf/(auth)/login/page.tsx` | `123502e94` 07-29 — server-side auth (#1110) | `8f66b6644` 07-24 — **the client-side check #1110 removed to stop the sign-in flicker** |
+> | `components/ui/empty-state.tsx` | `9e15b0b71` 07-29 — recruiting sunset | `5d7f782a9` **06-14** |
+> | `lifting/.../settings-client.tsx`, `coach/discover/{PlayerCard,FilterPanel}.tsx` | fixed in **#1126** | the pre-fix `<button>`-inside-`<button>` versions |
+>
+> So the branch's 1,070 "extra" lines are the OLD code main has since replaced.
+> **Nothing is stranded there.** The remote copy was deleted on the owner's
+> instruction along with 36 other stale branches; SHAs were recorded first.
+>
+> **Orientation is `main` now.** The commands below still say
+> `baseball/overnight-completion` because they were written when it was the
+> working branch — that expectation is stale, and following it literally is the
+> footgun this box exists to stop.
+
 ## 60-second orientation
 
 ```bash
 cd /Users/ricknini/Downloads/helmv3
-git branch --show-current            # expect: baseball/overnight-completion
-git log --oneline main..HEAD         # what this mission has landed so far
+git branch --show-current            # expect: main (NOT the mission branch — see above)
+git log --oneline -20 main           # what this mission has landed
+gh pr list --state open              # what is still in flight
 cat docs/baseballhelm-overnight/MISSION_STATE.md
 cat docs/baseballhelm-overnight/CURRENT_PRIORITIES.md
 cat docs/baseballhelm-overnight/ISSUE_LEDGER.md
@@ -42,7 +76,7 @@ caught, in this run alone: two RLS recursion cycles, five anon-callable
 functions, a miscounted pgTAP plan, and a fixture using the wrong id family.
 None was visible to reading.
 
-## The two hazards you must respect
+## The hazards you must respect
 
 **1. Another session shares this working tree.** It owns
 `src/app/golf/admin/crm/**` and `src/components/landing/**` (~107 uncommitted
@@ -53,6 +87,34 @@ verify with `git diff --cached --name-only` before every commit.
 into a *dedicated demo org* is the sanctioned pattern here. Unscoped
 `DELETE`/`TRUNCATE`, or any write touching a row outside the demo org, is not.
 Schema changes go through migrations only.
+
+Both baseball seeds now refuse a non-local target unless you name it
+(`scripts/lib/seed-target-guard.ts`): production needs `--allow-prod`, any other
+project needs `--allow-project=<ref>`, and a loopback stack needs no flag at all.
+`npm run seed:baseball:ci` **no longer carries `--allow-prod`** — if you see
+`REFUSING TO SEED`, read the target line the script printed before reaching for a
+flag.
+
+**3. A green check named `all` does NOT mean CI passed.** `ci.yml` and
+`review-gate.yml` **both** define a job called `all`, and `all` is one of only
+three required contexts (`CodeQL`, `all`, `Smoke checks`). On 2026-07-30, PR #1125
+reported `all → success` on its head commit while the `BaseballHelm authenticated
+smoke` job that CI's `all` *needs* was still `in_progress` — the green was Review
+Gate's. That smoke job then **failed**. Never decide "ready to merge" from the
+name; read the CI run's own jobs:
+
+```bash
+sha=$(gh pr view <PR> --json headRefOid -q .headRefOid)
+rid=$(gh api "repos/njrini99-code/helmv3/actions/runs?head_sha=$sha&per_page=50" \
+        -q '[.workflow_runs[]|select(.name=="CI")][0].id')
+gh api "repos/njrini99-code/helmv3/actions/runs/$rid/jobs?per_page=60" \
+  -q '.jobs[]|"\(.conclusion // .status)\t\(.name)"'
+```
+
+Fixing it properly needs the **owner**: renaming a job changes its check-run name,
+so branch protection would then wait forever for a context named `all` that no
+longer exists — blocking every PR. The rename and the `required_status_checks`
+update must land together. Do not do it unilaterally.
 
 ## How to resume
 
