@@ -30,7 +30,7 @@ export interface SendOpsDigestResult {
   messageId?: string;
 }
 
-const DEFAULT_FROM = 'Helm Bridge <bridge@helmsportslabs.com>';
+const DEFAULT_FROM = 'Cup of Helm <bridge@helmsportslabs.com>';
 
 export interface OpsAlert {
   subject: string;

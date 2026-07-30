@@ -12,6 +12,44 @@ export const runtime = 'nodejs';
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
+/**
+ * "What shipped yesterday" for Cup of Helm.
+ *
+ * FAIL-SOFT, and the distinction matters: this returns `undefined` when we
+ * could not ask GitHub (no token, network error, non-200) and `[]` only when
+ * GitHub answered and nothing had merged. The email renders those two states
+ * with different words — "unknown" vs "nothing merged" — because telling the
+ * owner nothing shipped when we simply failed to look is the same class of lie
+ * as a zeroed dashboard on a failed query.
+ *
+ * Unauthenticated GitHub search is rate-limited to ~10 req/min per IP, which is
+ * fine for one daily call, so a missing token degrades rather than breaks.
+ */
+async function fetchShippedYesterday(): Promise<Array<{ title: string; number: number }> | undefined> {
+  const since = new Date(Date.now() - 86400_000).toISOString().slice(0, 10);
+  const url =
+    `https://api.github.com/search/issues?q=repo:njrini99-code/helmv3+is:pr+is:merged+merged:%3E=${since}` +
+    `&sort=updated&order=desc&per_page=20`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+      },
+      // Never let a slow GitHub hold the whole cron open.
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return undefined;
+    const json = (await res.json()) as { items?: Array<{ title?: unknown; number?: unknown }> };
+    if (!Array.isArray(json.items)) return undefined;
+    return json.items
+      .filter((i) => typeof i.title === 'string' && typeof i.number === 'number')
+      .map((i) => ({ title: i.title as string, number: i.number as number }));
+  } catch {
+    return undefined;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const expected = process.env.CRON_SECRET;
   if (!expected || req.headers.get('authorization') !== `Bearer ${expected}`) {
@@ -49,6 +87,9 @@ export async function GET(req: NextRequest) {
         admin.from('demo_requests').select('id', { count: 'exact', head: true }).gte('created_at', ago24h),
         admin.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
+
+    // Outside the Promise.all above so a GitHub hiccup cannot reject the batch.
+    const shippedYesterday = await fetchShippedYesterday();
 
     const latestByJob = new Map<string, { started_at: string; status: string }>();
     for (const row of (jobRows.data ?? []) as Array<{ job_type: string; status: string; started_at: string }>) {
@@ -91,6 +132,7 @@ export async function GET(req: NextRequest) {
         liftSessions: lifts.count ?? 0,
       },
       reds,
+      shippedYesterday,
     };
 
     const result = await sendOpsDigest(buildDigestEmail(data));
