@@ -159,13 +159,19 @@ function ratchetKey(violation: string): string {
  * stale-entries test below.
  */
 const KNOWN_VIOLATIONS = new Set<string>([
-  // -- SEVERE: interactive inside a <button>. The parser SPLITS the outer button,
-  // so the server DOM and the React tree disagree and hydration throws (#418/#425).
-  // This is the shape that shipped in CalendarView (#1111) and in select.tsx.
-  // Fix these first. Two are in sunset recruiting surfaces, one is live.
-  'app/lifting/(dashboard)/dashboard/settings/settings-client.tsx — <Button> nested inside <Button>',
-  'components/coach/discover/FilterPanel.tsx — <IconButton> nested inside <Button>',
-  'components/coach/discover/PlayerCard.tsx — <Button> nested inside <Button>',
+  // -- SEVERE (interactive inside a <button>): NONE LEFT.
+  //
+  // The three that were here — the lifting settings team combobox, and the saved
+  // search row + compare-mode player card in the sunset recruiting Discover
+  // surfaces — were fixed by making the inner control a SIBLING of the outer one
+  // rather than a child. That is the only real fix: `<button><button/></button>`
+  // makes the parser close the outer button at the inner one, so the server DOM
+  // and the React tree disagree and hydration throws (#418/#425) — the shape that
+  // shipped in CalendarView (#1111) and in select.tsx.
+  //
+  // Keep this section empty. A new entry here is not a build fix, it is a
+  // hydration crash with a note attached.
+  //
   // -- INVALID, but the parser does not split: interactive content inside an <a>.
   // It renders, but nests two focusable elements -- keyboard and screen-reader
   // users get a control inside a control and the click target is ambiguous.

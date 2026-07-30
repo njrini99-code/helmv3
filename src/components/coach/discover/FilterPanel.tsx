@@ -307,36 +307,45 @@ export function FilterPanel({ currentFilters, mode = 'players', sticky = true }:
               {/* Saved Searches List */}
               {savedSearches.length > 0 ? (
                 <div className="space-y-2">
+                  {/*
+                    Row = plain <div>. The load and delete controls are SIBLINGS
+                    inside it, never nested: `<button><button/></button>` is
+                    invalid HTML, so the parser closes the outer button at the
+                    inner one and hydration throws (#418/#425). The row keeps its
+                    own hover styling and gains `focus-within` so keyboard users
+                    see the same highlight mouse users do.
+                  */}
                   {savedSearches.map((savedSearch) => (
-                    <Button
-                      variant="ghost"
+                    <div
                       key={savedSearch.id}
-                      type="button"
                       className="group flex items-start justify-between p-3 rounded-xl bg-cream-100/60
                                  border border-warm-200/50 hover:border-primary-200 hover:bg-primary-50/30
-                                 transition-all duration-200 cursor-pointer w-full text-left h-auto"
-                      onClick={() => handleLoadSearch(savedSearch.filters)}
+                                 focus-within:border-primary-200 focus-within:bg-primary-50/30
+                                 transition-all duration-200"
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-warm-900 truncate group-hover:text-primary-700 transition-colors">
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        className="flex-1 min-w-0 flex flex-col items-start gap-0 p-0 h-auto min-h-0 text-left
+                                   font-normal hover:bg-transparent"
+                        onClick={() => handleLoadSearch(savedSearch.filters)}
+                      >
+                        <span className="block w-full text-sm font-medium text-warm-900 truncate group-hover:text-primary-700 transition-colors">
                           {savedSearch.name}
-                        </p>
-                        <p className="text-xs text-warm-500 truncate mt-0.5">
+                        </span>
+                        <span className="block w-full text-xs text-warm-500 truncate mt-0.5">
                           {getSearchDescription(savedSearch.filters)}
-                        </p>
-                      </div>
+                        </span>
+                      </Button>
                       <IconButton variant="default"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteSearch(savedSearch.id);
-                        }}
+                        onClick={() => deleteSearch(savedSearch.id)}
                         className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50
-                                   opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 ml-2"
+                                   opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all flex-shrink-0 ml-2"
                         aria-label="Delete saved search"
                       >
                         <IconTrash size={14} />
                       </IconButton>
-                    </Button>
+                    </div>
                   ))}
                 </div>
               ) : (

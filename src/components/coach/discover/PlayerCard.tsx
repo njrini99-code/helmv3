@@ -88,15 +88,19 @@ const PlayerCardComponent = function PlayerCard({
 
   if (variant === 'compact') {
     return (
-      <Button
-        variant="ghost"
-        type="button"
-        onClick={handleClick}
+      // Card = plain <div>. The compare checkbox is a SIBLING of the
+      // open-player button, never a child of it: `<button><button/></button>` is
+      // invalid HTML, the parser closes the outer button at the inner one, and
+      // hydration throws (#418/#425). The card keeps its own hover/selected
+      // styling and gains `focus-within` so the keyboard path shows the same
+      // affordance as the pointer path.
+      <div
         className={cn(
-          "flex items-center gap-3 p-3 rounded-xl cursor-pointer relative text-left h-auto min-h-0 justify-start font-normal",
+          "flex items-center gap-3 p-3 rounded-xl relative",
           "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
           "transition-[transform,box-shadow,border-color] duration-200",
           "hover:-translate-y-0.5 hover:shadow-md hover:border-warm-200/55",
+          "focus-within:-translate-y-0.5 focus-within:shadow-md",
           isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
           className
         )}
@@ -106,9 +110,10 @@ const PlayerCardComponent = function PlayerCard({
           <Button variant="primary"
             type="button"
             aria-label="Select player for comparison"
-            onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+            aria-pressed={isSelected}
+            onClick={() => onSelect?.()}
             className={cn(
-              'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200 flex-shrink-0',
+              'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200 flex-shrink-0 !min-h-0 !p-0',
               isSelected
                 ? 'bg-primary-600 border-primary-600 text-white scale-110'
                 : 'border-warm-300 hover:border-primary-500 bg-cream-50'
@@ -117,25 +122,33 @@ const PlayerCardComponent = function PlayerCard({
             {isSelected && <IconCheck size={12} />}
           </Button>
         )}
-        
-        <PlayerAvatar player={player} size="sm" />
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-warm-900 truncate">
-            {player.firstName} {player.lastName}
-          </div>
-          <div className="text-sm leading-relaxed text-warm-500">
-            {player.position} • {player.graduationYear}
-          </div>
-        </div>
-        {player.hasVideo && (
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-600 text-xs">
-            <IconVideo size={10} />
-          </div>
-        )}
+
+        <Button
+          variant="ghost"
+          type="button"
+          onClick={handleClick}
+          className="flex flex-1 min-w-0 items-center gap-3 p-0 h-auto min-h-0 justify-start
+                     text-left font-normal hover:bg-transparent"
+        >
+          <PlayerAvatar player={player} size="sm" />
+          <span className="flex-1 min-w-0 block">
+            <span className="block font-medium text-warm-900 truncate">
+              {player.firstName} {player.lastName}
+            </span>
+            <span className="block text-sm leading-relaxed text-warm-500">
+              {player.position} • {player.graduationYear}
+            </span>
+          </span>
+          {player.hasVideo && (
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-600 text-xs">
+              <IconVideo size={10} />
+            </span>
+          )}
+        </Button>
         {player.status && (
           <StatusDot variant={getStatusVariant(player.status)} />
         )}
-      </Button>
+      </div>
     );
   }
 
