@@ -56,39 +56,39 @@ SELECT plan(10);
 DO $$
 BEGIN
   INSERT INTO auth.users (id, email, role) VALUES
-    ('00000000-0000-0000-0000-0000000cr101', 'reccoach@helm.test', 'authenticated'),
-    ('00000000-0000-0000-0000-0000000cr201', 'recplayer@helm.test', 'authenticated')
+    ('00000000-0000-0000-0000-0000000ce101', 'reccoach@helm.test', 'authenticated'),
+    ('00000000-0000-0000-0000-0000000ce201', 'recplayer@helm.test', 'authenticated')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.users (id, email, role) VALUES
-    ('00000000-0000-0000-0000-0000000cr101', 'reccoach@helm.test', 'coach'),
-    ('00000000-0000-0000-0000-0000000cr201', 'recplayer@helm.test', 'player')
+    ('00000000-0000-0000-0000-0000000ce101', 'reccoach@helm.test', 'coach'),
+    ('00000000-0000-0000-0000-0000000ce201', 'recplayer@helm.test', 'player')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.baseball_coaches (id, user_id, coach_type, full_name)
-    VALUES ('00000000-0000-0000-0000-0000000cr102',
-            '00000000-0000-0000-0000-0000000cr101', 'college', 'Recursion Coach')
+    VALUES ('00000000-0000-0000-0000-0000000ce102',
+            '00000000-0000-0000-0000-0000000ce101', 'college', 'Recursion Coach')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.baseball_teams (id, name, team_type, join_code)
-    VALUES ('00000000-0000-0000-0000-0000000cr103', 'Recursion Team', 'college', 'CODERECU')
+    VALUES ('00000000-0000-0000-0000-0000000ce103', 'Recursion Team', 'college', 'CODERECU')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.baseball_team_coach_staff
     (team_id, coach_id, role, is_primary, is_head_coach, status)
-  VALUES ('00000000-0000-0000-0000-0000000cr103',
-          '00000000-0000-0000-0000-0000000cr102', 'head_coach', true, true, 'active')
+  VALUES ('00000000-0000-0000-0000-0000000ce103',
+          '00000000-0000-0000-0000-0000000ce102', 'head_coach', true, true, 'active')
   ON CONFLICT (team_id, coach_id)
     DO UPDATE SET is_primary = true, is_head_coach = true, status = 'active';
 
   INSERT INTO public.baseball_players (id, user_id, player_type, recruiting_activated)
-    VALUES ('00000000-0000-0000-0000-0000000cr202',
-            '00000000-0000-0000-0000-0000000cr201', 'college', false)
+    VALUES ('00000000-0000-0000-0000-0000000ce202',
+            '00000000-0000-0000-0000-0000000ce201', 'college', false)
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.baseball_team_members (team_id, player_id, status)
-    VALUES ('00000000-0000-0000-0000-0000000cr103',
-            '00000000-0000-0000-0000-0000000cr202', 'active')
+    VALUES ('00000000-0000-0000-0000-0000000ce103',
+            '00000000-0000-0000-0000-0000000ce202', 'active')
   ON CONFLICT DO NOTHING;
 END $$;
 
@@ -103,7 +103,7 @@ END $$;
 
 SET LOCAL role TO authenticated;
 SET LOCAL request.jwt.claims TO
-  '{"sub": "00000000-0000-0000-0000-0000000cr201", "role": "authenticated"}';
+  '{"sub": "00000000-0000-0000-0000-0000000ce201", "role": "authenticated"}';
 
 SELECT lives_ok(
   $$ SELECT count(*) FROM public.baseball_team_members $$,
@@ -112,7 +112,7 @@ SELECT lives_ok(
 
 SELECT is(
   (SELECT count(*)::int FROM public.baseball_team_members
-    WHERE team_id = '00000000-0000-0000-0000-0000000cr103'),
+    WHERE team_id = '00000000-0000-0000-0000-0000000ce103'),
   1,
   'player: sees their own team membership row (not merely non-erroring)'
 );
@@ -147,7 +147,7 @@ RESET request.jwt.claims;
 
 SET LOCAL role TO authenticated;
 SET LOCAL request.jwt.claims TO
-  '{"sub": "00000000-0000-0000-0000-0000000cr101", "role": "authenticated"}';
+  '{"sub": "00000000-0000-0000-0000-0000000ce101", "role": "authenticated"}';
 
 SELECT lives_ok(
   $$ SELECT count(*) FROM public.baseball_team_coach_staff $$,
@@ -156,7 +156,7 @@ SELECT lives_ok(
 
 SELECT is(
   (SELECT count(*)::int FROM public.baseball_team_coach_staff
-    WHERE team_id = '00000000-0000-0000-0000-0000000cr103'),
+    WHERE team_id = '00000000-0000-0000-0000-0000000ce103'),
   1,
   'coach: sees their own staff row (not merely non-erroring)'
 );
