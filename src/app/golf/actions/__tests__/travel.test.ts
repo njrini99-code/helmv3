@@ -4,11 +4,46 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Chainable Supabase mock
 // ---------------------------------------------------------------------------
 
-function createChainableMock(finalResult: Record<string, unknown> = { data: [], error: null }) {
+const CHAIN_METHODS = ['select', 'eq', 'neq', 'in', 'is', 'gt', 'lt', 'gte', 'lte', 'not', 'or', 'order', 'limit', 'range', 'single', 'maybeSingle', 'insert', 'update', 'delete', 'upsert'] as const;
+
+/** A chain whose every terminal resolves to one fixed result. */
+function flatChain(result: Record<string, unknown>) {
   const chain: Record<string, unknown> = {};
-  const methods = ['select', 'eq', 'neq', 'in', 'is', 'gt', 'lt', 'gte', 'lte', 'not', 'or', 'order', 'limit', 'range', 'single', 'maybeSingle', 'insert', 'update', 'delete', 'upsert'];
-  for (const method of methods) {
-    chain[method] = vi.fn(() => ({ ...chain, ...finalResult }));
+  for (const method of CHAIN_METHODS) {
+    chain[method] = vi.fn(() => ({ ...chain, ...result }));
+  }
+  return chain;
+}
+
+/**
+ * Chainable Supabase mock with OPTIONAL per-operation results.
+ *
+ * `perOperation` lets one table return different shapes for different verbs in
+ * the same test — e.g. a `select` that finds a row while the `delete` fails.
+ * Entering an overridden verb switches the REST of that chain to the override,
+ * so `.delete().eq(...)` resolves to the delete's result rather than the
+ * select's; the sub-chain is flat, so an override cannot recurse into itself.
+ *
+ * WHY THIS EXISTS. `returns error when delete fails` was skipped on
+ * TODO(fake-supabase-migration) — "with the current single-chain mock, the
+ * select-for-existence-check and the delete can't return different shapes.
+ * Re-enable after migrating this file to src/test/fixtures/fake-supabase.ts".
+ * The blocker was real, but the requirement is just per-operation results, and
+ * adding them here is ~15 lines against migrating 447 lines and 32 tests to a
+ * different fixture — a migration that would risk the 31 specs that already
+ * pass in order to enable one.
+ */
+function createChainableMock(
+  finalResult: Record<string, unknown> = { data: [], error: null },
+  perOperation: Partial<Record<(typeof CHAIN_METHODS)[number], Record<string, unknown>>> = {},
+) {
+  const chain: Record<string, unknown> = {};
+  for (const method of CHAIN_METHODS) {
+    chain[method] = vi.fn(() => {
+      const override = perOperation[method];
+      if (override) return { ...flatChain(override), ...override };
+      return { ...chain, ...finalResult };
+    });
   }
   return chain;
 }
@@ -238,15 +273,35 @@ describe('travel server actions', () => {
       expect(mockFrom).toHaveBeenCalledWith('golf_travel_itineraries');
     });
 
-    // TODO(fake-supabase-migration): with the current single-chain mock, the
-    // select-for-existence-check and the delete can't return different shapes.
-    // Re-enable after migrating this file to src/test/fixtures/fake-supabase.ts,
-    // which supports per-operation results.
-    it.skip('returns error when delete fails', async () => {
-      mockFromResult = createChainableMock({ error: { message: 'Delete failed' } });
+    // UN-SKIPPED: `createChainableMock` now takes per-operation results, which is
+    // all the parked TODO actually needed. The select-for-existence-check (and the
+    // golf_team_coach_staff lookup behind validateCoachTeamAccess) succeed, while
+    // the delete fails — the shape the single-result mock could not express.
+    it('returns error when delete fails', async () => {
+      mockFromResult = createChainableMock(
+        // existence check + staff lookup both find a row
+        { data: { id: validId, team_id: 'team-1' }, error: null },
+        // ...and only the delete fails
+        { delete: { data: null, error: { message: 'Delete failed' } } },
+      );
+
+      const result = await deleteGolfTravelItinerary(validId);
+
+      expect(result.success).toBe(false);
+      // The user-facing message, not the raw Postgres text — the action
+      // deliberately does not leak `Delete failed` to the client.
+      expect(result.error).toContain('Failed to delete');
+      expect(result.error).not.toContain('Delete failed');
+    });
+
+    it('reports not-found before attempting a delete', async () => {
+      // Guards the pair above from passing for the wrong reason: the error path
+      // must be reachable only AFTER the existence check succeeds, so a missing
+      // row has to produce a different message.
+      mockFromResult = createChainableMock({ data: null, error: null });
       const result = await deleteGolfTravelItinerary(validId);
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to delete');
+      expect(result.error).toContain('Itinerary not found');
     });
 
     it('rejects non-UUID itinerary id', async () => {
