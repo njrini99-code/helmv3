@@ -78,10 +78,6 @@
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/v3/weekly-coach-email",
-      "schedule": "0 23 * * 0"
-    },
-    {
       "path": "/api/cron/v3/goal-suggestions-write",
       "schedule": "20 3 * * *"
     },
