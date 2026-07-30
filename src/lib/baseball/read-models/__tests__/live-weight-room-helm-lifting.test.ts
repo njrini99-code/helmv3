@@ -19,14 +19,34 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 import { getLiveWeightRoomData } from '@/lib/baseball/read-models/live-weight-room';
+import { todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 
 const TEAM_ID = 'team-1';
 const ORG_ID = 'org-1';
 const PLAYER_ID = 'player-1';
 const ATHLETE_ID = 'athlete-1';
 
+/**
+ * The fixture's "today" must be anchored the same way the code under test
+ * anchors it, or this test only passes for part of the day.
+ *
+ * `getLiveWeightRoomData` resolves the TEAM's wall-clock day —
+ * `todayIsoInTz(await resolveTeamTimezone(...))`. This fixture's `baseball_teams`
+ * row carries no `timezone` column, so `resolveTeamTimezone` returns its
+ * `DEFAULT_TZ` of 'America/New_York'.
+ *
+ * This used to be `new Date().toISOString().slice(0, 10)` — the UTC date — which
+ * agreed with New York only between 00:00 UTC and 20:00 Eastern. From 8pm Eastern
+ * the two dates diverge, the fixture's session lands on the team's TOMORROW, and
+ * the assertion below fails. It went unnoticed because CI happened to run during
+ * the agreeing window; it surfaced at 21:05 EDT on 2026-07-29, when local was
+ * 07-29 and UTC was already 07-30.
+ *
+ * Using the real helper rather than a second implementation also means a future
+ * change to how the day is resolved cannot silently desynchronise the two.
+ */
 function todayYmd(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayIsoInTz('America/New_York');
 }
 
 function baseTables() {

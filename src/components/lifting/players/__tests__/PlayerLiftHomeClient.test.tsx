@@ -76,6 +76,27 @@ function makeSession(overrides: Partial<HelmLiftingSessionRow> = {}): HelmLiftin
   };
 }
 
+/**
+ * The athlete's own wall-clock date, built the same way the component builds it.
+ *
+ * PlayerLiftHomeClient uses `localYmd()` (local getters) because `scheduled_date`
+ * is a zoneless calendar date and the athlete is looking at their own phone. This
+ * fixture used `new Date().toISOString().slice(0, 10)` — the UTC date — which
+ * matches local only until UTC rolls over, 8pm Eastern / 5pm Pacific. After that
+ * the fixture's session is dated the component's TOMORROW, so it renders
+ * "No lift today" and there is no "Start" link to find.
+ *
+ * That made these two assertions pass or fail depending on the hour: green in
+ * CI during the day, red at 21:05 EDT on 2026-07-29 when local was 07-29 and UTC
+ * was already 07-30. Anchoring both sides the same way makes them time-independent.
+ */
+function localYmd(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 describe('PlayerLiftHomeClient — basePath link wiring', () => {
   it('builds the readiness check-in link off the baseball basePath, not a hardcoded /lifting path', () => {
     render(
@@ -92,7 +113,7 @@ describe('PlayerLiftHomeClient — basePath link wiring', () => {
   });
 
   it("builds today's session link off the baseball basePath", () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localYmd();
     render(
       <PlayerLiftHomeClient
         upcoming={[makeSession({ id: 'sess-today', scheduled_date: today })]}
@@ -107,7 +128,7 @@ describe('PlayerLiftHomeClient — basePath link wiring', () => {
   });
 
   it('still builds /lifting/dashboard links when the Lifting Lab caller passes that basePath', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localYmd();
     render(
       <PlayerLiftHomeClient
         upcoming={[makeSession({ id: 'sess-today', scheduled_date: today })]}
