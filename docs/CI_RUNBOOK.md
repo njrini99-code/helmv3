@@ -11,20 +11,64 @@ updated.
 
 ## 1. Status classification — hard gate vs. advisory
 
-The four **required contexts** actually enforced on `main` are: `all`,
-`Smoke checks`, `CodeRabbit`, `CodeQL`. Everything below labeled "Hard gate"
-rolls up into one of those. (The context name `all` is shared by both the
-`CI / all` and `Review Gate / all` aggregate jobs, so both must pass.)
+**THREE** required contexts are actually enforced on `main` — read live from the
+API, not from this table:
+
+```bash
+gh api repos/njrini99-code/helmv3/branches/main/protection \
+  -q '.required_status_checks | {strict, contexts}'
+# => {"strict": true, "contexts": ["CodeQL", "all", "Smoke checks"]}
+```
+
+`CodeRabbit` **is no longer one of them** — dropped by founder decision on
+2026-07-20 and removed from the required set (the app itself still needs an owner
+uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
+
+> ### ⚠️ `all` IS AMBIGUOUS, AND A GREEN `all` DOES NOT MEAN CI PASSED
+>
+> `ci.yml` and `review-gate.yml` **both** define a job named `all`, so both emit a
+> check run named `all` — and `all` is a required context. GitHub cannot tell them
+> apart by name.
+>
+> **Observed on PR #1125, 2026-07-30:** a check-runs query scoped to the head commit
+> returned `all → success` while `BaseballHelm authenticated smoke`, a job that
+> CI's `all` explicitly `needs`, was still `in_progress`. The green was **Review
+> Gate's**. That smoke job then **failed**, and CI's `all` failed with it. A
+> name-based readiness check reads green before CI has finished, and can read green
+> while CI is red.
+>
+> This is the most likely explanation for a PR with failing **Unit tests** merging on
+> 2026-07-29. Note `Unit tests` is *not* a required context by name — it is required
+> only transitively, because CI's `all` job `needs` it.
+>
+> **Never decide "ready to merge" from a check named `all`.** Resolve the PR's head
+> SHA, find the run whose `.name == "CI"`, and read that run's own jobs:
+>
+> ```bash
+> sha=$(gh pr view <PR> --json headRefOid -q .headRefOid)
+> rid=$(gh api "repos/njrini99-code/helmv3/actions/runs?head_sha=$sha&per_page=50" \
+>         -q '[.workflow_runs[]|select(.name=="CI")][0].id')
+> gh api "repos/njrini99-code/helmv3/actions/runs/$rid/jobs?per_page=60" \
+>   -q '.jobs[]|"\(.conclusion // .status)\t\(.name)"'
+> ```
+>
+> To identify which workflow a given check run came from, read its `html_url` — it
+> contains the run id.
+>
+> **Fixing this needs the repo owner, so do not do it unilaterally.** Renaming
+> either job changes its check-run name, and branch protection would then wait
+> forever for a context named `all` that no longer exists — blocking every PR. The
+> rename and the `required_status_checks` update have to land together.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
-| `all` (CI) | `ci.yml` | aggregate: DB-types drift, schema invariants, feature knowledge, typecheck, ESLint, lint-ratchet, unit tests, business contracts, `next build`, route hygiene, **Supabase lint + RLS tests**, **BaseballHelm authenticated coach/player smoke (#372)** | **Hard gate** (required context `all`) |
-| `all` (Review Gate) | `review-gate.yml` | aggregate: ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** (required context `all`) |
+| `all` (CI) | `ci.yml` | aggregate: DB-types drift, schema invariants, feature knowledge, typecheck, ESLint, lint-ratchet, unit tests, business contracts, `next build`, route hygiene, **Supabase lint + RLS tests**, **BaseballHelm authenticated coach/player smoke (#372)** | **Hard gate** — but see the ambiguity warning above: this shares the required context name `all` with the Review Gate job below, so a green `all` may not be this one |
+| `all` (Review Gate) | `review-gate.yml` | aggregate: ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** — same shared name; verify which workflow reported |
 | `Smoke checks` | `playwright.yml` (PRs + main push) | build-only smoke: `npm ci` + `next build` (no full E2E) | **Hard gate** |
 | `Playwright PR smoke (a11y)` | `pr-smoke.yml` | public-route accessibility Playwright only when frontend/e2e paths change | Advisory |
-| `CodeRabbit` | CodeRabbit GitHub App | assertive line-level review + blocking custom checks (`.coderabbit.yaml`) | **Hard gate** |
+| `CodeRabbit` | CodeRabbit GitHub App | ~~assertive line-level review + blocking custom checks~~ | **DROPPED 2026-07-20** — removed from the required set by founder decision; `.coderabbit.yaml` is a disable stub. If a `CodeRabbit` status still appears, it is informational. The custom rule packs under `.coderabbit/` REMAIN and are consumed directly by the Review Gate. |
 | `CodeQL` | `codeql.yml` | code-scanning security analysis | **Hard gate** |
-| `Greptile Review` | Greptile GitHub App | whole-codebase review + hard rules (`.greptile/rules.md`) | Advisory — *not* a required context; Greptile skips `dependabot` PRs, so requiring it would block the bot flow. CodeRabbit is the blocking AI reviewer. |
+| `Greptile Review` | Greptile GitHub App | ~~whole-codebase review~~ | **DROPPED 2026-07-20** — `.greptile/` is deleted. Neither external AI reviewer is a gate any more; the deterministic Review Gate + CodeQL cover the same hard rules. |
 | `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E (mandatory Baseball smoke + mobile-viewport regression + broader chromium suite) — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches. **Note:** `Playwright (chromium)`'s broader-suite step no longer masks its exit code (`|| echo ...` removed) — a red run here now means a real failure, not just "see artifact." |
 | `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; usually skips when no preview exists (non-main Vercel builds disabled) | Advisory |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |
@@ -45,13 +89,23 @@ Don't treat a check as "stuck" before its normal window has passed:
 - **Full Playwright** (`playwright.yml`, main + manual only) — `e2e` job
   75-minute budget; `picker-screenshots` and `baseball-smoke` 20 minutes each;
   main-push `Smoke checks` 15 minutes.
-- **`CI / all`'s `baseball-auth-smoke` job (#372)** — 30-minute budget; on
-  every same-repo, non-Dependabot PR/push it installs Playwright chromium,
-  runs a full `npm run build`, seeds BaseballHelm CI accounts, then runs the
-  mandatory coach/player smoke. This is separate from — and in addition to —
-  the broader `Smoke checks` build. On fork/Dependabot PR runs it **skips**
-  (no repo secrets available) rather than running or failing; a skip here
-  is expected, not stuck.
+- **`CI / all`'s `baseball-auth-smoke` job (#372)** — 30-minute budget. It
+  installs Playwright chromium, runs a full `npm run build`, seeds BaseballHelm
+  CI accounts, then runs the mandatory coach/player smoke. Separate from — and in
+  addition to — the broader `Smoke checks` build.
+
+  **This job's target changed on 2026-07-30 (PR #1125).** Before: it seeded
+  **production** using repo secrets, and **skipped** on fork/Dependabot PRs because
+  those receive no secrets — so a skip there was expected, not stuck. After: it
+  stands up a throwaway Supabase stack on the runner
+  (`.github/actions/local-supabase-stack`) and seeds that, needs **no secrets**, and
+  therefore **no longer skips for anyone**. Budget in practice: ~17 min for a clean
+  run (`supabase start` ≈ 1m45s, `npm run build` ≈ 9-10 min under container
+  contention, seed ≈ 1 min, the smoke itself ≈ 1m30s). A run where the smoke fails
+  costs ~24 min because each spec retries twice — close enough to the 30-minute
+  budget to matter: if the JOB timeout fires first, GitHub cancels outright and the
+  `if: always()` report upload never runs, which is how #953 produced three
+  consecutive `cancelled` runs with nothing to diagnose from.
 - **Web server / auth waits** (why Playwright can be slow to even start) —
   120s dev-server startup, 45s auth navigation per spec.
 

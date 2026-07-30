@@ -8,6 +8,32 @@ Require aggregate checks instead of every leaf job. Leaf jobs still run and
 remain visible on PRs, but branch protection depends on stable aggregate names
 so a job split/rename does not silently break protection.
 
+> ### ⚠️ WHAT IS ACTUALLY ENFORCED — verified live 2026-07-30
+>
+> ```bash
+> gh api repos/njrini99-code/helmv3/branches/main/protection \
+>   -q '.required_status_checks | {strict, contexts}'
+> # => {"strict": true, "contexts": ["CodeQL", "all", "Smoke checks"]}
+> ```
+>
+> **THREE contexts, and the names are bare** — `all`, not `CI / all`. That matters,
+> because **both `ci.yml` and `review-gate.yml` define a job named `all`**, so the
+> single required context `all` cannot distinguish them. On PR #1125 a check-runs
+> query returned `all → success` while the `BaseballHelm authenticated smoke` job
+> that CI's `all` `needs` was still `in_progress` — the green was Review Gate's, and
+> the smoke then failed. This is very likely how a PR with failing `Unit tests`
+> merged on 2026-07-29. See `docs/CI_RUNBOOK.md` §1 for the CI-run-scoped query to
+> use instead of trusting the name.
+>
+> **Fixing it needs both halves at once:** rename one aggregate job AND update
+> `required_status_checks` in the same change. Renaming alone leaves protection
+> waiting forever for a context named `all` that no longer exists, which blocks
+> every PR.
+>
+> `CodeRabbit` is **no longer required** (dropped 2026-07-20). The bullet below is
+> kept struck through rather than deleted so the change is visible to anyone
+> re-applying these settings from this file.
+
 - `CI / all` — hard aggregate for:
   - `Database types drift`
   - `Schema invariants`
@@ -20,9 +46,12 @@ so a job split/rename does not silently break protection.
   - `Next build`
   - `Route Hygiene P0/P1`
   - `Supabase lint + RLS tests`
-  - `BaseballHelm authenticated smoke` (coach + player, #372) — skips (does
-    not fail) on fork/Dependabot PRs, which receive no repo secrets from
-    GitHub by design
+  - `BaseballHelm authenticated smoke` (coach + player, #372) — as of PR #1125
+    this seeds a throwaway Supabase stack on the runner instead of production, so
+    it needs **no repo secrets** and therefore **no longer skips** on
+    fork/Dependabot PRs. Before that change it skipped (did not fail) on those
+    runs, because they receive no secrets from GitHub by design — and a required
+    gate that silently skipped for a whole class of PR was a hole in it
 - `Review Gate / all` — hard aggregate for ast-grep, semgrep, gitleaks,
   actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, and
   hadolint.
@@ -31,15 +60,21 @@ so a job split/rename does not silently break protection.
   `Playwright (chromium)` suite runs on `main` pushes and manual
   `workflow_dispatch` only and remains advisory.
 - `CodeQL` — GitHub code-scanning status.
-- `CodeRabbit` — CodeRabbit's own status check, with assertive review,
+- ~~`CodeRabbit` — CodeRabbit's own status check, with assertive review,
   pre-merge checks, issue enrichment, and auto-planning configured in
-  `.coderabbit.yaml`.
+  `.coderabbit.yaml`.~~ **DROPPED 2026-07-20** by founder decision and removed
+  from the required set: its credit quota had become the slowest step in shipping,
+  and the Review Gate + CodeQL cover the same hard rules deterministically.
+  `.coderabbit.yaml` is now a disable stub. The custom rule packs under
+  `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` REMAIN — CI consumes them
+  directly — so treat that directory name as historical. The GitHub App itself
+  still needs an owner uninstall.
 
 Advisory checks:
 
 - `Vercel` and `Vercel Preview Comments` (non-main preview builds skipped —
   see `docs/operations/COST_CONTROLS.md`)
-- `Greptile Review`
+- ~~`Greptile Review`~~ — **DELETED 2026-07-20**; `.greptile/` is gone.
 - `ci/circleci: lighthouse-preview`
 - `Playwright PR smoke (a11y)` — public routes only, path-filtered within PRs
 - `Playwright (chromium)` — main + manual only
@@ -65,11 +100,22 @@ configured or the job fails loudly. Note the added cost: a second full
 non-Dependabot PR, on top of the existing `Next build` / `Smoke checks`
 builds.
 
-`Greptile Review` is intentionally advisory, not a required check: Greptile's
-`.greptile/config.json` skips `dependabot`-titled PRs, so it never posts a
-passing `Greptile Review` on them — making it a required context would leave
-every Dependabot PR permanently un-mergeable without an admin override.
-CodeRabbit is the blocking AI reviewer.
+**HISTORICAL (both AI reviewers were dropped 2026-07-20).** `Greptile Review` was
+intentionally advisory, not required: its `.greptile/config.json` skipped
+`dependabot`-titled PRs, so it never posted a passing status on them, and making it
+a required context would have left every Dependabot PR permanently un-mergeable
+without an admin override. CodeRabbit was the blocking AI reviewer.
+
+The reasoning is kept because it generalises — **a check that structurally cannot
+report on a class of PR must not be a required context.** The same trap applied to
+`BaseballHelm authenticated smoke` while it needed repo secrets: it skipped on
+fork/Dependabot PRs, which meant a *required* gate silently waved through a whole
+class of change. PR #1125 removed the secret dependency and with it the skip, rather
+than leaving the hole in place.
+
+Today neither AI reviewer is a gate: the deterministic Review Gate (ast-grep,
+semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint,
+sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR.
 
 ## Other settings
 
