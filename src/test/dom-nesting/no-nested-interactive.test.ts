@@ -25,8 +25,7 @@
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync, writeFileSync, unlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 
@@ -189,9 +188,19 @@ const KNOWN_VIOLATIONS = new Set<string>([
   'components/ui/empty-state.tsx — <Button> nested inside <Link>',
 ]);
 
-function findNestedInteractive(file: string): string[] {
-  const source = readFileSync(file, 'utf8');
-  const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+/**
+ * Core detector, over source TEXT rather than a path.
+ *
+ * Split out so the fixture test can exercise the real walk without writing a
+ * temp file. The first version of that test wrote to
+ * `path.join(tmpdir(), 'nest-fixture-<pid>.tsx')`, which CodeQL correctly flagged
+ * as `js/insecure-temporary-file` (high): a predictable name in a world-writable
+ * directory is a symlink/TOCTOU vector. Passing the source in removes the file,
+ * the alert, and the fs dependency from that test in one move.
+ */
+function findNestedInteractiveInSource(label: string, source: string): string[] {
+  const sf = ts.createSourceFile(label, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const file = label;
   const violations: string[] = [];
 
   const walk = (node: ts.Node, ancestor: string | null): void => {
@@ -217,6 +226,10 @@ function findNestedInteractive(file: string): string[] {
 
   walk(sf, null);
   return violations;
+}
+
+function findNestedInteractive(file: string): string[] {
+  return findNestedInteractiveInSource(file, readFileSync(file, 'utf8'));
 }
 
 /**
@@ -316,18 +329,14 @@ describe('DOM nesting: interactive elements are never nested', () => {
         );
       }
     `;
-    const tmp = path.join(tmpdir(), `nest-fixture-${process.pid}.tsx`);
-    writeFileSync(tmp, fixture, 'utf8');
-    try {
-      const found = findNestedInteractive(tmp).map((v) => v.replace(/^.*? — /, ''));
-      expect(found).toEqual([
-        '<Link> nested inside <Button>',
-        '<Button> nested inside <Button>',
-        '<Button> nested inside <Button>',
-      ]);
-    } finally {
-      unlinkSync(tmp);
-    }
+    const found = findNestedInteractiveInSource('fixture.tsx', fixture).map((v) =>
+      v.replace(/^.*? \u2014 /, ''),
+    );
+    expect(found).toEqual([
+      '<Link> nested inside <Button>',
+      '<Button> nested inside <Button>',
+      '<Button> nested inside <Button>',
+    ]);
   });
 
   it('actually detects nesting when it exists (the detector is not vacuous)', () => {
