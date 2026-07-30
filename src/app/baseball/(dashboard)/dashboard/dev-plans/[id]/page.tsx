@@ -32,11 +32,14 @@ import { SectionMasthead, PaperCard, EditorsLetter } from '@/components/baseball
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 const BACK_ACTION = (
-  <Link href="/baseball/dashboard/dev-plans">
-    <Button variant="secondary" size="sm" leftIcon={<IconChevronLeft size={16} />}>
+  <Button asChild variant="secondary" size="sm">
+    <Link href="/baseball/dashboard/dev-plans">
+      <span className="flex-shrink-0 -ml-0.5">
+        <IconChevronLeft size={16} />
+      </span>
       Back
-    </Button>
-  </Link>
+    </Link>
+  </Button>
 );
 
 export default function DevPlanDetailPage() {

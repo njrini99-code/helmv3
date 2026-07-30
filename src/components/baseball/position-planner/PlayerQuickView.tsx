@@ -352,19 +352,20 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             'bg-gradient-to-t from-warm-50/80 to-white/50'
           )}
         >
-          <Link href={`/baseball/player/${player.id}`} className="block">
-            <Button
-              variant="primary"
-              className={cn(
-                'w-full py-3 rounded-xl',
-                'bg-gradient-to-r from-primary-600 to-primary-500',
-                'hover:from-primary-700 hover:to-primary-600',
-                'shadow-lg shadow-primary-500/25',
-                'hover:shadow-xl hover:shadow-primary-500/30',
-                'transition-all duration-300',
-                'group'
-              )}
-            >
+          <Button
+            asChild
+            variant="primary"
+            className={cn(
+              'w-full py-3 rounded-xl',
+              'bg-gradient-to-r from-primary-600 to-primary-500',
+              'hover:from-primary-700 hover:to-primary-600',
+              'shadow-lg shadow-primary-500/25',
+              'hover:shadow-xl hover:shadow-primary-500/30',
+              'transition-all duration-300',
+              'group'
+            )}
+          >
+            <Link href={`/baseball/player/${player.id}`}>
               <span className="flex items-center justify-center gap-2">
                 View Full Profile
                 <IconChevronRight
@@ -372,8 +373,8 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
                   className="transition-transform duration-200 group-hover:translate-x-0.5"
                 />
               </span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </motion.div>
       </motion.div>
     </>

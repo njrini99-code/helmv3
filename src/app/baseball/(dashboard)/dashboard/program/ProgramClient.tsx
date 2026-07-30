@@ -253,12 +253,12 @@ export default function ProgramClient() {
         title="Program Profile"
         ink="team"
         actions={
-          <Link href={`/baseball/program/${organization.id}`} target="_blank">
-            <Button variant="secondary" size="sm" className="gap-2">
+          <Button asChild variant="secondary" size="sm" className="gap-2">
+            <Link href={`/baseball/program/${organization.id}`} target="_blank">
               <IconGlobe size={14} />
               View Public Page
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         }
       >
         <p className="font-annual text-body-sm text-text-secondary">{`Customize how your program appears to ${PUBLIC_PAGE_AUDIENCE}`}</p>

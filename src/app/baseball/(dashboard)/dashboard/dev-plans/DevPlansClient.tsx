@@ -332,11 +332,11 @@ export default function DevPlansClient() {
                           shrunken box hard-clipped the label to "View" with no
                           ellipsis. shrink-0 forces the title column to wrap/give up
                           width first instead. */}
-                      <Link href={`/baseball/dashboard/dev-plans/${plan.id}`} className="shrink-0">
-                        <Button variant="secondary" size="sm">
+                      <Button asChild variant="secondary" size="sm" className="shrink-0">
+                        <Link href={`/baseball/dashboard/dev-plans/${plan.id}`}>
                           View Plan
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                   </PaperCard>
                 </Reveal>

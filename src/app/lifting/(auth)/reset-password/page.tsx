@@ -160,11 +160,9 @@ export default function LiftingResetPasswordPage() {
                     </Link>
                   </div>
                 </div>
-                <Link href="/lifting/login">
-                  <Button variant="ghost" className="w-full py-3 bg-cream-50 text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all">
-                    Back to Sign In
-                  </Button>
-                </Link>
+                <Button asChild variant="ghost" className="w-full py-3 bg-cream-50 text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all">
+                  <Link href="/lifting/login">Back to Sign In</Link>
+                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5" noValidate>

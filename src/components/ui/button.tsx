@@ -1,6 +1,7 @@
 'use client';
 
 import { ButtonHTMLAttributes, forwardRef, useCallback } from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -12,11 +13,34 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: React.ReactNode;
   /** Haptic intensity on tap (native only). Defaults to 'light'. Pass 'none' to disable. */
   haptic?: 'none' | 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error';
+  /**
+   * Render the button's styling onto a single child element instead of emitting a
+   * `<button>` — the correct shape for a link that looks like a button:
+   *
+   *     <Button asChild><Link href="/x">Go</Link></Button>   // ONE <a>
+   *
+   * The wrapping form `<Link><Button/></Link>` puts a control inside a control:
+   * two focusable elements for one action, an ambiguous click target, and a
+   * screen reader announcing a button nested in a link. It renders, so it is easy
+   * to ship — `src/test/dom-nesting/no-nested-interactive.test.ts` is what catches
+   * it. This prop is the fix, and it exists here (not only on the Fairway button)
+   * because every wrapping site in the repo imports THIS Button.
+   *
+   * Constraints, mirroring `src/components/fairway/controls/button.tsx`:
+   *   - exactly one child element (Radix `Slot` requirement)
+   *   - `leftIcon` / `rightIcon` / the `isLoading` spinner are NOT injected — we
+   *     cannot add sibling spans to an arbitrary single child. Compose them
+   *     inside the child yourself.
+   *   - `disabled` is not forwarded (invalid on `<a>`); it becomes
+   *     `aria-disabled` plus `pointer-events-none`, so a disabled link-button is
+   *     neither clickable nor silently still-active.
+   */
+  asChild?: boolean;
   children: React.ReactNode;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading = false, disabled, leftIcon, rightIcon, haptic, children, onClick, ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', isLoading = false, disabled, leftIcon, rightIcon, haptic, asChild = false, children, onClick, ...props }, ref) => {
     const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
       // Native haptic feedback — light impact by default, or variant-based default.
       const hapticStyle = haptic ?? (
@@ -73,22 +97,38 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon: 'h-12 w-12 p-0',
     };
 
+    const Comp = asChild ? Slot : 'button';
+    const isDisabled = disabled || isLoading;
+
     // iOS-native loading pattern: keep the original label visible, prepend an
     // inline spinner, and block pointer events. We do NOT replace the label
     // with a "Loading..." placeholder — that causes layout shift and loses
     // context for the user.
     return (
-      <button
+      <Comp
         ref={ref}
         className={cn(
           baseStyles,
           variants[variant],
           sizes[size],
           isLoading && 'pointer-events-none cursor-wait',
+          // `disabled` cannot be forwarded to a non-button child, so under
+          // asChild the disabled state has to be expressed in CSS + ARIA or it
+          // would render as a normal, clickable link.
+          asChild && isDisabled && 'pointer-events-none opacity-50',
           className,
         )}
-        disabled={disabled || isLoading}
+        {...(asChild
+          ? { 'aria-disabled': isDisabled || undefined }
+          : { disabled: isDisabled })}
         aria-busy={isLoading || undefined}
+        // Ripple + haptic stay ON under asChild, unlike the Fairway button which
+        // skips them. The reason is behaviour preservation, not inconsistency for
+        // its own sake: every asChild call site here is a former
+        // `<Link><Button/></Link>`, where the Button was the styled element and
+        // did ripple. Since this component applies `relative overflow-hidden` to
+        // whichever element it styles, the ripple host is still correct — so
+        // keeping it means the migration is invisible to the user.
         onClick={handleClick}
         {...props}
       >
@@ -100,34 +140,43 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           every label 4px right of centre. Visible in the footer, where
           "Request Demo" stopped lining up with the links above it (audit L-12).
         */}
-        {isLoading ? (
-          <svg
-            className="animate-spin h-4 w-4 flex-shrink-0 -ml-0.5"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="3"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
+        {asChild ? (
+          // Slot takes exactly ONE child and clones it — icon spans and the
+          // spinner cannot be injected as siblings. Compose them inside the
+          // child instead.
+          children
         ) : (
-          leftIcon && <span className="flex-shrink-0 -ml-0.5">{leftIcon}</span>
+          <>
+            {isLoading ? (
+              <svg
+                className="animate-spin h-4 w-4 flex-shrink-0 -ml-0.5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            ) : (
+              leftIcon && <span className="flex-shrink-0 -ml-0.5">{leftIcon}</span>
+            )}
+            {children}
+            {!isLoading && rightIcon && <span className="flex-shrink-0 -mr-0.5">{rightIcon}</span>}
+          </>
         )}
-        {children}
-        {!isLoading && rightIcon && <span className="flex-shrink-0 -mr-0.5">{rightIcon}</span>}
-      </button>
+      </Comp>
     );
   }
 );

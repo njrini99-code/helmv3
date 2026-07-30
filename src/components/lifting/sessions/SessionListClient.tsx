@@ -145,9 +145,9 @@ export function SessionListClient({ sessions, orgId, canEdit, loading = false }:
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
-            <Link href="/lifting/dashboard/sessions/live">
-              <Button variant="ghost">Live room</Button>
-            </Link>
+            <Button asChild variant="ghost">
+              <Link href="/lifting/dashboard/sessions/live">Live room</Link>
+            </Button>
           )}
         </div>
       </div>

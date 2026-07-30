@@ -215,12 +215,12 @@ export function EmptyState({
 
     if (config.href) {
       return (
-        <Link href={config.href}>
-          <Button variant={buttonVariant} size={buttonSize}>
+        <Button asChild variant={buttonVariant} size={buttonSize}>
+          <Link href={config.href}>
             {isPrimary && <IconPlus size={16} className="mr-1.5" />}
             {config.label}
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       );
     }
 

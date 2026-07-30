@@ -103,14 +103,13 @@ export default function ForgotPasswordPage() {
             <p className="text-center text-xs text-warm-500">
               Did not receive the email? Check your spam folder or try again with a different email address.
             </p>
-            <Link href="/baseball/login">
-              <Button
-                variant="outline"
-                className="w-full py-2.5 text-sm font-medium sm:py-3"
-              >
-                Back to Sign In
-              </Button>
-            </Link>
+            <Button
+              asChild
+              variant="outline"
+              className="w-full py-2.5 text-sm font-medium sm:py-3"
+            >
+              <Link href="/baseball/login">Back to Sign In</Link>
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>

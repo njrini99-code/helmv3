@@ -634,11 +634,11 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
             title="Roster is coach-only."
             body="The team roster workspace — lineups, player management, and exports — is available to coaches and staff. Your schedule, stats, and assignments live on your own dashboard."
             action={
-              <Link href={homeHref}>
-                <Button variant="primary" size="md">
+              <Button asChild variant="primary" size="md">
+                <Link href={homeHref}>
                   {user?.role === 'player' ? 'Back to My Today' : 'Back to Command Center'}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             }
           />
         </div>

@@ -159,39 +159,29 @@ function ratchetKey(violation: string): string {
  * stale-entries test below.
  */
 const KNOWN_VIOLATIONS = new Set<string>([
-  // -- SEVERE (interactive inside a <button>): NONE LEFT.
+  // -- EMPTY. Both classes are closed.
   //
-  // The three that were here — the lifting settings team combobox, and the saved
-  // search row + compare-mode player card in the sunset recruiting Discover
-  // surfaces — were fixed by making the inner control a SIBLING of the outer one
-  // rather than a child. That is the only real fix: `<button><button/></button>`
-  // makes the parser close the outer button at the inner one, so the server DOM
-  // and the React tree disagree and hydration throws (#418/#425) — the shape that
-  // shipped in CalendarView (#1111) and in select.tsx.
+  // SEVERE (interactive inside a <button>) was emptied by #1126: the parser closes
+  // the outer button at the inner one, so the server DOM and the React tree
+  // disagree and hydration throws (#418/#425).
   //
-  // Keep this section empty. A new entry here is not a build fix, it is a
-  // hydration crash with a note attached.
+  // The 17 remaining entries were interactive content inside an <a>. That renders,
+  // which is why it shipped, but it puts a control inside a control: two focusable
+  // elements for one action, an ambiguous click target, and a screen reader
+  // announcing a button nested in a link.
   //
-  // -- INVALID, but the parser does not split: interactive content inside an <a>.
-  // It renders, but nests two focusable elements -- keyboard and screen-reader
-  // users get a control inside a control and the click target is ambiguous.
-  'app/baseball/(auth)/forgot-password/page.tsx — <Button> nested inside <Link>',
-  'app/baseball/(auth)/reset-password/page.tsx — <Button> nested inside <Link>',
-  'app/baseball/(dashboard)/dashboard/camps/[id]/CampDetailClient.tsx — <Button> nested inside <Link>',
-  'app/baseball/(dashboard)/dashboard/camps/CampsClient.tsx — <Button> nested inside <Link>',
-  'app/baseball/(dashboard)/dashboard/dev-plans/[id]/page.tsx — <Button> nested inside <Link>',
-  'app/baseball/(dashboard)/dashboard/dev-plans/DevPlansClient.tsx — <Button> nested inside <Link>',
-  'app/baseball/(dashboard)/dashboard/program/ProgramClient.tsx — <Button> nested inside <Link>',
-  'app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx — <Button> nested inside <Link>',
-  'app/baseball/page.tsx — <Button> nested inside <Link>',
-  'app/lifting/(auth)/forgot-password/page.tsx — <Button> nested inside <Link>',
-  'app/lifting/(auth)/reset-password/page.tsx — <Button> nested inside <Link>',
-  'app/not-found.tsx — <Button> nested inside <Link>',
-  'components/baseball/position-planner/PlayerQuickView.tsx — <Button> nested inside <Link>',
-  'components/features/college-card.tsx — <IconButton> nested inside <Link>',
-  'components/golf/dashboard/premium-components.tsx — <Button> nested inside <Link>',
-  'components/lifting/sessions/SessionListClient.tsx — <Button> nested inside <Link>',
-  'components/ui/empty-state.tsx — <Button> nested inside <Link>',
+  // They are gone because `asChild` now exists on `src/components/ui/button.tsx` —
+  // it did not, which is the whole reason every one of these sites wrapped instead.
+  // The correct shape for a link that looks like a button is:
+  //
+  //     <Button asChild><Link href="/x">Go</Link></Button>   // ONE <a>
+  //
+  // For a whole CARD that is clickable and also holds its own control, asChild does
+  // not apply — use a stretched link (an `absolute inset-0` overlay sibling), as in
+  // `components/features/college-card.tsx`.
+  //
+  // KEEP THIS LIST EMPTY. Adding an entry is not a build fix, it is shipping one of
+  // the two defects above with a note attached.
 ]);
 
 /**

@@ -135,11 +135,9 @@ export default function ResetPasswordPage() {
                 Request a new reset link
               </Link>
             </InkNotice>
-            <Link href="/baseball/login">
-              <Button variant="outline" className="w-full py-2.5 text-sm font-medium sm:py-3">
-                Back to Sign In
-              </Button>
-            </Link>
+            <Button asChild variant="outline" className="w-full py-2.5 text-sm font-medium sm:py-3">
+              <Link href="/baseball/login">Back to Sign In</Link>
+            </Button>
           </div>
         ) : (
           // Valid session - show form

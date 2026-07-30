@@ -142,14 +142,13 @@ export default function LiftingForgotPasswordPage() {
                 <p className="text-xs text-warm-500 text-center">
                   Didn&apos;t receive the email? Check your spam folder or try again.
                 </p>
-                <Link href="/lifting/login">
-                  <Button
-                    variant="ghost"
-                    className="w-full py-3 bg-cream-50 text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300 active:scale-[0.98] transition-all"
-                  >
-                    Back to Sign In
-                  </Button>
-                </Link>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full py-3 bg-cream-50 text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300 active:scale-[0.98] transition-all"
+                >
+                  <Link href="/lifting/login">Back to Sign In</Link>
+                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5" noValidate>

@@ -94,15 +94,15 @@ export function SectionHeader({
                 </h2>
             </div>
             {action && (
-                <Link href={action.href} prefetch={true} className="flex-shrink-0">
-                    <Button variant="ghost" className="group inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+                <Button asChild variant="ghost" className="group flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+                    <Link href={action.href} prefetch={true}>
                         {action.label}
                         <IconArrowRight
                             size={13}
                             className="transition-transform duration-300 group-hover:translate-x-0.5"
                         />
-                    </Button>
-                </Link>
+                    </Link>
+                </Button>
             )}
         </div>
     );
