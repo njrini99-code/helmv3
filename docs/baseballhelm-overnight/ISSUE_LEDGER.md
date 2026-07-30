@@ -73,6 +73,90 @@ it. N.2 was found by deliberately sweeping for the class after N.1.
   builds out an intentionally-hidden feature; deleting the call sites deletes
   recruiting code.
 
+**N.7 — the CSP omits PostHog's origin, so the analytics integration cannot work**
+
+- **Anchor:** `next.config.mjs` (`connect-src`), `src/components/providers/PostHogProvider.tsx:19`
+- **State:** `missing`
+- **Evidence:** `PostHogProvider` is mounted in the ROOT layout
+  (`src/app/layout.tsx:126`) and initialises with
+  `api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com'`.
+  Neither that host nor any `*.posthog.com` appears in `connect-src`, so every
+  `posthog.capture()` would be refused by the browser — the identical mechanism
+  that made the local Supabase stack unusable (N.8 below / PR #1125).
+- **What is NOT claimed:** that this is why PostHog has no data. The provider
+  no-ops without `NEXT_PUBLIC_POSTHOG_KEY`, and that key is **commented out** in
+  `.env.example`, absent from `.env.local`, and in no CI or deploy config in this
+  repo. Vercel's environment could not be read from here, so the key may simply
+  never have been set. Both explanations are live and this entry does not pick one.
+- **Why it matters either way:** it is a latent trap with a very expensive failure
+  mode. Someone sets the key, PostHog initialises, every request is silently
+  refused, and it presents as "PostHog is dark" — a conclusion already recorded for
+  other reasons, so the CSP would not be suspected. Diagnosing the equivalent
+  Supabase case took three CI rounds and was only found in a Playwright trace's
+  console.
+- **Deliberately NOT fixed here, and this differs from the Supabase case.** The
+  Supabase fix provably adds NOTHING in production (the origin is only emitted when
+  the target is loopback). Allowing a third-party analytics origin is a
+  privacy/security decision about sending user data off-platform, not a mechanical
+  repair — that is the owner's call, not a 2am one. The ready-made shape, if
+  wanted, mirrors `src/lib/security/local-supabase-csp.mjs`: derive the origin from
+  `NEXT_PUBLIC_POSTHOG_HOST` at build time and emit it **only when
+  `NEXT_PUBLIC_POSTHOG_KEY` is also set**, so a deployment not using PostHog keeps
+  a byte-identical CSP.
+- **Papercut found alongside it:** `.env.example:85` suggests
+  `NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com` while the code defaults to
+  `https://us.i.posthog.com`. Whichever is right, an allowlist would have to match
+  the one actually used.
+
+**N.8 — our own CSP blocked the local Supabase stack** — FIXED in PR #1125.
+`connect-src` allowed `ws://127.0.0.1:*` (Next's HMR socket) but no `http://`
+loopback origin, so the browser refused every `supabase-js` call. It presented as a
+hang, not an auth error: the client `getUser()` fetch was refused, so
+`DashboardSessionGuard` never settled and sat on "Opening your command center".
+This is why all 16 authenticated smoke renders failed once the gate was repointed at
+a local stack — and it means `supabase start` + `npm run dev` had never been able to
+authenticate in a browser either, which is plausibly part of why nobody used the
+local stack, the same blind spot that let N.1 and N.2 survive for months.
+
+**N.9 — `baseball_team_coach_staff_select` differs between production and the
+migrations, so a rebuilt database hides staff from players**
+
+- **Anchor:** `supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql`
+  vs live `pg_policies`
+- **State:** `inconsistent`
+- **Evidence:** read live from production 2026-07-30, the policy is
+  `is_baseball_team_staff(team_id) OR is_baseball_team_member(team_id)`. The last
+  tracked migration to create it produces
+  `is_baseball_team_staff(team_id) OR coach_id = get_my_coach_id()`. No later
+  migration redefines it.
+- **Impact:** benign for recursion — both forms call only `SECURITY DEFINER`
+  helpers, so neither cycles. But the visibility rule genuinely differs: in
+  production a **player on the team can see their team's staff rows**; on a
+  database built from migrations they cannot, because the second branch narrows to
+  "this staff row is my own coach row". A rebuilt or preview database would hide
+  coaching staff from players, and the table carries a `visible_to_players` column,
+  which suggests production's behaviour is the intended one.
+- **Not fixed:** deciding which predicate is correct is a product call about what
+  players may see, and changing production's policy is the owner's, not a
+  by-product of a CI repair. Filed with both predicates written out so the decision
+  is a reading rather than an investigation.
+- **How it was found:** pre-emptively, while checking whether the coach half of the
+  smoke failure had a *different* cause from the player half (N.10). It did not —
+  every context-path policy on the coach side uses definer helpers only — but the
+  comparison surfaced this.
+
+**N.10 — the migrations create an infinitely-recursive RLS policy** — FIXED in
+`20260730040000`. `baseball_team_members_select` from the 2026-05-27 baseline
+contains `EXISTS (… JOIN baseball_team_members btm …)` — a subquery over the table
+the policy is on — so Postgres rejects **every** select against it with
+`infinite recursion detected in policy for relation "baseball_team_members"`. No
+later migration replaced it. Production instead has
+`… OR is_baseball_team_member(team_id)`, a definer call, applied out of band and
+never committed. `20260729000200`'s own comments trace this exact cycle and cite the
+baseline's line numbers — its author escaped it for `baseball_players_select` and
+left the other half in place. **This breaks any restore or rebuild of production
+from migrations**, which is the disaster-recovery path.
+
 ### Swept and clean — recorded so nobody re-runs it
 
 - **Tables and views: 255 relation names addressed from `src/`, all created by
