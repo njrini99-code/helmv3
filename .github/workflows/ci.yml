@@ -225,6 +225,71 @@ jobs:
       - name: Integration tests
         run: npm run test:integration
 
+  # ---------------------------------------------------------------------------
+  # The same unit suite, run at a FAR timezone offset.
+  #
+  # WHY THIS IS NOT HYGIENE. On 2026-07-29 `main` went red at 8pm EDT because two
+  # "today" fixtures were anchored to the UTC date while the code under test used a
+  # local/team date (#1123). Sweeping for the class found exactly two
+  # offset-dependent files in 8,514 tests — and the second one proved the sharper
+  # point. Re-injecting the ORIGINAL React #418 hydration bug that
+  # `FairwayAgendaView` was hardened against gives:
+  #
+  #     TZ=America/New_York    -> 4 passed   <- the bug is INVISIBLE
+  #     TZ=Pacific/Kiritimati  -> 1 failed
+  #     TZ=Asia/Tokyo          -> 1 failed
+  #
+  # CI runs at UTC, where midday-ET fixtures land on the same calendar day, so that
+  # guard was DORMANT: it could not catch the regression it exists to prevent.
+  # This job is what wakes it up.
+  #
+  # WHY A MATRIX OF BOTH EXTREMES. Each caught a different subset — UTC-11 broke one
+  # assertion in stage-history-format, UTC+14 broke the other two plus both agenda
+  # cases. One offset is enough to detect the class in principle; two is cheap
+  # insurance against a fixture that only slips in one direction.
+  #
+  # COST: runner minutes, not wall-clock — GHA runs these in parallel with the
+  # other jobs, so a green PR is not slower. Rejected alternative: banning
+  # `toISOString().slice(0, 10)`. There are 216 call sites and most are legitimate
+  # (formatting an already-stored date, or intentionally UTC), so a blanket rule
+  # would be noise. Running at a shifted offset catches the class regardless of
+  # which API produced the date.
+  #
+  # Verified clean at BOTH offsets on c2ea35695 before this job was added:
+  # 892 files / 8,514 tests, identical to the UTC run.
+  # ---------------------------------------------------------------------------
+  unit-tests-timezone:
+    name: Unit tests (shifted timezone)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        tz:
+          - Pacific/Kiritimati  # UTC+14, the furthest ahead of UTC
+          - Pacific/Midway      # UTC-11, the furthest behind
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests at ${{ matrix.tz }}
+        env:
+          TZ: ${{ matrix.tz }}
+        run: |
+          echo "Runner offset: $(date +%z)  ($(date))"
+          npm run test:run
+
   business-contracts:
     name: Business contracts
     runs-on: ubuntu-latest
@@ -502,6 +567,12 @@ jobs:
     # #372) is part of the hard gate for the same reason: an authenticated
     # smoke suite that only ran post-merge could not have caught a real
     # regression before it landed on `main`.
+    #
+    # `unit-tests-timezone` is a hard gate, not advisory, on the same principle: a
+    # timezone-dependent fixture is a test that reports a different answer
+    # depending on when and where it runs, and one already took `main` red at 8pm
+    # EDT (#1123). Advisory would let the next one land. The suite is verified
+    # clean at both offsets, so this blocks nothing that exists today.
     needs:
       - database-types
       - schema-invariants
@@ -510,6 +581,7 @@ jobs:
       - lint
       - lint-ratchet
       - unit-tests
+      - unit-tests-timezone
       - business-contracts
       - next-build
       - route-hygiene
