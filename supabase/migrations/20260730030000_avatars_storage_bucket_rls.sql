@@ -30,13 +30,22 @@
 --   allowed_mime_types = {image/jpeg, image/png, image/gif, image/webp}
 --   policies via pg_policies.qual / with_check, reproduced verbatim below.
 --
--- ⚠️ ONE OBSERVATION, DELIBERATELY NOT "FIXED" HERE. Production's UPDATE policy
--- has a USING clause and NO WITH CHECK, so an authenticated user may UPDATE a row
--- they own and move it OUT of their own folder — the owner check is not re-applied
--- to the new row. Adding `WITH CHECK` would strengthen it, but this migration's
--- job is to make a fresh database MATCH production; silently shipping a different
--- policy under that description is how the file stops being a faithful record.
--- Raised for the owner as a separate decision rather than smuggled in here.
+-- THE UPDATE POLICY'S MISSING `WITH CHECK` IS NOT A HOLE. An earlier draft of this
+-- header claimed it was — that a user could UPDATE a row they own and move it out of
+-- their own folder, because the owner check was "not re-applied to the new row."
+-- That is wrong, and the correction is worth keeping here so nobody re-files it:
+--
+--   For UPDATE, when `WITH CHECK` is omitted, PostgreSQL applies the `USING`
+--   expression to the NEW row as well as the old one.
+--
+-- Verified by execution rather than from the docs, in a rolled-back transaction on a
+-- throwaway table with a USING-only UPDATE policy: moving a row out of the predicate
+-- fails with `42501 new row violates row-level security policy`, while a control
+-- update that stays inside the predicate succeeds — so the probe is not vacuous.
+--
+-- Production's policy is therefore already owner-scoped on both sides, and adding an
+-- explicit `WITH CHECK` would change nothing but the reading. The policies below
+-- reproduce production exactly, which is this file's job.
 --
 -- WHY `DO NOTHING` AND CONDITIONAL CREATES. Strictly additive, and a genuine
 -- no-op on production. The sibling `20260728173939_documents_storage_bucket_rls`
@@ -92,7 +101,8 @@ BEGIN
     WHERE schemaname = 'storage' AND tablename = 'objects'
       AND policyname = 'Users can update their own avatar'
   ) THEN
-    -- USING only, matching production. See the WITH CHECK note in the header.
+    -- USING only, matching production. Postgres applies this to the new row too
+    -- when WITH CHECK is omitted — verified, see the header note.
     CREATE POLICY "Users can update their own avatar"
       ON storage.objects FOR UPDATE TO authenticated
       USING (
