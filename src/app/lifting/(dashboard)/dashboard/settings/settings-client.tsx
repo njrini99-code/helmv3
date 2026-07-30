@@ -151,44 +151,55 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
 
   return (
     <div ref={containerRef} className="relative">
-      <Button
-        type="button"
-        variant="ghost"
-        disabled={disabled || loading}
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border-subtle bg-surface text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-warm-400 flex-shrink-0" />
-        ) : (
-          <Search className="w-4 h-4 text-warm-400 flex-shrink-0" />
-        )}
-        <span className={`flex-1 text-left truncate ${value ? 'text-warm-900' : 'text-warm-400'}`}>
-          {value ? `${sportEmoji(value.sport)} ${value.name}` : 'Search teams…'}
-        </span>
-        {value ? (
+      {/*
+        The clear affordance is a SIBLING of the trigger, not a child of it.
+        `<button><button/></button>` is invalid HTML: the parser closes the outer
+        button at the inner one, so the server DOM and the React tree disagree and
+        hydration throws (#418/#425) — the same shape that shipped in CalendarView
+        (#1111). It is overlaid with `absolute` and the trigger reserves room for it
+        with `pr-10`, so the layout is unchanged from the nested version.
+      */}
+      <div className="relative">
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={disabled || loading}
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          className={`w-full flex items-center gap-2 py-2.5 pl-3 ${value ? 'pr-10' : 'pr-3'} rounded-xl border border-border-subtle bg-surface text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all`}
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin text-warm-400 flex-shrink-0" />
+          ) : (
+            <Search className="w-4 h-4 text-warm-400 flex-shrink-0" />
+          )}
+          <span className={`flex-1 text-left truncate ${value ? 'text-warm-900' : 'text-warm-400'}`}>
+            {value ? `${sportEmoji(value.sport)} ${value.name}` : 'Search teams…'}
+          </span>
+          {!value && (
+            <ChevronDown
+              className={`w-4 h-4 text-warm-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+            />
+          )}
+        </Button>
+        {value && (
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            onClick={(e) => {
-              e.stopPropagation();
+            disabled={disabled || loading}
+            onClick={() => {
               onChange(null);
               setQuery('');
             }}
             aria-label="Clear selection"
-            className="w-4 h-4 text-warm-400 hover:text-warm-700 flex-shrink-0 !h-auto !w-auto !min-h-0 !p-0"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 hover:text-warm-700 disabled:opacity-50 !h-auto !w-auto !min-h-0 !p-0"
           >
             <X className="w-4 h-4" />
           </Button>
-        ) : (
-          <ChevronDown
-            className={`w-4 h-4 text-warm-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-          />
         )}
-      </Button>
+      </div>
 
       <AnimatePresence>
         {open && (
