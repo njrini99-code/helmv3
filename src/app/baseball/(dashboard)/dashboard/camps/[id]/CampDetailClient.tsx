@@ -332,9 +332,9 @@ export default function CampDetailClient() {
             title="Camp not found."
             body="This camp may have been deleted or you don't have access."
             action={
-              <Link href="/baseball/dashboard/camps">
-                <Button>Back to Camps</Button>
-              </Link>
+              <Button asChild>
+                <Link href="/baseball/dashboard/camps">Back to Camps</Link>
+              </Button>
             }
           />
         </div>
@@ -349,11 +349,17 @@ export default function CampDetailClient() {
         title={camp.name}
         ink="pursuit"
         actions={
-          <Link href="/baseball/dashboard/camps">
-            <Button variant="secondary" size="sm" leftIcon={<IconArrowLeft size={16} />}>
+          // `leftIcon` is not injected under asChild (Slot takes one child), so the
+          // icon span is composed inline — same DOM the prop would have produced.
+          // A plain line comment, not a JSX comment: this is already an expression slot.
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/baseball/dashboard/camps">
+              <span className="flex-shrink-0 -ml-0.5">
+                <IconArrowLeft size={16} />
+              </span>
               Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         }
       >
         {camp.organization?.name && (

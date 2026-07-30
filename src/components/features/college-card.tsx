@@ -73,8 +73,30 @@ export function CollegeCard({
   };
 
   return (
-    <Link href={`/baseball/program/${college.id}`} className="block h-full">
-      <PaperCard className="h-full p-5 transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_10px_rgba(0,0,0,0.04)]">
+    <PaperCard className="h-full p-5 transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_10px_rgba(0,0,0,0.04)]">
+      {/*
+        STRETCHED LINK, not a wrapping one. The card used to be `<Link>` around
+        everything, with the interest IconButton INSIDE it — a control inside a
+        control: two focusable elements for one card, an ambiguous click target,
+        and a screen reader announcing a button nested in a link.
+
+        `asChild` does not apply here (the card is not button-shaped), and lifting
+        the IconButton out into an absolute corner would mean guessing at pixels.
+        This pattern avoids both: the link is an overlay with NO layout impact, so
+        the card's geometry is unchanged by construction, the whole card stays
+        clickable, and the two controls are siblings. The overlay sits inside
+        PaperCard so hovering it still triggers PaperCard's own `hover:shadow-*`
+        (:hover applies to ancestors; a sibling overlay would have broken it).
+
+        Known tradeoff, inherent to stretched links: text on the card can no longer
+        be selected with the mouse.
+      */}
+      <Link
+        href={`/baseball/program/${college.id}`}
+        aria-label={`View ${college.name}`}
+        className="absolute inset-0 z-10 rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2"
+      />
+      <div className="relative">
         <div className="flex items-start gap-4">
           <Avatar decorative name={college.name} size="lg" src={college.logo_url} />
           <div className="min-w-0 flex-1">
@@ -86,7 +108,9 @@ export function CollegeCard({
                   onClick={handleInterestClick}
                   disabled={loading}
                   className={cn(
-                    'flex-shrink-0 p-1.5',
+                    // z-20 keeps this above the stretched-link overlay (z-10);
+                    // without it the link would swallow every click on the heart.
+                    'relative z-20 flex-shrink-0 p-1.5',
                     interested ? 'text-grade-plus' : 'text-text-tertiary hover:text-grade-plus',
                     loading && 'cursor-not-allowed opacity-50',
                   )}
@@ -108,7 +132,7 @@ export function CollegeCard({
             </div>
           </div>
         </div>
-      </PaperCard>
-    </Link>
+      </div>
+    </PaperCard>
   );
 }

@@ -198,16 +198,17 @@ function CampCard({
       {/* Coach Actions */}
       {isCoach && (
         <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[color:var(--hairline)] pt-4">
-          <Link href={`/baseball/dashboard/camps/${camp.id}`}>
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={`View roster for ${camp.name}`}
-            >
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            aria-label={`View roster for ${camp.name}`}
+          >
+            <Link href={`/baseball/dashboard/camps/${camp.id}`}>
               <IconEye size={16} className="mr-1.5" />
               Roster
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <Button
             variant="secondary"
             size="sm"

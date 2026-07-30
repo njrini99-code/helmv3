@@ -337,22 +337,18 @@ function ClosingCta() {
 function CtaRow({ className }: { className?: string }) {
   return (
     <div className={cn('flex flex-col items-center gap-3 sm:flex-row', className)}>
-      <Link href="/baseball/login" className="w-full sm:w-auto">
-        <Button variant="primary" size="lg" className="w-full sm:w-auto">
+      <Button asChild variant="primary" size="lg" className="w-full sm:w-auto">
+        <Link href="/baseball/login">
           Sign in
           <IconArrowRight size={16} />
-        </Button>
-      </Link>
-      <Link href="/baseball/signup" className="w-full sm:w-auto">
-        <Button variant="outline" size="lg" className="w-full sm:w-auto">
-          Create a program
-        </Button>
-      </Link>
-      <Link href="/baseball/join" className="w-full sm:w-auto">
-        <Button variant="ghost" size="lg" className="w-full sm:w-auto">
-          Join with a code
-        </Button>
-      </Link>
+        </Link>
+      </Button>
+      <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+        <Link href="/baseball/signup">Create a program</Link>
+      </Button>
+      <Button asChild variant="ghost" size="lg" className="w-full sm:w-auto">
+        <Link href="/baseball/join">Join with a code</Link>
+      </Button>
     </div>
   );
 }
