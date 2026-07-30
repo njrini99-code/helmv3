@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
 import { initCapacitor, isNativeApp, hideSplashScreen, syncStatusBarToTheme } from '@/lib/utils/capacitor';
 import {
   initPushListeners,
@@ -56,7 +57,11 @@ export function CapacitorProvider() {
     if (isNativeApp()) {
       // Tag the <body> so native-only CSS (iOS font, web-ism removals,
       // momentum scroll) can target `body.capacitor`.
-      document.body.classList.add('capacitor', 'capacitor-ios');
+      // The platform class was hardcoded to `capacitor-ios` because iOS was the
+      // only shell. That becomes a lie on Android: every `body.capacitor-ios`
+      // rule would apply there too, and no Android-specific rule could ever
+      // match. Read the real platform instead.
+      document.body.classList.add('capacitor', `capacitor-${Capacitor.getPlatform()}`);
 
       // Match the status bar to the active theme, then keep it matched.
       // `useGolfTheme` toggles `.dark` on <html> for an explicit choice, an OS

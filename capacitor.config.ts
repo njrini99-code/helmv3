@@ -29,6 +29,27 @@ const config: CapacitorConfig = {
     // requests and block marketing/membership pages (App Store Guideline 3.1.1).
     appendUserAgent: 'HelmSportsLabsApp',
   },
+  android: {
+    // Mirrors the iOS block. Every value here has a reason — do not drop one
+    // assuming the Android default is equivalent.
+    //
+    // appendUserAgent is LOAD-BEARING, not cosmetic. src/proxy.ts keys its
+    // marketing-route block on the literal string 'HelmSportsLabsApp'
+    // (NATIVE_UA_MARKER). Omit it and the Android shell is treated as an
+    // ordinary browser: the landing page, pricing and membership surfaces all
+    // render inside the app. Play does not enforce Apple's Guideline 3.1.1, but
+    // the block is also what makes this read as an app rather than a website in
+    // a frame — and it keeps the two platforms behaving identically.
+    appendUserAgent: 'HelmSportsLabsApp',
+    // The web app is served over HTTPS from helmsportslabs.com; never let the
+    // WebView silently downgrade a subresource.
+    allowMixedContent: false,
+    // Same posture as iOS: no inspector in shipped builds.
+    webContentsDebuggingEnabled: false,
+    // Cream (#EDE0C8) matches the splash and the app's canvas, so the window
+    // behind the WebView never flashes white during navigation or rotation.
+    backgroundColor: '#EDE0C8',
+  },
   plugins: {
     Keyboard: {
       // @ts-expect-error — Capacitor types don't include 'ionic' but it's valid at runtime

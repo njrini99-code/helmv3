@@ -170,3 +170,8 @@ statsfixresults.pdf
 # Local Playwright screenshot artifacts
 e2e-screenshots/
 .bugtest-screens/
+
+# Android upload keystore — NEVER commit
+*.keystore
+*.jks
+android/keystore.properties
