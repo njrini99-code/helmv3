@@ -118,6 +118,45 @@ a local stack — and it means `supabase start` + `npm run dev` had never been a
 authenticate in a browser either, which is plausibly part of why nobody used the
 local stack, the same blind spot that let N.1 and N.2 survive for months.
 
+**N.9 — `baseball_team_coach_staff_select` differs between production and the
+migrations, so a rebuilt database hides staff from players**
+
+- **Anchor:** `supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql`
+  vs live `pg_policies`
+- **State:** `inconsistent`
+- **Evidence:** read live from production 2026-07-30, the policy is
+  `is_baseball_team_staff(team_id) OR is_baseball_team_member(team_id)`. The last
+  tracked migration to create it produces
+  `is_baseball_team_staff(team_id) OR coach_id = get_my_coach_id()`. No later
+  migration redefines it.
+- **Impact:** benign for recursion — both forms call only `SECURITY DEFINER`
+  helpers, so neither cycles. But the visibility rule genuinely differs: in
+  production a **player on the team can see their team's staff rows**; on a
+  database built from migrations they cannot, because the second branch narrows to
+  "this staff row is my own coach row". A rebuilt or preview database would hide
+  coaching staff from players, and the table carries a `visible_to_players` column,
+  which suggests production's behaviour is the intended one.
+- **Not fixed:** deciding which predicate is correct is a product call about what
+  players may see, and changing production's policy is the owner's, not a
+  by-product of a CI repair. Filed with both predicates written out so the decision
+  is a reading rather than an investigation.
+- **How it was found:** pre-emptively, while checking whether the coach half of the
+  smoke failure had a *different* cause from the player half (N.10). It did not —
+  every context-path policy on the coach side uses definer helpers only — but the
+  comparison surfaced this.
+
+**N.10 — the migrations create an infinitely-recursive RLS policy** — FIXED in
+`20260730040000`. `baseball_team_members_select` from the 2026-05-27 baseline
+contains `EXISTS (… JOIN baseball_team_members btm …)` — a subquery over the table
+the policy is on — so Postgres rejects **every** select against it with
+`infinite recursion detected in policy for relation "baseball_team_members"`. No
+later migration replaced it. Production instead has
+`… OR is_baseball_team_member(team_id)`, a definer call, applied out of band and
+never committed. `20260729000200`'s own comments trace this exact cycle and cite the
+baseline's line numbers — its author escaped it for `baseball_players_select` and
+left the other half in place. **This breaks any restore or rebuild of production
+from migrations**, which is the disaster-recovery path.
+
 ### Swept and clean — recorded so nobody re-runs it
 
 - **Tables and views: 255 relation names addressed from `src/`, all created by
