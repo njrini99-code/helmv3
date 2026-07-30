@@ -157,6 +157,56 @@ baseline's line numbers — its author escaped it for `baseball_players_select` 
 left the other half in place. **This breaks any restore or rebuild of production
 from migrations**, which is the disaster-recovery path.
 
+**N.11 — a player awaiting coach approval cannot see their own membership, so
+they are shown the "you have no team" join screen again**
+
+- **Anchor:** `baseball_team_members_select` (live `pg_policies`),
+  `src/lib/baseball/active-context.ts:74`,
+  `src/app/baseball/(dashboard)/layout.tsx:77`
+- **State:** `insecure` (wrong-visibility, not a leak — it hides too much)
+- **VERIFIED BY EXECUTION against production**, in a rolled-back transaction with a
+  control, not inferred:
+
+  | probe | rows visible to the owning player |
+  |---|---|
+  | CONTROL — own membership, `status='active'` | **1** (so the probe is not vacuous) |
+  | own membership, `status='pending'` | **0** |
+
+- **The chain, each link checked:**
+  1. **All 13 teams have `require_coach_approval = true`** (and
+     `invite_policy = 'invite_only'`), so `can_insert_baseball_team_member`
+     REFUSES `status='active'` and every join must insert `'pending'`.
+  2. Production's `baseball_team_members_select` is
+     `… OR is_baseball_team_member(team_id)`, and that helper requires
+     `btm.status = 'active'` — so the new row is invisible to its own player.
+  3. `loadMemberships`' player branch applies **no status filter** of its own, so
+     RLS is the only thing hiding the row → `memberships` comes back empty.
+  4. `navContext === null` → `DashboardSessionGuard` redirects the player to
+     `/baseball/player/today`, which renders **`PlayerTodayTeamless` — the
+     join-by-code screen**. A player who has just joined is told they have no team.
+- **Impact today: zero users.** `baseball_team_members` holds 34 rows, all
+  `active`, none `pending`. This is dormant, not benign: the next join into any of
+  the 13 teams creates a pending row and lands on it.
+- **The repo already knows the shape of the fix, for the identical reason.**
+  `supabase/tests/rls/baseball_tenant_isolation.sql` documents why
+  `baseball_teams_select` uses the ANY-status helper
+  `has_any_baseball_team_membership` rather than `is_baseball_team_member`: *"a join
+  inserts 'pending' whenever the team requires coach approval … so under the
+  active-only helper a player who had just joined could not read the team they
+  joined, and their own pending-approval screen would render nothing."* That
+  reasoning was applied to `baseball_teams` and not to `baseball_team_members`.
+- **Not fixed, and deliberately so.** `20260730040000` reproduces production's
+  predicate EXACTLY — that is the file's whole purpose, and making it diverge would
+  defeat it. Changing production's visibility rule is an owner call. But unlike the
+  other filed items this one carries a recommendation rather than a neutral choice:
+  the any-status helper is almost certainly right, by the repo's own recorded
+  argument.
+- **How it was found:** reading the neighbouring pgTAP suite while fixing an
+  unrelated failure in `baseball_no_policy_recursion.sql`. Worth noting because the
+  first version of this entry was an *inference* from that comment; the table above
+  exists because inferring from comments is what produced two wrong diagnoses
+  earlier in this run.
+
 ### Swept and clean — recorded so nobody re-runs it
 
 - **Tables and views: 255 relation names addressed from `src/`, all created by
