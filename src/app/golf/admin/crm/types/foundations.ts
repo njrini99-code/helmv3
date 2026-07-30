@@ -149,7 +149,12 @@ export type TimelineSource =
   | 'email_event'
   | 'crm_event'
   | 'note'
-  | 'task';
+  | 'task'
+  // 2026-07-29: crm_replies was missing from the union, so what a coach actually
+  // WROTE BACK — the single highest-signal event in the whole CRM — never
+  // appeared on their timeline. Everything else here is outbound activity or our
+  // own internal record-keeping.
+  | 'reply';
 
 export interface TimelineItem {
   id: string;
