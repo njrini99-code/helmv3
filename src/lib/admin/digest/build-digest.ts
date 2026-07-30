@@ -96,6 +96,13 @@ export interface DigestData {
    * different statement from `[]` ("nothing shipped"), and the email says so.
    */
   shippedYesterday?: Array<{ title: string; number: number }>;
+  /**
+   * How far the running production release is from `main`. Optional because the
+   * check is fail-soft; when absent the briefing simply omits the line rather
+   * than implying production is current. Its `red` (if any) is pushed into
+   * `reds` by the caller, so this field carries only the descriptive line.
+   */
+  deploy?: { state: 'unknown' | 'current' | 'behind' | 'stale'; summary: string };
 }
 
 export interface DigestEmail {
@@ -308,6 +315,9 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
     lines.push('', 'ON DECK');
     for (const t of tasks) lines.push(`  - ${t.title} (${t.overdue ? 'OVERDUE' : 'due'} ${t.dueLabel})`);
   }
+  if (data.deploy) {
+    lines.push('', 'RELEASE', `  ${data.deploy.summary}`);
+  }
   lines.push('', 'Open the admin: https://helmsportslabs.com/admin');
   const text = lines.join('\n');
 
@@ -475,6 +485,19 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
   ${section('Activity, last 24h', activityBody, `${activityTotal} total`)}
   ${section('Shipped yesterday', shippedBody)}
   ${tasksBody ? section('On deck', tasksBody, `${tasks.length} due`) : ''}
+  ${
+    data.deploy
+      ? section(
+          'Release',
+          quiet(data.deploy.summary),
+          data.deploy.state === 'stale'
+            ? 'behind'
+            : data.deploy.state === 'unknown'
+              ? 'unknown'
+              : undefined,
+        )
+      : ''
+  }
   <tr><td style="padding:28px 0 0">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border-top:1px solid ${HAIRLINE}">
       <tr><td style="padding-top:18px">

@@ -217,4 +217,39 @@ describe('buildDigestEmail — Cup of Helm', () => {
     const html = buildDigestEmail(base).html;
     expect(html).not.toMatch(/[^-]font:\s/);
   });
+
+  /**
+   * The release line exists so an already-fixed-but-unshipped bug cannot pass
+   * for a live one. Its red is contributed by the route, not by this builder,
+   * so what is asserted here is that the descriptive line renders in both
+   * formats and that absence stays silent rather than implying "current".
+   */
+  describe('release line', () => {
+    it('renders in text and html when present', () => {
+      const email = buildDigestEmail({
+        ...base,
+        deploy: { state: 'stale', summary: 'Production is running abc1234, 11 commits behind main, deployed 18 hours ago.' },
+      });
+      expect(email.text).toContain('RELEASE');
+      expect(email.text).toContain('11 commits behind main');
+      expect(email.html).toContain('11 commits behind main');
+      expect(email.html).toContain('Release');
+    });
+
+    it('omits the section entirely when the check could not run', () => {
+      const email = buildDigestEmail(base);
+      expect(email.text).not.toContain('RELEASE');
+      // Silence, not a claim: nothing may say production is level with main.
+      expect(email.html).not.toContain('level with main');
+    });
+
+    it('flags an unknown release as unknown rather than dropping it', () => {
+      const email = buildDigestEmail({
+        ...base,
+        deploy: { state: 'unknown', summary: 'Production release could not be determined, so drift from main is unknown.' },
+      });
+      expect(email.text).toContain('could not be determined');
+      expect(email.html).toContain('unknown');
+    });
+  });
 });

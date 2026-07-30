@@ -7,6 +7,7 @@ import { fetchTriageQueue, groupAppErrorEvents, type AppTriageEventRow } from '@
 import { buildDigestEmail, type DigestData } from '@/lib/admin/digest/build-digest';
 import { sendOpsDigest } from '@/lib/admin/digest/transport';
 import { CRON_REGISTRY, classifyCronStatus } from '@/lib/admin/cron-registry';
+import { fetchDeployFreshness } from '@/lib/admin/deploy-freshness';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -143,6 +144,10 @@ export async function GET(req: NextRequest) {
     // Outside the Promise.all above so a GitHub hiccup cannot reject the batch.
     const shippedYesterday = await fetchShippedYesterday();
 
+    // How far production is from `main`. Kept outside the batch for the same
+    // reason as the GitHub read above, and fail-soft to an `unknown` state.
+    const deploy = await fetchDeployFreshness(now);
+
     const latestByJob = new Map<string, { started_at: string; status: string }>();
     for (const row of (jobRows.data ?? []) as Array<{ job_type: string; status: string; started_at: string }>) {
       if (!latestByJob.has(row.job_type)) latestByJob.set(row.job_type, row);
@@ -199,6 +204,11 @@ export async function GET(req: NextRequest) {
     });
 
     const reds: string[] = [
+      // First, deliberately: if production is not running `main`, every error
+      // below may already be fixed. That reframing has to come before the list
+      // it reframes — on 2026-07-30 three of four open "production bug" issues
+      // were already-repaired code sitting in an undeployed `main`.
+      ...(deploy.red ? [deploy.red] : []),
       // A lead awaiting reply is the most actionable item in the whole digest —
       // it stays red until someone moves it out of 'pending' in the CRM.
       ...(demoPendingCount > 0
@@ -245,6 +255,7 @@ export async function GET(req: NextRequest) {
       },
       reds,
       shippedYesterday,
+      deploy: { state: deploy.state, summary: deploy.summary },
     };
 
     const result = await sendOpsDigest(buildDigestEmail(data));
