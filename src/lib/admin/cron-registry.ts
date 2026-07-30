@@ -5,7 +5,6 @@ export interface CronRegistryEntry {
 }
 
 const DAILY = 24 * 60;
-const WEEKLY = 7 * DAILY;
 
 /** Code-defined cadence registry — the "expected" half of expected-vs-actual.
  *  MUST mirror vercel.json crons exactly (contract test enforces). */
@@ -20,7 +19,6 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'v3-standing-refresh', path: '/api/cron/v3/standing-refresh', cadenceMinutes: DAILY },
   { jobType: 'v3-genome-nightly', path: '/api/cron/v3/genome-nightly', cadenceMinutes: DAILY },
   { jobType: 'v3-causality-attribute', path: '/api/cron/v3/causality-attribute', cadenceMinutes: DAILY },
-  { jobType: 'v3-weekly-coach-email', path: '/api/cron/v3/weekly-coach-email', cadenceMinutes: WEEKLY },
   { jobType: 'v3-goal-suggestions-write', path: '/api/cron/v3/goal-suggestions-write', cadenceMinutes: DAILY },
   { jobType: 'v3-goal-suggestions-evaluate', path: '/api/cron/v3/goal-suggestions-evaluate', cadenceMinutes: DAILY },
   { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY },
