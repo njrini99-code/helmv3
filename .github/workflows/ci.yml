@@ -400,7 +400,18 @@ jobs:
     # builds, and adds ~1-2min of `supabase start` — a real, ongoing CI-minutes
     # tradeoff. Revisit if PR wall-clock time becomes a problem.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45, not 30. Measured on this branch: a CLEAN run is ~17 min (supabase start
+    # ~1m45s, build ~9-10 min under container contention, seed ~1 min, the smoke
+    # itself ~1m30s). A run where the smoke FAILS costs ~24 min, because every spec
+    # retries twice — which left only ~6 min of head-room against 30.
+    #
+    # That head-room is what produces a diagnosable failure. When the JOB timeout
+    # fires first, GitHub cancels the job outright and the `if: always()`
+    # report-upload step never runs: exactly how #953 produced three consecutive
+    # `cancelled` runs with nothing to debug from (see the note in
+    # playwright.yml's `e2e` job). A red run that uploads its Playwright report is
+    # worth far more than a cancelled one that finishes 15 minutes sooner.
+    timeout-minutes: 45
     env:
       # NOT secrets, and deliberately not read from any. The seed script creates
       # exactly these two accounts on the local stack with exactly these values
