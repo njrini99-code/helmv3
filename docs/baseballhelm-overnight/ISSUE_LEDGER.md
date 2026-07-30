@@ -73,6 +73,51 @@ it. N.2 was found by deliberately sweeping for the class after N.1.
   builds out an intentionally-hidden feature; deleting the call sites deletes
   recruiting code.
 
+**N.7 — the CSP omits PostHog's origin, so the analytics integration cannot work**
+
+- **Anchor:** `next.config.mjs` (`connect-src`), `src/components/providers/PostHogProvider.tsx:19`
+- **State:** `missing`
+- **Evidence:** `PostHogProvider` is mounted in the ROOT layout
+  (`src/app/layout.tsx:126`) and initialises with
+  `api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com'`.
+  Neither that host nor any `*.posthog.com` appears in `connect-src`, so every
+  `posthog.capture()` would be refused by the browser — the identical mechanism
+  that made the local Supabase stack unusable (N.8 below / PR #1125).
+- **What is NOT claimed:** that this is why PostHog has no data. The provider
+  no-ops without `NEXT_PUBLIC_POSTHOG_KEY`, and that key is **commented out** in
+  `.env.example`, absent from `.env.local`, and in no CI or deploy config in this
+  repo. Vercel's environment could not be read from here, so the key may simply
+  never have been set. Both explanations are live and this entry does not pick one.
+- **Why it matters either way:** it is a latent trap with a very expensive failure
+  mode. Someone sets the key, PostHog initialises, every request is silently
+  refused, and it presents as "PostHog is dark" — a conclusion already recorded for
+  other reasons, so the CSP would not be suspected. Diagnosing the equivalent
+  Supabase case took three CI rounds and was only found in a Playwright trace's
+  console.
+- **Deliberately NOT fixed here, and this differs from the Supabase case.** The
+  Supabase fix provably adds NOTHING in production (the origin is only emitted when
+  the target is loopback). Allowing a third-party analytics origin is a
+  privacy/security decision about sending user data off-platform, not a mechanical
+  repair — that is the owner's call, not a 2am one. The ready-made shape, if
+  wanted, mirrors `src/lib/security/local-supabase-csp.mjs`: derive the origin from
+  `NEXT_PUBLIC_POSTHOG_HOST` at build time and emit it **only when
+  `NEXT_PUBLIC_POSTHOG_KEY` is also set**, so a deployment not using PostHog keeps
+  a byte-identical CSP.
+- **Papercut found alongside it:** `.env.example:85` suggests
+  `NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com` while the code defaults to
+  `https://us.i.posthog.com`. Whichever is right, an allowlist would have to match
+  the one actually used.
+
+**N.8 — our own CSP blocked the local Supabase stack** — FIXED in PR #1125.
+`connect-src` allowed `ws://127.0.0.1:*` (Next's HMR socket) but no `http://`
+loopback origin, so the browser refused every `supabase-js` call. It presented as a
+hang, not an auth error: the client `getUser()` fetch was refused, so
+`DashboardSessionGuard` never settled and sat on "Opening your command center".
+This is why all 16 authenticated smoke renders failed once the gate was repointed at
+a local stack — and it means `supabase start` + `npm run dev` had never been able to
+authenticate in a browser either, which is plausibly part of why nobody used the
+local stack, the same blind spot that let N.1 and N.2 survive for months.
+
 ### Swept and clean — recorded so nobody re-runs it
 
 - **Tables and views: 255 relation names addressed from `src/`, all created by
