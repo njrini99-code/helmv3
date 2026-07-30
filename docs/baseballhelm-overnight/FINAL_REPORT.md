@@ -1,14 +1,123 @@
 # FINAL REPORT — BaseballHelm overnight run
 
-_2026-07-28 23:35 → **2026-07-29 19:30 EDT** (the window was originally
-10:45; an afternoon session continued it — see the addendum immediately below,
-which supersedes several claims in the body). Branch
+_2026-07-28 23:35 → **2026-07-29 20:30 EDT** (the window was originally 10:45;
+an afternoon session continued it, then an evening one — there are now **two**
+addenda below, newest first, and both supersede claims in the body). Branch
 `baseball/overnight-completion`, PR
 [#1092](https://github.com/njrini99-code/helmv3/pull/1092) — **merged to
 `main` and deployed to production**. Full unit suite green on the merged
 tree: **877 files, 8,359 tests, 0 failures**; every CI check green including
 `BaseballHelm authenticated smoke`, which passed for the first time this run
 once the database was restored._
+
+---
+
+## ⚡ ADDENDUM 2 — the evening of 2026-07-29, 19:30 → 20:30 EDT (newest; read first)
+
+_Both addenda supersede the body. This one supersedes the first where they differ._
+
+The evening was not BaseballHelm feature work — the owner redirected it to the golf
+CRM, then to getting the repo's branches, PRs and issues into a clean state. What
+follows is honest about which of that is finished and which is merely filed.
+
+### Complete and verified
+
+**Four golf CRM defects, merged.** Each was verified non-vacuously — the source was
+reverted and the tests re-run to confirm they actually fail without the fix, because
+a structural test that cannot fail is worse than none.
+
+| PR | What it was |
+|---|---|
+| #1109 | merging a duplicate coach stranded its stage history (`crm_stage_transitions` missing from `COACH_CHILD_TABLES`) |
+| #1111 | the CRM had **no calendar**: `CalendarView` was never mounted and neither event modal had an external opener |
+| #1113 | `getCoachTimeline` unioned 5 sources, all outbound — `crm_replies`, the only inbound signal, was the one missing |
+| #1115 | `updateCrmTask` had **zero callers**, so a task was immutable once saved; "complete" was the only verb |
+
+Two defects inside #1111 had never been reachable because the component was never
+rendered: a `<button>` nested inside a `<button>` in the month cell (invalid HTML,
+the #418 hydration class CLAUDE.md names), and a week view whose `overflow-hidden`
+**clipped** the last weekdays below ~700px with no scrollbar to reach them. It also
+had zero responsive classes in 677 lines.
+
+**The issue tracker went from 41 open to 0.** #988 closed with a real resolution —
+#1111 fixed it. The other 40 closed as bulk triage at the owner's instruction, with
+the reasoning recorded on each and a note that Sentry/Supabase-sourced issues
+re-file themselves if the error recurs, so nothing live was suppressed.
+
+**Two PRs closed rather than merged, because merging them would have regressed
+`main`.** This is the part most worth keeping:
+
+- **#1100** wanted the table count `263 → 264`. Running `npm run docs:regen` against
+  current main reports **266** and produces *zero* diff, so merging would have
+  overwritten 266 with 264.
+- **#1075** (draft, 622 files diverged) would have downgraded `@sentry/nextjs`
+  10.68 → 10.62, removed `@sentry/profiling-node`, deleted AGENTS.md's Cursor Cloud
+  section, and stripped `--allow-prod` from `seed:baseball:ci` — which makes the
+  seed's own production guard **refuse**, taking the *required* `BaseballHelm
+  authenticated smoke` gate red on every PR. Its actual value (13 additive QA docs,
+  ~13k lines) was extracted to **#1120** with no dependency changes.
+
+### Improved but incomplete — filed, not fixed
+
+- **`supabase_migrations.schema_migrations` is not a usable apply check here.** All
+  six recent migrations return zero rows from it, including A and B which are
+  demonstrably applied. MCP-applied migrations don't record a row the way the CLI
+  does. Use `to_regprocedure()` and live `pg_policies.qual` instead.
+- **The elite stat event model was misclassified as `dead`.** Zero rows holds, but
+  ~20 live `.from()` read sites depend on those tables — dropping them breaks all of
+  them. The real gap is **ingest**: of pitch / batted-ball / catching / fielding /
+  baserunning / workload events, not one has a write path. It is 13 tables not 8,
+  and two were never created in production at all.
+- **The queued "CI seeds PRODUCTION" item is narrower than filed** — the
+  `login_attempts` DELETE is scoped to two demo emails, and fork PRs get no secrets
+  (`pull_request`, not `pull_request_target`).
+
+### Blocked on the owner, unchanged and still the critical path
+
+1. **Two migrations authored, merged, applied to nothing:** `20260729200000` (the
+   last baseball P0 — any coach reads every coach's email) and `20260728030000`
+   (golf, worth 3413ms → 515ms). **Read the NULL-org note first:** one of the 10
+   coach rows has `organization_id IS NULL`, and the new helper is
+   `p_org_id IS NOT NULL AND EXISTS(...)`, so that row becomes self-visible only.
+   It is an internal account today; a *customer* coach with a NULL org would
+   silently lose sight of their colleagues, presenting as "the roster page went
+   blank" rather than an error.
+2. `GMAIL_SA_*` + Workspace `gmail.readonly`, `INNGEST_EVENT_KEY` rotation **plus a
+   redeploy** (Vercel bakes env at deploy time), Google Calendar OAuth creds.
+
+### Intentionally not done
+
+**The `process-sequences` cron stays unregistered.** Its own header says it is off
+*by design* so outreach stays human-triggered, and the operator script it names
+exists and was touched today. Registering it would start real email to real college
+coaches — a product decision, not a repo fix. Not touched.
+
+### Honest limits of the evening's work
+
+- **#1113 has no visible effect today.** `crm_replies` has **0 rows** in production
+  because the Gmail poll is inert without `GMAIL_SA_*`. The code gap was real and is
+  fixed; the surface renders empty until the ops work lands. Saying otherwise would
+  be claiming a win that no user can see.
+- **Empty-state honesty was spot-checked at 1 of ~20 elite-stat read sites.**
+  `buildPitcherWorkload` degrades honestly to `[]`. The rest is unverified. #1118
+  (in flight) appears to address the baseball read-models directly.
+- **No migration was applied and no schema touched all evening.** Read-only SQL only.
+
+### Corrections to this run's own record
+
+- **I edited a stale copy of `DATABASE_STATUS.md` and "found" corrections that were
+  already on `main`.** `#1092` was squash-merged at 14:23Z; main had since been
+  reconciled by #1102/#1104/#1105, already carried the "0 with phone / email + phone
+  overstated it" correction, and had better numbers than mine (cross-org player
+  visibility 35 → 16 for a coach, 35 → 1 for a player). #1119 was rebuilt to carry
+  only what is genuinely new. This is the same stale-source mistake recorded in the
+  body's "reading is not verifying" section, repeated in a new costume.
+- **`baseball/overnight-completion` is now dead weight.** Its content reached main
+  via #1092's squash; the only thing it added afterwards was the redundant pair of
+  doc commits #1119 replaced. It should not be merged.
+- **`perf/golf-shot-detail-rls` must never be merged.** It is closed PR #1103 — its
+  `20260729180000` duplicates `20260728030000` already on main and broke that
+  suite's pgTAP. It carries no unique value.
 
 ---
 
