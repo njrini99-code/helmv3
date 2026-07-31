@@ -51,6 +51,7 @@ import { useGolfUser } from '@/contexts/golf-user-context';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { usePushSubscription } from '@/hooks/golf/use-push-subscription';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import {
   getNotificationPreferences,
@@ -1400,6 +1401,65 @@ export function DistanceUnitsPanel() {
  * quiet mode silences everything except the quiet-exempt rows. Available to
  * BOTH coaches and players (the live shell previously gave coaches no UI here).
  */
+/**
+ * Device-level Web Push opt-in — the actual `pushManager.subscribe()` call
+ * (see `usePushSubscription`). This is the master gate the per-category
+ * "Push" columns below sit underneath: flipping a category's push cell on
+ * does nothing unless this device also holds a live browser subscription.
+ * Renders nothing when the platform can't do Web Push at all (iOS WKWebView
+ * — that platform's push goes through the separate native APNs pipeline
+ * instead), matching the file's honest-empty-state convention.
+ */
+function PushDeviceRow() {
+  const { status, pending, subscribe, unsubscribe } = usePushSubscription();
+
+  if (status === 'unsupported') return null;
+
+  const checking = status === 'checking';
+  const denied = status === 'denied';
+  const subscribed = status === 'subscribed';
+
+  async function handleChange(next: boolean) {
+    const result = next ? await subscribe() : await unsubscribe();
+    if (!result.ok) {
+      void triggerHaptic('error');
+      if (result.error) fairwayToast.error(result.error);
+    } else if (next) {
+      void triggerHaptic('light');
+    }
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3 rounded-fw-sm bg-surface-sunken p-3">
+        <div className="min-w-0">
+          <p className="font-fw-sans text-body-sm font-medium text-text-primary">
+            Push notifications on this device
+          </p>
+          <p className="font-fw-sans text-caption text-text-tertiary">
+            {denied
+              ? 'Blocked in your browser or device settings.'
+              : 'Required for any push toggle below to actually deliver.'}
+          </p>
+        </div>
+        <Switch
+          checked={subscribed}
+          onCheckedChange={(v) => void handleChange(v)}
+          disabled={checking || pending || denied}
+          aria-label="Push notifications on this device"
+        />
+      </div>
+      {denied && (
+        <InlineNotice tone="warning" className="mt-2">
+          Notifications are blocked for this site. Enable them in your
+          browser&rsquo;s (or device&rsquo;s) site settings, then reload this
+          page to turn this back on.
+        </InlineNotice>
+      )}
+    </>
+  );
+}
+
 export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
   const [prefs, setPrefs] = useState<DeliveryNotificationPreferences | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -1544,6 +1604,9 @@ export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
             aria-label="Quiet mode"
           />
         </div>
+
+        {/* Device-level push opt-in — the real pushManager.subscribe() call */}
+        <PushDeviceRow />
 
         {/* Column legend */}
         <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-1 pt-3 pb-1">

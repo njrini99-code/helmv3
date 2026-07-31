@@ -59,7 +59,21 @@ const config: CapacitorConfig = {
       scrollPadding: true,
     },
     PushNotifications: { presentationOptions: ['badge', 'sound', 'alert'] },
-    SplashScreen: { launchAutoHide: false, showSpinner: false },
+    // launchAutoHide MUST stay true. The only code path that hides this splash
+    // is hideSplashScreen() in CapacitorProvider, which runs after the WebView
+    // has fetched the remote app, downloaded the bundle and hydrated React.
+    // With launchAutoHide:false, ANY failure before that point -- slow network,
+    // a bad deploy, an offline device, a reviewer on hotel wifi -- left the
+    // splash up forever with no watchdog, and the app read as permanently
+    // frozen rather than merely slow. Reproduced on an Android 16 emulator:
+    // stuck on the splash indefinitely. launchShowDuration is the ceiling, not
+    // the target -- a healthy cold start still hides early via hideSplashScreen().
+    SplashScreen: {
+      launchAutoHide: true,
+      launchShowDuration: 10000,
+      backgroundColor: '#EDE0C8',
+      showSpinner: false,
+    },
     StatusBar: { style: 'LIGHT' },
   },
 };

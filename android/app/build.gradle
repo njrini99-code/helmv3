@@ -1,5 +1,16 @@
 apply plugin: 'com.android.application'
 
+// Release signing: reads android/keystore.properties (gitignored, machine-local).
+// Guarded so a checkout without that file (CI, a fresh clone, another dev's machine)
+// still configures successfully -- it just produces an unsigned release build instead
+// of failing the Gradle configuration phase.
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def keystoreProperties = new Properties()
+def keystorePropertiesExist = keystorePropertiesFile.exists()
+if (keystorePropertiesExist) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 android {
     namespace = "com.helmsportslabs.golfhelm"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +27,29 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropertiesExist) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig keystorePropertiesExist ? signingConfigs.release : null
+            // Minification stays OFF deliberately: this is a Capacitor remote-URL WebView
+            // shell, not a large native codebase with meaningful obfuscation upside, and
+            // there is no Android SDK / gradle available in this environment to verify a
+            // minified build still boots (WebView bridge classes, JS-interfaces, and the
+            // Capacitor plugin registry are all reflection/JNI-touched and easy to strip
+            // by accident under R8 without a device to test against). A broken release
+            // build discovered only after Play Store upload is far worse than a slightly
+            // larger AAB. Re-visit once a real device/emulator is available to validate
+            // R8 output, and add the Capacitor/WebView keep rules to proguard-rules.pro
+            // before flipping this on.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

@@ -17,6 +17,15 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <!-- android:background alone is NOT enough on Android 12+ (API 31+):
+             the platform splash-screen API reads windowSplashScreenBackground
+             and ignores the window background, which is why the launch screen
+             rendered system grey instead of Fairway cream on an Android 16
+             emulator. Keep both: the legacy attribute covers API 24-30, the
+             windowSplashScreen* attributes cover 31+. -->
         <item name="android:background">@drawable/splash</item>
+        <item name="android:windowSplashScreenBackground">#EDE0C8</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>
