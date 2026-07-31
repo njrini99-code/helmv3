@@ -33,7 +33,7 @@ screenshots (§9), and the Play Console forms (§10–§12).
 | Runtime verification | ✅ installed and driven on an Android 16 emulator: login → dashboard → roster → calendar → CoachHelm |
 | Dashboard rendering | ❌ **NEW BLOCKER** — stale layer paints through the coach dashboard on Android. See §14.2 |
 | Offline error handling | ⚠️ **not yet fixed** — no native fallback page for a cold, offline first launch. See §14 |
-| Auto Backup | ⚠️ **not yet fixed** — `allowBackup="true"` with no exclusion rules risks WebView session data landing in Android Auto Backup. See §14 |
+| Auto Backup | ✅ **FIXED** — WebView cookie jar + storage excluded from cloud backup and device transfer. See §14c |
 
 `targetSdk 36` already satisfies Play's current target-API requirement, so
 there's no upgrade treadmill before launch.
@@ -510,7 +510,20 @@ of the app.
 navigation failures (Capacitor 8 exposes `bridge.getWebViewClient()` to wrap)
 and load a bundled offline page from `file:///android_asset/` instead.
 
-### 14c. `allowBackup="true"` with no exclusion rules — MEDIUM
+### 14c. `allowBackup="true"` with no exclusion rules — FIXED ✅
+
+**Fixed.** `res/xml/data_extraction_rules.xml` (API 31+) and
+`res/xml/full_backup_content.xml` (API 24–30 — minSdk is 24, so both are
+required and Android reads a different one either side of 31) now exclude
+`app_webview`, the two WebView cookie databases, and `CapacitorSettings.xml`
+from both cloud backup and device-to-device transfer. Both are referenced from
+`AndroidManifest.xml`; keep their exclusion lists in sync. `bundleRelease`
+re-verified green. Cost: a user re-authenticates after a restore, which is the
+correct trade for not shipping a live auth session to Google Drive.
+
+Original finding follows.
+
+
 
 `AndroidManifest.xml` sets `android:allowBackup="true"` with no
 `android:fullBackupContent` or `android:dataExtractionRules` attribute, and no

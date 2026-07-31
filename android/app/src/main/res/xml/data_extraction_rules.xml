@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+) backup/transfer rules.
+
+  This is a remote-URL WebView shell, so the WebView's on-disk state for
+  helmsportslabs.com — cookie jar, localStorage, IndexedDB — holds the Supabase
+  session and auth tokens. With allowBackup="true" and no rules, that directory
+  is a default candidate for Android Auto Backup to Google Drive, and for
+  device-to-device transfer. Neither is somewhere a live auth session belongs:
+  a restored backup could re-materialise a signed-in session on another device.
+
+  We exclude the WebView data directories from both flows. The cost is that a
+  user re-authenticates after a restore, which is the correct trade.
+
+  See res/xml/full_backup_content.xml for the API 24-30 equivalent; both are
+  referenced from AndroidManifest.xml and must be kept in sync.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="app_webview" />
+        <exclude domain="database" path="webview.db" />
+        <exclude domain="database" path="webviewCookiesChromium.db" />
+        <exclude domain="sharedpref" path="CapacitorSettings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="app_webview" />
+        <exclude domain="database" path="webview.db" />
+        <exclude domain="database" path="webviewCookiesChromium.db" />
+        <exclude domain="sharedpref" path="CapacitorSettings.xml" />
+    </device-transfer>
+</data-extraction-rules>

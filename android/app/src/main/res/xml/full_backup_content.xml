@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  API 24-30 equivalent of res/xml/data_extraction_rules.xml — Android only reads
+  this older format below API 31, and the newer format above it, so BOTH are
+  referenced from AndroidManifest.xml. minSdk here is 24, so this file is not
+  vestigial: it covers Android 7.0 through 11.
+
+  Same rationale: keep the WebView's cookie jar / localStorage / IndexedDB for
+  helmsportslabs.com (which carries the Supabase auth session) out of Google
+  Drive backups. Keep the exclusion list in sync with the API 31+ file.
+-->
+<full-backup-content>
+    <exclude domain="root" path="app_webview" />
+    <exclude domain="database" path="webview.db" />
+    <exclude domain="database" path="webviewCookiesChromium.db" />
+    <exclude domain="sharedpref" path="CapacitorSettings.xml" />
+</full-backup-content>
