@@ -23,7 +23,7 @@ screenshots (§9), and the Play Console forms (§10–§12).
 | SDK | `minSdk 24` (Android 7.0) · `targetSdk 36` (Android 16) |
 | Permissions | ✅ INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, ACCESS_NETWORK_STATE |
 | UA marker | ✅ `HelmSportsLabsApp` — `proxy.ts` marketing block works on Android |
-| Push | ✅ Web Push (Option B) wired client-side — see §3. ⚠️ **not yet proven inside the Android WebView** — see §14.4 |
+| Push | ✅ Web Push (Option B) wired — fixes **web/desktop**. ⛔ **MEASURED: does not work in the Android WebView** (no `PushManager`/`Notification`); native FCM is required for the installed app — see §3 |
 | Signing | ✅ upload keystore created, wired into Gradle, and **validated by a real signed build** — see §6–§7 |
 | Build | ✅ **`app-release.aab` produced and signed** (13 MB). Cert SHA256 matches the upload key. See §4 |
 | Toolchain | ✅ Android Studio + cmdline-tools + platform 36 + JDK 21 all installed on this machine — see §5 |
@@ -95,16 +95,39 @@ was specifically about notifications.
   live `push_subscriptions` table.
 - No Firebase project, no `google-services.json`, no native FCM sender needed.
 
-**Residual risk:** this has been verified by code inspection (payload shape
-matched exactly against the route's validator, every state transition traced
-by hand, `tsc`/`eslint` clean on both changed files) but **not exercised live**
-— no dev server was run and no device is available in this environment. The
-first real test should be: open Settings → toggle push on → grant the
-permission prompt → confirm a row appears in `push_subscriptions`. Do this
-before relying on push notifications as a submission talking point.
+### ⛔ Measured: Option B does NOT work inside the Android app
 
-**Option A — native FCM** remains undone and is no longer necessary to unblock
-anything. It's still available later for native delivery guarantees:
+An earlier draft of this section recommended Option B on the grounds that
+"Android Chrome supports Web Push completely." That is true of **Chrome the
+browser**. It is **false for the Android System WebView this app ships**, which
+is a different runtime with a different feature surface.
+
+Measured directly, by loading a capability probe inside this app's own WebView
+on a Pixel 7 / Android 16 emulator (Chrome 133 WebView):
+
+| Check | Result |
+|---|---|
+| `isSecureContext` | `true` — so the rest is **not** a secure-context false negative |
+| `'serviceWorker' in navigator` | `true` — service workers do work |
+| `'PushManager' in window` | **`false`** |
+| `'PushSubscription' in window` | **`false`** |
+| `typeof Notification !== 'undefined'` | **`false`** — the Notification API isn't present either |
+
+UA confirms the runtime: `...Android 16...; wv) ... Chrome/133.0.6943.137 ... HelmSportsLabsApp`.
+
+**What this means:**
+
+- Option B is still correct and worth shipping — it fixes push for the **web
+  app** on desktop and on Android *Chrome*, where `push_subscriptions` has sat
+  empty for 67+ days. That work is done and stands.
+- It does **nothing for users who install the app from Play.** `isSupported()`
+  returns false, `PushDeviceRow` renders nothing, and no toggle appears. That
+  degrades cleanly — no crash — but it also means no notifications.
+- **Lynchburg's objection is about the installed app, so Option B does not
+  resolve it.** Do not report Android push as solved.
+
+**Option A — native FCM — is therefore REQUIRED, not optional**, for
+notifications inside the Play build:
 
 1. A Firebase project for `com.helmsportslabs.golfhelm`
 2. `google-services.json` dropped into `android/app/`
@@ -501,27 +524,26 @@ back up to Google Drive with no exclusion configured.
 devices, a matching `fullBackupContent` XML) that excludes the WebView data
 directory, then reference both from the manifest.
 
-### 14.4 Web Push is unproven inside the Android WebView — HIGH
+### 14.4 Web Push does not exist in the Android WebView — MEASURED, see §3
 
-§3 recommends Option B partly on the grounds that "Android Chrome supports Web
-Push completely." That is true of **Chrome the browser**. This app ships an
-Android **System WebView**, which is a different runtime with a different
-feature surface, and the Push API has historically not been exposed there.
+**Resolved.** This was measured, not reasoned about: `PushManager`,
+`PushSubscription` and `Notification` are all absent from this app's WebView in
+a confirmed secure context, while `serviceWorker` is present. Full table and
+consequences in §3.
 
-The hook handles this honestly — `isSupported()` checks for `PushManager` and
-`PushDeviceRow` renders nothing when absent — so there is no crash either way.
-But the consequence is material: if `PushManager` is absent in the WebView,
-Option B fixes push for **web and desktop users only**, and the installed Play
-app still has no notifications. That is precisely the user Lynchburg is asking
-about, so do not report this as solved until it is measured.
+Net effect: Option B is correct for the web app and should ship, but native FCM
+(§3 Option A) is **required** for notifications inside the installed Play app.
+No code change is needed to make the app safe in the meantime — the hook already
+feature-detects and renders nothing rather than crashing.
 
-**How to settle it in five minutes** (the emulator is already configured):
-temporarily set `webContentsDebuggingEnabled: true`, build a debug variant,
-attach `chrome://inspect`, and evaluate `'PushManager' in window` in the app's
-WebView context. If it returns `false`, native FCM (§3 Option A) is the only
-path to notifications inside the installed app.
+**Reproducing the measurement** (about ten minutes, toolchain already installed):
+drop a page in `public/` that logs `'PushManager' in window`, comment out
+`server.url` in `capacitor.config.ts` so Capacitor serves `webDir` over
+`https://localhost` (a secure context — testing over plain http gives a false
+negative, since `PushManager` is `[SecureContext]`-gated), `assembleDebug`,
+install, and read `adb logcat`. Revert the config afterwards.
 
-The toolchain is now installed, so 14.2/14.4 can be investigated immediately.
+The toolchain is installed, so 14.2 can be investigated immediately.
 14.3 and 14c are config edits; 14b is a Java change validated on the emulator.
 
 ---
