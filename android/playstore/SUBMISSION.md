@@ -1,10 +1,19 @@
 # GolfHelm — Google Play submission package (v2.0, versionCode 8)
 
 Everything needed to publish GolfHelm on Google Play under an **organization**
-account. The Android platform is scaffolded, configured, signed, and at
-version parity with iOS. What remains before submission: two code fixes
-surfaced by review (§14), the Play Console org/DUNS setup (§1), Android
-screenshots (§9), and the Play Console forms (§10–§12).
+account. The Android platform is scaffolded, configured, **signed, built and
+run on a real Android 16 device image**, at version parity with iOS. The `.aab`,
+store assets and phone screenshots all exist (§4, §9).
+
+What remains before submission:
+
+1. **§14.2 — the coach dashboard renders a stale layer on Android.** The one
+   open code blocker, and the first authenticated screen a reviewer sees.
+2. **§1 — Play Console organization account + DUNS.** The long pole; nothing
+   else can proceed past it, and only the account owner can do it.
+3. **§10–§12 — the Console forms** (Data Safety, content rating, app access).
+4. **§3 — native FCM**, if Android notifications are required. Web Push is
+   measured as unavailable in the WebView.
 
 > **Why an organization account:** personal Play accounts created after Nov 2023
 > must run a closed test with **12 testers for 14 continuous days** before they
@@ -73,7 +82,7 @@ there's no upgrade treadmill before launch.
 
 ---
 
-## 3. Push notifications — status: Option B is now wired
+## 3. Push notifications — Option B wired (web only); FCM required for the app
 
 This was the one genuine fork, and it mattered because Lynchburg's objection
 was specifically about notifications.
