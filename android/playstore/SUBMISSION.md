@@ -102,7 +102,9 @@ was specifically about notifications.
   `notificationclick` handlers), VAPID keys already in Vercel production
   (`VAPID_SUBJECT`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`), the
   live `push_subscriptions` table.
-- No Firebase project, no `google-services.json`, no native FCM sender needed.
+- Needs no Firebase project — **for the web app**. See the measurement below
+  before extending that claim to the installed Android app; it does not hold
+  there.
 
 ### ⛔ Measured: Option B does NOT work inside the Android app
 
