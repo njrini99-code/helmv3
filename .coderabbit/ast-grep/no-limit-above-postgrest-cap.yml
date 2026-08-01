@@ -1,0 +1,55 @@
+# ast-grep rule: forbid `.limit(N)` with N above PostgREST's row cap.
+#
+# PostgREST truncates EVERY request to 1,000 rows. `.limit(2000)` does not
+# raise that cap — it returns 1,000 and looks like it worked. The number is a
+# lie the next reader will trust.
+#
+# This has produced real defects in this repo twice:
+#
+#   - auto-resolve Rule C used LEGACY_BATCH = 2000 against `.limit()`. A full
+#     1,000-row page was then compared against the 2,000 threshold, read as a
+#     "short page", and the drain loop stopped believing the backlog was empty.
+#     It never cleared a row; 87,619 sat unresolved.
+#   - log-retention's purge had the identical shape at BATCH = 5000.
+#
+# The comment trail in src/lib/admin/data/*.ts and src/lib/baseball/**
+# documents several more that were already fixed by hand. This rule is what
+# stops the next one.
+#
+# WHAT TO DO INSTEAD:
+#   - Need at most N rows, N <= 1000?  ->  `.limit(N)`, nothing else needed.
+#   - Need a bounded page for a drain loop?  ->  `.limit(1000)` and compare the
+#     short-page check against 1000, not against a larger intended batch.
+#   - Need ALL rows?  ->  fetchAllRows / fetchAllRowsResult
+#     (src/lib/supabase/fetch-all-rows.ts), which paginates past the cap.
+#
+# Exactly 1000 is allowed: it is the cap, so it is honest about what it gets.
+id: helmv3-no-limit-above-postgrest-cap
+language: typescript
+severity: error
+message: >
+  .limit() above 1000 is silently truncated by PostgREST — you get 1000 rows,
+  not the number you asked for. Use .limit(1000), or paginate with
+  fetchAllRows/fetchAllRowsResult if you need every row.
+note: >
+  A "short page means the backlog is drained" check compared against a
+  threshold above 1000 can NEVER fire, because a full page is always 1000.
+  That exact bug shipped twice in this repo (auto-resolve Rule C,
+  log-retention purge).
+# Tests are exempt: a test that asserts what the 1,000-row cap DOES has to be
+# able to ask for more than 1,000.
+ignores:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/__tests__/**"
+  - "src/test/**"
+rule:
+  pattern: $X.limit($N)
+constraints:
+  N:
+    all:
+      # Four or more digits, i.e. >= 1000.
+      - regex: '^[0-9]{4,}$'
+      # ...but 1000 itself is the cap and therefore honest.
+      - not:
+          regex: '^1000$'

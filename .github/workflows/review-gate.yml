@@ -113,6 +113,15 @@ jobs:
           run_rule .coderabbit/ast-grep/no-deep-types-import.yml \
             '' '' 'repo-wide'
 
+          # PostgREST row-cap rule — repo-wide on source, never on tests: a test
+          # that asserts what the 1,000-row cap DOES has to ask for more than
+          # 1,000. The rule carries the same exemption in its own `ignores`,
+          # this is belt-and-braces at the scoping layer.
+          run_rule .coderabbit/ast-grep/no-limit-above-postgrest-cap.yml \
+            '\.(ts|tsx)$' \
+            '(\.test\.tsx?$|/__tests__/|^src/test/)' \
+            'source-only'
+
           # Edge-Functions-only rule — Deno runtime, process.env is undefined.
           # Mirrors .coderabbit.yaml > path_instructions for supabase/functions/.
           run_rule .coderabbit/ast-grep/no-process-env-in-edge.yml \

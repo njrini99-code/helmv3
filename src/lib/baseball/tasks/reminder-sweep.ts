@@ -169,7 +169,10 @@ export async function sweepTaskReminders(
     .not('reminder_at', 'is', null)
     .lte('reminder_at', cutoverIso)
     .order('reminder_at', { ascending: true })
-    .limit(5000);
+    // 1000, not a larger number: PostgREST caps every request there anyway,
+    // so a bigger literal would just be a lie. A backlog beyond one page
+    // drains over consecutive runs, which this sweep already tolerates.
+    .limit(1000);
 
   if (error) {
     throw new Error(
