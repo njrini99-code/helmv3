@@ -38,7 +38,10 @@ function isChunkLoadError(error: Error): boolean {
     msg.includes('loading chunk') ||
     msg.includes('loading css chunk') ||
     msg.includes('chunkloaderror') ||
-    (msg.includes("cannot read properties of undefined") && msg.includes("'call'"))
+    (msg.includes("cannot read properties of undefined") && msg.includes("'call'")) ||
+    // ESM dynamic-import wording for the same stale-asset failure — see the
+    // matching note in `isChunkLoadErrorMessage` (src/lib/error-logging.ts).
+    msg.includes('failed to fetch dynamically imported module')
   );
 }
 

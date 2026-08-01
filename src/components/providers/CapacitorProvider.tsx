@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
 import { initCapacitor, isNativeApp, hideSplashScreen, syncStatusBarToTheme } from '@/lib/utils/capacitor';
 import {
   initPushListeners,
@@ -91,6 +92,16 @@ export function CapacitorProvider() {
       let cleanupKeyboard: (() => void) | undefined;
       import('@capacitor/keyboard').then(({ Keyboard }) => {
         if (cancelled) return;
+        // Guard against a native build where the JS dependency is present
+        // (package.json) but the plugin was never registered on the native
+        // platform project (e.g. missing from android/capacitor.settings.gradle
+        // autolinking). Without this check, addListener() below still fires;
+        // its returned promise rejects ASYNCHRONOUSLY with "plugin is not
+        // implemented", and since nothing awaits or catches it until unmount,
+        // that rejection reaches the global unhandled-rejection handler and
+        // pollutes the error feed on every load — this was the "Keyboard
+        // plugin is not implemented on android" incident.
+        if (!Capacitor.isPluginAvailable('Keyboard')) return;
         const showListener = Keyboard.addListener('keyboardWillShow', (info) => {
           document.body.classList.add('keyboard-open');
           document.documentElement.style.setProperty(
@@ -102,6 +113,13 @@ export function CapacitorProvider() {
           document.body.classList.remove('keyboard-open');
           document.documentElement.style.setProperty('--keyboard-height', '0px');
         });
+        // addListener() rejects asynchronously, not synchronously, so a
+        // try/catch around this block would not have caught it anyway.
+        // Attach no-op catches immediately so a rejection is never left
+        // unhandled between now and unmount (independent of the cleanup
+        // handlers below, which only run then).
+        showListener.catch(() => {});
+        hideListener.catch(() => {});
         cleanupKeyboard = () => {
           showListener.then((h) => h.remove()).catch(() => {});
           hideListener.then((h) => h.remove()).catch(() => {});

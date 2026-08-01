@@ -295,6 +295,10 @@ describe('logError → chunk-load severity ceiling', () => {
     'Loading CSS chunk 8351 failed.',
     'ChunkLoadError: Loading chunk 42 failed.',
     "Cannot read properties of undefined (reading 'call')",
+    // ESM dynamic-import wording (Safari/Firefox) for the same stale-asset
+    // failure — admin-data.ts's incident classifier already recognized this
+    // phrase; the recovery/severity path needed to as well.
+    'Failed to fetch dynamically imported module: https://helmv3.vercel.app/_next/static/chunks/app/products/page-abc123.js',
   ];
 
   for (const message of chunkMessages) {

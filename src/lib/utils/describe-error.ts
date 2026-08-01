@@ -41,7 +41,7 @@
  * occurrences of the same upstream failure, which means no Ray ID, no IP and no
  * timestamp may survive.
  */
-function collapseHtmlErrorBody(text: string): string | null {
+export function collapseHtmlErrorBody(text: string): string | null {
   const head = text.slice(0, 2000);
   const looksLikeHtml = /^\s*<(?:!doctype\s+html|html[\s>])/i.test(text) || /<html[\s>]/i.test(head);
   if (!looksLikeHtml) return null;
@@ -61,6 +61,30 @@ function collapseHtmlErrorBody(text: string): string | null {
   return status
     ? `upstream returned an HTML error page (HTTP ${status}): ${detail}`
     : `upstream returned an HTML error page: ${detail}`;
+}
+
+/**
+ * Same collapse, but for a message that has HTML embedded PART WAY THROUGH —
+ * the shape produced by every `logServerError(`prefix: ${error.message}`)` call
+ * site when the upstream returns a gateway error page.
+ *
+ * `collapseHtmlErrorBody` replaces the whole string, which would throw away the
+ * `[cron.refresh-engagement] RPC failed:` prefix that says WHICH call failed.
+ * This keeps the prefix and collapses only from the start of the HTML document
+ * to the end.
+ *
+ * Returns null when there is no embedded HTML, so callers can pass the original
+ * through untouched.
+ */
+export function collapseEmbeddedHtml(message: string): string | null {
+  const start = /<!doctype\s+html|<html[\s>]/i.exec(message);
+  if (!start || start.index === undefined) return null;
+
+  const prefix = message.slice(0, start.index).trimEnd();
+  const collapsed = collapseHtmlErrorBody(message.slice(start.index));
+  if (!collapsed) return null;
+
+  return prefix.length > 0 ? `${prefix} ${collapsed}` : collapsed;
 }
 
 export function describeError(err: unknown): string {
