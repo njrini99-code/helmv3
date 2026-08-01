@@ -114,6 +114,18 @@ export default defineConfig({
             // must not be guarded by a test nobody executes.
             'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
             'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts',
+            // The icon-only-button accessible-name guard. Promoted because it was
+            // not merely unrun — it was RIGHT, and silent. While it executed under
+            // nothing, an unlabeled icon-only dismiss button shipped in
+            // lifting/dashboard/import/import-client.tsx; a screen-reader user
+            // heard "button" with no indication of what it did. Fixed in the same
+            // change, and this line is what stops it coming back.
+            //
+            // Its own four self-checks (detection of labels vs placeholders,
+            // icon-only vs icon+text, and an end-to-end flag-one/pass-one) mean a
+            // green run here is evidence the detector works, not just that it
+            // found nothing.
+            'scripts/__tests__/icon-only-button-aria-label.test.mjs',
           ],
           exclude: [
             'node_modules',
