@@ -577,17 +577,86 @@ const completeBaseballSignupCoachAction = withBaseballAction(
     }
 
     const admin = createAdminClient();
-    const { error: coachError } = await admin.from('baseball_coaches').insert({
-      user_id: ctx.user.id,
-      coach_type: coachType,
-      full_name: ctx.user.user_metadata?.full_name || userEmail.split('@')[0] || 'Coach',
-      email: userEmail,
-      onboarding_completed: false,
-    });
+    const fullName = ctx.user.user_metadata?.full_name || userEmail.split('@')[0] || 'Coach';
 
-    if (coachError) {
+    // Create organization (required for team + staff + lifting setup)
+    const { data: org, error: orgError } = await admin
+      .from('organizations')
+      .insert({
+        name: `${fullName}'s Program`,
+        type: coachType,
+      })
+      .select('id')
+      .single();
+
+    if (orgError) {
+      await logServerError(`[Onboarding] Failed to create organization: ${describeDbError(orgError)}`, { action: 'onboarding.completeBaseballSignup' });
+      return { success: false, error: 'Unable to set up your program. Please try again.' };
+    }
+
+    // Create coach profile WITH organization_id (critical for lifting setup)
+    const { data: coachRow, error: coachError } = await admin
+      .from('baseball_coaches')
+      .insert({
+        user_id: ctx.user.id,
+        coach_type: coachType,
+        organization_id: org.id,
+        full_name: fullName,
+        email: userEmail,
+        onboarding_completed: false,
+      })
+      .select('id')
+      .single();
+
+    if (coachError || !coachRow) {
       await logServerError(`[Onboarding] Failed to create coach profile: ${describeDbError(coachError)}`, { action: 'onboarding.completeBaseballSignup' });
       return { success: false, error: 'Unable to create your profile. Please try again.' };
+    }
+
+    // Create team (required for lifting setup)
+    const joinCode = generateJoinCode();
+    const { data: teamRow, error: teamError } = await admin
+      .from('baseball_teams')
+      .insert({
+        name: `${fullName}'s Team`,
+        team_type: coachType,
+        organization_id: org.id,
+        join_code: joinCode,
+        created_by: coachRow.id,
+      })
+      .select('id')
+      .single();
+
+    if (teamError || !teamRow) {
+      await logServerError(`[Onboarding] Failed to create team (non-fatal): ${describeDbError(teamError)}`, { action: 'onboarding.completeBaseballSignup' });
+    } else {
+      // Link coach to team
+      const { error: staffError } = await admin
+        .from('baseball_team_coach_staff')
+        .insert({
+          team_id: teamRow.id,
+          coach_id: coachRow.id,
+          role: 'head_coach',
+          is_head_coach: true,
+          is_primary: true,
+          status: 'active',
+          title: 'Head Coach',
+          can_manage_roster: true,
+          can_manage_practice: true,
+          can_manage_lifting: true,
+          can_view_academics: true,
+          can_manage_imports: true,
+          can_manage_stats: true,
+          can_invite_staff: true,
+          can_manage_settings: true,
+          can_view_medical: true,
+          can_message_team: true,
+          can_manage_calendar: true,
+        });
+
+      if (staffError) {
+        await logServerError(`[Onboarding] Failed to staff-link coach to team (non-fatal): ${describeDbError(staffError)}`, { action: 'onboarding.completeBaseballSignup' });
+      }
     }
 
     revalidatePath('/baseball');
