@@ -39,18 +39,49 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-function which(bin) {
-  const r = spawnSync('which', [bin], { encoding: 'utf8' });
-  return r.status === 0 ? r.stdout.trim() : null;
+/**
+ * Resolve the ast-grep binary, or null.
+ *
+ * `which('sg')` is NOT a valid check for ast-grep, and getting this wrong is
+ * worse than not checking at all. **`sg` is a standard Linux binary** — the
+ * shadow-utils "run a command under a different group ID" tool — so it exists
+ * on every Ubuntu runner whether or not ast-grep is installed. A bare
+ * `which('sg')` therefore succeeds in CI, the guard does NOT skip, and every
+ * `sg scan` invocation runs the WRONG PROGRAM and quietly returns zero
+ * findings. This test then reports its own positive fixtures as unmatched:
+ *
+ *   no-bare-table-names: positive fixture .../positive-bare-table.ts
+ *   expected >= 1 finding, got 0
+ *
+ * which reads as "the rule is broken" when the rule is fine (it finds 3 of
+ * them locally). Observed for real on PR #1197.
+ *
+ * So: prefer the unambiguous `ast-grep` name, and only accept `sg` if it
+ * actually identifies itself as ast-grep. `--version` prints `ast-grep X.Y.Z`.
+ *
+ * NOTE the Review Gate workflow installs ast-grep to `/usr/local/bin/sg`,
+ * which shadows `/usr/bin/sg` on PATH — that is why the rules genuinely work
+ * there. This resolution handles both layouts.
+ */
+function resolveAstGrep() {
+  for (const bin of ['ast-grep', 'sg']) {
+    const found = spawnSync('which', [bin], { encoding: 'utf8' });
+    if (found.status !== 0) continue;
+    const version = spawnSync(bin, ['--version'], { encoding: 'utf8' });
+    if (version.status === 0 && /ast-grep/i.test(version.stdout || '')) return bin;
+  }
+  return null;
 }
 
-const sgAvailable = !!which('sg');
+const astGrepBin = resolveAstGrep();
+const sgAvailable = !!astGrepBin;
 
 test.skipIf(!sgAvailable)('Review Gate rule smoke test', () => {
   const repoRoot = resolve(import.meta.dirname, '../..');
 
   function sgScan(rule, ...paths) {
-    const result = spawnSync('sg', ['scan', '--rule', rule, '--json', ...paths], {
+    // astGrepBin, not a bare 'sg' — see resolveAstGrep() above.
+    const result = spawnSync(astGrepBin, ['scan', '--rule', rule, '--json', ...paths], {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
       cwd: repoRoot,
