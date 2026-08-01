@@ -49,7 +49,7 @@ export const CATEGORY_SHORT_LABEL: Record<NotificationCategoryId, string> = {
 /** Fallback icon for anything unexpected — never used in practice since
  *  `category` is always one of the 7 taxonomy ids, but keeps row rendering
  *  defensive against a future category id this map hasn't caught up to. */
-export const CATEGORY_FALLBACK_ICON: LucideIcon = Bell;
+const CATEGORY_FALLBACK_ICON: LucideIcon = Bell;
 
 export function categoryIcon(id: NotificationCategoryId): LucideIcon {
   return CATEGORY_ICON[id] ?? CATEGORY_FALLBACK_ICON;

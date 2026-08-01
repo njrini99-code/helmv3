@@ -105,7 +105,7 @@ function formatFreshness(iso: string): string {
  * Deliberately always present and always in the same place. A coach learns
  * where to look for "how much data is this?" once, and then it is free.
  */
-export function provenanceText(
+function provenanceText(
   win: string | null,
   sampleSize: number,
   sampleUnit: string,
@@ -210,7 +210,7 @@ function InstrumentFigure({
 }
 
 /** Honest states, styled as information rather than error. */
-export function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
+function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
   if (envelope.coverage === 'complete' || !envelope.coverage_note) return null;
 
   const isFailure = envelope.coverage === 'unavailable';
@@ -256,7 +256,7 @@ export function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
  * The pattern is the standard one for related KPIs — a calm row, detail on
  * demand — rather than a vertical wall of equally-weighted cards.
  */
-export function MetricPanel({
+function MetricPanel({
   measurements,
   series = [],
 }: {
@@ -512,7 +512,7 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
  * Everything else stays a bar comparison, which is what an unordered set of
  * categories actually is.
  */
-export function BucketChart({ series }: { series: MeasurementSeries }) {
+function BucketChart({ series }: { series: MeasurementSeries }) {
   const points = series.points.map((p) => ({
     label: p.bucket ?? p.at,
     value: p.value,
@@ -676,7 +676,7 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
 }
 
 /** Ranked list on one metric. Names a measured value — never a verdict. */
-export function RankingList({ measurements }: { measurements: Measurement[] }) {
+function RankingList({ measurements }: { measurements: Measurement[] }) {
   const withValue = measurements.filter((m) => m.value !== null);
   if (withValue.length === 0) return null;
   const label = withValue[0]!.metric_label;

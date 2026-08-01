@@ -37,7 +37,7 @@ import { DUR, EASE, SCRUB, STAGGER } from '@/lib/motion/gsap/tokens';
 import { arrive } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
-export const DOCK = {
+const DOCK = {
   grid: '[data-dock="grid"]',
   tile: '[data-dock="tile"]',
   stage: '[data-dock="stage"]',
