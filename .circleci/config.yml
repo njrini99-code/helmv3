@@ -50,7 +50,7 @@ executors:
   android:
     docker:
       - image: cimg/android:2025.04
-    resource_class: large
+    resource_class: medium
 
 # ---------------------------------------------------------------------------
 # Reusable commands
@@ -244,17 +244,19 @@ jobs:
       - node/install:
           node-version: "22.13"
       - install-node-deps
-      - run:
-          name: Build web bundle (for Capacitor sync)
-          environment:
-            NODE_OPTIONS: --max-old-space-size=8192
-            NEXT_PUBLIC_SUPABASE_URL: https://dummy-ci-build.supabase.co
-            NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-ci-build-only
-          command: |
-            # Same reasoning as the iOS job: Capacitor needs the web bundle to
-            # exist before `cap sync`, and a prod build catches SSR/Server
-            # Component breakage that dev mode hides.
-            npm run build
+      # NO `npm run build` here, deliberately — unlike the iOS job.
+      #
+      # capacitor.config.ts sets `webDir: 'public'` and
+      # `server.url: https://www.helmsportslabs.com/...`, so the native app
+      # loads the LIVE SITE rather than an embedded bundle. There are no built
+      # web assets for `cap sync` to copy: `public/` is checked in and already
+      # present at checkout.
+      #
+      # The first version of this job did run the build, copied from the iOS
+      # job, and died with exit 137 — SIGKILL, an OOM: --max-old-space-size=8192
+      # against a `large` container's 8GB. The fix is not a bigger resource
+      # class; it is not doing ~10 minutes of work whose output is discarded.
+      # `next build` is still verified on every PR by ci.yml's `next-build`.
       - run:
           name: Capacitor sync Android
           command: |
