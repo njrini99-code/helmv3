@@ -12,6 +12,8 @@ import {
 } from '@/lib/coachhelm/v3/foundation/push';
 import { getUserNotificationPreferences } from '@/lib/notifications/email';
 import { describeError } from '@/lib/utils/describe-error';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
+import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
 
 // Email service configuration
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -27,6 +29,42 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
  * cookie-scoped server client (or omit it and one is created on demand).
  */
 type TaskReminderClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Was this call handed a REAL Supabase client in-process?
+ *
+ * SECURITY. Every export in a `'use server'` file is wire-callable, so the
+ * cron helpers below (`getDueReminders`, `markReminderSent`, and above all
+ * `processReminders`, which fans out email + push + in-app notifications for
+ * every due reminder in the system) can be invoked by any authenticated
+ * browser session. The only legitimate driver is `/api/cron/task-reminders`,
+ * which authenticates with `CRON_SECRET` (`requireCronAuth`) and then hands
+ * these functions the service-role admin client.
+ *
+ * A Supabase client cannot cross the server-action wire boundary: its API
+ * surface is functions, and functions are not serialisable in a client →
+ * server action payload. So "we were handed a client-shaped object with live
+ * methods" is itself proof the caller is in-process (the cron route), not a
+ * remote browser.
+ *
+ * The previous guards tested `!client`, which an over-the-wire `{}` passes
+ * (`!{}` is `false`) — it happened not to matter because `({}).from` throws,
+ * but the shape is now checked explicitly rather than relying on truthiness,
+ * and a non-client value is discarded instead of being used as the client.
+ */
+function isServiceRoleClient(client: unknown): client is TaskReminderClient {
+  if (!client || typeof client !== 'object') return false;
+  const candidate = client as {
+    from?: unknown;
+    rpc?: unknown;
+    auth?: { getUser?: unknown } | null;
+  };
+  return (
+    typeof candidate.from === 'function' &&
+    typeof candidate.rpc === 'function' &&
+    typeof candidate.auth?.getUser === 'function'
+  );
+}
 
 /** A resolved recipient: the auth user id + (optional) email. */
 interface TaskRecipient {
@@ -106,6 +144,21 @@ async function setTaskReminderImpl(
       return { success: false, error: 'Unauthorized' };
     }
 
+    // Verify the caller is a coach who STAFFS the task's team. An
+    // organization_id comparison is only org-scoped and is strictly weaker:
+    // it lets a coach elsewhere in the same program (e.g. the men's staff
+    // reaching the women's team) set reminders on a team they don't staff.
+    // validateCoachTeamAccess is the team-scoped check used everywhere else.
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Only coaches can set reminders' };
+    }
+
     // Verify the user has access to this task. golf_tasks has assigned_by
     // (the coach id), NOT a created_by column; assigned_to is the legacy
     // (never-written) player column — assignment lives in golf_task_assignments.
@@ -117,6 +170,21 @@ async function setTaskReminderImpl(
 
     if (taskError || !task) {
       return { success: false, error: 'Task not found' };
+    }
+
+    if (!coach.organization_id) {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+
+    const authorized = await validateCoachTeamAccess(
+      supabase,
+      coach.id,
+      task.team_id,
+      coach.organization_id,
+    );
+
+    if (!authorized) {
+      return { success: false, error: 'Not authorized for this team' };
     }
 
     // Update the task with reminder information
@@ -172,6 +240,47 @@ async function cancelTaskReminderImpl(
       return { success: false, error: 'Unauthorized' };
     }
 
+    // Verify the caller is a coach who STAFFS the task's team. The
+    // golf_task_reminders delete below is queue-only (no ownership predicate
+    // of its own) and is backstopped solely by an ORGANIZATION-scoped RLS
+    // DELETE policy, so the app-layer check has to be the strictly stronger
+    // team-scoped one — otherwise any coach in the same org can cancel
+    // reminders for a team they have nothing to do with.
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Only coaches can cancel reminders' };
+    }
+
+    const { data: task } = await supabase
+      .from('golf_tasks')
+      .select('id, team_id')
+      .eq('id', taskId)
+      .single();
+
+    if (!task) {
+      return { success: false, error: 'Task not found' };
+    }
+
+    if (!coach.organization_id) {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+
+    const authorized = await validateCoachTeamAccess(
+      supabase,
+      coach.id,
+      task.team_id,
+      coach.organization_id,
+    );
+
+    if (!authorized) {
+      return { success: false, error: 'Not authorized for this team' };
+    }
+
     // Update the task to remove reminder
     const { error: updateError } = await supabase
       .from('golf_tasks')
@@ -224,6 +333,19 @@ async function getUpcomingRemindersImpl(
 ): Promise<{ data: TaskReminderWithTask[] | null; error?: string }> {
   try {
     const supabase = await createClient();
+
+    // Auth first. This is a wire-callable 'use server' export that previously
+    // took an arbitrary `userId` with NO session check, so it read out another
+    // account's upcoming reminders for anyone who guessed a user id (RLS on
+    // golf_task_reminders was the only thing standing in the way). It is
+    // self-scoped now: you may only ask for your own reminders.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: 'Unauthorized' };
+    }
+    if (userId !== user.id) {
+      return { data: null, error: 'Unauthorized' };
+    }
 
     // Resolve the user's coach/player domain ids. A user "owns" a task when
     // they are the assigning coach (golf_tasks.assigned_by === coach.id) and is
@@ -301,7 +423,21 @@ async function getDueRemindersImpl(
   client?: TaskReminderClient,
 ): Promise<{ data: TaskReminderWithTask[] | null; error?: string }> {
   try {
-    const supabase = client ?? (await createClient());
+    // This is cron-only: the real caller (/api/cron/task-reminders) always
+    // passes the service-role admin client. Anything that isn't a live client
+    // (including an over-the-wire `{}`) is discarded — see isServiceRoleClient
+    // — and the caller falls back to the cookie-scoped session, which then has
+    // to carry an authenticated user as a defense-in-depth floor; this
+    // endpoint has no per-user scoping of its own beyond that.
+    const cronClient = isServiceRoleClient(client) ? client : null;
+    const supabase = cronClient ?? (await createClient());
+
+    if (!cronClient) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: 'Unauthorized' };
+      }
+    }
 
     // Plain task join. The previous embedded `assignee:users!assigned_to` /
     // `creator:users!created_by` joins were invalid: assigned_to FKs
@@ -355,7 +491,18 @@ async function markReminderSentImpl(
   client?: TaskReminderClient,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = client ?? (await createClient());
+    // Cron-only helper — see getDueRemindersImpl for why this check is
+    // gated on the absence of a live (service-role) client rather than on
+    // `!client`, which an over-the-wire `{}` would have passed.
+    const cronClient = isServiceRoleClient(client) ? client : null;
+    const supabase = cronClient ?? (await createClient());
+
+    if (!cronClient) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Unauthorized' };
+      }
+    }
 
     const updateData: { sent: boolean; sent_at: string; error?: string } = {
       sent: true,
@@ -428,8 +575,14 @@ async function processRemindersImpl(
     errors: [] as string[],
   };
 
+  // Normalise once: anything that isn't a live service-role client is dropped
+  // so the fetch / send / mark-sent path below can't be driven with a forged
+  // client-shaped payload. Authorization itself is enforced in the exported
+  // `processReminders` wrapper.
+  const cronClient = isServiceRoleClient(client) ? client : undefined;
+
   try {
-    const { data: reminders, error } = await getDueReminders(100, client);
+    const { data: reminders, error } = await getDueReminders(100, cronClient);
 
     if (error || !reminders) {
       results.errors.push(error || 'Failed to fetch reminders');
@@ -439,19 +592,19 @@ async function processRemindersImpl(
     for (const reminder of reminders) {
       try {
         // Send notification based on reminder type
-        const sendResult = await sendReminderNotification(reminder, client);
+        const sendResult = await sendReminderNotification(reminder, cronClient);
 
         if (sendResult.success) {
-          await markReminderSent(reminder.id, undefined, client);
+          await markReminderSent(reminder.id, undefined, cronClient);
           results.sent++;
         } else {
-          await markReminderSent(reminder.id, sendResult.error, client);
+          await markReminderSent(reminder.id, sendResult.error, cronClient);
           results.failed++;
           results.errors.push(`Reminder ${reminder.id}: ${sendResult.error}`);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        await markReminderSent(reminder.id, errorMessage, client);
+        await markReminderSent(reminder.id, errorMessage, cronClient);
         results.failed++;
         results.errors.push(`Reminder ${reminder.id}: ${errorMessage}`);
       }
@@ -471,6 +624,26 @@ const observedProcessReminders = withAdminObserved(
   processRemindersImpl,
 );
 
+/**
+ * Drive the due-reminder fan-out (in-app rows + Resend emails + web push) for
+ * EVERY due reminder in the system.
+ *
+ * AUTHORIZATION. This is a `'use server'` export, so it is reachable from any
+ * authenticated browser session over the server-action wire; it previously had
+ * no check of its own at any layer (`processRemindersImpl` had none, and the
+ * `!client` guards further down only ever produced a session check, which any
+ * logged-in user satisfies). Two callers are allowed now:
+ *
+ *   1. The cron. `/api/cron/task-reminders` authenticates with `CRON_SECRET`
+ *      via `requireCronAuth` and passes the service-role admin client, which
+ *      cannot be forged across the wire (see isServiceRoleClient).
+ *   2. A platform super-admin, via the repo's canonical database-backed gate
+ *      (`checkSuperAdminAccess` → `public.is_super_admin()`), so the fan-out
+ *      can still be kicked manually from an admin surface.
+ *
+ * Everyone else gets the zero-work result shape — same keys as a real run, so
+ * callers that destructure `{ sent, failed, errors }` are unaffected.
+ */
 export async function processReminders(
   client?: TaskReminderClient,
 ): Promise<{
@@ -478,6 +651,13 @@ export async function processReminders(
   failed: number;
   errors: string[];
 }> {
+  if (!isServiceRoleClient(client)) {
+    const probe = await checkSuperAdminAccess();
+    if (!probe.allowed) {
+      return { sent: 0, failed: 0, errors: ['Unauthorized'] };
+    }
+  }
+
   return observedProcessReminders(client);
 }
 
@@ -632,7 +812,7 @@ async function sendEmailNotification(task: GolfTask, client?: TaskReminderClient
                 </p>
                 ${task.priority && task.priority !== 'normal' ? `
                 <p style="color: ${task.priority === 'urgent' ? '#DC2626' : task.priority === 'high' ? '#F59E0B' : '#78716c'}; margin: 8px 0 0 0; font-size: 14px;">
-                  <strong>Priority:</strong> ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                  <strong>Priority:</strong> ${escapeHtml(task.priority.charAt(0).toUpperCase() + task.priority.slice(1))}
                 </p>` : ''}
               </div>
 
@@ -812,6 +992,46 @@ async function getReminderStatsImpl(
   failedToday: number;
 }> {
   const supabase = await createClient();
+
+  // Auth first. Another wire-callable 'use server' export that took an
+  // arbitrary teamId with no check of its own. The zero-counts object is the
+  // denial result: the return type has no error channel and every caller
+  // destructures the three counts, so the shape must not change.
+  const emptyStats = { pendingReminders: 0, sentToday: 0, failedToday: 0 };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return emptyStats;
+  }
+
+  const [coachResult, playerResult] = await Promise.all([
+    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
+  ]);
+
+  let allowed = false;
+  if (coachResult.data) {
+    // TEAM-scoped, not org-scoped — same boundary as set/cancelTaskReminder.
+    allowed = await validateCoachTeamAccess(
+      supabase,
+      coachResult.data.id,
+      teamId,
+      coachResult.data.organization_id,
+    );
+  } else if (playerResult.data) {
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('player_id', playerResult.data.id)
+      .eq('team_id', teamId)
+      .maybeSingle();
+    allowed = Boolean(membership);
+  }
+
+  if (!allowed) {
+    return emptyStats;
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

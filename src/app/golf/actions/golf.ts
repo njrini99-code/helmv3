@@ -6309,7 +6309,16 @@ async function reconcileQualifierStatusImpl(qualifierId: string): Promise<void> 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await advanceQualifierOnRoundSubmit(supabase, qualifierId);
+    // DS: this is a view-time reconcile reachable by ANY team member who
+    // opens the qualifier detail page (not just coaches), but the write
+    // below goes through the service-role client and previously bypassed
+    // golf_qualifiers_update_coach unconditionally. Restrict the page-view
+    // path to the objective 'completed' transition only (deadline passed /
+    // every entrant done) — the unconditional 'upcoming' -> 'in_progress'
+    // flip stays reserved for the real round-submit trigger at
+    // submitGolfRoundComprehensive, which calls this with
+    // allowUpcomingTransition: true below.
+    await advanceQualifierOnRoundSubmit(supabase, qualifierId, { allowUpcomingTransition: false });
   } catch {
     // Best-effort — never block the page render.
   }
@@ -6327,7 +6336,8 @@ export async function reconcileQualifierStatus(qualifierId: string): Promise<voi
 
 async function advanceQualifierOnRoundSubmit(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  qualifierId: string
+  qualifierId: string,
+  options: { allowUpcomingTransition?: boolean } = { allowUpcomingTransition: true },
 ): Promise<void> {
   const { data: qualifier } = await supabase
     .from('golf_qualifiers')
@@ -6340,6 +6350,13 @@ async function advanceQualifierOnRoundSubmit(
   const admin = createAdminClient();
 
   if (qualifier.status === 'upcoming') {
+    // DS: this unconditional service-role write bypasses
+    // golf_qualifiers_update_coach (UPDATE is coach-only under RLS). Only the
+    // real round-submit caller (which just posted a completed round) may
+    // trigger it — the view-time reconcile above passes
+    // allowUpcomingTransition: false so merely opening the qualifier page
+    // can no longer flip 'upcoming' -> 'in_progress' on a coach's behalf.
+    if (!options.allowUpcomingTransition) return;
     await admin
       .from('golf_qualifiers')
       .update({ status: 'in_progress' })

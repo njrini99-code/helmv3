@@ -106,21 +106,34 @@ const observedVerifyPlayerAccess = withAdminObserved(
   verifyPlayerAccessImpl,
 );
 
+/**
+ * DS-B4: this module carries a file-level `'use server'`, so this export is a
+ * callable server-action endpoint and `userId` arrived fully attacker-supplied
+ * on a raw POST. The coach branch resolves through `verify_coach_owns_player`,
+ * a SECURITY DEFINER RPC with no `auth.uid()` gate, which turned the action
+ * into a truthful "does user X coach player Y" oracle for arbitrary ids.
+ *
+ * The subject is therefore resolved from the SESSION and the caller-supplied
+ * `_userId` is dropped on the floor. Every in-repo caller already passes its
+ * own `requireAuth()` user, so this is a no-op for them. (The canonical
+ * non-action helper lives at `@/lib/auth/verify-player-access`; this wrapper
+ * stays exported only because `stats-leak-maps.ts` imports it.)
+ */
 export async function verifyPlayerAccess(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
+  _userId: string,
   playerId: string
 ): Promise<boolean> {
   const shared = getStatsActionContext();
   if (
     shared &&
     shared.supabase === supabase &&
-    shared.user.id === userId &&
     shared.requestedPlayerId === playerId
   ) {
     return shared.authorization.allowed;
   }
-  return observedVerifyPlayerAccess(supabase, userId, playerId);
+  const { supabase: sessionSupabase, user } = await requireAuth(playerId);
+  return observedVerifyPlayerAccess(sessionSupabase, user.id, playerId);
 }
 
 /**

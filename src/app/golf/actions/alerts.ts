@@ -12,6 +12,7 @@ import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
 
 type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
 
@@ -332,6 +333,15 @@ async function generateAlertsImpl(
 
   if (!coach) {
     return { success: false, error: 'Not authorized to generate alerts for this coach' };
+  }
+
+  // DS: generateAlerts fans coachHelmIntelligence.analyzePlayer (full v2
+  // orchestrator, multi-second/table-writing) out across the entire active
+  // roster with no gate — a tight client loop can hold a function instance
+  // hostage. Same 5/min/user gate as every other CoachHelm engine entrypoint.
+  const rateLimit = await gateCoachHelmEngineCall(user.id);
+  if (!rateLimit.allowed) {
+    return { success: false, error: rateLimit.error };
   }
 
   try {

@@ -599,27 +599,41 @@ export async function enrollCoachesInSequence(input: {
     //                                        violated by a second insert)
     //   anything else (active/paused/completed, or stopped for
     //   replied/unsubscribed/bounced) -> permanently/currently blocked, skip
-    const { data: existing, error: existingErr } = await client
-      .from('crm_sequence_enrollments')
-      .select('id, coach_id, status, stop_reason')
-      .eq('sequence_id', input.sequence_id)
-      .in('coach_id', input.coach_ids);
+    // Chunk the `.in('coach_id', ...)` lookup at 500 (same limit as
+    // getCoachSequenceEnrollmentStatuses above) so a large segment doesn't
+    // silently truncate the existing-enrollment read and leave already-blocked
+    // coaches misclassified as new.
+    const existing: Array<{
+      id: string;
+      coach_id: string;
+      status: SequenceEnrollmentStatus;
+      stop_reason: SequenceEnrollmentStopReason | null;
+    }> = [];
+    for (let i = 0; i < input.coach_ids.length; i += 500) {
+      const chunk = input.coach_ids.slice(i, i + 500);
+      const { data: chunkRows, error: existingErr } = await client
+        .from('crm_sequence_enrollments')
+        .select('id, coach_id, status, stop_reason')
+        .eq('sequence_id', input.sequence_id)
+        .in('coach_id', chunk);
 
-    if (existingErr) {
-      throw new Error(`Failed to check existing enrollments: ${existingErr.message}`);
+      if (existingErr) {
+        throw new Error(`Failed to check existing enrollments: ${existingErr.message}`);
+      }
+      existing.push(
+        ...((chunkRows ?? []) as Array<{
+          id: string;
+          coach_id: string;
+          status: SequenceEnrollmentStatus;
+          stop_reason: SequenceEnrollmentStopReason | null;
+        }>),
+      );
     }
 
     const existingByCoach = new Map<
       string,
       { id: string; status: SequenceEnrollmentStatus; stop_reason: SequenceEnrollmentStopReason | null }
-    >(
-      ((existing ?? []) as Array<{
-        id: string;
-        coach_id: string;
-        status: SequenceEnrollmentStatus;
-        stop_reason: SequenceEnrollmentStopReason | null;
-      }>).map((r) => [r.coach_id, { id: r.id, status: r.status, stop_reason: r.stop_reason }]),
-    );
+    >(existing.map((r) => [r.coach_id, { id: r.id, status: r.status, stop_reason: r.stop_reason }]));
 
     const newCoachIds: string[] = [];
     const reEnrollIds: string[] = [];
@@ -721,65 +735,70 @@ export async function enrollSegmentInSequence(input: {
     }
 
     const def = (segment as { definition: Record<string, unknown> }).definition ?? {};
-    let query = client
-      .from('crm_coaches')
-      .select('id')
-      // NULL-safe archived filter: legacy rows with is_archived = NULL must still
-      // enroll, so match NULL OR false. A bare .eq('is_archived', false) would drop
-      // NULL rows via Postgres three-valued logic. Mirrors admin/crm/page.tsx.
-      .or('is_archived.is.null,is_archived.eq.false');
 
-    if (def.status && def.status !== 'all') {
-      query = query.eq('status', def.status);
-    }
-    if (def.division && def.division !== 'all') {
-      query = query.eq('division', def.division);
-    }
-    if (def.conference && def.conference !== 'all') {
-      query = query.eq('conference', def.conference);
-    }
-    if (def.program && def.program !== 'all') {
-      query = query.eq('program', def.program);
-    }
-    if (def.priority && def.priority !== 'all') {
-      const priorityNum = Number.parseInt(String(def.priority), 10);
-      if (!Number.isNaN(priorityNum)) {
-        query = query.eq('priority', priorityNum);
+    const buildQuery = () => {
+      let query = client
+        .from('crm_coaches')
+        .select('id')
+        // NULL-safe archived filter: legacy rows with is_archived = NULL must still
+        // enroll, so match NULL OR false. A bare .eq('is_archived', false) would drop
+        // NULL rows via Postgres three-valued logic. Mirrors admin/crm/page.tsx.
+        .or('is_archived.is.null,is_archived.eq.false');
+
+      if (def.status && def.status !== 'all') {
+        query = query.eq('status', def.status);
       }
-    }
-    if (def.starred === true) {
-      query = query.eq('is_starred', true);
-    }
-    if (def.primaryOnly === true) {
-      query = query.eq('is_primary_contact', true);
-    }
-    // Mirror the remaining crm_coaches-column filters from CoachFilters/filteredCoaches
-    // so the segment we ENROLL matches the segment the operator SEES. Previously these
-    // were applied only client-side, so enrolling a saved "cold, has-notes" view could
-    // email the entire cold cohort. (queueStatus + temperature depend on joins to the
-    // enrollment state / engagement view and are intentionally not mirrored here — they
-    // are rare in enrollment segments and the dialog's resolved-count surfaces any gap.)
-    if (typeof def.search === 'string' && def.search.trim()) {
-      const s = def.search.trim().replace(/[%,()]/g, ''); // sanitize for the or-filter grammar
-      if (s) query = query.or(`name.ilike.%${s}%,school.ilike.%${s}%,email.ilike.%${s}%,conference.ilike.%${s}%`);
-    }
-    if (def.followUpDue === true) {
-      query = query.not('next_follow_up_at', 'is', null).lte('next_follow_up_at', new Date().toISOString());
-    }
-    if (def.hasNotes === true) {
-      query = query.not('notes', 'is', null).neq('notes', '');
-    }
-    if (def.noContact30Days === true) {
-      const cutoff = new Date(Date.now() - 30 * 86400_000).toISOString();
-      query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${cutoff}`);
-    }
+      if (def.division && def.division !== 'all') {
+        query = query.eq('division', def.division);
+      }
+      if (def.conference && def.conference !== 'all') {
+        query = query.eq('conference', def.conference);
+      }
+      if (def.program && def.program !== 'all') {
+        query = query.eq('program', def.program);
+      }
+      if (def.priority && def.priority !== 'all') {
+        const priorityNum = Number.parseInt(String(def.priority), 10);
+        if (!Number.isNaN(priorityNum)) {
+          query = query.eq('priority', priorityNum);
+        }
+      }
+      if (def.starred === true) {
+        query = query.eq('is_starred', true);
+      }
+      if (def.primaryOnly === true) {
+        query = query.eq('is_primary_contact', true);
+      }
+      // Mirror the remaining crm_coaches-column filters from CoachFilters/filteredCoaches
+      // so the segment we ENROLL matches the segment the operator SEES. Previously these
+      // were applied only client-side, so enrolling a saved "cold, has-notes" view could
+      // email the entire cold cohort. (queueStatus + temperature depend on joins to the
+      // enrollment state / engagement view and are intentionally not mirrored here — they
+      // are rare in enrollment segments and the dialog's resolved-count surfaces any gap.)
+      if (typeof def.search === 'string' && def.search.trim()) {
+        const s = def.search.trim().replace(/[%,()]/g, ''); // sanitize for the or-filter grammar
+        if (s) query = query.or(`name.ilike.%${s}%,school.ilike.%${s}%,email.ilike.%${s}%,conference.ilike.%${s}%`);
+      }
+      if (def.followUpDue === true) {
+        query = query.not('next_follow_up_at', 'is', null).lte('next_follow_up_at', new Date().toISOString());
+      }
+      if (def.hasNotes === true) {
+        query = query.not('notes', 'is', null).neq('notes', '');
+      }
+      if (def.noContact30Days === true) {
+        const cutoff = new Date(Date.now() - 30 * 86400_000).toISOString();
+        query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${cutoff}`);
+      }
+      return query;
+    };
 
-    const { data: coaches, error: coachErr } = await query;
-    if (coachErr) {
-      throw new Error(`Failed to resolve segment coaches: ${coachErr.message}`);
-    }
+    // Paginate past PostgREST's 1000-row cap (fetchAllRows requires a stable
+    // order on a unique column so page boundaries don't drift).
+    const coaches = await fetchAllRows<{ id: string }>((from, to) =>
+      buildQuery().order('id', { ascending: true }).range(from, to),
+    );
 
-    const coachIds = ((coaches ?? []) as Array<{ id: string }>).map((c) => c.id);
+    const coachIds = coaches.map((c) => c.id);
     if (coachIds.length === 0) {
       return { enrolled: 0, skipped: 0 };
     }

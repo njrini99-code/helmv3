@@ -3,12 +3,23 @@
  *
  * Team D — Task D1. Verifies auth, ownership, upsert, and behavior-learner
  * invocation paths for the player feedback loop.
+ *
+ * DS-6 (2026-08-01): the action used to accept `supabaseOverride` /
+ * `recorderOverride` as its 2nd and 3rd parameters, and these tests injected
+ * through them. Every export of a `'use server'` module is a wire-callable
+ * endpoint, so those seams were removed from the public signature. The tests
+ * now drive the same paths through the module mocks below — `createClient`
+ * for the Supabase client, `BehaviorLearner` for the learner fan-out — which
+ * additionally exercises the real `buildDefaultRecorder` adapter.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock the supabase server client so the module under test doesn't try
-// to read cookies during import. Tests inject their own client via the
-// supabaseOverride parameter.
+const { learnFromInteractionSpy } = vi.hoisted(() => ({
+  learnFromInteractionSpy: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock the supabase server client so the module under test doesn't try to read
+// cookies during import. Each test sets the client the action will receive.
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({})),
 }));
@@ -19,15 +30,24 @@ vi.mock('next/cache', () => ({
 }));
 
 // Mock the BehaviorLearner so we don't hit the DB for the learner path.
+// A real class, not vi.fn().mockImplementation(() => ({…})) — the action
+// constructs the learner with `new`, and an arrow implementation is not a
+// constructor.
 vi.mock('@/lib/coachhelm/v2/learning/behavior-learner', () => {
   return {
-    BehaviorLearner: vi.fn().mockImplementation(() => ({
-      recordInteraction: vi.fn().mockResolvedValue(undefined),
-    })),
+    BehaviorLearner: class BehaviorLearnerMock {
+      learnFromInteraction = learnFromInteractionSpy;
+    },
   };
 });
 
+import { createClient } from '@/lib/supabase/server';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
+
+/** Point the action's `await createClient()` at this test's stub client. */
+function useSupabase(client: unknown): void {
+  vi.mocked(createClient).mockResolvedValue(client as never);
+}
 
 // Zod v4's uuid() requires a spec-compliant v1-v8 UUID (version nibble 1-8
 // and 8/9/a/b variant bit). Use a proper v4 UUID for fixture data.
@@ -39,28 +59,28 @@ beforeEach(() => {
 
 describe('rateInsightAsPlayer', () => {
   it('rejects unauthenticated users', async () => {
-    const supabaseMock = {
+    useSupabase({
       auth: { getUser: async () => ({ data: { user: null } }) },
-    } as unknown;
+    });
     await expect(
-      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'helpful' }, supabaseMock as never)
+      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'helpful' })
     ).rejects.toThrow(/unauthorized/i);
   });
 
   it('rejects when player record does not match auth user', async () => {
-    const supabaseMock = {
+    useSupabase({
       auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
       from: vi.fn().mockReturnValue({
         select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
       }),
-    } as unknown;
+    });
     await expect(
-      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'helpful' }, supabaseMock as never)
+      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'helpful' })
     ).rejects.toThrow(/player not found/i);
   });
 
   it('verifies the insight belongs to the authed player', async () => {
-    const supabaseMock = {
+    useSupabase({
       auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
       from: vi.fn().mockImplementation((table: string) => {
         if (table === 'golf_players') {
@@ -81,16 +101,15 @@ describe('rateInsightAsPlayer', () => {
         }
         return {};
       }),
-    } as unknown;
+    });
     await expect(
-      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'helpful' }, supabaseMock as never)
+      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'helpful' })
     ).rejects.toThrow(/forbidden/i);
   });
 
-  it('upserts feedback row and calls BehaviorLearner.recordInteraction', async () => {
+  it('upserts feedback row and fans the rating into the behavior learner', async () => {
     const upsertSpy = vi.fn().mockResolvedValue({ error: null });
-    const recordSpy = vi.fn().mockResolvedValue(undefined);
-    const supabaseMock = {
+    useSupabase({
       auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
       from: vi.fn().mockImplementation((table: string) => {
         if (table === 'golf_players') {
@@ -115,13 +134,13 @@ describe('rateInsightAsPlayer', () => {
         }
         return {};
       }),
-    } as unknown;
+    });
 
-    const result = await rateInsightAsPlayer(
-      { insightId: VALID_UUID, rating: 'helpful', note: 'thanks coach' },
-      supabaseMock as never,
-      { recordInteraction: recordSpy } as never
-    );
+    const result = await rateInsightAsPlayer({
+      insightId: VALID_UUID,
+      rating: 'helpful',
+      note: 'thanks coach',
+    });
 
     expect(result).toEqual({ success: true });
     expect(upsertSpy).toHaveBeenCalledTimes(1);
@@ -133,30 +152,34 @@ describe('rateInsightAsPlayer', () => {
       rating: 'helpful',
       note: 'thanks coach',
     });
-    expect(recordSpy).toHaveBeenCalledWith({
-      interaction_type: 'insight_rated_helpful',
-      target_type: 'insight',
-      target_id: VALID_UUID,
-      metadata: expect.objectContaining({ insight_type: 'driving', rating: 'helpful' }),
-    });
+    expect(learnFromInteractionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 'p1',
+        entityType: 'player',
+        interactionType: 'action',
+        targetType: 'insight',
+        targetId: VALID_UUID,
+        metadata: expect.objectContaining({ insight_type: 'driving', rating: 'helpful' }),
+      })
+    );
   });
 
   it('rejects invalid rating values via Zod', async () => {
-    const supabaseMock = {
+    useSupabase({
       auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
-    } as unknown;
+    });
     await expect(
       // @ts-expect-error - intentional bad value
-      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'lol' }, supabaseMock as never)
+      rateInsightAsPlayer({ insightId: VALID_UUID, rating: 'lol' })
     ).rejects.toThrow();
   });
 
   it('rejects non-UUID insightId via Zod', async () => {
-    const supabaseMock = {
+    useSupabase({
       auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
-    } as unknown;
+    });
     await expect(
-      rateInsightAsPlayer({ insightId: 'not-a-uuid', rating: 'helpful' }, supabaseMock as never)
+      rateInsightAsPlayer({ insightId: 'not-a-uuid', rating: 'helpful' })
     ).rejects.toThrow();
   });
 });

@@ -69,7 +69,18 @@ export async function recordFailedLogin(
       };
     }
 
-    // Fail closed for query-level errors (safer default)
+    // Fail closed for query-level errors (safer default): report the attempt as
+    // exhausted so no "N attempts remaining" hint is handed out while the store
+    // is unreadable, and so callers log this at `warning`.
+    //
+    // DS-43 follow-up: do NOT stamp a lockedUntil here. Nothing was persisted —
+    // this branch ran because the SELECT failed, so no row was written and the
+    // account is not actually locked. A synthesized `now + 30 min` deadline made
+    // the callers render "Account locked. Please try again in 30 minutes", which
+    // is simply false: the very next attempt (once the query succeeds) finds no
+    // lock. An honest fail-closed here is "exhausted, no deadline" — callers see
+    // `locked` without `lockedUntil` and fall through to the generic
+    // "Invalid email or password" response rather than inventing a deadline.
     return {
       locked: true,
       attempts: MAX_FAILED_ATTEMPTS,

@@ -6,6 +6,16 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { revalidatePath } from 'next/cache';
 import type { Database } from '@/lib/types/database';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
+
+/**
+ * Hard ceiling on occurrences generated for one class sync. ~400 covers a full
+ * calendar year of daily meetings — far above any real semester — while
+ * stopping a crafted semester range from filling golf_events through the
+ * service-role client. Audit DS-B4.
+ */
+const MAX_GENERATED_OCCURRENCES = 400;
 
 // ============================================================================
 // TYPES
@@ -157,7 +167,7 @@ async function syncClassToCalendarImpl(
   // tag-scoped admin writes below.
   const { data: ownedClass, error: ownedClassError } = await supabase
     .from('golf_player_classes')
-    .select('id')
+    .select('id, semester')
     .eq('id', classId)
     .eq('player_id', player.id)
     .maybeSingle();
@@ -166,177 +176,215 @@ async function syncClassToCalendarImpl(
     return { success: false, error: 'Not authorized to sync this class' };
   }
 
-  // Parse semester to determine start and end dates
-  const semesterDates = parseSemesterDates(classData.semester, classData.semesterStartDate);
+  try {
+    // DS-B4: every field of `classData` is caller-controlled on a 'use server'
+    // export, and the semester drove UNBOUNDED occurrence generation — "Fall
+    // 9999" with a year-0001 start produced ~500k rows per meeting day, written
+    // with the service-role client. Prefer the semester persisted on the class
+    // row; the import path never writes one, so fall back to the submitted
+    // value and let parseSemesterDates' range validation plus the hard cap
+    // below bound the generation.
+    const semesterDates = parseSemesterDates(
+      ownedClass.semester ?? classData.semester,
+      classData.semesterStartDate,
+    );
 
-  if (!semesterDates) {
-    return { success: false, error: 'Could not determine semester dates. Please set a semester start date.' };
-  }
-
-  // WHY THE ADMIN CLIENT: golf_events RLS only lets COACHES write team events,
-  // so every player-initiated class sync was silently blocked (0 rows ever
-  // written). A player syncing their OWN class schedule onto their OWN team's
-  // calendar is a legitimate write, so after the explicit authz above (caller
-  // IS the player, player IS a member of teamId) we perform the writes with
-  // the service-role client. Every write below stays scoped to this teamId +
-  // this class's tag — the admin client never touches anything the checks
-  // above didn't authorize.
-  const admin = createAdminClient();
-
-  const classTag = `[class:${classId}]`;
-  const tzOffset = classData.timezoneOffset;
-
-  // Build shared event fields
-  const title = classData.course_code
-    ? `${classData.course_code}: ${classData.course_name}`
-    : classData.course_name || 'Class';
-  const location = [classData.building, classData.room].filter(Boolean).join(' - ') || classData.location || null;
-  const description = [
-    classData.instructor && `Instructor: ${classData.instructor}`,
-    classData.credits && `Credits: ${classData.credits}`,
-    classData.notes,
-    classTag,
-  ].filter(Boolean).join('\n') || classTag;
-
-  // Generate one desired occurrence per weekly meeting, keyed by local date.
-  // The calendar UI matches events by comparing start_time to the displayed
-  // date, so each week needs its own row.
-  //
-  // All date-only arithmetic here is done in UTC (explicit Z suffix +
-  // getUTC*/setUTC* methods) so occurrence dates don't shift by a day
-  // depending on the SERVER's timezone. The caller's wall-clock time enters
-  // only through buildDateTimeString's explicit offset.
-  const semesterEnd = new Date(semesterDates.end + 'T23:59:59Z');
-  const desiredByDate = new Map<string, GolfEventInsert>();
-
-  for (const day of classData.days) {
-    const dayOfWeek = getDayOfWeek(day);
-    const firstDateStr = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
-    const cursor = new Date(firstDateStr + 'T00:00:00Z');
-
-    while (cursor <= semesterEnd) {
-      const dateStr = cursor.toISOString().slice(0, 10);
-      desiredByDate.set(dateStr, {
-        team_id: teamId,
-        title,
-        event_type: 'other',
-        // start_time/end_time are timestamptz — date + class time + explicit
-        // offset, the same convention golf.ts events use.
-        start_time: buildDateTimeString(dateStr, `${classData.start_time || '08:00'}:00`, tzOffset),
-        end_time: buildDateTimeString(dateStr, `${classData.end_time || '09:00'}:00`, tzOffset),
-        all_day: false,
-        location,
-        description,
-        status: 'confirmed',
-      });
-      // Advance by 7 days for next weekly occurrence (UTC — see note above)
-      cursor.setUTCDate(cursor.getUTCDate() + 7);
+    if (!semesterDates) {
+      return { success: false, error: 'Could not determine semester dates. Please set a semester start date.' };
     }
-  }
 
-  // Fetch existing calendar rows for this class (paginated — a multi-semester
-  // tag history can exceed the PostgREST 1000-row cap).
-  const { data: existingRows, error: existingError } = await fetchAllRowsResult((from, to) =>
-    admin
-      .from('golf_events')
-      .select('id, title, start_time, end_time, location, description')
-      .eq('team_id', teamId)
-      .like('description', `%${classTag}%`)
-      .order('id', { ascending: true })
-      .range(from, to),
-    undefined,
-    { table: 'golf_events', action: 'syncClassToCalendar', feature: 'academics_classes', sport: 'golf' },
-  );
+    // WHY THE ADMIN CLIENT: golf_events RLS only lets COACHES write team events,
+    // so every player-initiated class sync was silently blocked (0 rows ever
+    // written). A player syncing their OWN class schedule onto their OWN team's
+    // calendar is a legitimate write, so after the explicit authz above (caller
+    // IS the player, player IS a member of teamId, player OWNS the class) we
+    // perform the writes with the service-role client. Every write below stays
+    // scoped to this teamId + this class's tag — the admin client never touches
+    // anything the checks above didn't authorize.
+    const admin = createAdminClient();
 
-  if (existingError) {
-    return { success: false, error: `Failed to load existing class events: ${existingError.message}` };
-  }
+    const classTag = `[class:${classId}]`;
+    const tzOffset = classData.timezoneOffset;
 
-  // Diff: match existing rows to desired occurrences by local calendar date.
-  const matchedByDate = new Map<string, ExistingClassEventRow>();
-  const staleIds: string[] = [];
-  for (const row of (existingRows ?? []) as ExistingClassEventRow[]) {
-    const key = localDateKey(row.start_time, tzOffset ?? 0);
-    if (desiredByDate.has(key) && !matchedByDate.has(key)) {
-      matchedByDate.set(key, row);
-    } else {
-      // Occurrence removed (day dropped / semester shortened) or duplicate.
-      staleIds.push(row.id);
+    // Build shared event fields
+    const title = classData.course_code
+      ? `${classData.course_code}: ${classData.course_name}`
+      : classData.course_name || 'Class';
+    const location = [classData.building, classData.room].filter(Boolean).join(' - ') || classData.location || null;
+    const description = [
+      classData.instructor && `Instructor: ${classData.instructor}`,
+      classData.credits && `Credits: ${classData.credits}`,
+      classData.notes,
+      classTag,
+    ].filter(Boolean).join('\n') || classTag;
+
+    // Generate one desired occurrence per weekly meeting, keyed by local date.
+    // The calendar UI matches events by comparing start_time to the displayed
+    // date, so each week needs its own row.
+    //
+    // All date-only arithmetic here is done in UTC (explicit Z suffix +
+    // getUTC*/setUTC* methods) so occurrence dates don't shift by a day
+    // depending on the SERVER's timezone. The caller's wall-clock time enters
+    // only through buildDateTimeString's explicit offset.
+    const semesterEnd = new Date(semesterDates.end + 'T23:59:59Z');
+    const desiredByDate = new Map<string, GolfEventInsert>();
+
+    // DS-B4: distinct weekday numbers only. `classData.days` is caller-supplied
+    // and unbounded, and getDayOfWeek collapses unknown codes onto Monday, so
+    // the raw array could otherwise drive the same weekly walk thousands of
+    // times over.
+    const dayNumbers = new Set<number>();
+    for (const day of Array.isArray(classData.days) ? classData.days : []) {
+      dayNumbers.add(getDayOfWeek(day));
     }
-  }
 
-  const toInsert: GolfEventInsert[] = [];
-  const toUpdate: Array<{ id: string; changes: Database['public']['Tables']['golf_events']['Update'] }> = [];
+    for (const dayOfWeek of dayNumbers) {
+      const firstDateStr = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
+      const cursor = new Date(firstDateStr + 'T00:00:00Z');
 
-  for (const [dateKey, desired] of desiredByDate) {
-    const existing = matchedByDate.get(dateKey);
-    if (!existing) {
-      toInsert.push(desired);
-      continue;
+      while (cursor <= semesterEnd) {
+        const dateStr = cursor.toISOString().slice(0, 10);
+        desiredByDate.set(dateStr, {
+          team_id: teamId,
+          title,
+          event_type: 'other',
+          // start_time/end_time are timestamptz — date + class time + explicit
+          // offset, the same convention golf.ts events use.
+          start_time: buildDateTimeString(dateStr, `${classData.start_time || '08:00'}:00`, tzOffset),
+          end_time: buildDateTimeString(dateStr, `${classData.end_time || '09:00'}:00`, tzOffset),
+          all_day: false,
+          location,
+          description,
+          status: 'confirmed',
+        });
+        // DS-B4: refuse rather than generate — a range that produces more than
+        // a year of daily meetings is crafted, not a semester.
+        if (desiredByDate.size > MAX_GENERATED_OCCURRENCES) {
+          return { success: false, error: 'Semester range too large' };
+        }
+        // Advance by 7 days for next weekly occurrence (UTC — see note above)
+        cursor.setUTCDate(cursor.getUTCDate() + 7);
+      }
     }
-    const changed =
-      existing.title !== desired.title ||
-      existing.location !== desired.location ||
-      existing.description !== desired.description ||
-      !sameInstant(existing.start_time, desired.start_time ?? null) ||
-      !sameInstant(existing.end_time, desired.end_time ?? null);
-    if (changed) {
-      toUpdate.push({
-        id: existing.id,
-        changes: {
-          title: desired.title,
-          start_time: desired.start_time,
-          end_time: desired.end_time,
-          location: desired.location,
-          description: desired.description,
-        },
-      });
+
+    // Fetch existing calendar rows for this class (paginated — a multi-semester
+    // tag history can exceed the PostgREST 1000-row cap).
+    const { data: existingRows, error: existingError } = await fetchAllRowsResult((from, to) =>
+      admin
+        .from('golf_events')
+        .select('id, title, start_time, end_time, location, description')
+        .eq('team_id', teamId)
+        .like('description', `%${classTag}%`)
+        .order('id', { ascending: true })
+        .range(from, to),
+      undefined,
+      { table: 'golf_events', action: 'syncClassToCalendar', feature: 'academics_classes', sport: 'golf' },
+    );
+
+    if (existingError) {
+      return { success: false, error: `Failed to load existing class events: ${existingError.message}` };
     }
-  }
 
-  // Apply the diff: insert + update first, delete stale rows LAST so a
-  // transient failure leaves extra (still-valid-looking) rows rather than a
-  // hole in the schedule.
-  const BATCH_SIZE = 100;
-
-  for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
-    const batch = toInsert.slice(i, i + BATCH_SIZE);
-    const { error } = await admin.from('golf_events').insert(batch);
-    if (error) {
-      return { success: false, error: `Failed to sync class to calendar: ${error.message}` };
+    // Diff: match existing rows to desired occurrences by local calendar date.
+    const matchedByDate = new Map<string, ExistingClassEventRow>();
+    const staleIds: string[] = [];
+    for (const row of (existingRows ?? []) as ExistingClassEventRow[]) {
+      const key = localDateKey(row.start_time, tzOffset ?? 0);
+      if (desiredByDate.has(key) && !matchedByDate.has(key)) {
+        matchedByDate.set(key, row);
+      } else {
+        // Occurrence removed (day dropped / semester shortened) or duplicate.
+        staleIds.push(row.id);
+      }
     }
-  }
 
-  for (const { id, changes } of toUpdate) {
-    const { error } = await admin
-      .from('golf_events')
-      .update(changes)
-      .eq('id', id)
-      .eq('team_id', teamId);
-    if (error) {
-      return { success: false, error: `Failed to update class events: ${error.message}` };
+    const toInsert: GolfEventInsert[] = [];
+    const toUpdate: Array<{ id: string; changes: Database['public']['Tables']['golf_events']['Update'] }> = [];
+
+    for (const [dateKey, desired] of desiredByDate) {
+      const existing = matchedByDate.get(dateKey);
+      if (!existing) {
+        toInsert.push(desired);
+        continue;
+      }
+      const changed =
+        existing.title !== desired.title ||
+        existing.location !== desired.location ||
+        existing.description !== desired.description ||
+        !sameInstant(existing.start_time, desired.start_time ?? null) ||
+        !sameInstant(existing.end_time, desired.end_time ?? null);
+      if (changed) {
+        toUpdate.push({
+          id: existing.id,
+          changes: {
+            title: desired.title,
+            start_time: desired.start_time,
+            end_time: desired.end_time,
+            location: desired.location,
+            description: desired.description,
+          },
+        });
+      }
     }
-  }
 
-  for (let i = 0; i < staleIds.length; i += BATCH_SIZE) {
-    const batch = staleIds.slice(i, i + BATCH_SIZE);
-    const { error } = await admin
-      .from('golf_events')
-      .delete()
-      .eq('team_id', teamId)
-      .in('id', batch);
-    if (error) {
-      return { success: false, error: `Failed to remove outdated class events: ${error.message}` };
+    // Apply the diff: insert + update first, delete stale rows LAST so a
+    // transient failure leaves extra (still-valid-looking) rows rather than a
+    // hole in the schedule.
+    const BATCH_SIZE = 100;
+
+    for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
+      const batch = toInsert.slice(i, i + BATCH_SIZE);
+      const { error } = await admin.from('golf_events').insert(batch);
+      if (error) {
+        return { success: false, error: `Failed to sync class to calendar: ${error.message}` };
+      }
     }
-  }
 
-  revalidatePath('/golf/dashboard/calendar');
-  return {
-    success: true,
-    eventsCreated: toInsert.length,
-    eventsUpdated: toUpdate.length,
-    eventsDeleted: staleIds.length,
-  };
+    for (const { id, changes } of toUpdate) {
+      const { error } = await admin
+        .from('golf_events')
+        .update(changes)
+        .eq('id', id)
+        .eq('team_id', teamId);
+      if (error) {
+        return { success: false, error: `Failed to update class events: ${error.message}` };
+      }
+    }
+
+    for (let i = 0; i < staleIds.length; i += BATCH_SIZE) {
+      const batch = staleIds.slice(i, i + BATCH_SIZE);
+      const { error } = await admin
+        .from('golf_events')
+        .delete()
+        .eq('team_id', teamId)
+        .in('id', batch);
+      if (error) {
+        return { success: false, error: `Failed to remove outdated class events: ${error.message}` };
+      }
+    }
+
+    revalidatePath('/golf/dashboard/calendar');
+    return {
+      success: true,
+      eventsCreated: toInsert.length,
+      eventsUpdated: toUpdate.length,
+      eventsDeleted: staleIds.length,
+    };
+  } catch (error) {
+    // DS-B4: the date arithmetic above can throw a raw RangeError (toISOString
+    // on an out-of-range Date) for a malformed semester start. A 'use server'
+    // entrypoint must always answer with a CalendarSyncResult, never a stack.
+    const message = `Failed to sync class to calendar: ${describeError(error)}`;
+    await logServerError(message, {
+      action: 'syncClassToCalendar',
+      feature: 'academics_classes',
+      sport: 'golf',
+      source: 'server_action',
+      playerId,
+      teamId,
+    });
+    return { success: false, error: message };
+  }
 }
 
 const observedSyncClassToCalendar = withAdminObserved(
@@ -355,13 +403,21 @@ export async function syncClassToCalendar(
 }
 
 /**
- * Remove calendar events for a deleted class.
+ * Remove calendar events for a class the caller is deleting.
  *
- * Pure removal path (the source class is gone), so deletion is correct here —
- * this is not a sync/save rebuild. Same authz model as syncClassToCalendar:
- * verify the caller is a player and resolve THEIR team memberships, then
- * delete via the admin client (player RLS cannot delete golf_events) scoped
- * to the class tag AND the player's own team(s).
+ * Pure removal path, so deletion is correct here — this is not a sync/save
+ * rebuild. Same authz model as syncClassToCalendar: verify the caller is a
+ * player, resolve THEIR team memberships, prove the class is not SOMEBODY
+ * ELSE'S, then delete via the admin client (player RLS cannot delete
+ * golf_events) scoped to the class tag AND the player's own team(s).
+ *
+ * An ABSENT class row is a NARROWED orphan cleanup, not a denial. Both call
+ * sites in /golf/dashboard/classes discard this result and delete the
+ * golf_player_classes row regardless, so a denial-on-absence would strand every
+ * `[class:<id>]`-tagged event permanently the first time removal hit a
+ * transient failure — the retry could never find the row again. The cleanup is
+ * safe because it is doubly scoped: only events carrying THIS class's tag, and
+ * only on teams the caller is already a member of.
  */
 async function removeClassFromCalendarImpl(classId: string, teamId?: string): Promise<CalendarSyncResult> {
   const supabase = await createClient();
@@ -402,28 +458,37 @@ async function removeClassFromCalendarImpl(classId: string, teamId?: string): Pr
 
   const targetTeamIds = teamId ? [teamId] : memberTeamIds;
 
-  // Class ownership (PR #259 review, verified real): if the class row still
-  // exists it must belong to the caller — otherwise any teammate could delete
-  // another player's class events via the tag-scoped delete below. A missing
-  // row means the class was already deleted (callers remove events first, but
-  // retries/legacy orders exist) — then this is orphan cleanup on the
-  // caller's own teams, which stays allowed.
-  const { data: classRow, error: classRowError } = await supabase
+  // Class ownership (PR #259 review, verified real): a LIVE class owned by
+  // someone else must never be removable — otherwise any teammate could delete
+  // another player's class events via the tag-scoped delete below.
+  //
+  // DS-B4: this lookup runs on the SERVICE-ROLE client ON PURPOSE. On the
+  // session client, golf_player_classes RLS shows a player only their OWN
+  // rows, so a teammate's LIVE class read back as absent and this guard was
+  // skipped entirely — RLS invisibility was being mistaken for "the class is
+  // gone", and THAT is what made absence a bypass. Reading past RLS fixes it at
+  // the source: absence now genuinely means the row is gone, so the orphan
+  // allowance below no longer hands an attacker a live class.
+  const admin = createAdminClient();
+  const { data: classRow, error: classRowError } = await admin
     .from('golf_player_classes')
     .select('id, player_id')
     .eq('id', classId)
     .maybeSingle();
 
   if (classRowError) {
+    // Unreadable is UNKNOWN ownership, not an orphan — refuse rather than guess.
     return { success: false, error: `Failed to verify class ownership: ${classRowError.message}` };
   }
   if (classRow && classRow.player_id !== player.id) {
     return { success: false, error: 'Not authorized to remove this class' };
   }
+  // classRow === null → the class really is gone. Fall through to the narrowed
+  // orphan cleanup: this tag only, on the caller's own teams only.
 
-  // Authz established above — admin client required because player RLS has no
-  // DELETE grant on golf_events. Scoped to the class tag + the player's teams.
-  const admin = createAdminClient();
+  // Authz established above — admin client also required for the delete itself
+  // because player RLS has no DELETE grant on golf_events. Scoped to the class
+  // tag + the player's teams.
   const classTag = `[class:${classId}]`;
   const { error } = await admin
     .from('golf_events')
@@ -450,43 +515,73 @@ export async function removeClassFromCalendar(classId: string, teamId?: string):
 }
 
 /**
+ * A caller-supplied semester start must be a real calendar date inside the
+ * term's own window — on or after 1 January of the term year, and on or before
+ * the term end. DS-B4: it was previously used verbatim, so a year-0001 start on
+ * a "Fall 9999" term produced a five-century occurrence walk.
+ */
+function isValidCustomStart(customStartDate: string, termYear: number, endDate: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(customStartDate)) return false;
+  const start = new Date(customStartDate + 'T00:00:00Z').getTime();
+  const lowerBound = new Date(`${termYear}-01-01T00:00:00Z`).getTime();
+  const upperBound = new Date(endDate + 'T00:00:00Z').getTime();
+  if (!Number.isFinite(start)) return false;
+  return start >= lowerBound && start <= upperBound;
+}
+
+/**
  * Parse semester string to get start and end dates
  * Format: "Fall 2025", "Spring 2026", etc.
  * If customStartDate is provided, use it instead of the default start date
+ *
+ * DS-B4: both inputs are caller-controlled, so the term year is bounded to a
+ * plausible range and a custom start is range-checked against the term. An
+ * unusable value returns null, which the caller surfaces as the existing
+ * "Could not determine semester dates" error.
  */
 function parseSemesterDates(semester: string, customStartDate?: string): { start: string; end: string } | null {
+  if (typeof semester !== 'string') return null;
+
   const match = semester.match(/(Fall|Spring|Summer|Winter)\s+(\d{4})/i);
   if (!match || !match[1] || !match[2]) return null;
 
   const term = match[1];
   const year = match[2];
   const yearNum = parseInt(year, 10);
+  // Anything outside this window is not a real academic term, and it is what
+  // made the generated range unbounded ("Fall 9999").
+  if (!Number.isFinite(yearNum) || yearNum < 2000 || yearNum > 2100) return null;
 
-  let startDate: string;
+  let defaultStartDate: string;
   let endDate: string;
 
   switch (term.toLowerCase()) {
     case 'spring':
-      startDate = customStartDate || `${yearNum}-01-15`; // Mid-January
+      defaultStartDate = `${yearNum}-01-15`; // Mid-January
       endDate = `${yearNum}-05-15`;   // Mid-May
       break;
     case 'summer':
-      startDate = customStartDate || `${yearNum}-06-01`; // Early June
+      defaultStartDate = `${yearNum}-06-01`; // Early June
       endDate = `${yearNum}-08-15`;   // Mid-August
       break;
     case 'fall':
-      startDate = customStartDate || `${yearNum}-08-20`; // Late August
+      defaultStartDate = `${yearNum}-08-20`; // Late August
       endDate = `${yearNum}-12-15`;   // Mid-December
       break;
     case 'winter':
-      startDate = customStartDate || `${yearNum}-12-15`; // Mid-December
+      defaultStartDate = `${yearNum}-12-15`; // Mid-December
       endDate = `${yearNum + 1}-01-15`; // Mid-January next year
       break;
     default:
       return null;
   }
 
-  return { start: startDate, end: endDate };
+  if (customStartDate) {
+    if (!isValidCustomStart(customStartDate, yearNum, endDate)) return null;
+    return { start: customStartDate, end: endDate };
+  }
+
+  return { start: defaultStartDate, end: endDate };
 }
 
 /**

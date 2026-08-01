@@ -93,9 +93,15 @@ function buildDefaultRecorder(playerId: string, rating: RatingInput['rating']): 
 /**
  * Persists a player's rating for a coach insight.
  *
+ * DS-6: the two override parameters are INTERNAL ONLY and must never be
+ * reachable from the exported wrapper below. Every export of a `'use server'`
+ * module is a wire-callable endpoint, so re-exposing them would put a client
+ * dependency-injection seam on the public boundary. Tests drive this through
+ * the mocked `createClient` / `BehaviorLearner` instead.
+ *
  * @param input          Validated feedback payload
- * @param supabaseOverride  Optional client (for tests / service-role callers)
- * @param recorderOverride  Optional behavior-learner recorder (for tests)
+ * @param supabaseOverride  Optional client (internal callers only)
+ * @param recorderOverride  Optional behavior-learner recorder (internal callers only)
  */
 async function rateInsightAsPlayerImpl(
   input: RatingInput,
@@ -213,6 +219,6 @@ const observedRateInsightAsPlayer = withAdminObserved(
   rateInsightAsPlayerImpl,
 );
 
-export async function rateInsightAsPlayer(input: RatingInput, supabaseOverride?: SupabaseClient, recorderOverride?: InteractionRecorder): Promise<{ success: true }> {
-  return observedRateInsightAsPlayer(input, supabaseOverride, recorderOverride);
+export async function rateInsightAsPlayer(input: RatingInput): Promise<{ success: true }> {
+  return observedRateInsightAsPlayer(input);
 }

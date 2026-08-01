@@ -1096,7 +1096,10 @@ async function createFocusAreaFromInsightV2Impl(
     insight_id: args.insightId,
     player_id: args.playerId,
     actor_id: user.id,
-    actor_role: 'coach',
+    // DS: this path is reachable by a player self-promoting their own insight
+    // (access.reason === 'self'), which was hardcoded to 'coach' — derive from
+    // the same isCoachPromoting branch used above for status/started_at.
+    actor_role: isCoachPromoting ? 'coach' : 'player',
     action_type: 'create_focus',
     metadata: { focus_area_id: row.id },
   });
@@ -1337,6 +1340,9 @@ async function createFocusAreaFromInsightImpl(
     insight_id: data.insight_id,
     player_id: data.player_id,
     actor_id: user.id,
+    // DS: unlike createFocusAreaFromInsightV2, this legacy path requires a
+    // resolved golf_coaches row above (no player self-promotion branch
+    // exists here), so 'coach' is always correct.
     actor_role: 'coach',
     action_type: 'create_focus',
     metadata: { focus_area_id: focusArea.id },

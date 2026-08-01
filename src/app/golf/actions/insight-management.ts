@@ -87,6 +87,43 @@ async function searchInsightsImpl({
   const supabase = await createClient();
 
   try {
+    // Resolve the caller from the session rather than trusting the
+    // client-supplied `coachId` (mirrors bulkDismissInsightsImpl above).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        insights: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+        error: 'Not authenticated',
+      };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('id', coachId)
+      .single();
+
+    if (!coach) {
+      return {
+        success: false,
+        insights: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+        error: 'Coach not found',
+      };
+    }
+
     // Build the query. Apply the SAME shared product-visibility contract (P2
     // legacy-surface) so the legacy InsightsPageContent search never surfaces
     // stale v2 phantoms or archived/tentative rows if the redesign flag is ever
@@ -102,17 +139,23 @@ async function searchInsightsImpl({
       `,
           { count: 'exact' }
         )
-        .eq('coach_id', coachId),
+        .eq('coach_id', coach.id),
     );
 
     // Text search on title and content.
     // NOTE: live schema has `content` (not `description`). The old `.or()`
     // filter referenced a nonexistent column and silently returned 0 rows.
+    // The search term is sanitized before interpolation into the PostgREST
+    // `.or()` filter string (same predicate class as resend-activity.ts:195)
+    // so it cannot inject additional filter terms.
     if (query && query.trim()) {
-      const searchTerm = `%${query.trim()}%`;
-      queryBuilder = queryBuilder.or(
-        `title.ilike.${searchTerm},content.ilike.${searchTerm}`
-      );
+      const sanitizedQuery = query.trim().replace(/[,()\\:{}%]/g, '');
+      if (sanitizedQuery) {
+        const searchTerm = `%${sanitizedQuery}%`;
+        queryBuilder = queryBuilder.or(
+          `title.ilike.${searchTerm},content.ilike.${searchTerm}`
+        );
+      }
     }
 
     // Apply filters
@@ -704,11 +747,22 @@ async function getInsightFilterOptionsImpl(
   const supabase = await createClient();
 
   try {
+    // Resolve the caller from the session rather than trusting the
+    // client-supplied `coachId` (mirrors searchInsightsImpl above).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // Get team ID from coach
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('organization_id')
       .eq('id', coachId)
+      .eq('user_id', user.id)
       .single();
 
     if (!coach?.organization_id) {
