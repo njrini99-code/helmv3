@@ -40,7 +40,7 @@ The push notification system is **fundamentally incomplete for iOS native delive
 | Service worker with push event handler | Present | `public/sw.js` (lines 298-343) |
 | Service worker hook with `requestPushPermission()` | Present | `src/hooks/golf/use-service-worker.ts` |
 | Web Push sending (VAPID) in task reminders | Partially implemented | `src/app/golf/actions/task-reminders.ts` (lines 524-680) |
-| Supabase Edge Function for processing task reminders | Present | `supabase/functions/process-task-reminders/index.ts` |
+| Supabase Edge Function for processing task reminders | Removed 2026-08-01 | Never deployed and never invoked; superseded by `src/app/api/cron/task-reminders/route.ts` |
 | Email notifications for messages, announcements, tasks, etc. | Working | `src/lib/notifications/index.ts` |
 
 ### What is MISSING (iOS Native Push)
@@ -144,7 +144,8 @@ The backend has a `push_subscriptions` table designed for **Web Push** (stores `
 **Current architecture:**
 - `push_subscriptions` stores Web Push subscription objects
 - `sendPushNotification()` in `task-reminders.ts` uses VAPID/Web Push protocol
-- The Edge Function `process-task-reminders` also uses Web Push protocol
+- (An Edge Function `process-task-reminders` also carried a duplicate Web Push
+  implementation. It was never deployed, so it never ran; removed 2026-08-01.)
 
 **Missing:**
 - A `device_tokens` or `apns_tokens` table for storing iOS device tokens
@@ -382,4 +383,4 @@ The app has badge count logic in the notification-badge-context (announcements, 
 | `supabase/migrations/010_notifications.sql` | In-app notifications table | Working |
 | `supabase/migrations/068_notification_preferences_column.sql` | User notification prefs | Working, includes push fields |
 | `supabase/migrations/069_push_subscriptions.sql` | Web Push subscriptions | Wrong schema for APNs (Web Push only) |
-| `supabase/functions/process-task-reminders/index.ts` | Edge function for reminders | Has Web Push sending code, untested |
+| ~~`supabase/functions/process-task-reminders/index.ts`~~ | Edge function for reminders | Removed 2026-08-01 — never deployed, never invoked |
