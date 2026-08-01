@@ -1244,5 +1244,3 @@ export function FairwayEventEditor({
     </>
   );
 }
-
-export default FairwayEventEditor;

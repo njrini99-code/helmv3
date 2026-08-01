@@ -258,5 +258,3 @@ function PlayerSurfaceLink({
     </Link>
   );
 }
-
-export default FairwayPlayerProfile;

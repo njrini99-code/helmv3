@@ -519,5 +519,3 @@ function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
     </Surface>
   );
 }
-
-export default FairwayQualifiers;

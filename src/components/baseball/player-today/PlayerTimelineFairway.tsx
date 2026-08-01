@@ -315,5 +315,3 @@ export function PlayerTimelineFairway({
     </div>
   );
 }
-
-export default PlayerTimelineFairway;

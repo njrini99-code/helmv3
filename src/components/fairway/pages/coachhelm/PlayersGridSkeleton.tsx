@@ -173,5 +173,3 @@ export function PlayersGridSkeleton() {
     </div>
   );
 }
-
-export default PlayersGridSkeleton;

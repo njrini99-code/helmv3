@@ -100,5 +100,3 @@ export function FairwayGolfClassesSkeleton() {
     </div>
   );
 }
-
-export default FairwayGolfClassesSkeleton;

@@ -366,5 +366,3 @@ export function DocumentCard({
     </PaperCard>
   );
 }
-
-export default DocumentCard;

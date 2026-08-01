@@ -256,5 +256,3 @@ export function DocumentsFairway({
     </div>
   );
 }
-
-export default DocumentsFairway;

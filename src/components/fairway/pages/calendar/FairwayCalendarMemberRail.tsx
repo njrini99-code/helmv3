@@ -246,5 +246,3 @@ export function FairwayCalendarMemberRail({
     </div>
   );
 }
-
-export default FairwayCalendarMemberRail;

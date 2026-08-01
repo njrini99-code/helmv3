@@ -281,5 +281,3 @@ export function DocumentVersionHistoryModal({
     </>
   );
 }
-
-export default DocumentVersionHistoryModal;

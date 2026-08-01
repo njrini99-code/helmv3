@@ -235,5 +235,3 @@ export function FairwayDayStrip({
     </div>
   );
 }
-
-export default FairwayDayStrip;
