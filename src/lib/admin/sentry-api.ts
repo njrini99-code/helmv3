@@ -34,6 +34,24 @@ const MAX_PAGES = 20;
 // load. Same `truncated: true` contract as the page ceiling: if the deadline
 // hits while a next-page cursor still exists, the caller is told honestly.
 const MAX_WALL_CLOCK_MS = 8_000;
+/** In-flight ceiling for the per-feature count sweep — see
+ *  fetchSentryFeatureCounts' doc comment for why this is not unbounded. */
+const FEATURE_COUNT_CONCURRENCY = 6;
+/** How long to skip the per-feature sweep entirely after one fails. Matches
+ *  REVALIDATE_SECONDS: long enough to break the 429 feedback loop, short
+ *  enough that a transient blip costs at most one minute of feature counts. */
+const FEATURE_COUNT_COOLDOWN_MS = REVALIDATE_SECONDS * 1000;
+/** Module-scoped, per-serverless-instance, best-effort — the same contract as
+ *  emit-throttle.ts. An instance recycling just means the next sweep tries
+ *  again, which is the safe direction to fail. */
+let featureCountCooldownUntil = 0;
+
+/** TEST-ONLY. Module state that deliberately outlives a single call needs an
+ *  explicit reset, or one test's simulated 429 silently suppresses the next
+ *  test's sweep. Not called from application code. */
+export function __resetSentryFeatureCountCooldown(): void {
+  featureCountCooldownUntil = 0;
+}
 
 function isPlaceholderSecret(value: string): boolean {
   return /^(your-|replace-|changeme|todo|example)/i.test(value.trim());
@@ -234,13 +252,29 @@ export async function fetchSentryHourlyStats(): Promise<AdminFetchResult<SentryS
  * the documented fallback for the same 60s revalidate window. We take the
  * documented fallback: N batched, parallel `is:unresolved feature:<key>`
  * queries reusing the existing `fetchSentryIssues({query})` plumbing (same
- * 60s Next revalidate, same fail-soft contract). 37 features → 37 parallel
- * queries once per minute — acceptable rate-limit headroom per Appendix B.
+ * 60s Next revalidate, same fail-soft contract).
+ *
+ * CONCURRENCY IS BOUNDED, and that is the whole point. The original version
+ * fired one `Promise.all` over every key at once on the belief that there
+ * were 37 of them; the registry has since grown to 86 with none excluded, and
+ * each key's query can itself walk up to MAX_PAGES. An 86-wide burst on every
+ * single /admin page load is what put Sentry into sustained 429s (127
+ * rate-limit faults in one 6-hour window on 2026-07-31). Six at a time keeps
+ * the same data with a request rate Sentry tolerates.
  *
  * All-or-nothing degrade: if ANY per-feature query fails, the whole result
  * is `null` (never a partially-populated, misleading map) — every feature's
  * `sentryUnresolved` then reads null in computeFeatureStatus, which degrades
- * gracefully to DB-only signals (never fake-green, never fake-red).
+ * gracefully to DB-only signals (never fake-green, never fake-red). Because
+ * one failure already discards every other result, the remaining queries are
+ * ABANDONED as soon as the first one fails rather than run to completion for
+ * output nobody will read.
+ *
+ * COOLDOWN. The all-or-nothing rule used to be self-amplifying: a single 429
+ * threw away 85 good responses, and the next page load re-issued all 86,
+ * which earned another 429. After a failed sweep the fan-out is skipped
+ * entirely for FEATURE_COUNT_COOLDOWN_MS so a rate-limited Bridge stops
+ * pushing on the door. Callers see the same `null` they already handle.
  */
 export async function fetchSentryFeatureCounts(
   keys: readonly string[],
@@ -248,22 +282,45 @@ export async function fetchSentryFeatureCounts(
   const cfg = config();
   if (!cfg) return null;
   if (keys.length === 0) return {};
+  if (Date.now() < featureCountCooldownUntil) return null;
+
+  const counts: Record<string, { total: number; critical: number }> = {};
+  let sweepFailed = false;
+  let nextIndex = 0;
+
+  // Hand-rolled worker pool rather than a new dependency: each worker pulls
+  // the next key until the list is exhausted, or until a sibling has already
+  // failed and made the rest of the sweep worthless.
+  async function worker(): Promise<void> {
+    for (;;) {
+      if (sweepFailed) return;
+      const key = keys[nextIndex++];
+      if (key === undefined) return;
+
+      const res = await fetchSentryIssues({ query: `is:unresolved feature:${key}`, limit: 100 });
+      if (res.status !== 'ok' || !res.data) {
+        sweepFailed = true;
+        return;
+      }
+      counts[key] = {
+        total: res.data.length,
+        critical: res.data.filter((issue) => issue.level === 'fatal').length,
+      };
+    }
+  }
 
   try {
-    const entries = await Promise.all(
-      keys.map(async (key) => {
-        const res = await fetchSentryIssues({ query: `is:unresolved feature:${key}`, limit: 100 });
-        if (res.status !== 'ok' || !res.data) return null;
-        const total = res.data.length;
-        const critical = res.data.filter((issue) => issue.level === 'fatal').length;
-        return [key, { total, critical }] as const;
-      }),
-    );
-    if (entries.some((e) => e === null)) return null;
-    return Object.fromEntries(entries as Array<readonly [string, { total: number; critical: number }]>);
+    const workers = Math.min(FEATURE_COUNT_CONCURRENCY, keys.length);
+    await Promise.all(Array.from({ length: workers }, () => worker()));
   } catch {
+    sweepFailed = true;
+  }
+
+  if (sweepFailed) {
+    featureCountCooldownUntil = Date.now() + FEATURE_COUNT_COOLDOWN_MS;
     return null;
   }
+  return counts;
 }
 
 export interface SentryReleaseHealth {

@@ -198,6 +198,15 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Sharded because the suite is runner-bound, not config-bound: 8,657 tests
+    # take ~2.4 min on a 10-core laptop and ~13.9 min on a 4-core hosted runner.
+    # `npm ci` is only ~1.2 min of that, so installs are not the lever — cores
+    # are. Three shards keeps total runner minutes roughly flat while cutting
+    # this job's wall clock from ~15.5 min to ~6.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -213,8 +222,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Unit tests
-        run: npm run test:run
+      - name: Unit tests (shard ${{ matrix.shard }}/3)
+        run: npm run test:run -- --shard=${{ matrix.shard }}/3
 
       # The `integration` project ran in no job of its own. It was still being
       # executed — but only by accident, because `--project business` matched
@@ -223,6 +232,7 @@ jobs:
       # coach-onboarding-staff-row and player-access-action-gate — the auth and
       # access-control tests — running at all.
       - name: Integration tests
+        if: matrix.shard == 1
         run: npm run test:integration
 
   # ---------------------------------------------------------------------------
@@ -268,6 +278,9 @@ jobs:
         tz:
           - Pacific/Kiritimati  # UTC+14, the furthest ahead of UTC
           - Pacific/Midway      # UTC-11, the furthest behind
+        # Sharded for the same reason as unit-tests. Unsharded, this job would
+        # become the critical path the moment the others got faster.
+        shard: [1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -283,12 +296,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Unit tests at ${{ matrix.tz }}
+      - name: Unit tests at ${{ matrix.tz }} (shard ${{ matrix.shard }}/3)
         env:
           TZ: ${{ matrix.tz }}
         run: |
           echo "Runner offset: $(date +%z)  ($(date))"
-          npm run test:run
+          npm run test:run -- --shard=${{ matrix.shard }}/3
 
   business-contracts:
     name: Business contracts
@@ -330,6 +343,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # `next build --webpack` keeps its incremental compilation cache in
+      # .next/cache. Only the Playwright browser cache existed before, so every
+      # build was cold. Keyed on the lockfile plus source, with a lockfile-only
+      # restore-key so a source change still warm-starts.
+      - name: Cache Next build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .next/cache
+          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            next-build-${{ runner.os }}-
 
       - name: Build
         run: npm run build
@@ -522,6 +548,18 @@ jobs:
       # MUST come after the stack is up: Next.js inlines NEXT_PUBLIC_* into the
       # client bundle at build time, so building first would bake in whatever the
       # env held before the local URL existed.
+      # Separate cache prefix from next-build ON PURPOSE. This build runs after
+      # the local Supabase stack is up and inlines DIFFERENT NEXT_PUBLIC_*
+      # values, so the two must not share a cache entry.
+      - name: Cache Next build (smoke)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .next/cache
+          key: next-smoke-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            next-smoke-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            next-smoke-${{ runner.os }}-
+
       - name: Build (so dev server boots fast)
         run: npm run build
 
