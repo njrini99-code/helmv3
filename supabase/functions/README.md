@@ -44,12 +44,13 @@ production.
 As of 2026-08-01 the project has four ACTIVE functions, and **two of them have
 no source in this directory**:
 
-| slug | source here | note |
-| --- | --- | --- |
-| `send-apns-push` | yes | deployed build is stale — see above |
-| `personalize-email` | yes | in sync |
-| `create-admin-user` | **no** | unauthenticated; see #1175 |
-| `verify-emails` | **no** | see #1175 |
+| slug | source here | deployed | note |
+| --- | --- | --- | --- |
+| `send-apns-push` | yes | yes | deployed build is stale — see above |
+| `personalize-email` | yes | yes | in sync |
+| `send-fcm-push` | yes | **NO** | Android push; invoked in `main`. See below. |
+| `create-admin-user` | no | yes | unauthenticated; see #1175 |
+| `verify-emails` | no | yes | see #1175 |
 
 Anything deployed but absent here cannot be reviewed, linted, secret-scanned,
 or reasoned about from the repo. If you deploy a function, commit it here in
@@ -57,3 +58,31 @@ the same change.
 
 `process-task-reminders` used to live here; it was never deployed and never
 invoked, and was removed 2026-08-01.
+
+## Android push needs THREE things, not one
+
+The Play Store platform landed on `main` on 2026-08-01, and `push.ts` now routes
+by platform:
+
+```ts
+const fn = deviceToken.platform === 'android' ? 'send-fcm-push' : 'send-apns-push';
+```
+
+So `main` invokes `send-fcm-push` today, and **it is not deployed**. Android push
+is inert for three independent reasons, and fixing any one alone changes nothing:
+
+1. **No `google-services.json`.** `android/app/build.gradle` applies the Google
+   Services plugin only `if (servicesJSON.exists())` and otherwise logs and
+   carries on, so the app never registers for FCM and no device token is ever
+   minted. Needs a Firebase project for `com.helmsportslabs.golfhelm`.
+2. **`send-fcm-push` is not deployed.** Even with a token, the send has
+   nothing to call:
+   `supabase functions deploy send-fcm-push --project-ref <ref>`
+3. **Its secrets are not set.** It reads `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL` and
+   `FCM_PRIVATE_KEY` — Supabase *function* secrets, not Vercel env vars, so
+   `vercel env ls` will never show them. All three come from the Firebase service
+   account JSON created in step 1.
+
+Do them in that order. Deploying the function before the Firebase project exists
+gives you a function that fails on every call with a credentials error, which
+looks like a code bug and is not one.
