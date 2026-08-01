@@ -112,11 +112,23 @@ function migrationsBlob(): string {
  * recursion cycles and five anon-callable functions in this run, none of which was
  * visible to reading. That belongs in a deliberate reviewed pass, not a 2am sweep.
  *
+ * UPDATE 2026-08-01: `golf-attachments` got that deliberate pass and is now
+ * created by `20260801080000_golf_attachments_storage_bucket.sql`, so its line is
+ * gone from the list below. Its policies scope SELECT/INSERT to conversation
+ * membership through the existing `user_conversation_ids()` helper and UPDATE/
+ * DELETE to `owner`, mirroring the app's sender-only delete rule.
+ *
+ * `expense-receipts` stays, and the reason above is exactly why: it is not a
+ * missing-bucket problem alone. The code calls `getPublicUrl()` and persists the
+ * result to `golf_travel_expenses.receipt_url`, which FairwayExpenseList renders
+ * later — so a private bucket needs the read path to sign on demand, and a public
+ * one makes every financial receipt readable by anyone holding the URL. Product
+ * decision, tracked in #1179.
+ *
  * Keyed on bucket id. Fixing one means deleting its line — enforced by the
  * stale-entry test below, so this list cannot quietly outlive the defect.
  */
 const KNOWN_MISSING_BUCKETS = new Set<string>([
-  'golf-attachments',
   'expense-receipts',
 ]);
 
