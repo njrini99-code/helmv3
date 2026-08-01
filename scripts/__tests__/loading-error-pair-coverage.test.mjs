@@ -11,8 +11,10 @@
 // will block the PR.
 //
 // Run via: node --test scripts/__tests__/loading-error-pair-coverage.test.mjs
+// This previously ran under `node --test`, which nothing invokes, so it
+// never executed. Promoted to vitest (issue #1194).
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';

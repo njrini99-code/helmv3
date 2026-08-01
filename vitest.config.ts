@@ -137,6 +137,80 @@ export default defineConfig({
             // green run here is evidence the detector works, not just that it
             // found nothing.
             'scripts/__tests__/icon-only-button-aria-label.test.mjs',
+            // Promoted 2026-08 (issue #1194) — the second wave of
+            // previously-dead `node --test` guards, all verified passing
+            // before promotion. Named individually rather than swept in by
+            // a glob for the same reason as their neighbours above: the
+            // other 20 files still in scripts/__tests__/ FAIL today and
+            // need per-file triage before they can be trusted in CI.
+            //
+            // Merge-artifact guard for baseball server actions: duplicated
+            // top-level return keys, dead consecutive duplicate returns,
+            // stale "types will be regenerated" comments.
+            'scripts/__tests__/baseball-action-integrity.test.mjs',
+            // Blocks reintroduction of the retired
+            // /baseball/dashboard/stats/games/new href now that middleware
+            // redirects it to /stats/games/create.
+            'scripts/__tests__/baseball-stale-route-links.test.mjs',
+            // Wave W7A nav primitives: <Breadcrumb>/<SecondaryNav> stay the
+            // canonical deep-route wayfinding surfaces.
+            'scripts/__tests__/breadcrumb-nav.test.mjs',
+            // Tier-1 motion-vocabulary files stay bound to the canonical
+            // v3 motion library (no locally re-declared eases/durations).
+            'scripts/__tests__/canonical-motion-tokens.test.mjs',
+            // Wave W5A chart primitives (<ChartShell>/<ChartTooltip>/
+            // <ChartLegend>/CHART_PALETTE) keep existing and exporting.
+            'scripts/__tests__/chartshell-exists.test.mjs',
+            // Migration-ledger reconciliation: every file on disk has a
+            // ledger entry and vice versa.
+            'scripts/__tests__/check-migration-ledger.test.mjs',
+            // Migration filename version prefixes are unique and
+            // well-formed (the #220 duplicate-version hazard class).
+            'scripts/__tests__/check-migration-versions.test.mjs',
+            // Required-env guard: canonical Supabase vars present and the
+            // URL isn't a placeholder, scoped per Vercel environment.
+            'scripts/__tests__/check-required-env.test.mjs',
+            // Every route-level error.tsx in golf/baseball routes Sentry
+            // errors through the canonical error-boundary wrapper instead
+            // of rendering {error.message} (and leaking Supabase errors).
+            'scripts/__tests__/error-boundary-coverage.test.mjs',
+            // Form-primitive a11y: Select-family labels are associated to
+            // their trigger via useId()/htmlFor, and every interactive form
+            // control carries a focus-visible ring.
+            'scripts/__tests__/form-a11y.test.mjs',
+            // Every golf page.tsx route has a sibling loading.tsx AND
+            // error.tsx (directly or via a covering parent segment) — the
+            // "no blank page during navigation" gate.
+            'scripts/__tests__/loading-error-pair-coverage.test.mjs',
+            // CoachHelm card-level empty states must route through the
+            // shared <EmptyState /> primitive, not bare <p>No X</p> markup.
+            'scripts/__tests__/no-bare-empty-text.test.mjs',
+            // Wave W2B card consolidation: GlassCard/GlassStatCard/
+            // PremiumGlassCard stay deleted and unimported.
+            'scripts/__tests__/no-glasscard-imports.test.mjs',
+            // The golf /stats surface stays bound to the canonical v3
+            // motion library — no legacy IOS_EASE or ad-hoc springs.
+            'scripts/__tests__/no-ios-ease-stats.test.mjs',
+            // Wave W2C skeleton consolidation: the three legacy skeleton
+            // modules stay deleted and unimported.
+            'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
+            // The 2026-05-28 `s/translate/tranwarm/g` typo-squat class
+            // never reappears (it silently killed 203 Tailwind utilities).
+            'scripts/__tests__/no-tranwarm-typo.test.mjs',
+            // Wave W2F: hand-rolled Dropdown/Toast primitives stay retired
+            // in favor of Radix DropdownMenu + Sonner.
+            'scripts/__tests__/radix-dropdown-sonner.test.mjs',
+            // Smoke test for the Review Gate ast-grep rule pack (bare table
+            // names, process.env in edge functions, service-role leaks)
+            // against real src/ plus the synthetic positive fixture.
+            'scripts/__tests__/review-gate-rules.test.mjs',
+            // Wave W2E header consolidation: canonical PageHeader still
+            // ships its four variants, and the six sibling header modules
+            // stay deleted or thinned to shims.
+            'scripts/__tests__/single-pageheader.test.mjs',
+            // tokens.css and globals.css never redeclare the same CSS
+            // custom property inside :root (the W0 silent-override class).
+            'scripts/__tests__/token-files-no-conflict.test.mjs',
           ],
           exclude: [
             'node_modules',

@@ -1,4 +1,6 @@
-import { test } from 'node:test';
+// This previously ran under `node --test`, which nothing invokes, so it
+// never executed. Promoted to vitest (issue #1194).
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readdir, readFile, stat, access } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
