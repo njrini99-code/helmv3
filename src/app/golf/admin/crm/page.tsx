@@ -53,6 +53,7 @@ import {
 } from './page-contracts';
 import { CRMDashboard } from './components/CRMDashboard';
 import { TodayQueue } from './components/TodayQueue';
+import { IntentRankingPanel } from './components/IntentRankingPanel';
 import { CoachTable } from './components/CoachTable';
 import { PipelineView } from './components/PipelineView';
 import { ConferenceGroupView } from './components/ConferenceGroupView';
@@ -1596,6 +1597,12 @@ export default function CRMPage() {
                   batchSending={gmailBatchSending}
                   domainAuth={domainAuth}
                   sendStatus={gmailSendStatus}
+                />
+                <IntentRankingPanel
+                  onCoachClick={(coachId) => {
+                    const coach = allCoaches.find((c) => c.id === coachId);
+                    if (coach) handleCoachClick(coach);
+                  }}
                 />
                 <TodayQueue
                   loading={loading}

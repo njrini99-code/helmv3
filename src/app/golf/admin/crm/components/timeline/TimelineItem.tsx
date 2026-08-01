@@ -10,6 +10,7 @@ import {
   IconCalendar,
   IconFileText,
   IconCheckCircle2,
+  IconMonitor,
   IconExternalLink,
 } from '@/components/icons';
 import type { TimelineItem as TimelineItemType } from '@/app/golf/admin/crm/types/foundations';
@@ -25,6 +26,7 @@ const ICON_MAP: Record<TimelineIconKey, typeof IconMail> = {
   IconCalendar,
   IconFileText,
   IconCheckCircle2,
+  IconMonitor,
 };
 
 interface TimelineItemProps {

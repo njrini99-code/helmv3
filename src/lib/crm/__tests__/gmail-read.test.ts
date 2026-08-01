@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   classifyInboundAutomation,
+  extractBouncedRecipients,
   isAutomatedSenderAddress,
   parseAddress,
   parseAddressPreserveCase,
+  readContactLogGmailId,
   resolveLookbackWindow,
   DEFAULT_LOOKBACK_DAYS,
   MAX_LOOKBACK_DAYS,
@@ -11,6 +13,7 @@ import {
   MAX_MESSAGES,
   type InboundAutomationSignals,
 } from '@/lib/crm/gmail-read';
+import type { Json } from '@/lib/types';
 
 /**
  * Pure-function coverage for the Gmail ingest fix (crm_replies had 0 rows
@@ -264,5 +267,201 @@ describe('resolveLookbackWindow', () => {
   it('raises the default well above the old hard-coded 2 days', () => {
     // The 2-day window is what made a >48h outage unrecoverable.
     expect(DEFAULT_LOOKBACK_DAYS).toBeGreaterThan(2);
+  });
+
+  it('raises the manual-backfill ceiling far enough to reach a March campaign from today', () => {
+    expect(MAX_LOOKBACK_DAYS).toBeGreaterThanOrEqual(150);
+  });
+
+  it('keeps the default at 7 regardless of the raised ceiling — the scheduled tick must not slow down', () => {
+    expect(resolveLookbackWindow(null).days).toBe(7);
+  });
+});
+
+describe('extractBouncedRecipients — transient DSNs must never suppress', () => {
+  // A delay warning carries BOTH a null Return-Path and X-Failed-Recipients,
+  // so without an Action/Status gate it reads as a hard bounce and
+  // permanently blacklists a coach whose mail delivers minutes later.
+  it('ignores an Action: delayed report even with X-Failed-Recipients set', () => {
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: 'coach@school.edu',
+        deliveryStatusText:
+          'Reporting-MTA: dns; googlemail.com\nAction: delayed\nStatus: 4.2.2\nFinal-Recipient: rfc822; coach@school.edu',
+        bodyText: null,
+      }),
+    ).toEqual([]);
+  });
+
+  it('ignores a 4.x.x transient status', () => {
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: null,
+        deliveryStatusText: 'Status: 4.7.1\nFinal-Recipient: rfc822; coach@school.edu',
+        bodyText: null,
+      }),
+    ).toEqual([]);
+  });
+
+  it('ignores Action: relayed / expanded', () => {
+    for (const action of ['relayed', 'expanded']) {
+      expect(
+        extractBouncedRecipients({
+          failedRecipients: 'coach@school.edu',
+          deliveryStatusText: `Action: ${action}\nFinal-Recipient: rfc822; coach@school.edu`,
+          bodyText: null,
+        }),
+      ).toEqual([]);
+    }
+  });
+
+  it('still suppresses on a genuine Action: failed report', () => {
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: null,
+        deliveryStatusText:
+          'Action: failed\nStatus: 5.1.1\nFinal-Recipient: rfc822; gone@school.edu',
+        bodyText: null,
+      }),
+    ).toEqual(['gone@school.edu']);
+  });
+
+  it('accepts a 5.x.x status when the MTA omits Action entirely', () => {
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: null,
+        deliveryStatusText: 'Status: 5.1.1\nFinal-Recipient: rfc822; gone@school.edu',
+        bodyText: null,
+      }),
+    ).toEqual(['gone@school.edu']);
+  });
+
+  it('fails closed on a DSN carrying neither Action nor Status', () => {
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: 'coach@school.edu',
+        deliveryStatusText: 'Reporting-MTA: dns; example.com\nFinal-Recipient: rfc822; coach@school.edu',
+        bodyText: null,
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe('extractBouncedRecipients', () => {
+  it('reads a single address from X-Failed-Recipients', () => {
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: 'coach@school.edu',
+        deliveryStatusText: null,
+        bodyText: null,
+      }),
+    ).toEqual(['coach@school.edu']);
+  });
+
+  it('splits X-Failed-Recipients on comma AND semicolon, lowercases, and dedupes', () => {
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: 'Coach@School.edu, other@school.edu; coach@school.edu',
+        deliveryStatusText: null,
+        bodyText: null,
+      }),
+    ).toEqual(['coach@school.edu', 'other@school.edu']);
+  });
+
+  it('falls back to a single RFC 3464 Final-Recipient field in the DSN', () => {
+    const dsn = [
+      'Reporting-MTA: dns; mail.school.edu',
+      'Final-Recipient: rfc822; coach@school.edu',
+      'Action: failed',
+      'Status: 5.1.1',
+    ].join('\n');
+    expect(
+      extractBouncedRecipients({ failedRecipients: null, deliveryStatusText: dsn, bodyText: null }),
+    ).toEqual(['coach@school.edu']);
+  });
+
+  it('collects every Final-Recipient field on a multi-recipient bounce', () => {
+    const dsn = [
+      'Final-Recipient: rfc822; coach1@school.edu',
+      'Action: failed',
+      '',
+      'Final-Recipient: rfc822; coach2@school.edu',
+      'Action: failed',
+    ].join('\n');
+    expect(
+      extractBouncedRecipients({ failedRecipients: null, deliveryStatusText: dsn, bodyText: null }),
+    ).toEqual(['coach1@school.edu', 'coach2@school.edu']);
+  });
+
+  it('prefers X-Failed-Recipients over the DSN when both are present', () => {
+    // Fixture carries `Action: failed` because the permanence gate now runs
+    // first: a report with neither Action nor Status is refused outright
+    // (covered by its own test above). The precedence contract under test
+    // here is unchanged — the header still wins over the DSN body.
+    const dsn = 'Action: failed\nStatus: 5.1.1\nFinal-Recipient: rfc822; wrong@school.edu';
+    expect(
+      extractBouncedRecipients({
+        failedRecipients: 'right@school.edu',
+        deliveryStatusText: dsn,
+        bodyText: null,
+      }),
+    ).toEqual(['right@school.edu']);
+  });
+
+  it('falls back to a scoped prose paragraph when neither structured source is present', () => {
+    const bodyText = [
+      'Delivery to the following recipient failed permanently:',
+      '',
+      '    coach@school.edu',
+      '',
+      'Technical details of permanent failure:',
+      'The recipient server did not accept our requests.',
+    ].join('\n');
+    expect(
+      extractBouncedRecipients({ failedRecipients: null, deliveryStatusText: null, bodyText }),
+    ).toEqual(['coach@school.edu']);
+  });
+
+  it('does NOT leak an address from a quoted original-message block below the paragraph break', () => {
+    const bodyText = [
+      "Delivery to the following recipient failed permanently:",
+      '',
+      '    coach@school.edu',
+      '',
+      '----- Original message -----',
+      'From: nick@helmsportslabs.com',
+      'To: unrelated-cc@otherschool.edu',
+      'Subject: Following up',
+    ].join('\n');
+    expect(
+      extractBouncedRecipients({ failedRecipients: null, deliveryStatusText: null, bodyText }),
+    ).toEqual(['coach@school.edu']);
+  });
+
+  it('returns [] when nothing could be extracted', () => {
+    expect(
+      extractBouncedRecipients({ failedRecipients: null, deliveryStatusText: null, bodyText: null }),
+    ).toEqual([]);
+    expect(
+      extractBouncedRecipients({ failedRecipients: '   ', deliveryStatusText: null, bodyText: 'no addresses here' }),
+    ).toEqual([]);
+  });
+});
+
+describe('readContactLogGmailId', () => {
+  it('reads the id from the exact shape crm-gmail-send.ts writes', () => {
+    const metadata: Json = { channel: 'gmail_api', gmail_message_id: '19f7d02ccba7813f' };
+    expect(readContactLogGmailId(metadata)).toBe('19f7d02ccba7813f');
+  });
+
+  it('returns null when the key is absent', () => {
+    expect(readContactLogGmailId({ channel: 'gmail_api' } as Json)).toBeNull();
+    expect(readContactLogGmailId({} as Json)).toBeNull();
+  });
+
+  it('is safe on null, an array, and a non-string value', () => {
+    expect(readContactLogGmailId(null)).toBeNull();
+    expect(readContactLogGmailId(['gmail_message_id'] as unknown as Json)).toBeNull();
+    expect(readContactLogGmailId({ gmail_message_id: 12345 } as unknown as Json)).toBeNull();
   });
 });

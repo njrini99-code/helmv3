@@ -154,7 +154,12 @@ export type TimelineSource =
   // WROTE BACK — the single highest-signal event in the whole CRM — never
   // appeared on their timeline. Everything else here is outbound activity or our
   // own internal record-keeping.
-  | 'reply';
+  | 'reply'
+  // 2026-07-31: golf_demo_sessions, the other inbound source. 170 real coaches
+  // toured the demo and none of it reached the timeline. Only 'likely_human'
+  // (and not-yet-classified NULL) sessions are ever mapped to this source —
+  // see the traffic_quality guard in crm-timeline.ts.
+  | 'demo_session';
 
 export interface TimelineItem {
   id: string;
