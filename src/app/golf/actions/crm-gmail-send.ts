@@ -356,7 +356,10 @@ export async function sendNextBatchViaGmail(input: {
       .not('email', 'is', null)
       .or('is_archived.is.null,is_archived.eq.false')
       .order('priority', { ascending: false })
-      .limit(2000);
+      // 1000 is PostgREST's hard cap — asking for more returns 1000 anyway.
+      // Ordered by priority desc, and only ~10 survive dedupe + suppression,
+      // so one page is a generous candidate pool.
+      .limit(1000);
 
     // Authoritative anti-double-send: exclude any coach we ALREADY sent to via
     // Gmail in the last 7 days, keyed off crm_contact_log (the record of the

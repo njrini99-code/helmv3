@@ -545,7 +545,12 @@ async function loadPlayerHittingSpans(
     .gte('session_date', sinceDate)
     .lte('session_date', nowDate)
     .order('session_date', { ascending: false })
-    .limit(2000);
+    // 1000 is PostgREST's hard cap; a larger literal reads as headroom that
+    // does not exist. Worst observed 21-day window across all teams is 55
+    // rows, so this bound does not bind. If it ever could, paginate with
+    // fetchAllRowsResult — playerIds is derived from these rows, so a silent
+    // truncation would drop whole players from the signal set.
+    .limit(1000);
 
   const gameRows = (gameData ?? []) as Array<
     HittingCountingRow & {
