@@ -53,13 +53,13 @@ jobs:
       - name: Check for changes
         id: diff
         run: |
-          if git diff --quiet memory/glossary.md memory/projects/golfhelm.md; then
+          if git diff --quiet memory/glossary.md memory/projects/golfhelm.md memory/context/golfhelm-database.md; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Inventory docs already in sync — no PR needed."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Inventory drift detected — opening auto-PR."
-            git diff --stat memory/glossary.md memory/projects/golfhelm.md
+            git diff --stat memory/glossary.md memory/projects/golfhelm.md memory/context/golfhelm-database.md
           fi
 
       - name: Open auto-PR with regenerated inventory
@@ -103,3 +103,4 @@ jobs:
           add-paths: |
             memory/glossary.md
             memory/projects/golfhelm.md
+            memory/context/golfhelm-database.md

@@ -12,5 +12,88 @@
     "data-validation-suite@claude-code-workflows": true,
     "api-scaffolding@claude-code-workflows": true,
     "backend-api-security@claude-code-workflows": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-context.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git stash*)",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
+            "timeout": 10,
+            "statusMessage": "guard: git stash"
+          },
+          {
+            "type": "command",
+            "if": "Bash(rm *)",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
+            "timeout": 10,
+            "statusMessage": "guard: rm"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npm *)",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
+            "timeout": 10,
+            "statusMessage": "guard: gate pipe"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx *)",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
+            "timeout": 10,
+            "statusMessage": "guard: gate pipe"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.sh",
+            "timeout": 10,
+            "statusMessage": "guard: sql grants"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*(apply_migration|execute_sql)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.sh",
+            "timeout": 10,
+            "statusMessage": "guard: prod sql"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh",
+            "timeout": 30,
+            "statusMessage": "eslint --fix"
+          }
+        ]
+      }
+    ]
   }
 }
