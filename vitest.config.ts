@@ -114,6 +114,17 @@ export default defineConfig({
             // must not be guarded by a test nobody executes.
             'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
             'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts',
+            // The mobile touch-target / safe-area guard. Promoted for the same
+            // reason as its neighbours, with a sharper illustration of the cost:
+            // while it ran under nothing, it drifted twice without a murmur. It
+            // asserted 44pt putt-picker targets against
+            // `golf/ShotTrackingComprehensive.tsx`, which no longer renders
+            // anywhere — both round clients render `FairwayShotTracking` — so it
+            // was guarding dead code while the surface users actually touch went
+            // unguarded. And it read a `RoundStripGrid.tsx` that does not exist in
+            // main, so it would have failed on a missing file the instant anything
+            // executed it. Both are fixed; it now points at the live components.
+            'scripts/__tests__/drawers-mobile.test.mjs',
           ],
           exclude: [
             'node_modules',
