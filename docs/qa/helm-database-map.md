@@ -68,7 +68,7 @@ Actual table names differ by product: Baseball uses `baseball_teams/team_members
 | send-apns-push | Active v5 | Enabled | Present at supabase/functions/send-apns-push | Sends caller-supplied token/payload; live 410 responses observed; deployed/repo token-deactivation behavior differs |
 | personalize-email | Active | Enabled | Present in Supabase function source | Pure email-template personalization path; test with fictional content only |
 | verify-emails | Active v4 | Enabled | Absent from repository | Any authenticated caller can trigger service-role CRM batch verification/update in deployed source; orphan P0/P1 |
-| process-task-reminders | Not deployed | N/A | Present in repository | Repository-only reminder function; current product reminder scheduling uses Vercel cron/action paths |
+| process-task-reminders | Not deployed | N/A | Removed from repository 2026-08-01 | Was repository-only and never invoked; reminder scheduling runs through `src/app/api/cron/task-reminders/route.ts`. Deleted as dead code — see #1175 |
 
 Live-only/deployed-source conclusions are supported by the connected Supabase Edge Function list/source. Repository paths exist only for the rows marked present. No function was invoked.
 
