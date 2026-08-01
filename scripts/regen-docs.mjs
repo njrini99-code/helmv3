@@ -234,6 +234,13 @@ function extractTableColumns(src) {
   return out.sort((a, b) => a.table.localeCompare(b.table));
 }
 
+/** Escape a value for use inside a markdown table cell. Order matters:
+ *  backslashes first, then pipes, or the pipe escapes are themselves
+ *  escapable by an input backslash. */
+function mdCell(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
+}
+
 function renderColumnsBody(tableColumns) {
   const totalCols = tableColumns.reduce((n, t) => n + t.columns.length, 0);
   const parts = [
@@ -252,9 +259,10 @@ function renderColumnsBody(tableColumns) {
     parts.push('| Column | Type |');
     parts.push('|---|---|');
     for (const c of columns) {
-      // Escape pipes: union types like `number | null` would otherwise
-      // split the markdown row into extra columns.
-      parts.push(`| \`${c.name}\` | \`${c.type.replace(/\|/g, '\\|')}\` |`);
+      // Escape for a markdown table cell. Backslash MUST be escaped first —
+      // escaping `|` alone leaves the escape itself subvertible by a literal
+      // backslash in the input (CodeQL js/incomplete-sanitization).
+      parts.push(`| \`${mdCell(c.name)}\` | \`${mdCell(c.type)}\` |`);
     }
     parts.push('');
     parts.push('</details>');
