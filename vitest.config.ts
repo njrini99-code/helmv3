@@ -125,6 +125,18 @@ export default defineConfig({
             // main, so it would have failed on a missing file the instant anything
             // executed it. Both are fixed; it now points at the live components.
             'scripts/__tests__/drawers-mobile.test.mjs',
+            // The icon-only-button accessible-name guard. Promoted because it was
+            // not merely unrun — it was RIGHT, and silent. While it executed under
+            // nothing, an unlabeled icon-only dismiss button shipped in
+            // lifting/dashboard/import/import-client.tsx; a screen-reader user
+            // heard "button" with no indication of what it did. Fixed in the same
+            // change, and this line is what stops it coming back.
+            //
+            // Its own four self-checks (detection of labels vs placeholders,
+            // icon-only vs icon+text, and an end-to-end flag-one/pass-one) mean a
+            // green run here is evidence the detector works, not just that it
+            // found nothing.
+            'scripts/__tests__/icon-only-button-aria-label.test.mjs',
           ],
           exclude: [
             'node_modules',

@@ -358,7 +358,13 @@ export function ImportClient({ orgId, sport, canEdit, recentRuns }: ImportClient
         <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{actionError}</span>
-          <Button variant="ghost" type="button" onClick={() => setActionError(null)} className="ml-auto shrink-0 text-red-400 hover:text-red-600">
+          <Button
+            variant="ghost"
+            type="button"
+            aria-label="Dismiss error"
+            onClick={() => setActionError(null)}
+            className="ml-auto shrink-0 text-red-400 hover:text-red-600"
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
