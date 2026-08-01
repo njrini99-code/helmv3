@@ -126,10 +126,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const bundleId = Deno.env.get("APNS_BUNDLE_ID") || "com.helmsportslabs.golfhelm";
-    const isProduction = Deno.env.get("APNS_ENVIRONMENT") === "production";
-    const apnsHost = isProduction
-      ? "https://api.push.apple.com"
-      : "https://api.sandbox.push.apple.com";
+    // DEFAULT TO PRODUCTION, and opt IN to sandbox.
+    //
+    // This used to read `=== "production"`, which defaults to SANDBOX whenever
+    // APNS_ENVIRONMENT is unset. That is the wrong way round for a function
+    // whose only deployment target is production, and it is a live footgun:
+    // the version currently running in production is the pre-#1096 one, which
+    // defaults to production. Deploying this file without first setting
+    // APNS_ENVIRONMENT would therefore have silently moved every send to the
+    // sandbox host, where production device tokens are rejected outright with
+    // BadDeviceToken — push would break completely, and the only symptom is a
+    // 400 per send.
+    //
+    // Sandbox is reached explicitly with APNS_ENVIRONMENT=development, which
+    // is also what a debug build needs; a token minted by a debug build is not
+    // valid against the production host either, so this must match the build.
+    const apnsHost = Deno.env.get("APNS_ENVIRONMENT") === "development"
+      ? "https://api.sandbox.push.apple.com"
+      : "https://api.push.apple.com";
 
     const jwt = await generateAPNsJWT();
 
