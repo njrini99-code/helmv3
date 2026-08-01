@@ -360,7 +360,7 @@ export function SectionCard({
  * resting on a quiet "Auto-saves" label otherwise. Tokens only; honest (only
  * announces "Saved" when a change actually committed).
  */
-export function AutoSaveBadge({ savedAt }: { savedAt: number | null }) {
+function AutoSaveBadge({ savedAt }: { savedAt: number | null }) {
   const [showSaved, setShowSaved] = useState(false);
   useEffect(() => {
     if (savedAt === null) return;
@@ -1680,7 +1680,7 @@ export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
  * 2026-07-25 — every team on the platform got 24h + 1h, and the only way to
  * stop reminders was for each player to opt out individually.
  */
-export function EventRemindersPanel({ teamId }: { teamId: string }) {
+function EventRemindersPanel({ teamId }: { teamId: string }) {
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);

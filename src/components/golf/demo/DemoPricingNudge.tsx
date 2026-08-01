@@ -57,7 +57,7 @@ import {
  *
  * Single exported const — keep this greppable.
  */
-export const DEMO_PRICING_CALL_PATH = '/api/crm/book-call?src=demo-pricing-nudge';
+const DEMO_PRICING_CALL_PATH = '/api/crm/book-call?src=demo-pricing-nudge';
 
 function readSessionFlag(key: string): string | null {
   try {
