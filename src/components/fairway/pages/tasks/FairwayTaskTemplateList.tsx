@@ -223,7 +223,7 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
               size="sm"
               onClick={resetForm}
               aria-label="Close form"
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 p-0 [@media(pointer:coarse)]:min-w-[44px]"
             >
               <IconX size={15} />
             </Button>
@@ -353,7 +353,7 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
                         variant="ghost"
                         size="sm"
                         aria-label="Edit template"
-                        className="h-7 w-7 p-0"
+                        className="h-7 w-7 p-0 [@media(pointer:coarse)]:min-w-[44px]"
                         onClick={(e) => {
                           e.stopPropagation();
                           startEdit(t);
@@ -365,7 +365,7 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
                         variant="ghost"
                         size="sm"
                         aria-label="Delete template"
-                        className="h-7 w-7 p-0"
+                        className="h-7 w-7 p-0 [@media(pointer:coarse)]:min-w-[44px]"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPendingDelete(t);

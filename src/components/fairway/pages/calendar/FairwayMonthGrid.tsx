@@ -181,24 +181,34 @@ export function FairwayMonthGrid({
                 inMonth ? 'bg-surface' : 'bg-surface-sunken/50',
               )}
             >
-              {/* Day number */}
+              {/* Day number — the VISIBLE circle stays a fixed 24x24 (grid cells are a
+                  hard 148/160px fixed track; a bigger circle would blow the row out).
+                  The Button itself grows to the 44x44 WCAG touch floor and is
+                  anchored top-left (`items-start justify-start`) so it overlaps
+                  invisibly into the cell's own padding/chip-list space instead of
+                  shifting the visible number — only the tap target grows. */}
               <Button
                 type="button"
                 variant="ghost"
                 haptic="none"
                 onClick={onSelectDate ? () => onSelectDate(day) : undefined}
                 aria-label={format(day, 'EEEE, MMMM d')}
-                className={cn(
-                  'flex h-6 w-6 min-h-0 p-0 flex-shrink-0 items-center justify-center self-start rounded-full font-fw-mono text-caption font-medium tabular-nums transition-colors',
-                  isToday
-                    ? 'bg-accent-700 text-text-on-accent'
-                    : inMonth
-                      ? 'text-text-secondary hover:bg-surface-tint'
-                      : 'text-text-tertiary hover:bg-surface-tint',
-                )}
+                className="group flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-start justify-start self-start rounded-full p-0 hover:bg-transparent active:bg-transparent"
                 suppressHydrationWarning
               >
-                {format(day, 'd')}
+                <span
+                  aria-hidden
+                  className={cn(
+                    'flex h-6 w-6 items-center justify-center rounded-full font-fw-mono text-caption font-medium tabular-nums transition-colors',
+                    isToday
+                      ? 'bg-accent-700 text-text-on-accent'
+                      : inMonth
+                        ? 'text-text-secondary group-hover:bg-surface-tint group-active:bg-surface-tint'
+                        : 'text-text-tertiary group-hover:bg-surface-tint group-active:bg-surface-tint',
+                  )}
+                >
+                  {format(day, 'd')}
+                </span>
               </Button>
 
               {/* Chips — `min-h-0` lets this region shrink below its content
