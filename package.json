@@ -24,9 +24,9 @@
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "typecheck": "tsc --noEmit",
     "db:types": "bash scripts/gen-db-types.sh",
-    "db:types:check": "npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '❌ Types are out of date. Run npm run db:types and commit changes.' && exit 1)",
+    "db:types:check": "npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '\u274c Types are out of date. Run npm run db:types and commit changes.' && exit 1)",
     "docs:regen": "node scripts/regen-docs.mjs",
-    "docs:check": "npm run docs:regen && git diff --exit-code memory/glossary.md memory/projects/golfhelm.md || (echo '❌ Inventory docs are out of date. Run npm run docs:regen and commit changes.' && exit 1)",
+    "docs:check": "npm run docs:regen && git diff --exit-code memory/glossary.md memory/projects/golfhelm.md memory/context/golfhelm-database.md || (echo '\u274c Inventory docs are out of date. Run npm run docs:regen and commit changes.' && exit 1)",
     "knowledge:map": "node scripts/knowledge/map-changed-files.mjs",
     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
     "knowledge:check": "node scripts/knowledge/check.mjs",
@@ -58,7 +58,8 @@
     "ui:atlas": "tsx scripts/ui-intelligence/generate-atlas.ts",
     "ui:refresh": "node scripts/ui-intelligence/refresh-landed.mjs",
     "ui:dataflow": "tsx scripts/ui-intelligence/generate-data-flow.ts",
-    "routes:hygiene:p0p1": "node scripts/check-route-hygiene-p0-p1.mjs"
+    "routes:hygiene:p0p1": "node scripts/check-route-hygiene-p0-p1.mjs",
+    "check:row-caps": "node scripts/check-row-cap-limits.mjs"
   },
   "keywords": [],
   "author": "",

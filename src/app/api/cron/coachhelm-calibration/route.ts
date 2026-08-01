@@ -25,7 +25,14 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const LOOKBACK_DAYS = 90;
-const BATCH_LIMIT = 5000;
+/**
+ * PostgREST caps every response at 1000 rows, so 5000 here was a number that
+ * lied — it returned 1000. Calibration is a statistical aggregate, so a
+ * truncated, unordered sample would skew the curve silently. 29 validations
+ * exist in total (12 in the last 30 days), so this bound has never bitten; if
+ * it ever could, paginate with fetchAllRowsResult rather than raising it.
+ */
+const BATCH_LIMIT = 1000;
 
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
