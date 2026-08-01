@@ -8,6 +8,10 @@ interface MockRow {
   created_at: string;
 }
 
+/** PostgREST's server-side per-request row cap. Hoisted alongside `mocks`
+ *  because the `vi.mock` factory below closes over it. */
+const { POSTGREST_MAX_ROWS } = vi.hoisted(() => ({ POSTGREST_MAX_ROWS: 1000 }));
+
 const mocks = vi.hoisted(() => ({
   rows: [] as MockRow[],
   updates: [] as Array<{ fingerprints: string[]; patch: Record<string, unknown> }>,
@@ -53,8 +57,13 @@ vi.mock('@/lib/supabase/admin', () => ({
                 (cutoffIso === null || r.created_at < cutoffIso) &&
                 !resolvedIds.has(r.id ?? ''),
             );
+            // PostgREST caps ANY request at 1,000 rows — `.limit(n)` above
+            // that is silently truncated, it does not raise the cap. Modelled
+            // here because a mock that honours an oversized limit hides the
+            // exact bug that stalled Rule C's drain loop after one batch.
+            const served = Math.min(n, POSTGREST_MAX_ROWS);
             return Promise.resolve({
-              data: matched.slice(0, n).map((r) => ({ id: r.id ?? '' })),
+              data: matched.slice(0, served).map((r) => ({ id: r.id ?? '' })),
               error: null,
             });
           },
@@ -274,6 +283,51 @@ describe('autoResolveFixedIncidents', () => {
     expect(mocks.updates[0]!.fingerprints).toEqual(['fp-quiet']);
     expect(result.resolvedLegacy).toBe(1);
     expect(mocks.legacyUpdates[0]!.ids).toEqual(['legacy-row']);
+  });
+
+  // THE BUG THIS PAIR EXISTS FOR (found in production 2026-07-31). Rule C
+  // shipped spending a whole page of ids in ONE `.in('id', ids)` UPDATE.
+  // PostgREST puts filters in the query string, so ~1,000 uuids is a ~39 KB
+  // request URI and Supabase's edge answered `400 Bad Request` — every night,
+  // for every run, without ever resolving a row. 87,619 legacy rows were still
+  // unresolved when it was caught. Measured ceiling: 584 ids (~22.8 KB) works,
+  // 585 does not.
+  it('Rule C: chunks its UPDATE so the request URI can never overflow', async () => {
+    mocks.rows = Array.from({ length: 450 }, (_, i) => ({
+      id: `legacy-${i}`,
+      fingerprint: null,
+      created_at: new Date(NOW - 30 * 86400_000).toISOString(),
+    }));
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedLegacy).toBe(450);
+    // The whole point: many bounded updates, not one oversized one.
+    expect(mocks.legacyUpdates.length).toBeGreaterThan(1);
+    for (const update of mocks.legacyUpdates) {
+      expect(update.ids.length).toBeLessThanOrEqual(200);
+    }
+    // …and chunking must not lose or duplicate a single row.
+    const touched = mocks.legacyUpdates.flatMap((u) => u.ids);
+    expect(new Set(touched).size).toBe(450);
+  });
+
+  it('Rule C: keeps draining when the server returns a full page', async () => {
+    // The companion defect: `.limit(2000)` never raised PostgREST's 1,000-row
+    // cap, so a *full* page looked "short" against a 2,000 threshold and the
+    // drain loop returned believing the backlog was empty — capping Rule C at
+    // one page per night against an 87k backlog.
+    mocks.rows = Array.from({ length: 1200 }, (_, i) => ({
+      id: `legacy-${i}`,
+      fingerprint: null,
+      created_at: new Date(NOW - 30 * 86400_000).toISOString(),
+    }));
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedLegacy).toBe(1200);
   });
 
   it('Rule C reports 0 when there is no legacy backlog (non-vacuity)', async () => {
