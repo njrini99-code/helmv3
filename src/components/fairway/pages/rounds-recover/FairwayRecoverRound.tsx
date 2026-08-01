@@ -553,5 +553,3 @@ function ScoreCell({ label, children }: { label: string; children: React.ReactNo
     </div>
   );
 }
-
-export default FairwayRecoverRound;

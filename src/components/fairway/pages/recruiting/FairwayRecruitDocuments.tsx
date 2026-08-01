@@ -464,5 +464,3 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
     </div>
   );
 }
-
-export default FairwayRecruitDocuments;

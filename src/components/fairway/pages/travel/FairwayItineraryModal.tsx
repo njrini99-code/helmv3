@@ -528,5 +528,3 @@ export function FairwayItineraryModal({
     </ModalShell>
   );
 }
-
-export default FairwayItineraryModal;

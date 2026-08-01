@@ -80,5 +80,3 @@ export function FairwayYearBadge({ year, className }: FairwayYearBadgeProps) {
     </Badge>
   );
 }
-
-export default FairwayYearBadge;

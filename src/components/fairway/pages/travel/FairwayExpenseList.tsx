@@ -379,5 +379,3 @@ export function FairwayExpenseList({ expenses, onEdit, onRefresh, isCoach }: Fai
     </div>
   );
 }
-
-export default FairwayExpenseList;
