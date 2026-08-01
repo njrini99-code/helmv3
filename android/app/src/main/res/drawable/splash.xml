@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launch splash for AppTheme.NoActionBarLaunch (values/styles.xml).
+
+  Deliberately an XML layer-list rather than the splash.png that
+  `npx cap add android` generates: this repo's .gitignore carries a global
+  *.png rule, so a generated PNG here is silently untracked and the build then
+  fails on a fresh clone with "resource drawable/splash not found". XML is
+  immune to that, and resolution-independent besides.
+
+  The solid fill matches capacitor.config.ts `android.backgroundColor`
+  (#EDE0C8, Fairway cream) so there is no colour step between the splash, the
+  window behind the WebView, and the app canvas on cold start.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#EDE0C8" />
+        </shape>
+    </item>
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher_foreground" />
+    </item>
+</layer-list>

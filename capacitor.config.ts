@@ -14,6 +14,14 @@ const config: CapacitorConfig = {
     // PWA manifest's start_url.
     url: 'https://www.helmsportslabs.com/golf/dashboard',
     cleartext: false,
+    // Shown when the remote app fails to load — no connectivity, DNS failure,
+    // origin down. Without it the WebView renders Chromium's raw "can't reach
+    // this page" interstitial, which does not read as part of the app and is a
+    // bad first impression for a Play reviewer on hotel wifi. offline.html is
+    // bundled into the APK by `cap sync` (assets/public/), so it needs no
+    // network to display. Its Try Again button detects the local origin and
+    // navigates back to the app rather than reloading itself.
+    errorPath: 'offline.html',
     allowNavigation: ['*.helmsportslabs.com', 'helmsportslabs.com'],
   },
   ios: {
@@ -29,6 +37,27 @@ const config: CapacitorConfig = {
     // requests and block marketing/membership pages (App Store Guideline 3.1.1).
     appendUserAgent: 'HelmSportsLabsApp',
   },
+  android: {
+    // Mirrors the iOS block. Every value here has a reason — do not drop one
+    // assuming the Android default is equivalent.
+    //
+    // appendUserAgent is LOAD-BEARING, not cosmetic. src/proxy.ts keys its
+    // marketing-route block on the literal string 'HelmSportsLabsApp'
+    // (NATIVE_UA_MARKER). Omit it and the Android shell is treated as an
+    // ordinary browser: the landing page, pricing and membership surfaces all
+    // render inside the app. Play does not enforce Apple's Guideline 3.1.1, but
+    // the block is also what makes this read as an app rather than a website in
+    // a frame — and it keeps the two platforms behaving identically.
+    appendUserAgent: 'HelmSportsLabsApp',
+    // The web app is served over HTTPS from helmsportslabs.com; never let the
+    // WebView silently downgrade a subresource.
+    allowMixedContent: false,
+    // Same posture as iOS: no inspector in shipped builds.
+    webContentsDebuggingEnabled: false,
+    // Cream (#EDE0C8) matches the splash and the app's canvas, so the window
+    // behind the WebView never flashes white during navigation or rotation.
+    backgroundColor: '#EDE0C8',
+  },
   plugins: {
     Keyboard: {
       // @ts-expect-error — Capacitor types don't include 'ionic' but it's valid at runtime
@@ -38,7 +67,21 @@ const config: CapacitorConfig = {
       scrollPadding: true,
     },
     PushNotifications: { presentationOptions: ['badge', 'sound', 'alert'] },
-    SplashScreen: { launchAutoHide: false, showSpinner: false },
+    // launchAutoHide MUST stay true. The only code path that hides this splash
+    // is hideSplashScreen() in CapacitorProvider, which runs after the WebView
+    // has fetched the remote app, downloaded the bundle and hydrated React.
+    // With launchAutoHide:false, ANY failure before that point -- slow network,
+    // a bad deploy, an offline device, a reviewer on hotel wifi -- left the
+    // splash up forever with no watchdog, and the app read as permanently
+    // frozen rather than merely slow. Reproduced on an Android 16 emulator:
+    // stuck on the splash indefinitely. launchShowDuration is the ceiling, not
+    // the target -- a healthy cold start still hides early via hideSplashScreen().
+    SplashScreen: {
+      launchAutoHide: true,
+      launchShowDuration: 10000,
+      backgroundColor: '#EDE0C8',
+      showSpinner: false,
+    },
     StatusBar: { style: 'LIGHT' },
   },
 };

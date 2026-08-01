@@ -87,6 +87,15 @@ helm-vid/
 !public/email/*.png
 # QA visual audit packs (labeled screenshots + manifests)
 !docs/qa/**/*.png
+# Android launcher icons are build inputs — without these the adaptive icon's
+# @mipmap/ic_launcher_foreground does not resolve on a fresh clone and the
+# Gradle build FAILS. The generated vector defaults were removed in favour of
+# real branded PNGs, so these must be tracked.
+!android/app/src/main/res/**/*.png
+# Play Store listing assets (feature graphic, 512 icon, phone screenshots) —
+# deliverables, not scratch. Needs ** to reach assets/screenshots/, a single *
+# only matches direct children.
+!android/playstore/assets/**/*.png
 GolfHelm-Prospect-Deck.pptx
 .claude/worktrees/
 
@@ -170,3 +179,8 @@ statsfixresults.pdf
 # Local Playwright screenshot artifacts
 e2e-screenshots/
 .bugtest-screens/
+
+# Android upload keystore — NEVER commit
+*.keystore
+*.jks
+android/keystore.properties

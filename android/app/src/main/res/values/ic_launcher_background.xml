@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fairway canvas token (warm cream), locked to match the GolfHelm
+         PWA/iOS icon background and android/playstore/assets/*.png.
+         NOTE: do not write the raw token name with its leading double-hyphen
+         here; "- -" is illegal inside an XML comment and fails
+         :app:mergeReleaseResources. -->
+    <color name="ic_launcher_background">#F7EFDF</color>
+</resources>

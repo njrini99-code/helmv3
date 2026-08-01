@@ -198,7 +198,13 @@ export async function sendPushNotification(
     // of a raw key in a hand-built header (helmv3-service-role-outside-admin).
     for (const deviceToken of tokens) {
       try {
-        const { error: invokeError } = await supabase.functions.invoke('send-apns-push', {
+        // Route by transport, not by one hardcoded function. `send-apns-push`
+        // talks to Apple; an Android FCM token sent there is rejected, and a
+        // rejection only bumps failed_count, so it fails silently forever.
+        // Anything not explicitly 'android' keeps the historical APNs path —
+        // rows predating platform-aware registration are iOS.
+        const fn = deviceToken.platform === 'android' ? 'send-fcm-push' : 'send-apns-push';
+        const { error: invokeError } = await supabase.functions.invoke(fn, {
           body: {
             deviceToken: deviceToken.token,
             platform: deviceToken.platform,

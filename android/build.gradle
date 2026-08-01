@@ -1,0 +1,47 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+//
+// REQUIRED JDK: 21 (LTS) -- not just "17+", and not the newest available.
+//   - AGP 8.13.0 (pinned below) needs JDK 17 as a floor to run Gradle itself.
+//   - android/app/capacitor.build.gradle hardcodes sourceCompatibility/targetCompatibility
+//     to JavaVersion.VERSION_21 for the app module, so the JDK actually invoking javac
+//     must be >= 21 (javac cannot target a release above its own major version).
+//   - Gradle 8.14.3 (pinned in gradle/wrapper/gradle-wrapper.properties) does not run on
+//     Java 25 (see gradle/gradle#35111) -- Java 24 is the newest confirmed-working line,
+//     so 21 is the safe, exact target: satisfies both floors and stays under the ceiling.
+//   This machine currently only has Temurin 25 installed (`/usr/libexec/java_home -V`),
+//   so a plain `./gradlew` invocation from this shell WILL fail. Do not attempt it here.
+//   Once Android Studio is installed, point Settings > Build Tools > Gradle > Gradle JDK
+//   at its bundled JBR (recent stable channels bundle JBR 21) rather than "system Java".
+//   For a headless/CI build later, install a JDK 21 side-by-side and set
+//   org.gradle.java.home in android/gradle.properties to that JDK's path -- do not add
+//   that setting here pointing at a JDK that doesn't exist on the machine, since an
+//   invalid org.gradle.java.home fails Gradle even earlier/more opaquely than letting it
+//   fall through to whatever's on PATH.
+
+buildscript {
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'com.google.gms:google-services:4.4.4'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+apply from: "variables.gradle"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

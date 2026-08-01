@@ -111,11 +111,17 @@ export async function initPushListeners(): Promise<void> {
       // cookie has propagated, so registerDeviceToken may return a retryable
       // Unauthorized result. Back off and retry a few times before giving up
       // — initPushListeners re-registers on the next launch regardless.
+      // Was hardcoded 'ios'. On Android this listener fires with an **FCM**
+      // token, and storing it as 'ios' sends it to `send-apns-push`, where
+      // Apple rejects it — silently, since a rejected token just increments
+      // failed_count. Read the real platform so `sendPushNotification` can
+      // route to the right transport.
+      const platform = Capacitor.getPlatform() === 'android' ? 'android' : 'ios';
       const backoffsMs = [1000, 2000, 4000, 8000];
       let lastError: unknown;
       for (let attempt = 0; attempt <= backoffsMs.length; attempt++) {
         try {
-          const result = await registerDeviceToken(token.value, 'ios');
+          const result = await registerDeviceToken(token.value, platform);
           if (result.success) return;
           if (!result.retryable) {
             console.error('[Push] Failed to save device token:', result.error);
