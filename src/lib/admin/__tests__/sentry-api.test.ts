@@ -3,7 +3,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
 
-import { fetchSentryIssues, fetchSentryFeatureCounts } from '@/lib/admin/sentry-api';
+import {
+  fetchSentryIssues,
+  fetchSentryFeatureCounts,
+  __resetSentryFeatureCountCooldown,
+} from '@/lib/admin/sentry-api';
 
 function issuePayload(id: string) {
   return {
@@ -127,6 +131,9 @@ describe('fetchSentryFeatureCounts', () => {
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();
+    // A failing test above would otherwise leave the sweep in cooldown and
+    // make every later test pass for the wrong reason.
+    __resetSentryFeatureCountCooldown();
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -180,5 +187,54 @@ describe('fetchSentryFeatureCounts', () => {
     fetchMock.mockRejectedValue(new Error('ECONNRESET'));
     const res = await fetchSentryFeatureCounts(['round_tracking']);
     expect(res).toBeNull();
+  });
+
+  it('never exceeds the concurrency ceiling, however many features exist', async () => {
+    let inFlight = 0;
+    let peakInFlight = 0;
+    fetchMock.mockImplementation(async () => {
+      inFlight += 1;
+      peakInFlight = Math.max(peakInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight -= 1;
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    const keys = Array.from({ length: 40 }, (_, i) => `feature_${i}`);
+    const res = await fetchSentryFeatureCounts(keys);
+
+    // Every key still gets counted — bounding concurrency must not drop work.
+    expect(Object.keys(res ?? {})).toHaveLength(40);
+    expect(peakInFlight).toBeLessThanOrEqual(6);
+  });
+
+  it('abandons the rest of the sweep once one query fails', async () => {
+    fetchMock.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      return new Response('slow down', { status: 429 });
+    });
+
+    const keys = Array.from({ length: 40 }, (_, i) => `feature_${i}`);
+    expect(await fetchSentryFeatureCounts(keys)).toBeNull();
+
+    // The result is already null, so issuing the other 34 queries would be
+    // pure rate-limit pressure for output nobody reads.
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(6);
+  });
+
+  it('skips the sweep entirely during the cooldown that follows a failure', async () => {
+    fetchMock.mockResolvedValue(new Response('slow down', { status: 429 }));
+
+    expect(await fetchSentryFeatureCounts(['round_tracking'])).toBeNull();
+    const callsAfterFailedSweep = fetchMock.mock.calls.length;
+    expect(callsAfterFailedSweep).toBeGreaterThan(0);
+
+    // The next admin page load must not re-issue the fan-out — that feedback
+    // loop is what kept Sentry rate-limiting the Bridge.
+    expect(await fetchSentryFeatureCounts(['round_tracking'])).toBeNull();
+    expect(fetchMock.mock.calls.length).toBe(callsAfterFailedSweep);
   });
 });

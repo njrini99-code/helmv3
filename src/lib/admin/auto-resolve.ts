@@ -46,6 +46,14 @@
  * fingerprint is null — so those 87,653 rows are not one incident, they are
  * 87,653 separate incident groups.
  *
+ * RULE C DID NOT ACTUALLY RUN UNTIL 2026-07-31. As shipped it selected a
+ * whole page of ids and spent them in a single `.in('id', ids)` UPDATE, whose
+ * query string overflowed the request-URI limit and came back `400 Bad
+ * Request` every night — so the count above barely moved (87,619 still
+ * unresolved two days later) and the nightly cron logged
+ * `legacy update failed: Bad Request` once per run. The update is now chunked
+ * (ID_CHUNK_SIZE) and LEGACY_BATCH no longer exceeds PostgREST's row cap.
+ *
  * Aging them out is safe in a way it would NOT be for a fingerprinted row:
  * there is nothing to regress. A fingerprint is how a recurrence is
  * recognised, and these have none, so a "return" of one of these is by
@@ -77,12 +85,34 @@ import { fetchVercelDeployments, type VercelDeployment } from '@/lib/admin/verce
 export const RELEASE_GRACE_MS = 24 * 3600_000;
 const QUIET_MS = 14 * 86400_000;
 const FINGERPRINT_CHUNK_SIZE = 200;
+/**
+ * Hard ceiling on how many ids may ride in one `.in('id', [...])` filter.
+ *
+ * PostgREST puts filters in the QUERY STRING, so an `id=in.("<uuid>",...)`
+ * list is ~39 bytes per row — and Supabase's edge rejects an over-long
+ * request URI *before* PostgREST ever sees it. Measured against this project
+ * 2026-07-31: 584 ids (~22.8 KB URL) is the last size that gets through;
+ * 585 (~22.9 KB) comes back `400` with the literal body `Bad Request`, and
+ * ~1,700+ becomes a `414` with an empty body.
+ *
+ * That 400 is exactly what broke Rule C: it selected a full page of ids and
+ * spent them in ONE update, so every nightly run since Rule C shipped died on
+ * `legacy update failed: Bad Request` and never resolved a single row (87,619
+ * legacy rows still unresolved when this was found). 200 ids ≈ 7.8 KB leaves
+ * roughly 3x headroom under the measured ceiling, and matches the chunk size
+ * the fingerprint path has always used.
+ */
+const ID_CHUNK_SIZE = 200;
 /** Rule C runs as bounded batches for the same reason log-retention's purge
  *  does: a single UPDATE over tens of thousands of rows holds locks on a table
- *  shared with live Golf traffic. 2,000 x 25 clears up to 50k per nightly run,
- *  so even the full historical backlog drains in a couple of nights without
- *  one long-running statement. */
-const LEGACY_BATCH = 2000;
+ *  shared with live Golf traffic.
+ *
+ *  LEGACY_BATCH must not exceed PostgREST's own per-request row cap (1,000) —
+ *  `.limit(2000)` did NOT raise that cap, it just meant a full 1,000-row page
+ *  always looked "short" against a 2,000 threshold, so the drain loop returned
+ *  after a single batch believing the backlog was empty. At 1,000 the short-page
+ *  check means what it says, and 1,000 x 25 clears up to 25k per nightly run. */
+const LEGACY_BATCH = 1000;
 const LEGACY_MAX_BATCHES = 25;
 /** Short cache — mirrors vercel-api.ts's own REVALIDATE_SECONDS. Both the
  *  cron (one call/run) and the Errors-tab read path (one call per admin
@@ -230,17 +260,22 @@ async function resolveLegacyUnfingerprinted(
     const ids = (data ?? []).map((row) => (row as { id: string }).id);
     if (ids.length === 0) return total;
 
-    const { error: updateError, count } = await admin
-      .from('admin_events')
-      .update({ resolved: true, resolved_at: resolvedAtIso }, { count: 'exact' })
-      .eq('resolved', false)
-      .lt('created_at', cutoffIso)
-      .in('id', ids);
-    if (updateError) {
-      throw new Error(`autoResolveFixedIncidents: legacy update failed: ${updateError.message}`);
-    }
+    // Spend the page in ID_CHUNK_SIZE slices — a full page of ids in one
+    // `.in()` overflows the request URI and comes back `400 Bad Request`
+    // before reaching Postgres. See ID_CHUNK_SIZE.
+    for (const idBatch of chunk(ids, ID_CHUNK_SIZE)) {
+      const { error: updateError, count } = await admin
+        .from('admin_events')
+        .update({ resolved: true, resolved_at: resolvedAtIso }, { count: 'exact' })
+        .eq('resolved', false)
+        .lt('created_at', cutoffIso)
+        .in('id', idBatch);
+      if (updateError) {
+        throw new Error(`autoResolveFixedIncidents: legacy update failed: ${updateError.message}`);
+      }
 
-    total += count ?? 0;
+      total += count ?? 0;
+    }
     // A short page means the backlog is drained; anything else and we stop at
     // MAX_BATCHES and pick up the remainder tomorrow night.
     if (ids.length < LEGACY_BATCH) return total;
