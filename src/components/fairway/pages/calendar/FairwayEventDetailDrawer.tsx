@@ -419,5 +419,3 @@ export function FairwayEventDetailDrawer({
     </Sheet>
   );
 }
-
-export default FairwayEventDetailDrawer;

@@ -401,5 +401,3 @@ export function DayScheduleSwipe({
     </Surface>
   );
 }
-
-export default DayScheduleSwipe;

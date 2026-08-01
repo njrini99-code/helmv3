@@ -117,22 +117,6 @@ export interface GoalProposal {
   coach_assignment_mode: 'mandatory' | 'suggested';
 }
 
-/** Type guard for a goal-creation proposal embedded in a tool result. */
-export function isGoalProposal(value: unknown): value is GoalProposal {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as Record<string, unknown>;
-  return (
-    v.kind === 'create_goal' &&
-    typeof v.player_id === 'string' &&
-    typeof v.team_id === 'string' &&
-    typeof v.metric_id === 'string' &&
-    typeof v.title === 'string' &&
-    typeof v.target_value === 'number' &&
-    typeof v.window_days === 'number' &&
-    (v.coach_assignment_mode === 'mandatory' || v.coach_assignment_mode === 'suggested')
-  );
-}
-
 export interface ChatConversation {
   id: string;
   coach_id: string;

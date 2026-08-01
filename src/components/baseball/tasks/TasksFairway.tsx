@@ -159,5 +159,3 @@ export function TasksFairway({
     </div>
   );
 }
-
-export default TasksFairway;

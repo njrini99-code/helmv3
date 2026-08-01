@@ -892,5 +892,3 @@ function findInsightSection(
   }
   return null;
 }
-
-export default FairwayPlayerGameFingerprint;

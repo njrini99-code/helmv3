@@ -235,5 +235,3 @@ function ColoredInitialsAvatar({
     </span>
   );
 }
-
-export default FairwayPlayerRoster;

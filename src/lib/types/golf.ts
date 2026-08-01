@@ -386,15 +386,6 @@ export interface ReminderPreset {
   offsetHours?: number;
 }
 
-export const REMINDER_PRESETS: ReminderPreset[] = [
-  { label: '1 hour before', value: '1h', offsetHours: 1 },
-  { label: '2 hours before', value: '2h', offsetHours: 2 },
-  { label: '1 day before', value: '1d', offsetDays: 1 },
-  { label: '2 days before', value: '2d', offsetDays: 2 },
-  { label: '1 week before', value: '1w', offsetDays: 7 },
-  { label: 'Custom', value: 'custom' },
-];
-
 interface TaskReminder {
   id: string;
   task_id: string;

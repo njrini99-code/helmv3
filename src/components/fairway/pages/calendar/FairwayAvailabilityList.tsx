@@ -155,5 +155,3 @@ export function FairwayAvailabilityList({
     </div>
   );
 }
-
-export default FairwayAvailabilityList;

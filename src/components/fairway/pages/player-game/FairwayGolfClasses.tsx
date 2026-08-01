@@ -925,5 +925,3 @@ export function FairwayGolfClasses({
     </div>
   );
 }
-
-export default FairwayGolfClasses;

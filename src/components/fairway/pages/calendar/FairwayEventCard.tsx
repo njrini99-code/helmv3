@@ -191,5 +191,3 @@ export function FairwayEventCard({
     </Button>
   );
 }
-
-export default FairwayEventCard;

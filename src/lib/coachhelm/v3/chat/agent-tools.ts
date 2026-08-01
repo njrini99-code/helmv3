@@ -69,7 +69,7 @@ import {
 type Sb = SupabaseClient<Database>;
 
 /** Tool names whose execution must be gated behind an explicit coach approval. */
-export const CONFIRM_REQUIRED_TOOLS = [
+const CONFIRM_REQUIRED_TOOLS = [
   'create_recurring_practice',
   'create_focus_area',
   'create_task',

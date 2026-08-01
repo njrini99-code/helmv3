@@ -392,5 +392,3 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
     </Surface>
   );
 }
-
-export default FairwayGoalCard;

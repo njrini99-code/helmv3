@@ -50,7 +50,6 @@ import {
   InlineNotice,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import { getGreeting, getTimeOfDay } from '@/lib/utils/time-of-day';
 import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
 import { useToast } from '@/components/ui/sonner';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -107,19 +106,6 @@ export interface EventInvite {
   maybe_count: number;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
- * Time-of-day greeting — mirrors FairwayPlayerDashboard. The firstName is
- * server-known and renders on first paint; only the time word resolves on the
- * client to avoid an SSR timezone mismatch.
- * ──────────────────────────────────────────────────────────────────────── */
-
-export function useTimeWord(): string {
-  const [timeWord, setTimeWord] = useState('Welcome back');
-  useEffect(() => {
-    setTimeWord(getGreeting(getTimeOfDay()));
-  }, []);
-  return timeWord;
-}
 
 /* ─────────────────────────────────────────────────────────────────────────
  * SectionTitle — one quiet General Sans h3 voice for all overview sections.

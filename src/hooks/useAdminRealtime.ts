@@ -88,7 +88,7 @@ const SEVERITY_LEVELS: Record<AdminEventSeverity, number> = {
 // across remounts, reconnects, and multiple bundles/tabs.
 let adminRealtimeChannelSequence = 0;
 
-export function createAdminRealtimeChannelName(): string {
+function createAdminRealtimeChannelName(): string {
   adminRealtimeChannelSequence += 1;
   const entropy = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
   return `admin-realtime-events-${Date.now()}-${adminRealtimeChannelSequence}-${entropy}`;

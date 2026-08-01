@@ -143,5 +143,3 @@ export function MoveToFolderModal({ open, document, folders, onClose, onMove }: 
     </div>
   );
 }
-
-export default MoveToFolderModal;

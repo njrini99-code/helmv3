@@ -239,5 +239,3 @@ export function ThemeCard({
     </Surface>
   );
 }
-
-export default ThemeCard;

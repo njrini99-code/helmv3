@@ -48,8 +48,6 @@ export const ACCESS_KEY_TO_COLUMN: Record<PlayerAccessKey, string> = {
   guardian_can_view_travel: 'guardian_can_view_travel',
 };
 
-export const ALL_PLAYER_ACCESS_KEYS = Object.keys(ACCESS_KEY_TO_COLUMN) as PlayerAccessKey[];
-
 /**
  * Keys where a coach acting on the team should bypass the player toggle (a coach
  * editing/uploading/reading on behalf of the program is governed by their staff

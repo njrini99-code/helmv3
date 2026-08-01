@@ -130,7 +130,7 @@ export interface SettingsValueProps {
  * token everywhere, so the right edge of a settings list reads as one column
  * of state instead of a ragged mix of chips, plain text and bold numbers.
  */
-export function SettingsValue({ children, numeric, muted, className }: SettingsValueProps) {
+function SettingsValue({ children, numeric, muted, className }: SettingsValueProps) {
   return (
     <span
       data-slot="fw-settings-value"

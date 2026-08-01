@@ -387,5 +387,3 @@ export function FairwayRecruitingPage({
     </div>
   );
 }
-
-export default FairwayRecruitingPage;

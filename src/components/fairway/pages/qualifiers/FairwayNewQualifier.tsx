@@ -547,5 +547,3 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
     </div>
   );
 }
-
-export default FairwayNewQualifier;

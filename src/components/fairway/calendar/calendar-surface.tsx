@@ -312,5 +312,3 @@ function cellWidth(cell: string): string {
   if (cell.startsWith('h-11')) return 'w-11';
   return 'w-10';
 }
-
-export default CalendarSurface;

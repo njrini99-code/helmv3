@@ -171,5 +171,3 @@ export function FairwayJoinRequestAlert({
     </InlineNotice>
   );
 }
-
-export default FairwayJoinRequestAlert;

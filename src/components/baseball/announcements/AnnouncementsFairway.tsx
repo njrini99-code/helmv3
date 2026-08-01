@@ -108,5 +108,3 @@ export function AnnouncementsFairway({
     </div>
   );
 }
-
-export default AnnouncementsFairway;

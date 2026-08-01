@@ -131,5 +131,3 @@ export function PlayerTimelineClient({ model, initialAcks }: PlayerTimelineClien
     />
   );
 }
-
-export default PlayerTimelineClient;

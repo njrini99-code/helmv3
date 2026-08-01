@@ -209,7 +209,7 @@ export async function queryAppErrorEvents(
  * reoccurring today reads as new rather than as a regression of ancient
  * history — 90 days is well past any realistic fix-verification window.
  */
-export const REGRESSION_LOOKBACK_DAYS = 90;
+const REGRESSION_LOOKBACK_DAYS = 90;
 
 /**
  * Latest `resolved_at` per fingerprint, for fingerprints that currently have

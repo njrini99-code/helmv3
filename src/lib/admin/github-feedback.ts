@@ -76,7 +76,7 @@ export function validateFeedback(input: Omit<FeedbackIssueInput, 'attachments'>)
   return null;
 }
 
-export function buildFeedbackIssueBody(input: FeedbackIssueInput): string {
+function buildFeedbackIssueBody(input: FeedbackIssueInput): string {
   const attachmentLines = input.attachments.length
     ? input.attachments.map((a) => {
         const sizeKb = Math.round(a.size / 1024);

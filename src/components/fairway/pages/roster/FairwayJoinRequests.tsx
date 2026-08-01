@@ -678,5 +678,3 @@ export function FairwayJoinRequests({
     </>
   );
 }
-
-export default FairwayJoinRequests;

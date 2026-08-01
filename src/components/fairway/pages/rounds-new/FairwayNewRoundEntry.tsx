@@ -1004,5 +1004,3 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
     </div>
   );
 }
-
-export default FairwayNewRoundEntry;

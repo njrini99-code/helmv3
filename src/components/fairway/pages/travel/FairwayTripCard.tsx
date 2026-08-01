@@ -100,5 +100,3 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
     </Button>
   );
 }
-
-export default FairwayTripCard;

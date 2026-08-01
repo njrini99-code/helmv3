@@ -474,5 +474,3 @@ export function FairwayExpenseForm({
     </ModalShell>
   );
 }
-
-export default FairwayExpenseForm;

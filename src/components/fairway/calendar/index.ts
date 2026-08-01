@@ -13,8 +13,8 @@
  * Import from `@/components/fairway/calendar`.
  * ========================================================================== */
 
-export { CalendarSurface, default as CalendarSurfaceDefault } from './calendar-surface';
-export { DatePicker, default as DatePickerDefault } from './date-picker';
+export { CalendarSurface } from './calendar-surface';
+export { DatePicker } from './date-picker';
 
 export type {
   CalendarSurfaceProps,

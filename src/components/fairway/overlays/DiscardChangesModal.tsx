@@ -71,5 +71,3 @@ export function DiscardChangesModal({ open, onStay, onDiscard, itemLabel }: Disc
     </ModalShell>
   );
 }
-
-export default DiscardChangesModal;

@@ -245,5 +245,3 @@ function PracticeRxRow({ drill, onView }: PracticeRxRowProps) {
     </Button>
   );
 }
-
-export default PracticeRxPanel;

@@ -306,5 +306,3 @@ export function DaySchedule({
     </Surface>
   );
 }
-
-export default DaySchedule;

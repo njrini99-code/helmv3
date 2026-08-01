@@ -475,5 +475,3 @@ export function FairwayTeamHubWrapper({
     />
   );
 }
-
-export default FairwayTeamHub;

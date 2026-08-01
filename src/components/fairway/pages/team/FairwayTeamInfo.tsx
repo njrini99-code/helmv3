@@ -535,5 +535,3 @@ export function FairwayTeamInfo({
     </div>
   );
 }
-
-export default FairwayTeamInfo;

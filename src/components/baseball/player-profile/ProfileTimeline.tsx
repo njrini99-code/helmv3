@@ -408,5 +408,3 @@ export function ProfileTimeline({
     </LazyMotion>
   );
 }
-
-export default ProfileTimeline;

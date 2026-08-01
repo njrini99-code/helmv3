@@ -41,7 +41,7 @@ import { z } from 'zod';
  * players" and "we found nobody" lead a coach to different actions, and
  * collapsing them is how a roster of seven silently becomes six.
  */
-export const CoverageState = z.enum([
+const CoverageState = z.enum([
   /** Every entity in scope had data for the whole window. */
   'complete',
   /** Some entities or some of the window had no data. `coverage_note` says which. */
@@ -69,7 +69,7 @@ export type CoverageState = z.infer<typeof CoverageState>;
  * "never invent a baseline", so the source and the version travel with the
  * number and the UI prints them next to it.
  */
-export const BenchmarkRef = z.object({
+const BenchmarkRef = z.object({
   /** Human-readable source, e.g. 'PGA Tour (Broadie expected strokes)'. */
   source: z.string(),
   /** Version/season identifier of the baseline actually used. */
@@ -102,7 +102,7 @@ export const BROADIE_BENCHMARK = {
 // ---------------------------------------------------------------------------
 
 /** What the measurement is *about* — a player, the team, or one round. */
-export const MeasuredEntity = z.object({
+const MeasuredEntity = z.object({
   kind: z.enum(['player', 'team', 'round']),
   /** Database id. Never rendered to the coach; used for deep links + validation. */
   id: z.string(),

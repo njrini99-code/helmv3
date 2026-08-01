@@ -382,5 +382,3 @@ export function FairwayExpenseSummary({
     </div>
   );
 }
-
-export default FairwayExpenseSummary;

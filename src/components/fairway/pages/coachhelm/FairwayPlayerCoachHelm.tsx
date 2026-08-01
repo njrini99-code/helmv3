@@ -1374,5 +1374,3 @@ function clamp01to100(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(100, n));
 }
-
-export default FairwayPlayerCoachHelm;
