@@ -268,7 +268,14 @@ jobs:
       - run:
           name: Capacitor sync Android
           command: |
-            npx cap update android
+            # `cap sync` == copy + update, in that order, and the COPY step is
+            # what creates android/app/src/main/assets — which .gitignore
+            # excludes (capacitor.plugins.json, capacitor.config.json,
+            # assets/public are all generated). Running `cap update` FIRST
+            # therefore ENOENTs writing capacitor.plugins.json into a directory
+            # that does not exist yet. The iOS job survives the same ordering
+            # because the iOS project layout differs.
+            mkdir -p android/app/src/main/assets
             npx cap sync android
       - run:
           name: Gradle assembleDebug (no signing)
