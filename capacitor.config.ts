@@ -14,6 +14,14 @@ const config: CapacitorConfig = {
     // PWA manifest's start_url.
     url: 'https://www.helmsportslabs.com/golf/dashboard',
     cleartext: false,
+    // Shown when the remote app fails to load — no connectivity, DNS failure,
+    // origin down. Without it the WebView renders Chromium's raw "can't reach
+    // this page" interstitial, which does not read as part of the app and is a
+    // bad first impression for a Play reviewer on hotel wifi. offline.html is
+    // bundled into the APK by `cap sync` (assets/public/), so it needs no
+    // network to display. Its Try Again button detects the local origin and
+    // navigates back to the app rather than reloading itself.
+    errorPath: 'offline.html',
     allowNavigation: ['*.helmsportslabs.com', 'helmsportslabs.com'],
   },
   ios: {

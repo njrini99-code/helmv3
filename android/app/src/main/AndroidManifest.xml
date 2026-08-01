@@ -26,6 +26,14 @@
 
         </activity>
 
+        <!-- Channel the FCM SDK posts to when a message carries no explicit
+             channel. Must match MainActivity.DEFAULT_CHANNEL_ID, which creates
+             it — declaring a channel here without creating it means every
+             notification is silently dropped on API 26+. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="helm_default" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

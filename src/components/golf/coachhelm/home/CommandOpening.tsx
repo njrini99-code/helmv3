@@ -27,6 +27,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getTimeOfDay } from '@/lib/utils/time-of-day';
 import type { ProgramPulse, PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { PromptComposer, type ComposerPlayer } from '../chat/PromptComposer';
 import type { ChatContextChip } from '../chat/useCoachHelmChat';
@@ -71,6 +72,26 @@ export function CommandOpening({
     setContext((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
+  // Was the hardcoded literal "Morning," — so the Brief greeted every coach
+  // with "Morning" at any hour, including 7pm, while the dashboard on the same
+  // session correctly said "Good evening". Bucket boundaries come from the
+  // shared util so the two surfaces can't drift again.
+  //
+  // Resolved in an effect, not at render: this component is SSR'd, and reading
+  // the clock during render makes the server (UTC) and the client (local)
+  // disagree — a hydration mismatch. 'Welcome back' is the initial value
+  // because it is the one greeting that is never wrong at any hour.
+  const [timeWord, setTimeWord] = React.useState('Welcome back');
+  React.useEffect(() => {
+    const t = getTimeOfDay();
+    setTimeWord(
+      t === 'morning' ? 'Morning'
+        : t === 'afternoon' ? 'Afternoon'
+        : t === 'evening' ? 'Evening'
+        : 'Welcome back',
+    );
+  }, []);
+
   const runQuickAction = React.useCallback(
     (action: { label: string; seed: string; complete: boolean }) => {
       if (action.complete) {
@@ -86,7 +107,7 @@ export function CommandOpening({
     <section className={cn('flex flex-col gap-5', className)} aria-label="Ask CoachHelm">
       <header>
         <h1 className="font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
-          {coachFirstName ? `Morning, ${coachFirstName}.` : teamName}
+          {coachFirstName ? `${timeWord}, ${coachFirstName}.` : teamName}
         </h1>
         <StatusLine pulse={pulse} teamName={teamName} />
       </header>

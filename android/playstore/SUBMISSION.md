@@ -5,15 +5,21 @@ account. The Android platform is scaffolded, configured, **signed, built and
 run on a real Android 16 device image**, at version parity with iOS. The `.aab`,
 store assets and phone screenshots all exist (§4, §9).
 
-What remains before submission:
+**There are no open code blockers.** Every issue this review surfaced is either
+fixed and re-verified on-device, or retracted as a test-rig artifact (§14).
 
-1. **§14.2 — the coach dashboard renders a stale layer on Android.** The one
-   open code blocker, and the first authenticated screen a reviewer sees.
-2. **§1 — Play Console organization account + DUNS.** The long pole; nothing
-   else can proceed past it, and only the account owner can do it.
-3. **§10–§12 — the Console forms** (Data Safety, content rating, app access).
-4. **§3 — native FCM**, if Android notifications are required. Web Push is
-   measured as unavailable in the WebView.
+What remains is not code:
+
+1. **§1 — Play Console organization account + DUNS.** The long pole. Nothing
+   downstream can start until it clears, and only the account owner can do it:
+   it involves a payment, a binding distribution agreement, and a legal-entity
+   attestation.
+2. **§10–§12 — the Console forms** (Data Safety, content rating, app access).
+3. **§3 — a Firebase project**, if Android notifications are required. The FCM
+   code path is complete and inert; it starts working the moment
+   `google-services.json` and three secrets exist. Web Push is *measured* as
+   unavailable inside the WebView, so this is the only route to notifications
+   in the installed app.
 
 > **Why an organization account:** personal Play accounts created after Nov 2023
 > must run a closed test with **12 testers for 14 continuous days** before they
@@ -36,12 +42,14 @@ What remains before submission:
 | Signing | ✅ upload keystore created, wired into Gradle, and **validated by a real signed build** — see §6–§7 |
 | Build | ✅ **`app-release.aab` produced and signed** (13 MB). Cert SHA256 matches the upload key. See §4 |
 | Toolchain | ✅ Android Studio + cmdline-tools + platform 36 + JDK 21 all installed on this machine — see §5 |
-| Assets | ✅ app icon, feature graphic, adaptive-icon mipmaps, **and 4 Play-compliant phone screenshots** — see §9 |
+| Assets | ✅ app icon, feature graphic, adaptive-icon mipmaps, **and 6 Play-compliant phone screenshots** — see §9 |
 | Data safety declarations | ⚠️ corrected in §10 this pass — crash/diagnostics were mis-declared "not linked to user," and a device-identifier row was missing entirely |
 | Splash screen | ✅ **FIXED and verified on an Android 16 emulator** — watchdog added, app now reaches login. See §14.1 |
 | Runtime verification | ✅ installed and driven on an Android 16 emulator: login → dashboard → roster → calendar → CoachHelm |
-| Dashboard rendering | ❌ **NEW BLOCKER** — stale layer paints through the coach dashboard on Android. See §14.2 |
-| Offline error handling | ⚠️ **not yet fixed** — no native fallback page for a cold, offline first launch. See §14 |
+| Dashboard rendering | ✅ **NOT A PRODUCT BUG** — the "stale layer" was a SwiftShader emulator artifact; clean on host GPU. See §14.2 |
+| Offline error handling | ✅ **FIXED** — `server.errorPath` serves the bundled `offline.html`. See §14b |
+| Greeting | ✅ **FIXED** — CoachHelm Brief said "Morning" at any hour. See §14.3 |
+| Android push (FCM) | ⚠️ **code complete, inert until Firebase exists** — `send-fcm-push` + platform routing + channel. See §3 |
 | Auto Backup | ✅ **FIXED** — WebView cookie jar + storage excluded from cloud backup and device transfer. See §14c |
 
 `targetSdk 36` already satisfies Play's current target-API requirement, so
@@ -138,15 +146,49 @@ UA confirms the runtime: `...Android 16...; wv) ... Chrome/133.0.6943.137 ... He
   resolve it.** Do not report Android push as solved.
 
 **Option A — native FCM — is therefore REQUIRED, not optional**, for
-notifications inside the Play build:
+notifications inside the Play build. **The code for it is now written and
+committed.** It is deliberately inert until Firebase exists, so nothing breaks
+in the meantime.
 
-1. A Firebase project for `com.helmsportslabs.golfhelm`
-2. `google-services.json` dropped into `android/app/`
-3. A send path — `supabase/functions/send-apns-push` is APNs-only; Android
-   would need a parallel FCM sender
+**Done (no action):**
 
-`device_tokens` already carries a `platform` column and `registerDeviceToken`
-already passes it, so the schema is ready whenever this is picked up.
+- `supabase/functions/send-fcm-push/index.ts` — FCM **HTTP v1** sender. Mints a
+  scoped OAuth token from a service account via the JWT-bearer grant and caches
+  it in module scope, so a fan-out to a whole roster mints one token rather than
+  one per device. (The legacy `fcm/send` endpoint and server key are retired;
+  HTTP v1 is the only supported path.) Returns **503** when unconfigured — a
+  deployment state, not a bug — and deliberately does *not* set
+  `shouldDeactivateToken` there, so a lapse in config can never destroy good
+  tokens.
+- **Platform routing.** `sendPushNotification` invoked `send-apns-push` for
+  *every* token regardless of platform; an Android token sent to Apple is
+  rejected, and a rejection only bumps `failed_count`, so it failed silently
+  and forever. It now routes `platform === 'android'` to `send-fcm-push`.
+- **Platform capture.** `push-registration.ts` hardcoded `'ios'` for every
+  registration, so an Android FCM token would have been stored as iOS. It now
+  reads `Capacitor.getPlatform()`.
+- **Notification channel.** `MainActivity` creates `helm_default` on launch and
+  the manifest declares it as the FCM default. Without this, API 26+ drops
+  every notification **silently** — FCM still reports success, so the failure is
+  invisible from both ends.
+- **Dead-token pruning** matches on the FCM reason string, never a bare 400 —
+  400 covers config faults that are identical for every token in a sweep, so
+  treating it as "dead token" would mass-deactivate an entire roster.
+- **Gradle needs no change.** Capacitor's template already applies the
+  `google-services` plugin conditionally on the file existing, and
+  `firebase-messaging:25.0.1` already arrives via `capacitor-push-notifications`.
+
+**What only you can do:**
+
+1. Create a Firebase project for `com.helmsportslabs.golfhelm`.
+2. Download `google-services.json` into `android/app/`. The build picks it up
+   automatically — it is not secret (it ships inside the APK), so commit it.
+3. Firebase Console → Project settings → Service accounts → Generate new
+   private key, then set three Supabase secrets from that JSON:
+   `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`.
+4. `supabase functions deploy send-fcm-push`.
+
+`device_tokens` already carries a `platform` column, so no migration is needed.
 
 ---
 
@@ -338,20 +380,25 @@ Android 16 emulator, signed in as the §12 demo review account:
 
 | File | Screen |
 |---|---|
-| `01-login.png` | Login — the first thing a reviewer sees |
-| `02-roster.png` | Team → Roster, "Who needs your attention" |
-| `03-calendar.png` | Calendar, month + agenda |
-| `04-coachhelm.png` | CoachHelm Brief — Program Pulse (the strongest of the set) |
+| `01-dashboard.png` | Coach dashboard — greeting, roster/schedule counts, quick actions |
+| `02-team-stats.png` | Scoring avg, GIR%, putts/round, roster — with sparklines |
+| `03-coachhelm.png` | CoachHelm Brief — Program Pulse |
+| `04-roster.png` | Team → Roster, "Who needs your attention" |
+| `05-calendar.png` | Calendar, month + agenda |
+| `06-login.png` | Login — the first thing a reviewer sees |
 
-> **Aspect-ratio trap.** The emulator captures at 1080×2400, which is **2.22:1**.
+Play takes 2–8; lead with `01`/`02`/`03`, which carry the product story.
+
+> **Aspect-ratio trap.** The emulator captures at 1080x2400, which is **2.22:1**.
 > Play requires the long side to be no more than **twice** the short side, so
-> raw captures are rejected. All four are cropped to exactly **1080×2160 (2.00:1)**
+> raw captures are rejected. All are cropped to exactly **1080x2160 (2.00:1)**
 > and saved as RGB with no alpha. Crop from the *top* — the status bar is the
 > least useful 240px; cropping the bottom would cut the tab bar.
 
-> **The coach dashboard is deliberately absent from this set** — it currently
-> renders a stale layer through the live content on Android. See §14.2. Add a
-> dashboard screenshot once that is fixed; it is the most sellable screen.
+> **Capture with `-gpu host`.** Under the default SwiftShader software
+> rasterizer this emulator produces compositing artifacts on the dashboard that
+> do not exist on real hardware (§14.2). An earlier pass nearly shipped a
+> screenshot set with a phantom bug in it.
 
 ---
 
@@ -446,7 +493,7 @@ A complete rebuild of GolfHelm.
 
 ---
 
-## 14. Known issues found in review — not yet fixed in code
+## 14. Issues found in review — all resolved or retracted
 
 Surfaced by this review pass. **14.1 is now fixed and verified on hardware;
 14.2 is a new blocker found by running the app; the rest remain open.**
@@ -480,46 +527,81 @@ the login screen. `values/styles.xml` also gained
 API 31+ the platform splash API ignores `android:background` — which is why the
 launch screen rendered system grey instead of Fairway cream.
 
-### 14.2 Coach dashboard paints a stale layer underneath — NEW BLOCKER ❌
+### 14.2 Coach dashboard "stale layer" — NOT A PRODUCT BUG ✅
 
-Found by running the app, not by reading code. On `/golf/dashboard` inside the
-Android WebView, an earlier render layer keeps painting *behind* the live
-content: "7 players · 55 upcoming events" appears three times, the
-`WINDOW 7D/30D/90D/Season` strip twice, and once scrolled, "Clear schedule
-today" and a stray truncated `pr` bleed through the stat cards.
+**Retracted.** An earlier pass of this document called this a submission
+blocker and advised holding the release. That was wrong, and the error was in
+the test rig, not the app.
 
-- **Not a loading state** — identical after 30 additional seconds.
-- **Isolated to the dashboard.** Roster, Calendar and CoachHelm all render
-  perfectly on the same build and session (see the screenshots in §9).
+The symptom was real: on `/golf/dashboard` inside the Android WebView, the
+players/events line appeared three times, the WINDOW strip twice, and "Clear
+schedule today" plus a truncated `pr` bled through the stat cards. It survived
+30+ seconds and a fresh install with no service worker.
 
-**Why it matters:** the dashboard is the first authenticated screen a Play
-reviewer sees, and it currently looks broken. It also cost us the dashboard as
-a listing screenshot.
+Three measurements settled it:
 
-**Not fixed here** — this is an app-layer rendering defect (stacking context /
-stale layer), not Play packaging, and fixing it blind risks regressing the
-shipped web app. Reproduce on the web at a 1080×2400 viewport first to
-determine whether it is WebView-specific or affects mobile web generally.
+1. **The DOM is correct.** Headless Chromium at the same 360x800 viewport with
+   the app's own `HelmSportsLabsApp` user agent, signed in as the demo coach,
+   counted each string **exactly once** (`upcoming events` x1, `Window` x1,
+   `Clear schedule today` x1). So nothing was duplicated in React, in the
+   server render, or by the service worker — it was a paint artifact.
+2. **logcat named the mechanism**: `[ERROR:tile_manager.cc] tile memory limits
+   exceeded, some content may not draw`, repeatedly. Compositor tiles were
+   being evicted and stale ones left on screen.
+3. **Changing only the GPU flag fixed it.** Same APK, same account:
+   `-gpu swiftshader_indirect` (software rasterizer) ghosts;
+   `-gpu host` renders perfectly.
 
-### 14.3 Greeting disagrees with local time — LOW
+It also explains the one detail that never fit a logic bug: only the dashboard
+was affected. It is by far the tallest page here (~3,700 CSS px), so it is the
+only one that exhausts the software rasterizer's tile budget. Roster, Calendar
+and CoachHelm are shorter and always rendered clean.
 
-The CoachHelm Brief renders "Morning, Coach." at 19:09 local while the
-dashboard on the same session renders "Good evening, Coach". Two greeting
-computations disagree; the Brief one looks like it is reading UTC.
+> **Run this emulator with `-gpu host`.** Under SwiftShader you will keep
+> seeing rendering faults that do not exist on real hardware, and it is an easy
+> way to waste a day chasing a phantom — as happened here.
 
-### 14b. No native offline/error page for a cold offline launch — HIGH
+The dashboard is now the lead Play screenshot (§9).
 
-`MainActivity` has no `WebViewClient` override, so a failed navigation (no
-connectivity, origin down) on a cold launch — before the service worker has
-ever installed and cached `public/offline.html` — renders Chromium's raw
-"can't reach this page" interstitial inside the WebView. Combined with §14a,
-a reviewer or new user hitting connectivity trouble on first open sees either
-a stuck splash screen or a raw browser error, neither of which reads as part
-of the app.
+### 14.3 Greeting disagreed with local time — FIXED ✅
 
-**Fix:** override `onReceivedError`/`onReceivedHttpError` for main-frame
-navigation failures (Capacitor 8 exposes `bridge.getWebViewClient()` to wrap)
-and load a bundled offline page from `file:///android_asset/` instead.
+The CoachHelm Brief rendered "Morning, Coach." at 19:09 while the dashboard on
+the same session correctly said "Good evening". `CommandOpening.tsx` had the
+word **hardcoded** — there was no time logic at all, so every coach was greeted
+with "Morning" at every hour.
+
+Now derived from the shared `getTimeOfDay()` buckets, so the two surfaces
+cannot drift again. Resolved in an effect rather than during render: this
+component is SSR'd, and reading the clock at render time makes the server (UTC)
+and client (local) disagree — a hydration mismatch. The initial value is
+"Welcome back", the one greeting that is never wrong at any hour.
+
+### 14b. No native offline/error page for a cold offline launch — FIXED ✅
+
+`MainActivity` had no `WebViewClient` override, so a failed navigation on a
+cold launch — before the service worker had ever cached `offline.html` —
+rendered Chromium's raw "can't reach this page" interstitial inside the app.
+Together with §14.1 that meant a reviewer on bad wifi saw either a frozen
+splash or a browser error, neither of which reads as part of the product.
+
+**Fixed via Capacitor's own `server.errorPath`** rather than hand-written
+native Java — same outcome, far less surface area to get wrong:
+
+```ts
+server: { url: '…', errorPath: 'offline.html', … }
+```
+
+`cap sync` bundles `public/offline.html` into the APK at
+`assets/public/offline.html` (verified present), so it needs no network to
+display, and `errorPath` is confirmed in the generated
+`android/app/src/main/assets/capacitor.config.json`.
+
+`offline.html` also needed a fix to work in this context. Its Try Again button
+called `location.reload()`, which is right for the web PWA (the document URL is
+still the real app URL) but a **dead end** in the shell, where the page is
+loaded from a local origin — reloading just re-renders the same local file
+forever. It now detects the local origin, navigates back to the app explicitly,
+and additionally auto-retries on the `online` event.
 
 ### 14c. `allowBackup="true"` with no exclusion rules — FIXED ✅
 

@@ -52,8 +52,36 @@
         </div>
         <h1>No Connection</h1>
         <p>Helm Sports Labs needs an internet connection. Please check your connection and try again.</p>
-        <button onclick="window.location.reload()" aria-label="Retry connection">Try Again</button>
+        <button onclick="helmRetry()" aria-label="Retry connection">Try Again</button>
         <p class="sub"><a href="mailto:admin@helmsportslabs.com">admin@helmsportslabs.com</a></p>
     </div>
+    <script>
+        // This page is served two different ways and retry means two different
+        // things:
+        //
+        //   1. Web PWA — public/sw.js serves it from cache for a failed
+        //      navigation. The document URL is still the real app URL, so
+        //      reload() correctly retries that page.
+        //   2. Android shell — Capacitor loads it as `server.errorPath` from a
+        //      LOCAL origin when the remote app fails to load. Here reload()
+        //      just re-renders this same local file, so "Try Again" becomes a
+        //      dead end that never returns to the app no matter how many times
+        //      it is pressed.
+        //
+        // Detect the local case and navigate back to the app explicitly.
+        function helmRetry() {
+            var local = location.protocol === 'file:' ||
+                        location.protocol === 'capacitor:' ||
+                        location.hostname === 'localhost';
+            if (local) {
+                location.replace('https://www.helmsportslabs.com/golf/dashboard');
+            } else {
+                location.reload();
+            }
+        }
+        // Auto-recover: if the device regains connectivity while this page is
+        // up, go back on its own rather than waiting for a tap.
+        window.addEventListener('online', helmRetry);
+    </script>
 </body>
 </html>
