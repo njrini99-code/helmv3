@@ -615,7 +615,13 @@ function isChunkLoadErrorMessage(message: string): boolean {
     msg.includes('loading chunk') ||
     msg.includes('loading css chunk') ||
     msg.includes('chunkloaderror') ||
-    (msg.includes('cannot read properties of undefined') && msg.includes("'call'"))
+    (msg.includes('cannot read properties of undefined') && msg.includes("'call'")) ||
+    // ESM dynamic-import wording for the same stale-asset failure (Safari/
+    // Firefox phrase it this way instead of webpack's "Loading chunk N
+    // failed"). `admin-data.ts`'s incident classifier already recognizes
+    // this exact phrase for the same root cause — recognize it here too so
+    // the recovery/severity-capping path doesn't miss the browsers that use it.
+    msg.includes('failed to fetch dynamically imported module')
   );
 }
 

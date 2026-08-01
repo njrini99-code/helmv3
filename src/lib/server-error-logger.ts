@@ -8,6 +8,7 @@ import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incid
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId } from '@/lib/admin/request-context';
+import { collapseEmbeddedHtml } from '@/lib/utils/describe-error';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -467,12 +468,24 @@ function isNextControlFlowError(message: string, error: Error | null): boolean {
 }
 
 async function captureServerTrace(
-  message: string,
+  rawMessage: string,
   context: RoundErrorContext,
   severity: ServerTraceSeverity,
   error?: Error | null,
   forceException = false,
 ): Promise<void> {
+  // Collapse an embedded gateway HTML page HERE, at the single sink, rather
+  // than at the 155 call sites that interpolate a raw `error.message` into a
+  // template string. One of them (cron.refresh-engagement) put ~6KB of
+  // Cloudflare markup into admin_events on 2026-07-29.
+  //
+  // The size is the lesser problem. That markup carries a unique Ray ID, client
+  // IP and to-the-second timestamp, and admin_events fingerprints hash the
+  // message — so every occurrence of one outage mints a NEW incident group.
+  // collapseEmbeddedHtml keeps the caller's prefix (which says WHICH call
+  // failed) and replaces only the HTML with a byte-stable summary, so an outage
+  // collapses to one incident with a count instead of dozens of singletons.
+  const message = collapseEmbeddedHtml(rawMessage) ?? rawMessage;
   const enriched = enrichTraceContext(message, context);
   const normalizedError = error ?? syntheticTraceError(message);
 

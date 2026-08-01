@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeAll, beforeEach } from 'vitest';
 
 import { GolfUserProvider } from '@/contexts/golf-user-context';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -243,6 +243,35 @@ vi.mock('@/components/golf/coachhelm/settings', () => ({
 }));
 
 describe('FairwaySettingsCoachingIntelligence', () => {
+  // Resolved once in `beforeAll` below — every test reads this instead of
+  // calling `import()` itself.
+  let PageComponent: typeof import(
+    '@/components/fairway/pages/settings/FairwaySettingsCoachingIntelligence'
+  )['FairwaySettingsCoachingIntelligence'];
+
+  // Root cause of an intermittent 5s timeout under the full suite / sharded
+  // CI (never in isolation): this file's FIRST test used to do its
+  // `import('@/components/fairway/pages/settings/FairwaySettingsCoachingIntelligence')`
+  // inline, inside its own `it()` body. That import is the one that
+  // transforms + evaluates the ENTIRE real (un-mocked) dependency graph of
+  // the page for the first time — every other test in the file paid nothing
+  // because the module is cached after the first load. Measured directly:
+  // under artificial CPU pressure (8 busy-loop processes on a 10-core
+  // machine, simulating the 3-way-sharded CI runner under load), that first
+  // test alone jumped from ~150ms to 2.44s while every other test in this
+  // same file stayed under 200ms — the cold import, not the `waitFor`
+  // assertion, is what eats the budget, and vitest's default 5000ms
+  // `testTimeout` has no margin left once shard contention doubles or
+  // triples that cost. Paying the one-time cost here, in `beforeAll` (a
+  // separately-budgeted hook, not the timed assertion), removes the race
+  // instead of widening it. 20s is a generous ceiling for a single cold
+  // module transform, not a race being masked.
+  beforeAll(async () => {
+    ({ FairwaySettingsCoachingIntelligence: PageComponent } = await import(
+      '@/components/fairway/pages/settings/FairwaySettingsCoachingIntelligence'
+    ));
+  }, 20_000);
+
   beforeEach(() => {
     saveMock.mockResolvedValue(true);
     saveMock.mockClear();
@@ -262,31 +291,23 @@ describe('FairwaySettingsCoachingIntelligence', () => {
   });
 
   function renderPage() {
-    return import(
-      '@/components/fairway/pages/settings/FairwaySettingsCoachingIntelligence'
-    ).then(({ FairwaySettingsCoachingIntelligence }) =>
-      render(
-        <GolfUserProvider
-          userData={{
-            role: 'coach',
-            userId: 'user-1',
-            name: 'Coach',
-            coachId: 'coach-1',
-            teamId: 'team-1',
-            organizationId: 'org-1',
-          }}
-        >
-          <FairwaySettingsCoachingIntelligence />
-        </GolfUserProvider>,
-      ),
+    return render(
+      <GolfUserProvider
+        userData={{
+          role: 'coach',
+          userId: 'user-1',
+          name: 'Coach',
+          coachId: 'coach-1',
+          teamId: 'team-1',
+          organizationId: 'org-1',
+        }}
+      >
+        <PageComponent />
+      </GolfUserProvider>,
     );
   }
 
   it('saves priority reorder through the philosophy hook without issuing a duplicate server-action write', async () => {
-    const { FairwaySettingsCoachingIntelligence } = await import(
-      '@/components/fairway/pages/settings/FairwaySettingsCoachingIntelligence'
-    );
-
     // The component reads the ACTIVE team from GolfUserContext (cookie-aware,
     // resolved by the dashboard layout) — provide it like the layout does.
     render(
@@ -300,7 +321,7 @@ describe('FairwaySettingsCoachingIntelligence', () => {
           organizationId: 'org-1',
         }}
       >
-        <FairwaySettingsCoachingIntelligence />
+        <PageComponent />
       </GolfUserProvider>,
     );
 

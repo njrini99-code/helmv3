@@ -1,5 +1,6 @@
 'use client';
 
+import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './capacitor';
 import { isSafeInternalPath } from './safe-redirect';
 import { fwHaptic } from '@/lib/fairway/haptics';
@@ -85,6 +86,17 @@ export async function initPushListeners(): Promise<void> {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');
 
+    // Guard against a native build where the JS dependency is present
+    // (package.json) but the plugin was never registered on the native
+    // platform project (e.g. missing from android/capacitor.settings.gradle
+    // autolinking). Without this check, the addListener() calls below still
+    // fire and their returned promises reject ASYNCHRONOUSLY with "plugin is
+    // not implemented" — none of those calls are awaited, so an unattached
+    // rejection reaches the global unhandled-rejection handler and pollutes
+    // the error feed. This was the "PushNotifications plugin is not
+    // implemented on android" incident.
+    if (!Capacitor.isPluginAvailable('PushNotifications')) return;
+
     // If permission was previously granted, silently re-register with APNs
     // so the token stays fresh.
     const permStatus = await PushNotifications.checkPermissions();
@@ -120,12 +132,16 @@ export async function initPushListeners(): Promise<void> {
         }
       }
       console.warn('[Push] Device token registration failed after retries; will retry on next launch', lastError);
+    }).catch((err) => {
+      // addListener() itself rejects async when the plugin is unavailable —
+      // separate from anything the callback above does.
+      console.error('[Push] addListener("registration") failed:', err);
     });
 
     // Listen for registration errors
     PushNotifications.addListener('registrationError', (error) => {
       console.error('[Push] Registration failed:', error);
-    });
+    }).catch(() => {});
 
     // Foreground notifications are displayed by the system based on
     // capacitor.config.ts presentationOptions: ["badge", "sound", "alert"].
@@ -139,7 +155,7 @@ export async function initPushListeners(): Promise<void> {
         body: notification.body ?? '',
         data: (notification.data ?? {}) as Record<string, unknown>,
       });
-    });
+    }).catch(() => {});
 
     // Tap handler — deep-link via the URL in the notification payload.
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
@@ -164,7 +180,7 @@ export async function initPushListeners(): Promise<void> {
       // tapped notification) we fall back to the hard navigation.
       const handled = dispatchPushEvent(PUSH_NAVIGATE_EVENT, { url: rawUrl });
       if (!handled) window.location.href = rawUrl;
-    });
+    }).catch(() => {});
   } catch (err) {
     console.error('[Push] Listener setup failed:', err);
   }
