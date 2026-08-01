@@ -38,7 +38,10 @@ const staleDeploymentRecoveryScript = `
       (lower.includes('server action') &&
         (lower.includes('not found on the server') || lower.includes('was not found'))) ||
       lower === 'load failed' ||
-      lower.includes('an unexpected response was received from the server')
+      lower.includes('an unexpected response was received from the server') ||
+      // ESM dynamic-import wording for the same stale-asset failure — see the
+      // matching note in error-logging.ts's isChunkLoadErrorMessage.
+      lower.includes('failed to fetch dynamically imported module')
     );
   }
 
