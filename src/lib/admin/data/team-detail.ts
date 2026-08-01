@@ -383,13 +383,23 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     const teamUserIds = await resolveTeamUserIds(teamId);
     let loginTimestamps: string[] = [];
     if (teamUserIds.size > 0) {
-      const { data, error } = await admin
-        .from('admin_events')
-        .select('created_at')
-        .eq('event_type', 'login')
-        .gte('created_at', ago30d)
-        .in('user_id', Array.from(teamUserIds))
-        .limit(TEAM_LOGINS_LIMIT);
+      // Paginated past the PostgREST 1000-row cap; TEAM_LOGINS_LIMIT is enforced
+      // by stopping page accumulation. `.limit(TEAM_LOGINS_LIMIT)` silently
+      // returned at most 1000, undercounting team login activity with no error.
+      // `.order('id')` gives pagination a stable unique sort.
+      const { data, error } = await fetchAllRowsResult<{ created_at: string | null }>(
+        (from, to) => {
+          if (from >= TEAM_LOGINS_LIMIT) return Promise.resolve({ data: [], error: null });
+          return admin
+            .from('admin_events')
+            .select('created_at')
+            .eq('event_type', 'login')
+            .gte('created_at', ago30d)
+            .in('user_id', Array.from(teamUserIds))
+            .order('id', { ascending: true })
+            .range(from, Math.min(to, TEAM_LOGINS_LIMIT - 1));
+        },
+      );
       if (error) throw new Error(error.message);
       loginTimestamps = ((data ?? []) as unknown as Array<{ created_at: string | null }>)
         .map((r) => r.created_at)

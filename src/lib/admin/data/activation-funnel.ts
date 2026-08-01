@@ -151,12 +151,23 @@ async function fetchBaseballWindowStats(admin: AdminClient, startIso: string, en
 async function golfActivationMap(admin: AdminClient, onboardedRows: CohortRow[]): Promise<Map<string, string>> {
   const ids = onboardedRows.map((r) => r.id);
   if (ids.length === 0) return new Map();
-  const { data } = await admin
-    .from('golf_rounds')
-    .select('player_id, created_at')
-    .in('player_id', ids)
-    .order('created_at', { ascending: true })
-    .limit(ACTIVATION_ROWS_CAP);
+  // Paginated past the PostgREST 1000-row cap; ACTIVATION_ROWS_CAP is enforced
+  // by stopping page accumulation. This map keeps the FIRST row per player, so a
+  // silent truncation drops whole players out of the activation funnel. `id` is
+  // the tiebreak — created_at alone is not unique, and a non-unique sort lets
+  // page boundaries drift.
+  const { data } = await fetchAllRowsResult<{ player_id: string; created_at: string | null }>(
+    (from, to) => {
+      if (from >= ACTIVATION_ROWS_CAP) return Promise.resolve({ data: [], error: null });
+      return admin
+        .from('golf_rounds')
+        .select('player_id, created_at')
+        .in('player_id', ids)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, Math.min(to, ACTIVATION_ROWS_CAP - 1));
+    },
+  );
   const map = new Map<string, string>();
   for (const row of (data ?? []) as Array<{ player_id: string; created_at: string | null }>) {
     if (!row.created_at) continue;
@@ -185,12 +196,20 @@ async function baseballActivationMap(admin: AdminClient, onboardedRows: CohortRo
   const teamIds = Array.from(new Set(members.map((m) => m.team_id)));
   if (teamIds.length === 0) return new Map();
 
-  const { data: gameRows } = await admin
-    .from('baseball_games')
-    .select('team_id, created_at')
-    .in('team_id', teamIds)
-    .order('created_at', { ascending: true })
-    .limit(ACTIVATION_ROWS_CAP);
+  // Same cap, same reasoning as golfActivationMap: first-row-per-team, so a
+  // truncation silently drops teams from the funnel.
+  const { data: gameRows } = await fetchAllRowsResult<{ team_id: string; created_at: string | null }>(
+    (from, to) => {
+      if (from >= ACTIVATION_ROWS_CAP) return Promise.resolve({ data: [], error: null });
+      return admin
+        .from('baseball_games')
+        .select('team_id, created_at')
+        .in('team_id', teamIds)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, Math.min(to, ACTIVATION_ROWS_CAP - 1));
+    },
+  );
   const teamFirstGame = new Map<string, string>();
   for (const row of (gameRows ?? []) as Array<{ team_id: string; created_at: string | null }>) {
     if (!row.created_at) continue;

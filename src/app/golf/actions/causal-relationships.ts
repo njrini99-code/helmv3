@@ -77,7 +77,15 @@ const SELECT_COLUMNS =
  * every distinct logical relationship in practice (there are only ~4 causes × 1
  * effect × 2 relationship types).
  */
-const FETCH_LIMIT = 2500;
+/**
+ * PostgREST hard-caps every response at 1000 rows, so a larger literal here
+ * would be a number that lies — 2500 returned 1000. Measured 2026-07-31: the
+ * worst player has 130 active relationships and no player exceeds the cap, so
+ * this bound has never bitten. If it ever could, the fix is pagination
+ * (fetchAllRowsResult) rather than a bigger number, because this query is built
+ * incrementally and `.limit()` cannot raise the ceiling.
+ */
+const FETCH_LIMIT = 1000;
 
 /** Natural-key dedupe key — kept consistent with the engine save path. */
 function naturalKey(row: RawCausalRow): string {
