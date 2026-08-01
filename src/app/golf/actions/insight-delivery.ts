@@ -1199,24 +1199,45 @@ async function fetchShotDriversByCategory(
     const roundIds = (rounds ?? []).map((r) => r.id as string);
     if (roundIds.length === 0) return undefined;
 
-    const { data: shots, error: shotsError } = await supabase
-      .from('golf_shots')
-      .select(`
-        shot_type,
-        club_type,
-        distance_to_hole_before,
-        distance_unit_before,
-        result,
-        miss_direction,
-        round_id,
-        hole_number,
-        shot_number,
-        putt_details(miss_tags, break_direction),
-        approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
-      `)
-      .in('round_id', roundIds)
-      .limit(SHOT_DRIVERS_FETCH_CAP)
-      .abortSignal(controller.signal);
+    // Paginated past the PostgREST 1000-row cap; SHOT_DRIVERS_FETCH_CAP is
+    // enforced by stopping page accumulation. A single
+    // `.limit(SHOT_DRIVERS_FETCH_CAP)` silently returned at most 1000 rows —
+    // measured 2026-07-31, 6 of 33 players already exceed 1000 shots (max
+    // 1,189), so their shot drivers were being computed from an ARBITRARY
+    // 1000-shot slice (no ORDER BY) rather than their full history. Every
+    // player crosses that line at roughly 14 rounds.
+    //
+    // `.order('id')` is required, not cosmetic: fetchAllRowsResult needs a
+    // stable unique sort or page boundaries drift and rows are dropped or
+    // repeated. The abort signal rides on every page, so the 5s best-effort
+    // budget still bounds the whole walk exactly as before.
+    const { data: shots, error: shotsError } = await fetchAllRowsResult((from, to) => {
+      if (from >= SHOT_DRIVERS_FETCH_CAP) return Promise.resolve({ data: [], error: null });
+      return supabase
+        .from('golf_shots')
+        .select(`
+          shot_type,
+          club_type,
+          distance_to_hole_before,
+          distance_unit_before,
+          result,
+          miss_direction,
+          round_id,
+          hole_number,
+          shot_number,
+          putt_details(miss_tags, break_direction),
+          approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
+        `)
+        .in('round_id', roundIds)
+        .order('id', { ascending: true })
+        .range(from, Math.min(to, SHOT_DRIVERS_FETCH_CAP - 1))
+        .abortSignal(controller.signal);
+    }, undefined, {
+      table: 'golf_shots',
+      action: 'insight-delivery.fetchShotDriversByCategory',
+      feature: 'coachhelm_ai_engine',
+      sport: 'golf',
+    });
     if (shotsError) throw new Error(shotsError.message);
     if (!shots || shots.length === 0) return undefined;
 
