@@ -2827,6 +2827,13 @@ export type Database = {
             foreignKeyName: "baseball_demo_sessions_crm_coach_id_fkey"
             columns: ["crm_coach_id"]
             isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "baseball_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
             referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
@@ -9275,6 +9282,13 @@ export type Database = {
             foreignKeyName: "crm_contact_log_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_contact_log_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
             referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
@@ -9525,6 +9539,13 @@ export type Database = {
             foreignKeyName: "crm_events_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
             referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
@@ -9650,6 +9671,13 @@ export type Database = {
             foreignKeyName: "crm_notes_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_notes_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
             referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
@@ -9718,6 +9746,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_replies_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
           },
           {
             foreignKeyName: "crm_replies_coach_id_fkey"
@@ -9828,6 +9863,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sequence_enrollments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
           },
           {
             foreignKeyName: "crm_sequence_enrollments_coach_id_fkey"
@@ -9976,6 +10018,13 @@ export type Database = {
             foreignKeyName: "crm_stage_transitions_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_stage_transitions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
             referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
@@ -10058,6 +10107,13 @@ export type Database = {
             foreignKeyName: "crm_tasks_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
             referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
@@ -10123,6 +10179,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_unmatched_inbound_promoted_coach_id_fkey"
+            columns: ["promoted_coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
           },
           {
             foreignKeyName: "crm_unmatched_inbound_promoted_coach_id_fkey"
@@ -10214,6 +10277,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_requests_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
           },
           {
             foreignKeyName: "demo_requests_crm_coach_id_fkey"
@@ -10377,6 +10447,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
           },
           {
             foreignKeyName: "email_events_coach_id_fkey"
@@ -12460,6 +12537,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_demo_sessions_crm_coach_id_fkey"
+            columns: ["crm_coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coach_signal_summary"
+            referencedColumns: ["coach_id"]
           },
           {
             foreignKeyName: "golf_demo_sessions_crm_coach_id_fkey"
@@ -20043,6 +20127,37 @@ export type Database = {
         }
         Relationships: []
       }
+      v_crm_coach_activity: {
+        Row: {
+          coach_id: string | null
+          context: string | null
+          detail: string | null
+          occurred_at: string | null
+          signal: string | null
+          weight: number | null
+        }
+        Relationships: []
+      }
+      v_crm_coach_signal_summary: {
+        Row: {
+          bounces: number | null
+          coach_id: string | null
+          delivered: number | null
+          demo_visits: number | null
+          email: string | null
+          email_status: string | null
+          intent_score: number | null
+          last_any_signal_at: string | null
+          last_intent_at: string | null
+          name: string | null
+          opens: number | null
+          replies: number | null
+          school: string | null
+          stage: string | null
+          touches: number | null
+        }
+        Relationships: []
+      }
       v_crm_coaches_by_school: {
         Row: {
           coaches_at_school: number | null
@@ -20119,6 +20234,10 @@ export type Database = {
       }
       can_notify_baseball_user: {
         Args: { p_target_user_id: string }
+        Returns: boolean
+      }
+      can_read_golf_shot_detail: {
+        Args: { p_shot_id: string }
         Returns: boolean
       }
       can_view_baseball_player:
@@ -20612,6 +20731,7 @@ export type Database = {
         Returns: undefined
       }
       mark_task_reminder_sent: { Args: { p_task_id: string }; Returns: boolean }
+      owns_golf_shot: { Args: { p_shot_id: string }; Returns: boolean }
       prune_stale_player_standing: {
         Args: { p_cutoff: string; p_team_ids: string[] }
         Returns: number
@@ -20738,6 +20858,10 @@ export type Database = {
           }
       sg_normalize_lie: { Args: { p_lie: string }; Returns: string }
       sg_scale_for_player: { Args: { p_player_id: string }; Returns: number }
+      shares_my_baseball_organization: {
+        Args: { p_org_id: string }
+        Returns: boolean
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       submit_round_atomic: {
