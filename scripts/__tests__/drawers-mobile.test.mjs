@@ -1,4 +1,10 @@
-import { test } from 'node:test';
+// NOTE: this file previously imported `test` from `node:test`, which only runs
+// under the `node --test` CLI. Nothing in package.json or CI ever invoked that
+// runner, so this entire mobile touch-target suite silently never executed —
+// which is how it kept asserting against a component that stopped rendering and
+// a file that no longer exists, without anyone noticing. It now uses vitest
+// (wired into the `unit` project in vitest.config.ts) so `npm test` runs it.
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -41,11 +47,17 @@ const COMPONENTS = resolve(REPO_ROOT, 'src', 'components');
 
 const FILES = {
   goalModal: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'GoalCreationModal', 'index.tsx'),
-  chatDrawer: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'Chat', 'ChatDrawer.tsx'),
-  chatComposer: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'Chat', 'ChatComposer.tsx'),
-  shotTracking: join(COMPONENTS, 'golf', 'ShotTrackingComprehensive.tsx'),
+  // The chat was restructured out of `coachhelm/v3/Chat/` into `coachhelm/chat/`.
+  // ChatComposer's successor is PromptComposer, which still owns the bottom edge
+  // of the mobile full-screen drawer.
+  promptComposer: join(COMPONENTS, 'golf', 'coachhelm', 'chat', 'PromptComposer.tsx'),
+  // The LIVE shot-entry surface. Both round clients render FairwayShotTracking
+  // (new-round-client.tsx:1841, continue-round-client.tsx:979); nothing renders
+  // the legacy ShotTrackingComprehensive, which this test used to point at.
+  shotEntry: join(COMPONENTS, 'fairway', 'pages', 'rounds-tracking', 'FairwayShotEntry.tsx'),
+  editShotModal: join(COMPONENTS, 'fairway', 'pages', 'rounds-tracking', 'FairwayEditShotModal.tsx'),
+  shotTrackingShell: join(COMPONENTS, 'fairway', 'pages', 'rounds-tracking', 'FairwayShotTracking.tsx'),
   holeShotPath: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'HoleShotPath', 'index.tsx'),
-  roundStrip: join(COMPONENTS, 'golf', 'coachhelm', 'round-review', 'RoundStripGrid.tsx'),
 };
 
 async function read(file) {
@@ -67,25 +79,64 @@ test('GoalCreationModal panel is dvh-capped and scrolls', async () => {
   assertContains(src, 'overflow-y-auto', FILES.goalModal, 'panel content must scroll instead of pushing actions off-screen');
 });
 
-test('ChatDrawer FAB respects the bottom safe-area inset', async () => {
-  const src = await read(FILES.chatDrawer);
-  assertContains(src, 'env(safe-area-inset-bottom)', FILES.chatDrawer, 'launcher FAB must clear the iOS home indicator');
+// REMOVED: 'ChatDrawer FAB respects the bottom safe-area inset'.
+// It read a `v3/Chat/ChatDrawer.tsx` that no longer exists. The launcher FAB
+// itself survives, at chat/CoachHelmDrawer.tsx:104 — but it is
+// `hidden ... md:flex`, i.e. desktop-only. It never renders on a viewport that
+// HAS a home indicator, so asserting a safe-area inset on it was the wrong
+// guarantee even before the file moved. Its real constraint is desktop content
+// clearance, which FairwayDashboardShell handles with `role === 'coach' &&
+// 'md:pb-28'`. Not re-added here rather than re-added wrongly.
+
+test('the chat composer clears the home indicator in the drawer variant', async () => {
+  const src = await read(FILES.promptComposer);
+  assertContains(
+    src,
+    'env(safe-area-inset-bottom)',
+    FILES.promptComposer,
+    'composer (bottom edge of the mobile full-screen drawer) must clear the home indicator',
+  );
 });
 
-test('ChatComposer respects the bottom safe-area inset', async () => {
-  const src = await read(FILES.chatComposer);
-  assertContains(src, 'env(safe-area-inset-bottom)', FILES.chatComposer, 'composer (bottom edge of the mobile full-screen drawer) must clear the home indicator');
+/**
+ * These assertions used to run against `golf/ShotTrackingComprehensive.tsx`.
+ * That component is no longer rendered anywhere — both round clients import and
+ * render `FairwayShotTracking` instead — so the test was guarding dead code and
+ * passing for the wrong reason, while the surface users actually touch was
+ * unguarded.
+ *
+ * The live components DO satisfy the same rules today (checked when repointing),
+ * so this is a coverage fix, not a bug fix. The point is that a future
+ * regression in the rendered component now fails.
+ *
+ * Note the breakpoint differs between the two live files — `FairwayShotEntry`
+ * uses `sm:grid-cols-6` and `FairwayEditShotModal` uses `md:grid-cols-6`. Both
+ * are ≥44pt at 320px because both start at 3-up; pinning one literal string
+ * would force a cosmetic rewrite of the other, so the assertion accepts either.
+ */
+const PUTT_GRID_3UP = /grid-cols-3\b[^"'`]*\b(sm|md):grid-cols-6/;
+
+test('putt distance pickers stay 3-up on narrow screens (>=44pt targets)', async () => {
+  for (const file of [FILES.shotEntry, FILES.editShotModal]) {
+    const src = await read(file);
+    assert.ok(
+      PUTT_GRID_3UP.test(src),
+      `${file}\n  putt quick-select must drop to 3 columns at 320px so each target is >=44pt\n` +
+        '  (expected grid-cols-3 … sm|md:grid-cols-6)',
+    );
+    // Must not regress to a bare 6-up row, which crushes targets below 44pt.
+    const bare6Up = /grid-cols-6/.test(src) && !PUTT_GRID_3UP.test(src);
+    assert.ok(!bare6Up, `${file}\n  putt distance pickers must not become a bare 6-up row`);
+  }
 });
 
-test('ShotTrackingComprehensive putt picker is touch-friendly and var-anchored', async () => {
-  const src = await read(FILES.shotTracking);
-  assertContains(src, 'grid-cols-3 md:grid-cols-6', FILES.shotTracking, 'putt quick-select must drop to 3 columns at 320px so each target is >=44pt');
-  assertContains(src, 'var(--scorecard-height', FILES.shotTracking, 'right-rail sticky offset must track the real scorecard header height, not a magic 128px');
-  // The two grid-cols-6 putt distance pickers must NOT regress back to a
-  // bare 6-up row that crushes targets below 44pt at 320px.
-  assert.ok(
-    !/grid-cols-6(?!\s|")/.test(src) || src.includes('grid-cols-3 md:grid-cols-6'),
-    `${FILES.shotTracking}\n  putt distance pickers must stay grid-cols-3 md:grid-cols-6`,
+test('shot-tracking right rail is anchored to the real scorecard height', async () => {
+  const src = await read(FILES.shotTrackingShell);
+  assertContains(
+    src,
+    'var(--scorecard-height',
+    FILES.shotTrackingShell,
+    'right-rail sticky offset must track the real scorecard header height, not a magic 128px',
   );
 });
 
@@ -94,8 +145,11 @@ test('HoleShotPath hero size is fluid and capped', async () => {
   assertContains(src, 'w-full max-w-[280px]', FILES.holeShotPath, 'hero must be fluid and capped so it never overflows a 320px viewport');
 });
 
-test('RoundReview hole strips scroll + snap on mobile', async () => {
-  const src = await read(FILES.roundStrip);
-  assertContains(src, 'overflow-x-auto', FILES.roundStrip, 'nine-hole strip row must scroll horizontally on narrow screens');
-  assertContains(src, 'snap-x', FILES.roundStrip, 'strip row must snap so holes land cleanly when swiped');
-});
+// REMOVED: 'RoundReview hole strips scroll + snap on mobile'.
+// It read src/components/golf/coachhelm/round-review/RoundStripGrid.tsx, which
+// does not exist in main — so the suite would have failed on a missing file the
+// moment anything ran it. The round-review UI was rebuilt around FilmstripReview,
+// which reflows holes with a responsive grid + flex-wrap rather than a
+// horizontally scrolling snap strip. That is a legitimate mobile answer, not a
+// regression, so the assertion is obsolete rather than mis-pointed and inventing
+// a replacement for a layout I have not studied would be worse than removing it.
