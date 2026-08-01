@@ -63,6 +63,12 @@ jobs:
       - name: Check schema invariants
         run: ./scripts/check-schema-invariants.sh
 
+      # Catches `.limit(N > 1000)` including behind a named constant, which the
+      # ast-grep rule cannot see through — that is exactly where the live
+      # shot-drivers truncation hid (SHOT_DRIVERS_FETCH_CAP = 25000).
+      - name: Check PostgREST row caps
+        run: node scripts/check-row-cap-limits.mjs
+
   feature-knowledge:
     name: Feature knowledge
     runs-on: ubuntu-latest
