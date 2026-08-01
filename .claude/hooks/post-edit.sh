@@ -6,12 +6,8 @@
 #   1. eslint --fix using THIS repo's config, so it reinforces the gates
 #      rather than fighting them (note: prettier is deliberately not used —
 #      it is not installed or configured here).
-#   2. Warn on Tailwind alpha applied to a CSS-variable colour, which compiles
-#      to NOTHING. No error, no lint failure, just an invisible element.
-#
-# PostToolUse cannot block (the write already happened). Structured feedback
-# goes back to Claude via hookSpecificOutput.additionalContext, so exit 0
-# with JSON — never exit 2 here, that would just print noise.
+# PostToolUse cannot block — the write already happened. Exit 0 always; exit 2
+# here would only print noise.
 set -uo pipefail
 
 INPUT=$(cat)
@@ -19,30 +15,23 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -z "$FILE" ] && exit 0
 [ -f "$FILE" ] || exit 0
 
-NOTES=""
-
 case "$FILE" in
   *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs)
     npx eslint --fix "$FILE" >/dev/null 2>&1 || true
     ;;
 esac
 
-# bg-fw-danger/30, text-accent-500/50 … — Tailwind cannot compute an alpha
-# channel from a var() colour, so the whole utility is dropped at build time.
-case "$FILE" in
-  *.tsx|*.jsx|*.css)
-    if HITS=$(grep -nEo '(bg|text|border|ring|fill|stroke)-(fw|accent)-[a-z0-9-]+/[0-9]+' "$FILE" 2>/dev/null | head -5) \
-       && [ -n "$HITS" ]; then
-      NOTES="Tailwind alpha on a CSS-variable colour compiles to NOTHING (silently — no error, no lint failure). Found in $FILE:
-$HITS
-Use an explicit inline style with color-mix(), or a pre-defined token that already carries the alpha."
-    fi
-    ;;
-esac
-
-if [ -n "$NOTES" ]; then
-  jq -nc --arg ctx "$NOTES" \
-    '{hookSpecificOutput:{hookEventName:"PostToolUse", additionalContext:$ctx}}'
-fi
+# NOTE — there is deliberately NO Tailwind alpha check here.
+#
+# The "alpha on a CSS-variable colour compiles to nothing" trap was REAL (the
+# 2026-07-24 audit measured 286 dead sites across 122 files) and is now FIXED
+# at the source: tailwind.config.ts's tokenColor() emits
+#   color-mix(in oklab, var(--x) calc(<alpha-value> * 100%), transparent)
+# so `bg-fw-danger/30` composes correctly. 341 such utilities are live and
+# correct today.
+#
+# A hook warning on them would fire on the majority of UI edits and be wrong
+# every time — which is how you train yourself to ignore hook output. If the
+# token layer ever regresses, the fix belongs in tailwind.config.ts, not here.
 
 exit 0
