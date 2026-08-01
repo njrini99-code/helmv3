@@ -477,5 +477,3 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
     </div>
   );
 }
-
-export default CategoryInsightsPanel;

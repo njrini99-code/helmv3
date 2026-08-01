@@ -1794,5 +1794,3 @@ function DocumentCard({
     </Surface>
   );
 }
-
-export default FairwayDocuments;

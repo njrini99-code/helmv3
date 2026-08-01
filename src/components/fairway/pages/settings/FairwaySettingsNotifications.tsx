@@ -370,5 +370,3 @@ export function FairwaySettingsNotifications({
     </div>
   );
 }
-
-export default FairwaySettingsNotifications;

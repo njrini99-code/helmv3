@@ -392,5 +392,3 @@ function PlayerFeed({
     </div>
   );
 }
-
-export default FairwayAnnouncements;

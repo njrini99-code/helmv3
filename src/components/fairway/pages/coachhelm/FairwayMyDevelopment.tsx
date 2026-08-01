@@ -884,5 +884,3 @@ function DevelopmentOverviewInstrument({
     </InstrumentPanel>
   );
 }
-
-export default FairwayMyDevelopment;

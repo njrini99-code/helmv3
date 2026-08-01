@@ -757,5 +757,3 @@ export function FairwayPlayerDashboard({
     </div>
   );
 }
-
-export default FairwayPlayerDashboard;

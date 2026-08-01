@@ -2629,5 +2629,3 @@ export function InviteSettingsPanel() {
     </SectionCard>
   );
 }
-
-export default FairwaySettingsGeneral;

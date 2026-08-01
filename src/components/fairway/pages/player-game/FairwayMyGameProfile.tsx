@@ -280,5 +280,3 @@ export function FairwayMyGameProfile({
     </div>
   );
 }
-
-export default FairwayMyGameProfile;

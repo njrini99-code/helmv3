@@ -474,5 +474,3 @@ export function FairwayTripDetail({
     </>
   );
 }
-
-export default FairwayTripDetail;

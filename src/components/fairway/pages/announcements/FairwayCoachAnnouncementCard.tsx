@@ -483,5 +483,3 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
     </Surface>
   );
 }
-
-export default FairwayCoachAnnouncementCard;

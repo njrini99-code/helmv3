@@ -490,5 +490,3 @@ export function FairwayTravel({
     </div>
   );
 }
-
-export default FairwayTravel;
