@@ -149,21 +149,27 @@ export function FairwayCalendarMemberRail({
             canScrollRight && 'pr-7 scroll-pr-7',
           )}
         >
-        {/* ALL */}
+        {/* ALL — visible pill stays h-9 (36px); the Button itself floors at the
+            44px touch target and centers the pill inside, so only the invisible
+            hit area grows. */}
         <Button
           type="button"
           variant="ghost"
           onClick={() => onSelect([])}
           aria-pressed={allSelected}
           haptic="none"
-          className={cn(
-            'flex h-9 min-h-0 flex-shrink-0 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
-            allSelected
-              ? 'bg-accent-700 text-text-on-accent shadow-flat'
-              : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
-          )}
+          className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
         >
-          All
+          <span
+            className={cn(
+              'flex h-9 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
+              allSelected
+                ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
+            )}
+          >
+            All
+          </span>
         </Button>
 
         <span aria-hidden className="h-6 w-px flex-shrink-0 bg-border-subtle" />
@@ -183,32 +189,39 @@ export function FairwayCalendarMemberRail({
               aria-pressed={selected}
               aria-label={selected ? `${fullName(m)} (viewing schedule)` : `View ${fullName(m)}'s schedule`}
               title={fullName(m)}
-              className={cn(
-                'relative grid h-9 w-9 min-h-0 flex-shrink-0 place-items-center overflow-visible rounded-full p-0 font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform hover:ring-border-strong hover:bg-transparent',
-                selected && 'scale-[1.06] text-white ring-0',
-              )}
-              style={
-                selected && color
-                  ? { backgroundColor: color.bg, color: '#fff', boxShadow: `0 0 0 2px ${color.border}` }
-                  : m.avatar_url
-                    ? undefined
-                    : { backgroundColor: tint.bg, color: tint.text }
-              }
+              className="group relative flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-center justify-center overflow-visible rounded-full p-0 transition-transform hover:bg-transparent active:bg-transparent"
             >
-              {m.avatar_url ? (
-                <img src={m.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-              ) : (
-                <span>{initials(m)}</span>
-              )}
-              {selected && color && (
-                <span
-                  aria-hidden
-                  className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-canvas text-microbadge font-bold text-white"
-                  style={{ backgroundColor: color.bg }}
-                >
-                  {idx + 1}
-                </span>
-              )}
+              {/* Visible avatar chip — fixed 36x36 (h-9 w-9), unchanged from
+                  before the fix. The Button around it is the 44x44 touch
+                  target; only the invisible padding grows. */}
+              <span
+                className={cn(
+                  'relative grid h-9 w-9 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform group-hover:ring-border-strong',
+                  selected && 'scale-[1.06] text-white ring-0',
+                )}
+                style={
+                  selected && color
+                    ? { backgroundColor: color.bg, color: '#fff', boxShadow: `0 0 0 2px ${color.border}` }
+                    : m.avatar_url
+                      ? undefined
+                      : { backgroundColor: tint.bg, color: tint.text }
+                }
+              >
+                {m.avatar_url ? (
+                  <img src={m.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  <span>{initials(m)}</span>
+                )}
+                {selected && color && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-canvas text-microbadge font-bold text-white"
+                    style={{ backgroundColor: color.bg }}
+                  >
+                    {idx + 1}
+                  </span>
+                )}
+              </span>
             </Button>
           );
         })}

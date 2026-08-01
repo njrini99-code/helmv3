@@ -1596,7 +1596,33 @@ function InsightTrustTable({ trust }: { trust: InsightTrustState }) {
           Each insight’s standing in the trust ledger — what it claimed, and whether it has held up.
         </p>
       </div>
-      <div className="overflow-x-auto">
+      {/* Phone: card list — every table column carries over (title/type/player,
+          trend glyph, trust chip), same dual-render convention as
+          FairwayQualifierDetail / FairwayQualifierLeaderboard / FairwayRoundDetail. */}
+      <ul className="divide-y divide-border-subtle md:hidden">
+        {trust.rows.map((row) => (
+          <li key={row.id} className="flex flex-col gap-2 px-5 py-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                  {row.title}
+                </span>
+                <span className="font-fw-sans text-caption text-text-tertiary">
+                  {row.typeLabel}
+                  {row.playerName ? <> · {row.playerName}</> : null}
+                </span>
+              </div>
+              <TrustTrendGlyph trend={row.signal.recentTrend} />
+            </div>
+            <div className="flex justify-end">
+              <InsightTrustChip signal={row.signal} />
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop (md+) — the flat matte table. */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">
             Recent insights with their trust status, recent outcome trend, and exposure counts.
