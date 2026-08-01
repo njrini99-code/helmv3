@@ -1,3 +1,14 @@
+---
+name: modern-saas-ui
+description: >-
+  Premium SaaS UI design system for Helm Sports Labs. Use when building or
+  restyling GolfHelm/BaseballHelm product surfaces that must match the existing
+  Fairway design system — dashboards, cards, tables, nav, empty states, and
+  marketing pages. Covers the app's own tokens, spacing scale and component
+  idioms rather than generic design advice. Prefer this over general UI skills
+  for anything inside this repo, because it encodes the tokens already shipped.
+---
+
 # Modern SaaS UI — App Enhancement Guide
 
 Premium SaaS UI design system for Helm Sports Labs and similar products.

@@ -44,6 +44,7 @@ const APP_DIR = join(REPO_ROOT, 'src/app');
 const HOOKS_DIR = join(REPO_ROOT, 'src/hooks');
 const GLOSSARY = join(REPO_ROOT, 'memory/glossary.md');
 const PROJECT_DOC = join(REPO_ROOT, 'memory/projects/golfhelm.md');
+const DATABASE_DOC = join(REPO_ROOT, 'memory/context/golfhelm-database.md');
 
 async function walk(dir, predicate) {
   const out = [];
@@ -175,6 +176,91 @@ async function findHooks() {
       !f.endsWith('.d.ts'),
   );
   return hookFiles.map((f) => toPosix(relative(REPO_ROOT, f))).sort();
+}
+
+
+/**
+ * Every column of every table, parsed from the Row type of each entry under
+ * `Tables` in database.ts.
+ *
+ * WHY THIS EXISTS. memory/context/golfhelm-database.md is what CLAUDE.md sends
+ * you to for any database work, billed as "every column of every table". It was
+ * the last hand-maintained doc in memory/ and it rotted exactly the way the
+ * table counts did: measured 2026-07-31 it described 80 tables while the live
+ * database had 266 — every baseball and admin table absent, untouched since
+ * April. A reference that covers 30% of the schema while claiming to cover all
+ * of it is worse than none, because it reads as authoritative.
+ *
+ * database.ts is the right source: `npm run db:types` generates it from the
+ * live database and CI already fails the build when it drifts (db:types:check).
+ */
+function extractTableColumns(src) {
+  // Reuse the same anchoring as extractTopLevelKeys: there are TWO `Tables: {`
+  // blocks (graphql_public's is empty and comes first), so start from the
+  // public schema, then brace-scan to find where the block ends.
+  const blockStart = src.indexOf('    Tables: {', publicSchemaOffset(src));
+  if (blockStart === -1) return [];
+  let depth = 0;
+  let i = blockStart + '    Tables: {'.length - 1;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') {
+      depth--;
+      if (depth === 0) break;
+    }
+  }
+  const region = src.slice(blockStart, i);
+
+  const out = [];
+  // Row types carry no trailing semicolons in generated output.
+  const tableRe = /^ {6}([a-z_][a-z0-9_]*): \{\n {8}Row: \{\n([\s\S]*?)^ {8}\}/gm;
+  let m;
+  while ((m = tableRe.exec(region)) !== null) {
+    const columns = m[2]
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('//'))
+      .map((line) => {
+        const col = /^([\w"]+)\??:\s*(.+?);?$/.exec(line);
+        if (!col) return null;
+        return {
+          name: col[1].replace(/"/g, ''),
+          type: col[2].replace(/\s+/g, ' ').trim(),
+        };
+      })
+      .filter(Boolean);
+    if (columns.length) out.push({ table: m[1], columns });
+  }
+  return out.sort((a, b) => a.table.localeCompare(b.table));
+}
+
+function renderColumnsBody(tableColumns) {
+  const totalCols = tableColumns.reduce((n, t) => n + t.columns.length, 0);
+  const parts = [
+    `**${tableColumns.length} tables, ${totalCols} columns** — generated from ` +
+      '`src/lib/types/database.ts`, which `npm run db:types` regenerates from the ' +
+      'live database. Types shown are the TypeScript Row types; `| null` marks a ' +
+      'nullable column.',
+    '',
+    'Sport prefixes are load-bearing: `golf_*`, `baseball_*`, `lift_*`. An ' +
+      'unprefixed table name almost certainly does not exist.',
+    '',
+  ];
+  for (const { table, columns } of tableColumns) {
+    parts.push(`<details><summary><code>${table}</code> — ${columns.length} columns</summary>`);
+    parts.push('');
+    parts.push('| Column | Type |');
+    parts.push('|---|---|');
+    for (const c of columns) {
+      // Escape pipes: union types like `number | null` would otherwise
+      // split the markdown row into extra columns.
+      parts.push(`| \`${c.name}\` | \`${c.type.replace(/\|/g, '\\|')}\` |`);
+    }
+    parts.push('');
+    parts.push('</details>');
+    parts.push('');
+  }
+  return parts.join('\n');
 }
 
 function replaceManagedBlock(content, blockName, newBody) {
@@ -316,6 +402,13 @@ async function main() {
   project = replaceManagedBlock(project, 'actions', renderActionsBody(actions));
   project = replaceManagedBlock(project, 'hooks', renderHooksBody(hooks));
   await writeFile(PROJECT_DOC, project);
+
+  const tableColumns = extractTableColumns(await readFile(DATABASE_TYPES, 'utf8'));
+  const totalCols = tableColumns.reduce((n, t) => n + t.columns.length, 0);
+  console.log(`  Columns doc: ${tableColumns.length} tables, ${totalCols} columns`);
+  let dbDoc = await readFile(DATABASE_DOC, 'utf8');
+  dbDoc = replaceManagedBlock(dbDoc, 'columns', renderColumnsBody(tableColumns));
+  await writeFile(DATABASE_DOC, dbDoc);
 
   console.log('Done.');
 }
