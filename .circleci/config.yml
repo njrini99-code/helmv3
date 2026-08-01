@@ -50,7 +50,15 @@ executors:
   android:
     docker:
       - image: cimg/android:2025.04
-    resource_class: medium
+    # `large` (8GB), not `medium`. Two separate OOMs got us here:
+    #   1. `large` + `npm run build` -> exit 137. The Next build's
+    #      --max-old-space-size=8192 heap against an 8GB container.
+    #   2. `medium` + no build -> exit 137 again, this time in `npm ci`.
+    #      This dependency tree (promptfoo, onnxruntime, sharp) needs more
+    #      than medium's 4GB just to INSTALL.
+    # So the build was the memory problem, not the box — but the box still
+    # has to be large enough to install.
+    resource_class: large
 
 # ---------------------------------------------------------------------------
 # Reusable commands
