@@ -32,8 +32,27 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-const BATCH = 5000;
-const MAX_BATCHES = 20;
+/**
+ * BATCH must not exceed PostgREST's per-request row cap (1,000). At the old
+ * 5,000 the cap silently truncated every page to 1,000, which is < BATCH, so
+ * `purgeBatch` read that as "short page = backlog drained" and returned after
+ * one pass — capping the purge at 1,000 rows/run instead of the intended
+ * 100k. MAX_BATCHES is raised to keep that documented 100k/run ceiling.
+ */
+const BATCH = 1000;
+const MAX_BATCHES = 100;
+/**
+ * Ceiling on ids per `.in('id', [...])` delete. PostgREST filters live in the
+ * query string (~39 bytes per uuid) and Supabase's edge rejects an over-long
+ * URI before Postgres sees it — measured on this project 2026-07-31, 584 ids
+ * (~22.8 KB) is the last size that works and 585 returns a bare
+ * `400 Bad Request`. A full 1,000-id page would be ~39 KB, so every delete
+ * MUST be chunked. This is the same defect that had been failing Rule C of
+ * auto-resolve nightly (see ID_CHUNK_SIZE in src/lib/admin/auto-resolve.ts);
+ * here it was merely unfired, because so few rows were ever purge-eligible
+ * in one night.
+ */
+const DELETE_CHUNK_SIZE = 200;
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 type AdminEventSeverity = Database['public']['Enums']['admin_event_severity'];
@@ -55,8 +74,12 @@ async function purgeBatch(
     if (error) throw new Error(error.message);
     const ids = (data ?? []).map((row) => row.id);
     if (ids.length === 0) return deleted;
-    const { error: deleteError } = await deletePage(ids);
-    if (deleteError) throw new Error(deleteError.message);
+    // Chunked: a whole page of ids in one `.in()` overflows the request URI
+    // and fails with `400 Bad Request`. See DELETE_CHUNK_SIZE.
+    for (let j = 0; j < ids.length; j += DELETE_CHUNK_SIZE) {
+      const { error: deleteError } = await deletePage(ids.slice(j, j + DELETE_CHUNK_SIZE));
+      if (deleteError) throw new Error(deleteError.message);
+    }
     deleted += ids.length;
     if (ids.length < BATCH) return deleted;
   }
