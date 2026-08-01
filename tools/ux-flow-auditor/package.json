@@ -14,19 +14,19 @@
     "scan:knowledge": "node src/knowledge/scanner.js ../.."
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.106.0",
+    "@anthropic-ai/sdk": "^0.115.0",
     "chalk": "^5.3.0",
-    "chokidar": "^3.6.0",
-    "commander": "^11.1.0",
+    "chokidar": "^5.0.0",
+    "commander": "^14.0.3",
     "enquirer": "^2.4.1",
     "fast-glob": "^3.3.2",
-    "marked": "^11.2.0",
+    "marked": "^17.0.6",
     "ora": "^8.0.1",
-    "playwright": "^1.61.1",
-    "ws": "^8.14.2"
+    "playwright": "^1.62.0",
+    "ws": "^8.21.1"
   },
   "devDependencies": {
-    "@types/node": "^26.0.1"
+    "@types/node": "^26.1.1"
   },
   "engines": {
     "node": ">=18.0.0"
