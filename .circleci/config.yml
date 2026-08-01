@@ -44,6 +44,13 @@ executors:
       # Capacitor 8 SwiftPM binaries require Swift 6.2, shipped with Xcode 26+.
       xcode: "26.4.1"
     resource_class: m4pro.medium
+  # Linux + Android SDK. Far cheaper than the macOS class the iOS job needs,
+  # which is why the Android check can afford to run on every android/** change
+  # rather than only on a release branch.
+  android:
+    docker:
+      - image: cimg/android:2025.04
+    resource_class: large
 
 # ---------------------------------------------------------------------------
 # Reusable commands
@@ -220,6 +227,54 @@ jobs:
           path: ios/App/xcodebuild.log
           destination: xcodebuild-log
 
+  # ---------- Android compile verification ----------
+  # Mirrors ios-compile: prove the native project still assembles after a web,
+  # Capacitor or plugin change. NOT a release build — no signing, no bundle.
+  #
+  # WHY THIS EXISTS. Until now nothing in CI touched Android at all: the only
+  # mobile job was `ios-compile`, whose branch filter lists main, release/*,
+  # ios/* and capacitor/* and matches no android branch, and no GitHub
+  # workflow referenced android either. A PR could add or break the entire
+  # Android platform and every check would stay green — which is exactly the
+  # state the Play Store scaffold PR shipped in.
+  android-compile:
+    executor: android
+    steps:
+      - checkout
+      - node/install:
+          node-version: "22.13"
+      - install-node-deps
+      - run:
+          name: Build web bundle (for Capacitor sync)
+          environment:
+            NODE_OPTIONS: --max-old-space-size=8192
+            NEXT_PUBLIC_SUPABASE_URL: https://dummy-ci-build.supabase.co
+            NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-ci-build-only
+          command: |
+            # Same reasoning as the iOS job: Capacitor needs the web bundle to
+            # exist before `cap sync`, and a prod build catches SSR/Server
+            # Component breakage that dev mode hides.
+            npm run build
+      - run:
+          name: Capacitor sync Android
+          command: |
+            npx cap update android
+            npx cap sync android
+      - run:
+          name: Gradle assembleDebug (no signing)
+          command: |
+            cd android
+            # Debug variant only: it uses the auto-generated debug keystore, so
+            # this never needs the real upload key. Release signing stays a
+            # local/manual concern.
+            ./gradlew --no-daemon --stacktrace assembleDebug 2>&1 | tee gradle.log
+      - store_artifacts:
+          path: android/gradle.log
+          destination: gradle-log
+      - store_artifacts:
+          path: android/app/build/outputs/apk/debug
+          destination: debug-apk
+
   # ---------- On-PR: Lighthouse CI against Vercel preview ----------
   # Polls the Vercel API for the preview deployment matching this PR's
   # commit SHA, then runs lhci against landing + login routes. Asserts
@@ -341,6 +396,20 @@ workflows:
                 - /ios\/.*/
                 - /capacitor\/.*/
                 - /agent\/fix-circleci-ios-.*/
+
+  android:
+    when:
+      not: << pipeline.parameters.run-weekly >>
+    jobs:
+      - android-compile:
+          filters:
+            branches:
+              only:
+                - main
+                - /release\/.*/
+                - /android\/.*/
+                - /capacitor\/.*/
+                - /ci\/android-.*/
 
   # Lighthouse runs on every push (excluding the scheduled weekly).
   # The wait-for-vercel-preview script returns early with a useful
