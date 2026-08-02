@@ -286,15 +286,18 @@ export async function scoreInsightWithCalibration(
   sb: Sb,
   activeGoals: Goal[] = [],
 ): Promise<number> {
-  // Load calibration record for this insight type
+  // Load calibration record for this insight type. The initializer IS the
+  // fallback: if bootstrapFromDb throws, we keep the raw confidence. The catch
+  // used to re-assign that same value, which made the initializer dead code
+  // (CodeQL "useless assignment to local variable", alert 549) and forced an
+  // unused `_err` binding past the no-unused-vars lint.
   let calibratedConfidence = insight.confidence;
   try {
     const record = await bootstrapFromDb(sb, insight.insight_type);
     // Apply calibration to the raw confidence value
     calibratedConfidence = calibrateConfidence(insight.confidence, record);
-  } catch (_err) {
-    // If calibration fails, fall back to raw confidence (no-op)
-    calibratedConfidence = insight.confidence;
+  } catch {
+    // Calibration unavailable — keep the raw confidence assigned above.
   }
 
   // Compute score with calibrated confidence
