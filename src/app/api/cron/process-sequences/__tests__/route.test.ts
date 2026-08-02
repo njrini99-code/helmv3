@@ -54,6 +54,21 @@ function resolveFor(table: string, op: string, argsLog: unknown[][]): Resp {
     return { data: null, error: { message: 'not found' } };
   }
   if (table === 'crm_sequence_enrollments' && op === 'update') {
+    // processEnrollment first CLAIMS the row with a conditional update
+    // (.eq('status','active').lte('next_send_at', now).select('id')) and treats
+    // an empty result as "a concurrent tick got there first" -> skipped. The
+    // claim is the only enrollment update carrying an lte on next_send_at, so
+    // match on that and hand back the row; every other update (the stop /
+    // advance writes these tests assert on) keeps returning no rows.
+    const isClaim = argsLog.some(
+      ([name, column]) => name === 'lte' && column === 'next_send_at',
+    );
+    if (isClaim) {
+      const idEq = argsLog.find(
+        ([name, column]) => name === 'eq' && column === 'id',
+      ) as [string, string, string] | undefined;
+      return { data: idEq ? [{ id: idEq[2] }] : [], error: null };
+    }
     return { data: null, error: null };
   }
   return { data: null, error: null };
@@ -157,13 +172,21 @@ describe('GET /api/cron/process-sequences — parent sequence is_active guard', 
 
     // And the paused-sequence enrollment row itself was never written to —
     // "skip", not "stop": it should resume untouched once the sequence is
-    // reactivated.
+    // reactivated. processEnrollment now also CLAIMS a row it intends to work
+    // on (a conditional next_send_at lease, guarding against a concurrent
+    // tick double-sending), so the active enrollment legitimately has more
+    // than one write. Assert the invariant that actually matters — every
+    // enrollment write targets the active row, none touch the paused one —
+    // rather than a raw count that the claim would break.
     const enrollmentUpdates = calls.filter(
       (c) => c.table === 'crm_sequence_enrollments' && c.op === 'update',
     );
-    expect(enrollmentUpdates).toHaveLength(1);
-    const updatedId = enrollmentUpdates[0]!.args.find(([name]) => name === 'eq')?.[2];
-    expect(updatedId).toBe('enr-under-active-seq');
+    expect(enrollmentUpdates.length).toBeGreaterThan(0);
+    const updatedIds = enrollmentUpdates.map(
+      (c) => c.args.find(([name, column]) => name === 'eq' && column === 'id')?.[2],
+    );
+    expect(new Set(updatedIds)).toEqual(new Set(['enr-under-active-seq']));
+    expect(updatedIds).not.toContain('enr-under-paused-seq');
   });
 
   it('does not skip an enrollment whose parent sequence is active', async () => {

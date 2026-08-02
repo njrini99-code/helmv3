@@ -11,6 +11,18 @@
  *
  * Both functions take an admin Supabase client — these run server-side
  * inside compose() and bypass RLS for the upsert.
+ *
+ * KNOWN GAP (Wave 2 / Class F): `checkBudget` is a plain SELECT and
+ * `recordSpend` is a separate read-then-upsert — neither is atomic, so two
+ * concurrent billable calls for the same coach can both read the pre-spend
+ * `spent_usd`, both pass the gate, and the second `recordSpend` can clobber
+ * the first's increment. Callers mitigate the window (re-gating a second
+ * billable call before it runs, rate-limiting the request path, ordering
+ * side effects after the gate) but a real fix needs a single atomic
+ * reserve-then-reconcile statement — see the `golf_coachhelm_reserve_llm_budget`
+ * RPC sketch in the Wave 2 remediation spec (needsMigration). Do NOT change
+ * these two functions' signatures without updating every caller — both
+ * `chat/stream/route.ts` and `compose.ts` call them directly.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';

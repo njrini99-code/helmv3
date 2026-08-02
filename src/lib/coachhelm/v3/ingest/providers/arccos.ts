@@ -26,6 +26,7 @@ import type { IngestAdapter, IngestConnection, SyncResult } from '../types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { refreshAccessToken, fetchRounds } from './arccos-client';
 import { mapArccosRound, arccosExternalId } from './arccos-mapper';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ---------------------------------------------------------------------------
 // Token encryption helpers
@@ -114,7 +115,22 @@ const arccos: IngestAdapter = {
         };
       }
 
-      const refreshed = await refreshAccessToken(connection, refreshToken);
+      // A transient provider/network failure must NOT escape sync(): the cron
+      // catches a throw and flips the connection to the terminal-in-practice
+      // 'error' state with no error_detail and no sync-log row. Return the
+      // SyncResult contract instead so the failure is recorded and recoverable.
+      let refreshed: Awaited<ReturnType<typeof refreshAccessToken>>;
+      try {
+        refreshed = await refreshAccessToken(connection, refreshToken);
+      } catch (err) {
+        return {
+          shots_inserted: 0,
+          rounds_inserted: 0,
+          errors_count: 1,
+          next_state: 'error',
+          error_detail: `Arccos token refresh failed: ${describeError(err)}`,
+        };
+      }
       if (!refreshed) {
         return {
           shots_inserted: 0,
@@ -125,23 +141,50 @@ const arccos: IngestAdapter = {
         };
       }
 
-      // Persist new tokens
-      accessToken = refreshed.access_token;
+      // Persist the rotated tokens BEFORE consuming the new access token.
+      // supabase-js resolves (never throws) on a DB error, so an unchecked
+      // update would silently leave the OLD refresh token stored while the
+      // provider has already rotated it — the next run then 401s and the
+      // connection is flipped to the terminal 'revoked' state. RFC 6749 §6
+      // also permits the provider to omit refresh_token on refresh, in which
+      // case the existing one stays valid and must be re-persisted as-is.
       const sb = createAdminClient();
-      await sb
+      const { error: persistErr } = await sb
         .from('golf_ingest_connections')
         .update({
           access_token_encrypted: encryptToken(refreshed.access_token),
-          refresh_token_encrypted: encryptToken(refreshed.refresh_token),
+          refresh_token_encrypted: encryptToken(refreshed.refresh_token ?? refreshToken),
           expires_at: refreshed.expires_at,
         })
         .eq('player_id', connection.player_id)
         .eq('provider', 'arccos');
+      if (persistErr) {
+        return {
+          shots_inserted: 0,
+          rounds_inserted: 0,
+          errors_count: 1,
+          next_state: 'error',
+          error_detail: `Token persist failed: ${persistErr.message}`,
+        };
+      }
+
+      accessToken = refreshed.access_token;
     }
 
     // ---- 3. Fetch rounds from Arccos API ----------------------------------
     const since = connection.last_synced_at ?? '2020-01-01T00:00:00Z';
-    const arccosRounds = await fetchRounds(accessToken, since);
+    let arccosRounds: Awaited<ReturnType<typeof fetchRounds>>;
+    try {
+      arccosRounds = await fetchRounds(accessToken, since);
+    } catch (err) {
+      return {
+        shots_inserted: 0,
+        rounds_inserted: 0,
+        errors_count: 1,
+        next_state: 'error',
+        error_detail: `Arccos fetchRounds failed: ${describeError(err)}`,
+      };
+    }
 
     if (arccosRounds.length === 0) {
       return { shots_inserted: 0, rounds_inserted: 0, errors_count: 0 };

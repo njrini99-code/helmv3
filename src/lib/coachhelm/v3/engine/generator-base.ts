@@ -419,7 +419,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
           archive_reason: `scope:${scope}`,
           retracted_at: nowIso,
         };
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('golf_coach_insights')
           .update({
             lifecycle_state: 'archived',
@@ -430,7 +430,8 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
           .eq('id', r.id)
           // Optimistic guard: if a concurrent run already moved this row
           // (re-emit refresh, coach action), skip rather than clobber.
-          .eq('lifecycle_state', r.lifecycle_state);
+          .eq('lifecycle_state', r.lifecycle_state)
+          .select('id');
         if (error) {
           await logServerError(
             `${this.name} stale-scope retraction update failed for insight=${r.id}: ${error.message}`,
@@ -438,6 +439,11 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
           );
           continue;
         }
+        // The optimistic `.eq('lifecycle_state', ...)` guard can match zero
+        // rows (a concurrent run already moved it) while still resolving
+        // `{ error: null }` — only count it as archived when a row actually
+        // came back, so `archived`/RunResult.retracted reflects reality.
+        if (!updated || updated.length === 0) continue;
         archived += 1;
       }
       return archived;

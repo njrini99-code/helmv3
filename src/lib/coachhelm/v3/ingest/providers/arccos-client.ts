@@ -61,7 +61,10 @@ const ARCCOS_API_BASE = 'https://api.arccosgolf.com';
 
 interface TokenRefreshResult {
   access_token: string;
-  refresh_token: string;
+  /** RFC 6749 §6: the authorization server MAY omit a new refresh token on
+   *  refresh, in which case the caller keeps using the existing one. Typed as
+   *  optional so callers cannot pass `undefined` into encryptToken(). */
+  refresh_token?: string;
   expires_at: string;
 }
 
@@ -98,7 +101,7 @@ export async function refreshAccessToken(
 
   const body = (await res.json()) as {
     access_token: string;
-    refresh_token: string;
+    refresh_token?: string;
     expires_in: number;
   };
 

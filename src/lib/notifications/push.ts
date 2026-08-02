@@ -1,4 +1,24 @@
-'use server';
+import 'server-only';
+
+/**
+ * SECURITY: this module intentionally has NO 'use server' directive. Per
+ * Next.js's server-actions guidance, EVERY exported async function in a
+ * 'use server' file becomes a public, directly-POSTable endpoint — keyed by
+ * its build-time action id, and registered whether or not any client
+ * component imports it. Both exports here (`sendPushNotification`,
+ * `sendBulkPushNotification`) read `device_tokens` with createAdminClient()
+ * (full RLS bypass) on a caller-supplied userId and then fan out to the paid
+ * APNs/FCM edge functions, so as actions they would let anyone deliver a
+ * spoofed push to any user's real devices. Their auth is the CALLER's:
+ * every real call site (server actions under src/app/golf/actions/**, the
+ * v3 notification dispatch, the event-reminders cron) derives userId from
+ * the DB or an authenticated session before calling in. Keep this a plain
+ * server module — the same shape src/lib/notifications/email.ts and
+ * src/lib/notifications/golf-message-fanout.ts already use, and the same
+ * rationale spelled out at src/lib/golf/progress-drivers.ts:1-28. Import it
+ * directly from server code (static or dynamic import); never re-export it
+ * from a 'use server' file's export surface.
+ */
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationType, NotificationPreferences } from './types';

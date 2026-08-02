@@ -96,6 +96,9 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { evaluateGoal, type GoalSnapshot } from '@/lib/coachhelm/v3/goals/evaluator';
 import {
@@ -278,13 +281,34 @@ async function runGoalProgressForPlayersImpl(
 
   const supabase = createAdminClient();
 
-  // All active goals for these players (one query).
-  const { data, error } = await fromUntyped(supabase, 'golf_goals')
-    .select('*')
-    .in('player_id', ids)
-    .eq('state', 'active');
-  if (error || !data) return empty;
-  const goals = data as unknown as Goal[];
+  // All active goals for these players. The id list comes from the standing-
+  // refresh cron and can hold up to 1000 uuids: PostgREST filters travel in the
+  // URL and the edge rejects one past ~585 uuids with a bare 400, while a single
+  // response is separately capped at max_rows (1000). Chunk the ids, page each
+  // chunk, and LOG every batch error — collapsing a 400 into `empty` is what
+  // made this silently no-op at scale.
+  const goals: Goal[] = [];
+  for (const batch of chunkIds(ids)) {
+    const { data, error } = await fetchAllRowsResult<Goal>((from, to) =>
+      fromUntyped(supabase, 'golf_goals')
+        .select('*')
+        .in('player_id', batch)
+        .eq('state', 'active')
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (error) {
+      await logServerError(
+        `runGoalProgressForPlayers: golf_goals batch query failed: ${error.message}`,
+        {
+          action: 'golf.progress-drivers.runGoalProgressForPlayers',
+          errorCode: error.code ?? undefined,
+        },
+      );
+      continue;
+    }
+    goals.push(...(data ?? []));
+  }
   if (goals.length === 0) return empty;
 
   // Batched standing for every player (chunked internally, gender-anchored).
@@ -365,10 +389,10 @@ function roundToMetric(metric: string | null, value: number): number {
 
 /**
  * Load every completed round (with the per-round stats we window) for the given
- * players on or after `sinceDate`. ONE rounds query + ONE stats query for the
- * whole batch; the caller date-filters per area in memory. Returns a map keyed
- * by player_id. Empty map on any error or no qualifying rounds (callers then
- * skip — current_value stays as-is).
+ * players on or after `sinceDate`. One rounds read + one stats read per id chunk
+ * (a single round trip each for normal-sized batches); the caller date-filters
+ * per area in memory. Returns a map keyed by player_id. Empty map on any error
+ * or no qualifying rounds (callers then skip — current_value stays as-is).
  */
 async function loadWindowRoundsByPlayer(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -379,15 +403,37 @@ async function loadWindowRoundsByPlayer(
   const out = new Map<string, FocusWindowRound[]>();
   if (playerIds.length === 0) return out;
 
-  const { data: rounds, error: rErr } = (await fromUntyped(supabase, 'golf_rounds')
-    .select('id, player_id, round_date')
-    .in('player_id', playerIds)
-    .eq('status', 'completed')
-    .gte('round_date', sinceDate)) as {
-    data: { id: string; player_id: string; round_date: string | null }[] | null;
-    error: unknown;
-  };
-  if (rErr || !rounds || rounds.length === 0) return out;
+  // Both reads are chunked (an `.in()` past ~585 uuids is rejected by the edge
+  // with a bare 400) AND paged (a single PostgREST response stops at max_rows,
+  // 1000). Truncation here is worse than a skip: a partial window still
+  // produces a real-looking number that gets WRITTEN to current_value. So on
+  // ANY batch error we log and return the empty map — the caller then leaves
+  // current_value untouched, which is the existing (and honest) behaviour.
+  type RoundRow = { id: string; player_id: string; round_date: string | null };
+  const rounds: RoundRow[] = [];
+  for (const batch of chunkIds(playerIds)) {
+    const { data, error } = await fetchAllRowsResult<RoundRow>((from, to) =>
+      fromUntyped(supabase, 'golf_rounds')
+        .select('id, player_id, round_date')
+        .in('player_id', batch)
+        .eq('status', 'completed')
+        .gte('round_date', sinceDate)
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (error) {
+      await logServerError(
+        `loadWindowRoundsByPlayer: golf_rounds batch query failed: ${error.message}`,
+        {
+          action: 'golf.progress-drivers.loadWindowRoundsByPlayer',
+          errorCode: error.code ?? undefined,
+        },
+      );
+      return out;
+    }
+    rounds.push(...(data ?? []));
+  }
+  if (rounds.length === 0) return out;
 
   const meta = new Map<string, { player_id: string; round_date: string }>();
   for (const r of rounds) {
@@ -396,13 +442,28 @@ async function loadWindowRoundsByPlayer(
   const roundIds = [...meta.keys()];
   if (roundIds.length === 0) return out;
 
-  const { data: stats, error: sErr } = (await fromUntyped(supabase, 'golf_round_stats_cache')
-    .select(STATS_SELECT)
-    .in('round_id', roundIds)) as {
-    data: (Omit<FocusWindowRound, 'round_date'> & { round_id: string })[] | null;
-    error: unknown;
-  };
-  if (sErr || !stats) return out;
+  type StatsRow = Omit<FocusWindowRound, 'round_date'> & { round_id: string };
+  const stats: StatsRow[] = [];
+  for (const batch of chunkIds(roundIds)) {
+    const { data, error } = await fetchAllRowsResult<StatsRow>((from, to) =>
+      fromUntyped(supabase, 'golf_round_stats_cache')
+        .select(STATS_SELECT)
+        .in('round_id', batch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (error) {
+      await logServerError(
+        `loadWindowRoundsByPlayer: golf_round_stats_cache batch query failed: ${error.message}`,
+        {
+          action: 'golf.progress-drivers.loadWindowRoundsByPlayer',
+          errorCode: error.code ?? undefined,
+        },
+      );
+      return out;
+    }
+    stats.push(...(data ?? []));
+  }
 
   for (const { round_id, ...rest } of stats) {
     const m = meta.get(round_id);
@@ -526,15 +587,35 @@ async function runFocusAreaProgressForPlayersImpl(
 
   const supabase = createAdminClient();
 
-  const { data, error } = (await fromUntyped(supabase, 'golf_player_focus_areas')
-    .select('id, player_id, target_metric, current_value, started_at')
-    .in('player_id', ids)
-    .eq('status', 'active')) as { data: ActiveFocusArea[] | null; error: unknown };
-  if (error || !data || data.length === 0) return empty;
+  // Chunked + paged for the same reason as the goals query above; a batch error
+  // is logged rather than collapsed into `empty`.
+  const areas: ActiveFocusArea[] = [];
+  for (const batch of chunkIds(ids)) {
+    const { data, error } = await fetchAllRowsResult<ActiveFocusArea>((from, to) =>
+      fromUntyped(supabase, 'golf_player_focus_areas')
+        .select('id, player_id, target_metric, current_value, started_at')
+        .in('player_id', batch)
+        .eq('status', 'active')
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (error) {
+      await logServerError(
+        `runFocusAreaProgressForPlayers: golf_player_focus_areas batch query failed: ${error.message}`,
+        {
+          action: 'golf.progress-drivers.runFocusAreaProgressForPlayers',
+          errorCode: error.code ?? undefined,
+        },
+      );
+      continue;
+    }
+    areas.push(...(data ?? []));
+  }
+  if (areas.length === 0) return empty;
 
   const { evaluated, updated, players } = await evaluateAreas(
     supabase,
-    data,
+    areas,
     new Date().toISOString(),
   );
   return { evaluated, updated, players_with_areas: players.size };

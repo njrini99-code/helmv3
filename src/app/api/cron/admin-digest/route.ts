@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { requireCronAuth } from '@/lib/cron/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { recordJobRun } from '@/lib/admin/job-log';
@@ -52,10 +53,12 @@ async function fetchShippedYesterday(): Promise<Array<{ title: string; number: n
 }
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (!expected || req.headers.get('authorization') !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  // Shared, constant-time CRON_SECRET check (src/lib/cron/auth.ts). Replaces an
+  // inline `!==`, which short-circuits on the first differing byte and so leaks
+  // a prefix-match timing oracle. Fail-closed behaviour on an unset secret is
+  // unchanged; the 401 body is now JSON `{"error":"Unauthorized"}`.
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   return recordJobRun('admin-digest', async () => {
     const admin = createAdminClient();

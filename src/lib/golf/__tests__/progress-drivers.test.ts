@@ -63,6 +63,20 @@ let roundRows: Array<{ id: string; player_id: string; round_date: string }> = []
 let statsRows: Array<{ round_id: string; total_putts: number | null }> = [];
 const updateCalls: Array<{ id: string; patch: Record<string, unknown> }> = [];
 
+/**
+ * The reads are chunked (chunkIds) + paged (fetchAllRowsResult), so every
+ * select chain now terminates in `.order('id').range(from, to)`. The double
+ * returns the full row set on the first page; fetchAllRowsResult sees a short
+ * page and stops after one round trip.
+ */
+function pagedResult<T>(rows: T[]) {
+  return {
+    order: () => ({
+      range: async () => ({ data: rows, error: null }),
+    }),
+  };
+}
+
 function makeAdminClient() {
   return {
     from: (table: string) => {
@@ -70,7 +84,7 @@ function makeAdminClient() {
         return {
           select: () => ({
             in: () => ({
-              eq: async () => ({ data: focusAreaRows, error: null }),
+              eq: () => pagedResult(focusAreaRows),
             }),
           }),
           update: (patch: Record<string, unknown>) => ({
@@ -86,7 +100,7 @@ function makeAdminClient() {
           select: () => ({
             in: () => ({
               eq: () => ({
-                gte: async () => ({ data: roundRows, error: null }),
+                gte: () => pagedResult(roundRows),
               }),
             }),
           }),
@@ -95,7 +109,7 @@ function makeAdminClient() {
       if (table === 'golf_round_stats_cache') {
         return {
           select: () => ({
-            in: async () => ({ data: statsRows, error: null }),
+            in: () => pagedResult(statsRows),
           }),
         };
       }

@@ -1,4 +1,10 @@
-'use server';
+// This module is intentionally NOT `'use server'`. A file-level `'use server'`
+// publishes every exported async function as a public, directly-POSTable
+// Server Action endpoint — whether or not any client component imports it.
+// logServerError/logServerException/logServerEvent write via the service-role
+// admin client and must only ever be called from server code. Precedent:
+// src/lib/golf/progress-drivers.ts:1-28.
+import 'server-only';
 
 import * as Sentry from '@sentry/nextjs';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
@@ -9,6 +15,7 @@ import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml } from '@/lib/utils/describe-error';
+import { redactSensitiveUrl } from '@/lib/security/redact-url';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -86,7 +93,7 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
   return JSON.parse(JSON.stringify({
     action: context.action,
     route: context.route ?? null,
-    url: context.url ?? null,
+    url: redactSensitiveUrl(context.url ?? null),
     featureArea: context.featureArea ?? null,
     feature: context.feature ?? context.featureArea ?? null,
     source: context.source ?? 'server_action',
@@ -133,7 +140,7 @@ function buildAdminTitle(message: string, context: RoundErrorContext, severity: 
 }
 
 function buildUrl(context: RoundErrorContext): string | null {
-  if (context.url) return context.url;
+  if (context.url) return redactSensitiveUrl(context.url);
   if (context.route) return context.route;
   if (context.action) return `/server/${context.action}`;
   return null;

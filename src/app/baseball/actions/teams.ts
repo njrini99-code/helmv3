@@ -1346,6 +1346,16 @@ export const deleteTeam = withBaseballAction(
       };
     }
 
+    // NOTE (known, accepted TOCTOU — LOW severity, deferred): the emptiness
+    // checks above and this DELETE are separate statements with no shared
+    // transaction/lock, so a row written into any cascading child table
+    // between the last count and this DELETE is silently cascade-wiped. The
+    // only correct fix is committing the re-check and the delete atomically,
+    // which needs a migration (a SECURITY DEFINER
+    // baseball_delete_team_if_empty(p_team_id uuid) that re-runs these checks
+    // and the DELETE in one statement, or a lock on baseball_teams first) —
+    // do not narrow this window with another re-check-then-delete, that is
+    // the same bug with a smaller constant.
     const { error: deleteError } = await supabase
       .from('baseball_teams')
       .delete()

@@ -27,6 +27,7 @@
  * touch the database.
  */
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -300,37 +301,64 @@ export async function getInsightEffectivenessSignals(
   try {
     const admin = createAdminClient();
 
-    // One batched query per table. measured_at DESC orders outcomes
-    // newest-first so the in-memory window for recentTrend is correct.
+    // One batched read per table, PAGINATED. These three tables are
+    // append-only and unbounded, and PostgREST caps a single response at
+    // supabase/config.toml's max_rows = 1000 — an unpaginated read silently
+    // truncated `shown`/`acted`/`measured` across the whole id set, which is
+    // exactly the kind of quiet under-count this module's header forbids.
+    //
+    // The ordering column is `id` (unique, stable page boundaries), NOT
+    // measured_at: a global `measured_at DESC` also let one insight's outcome
+    // volume starve another's — an insight whose outcomes all fell outside the
+    // 1000 newest aggregated to measured=0 and reported 'new_hypothesis'.
+    // recentTrend's newest-first window is now derived per insight IN MEMORY
+    // after full pagination (see the outcome loop below).
     const [exposureRes, actionRes, outcomeRes] = await Promise.all([
-      admin.from('golf_insight_exposure').select('insight_id').in('insight_id', ids),
-      admin.from('golf_insight_action').select('insight_id').in('insight_id', ids),
-      admin
-        .from('golf_insight_outcome')
-        .select('insight_id, improvement, measured_at')
-        .in('insight_id', ids)
-        .order('measured_at', { ascending: false }),
+      fetchAllRowsResult<{ insight_id: string }>((from, to) =>
+        admin
+          .from('golf_insight_exposure')
+          .select('insight_id')
+          .in('insight_id', ids)
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
+      fetchAllRowsResult<{ insight_id: string }>((from, to) =>
+        admin
+          .from('golf_insight_action')
+          .select('insight_id')
+          .in('insight_id', ids)
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
+      fetchAllRowsResult<{ insight_id: string; improvement: number | null; measured_at: string }>((from, to) =>
+        admin
+          .from('golf_insight_outcome')
+          .select('insight_id, improvement, measured_at')
+          .in('insight_id', ids)
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
     ]);
 
     if (exposureRes.error) {
       await logServerError(`getInsightEffectivenessSignals exposure read failed: ${exposureRes.error.message}`, {
         action: 'getInsightEffectivenessSignals',
         featureArea: FEATURE_AREA,
-        errorCode: exposureRes.error.code,
+        errorCode: exposureRes.error.code ?? undefined,
       });
     }
     if (actionRes.error) {
       await logServerError(`getInsightEffectivenessSignals action read failed: ${actionRes.error.message}`, {
         action: 'getInsightEffectivenessSignals',
         featureArea: FEATURE_AREA,
-        errorCode: actionRes.error.code,
+        errorCode: actionRes.error.code ?? undefined,
       });
     }
     if (outcomeRes.error) {
       await logServerError(`getInsightEffectivenessSignals outcome read failed: ${outcomeRes.error.message}`, {
         action: 'getInsightEffectivenessSignals',
         featureArea: FEATURE_AREA,
-        errorCode: outcomeRes.error.code,
+        errorCode: outcomeRes.error.code ?? undefined,
       });
     }
 
@@ -346,9 +374,10 @@ export async function getInsightEffectivenessSignals(
       if (sig) sig.acted += 1;
     }
 
-    // ── outcome: count MEASURED, count WORKED, collect newest-first
-    //    improvements per insight for the recent-trend derivation ──
-    const improvementsById = new Map<string, Array<number | null>>();
+    // ── outcome: count MEASURED, count WORKED, collect (improvement,
+    //    measured_at) pairs per insight. Rows arrive in `id` order now, so the
+    //    newest-first window deriveTrend expects is built per insight below. ──
+    const outcomesById = new Map<string, Array<{ improvement: number | null; measuredAt: string }>>();
     for (const r of outcomeRes.data ?? []) {
       const sig = result.get(r.insight_id);
       if (!sig) continue;
@@ -356,9 +385,10 @@ export async function getInsightEffectivenessSignals(
       const imp = typeof r.improvement === 'number' ? r.improvement : null;
       if (imp !== null && imp > OUTCOME_WORKED_THRESHOLD) sig.worked += 1;
 
-      const arr = improvementsById.get(r.insight_id);
-      if (arr) arr.push(imp);
-      else improvementsById.set(r.insight_id, [imp]);
+      const entry = { improvement: imp, measuredAt: r.measured_at };
+      const arr = outcomesById.get(r.insight_id);
+      if (arr) arr.push(entry);
+      else outcomesById.set(r.insight_id, [entry]);
     }
 
     // ── derive status + recentTrend from the accumulated counts ──
@@ -366,7 +396,17 @@ export async function getInsightEffectivenessSignals(
       const sig = result.get(id);
       if (!sig) continue;
       sig.status = deriveTrustStatus(sig.measured, sig.worked);
-      sig.recentTrend = deriveTrend(improvementsById.get(id) ?? []);
+      // Per-insight newest-first ordering (measured_at DESC) — the window is
+      // this insight's own most recent outcomes, never a globally-ranked slice.
+      const improvements = (outcomesById.get(id) ?? [])
+        .slice()
+        .sort((a, b) => {
+          const at = Date.parse(a.measuredAt);
+          const bt = Date.parse(b.measuredAt);
+          return Number.isNaN(at) || Number.isNaN(bt) ? 0 : bt - at;
+        })
+        .map((o) => o.improvement);
+      sig.recentTrend = deriveTrend(improvements);
     }
 
     return result;
