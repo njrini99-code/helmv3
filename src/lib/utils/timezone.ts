@@ -42,17 +42,3 @@ export function getCurrentDecimalHourInTz(tz: string): number {
   const minute = parseInt(parts.find((p) => p.type === 'minute')!.value, 10);
   return hour + minute / 60;
 }
-
-/** Convert an ISO date string to decimal hours in the given timezone. */
-export function toDecimalHourInTz(iso: string, tz: string): number {
-  const d = new Date(iso);
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  }).formatToParts(d);
-  const hour = parseInt(parts.find((p) => p.type === 'hour')!.value, 10);
-  const minute = parseInt(parts.find((p) => p.type === 'minute')!.value, 10);
-  return hour + minute / 60;
-}

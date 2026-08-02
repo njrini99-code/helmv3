@@ -356,10 +356,3 @@ export type BaseballClassConflictUpdate = Partial<
 
 
 
-/** Severity rank for sorting (hard first). */
-export const CONFLICT_SEVERITY_RANK: Record<BaseballClassConflictSeverity, number> = {
-  hard: 0,
-  soft: 1,
-  watch: 2,
-  informational: 3,
-};

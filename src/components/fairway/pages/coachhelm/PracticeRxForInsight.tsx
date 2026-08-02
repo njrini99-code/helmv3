@@ -192,5 +192,3 @@ export function PracticeRxForInsight({
     />
   );
 }
-
-export default PracticeRxForInsight;

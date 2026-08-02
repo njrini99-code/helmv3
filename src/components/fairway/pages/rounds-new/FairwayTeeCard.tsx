@@ -320,5 +320,3 @@ function TeeFact({ label, value }: { label: string; value: string }) {
     </span>
   );
 }
-
-export default FairwayTeeCard;

@@ -764,5 +764,3 @@ function CoachingIntelligenceBody({
     </CoachingIntelligenceFrame>
   );
 }
-
-export default FairwaySettingsCoachingIntelligence;

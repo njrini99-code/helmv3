@@ -34,7 +34,7 @@ export interface CoachNotificationCounts {
  * Queries golf_calendar_notifications and golf_messages.
  */
 async function getCoachNotificationCountsImpl(
-  userId: string,
+  _userId: string,
   _teamId?: string,
 ): Promise<ActionResult<CoachNotificationCounts>> {
   try {
@@ -53,6 +53,15 @@ async function getCoachNotificationCountsImpl(
       };
     }
 
+    // DS-04: every query below used to key off the caller-supplied `_userId`,
+    // never the session. golf_participants_select_v2 grants read on ANY
+    // participant row in a conversation you also belong to, so passing a
+    // teammate's id returned their last_read_at — and the per-conversation
+    // count below then revealed their unread count. The parameter is kept for
+    // the exported signature (notification-badge-context.tsx) but is now
+    // ignored: identity comes from the session only.
+    const viewerId = user.id;
+
     // Run queries in parallel
     const [calendarResult, conversationsResult] = await Promise.all([
       // 1. Unread calendar notifications
@@ -60,14 +69,14 @@ async function getCoachNotificationCountsImpl(
       (supabase as any)
         .from('golf_calendar_notifications')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
+        .eq('user_id', viewerId)
         .is('read_at', null) as Promise<{ count: number | null; error: unknown }>,
 
       // 2. Conversations the coach participates in
       supabase
         .from('golf_conversation_participants')
         .select('conversation_id, last_read_at')
-        .eq('user_id', userId),
+        .eq('user_id', viewerId),
     ]);
 
     const calendarNotifications = calendarResult.count || 0;
@@ -82,7 +91,7 @@ async function getCoachNotificationCountsImpl(
             .from('golf_messages')
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', p.conversation_id)
-            .neq('sender_id', userId)
+            .neq('sender_id', viewerId)
             .gt('created_at', p.last_read_at || '1970-01-01');
           return count || 0;
         })

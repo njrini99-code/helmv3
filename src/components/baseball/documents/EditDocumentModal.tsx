@@ -153,5 +153,3 @@ export function EditDocumentModal({ open, document, categories, onClose, onSave 
     </div>
   );
 }
-
-export default EditDocumentModal;

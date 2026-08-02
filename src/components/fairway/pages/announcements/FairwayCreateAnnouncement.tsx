@@ -653,5 +653,3 @@ function CreateSheet({
     </Sheet>
   );
 }
-
-export default FairwayCreateAnnouncement;

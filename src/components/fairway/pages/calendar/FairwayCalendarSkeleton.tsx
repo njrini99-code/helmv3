@@ -88,5 +88,3 @@ export function FairwayCalendarSkeleton() {
     </div>
   );
 }
-
-export default FairwayCalendarSkeleton;

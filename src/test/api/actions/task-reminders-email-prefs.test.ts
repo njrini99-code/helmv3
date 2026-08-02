@@ -30,6 +30,21 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerException: vi.fn().mockResolvedValue(undefined),
 }));
 
+// `processReminders` is a wire-callable 'use server' export, so it now
+// authorizes its caller: either a real (service-role) client handed over
+// in-process by the cron, or a platform super-admin. The super-admin probe is
+// mocked so these tests never touch the real DB-backed gate.
+type SuperAdminProbeStub =
+  | { allowed: true; context: { userId: string; email: string } }
+  | { allowed: false; reason: 'unauthenticated' | 'forbidden' };
+
+const checkSuperAdminAccessMock = vi.fn(
+  async (): Promise<SuperAdminProbeStub> => ({ allowed: false, reason: 'unauthenticated' }),
+);
+vi.mock('@/lib/admin/require-super-admin', () => ({
+  checkSuperAdminAccess: () => checkSuperAdminAccessMock(),
+}));
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyBuilder = any;
 
@@ -136,6 +151,11 @@ function buildClient() {
   let taskReminderCallsAfterFetch = 0;
 
   return {
+    // `from` / `rpc` / `auth.getUser` must all be live functions: that shape is
+    // what task-reminders.ts treats as proof of an in-process (cron)
+    // service-role client, since functions can't cross the server-action wire.
+    rpc: vi.fn(),
+    auth: { getUser: vi.fn(async () => ({ data: { user: null }, error: null })) },
     from: vi.fn((table: string): AnyBuilder => {
       if (table === 'golf_task_reminders') {
         if (!dueRemindersCallDone) {
@@ -160,6 +180,8 @@ describe('task-reminders.ts — email_task_reminders preference gate', () => {
 
   beforeEach(() => {
     getUserNotificationPreferencesMock.mockClear();
+    checkSuperAdminAccessMock.mockClear();
+    checkSuperAdminAccessMock.mockResolvedValue({ allowed: false, reason: 'unauthenticated' });
     getUserNotificationPreferencesMock.mockImplementation(async () => DEFAULT_NOTIFICATION_PREFERENCES);
     vi.stubEnv('RESEND_API_KEY', 'test-resend-key');
     global.fetch = vi.fn().mockResolvedValue({ ok: true, text: async () => '' } as Response);
@@ -197,6 +219,54 @@ describe('task-reminders.ts — email_task_reminders preference gate', () => {
     expect(url).toBe('https://api.resend.com/emails');
     const body = JSON.parse(init.body as string) as { to: string };
     expect(body.to).toBe(RECIPIENT_EMAIL);
+    expect(results.sent).toBe(1);
+    expect(results.failed).toBe(0);
+  });
+});
+
+describe('task-reminders.ts — processReminders authorization gate', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    checkSuperAdminAccessMock.mockClear();
+    checkSuperAdminAccessMock.mockResolvedValue({ allowed: false, reason: 'forbidden' });
+    getUserNotificationPreferencesMock.mockClear();
+    vi.stubEnv('RESEND_API_KEY', 'test-resend-key');
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: async () => '' } as Response);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('refuses a wire caller who passes no client and is not a super-admin', async () => {
+    const { processReminders } = await import('@/app/golf/actions/task-reminders');
+    const results = await processReminders();
+
+    expect(checkSuperAdminAccessMock).toHaveBeenCalledTimes(1);
+    expect(results).toEqual({ sent: 0, failed: 0, errors: ['Unauthorized'] });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a forged client-shaped payload ({} used to slip past `!client`)', async () => {
+    const { processReminders } = await import('@/app/golf/actions/task-reminders');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const results = await processReminders({} as any);
+
+    expect(checkSuperAdminAccessMock).toHaveBeenCalledTimes(1);
+    expect(results).toEqual({ sent: 0, failed: 0, errors: ['Unauthorized'] });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('lets the cron through on the strength of its service-role client alone', async () => {
+    const { processReminders } = await import('@/app/golf/actions/task-reminders');
+    const results = await processReminders(buildClient());
+
+    // No super-admin probe: the live client is itself the proof of an
+    // in-process caller, so the cron never needs a user session.
+    expect(checkSuperAdminAccessMock).not.toHaveBeenCalled();
     expect(results.sent).toBe(1);
     expect(results.failed).toBe(0);
   });

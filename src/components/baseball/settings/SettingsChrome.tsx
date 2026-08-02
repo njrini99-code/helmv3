@@ -52,7 +52,7 @@ import {
  * Every settings route wears the same dateline, so it is a constant rather
  * than a prop each caller re-types (and eventually re-types differently).
  */
-export const SETTINGS_EYEBROW = 'THE PRESSBOX · SETTINGS';
+const SETTINGS_EYEBROW = 'THE PRESSBOX · SETTINGS';
 
 const WIDTH_CLASS = {
   /** Single-column forms and reference lists — the default. */

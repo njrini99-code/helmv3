@@ -53,7 +53,7 @@ export interface BandHistogramProps {
  * ------------------------------------------------------------------------- */
 
 /** Local accent-ramp classes — mirrors RampMatrix's 0 (no data) .. 4 (strongest). */
-export const BAND_HISTOGRAM_RAMP_CLASSES: Record<0 | 1 | 2 | 3 | 4, string> = {
+const BAND_HISTOGRAM_RAMP_CLASSES: Record<0 | 1 | 2 | 3 | 4, string> = {
   0: 'bg-surface-sunken',
   1: 'bg-accent-100',
   2: 'bg-accent-300',

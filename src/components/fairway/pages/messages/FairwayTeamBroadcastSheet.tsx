@@ -447,5 +447,3 @@ export function FairwayTeamBroadcastSheet({
     </Sheet>
   );
 }
-
-export default FairwayTeamBroadcastSheet;

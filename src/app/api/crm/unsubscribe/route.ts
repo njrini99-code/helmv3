@@ -89,11 +89,34 @@ function page(msg: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe</title></head><body style="font-family:system-ui,-apple-system,sans-serif;background:#FFFEFA;color:#1c1917;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0"><div style="text-align:center;padding:2rem;max-width:30rem"><h1 style="font-size:1.25rem;margin:0 0 .5rem;font-weight:600">${msg}</h1><p style="color:#78716c;margin:0;font-size:.9rem">GolfHelm · helmsportslabs.com</p></div></body></html>`;
 }
 
-// RFC 8058 one-click (Gmail/Yahoo POST the List-Unsubscribe URL directly)
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// A plain GET (a scanner prefetching the visible link, or a human clicking it)
+// must NOT auto-suppress — only a real confirming click, or the RFC 8058
+// one-click POST above, should. Renders a form that POSTs back to this same
+// URL with the same c/t pair.
+function confirmPage(c: string, t: string): string {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe</title></head><body style="font-family:system-ui,-apple-system,sans-serif;background:#FFFEFA;color:#1c1917;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0"><div style="text-align:center;padding:2rem;max-width:30rem"><h1 style="font-size:1.25rem;margin:0 0 .5rem;font-weight:600">Unsubscribe from GolfHelm emails?</h1><p style="color:#78716c;margin:0 0 1.5rem;font-size:.9rem">You won't receive any more emails from us.</p><form method="POST" action="/api/crm/unsubscribe"><input type="hidden" name="c" value="${escapeAttr(c)}"><input type="hidden" name="t" value="${escapeAttr(t)}"><button type="submit" style="font:inherit;font-weight:600;background:#1c1917;color:#FFFEFA;border:none;border-radius:.5rem;padding:.75rem 1.5rem;cursor:pointer">Confirm unsubscribe</button></form></div></body></html>`;
+}
+
+// RFC 8058 one-click (Gmail/Yahoo POST the List-Unsubscribe URL directly) AND
+// the confirmation form rendered by GET below (a human confirming the click).
+// The one-click sender POSTs the URL as-is (c/t in the query string); the
+// confirm form POSTs the same pair as a form body — accept either shape.
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
-  const c = searchParams.get('c');
-  const t = searchParams.get('t');
+  let c = searchParams.get('c');
+  let t = searchParams.get('t');
+  if (!c || !t) {
+    const contentType = request.headers.get('content-type') ?? '';
+    if (contentType.includes('form')) {
+      const form = await request.formData();
+      c = c ?? (form.get('c') as string | null);
+      t = t ?? (form.get('t') as string | null);
+    }
+  }
   if (!verifyUnsubToken(c, t)) return NextResponse.json({ error: 'invalid' }, { status: 400 });
   const ok = await suppress(c);
   // Non-2xx tells RFC 8058 senders to retry the one-click POST — silently
@@ -102,7 +125,12 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true });
 }
 
-// Browser click (the visible link, if any client surfaces it)
+// Browser click (or an email-security scanner's prefetch of the visible
+// link). MUST NOT suppress — a scanner following every link in an email
+// would otherwise force-unsubscribe recipients who never clicked anything.
+// Renders a confirmation form; only the form's POST (or the RFC 8058
+// one-click POST above) actually suppresses. See CLASS K in the security
+// remediation spec.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const c = searchParams.get('c');
@@ -113,9 +141,7 @@ export async function GET(request: Request) {
       headers: { 'Content-Type': 'text/html' },
     });
   }
-  const ok = await suppress(c);
-  return new NextResponse(
-    page(ok ? "You're unsubscribed — you won't receive any more emails from us." : 'We could not find that address.'),
-    { headers: { 'Content-Type': 'text/html' } },
-  );
+  // `t` is guaranteed non-null here — verifyUnsubToken returns false on a
+  // missing token, and its type guard already narrowed `c`.
+  return new NextResponse(confirmPage(c, t as string), { headers: { 'Content-Type': 'text/html' } });
 }

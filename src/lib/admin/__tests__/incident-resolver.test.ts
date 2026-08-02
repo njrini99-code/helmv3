@@ -14,6 +14,12 @@ vi.mock('@/lib/supabase/admin', () => ({
         select: () => chain,
         in: () => chain,
         ilike: () => chain,
+        // The candidate load paginates through fetchAllRowsResult now (the
+        // unpaginated select was silently capped at PostgREST's 1,000 rows),
+        // so the double has to accept the .order().range() tail. Returning the
+        // full row set on the first page is a short page, which ends the loop.
+        order: () => chain,
+        range: () => chain,
         then: (resolve: (v: unknown) => unknown) =>
           Promise.resolve({ data: mocks.rows, error: null }).then(resolve),
         update: (patch: Record<string, unknown>) => ({

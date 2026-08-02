@@ -215,5 +215,3 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
     </nav>
   );
 }
-
-export default FairwayHubSubNav;

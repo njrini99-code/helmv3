@@ -236,5 +236,3 @@ export function CalendarFairway({
     </div>
   );
 }
-
-export default CalendarFairway;

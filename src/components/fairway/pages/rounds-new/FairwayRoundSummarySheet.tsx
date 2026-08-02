@@ -230,5 +230,3 @@ export function FairwayRoundSummarySheet({
     </ModalShell>
   );
 }
-
-export default FairwayRoundSummarySheet;

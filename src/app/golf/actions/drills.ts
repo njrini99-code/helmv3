@@ -23,10 +23,12 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { verifyInsightAccess, insightAccessDenialMessage } from '@/lib/auth/verify-player-access';
 
 export interface InsightDrill {
   id: string;
@@ -343,7 +345,61 @@ async function recordDrillAddedToPlanImpl(
     return { success: true };
   }
 
-  const { error: upsertError } = await supabase
+  // DS-5: `golf_insight_drill_attachments` has RLS enabled with exactly ONE
+  // policy — a SELECT policy. There is no INSERT/UPDATE policy, so under
+  // default-deny this upsert was rejected for EVERY authenticated caller and
+  // "Add to my practice plan" never persisted. The intended writer is the
+  // service role, so the write moves to the admin client — which means the
+  // caller-supplied `insightId` now needs a real ownership gate in front of it
+  // (default-deny used to neutralise the missing check). Order is
+  // authenticate → authorize → then admin client; the admin client is never
+  // the authorization probe.
+  const access = await verifyInsightAccess(insightId, user.id, supabase);
+  if (!access.allowed) {
+    // DS-5 follow-up: `verifyInsightAccess` resolves the insight's team and then
+    // routes through `public.coach_id_for_team`, so it grants COACH STAFF ONLY.
+    // This action, however, is the PLAYER's "Add to my practice plan" tap
+    // (DrillSheet on the player hub) — gating on the coach check alone returned
+    // an explicit "Not authorized" to every player. Coaches keep the staff path
+    // above; players are authorized here when the insight is about their OWN
+    // player row. Both reads go through the RLS client, so this is a second
+    // ownership assertion on top of the policy, not a substitute for it.
+    const [insightResult, playerResult] = await Promise.all([
+      supabase
+        .from('golf_coach_insights')
+        .select('id, player_id')
+        .eq('id', insightId)
+        .maybeSingle(),
+      supabase
+        .from('golf_players')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+
+    if (insightResult.error || playerResult.error) {
+      const probeError = insightResult.error ?? playerResult.error;
+      await logServerError(
+        `recordDrillAddedToPlan player-ownership probe failed: ${probeError?.message ?? 'unknown error'}`,
+        {
+          action: 'drills.recordDrillAddedToPlan',
+          featureArea: 'insights',
+          extra: { userId: user.id, drillId, insightId, errorCode: probeError?.code },
+        },
+      );
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
+    }
+
+    const callerPlayerId = playerResult.data?.id ?? null;
+    const insightPlayerId = insightResult.data?.player_id ?? null;
+
+    if (!callerPlayerId || !insightPlayerId || insightPlayerId !== callerPlayerId) {
+      return { success: false, error: insightAccessDenialMessage(access.reason) };
+    }
+  }
+
+  const admin = createAdminClient();
+  const { error: upsertError } = await admin
     .from('golf_insight_drill_attachments')
     .upsert(
       { insight_id: insightId, drill_id: drillId, rank: 0 },

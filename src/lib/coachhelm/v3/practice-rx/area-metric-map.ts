@@ -31,29 +31,3 @@ export function metricForArea(areaId: string | null | undefined): MetricId | nul
   return m && isMetricId(m) ? m : null;
 }
 
-/**
- * Whether a SMALLER per-player value is BETTER in this area (drives the
- * contributing-players sort + the "who's dragging" read). Putting (putts/round)
- * and scoring (strokes vs par) are lower-is-better; the % areas are higher.
- */
-export function areaLowerIsBetter(areaId: string): boolean {
-  return areaId === 'putting' || areaId === 'scoring';
-}
-
-/** Short display label for the area's representative SG metric (goal/target UI). */
-export const AREA_METRIC_LABEL: Record<string, string> = {
-  driving: 'Off-the-tee SG',
-  approach: 'Approach SG',
-  short_game: 'Around-green SG',
-  putting: 'Putting SG',
-  scoring: 'Total SG',
-};
-
-/** Per-area formatter for a player's raw `value` (mirrors TeamCategoryView). */
-export const AREA_VALUE_FORMAT: Record<string, (v: number) => string> = {
-  driving: (v) => `${v.toFixed(0)}%`,
-  approach: (v) => `${v.toFixed(0)}%`,
-  short_game: (v) => `${v.toFixed(0)}%`,
-  putting: (v) => v.toFixed(1),
-  scoring: (v) => (v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)),
-};

@@ -234,5 +234,3 @@ export function UploadNewVersionModal({
     </div>
   );
 }
-
-export default UploadNewVersionModal;

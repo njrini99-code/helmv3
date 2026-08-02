@@ -9,9 +9,13 @@ let puttRows: Row[] = [];
 function makeBuilder(rows: Row[]) {
   // Every chained filter returns the builder; awaiting it yields {data,error}.
   const builder: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'gte', 'in']) {
+  for (const m of ['select', 'eq', 'gte', 'in', 'order']) {
     builder[m] = () => builder;
   }
+  // The putts query (golf_shots) has a `.order('id').range(from, to)` tail —
+  // fetchAllRowsResult awaits `.range()` directly and paginates on it.
+  builder.range = (from: number, to: number) =>
+    Promise.resolve({ data: rows.slice(from, to + 1), error: null });
   builder.then = (resolve: (v: { data: Row[]; error: null }) => unknown) =>
     resolve({ data: rows, error: null });
   return builder;

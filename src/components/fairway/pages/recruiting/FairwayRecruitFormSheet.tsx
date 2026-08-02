@@ -338,5 +338,3 @@ export function FairwayRecruitFormSheet({
     </Sheet>
   );
 }
-
-export default FairwayRecruitFormSheet;

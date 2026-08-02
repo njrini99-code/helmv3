@@ -31,7 +31,7 @@ import { DUR, EASE, STAGGER } from '@/lib/motion/gsap/tokens';
 import { maskedLines } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
-export const THESIS = {
+const THESIS = {
   pillars: '[data-thesis="pillars"]',
   pillar: '[data-thesis="pillar"]',
   sep: '[data-thesis="sep"]',

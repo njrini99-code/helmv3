@@ -134,5 +134,3 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
     </div>
   );
 }
-
-export default FairwayPlayerStats;

@@ -3,7 +3,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
-import { verifyTeamAccess as sharedVerifyTeamAccess } from '@/lib/auth/verify-player-access';
+import {
+  verifyTeamAccess as sharedVerifyTeamAccess,
+  verifyInsightAccess as sharedVerifyInsightAccess,
+  insightAccessDenialMessage,
+} from '@/lib/auth/verify-player-access';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
@@ -516,39 +520,56 @@ async function dismissInsightImpl(
 
     const supabase = await createClient();
 
-    // Scope the UPDATE by team_id from verifyInsightAccess (closes 2026-05-23
-    // audit finding: sister acknowledgeInsight was hardened, this one was
-    // missed; a coach with a lenient org-scope insight access result could
-    // dismiss any insight in the org).
-    const teamId = access.insight?.team_id ?? null;
-    let updateQuery = supabase
-      .from('golf_coach_insights')
-      .update({
-        dismissed: true,
-        dismissed_at: new Date().toISOString(),
-        status: 'dismissed',
-        lifecycle_state: 'archived',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', insightId);
-    if (teamId) {
-      updateQuery = updateQuery.eq('team_id', teamId);
+    // DS-2: the local verifyInsightAccess above is ORG-lenient (any coach in
+    // the insight's organization passes), and the old compensating filter
+    // `.eq('team_id', access.insight?.team_id)` was the insight's OWN team id —
+    // a tautology, not an ownership scope. Re-gate through the shared
+    // team-strict helper exactly as acknowledgeInsightImpl does, and scope the
+    // UPDATE by the team id THAT gate returned.
+    const { data: { user } } = await supabase.auth.getUser();
+    const teamGate = await sharedVerifyInsightAccess(insightId, user!.id, supabase);
+    if (!teamGate.allowed) {
+      return { success: false, error: insightAccessDenialMessage(teamGate.reason) };
     }
+
     // P1-12 / Fix 2: fetch the acting user + the updated row's player_id off
     // the same UPDATE ... RETURNING so we can record a real ledger action.
     // Neither verifyInsightAccess helper (this file's local one or the
     // shared one in verify-player-access.ts) fetches player_id, and
     // recordInsightAction silently no-ops without it — extending the
     // trailing .select() costs nothing extra.
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data, error } = await updateQuery.select('id, player_id');
+    //
+    // DS-1: `updated_at` is deliberately NOT written. The `authenticated` role
+    // has no UPDATE privilege on that column (the grant is column-scoped), so
+    // including it made Postgres reject the whole statement with 42501 before
+    // RLS was even evaluated — dismissInsight always failed. The
+    // `update_golf_coach_insights_updated_at` BEFORE UPDATE trigger maintains
+    // it server-side, which is why every sibling mutation omits it too.
+    const { data, error } = await supabase
+      .from('golf_coach_insights')
+      .update({
+        dismissed: true,
+        dismissed_at: new Date().toISOString(),
+        status: 'dismissed',
+        lifecycle_state: 'archived',
+      })
+      .eq('id', insightId)
+      .eq('team_id', teamGate.teamId!)
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`Failed to dismiss insight: ${describeError(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
       return { success: false, error: 'Failed to dismiss insight' };
     }
 
-    if (data?.[0]?.player_id && user) {
+    // DS-2: an RLS-filtered UPDATE affects zero rows without erroring. Reporting
+    // success on that told the coach the insight was dismissed when nothing was
+    // written (and skipped the ledger entry). Mirrors acknowledgeInsightImpl.
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Insight not found' };
+    }
+
+    if (data[0]?.player_id && user) {
       await recordInsightAction({
         insight_id: insightId,
         player_id: data[0].player_id,
@@ -608,20 +629,20 @@ async function acknowledgeInsightImpl(
     // verifyInsightAccess call above proved the user staffs that team, so we
     // mirror it on the UPDATE itself and treat 0 affected rows as 404.
     const { data: { user: gateUser } } = await supabase.auth.getUser();
-    const { verifyInsightAccess: verifyInsightAccessFn, insightAccessDenialMessage } =
-      await import('@/lib/auth/verify-player-access');
-    const teamGate = await verifyInsightAccessFn(insightId, gateUser!.id, supabase);
+    const teamGate = await sharedVerifyInsightAccess(insightId, gateUser!.id, supabase);
     if (!teamGate.allowed) {
       return { success: false, error: insightAccessDenialMessage(teamGate.reason) };
     }
 
+    // DS-1: `updated_at` is deliberately NOT written here either — see the note
+    // in dismissInsightImpl. The column-scoped grant excludes it, so writing it
+    // errored the whole statement (42501) and acknowledge always failed.
     const { data, error } = await supabase
       .from('golf_coach_insights')
       .update({
         acknowledged_at: new Date().toISOString(),
         status: 'acknowledged',
         lifecycle_state: 'addressed',
-        updated_at: new Date().toISOString(),
       })
       .eq('id', insightId)
       .eq('team_id', teamGate.teamId!)

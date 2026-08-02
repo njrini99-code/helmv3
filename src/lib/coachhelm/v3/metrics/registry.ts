@@ -111,7 +111,7 @@ export function isMetricId(s: string): s is MetricId {
  */
 export type MetricDirection = 'higher_better' | 'lower_better';
 
-export const METRIC_DIRECTION: Record<MetricId, MetricDirection> = {
+const METRIC_DIRECTION: Record<MetricId, MetricDirection> = {
   // Strokes Gained headline — higher is better
   sg_total: 'higher_better',
   sg_ott: 'higher_better',

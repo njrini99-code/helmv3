@@ -432,5 +432,3 @@ function AttendanceSkeleton() {
     </ul>
   );
 }
-
-export default AttendancePanel;

@@ -15,6 +15,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import type { NarrativeGoal, AlertPosture } from '@/lib/coachhelm/v3/intent/types';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 
 export interface SetIntentInput {
   player_id: string;
@@ -47,6 +48,12 @@ async function setIntentImpl(input: SetIntentInput): Promise<ActionResult> {
       .eq('user_id', user.id)
       .maybeSingle();
     if (!coach) return { ok: false, error: 'Not a coach' };
+
+    // intent_coach_only (RLS) only binds coach_id, not player_id — a coach
+    // could otherwise upsert intent rows against any player uuid in any
+    // tenant. Verify the coach actually coaches this player before writing.
+    const access = await verifyPlayerAccess(input.player_id, user.id, supabase);
+    if (!access.allowed) return { ok: false, error: 'Not authorized for this player' };
 
     const payload: Record<string, unknown> = {
       coach_id: coach.id,
@@ -113,6 +120,16 @@ async function bulkSetIntentImpl(
       .eq('user_id', user.id)
       .maybeSingle();
     if (!coach) return { ok: false, error: 'Not a coach' };
+
+    // Same player-binding check as setIntent, applied to every id in the
+    // batch — fail the whole batch rather than silently writing a partial
+    // set of rows if any player is out of the coach's scope.
+    const accessChecks = await Promise.all(
+      playerIds.map((playerId) => verifyPlayerAccess(playerId, user.id, supabase)),
+    );
+    if (accessChecks.some((result) => !result.allowed)) {
+      return { ok: false, error: 'Not authorized for one or more players' };
+    }
 
     const now = new Date().toISOString();
     const rows = playerIds.map((player_id) => ({

@@ -48,11 +48,17 @@ export interface FairwayExpenseSummaryProps {
 }
 
 function formatCurrency(amount: number): string {
+  // Cents are NOT cosmetic here: this formats budget/reimbursement totals that
+  // a coach reconciles against receipts and against the CSV export. Rounding
+  // to whole dollars made a single $123.45 expense read "$123" in Total
+  // Expenses, in the category breakdown and in Team Paid, while the line item
+  // right below it correctly showed $123.45 — and the drift compounds with
+  // every row.
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
@@ -173,7 +179,7 @@ export function FairwayExpenseSummary({
           </div>
           <div className="text-right">
             <p className="font-fw-sans text-body-sm text-text-tertiary tabular-nums">
-              {summary.count} expenses
+              {summary.count} {summary.count === 1 ? 'expense' : 'expenses'}
             </p>
             {totalBudget > 0 && (
               <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary tabular-nums">
@@ -382,5 +388,3 @@ export function FairwayExpenseSummary({
     </div>
   );
 }
-
-export default FairwayExpenseSummary;

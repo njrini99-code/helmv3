@@ -250,5 +250,3 @@ export function FairwayCalendarHero({
     </Surface>
   );
 }
-
-export default FairwayCalendarHero;

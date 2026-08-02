@@ -312,5 +312,3 @@ export const DatePicker = React.forwardRef(DatePickerInner) as <
 >(
   props: DatePickerProps<M> & { ref?: React.ForwardedRef<HTMLButtonElement> },
 ) => React.ReactElement;
-
-export default DatePicker;

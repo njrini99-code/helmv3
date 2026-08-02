@@ -35,7 +35,7 @@ import { DUR, EASE, SCRUB, STAGGER, DIST } from '@/lib/motion/gsap/tokens';
 import { arrive, maskedWords } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
-export const CHD = {
+const CHD = {
   card: '[data-ch-card]',
   symptom: '[data-ch-symptom]',
   ruledOut: '[data-cause="ruled-out"]',

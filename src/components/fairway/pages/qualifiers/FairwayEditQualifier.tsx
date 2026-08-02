@@ -404,5 +404,3 @@ export function FairwayEditQualifier({
     </div>
   );
 }
-
-export default FairwayEditQualifier;

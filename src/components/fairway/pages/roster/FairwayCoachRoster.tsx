@@ -242,5 +242,3 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
     </div>
   );
 }
-
-export default FairwayCoachRoster;

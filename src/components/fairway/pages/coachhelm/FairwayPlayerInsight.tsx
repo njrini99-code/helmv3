@@ -1052,5 +1052,3 @@ export function FairwayPlayerInsight({
     </CoachHelmShell>
   );
 }
-
-export default FairwayPlayerInsight;

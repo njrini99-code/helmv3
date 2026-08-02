@@ -71,35 +71,6 @@ export function formatScoreToPar(score: number | null): string {
 
 
 /* ---------------------------------------------------------------------------
- * Score color map (lower is better) — VERBATIM legacy Tailwind classes from
- * KeyMetricsGrid.getScoringColor. Returns a text-color utility class.
- * NOTE: these are the LEGACY (warm/primary/amber/red) palette classes, kept
- * verbatim so the player-detail surface renders byte-identically; Fairway
- * surfaces that want token classes should map intent via scoreTone() instead.
- * ------------------------------------------------------------------------- */
-export function getScoringColor(toPar: number | null): string {
-  if (toPar === null) return 'text-warm-900';
-  if (toPar <= -2) return 'text-primary-600';
-  if (toPar < 0) return 'text-primary-600';
-  if (toPar === 0) return 'text-warm-900';
-  if (toPar <= 3) return 'text-amber-600';
-  return 'text-red-600';
-}
-
-/* ---------------------------------------------------------------------------
- * Percentage color map (higher is better) — VERBATIM legacy Tailwind classes
- * from KeyMetricsGrid.getPercentageColor (default goodThreshold = 50, the
- * legacy default; roster callers pass 55 for GIR/FW just as the legacy did).
- * ------------------------------------------------------------------------- */
-export function getPercentageColor(pct: number | null, goodThreshold = 50): string {
-  if (pct === null) return 'text-warm-900';
-  if (pct >= goodThreshold + 15) return 'text-primary-600';
-  if (pct >= goodThreshold) return 'text-primary-600';
-  if (pct >= goodThreshold - 15) return 'text-amber-600';
-  return 'text-red-600';
-}
-
-/* ---------------------------------------------------------------------------
  * Fairway-token intent maps — the SAME thresholds as the legacy color maps,
  * but expressed as Fairway `FwStatusTone` values so re-skinned surfaces can
  * drive token-based components (Badge/StatusPill/Readout) instead of hardcoded

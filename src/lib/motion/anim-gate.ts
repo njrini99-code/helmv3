@@ -31,7 +31,7 @@
  * hydration can never leave the page blank.
  * ========================================================================== */
 
-export const ANIM_READY_ATTR = 'data-anim-ready';
+const ANIM_READY_ATTR = 'data-anim-ready';
 
 /** This element's animation system has taken over; CSS may stop hiding it. */
 export function markAnimReady(el: Element | null | undefined): void {

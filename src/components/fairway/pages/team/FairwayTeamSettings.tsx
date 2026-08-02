@@ -652,5 +652,3 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
     </div>
   );
 }
-
-export default FairwayTeamSettings;

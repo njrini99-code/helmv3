@@ -624,12 +624,21 @@ async function searchTemplatesImpl(
   try {
     const supabase = await createClient();
 
+    // DS: query was interpolated into the PostgREST .or() filter unsanitized —
+    // commas/parens/colons/braces are or() metacharacters and could restructure
+    // the OR-group's logic tree. Strip them before interpolating (same
+    // sanitizer as insight-management.ts searchInsights).
+    const q = query.trim().replace(/[,()\\:{}%]/g, '');
+    if (!q) {
+      return { data: [] };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: templates, error } = await (supabase as any)
       .from('golf_task_templates')
       .select('*')
       .eq('team_id', teamId)
-      .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(`title.ilike.%${q}%,description.ilike.%${q}%`)
       .order('title', { ascending: true })
       .limit(10) as { data: DbTaskTemplate[] | null; error: Error | null };
 

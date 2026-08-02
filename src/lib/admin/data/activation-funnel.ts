@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { assertQueryOk } from '@/lib/admin/data/assert-query-ok';
 import { trailingUtcDays, bucketDailyCounts, type AdminClient, type DailyCount } from './auth';
 
 /**
@@ -117,6 +118,8 @@ async function fetchGolfWindowStats(admin: AdminClient, startIso: string, endIso
       .order('created_at', { ascending: true })
       .limit(ONBOARD_SAMPLE_CAP),
   ]);
+  assertQueryOk(signedUpRes, 'fetchGolfWindowStats: golf_players signup count');
+  assertQueryOk(onboardedRes, 'fetchGolfWindowStats: golf_players onboarded');
   const onboardedRows = toCohortRows(onboardedRes.data ?? []);
   return {
     signedUpCount: signedUpRes.count ?? 0,
@@ -138,6 +141,8 @@ async function fetchBaseballWindowStats(admin: AdminClient, startIso: string, en
       .order('created_at', { ascending: true })
       .limit(ONBOARD_SAMPLE_CAP),
   ]);
+  assertQueryOk(signedUpRes, 'fetchBaseballWindowStats: baseball_players signup count');
+  assertQueryOk(onboardedRes, 'fetchBaseballWindowStats: baseball_players onboarded');
   const onboardedRows = toCohortRows(onboardedRes.data ?? []);
   return {
     signedUpCount: signedUpRes.count ?? 0,
@@ -156,7 +161,7 @@ async function golfActivationMap(admin: AdminClient, onboardedRows: CohortRow[])
   // silent truncation drops whole players out of the activation funnel. `id` is
   // the tiebreak — created_at alone is not unique, and a non-unique sort lets
   // page boundaries drift.
-  const { data } = await fetchAllRowsResult<{ player_id: string; created_at: string | null }>(
+  const { data, error } = await fetchAllRowsResult<{ player_id: string; created_at: string | null }>(
     (from, to) => {
       if (from >= ACTIVATION_ROWS_CAP) return Promise.resolve({ data: [], error: null });
       return admin
@@ -168,6 +173,7 @@ async function golfActivationMap(admin: AdminClient, onboardedRows: CohortRow[])
         .range(from, Math.min(to, ACTIVATION_ROWS_CAP - 1));
     },
   );
+  assertQueryOk({ error }, 'golfActivationMap: golf_rounds');
   const map = new Map<string, string>();
   for (const row of (data ?? []) as Array<{ player_id: string; created_at: string | null }>) {
     if (!row.created_at) continue;
@@ -187,18 +193,19 @@ async function golfActivationMap(admin: AdminClient, onboardedRows: CohortRow[])
 async function baseballActivationMap(admin: AdminClient, onboardedRows: CohortRow[]): Promise<Map<string, string>> {
   const ids = onboardedRows.map((r) => r.id);
   if (ids.length === 0) return new Map();
-  const { data: memberRows } = await admin
+  const { data: memberRows, error: memberError } = await admin
     .from('baseball_team_members')
     .select('player_id, team_id')
     .in('player_id', ids)
     .eq('status', 'active');
+  assertQueryOk({ error: memberError }, 'baseballActivationMap: baseball_team_members');
   const members = (memberRows ?? []) as Array<{ player_id: string; team_id: string }>;
   const teamIds = Array.from(new Set(members.map((m) => m.team_id)));
   if (teamIds.length === 0) return new Map();
 
   // Same cap, same reasoning as golfActivationMap: first-row-per-team, so a
   // truncation silently drops teams from the funnel.
-  const { data: gameRows } = await fetchAllRowsResult<{ team_id: string; created_at: string | null }>(
+  const { data: gameRows, error: gameError } = await fetchAllRowsResult<{ team_id: string; created_at: string | null }>(
     (from, to) => {
       if (from >= ACTIVATION_ROWS_CAP) return Promise.resolve({ data: [], error: null });
       return admin
@@ -210,6 +217,7 @@ async function baseballActivationMap(admin: AdminClient, onboardedRows: CohortRo
         .range(from, Math.min(to, ACTIVATION_ROWS_CAP - 1));
     },
   );
+  assertQueryOk({ error: gameError }, 'baseballActivationMap: baseball_games');
   const teamFirstGame = new Map<string, string>();
   for (const row of (gameRows ?? []) as Array<{ team_id: string; created_at: string | null }>) {
     if (!row.created_at) continue;
@@ -257,6 +265,8 @@ async function fetchSportRunway(
         .range(from, to),
     ),
   ]);
+
+  assertQueryOk(signupRowsRes, `fetchSportRunway: ${table} signup rows (30d)`);
 
   const [currentActivation, previousActivation] = await Promise.all([
     activationMap(admin, current.onboardedRows),

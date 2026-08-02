@@ -8,8 +8,10 @@
 // going forward.
 //
 // Run via: node --test scripts/__tests__/error-boundary-coverage.test.mjs
+// This previously ran under `node --test`, which nothing invokes, so it
+// never executed. Promoted to vitest (issue #1194).
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

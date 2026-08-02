@@ -433,5 +433,3 @@ export function FairwayNewMessageSheet({
     </Sheet>
   );
 }
-
-export default FairwayNewMessageSheet;

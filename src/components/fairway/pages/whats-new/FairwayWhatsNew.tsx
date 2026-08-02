@@ -525,5 +525,3 @@ function FeedRow({ item, isNew }: { item: WhatsNewItem; isNew: boolean }) {
     </li>
   );
 }
-
-export default FairwayWhatsNew;

@@ -67,9 +67,28 @@ describe('searchInsights', () => {
   it('searches title.ilike and content.ilike (NOT description)', async () => {
     const { builder, orSpy } = makeSearchBuilder({ data: [], error: null, count: 0 });
     createClientMock.mockResolvedValue({
-      from: () => ({
-        select: () => builder,
-      }),
+      auth: {
+        // searchInsightsImpl resolves the caller from the session before
+        // trusting the client-supplied coachId — must precede the coach
+        // lookup below.
+        getUser: async () => ({ data: { user: { id: 'u-1' } } }),
+      },
+      from: (table: string) => {
+        if (table === 'golf_coaches') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  single: async () => ({ data: { id: 'coach-1' }, error: null }),
+                }),
+              }),
+            }),
+          };
+        }
+        return {
+          select: () => builder,
+        };
+      },
     });
 
     await searchInsights({ coachId: 'coach-1', query: 'putting' });

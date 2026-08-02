@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 import {
   AREA_TYPES,
   getAreaType,
-  getProgressPercent,
+  resolveMetricDirection,
   readMetricValue,
   suggestTarget,
   formatMetricValue,
@@ -408,14 +408,26 @@ export function FocusAreaModal({
     }
   }
 
-  const previewPct =
-    form.current_value && form.target_value
-      ? getProgressPercent(
-          parseFloat(form.current_value),
-          parseFloat(form.target_value),
-          form.target_metric,
-        )
-      : null;
+  // The old preview read "Starting at 92% of target" for a 61 → 66 area — the
+  // `current / target` ratio, which is not progress and made a fresh objective
+  // look nearly finished before it began (#1240). At creation the current value
+  // IS the baseline, so progress is 0 by definition; what the coach actually
+  // wants previewed is the SIZE of the ask.
+  const previewDelta = (() => {
+    const from = parseFloat(form.current_value);
+    const to = parseFloat(form.target_value);
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return null;
+    const decimals = Math.max(
+      (form.current_value.split('.')[1] ?? '').length,
+      (form.target_value.split('.')[1] ?? '').length,
+    );
+    return {
+      from: from.toFixed(decimals),
+      to: to.toFixed(decimals),
+      magnitude: Math.abs(to - from).toFixed(decimals),
+      improving: resolveMetricDirection(form.target_metric) === 'lower' ? to < from : to > from,
+    };
+  })();
 
   const ctaLabel = editing
     ? 'Save changes'
@@ -719,13 +731,15 @@ export function FocusAreaModal({
               </div>
             </FormField>
 
-            {previewPct != null ? (
+            {previewDelta ? (
               <p className="font-fw-sans text-eyebrow text-text-tertiary">
-                Starting at{' '}
-                <Badge tone={previewPct >= 100 ? 'success' : 'neutral'} size="sm" numeric>
-                  {previewPct}%
+                {previewDelta.improving ? 'Asking for a' : 'Heads up — this target moves the wrong way by'}{' '}
+                <Badge tone={previewDelta.improving ? 'neutral' : 'warning'} size="sm" numeric>
+                  {previewDelta.magnitude}
                 </Badge>{' '}
-                of target.
+                {previewDelta.improving
+                  ? `improvement, from ${previewDelta.from} to ${previewDelta.to}.`
+                  : `, from ${previewDelta.from} to ${previewDelta.to}.`}
               </p>
             ) : null}
           </FormSection>

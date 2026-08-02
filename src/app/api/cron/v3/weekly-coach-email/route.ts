@@ -6,9 +6,22 @@
  *
  * Idempotency: a retry/manual re-trigger within the same ISO week must not
  * re-email every coach. Each send carries an
- * `idempotencyKey: weekly-coach-email:${coach_id}:${isoWeekStart}` (Resend's
- * `Idempotency-Key` header) so a duplicate tick for the same coach/week
- * returns Resend's cached response instead of dispatching a second email.
+ * `idempotencyKey: weekly-coach-email:${coach_id}:${team_id}:${isoWeekStart}`
+ * (Resend's `Idempotency-Key` header) so a duplicate tick for the same
+ * coach/team/week returns Resend's cached response instead of dispatching a
+ * second email. `team_id` is included because one coach can be primary on
+ * more than one team.
+ *
+ * KEY-SHAPE TRANSITION. That key used to be `...:${coach_id}:${isoWeekStart}`
+ * with no `team_id`. Resend can only be consulted at send time — there is no
+ * "does this key exist" API — so a re-trigger in the SAME ISO week as the
+ * deploy that changed the shape would miss every pre-deploy key and re-email
+ * every coach already sent that week. `WEEKLY_COACH_EMAIL_LEGACY_WEEK` is the
+ * transition window: set it to the affected `YYYY-MM-DD` ISO-week-start and
+ * the FIRST send per coach in that week reuses the legacy shape, so it lands
+ * on the pre-deploy key. Unset (the default, and correct for every later
+ * week) nothing changes. It is self-limiting — it only ever matches one week.
+ * See the send site below for why reusing that key cannot double-send.
  *
  * Auth: Vercel Cron sends Authorization: Bearer ${CRON_SECRET}.
  *
@@ -81,6 +94,17 @@ async function handle(): Promise<NextResponse> {
   const now = new Date();
   const weekEndIso = now.toISOString();
   const weekKey = isoWeekStartKey(now);
+
+  // Key-shape transition (see the module header). Only the single ISO week
+  // named by the env var is affected; every other week uses the current shape.
+  const legacyKeyWeek = process.env.WEEKLY_COACH_EMAIL_LEGACY_WEEK?.trim() || null;
+  const legacyKeyWeekActive = legacyKeyWeek !== null && legacyKeyWeek === weekKey;
+  // Coaches whose legacy (coach+week) key has already been claimed by an
+  // earlier team in THIS run — the legacy shape is only unique per coach, so
+  // exactly one team may use it. Mirrors which team consumed it pre-deploy:
+  // teams are walked in the same `golf_teams.id ASC` order, and the first one
+  // that actually reached sendEmail is the one that got the email.
+  const legacyKeyClaimed = new Set<string>();
 
   // All teams that have at least one active member. Paginated — platform-wide
   // fetch with no filter can exceed the PostgREST 1000-row cap once the team
@@ -156,6 +180,17 @@ async function handle(): Promise<NextResponse> {
       }
 
       const { subject, html, text } = buildWeeklyRecapHtml(recap);
+
+      // Reusing a Resend idempotency key can never dispatch a second email:
+      // an identical payload replays the cached response, and a CHANGED
+      // payload is rejected outright with `invalid_idempotent_request`
+      // (node_modules/resend RESEND_ERROR_CODE_KEY). Both are handled below.
+      const useLegacyKey = legacyKeyWeekActive && !legacyKeyClaimed.has(staff.coach_id);
+      if (useLegacyKey) legacyKeyClaimed.add(staff.coach_id);
+      const idempotencyKey = useLegacyKey
+        ? `weekly-coach-email:${staff.coach_id}:${weekKey}`
+        : `weekly-coach-email:${staff.coach_id}:${team_id}:${weekKey}`;
+
       const result = await sendEmail({
         to: userRow.email,
         subject,
@@ -165,13 +200,29 @@ async function handle(): Promise<NextResponse> {
           { name: 'task', value: 'weekly_coach_recap' },
           { name: 'team_id', value: team_id },
         ],
-        idempotencyKey: `weekly-coach-email:${staff.coach_id}:${weekKey}`,
+        // team_id is in the current shape because one coach can be
+        // `is_primary` on more than one team (golf_team_coach_staff is UNIQUE
+        // only on (team_id, coach_id), not on coach_id alone), and each team
+        // gets its own recap payload. Without team_id, the second team's send
+        // collided with the first's key and Resend rejected it as a duplicate.
+        idempotencyKey,
       });
       if (!result.delivered) {
         // The wrapper returns a friendly error string when the API key
         // is unset (dev / preview) so we don't count those as errors.
-        if (result.error?.includes('RESEND_API_KEY')) summary.skipped_provider_unset += 1;
-        else summary.errors += 1;
+        if (result.error?.includes('RESEND_API_KEY')) {
+          summary.skipped_provider_unset += 1;
+        } else if (result.error && /idempoten/i.test(result.error)) {
+          // Resend refused a key it has already seen with a different body —
+          // i.e. this coach/team/week was ALREADY emailed and the recap has
+          // since been rebuilt with fresher data. That is idempotency working,
+          // not a failure: nothing was double-sent, so it must not be counted
+          // as an error and paged on. Counting it as `sent` would be a lie
+          // about THIS run, so it is simply not counted (the loop already has
+          // uncounted `continue`s for no-primary-coach and no-recap).
+        } else {
+          summary.errors += 1;
+        }
         continue;
       }
       summary.sent += 1;

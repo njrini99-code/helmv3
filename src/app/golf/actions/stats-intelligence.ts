@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { normalizePlayerMetrics } from '@/lib/coachhelm/v2/stats';
 import {
   getInsightsForPlayer,
@@ -320,7 +321,18 @@ async function getTeamStatsIntelligenceImpl(
     const supabase = await createClient();
 
     let teamId: string | null = teamIdArg ?? null;
-    if (!teamId && session.coach.organization_id) {
+    if (teamId) {
+      // Caller-supplied team id must be validated — the cookie-resolved
+      // fallback path below already goes through this same check inside
+      // resolveCoachTeamIdWithCookie's own validation.
+      const ok = await validateCoachTeamAccess(
+        supabase,
+        session.coach.id,
+        teamId,
+        session.coach.organization_id,
+      );
+      if (!ok) return { success: false, error: 'Unauthorized' };
+    } else if (session.coach.organization_id) {
       teamId = await resolveCoachTeamIdWithCookie(
         supabase,
         session.coach.organization_id,

@@ -176,5 +176,3 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
     </section>
   );
 }
-
-export default FairwayRecentCourses;

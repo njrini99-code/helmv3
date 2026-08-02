@@ -34,7 +34,7 @@ export interface BenLeahTrackedIssue extends BenLeahGitHubIssue {
 }
 
 /** GitHub workflow labels Helm Bridge reads and writes. */
-export const BEN_LEAH_WORKFLOW_LABELS = [
+const BEN_LEAH_WORKFLOW_LABELS = [
   'status:triaged',
   'status:in-progress',
   'status:in-production',
@@ -91,7 +91,7 @@ export function workflowLabelForSelection(selection: BenLeahWorkflowSelection): 
   return WORKFLOW_SELECTION_TO_LABEL[selection];
 }
 
-export function isBenLeahWorkflowLabel(label: string): label is BenLeahWorkflowLabel {
+function isBenLeahWorkflowLabel(label: string): label is BenLeahWorkflowLabel {
   return (BEN_LEAH_WORKFLOW_LABELS as readonly string[]).includes(label);
 }
 
@@ -111,10 +111,6 @@ export function applyWorkflowSelection(
 ): string[] {
   const preserved = labels.filter((label) => !isBenLeahWorkflowLabel(label));
   return [...preserved, workflowLabelForSelection(selection)];
-}
-
-export function stripWorkflowLabels(labels: string[]): string[] {
-  return labels.filter((label) => !isBenLeahWorkflowLabel(label));
 }
 
 /** Latest READY production deployment timestamp (epoch ms), if Vercel data is available. */
@@ -170,7 +166,7 @@ export function deriveBenLeahTrackStatus(
   return 'fixed';
 }
 
-export function emptyBenLeahStatusCounts(): Record<BenLeahTrackStatus, number> {
+function emptyBenLeahStatusCounts(): Record<BenLeahTrackStatus, number> {
   return {
     open: 0,
     in_progress: 0,

@@ -145,5 +145,3 @@ export function PlayerIdentity({
     </div>
   );
 }
-
-export default PlayerIdentity;

@@ -510,6 +510,44 @@ export interface ExpenseSummary {
 }
 
 /**
+ * DS-42: golf_travel_expenses_coach_all (the RLS policy backing every read/
+ * write below) is scoped to the caller's ORGANIZATION, not the team they are
+ * staffed on — unlike the itinerary table's staff-strict policy. Reads in
+ * this file used to rely on RLS alone, which let a coach staffed only on the
+ * men's team see the women's team's expenses within the same org.
+ *
+ * This helper closes that gap for coach callers while leaving player callers
+ * untouched: golf_travel_expenses_player_select is already correctly scoped
+ * to the player's own team, so a non-coach caller is allowed through here and
+ * RLS does the real filtering.
+ */
+async function callerMayAccessTravelTeam(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  teamId: string | null,
+): Promise<boolean> {
+  if (!teamId) return false;
+
+  const { data: coachRowsRaw } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', userId);
+  const coachRows = Array.isArray(coachRowsRaw) ? coachRowsRaw : coachRowsRaw ? [coachRowsRaw] : [];
+
+  if (coachRows.length === 0) {
+    // Not a coach — defer to golf_travel_expenses_player_select RLS.
+    return true;
+  }
+
+  for (const c of coachRows) {
+    if (await validateCoachTeamAccess(supabase, c.id, teamId, c.organization_id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Create a new travel expense
  */
 async function createTravelExpenseImpl(input: CreateExpenseInput) {
@@ -525,11 +563,38 @@ async function createTravelExpenseImpl(input: CreateExpenseInput) {
     // Verify user is a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
     if (!coach) {
       return { success: false, error: 'Only coaches can manage expenses' };
+    }
+
+    // DS-42: the team_id below is caller-supplied, and
+    // golf_travel_expenses_coach_all is ORG-scoped RLS rather than staff-scoped,
+    // so "is a coach at all" let a coach staffed only on the men's team INSERT
+    // expenses onto the women's team. Same staff-strict wall as
+    // updateTravelExpense / deleteTravelExpense, applied to the requested team.
+    if (!(await validateCoachTeamAccess(supabase, coach.id, validatedData.team_id, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
+    }
+
+    // The itinerary link is caller-supplied too, and nothing in the schema ties
+    // it to team_id — a coach could file an expense under their own team while
+    // attaching it to a sibling team's itinerary, where it would surface in that
+    // team's expense list, summary and CSV export. Require the two to agree.
+    if (validatedData.itinerary_id) {
+      const { data: itineraryRow } = await supabase
+        .from('golf_travel_itineraries')
+        .select('team_id')
+        .eq('id', validatedData.itinerary_id)
+        .maybeSingle();
+      if (!itineraryRow) {
+        return { success: false, error: 'Itinerary not found' };
+      }
+      if (itineraryRow.team_id !== validatedData.team_id) {
+        return { success: false, error: 'Not authorized for this team' };
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -595,11 +660,26 @@ async function updateTravelExpenseImpl(input: UpdateExpenseInput) {
     // Verify user is a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
     if (!coach) {
       return { success: false, error: 'Only coaches can manage expenses' };
+    }
+
+    // DS-42: golf_travel_expenses_coach_all is ORG-scoped RLS, not staff-scoped,
+    // so a coach staffed only on the men's team could edit the women's team's
+    // expenses. Resolve the expense's own team first and apply the same
+    // staff-strict wall travel.ts already uses for itineraries.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: expenseRecord } = await (supabase as any)
+      .from('golf_travel_expenses')
+      .select('team_id')
+      .eq('id', validatedData.id)
+      .maybeSingle();
+    if (!expenseRecord) return { success: false, error: 'Expense not found' };
+    if (!(await validateCoachTeamAccess(supabase, coach.id, expenseRecord.team_id, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
     }
 
     const { id, ...updateData } = validatedData;
@@ -659,11 +739,25 @@ async function deleteTravelExpenseImpl(expenseId: string) {
   // Verify user is a coach
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
   if (!coach) {
     return { success: false, error: 'Only coaches can manage expenses' };
+  }
+
+  // DS-42: same staff-strict wall as updateTravelExpense — the coach-side RLS
+  // policy on golf_travel_expenses is org-scoped, so an app-layer check is the
+  // only thing keeping a coach from deleting a sibling team's expenses.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: expenseRecord } = await (supabase as any)
+    .from('golf_travel_expenses')
+    .select('team_id')
+    .eq('id', parsed.data)
+    .maybeSingle();
+  if (!expenseRecord) return { success: false, error: 'Expense not found' };
+  if (!(await validateCoachTeamAccess(supabase, coach.id, expenseRecord.team_id, coach.organization_id))) {
+    return { success: false, error: 'Not authorized for this team' };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -706,6 +800,22 @@ async function getExpensesForItineraryImpl(itineraryId: string): Promise<{ succe
     return { success: false, error: 'Not authenticated' };
   }
 
+  // DS-42: golf_travel_expenses_coach_all is ORG-scoped RLS (not staff-scoped),
+  // so a coach staffed only on the men's team could read the women's team's
+  // expenses via the itinerary. Resolve the itinerary's team and, for callers
+  // who are coaches, require staffing on it. Player callers are left to the
+  // existing golf_travel_expenses_player_select RLS policy, which is already
+  // correctly team-scoped.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: itineraryRow } = await (supabase as any)
+    .from('golf_travel_itineraries')
+    .select('team_id')
+    .eq('id', parsed.data)
+    .maybeSingle();
+  if (!(await callerMayAccessTravelTeam(supabase, user.id, itineraryRow?.team_id ?? null))) {
+    return { success: false, error: 'Not authorized for this team' };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_travel_expenses')
@@ -746,6 +856,12 @@ async function getExpensesForTeamImpl(teamId: string): Promise<{ success: boolea
     return { success: false, error: 'Not authenticated' };
   }
 
+  // DS-42: see callerMayAccessTravelTeam — closes the org-scoped coach RLS gap
+  // without narrowing player reads, which are already team-scoped by RLS.
+  if (!(await callerMayAccessTravelTeam(supabase, user.id, parsed.data))) {
+    return { success: false, error: 'Not authorized for this team' };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_travel_expenses')
@@ -784,6 +900,18 @@ async function getExpenseSummaryImpl(itineraryId: string): Promise<{ success: bo
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: 'Not authenticated' };
+  }
+
+  // DS-42: see callerMayAccessTravelTeam — closes the org-scoped coach RLS gap
+  // without narrowing player reads, which are already team-scoped by RLS.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: itineraryRow } = await (supabase as any)
+    .from('golf_travel_itineraries')
+    .select('team_id')
+    .eq('id', parsed.data)
+    .maybeSingle();
+  if (!(await callerMayAccessTravelTeam(supabase, user.id, itineraryRow?.team_id ?? null))) {
+    return { success: false, error: 'Not authorized for this team' };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -879,6 +1007,23 @@ async function uploadExpenseReceiptImpl(
     return { success: false, error: 'Unauthorized' };
   }
 
+  // DS-42: teamId arrived from the client with no ownership check and was used
+  // verbatim as the storage prefix. App-layer gate only — the `expense-receipts`
+  // bucket does not exist yet (see storage-buckets-tracked.test.ts), so this is
+  // hardening a latent path; making the bucket private + signed-URL reads is a
+  // separate follow-up (issue #1179), not in scope here.
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!coach) {
+    return { success: false, error: 'Only coaches can upload receipts' };
+  }
+  if (!(await validateCoachTeamAccess(supabase, coach.id, parsedTeamId.data, coach.organization_id))) {
+    return { success: false, error: 'Not authorized for this team' };
+  }
+
   const fileName = `${parsedTeamId.data}/${expenseId || 'new'}_${Date.now()}.${fileExt}`;
 
   const { data, error } = await supabase.storage
@@ -914,6 +1059,18 @@ export async function uploadExpenseReceipt(
 }
 
 /**
+ * Escape a single CSV cell to RFC-4180 and defuse spreadsheet formula
+ * injection. Prefixes a leading apostrophe to any value starting with a
+ * formula trigger (= + - @, or a leading tab / carriage return) so Excel/
+ * Sheets treat it as text instead of evaluating it. Mirrors
+ * src/components/golf/roster/RosterToolbar.tsx:114-120.
+ */
+function csvCell(value: string): string {
+  const cell = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${cell.replace(/"/g, '""')}"`;
+}
+
+/**
  * Export expenses to CSV format
  */
 async function exportExpensesToCSVImpl(itineraryId: string): Promise<{ success: boolean; csv?: string; error?: string }> {
@@ -942,9 +1099,16 @@ async function exportExpensesToCSVImpl(itineraryId: string): Promise<{ success: 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: itinerary } = await (supabase as any)
     .from('golf_travel_itineraries')
-    .select('event_name, destination, departure_date')
+    .select('team_id, event_name, destination, departure_date')
     .eq('id', parsed.data)
     .single();
+
+  // DS-42: the coach check above is org-wide (golf_travel_expenses_coach_all
+  // joins on organization_id), so without this the export leaks a sibling
+  // team's full expense ledger. Same wall as getExpenseSummary above.
+  if (!(await callerMayAccessTravelTeam(supabase, user.id, itinerary?.team_id ?? null))) {
+    return { success: false, error: 'Not authorized for this team' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: expenses, error } = await (supabase as any)
@@ -962,18 +1126,24 @@ async function exportExpensesToCSVImpl(itineraryId: string): Promise<{ success: 
   }
 
   // Build CSV
+  // DS-42: description/vendor_name/notes are coach-entered free text; quoting
+  // alone does not stop a spreadsheet from evaluating a leading formula
+  // trigger when a colleague opens the export — route every free-text field
+  // through csvCell.
   const headers = ['Date', 'Category', 'Description', 'Vendor', 'Amount', 'Paid By', 'Notes'];
   const rows = expenses.map((exp: TravelExpense) => [
     exp.expense_date || '',
     exp.category,
-    `"${(exp.description || '').replace(/"/g, '""')}"`,
-    `"${(exp.vendor_name || '').replace(/"/g, '""')}"`,
+    csvCell(exp.description || ''),
+    csvCell(exp.vendor_name || ''),
     exp.amount.toFixed(2),
     exp.paid_by,
-    `"${(exp.notes || '').replace(/"/g, '""')}"`,
+    csvCell(exp.notes || ''),
   ]);
 
-  const tripInfo = itinerary ? `# ${itinerary.event_name} - ${itinerary.destination} (${itinerary.departure_date})\n` : '';
+  const tripInfo = itinerary
+    ? `${csvCell(`# ${itinerary.event_name} - ${itinerary.destination} (${itinerary.departure_date})`)}\n`
+    : '';
   const csv = tripInfo + headers.join(',') + '\n' + rows.map((r: string[]) => r.join(',')).join('\n');
 
   return { success: true, csv };

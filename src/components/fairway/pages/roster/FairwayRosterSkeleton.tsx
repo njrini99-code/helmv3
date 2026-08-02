@@ -98,5 +98,3 @@ export function FairwayRosterSkeleton() {
     </div>
   );
 }
-
-export default FairwayRosterSkeleton;

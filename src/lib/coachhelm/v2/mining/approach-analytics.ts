@@ -18,6 +18,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
+import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills, GATED_OUT } from '../insights/upsert';
@@ -296,20 +297,6 @@ export function horizontalAxis(
 }
 
 /**
- * P3 (2026-04-27): Lies that count as a real approach. Tee shots, putts,
- * green-side chips and unknown lies are excluded — those are not approaches.
- * `fringe` is included because a fairway-lie attempt that catches the fringe
- * is still effectively an approach into the green.
- */
-const APPROACH_LIES: ReadonlySet<string> = new Set([
-  'fairway',
-  'rough',
-  'sand',
-  'bunker',
-  'fringe',
-]);
-
-/**
  * P3 (2026-04-27): Filter to genuine approach-shot misses before bucketing.
  * The bug this fixes: `approach_miss_details` contains rows for tee shots on
  * par-5s (e.g. a 265y drive on a 485y par 5), layups, and malformed rows
@@ -323,21 +310,17 @@ const APPROACH_LIES: ReadonlySet<string> = new Set([
  *     progress toward the green (filters topped shots, OOB drops, errors).
  */
 function isRealApproach(row: MissRow): boolean {
-  const before = row.approach_distance_yds;
-  if (typeof before !== 'number' || !Number.isFinite(before) || before <= 0) {
-    return false;
-  }
-  if (before > 250) return false;
-
-  const lieBefore = (row.lie_before ?? '').toLowerCase();
-  if (!APPROACH_LIES.has(lieBefore)) return false;
-
-  const after = row.distance_after_yds;
-  if (typeof after === 'number' && Number.isFinite(after)) {
-    if (after >= before * 0.5) return false;
-  }
-
-  return true;
+  // Delegates to the shared rule so this miner, the player-facing stats
+  // calculator and the write path cannot drift apart again. `par` is not
+  // carried on these rows, so pass null — that only forgoes the par-3
+  // tee-shot allowance, and a par-3 tee shot reaches this table with
+  // lie_before='tee', which was already excluded by APPROACH_LIES here.
+  return isPlausibleApproach({
+    distanceToHoleBeforeYards: row.approach_distance_yds,
+    distanceToHoleAfterYards: row.distance_after_yds,
+    lieBefore: row.lie_before,
+    par: null,
+  });
 }
 
 function bucketize(rows: MissRow[]): Partial<Record<DistanceBucket, BucketStats>> {

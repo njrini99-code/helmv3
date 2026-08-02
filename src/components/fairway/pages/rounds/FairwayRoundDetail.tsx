@@ -1219,5 +1219,3 @@ function HitMark({ value }: { value: boolean | null }) {
     />
   );
 }
-
-export default FairwayRoundDetail;

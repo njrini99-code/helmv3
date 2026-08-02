@@ -215,5 +215,3 @@ export function FairwayCreateFromTemplateModal({
     </ModalShell>
   );
 }
-
-export default FairwayCreateFromTemplateModal;

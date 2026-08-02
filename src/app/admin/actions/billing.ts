@@ -5,6 +5,7 @@ import type Stripe from 'stripe';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { getStripe } from '@/lib/stripe/server';
 import { logSecurityEvent } from '@/lib/admin-logger';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
  * One-off B2B invoicing (Stripe Invoicing + Stripe Tax).
@@ -178,8 +179,29 @@ export async function createSchoolInvoice(
 /** Void a finalized-but-unpaid invoice. Super-admin only. */
 export async function voidInvoice(invoiceId: string): Promise<{ status: Stripe.Invoice['status'] }> {
   const admin = await requireSuperAdmin();
+  const supabase = createAdminClient();
+
+  // Validate that the invoiceId exists in our local billing_invoices table.
+  // This prevents IDOR: an attacker cannot void arbitrary Stripe invoices they
+  // don't own. We record all invoices we create via the webhook; if it's not in
+  // the table, we did not create it.
+  const { data: existing, error } = await supabase
+    .from('billing_invoices')
+    .select('id, stripe_invoice_id')
+    .eq('stripe_invoice_id', invoiceId)
+    .maybeSingle();
+
+  if (error || !existing) {
+    throw new Error(`Invoice ${invoiceId} not found in billing records`);
+  }
+
   const stripe = getStripe();
   const invoice = await stripe.invoices.voidInvoice(invoiceId);
-  await logSecurityEvent(`Admin voided invoice ${invoiceId}`, 'warning', {}, admin.userId);
+  await logSecurityEvent(
+    `Admin voided invoice ${invoiceId}`,
+    'warning',
+    { organization_id: existing.id },
+    admin.userId,
+  );
   return { status: invoice.status };
 }

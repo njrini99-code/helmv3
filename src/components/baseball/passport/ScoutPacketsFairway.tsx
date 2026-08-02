@@ -55,5 +55,3 @@ export function ScoutPacketsFairway({ roster }: ScoutPacketsFairwayProps) {
     </div>
   );
 }
-
-export default ScoutPacketsFairway;

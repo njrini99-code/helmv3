@@ -1,4 +1,6 @@
-import { scoreInsight, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
+import { scoreInsight, scoreInsightWithCalibration, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type {
   InsightCategory,
@@ -39,36 +41,49 @@ function canonicalMetricSubject(metric: string | null | undefined): string {
   return m;
 }
 
-function feedRankScore(
+async function feedRankScore(
   insight: RankableEvidenceInsight,
   weights: CoachWeights = {},
+  sb?: SupabaseClient<Database>,
   goals: Goal[] = [],
-): number {
-  return scoreInsight(
-    {
-      insight_type: insight.insight_type ?? insight.category ?? 'unknown',
-      strokes_impact: insight.evidence?.strokes_impact ?? 0,
-      confidence: insight.evidence?.confidence ?? 0,
-      metric: insight.evidence?.metric,
-      category: insight.category ?? undefined,
-      priority: insight.priority,
-      sample_n: insight.evidence?.sample_n,
-    },
-    weights,
-    goals,
-  );
+): Promise<number> {
+  const rankableInsight = {
+    insight_type: insight.insight_type ?? insight.category ?? 'unknown',
+    strokes_impact: insight.evidence?.strokes_impact ?? 0,
+    confidence: insight.evidence?.confidence ?? 0,
+    metric: insight.evidence?.metric,
+    category: insight.category ?? undefined,
+    priority: insight.priority,
+    sample_n: insight.evidence?.sample_n,
+  };
+
+  // Use calibrated scoring if database client is available
+  if (sb) {
+    return scoreInsightWithCalibration(rankableInsight, weights, sb, goals);
+  }
+
+  // Fall back to non-calibrated scoring
+  return scoreInsight(rankableInsight, weights, goals);
 }
 
 /**
  * Sort a mapped insight list by the shared composite, newest-first on ties.
+ * If a database client is provided, applies calibration to confidence values.
  */
-export function rankEvidenceInsights<T extends RankableEvidenceInsight>(
+export async function rankEvidenceInsights<T extends RankableEvidenceInsight>(
   insights: T[],
   weights: CoachWeights = {},
   goals: Goal[] = [],
-): T[] {
-  return insights
-    .map((insight) => ({ insight, score: feedRankScore(insight, weights, goals) }))
+  sb?: SupabaseClient<Database>,
+): Promise<T[]> {
+  const scored = await Promise.all(
+    insights.map(async (insight) => ({
+      insight,
+      score: await feedRankScore(insight, weights, sb, goals),
+    }))
+  );
+
+  return scored
     .sort((a, b) => {
       const diff = b.score - a.score;
       if (diff !== 0) return diff;

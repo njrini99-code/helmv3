@@ -42,5 +42,3 @@ export function FairwayTeam(props: FairwayTeamProps) {
   const { role: _role, ...playerProps } = props;
   return <FairwayTeamInfo {...playerProps} />;
 }
-
-export default FairwayTeam;

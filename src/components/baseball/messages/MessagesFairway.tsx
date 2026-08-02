@@ -166,5 +166,3 @@ export function MessagesFairway({
     </div>
   );
 }
-
-export default MessagesFairway;

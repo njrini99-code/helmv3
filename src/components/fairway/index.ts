@@ -213,9 +213,7 @@ export {
 // ── calendar ────────────────────────────────────────────────────────────────
 export {
   CalendarSurface,
-  CalendarSurfaceDefault,
   DatePicker,
-  DatePickerDefault,
   type CalendarSurfaceProps,
   type CalendarSurfaceBaseProps,
   type CalendarMode,
@@ -452,7 +450,6 @@ export {
 // ── pages · dashboard ─────────────────────────────────────────────────────--
 export {
   FairwayPlayerDashboard,
-  FairwayPlayerDashboardDefault,
   type PlayerDashboardData,
 } from './pages/dashboard';
 

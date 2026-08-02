@@ -159,8 +159,13 @@ export async function POST(req: Request): Promise<NextResponse> {
     event = await getStripe().webhooks.constructEventAsync(rawBody, signature, signingSecret);
   } catch (err) {
     // Bad signature or malformed payload — do NOT process.
+    // Log the actual error server-side; return generic message to client.
+    await logServerError(`[Stripe Webhook] Signature verification failed: ${describeError(err)}`, {
+      action: 'route.POST',
+      route: '/api/webhooks/stripe',
+    });
     return NextResponse.json(
-      { error: `Signature verification failed: ${(err as Error).message}` },
+      { error: 'Signature verification failed' },
       { status: 400 },
     );
   }

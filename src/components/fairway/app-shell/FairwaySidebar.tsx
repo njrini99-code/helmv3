@@ -24,6 +24,7 @@
 import { createContext, forwardRef, memo, useCallback, useContext, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { NavPendingDot } from './NavPending';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
@@ -169,6 +170,13 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
             {item.badge > 99 ? '99+' : item.badge}
           </span>
         )}
+        {/* In-flight feedback on the row the user actually clicked. Renders
+            nothing when idle, so it costs no layout on a settled sidebar.
+            Collapsed rows are icon-only and centered, so an inline dot would
+            shove the icon off-centre — pin it to the corner there instead. */}
+        <NavPendingDot
+          className={collapsed ? 'absolute right-1.5 top-1.5 ml-0' : undefined}
+        />
         {typeof item.badge === 'number' && item.badge > 0 && collapsed && (
           <span
             aria-hidden

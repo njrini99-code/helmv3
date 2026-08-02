@@ -34,6 +34,9 @@ export function GolfSignInForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // False until the client has mounted; gates submit so a pre-hydration tap
+  // cannot fire the action with React's empty initial state (#1245).
+  const [hydrated, setHydrated] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -57,8 +60,42 @@ export function GolfSignInForm() {
     }
   }, [refParam]);
 
+  /**
+   * #1245 — adopt whatever is already in the inputs at mount.
+   *
+   * These are CONTROLLED inputs seeded from `useState('')`. Anything that put
+   * text in the DOM before hydration — a fast typist on a cold load, a browser
+   * or password-manager autofill, an automated test — is invisible to React,
+   * and hydration then paints the empty state back over it. The submit that
+   * follows carries the EMPTY string: the server rejects it as "Invalid email
+   * or password" (the user's credentials were fine, the app dropped them) and
+   * records a failed attempt against a blank identity, so the failure is not
+   * even counted against the right account.
+   *
+   * Reading the live DOM values once on mount closes the window instead of
+   * papering over it, and fixes pre-hydration autofill as a side effect.
+   */
+  useEffect(() => {
+    const emailEl = document.getElementById('golf-signin-email') as HTMLInputElement | null;
+    const passwordEl = document.getElementById('golf-signin-password') as HTMLInputElement | null;
+    if (emailEl?.value) setEmail((cur) => cur || emailEl.value);
+    if (passwordEl?.value) setPassword((cur) => cur || passwordEl.value);
+    setHydrated(true);
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Belt-and-braces for the same race: never hand the server an empty
+    // credential pair. Without this the user is told their password is wrong
+    // when nothing was ever sent, and `login_attempts` accrues a failure under
+    // a blank email — a bucket shared by every user who hits this.
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setError('Enter your email and password to sign in.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     // Light haptic when the user taps Sign In — matches native iOS button feel.
@@ -67,7 +104,7 @@ export function GolfSignInForm() {
     try {
       // Read ref from sessionStorage (set on mount from URL param, persists through any redirect cycle)
       const storedRef = sessionStorage.getItem('golf_login_ref') ?? undefined;
-      const result = await loginAction(email, password, storedRef);
+      const result = await loginAction(trimmedEmail, password, storedRef);
 
       if (!result.success) {
         void triggerHaptic('error');
@@ -205,7 +242,7 @@ export function GolfSignInForm() {
       {/* Submit button — inline spinner, iOS ease, tactile press */}
       <Button variant="primary"
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !hydrated}
         aria-busy={isLoading}
         className="
           w-full min-h-[50px] py-3

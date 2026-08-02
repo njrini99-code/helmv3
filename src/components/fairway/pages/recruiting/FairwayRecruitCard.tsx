@@ -92,5 +92,3 @@ export function FairwayRecruitCard({
     </Surface>
   );
 }
-
-export default FairwayRecruitCard;

@@ -9,6 +9,7 @@
  */
 
 import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
+import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
 
 // ============================================================================
 // TYPES - Raw Data from Database
@@ -1021,16 +1022,48 @@ export function calculateHoleStatsFromShots(
   // If that shot doesn't exist, fall back to shotToGreen
   const girAttemptShotNumber = Math.max(holeInfo.par - 2, 1); // par 3 → shot 1, par 4 → shot 2, par 5 → shot 3
 
+  // The ordinal is a HINT, not proof. It silently mis-selects whenever the
+  // hole did not play to script:
+  //   - a penalty off the tee shifts every later shot up one, so on a par 4
+  //     shot #2 is the REPLAYED TEE SHOT, still 375y out. That was being
+  //     recorded as a 375-yard approach from a "fairway" lie that missed short.
+  //   - on a par 5 the shot at #3 may be a second layup, not a shot at the green.
+  // Validate the candidate against the shared rule and fall through when it is
+  // not actually an approach. (isPlausibleApproach needs yards; the shared
+  // helper below normalizes whatever unit the row carries.)
+  const asApproachCandidate = (s: (typeof normalizedShots)[number] | undefined) =>
+    s
+      ? {
+          distanceToHoleBeforeYards:
+            s.distance_to_hole_before !== null
+              ? normalizeToYards(s.distance_to_hole_before, s.distance_unit_before)
+              : null,
+          distanceToHoleAfterYards:
+            s.distance_to_hole_after !== null && !isGreenHit(s.result)
+              ? normalizeToYards(s.distance_to_hole_after, s.distance_unit_after)
+              : null,
+          lieBefore: s.lie_before,
+          par: holeInfo.par,
+        }
+      : null;
+
   // Find the GIR attempt shot (the approach)
   // Priority: 1) Shot at GIR attempt number, 2) Shot that landed on green (if earlier)
-  let approachShot = normalizedShots.find(s => s.shot_number === girAttemptShotNumber);
+  const ordinalCandidate = normalizedShots.find(s => s.shot_number === girAttemptShotNumber);
+  const ordinalCandidateArgs = asApproachCandidate(ordinalCandidate);
+  let approachShot =
+    ordinalCandidateArgs && isPlausibleApproach(ordinalCandidateArgs)
+      ? ordinalCandidate
+      : undefined;
 
   // If we hit green earlier (e.g., eagle attempt on par 5), use that shot instead
   if (shotToGreen && shotToGreen.shot_number < girAttemptShotNumber) {
     approachShot = shotToGreen;
   }
 
-  // Fall back to shotToGreen if no approach shot found at expected position
+  // Fall back to shotToGreen if no approach shot found at expected position —
+  // this is also the recovery path when the ordinal pick was rejected above:
+  // the shot that actually reached the green is the honest approach.
   if (!approachShot && shotToGreen) {
     approachShot = shotToGreen;
   }

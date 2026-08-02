@@ -114,7 +114,7 @@ function parseCheckedTypes(body: string): string[] {
   return checked;
 }
 
-export function normalizeWorkAreaToken(raw: string | null | undefined): WorkArea {
+function normalizeWorkAreaToken(raw: string | null | undefined): WorkArea {
   if (!raw) return 'unknown';
   const token = raw.toLowerCase().replace(/[`·]/g, ' ').trim();
   for (const part of token.split(/[\s,/]+/)) {

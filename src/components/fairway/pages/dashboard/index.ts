@@ -8,6 +8,5 @@
 
 export {
   FairwayPlayerDashboard,
-  default as FairwayPlayerDashboardDefault,
   type PlayerDashboardData,
 } from './FairwayPlayerDashboard';
