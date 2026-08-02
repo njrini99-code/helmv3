@@ -166,9 +166,24 @@ export async function POST(request: Request) {
       .select('id, email_status')
       .in('id', recipientIds) as { data: Array<{ id: string; email_status: string | null }> | null };
 
+    // Map of coach id → email status. Reject any recipient that doesn't exist in crm_coaches.
     const statusMap = new Map<string, string>();
+    const foundIds = new Set<string>();
     for (const cs of coachStatuses ?? []) {
       statusMap.set(cs.id, cs.email_status ?? 'valid');
+      foundIds.add(cs.id);
+    }
+
+    // Verify all recipients exist in the database to prevent sending to orphaned/invalid IDs.
+    const missingRecipients = recipients.filter(r => !foundIds.has(r.id));
+    if (missingRecipients.length > 0) {
+      return NextResponse.json(
+        {
+          error: `${missingRecipients.length} recipient(s) not found in crm_coaches`,
+          details: missingRecipients.map(r => ({ id: r.id, email: r.email })),
+        },
+        { status: 400 },
+      );
     }
 
     // ── Also skip any address on the suppression list ──
@@ -241,6 +256,15 @@ export async function POST(request: Request) {
         division: recipient.division,
       });
 
+      // For HTML format: escape all HTML in the merge-tag-substituted body to prevent
+      // injection of unintended HTML from recipient data (name, email, etc).
+      // For plain format: buildEmailHtml already escapes the body when building the shell.
+      const bodyForEmail = isHtmlBody
+        ? escapeHtml(personalizedBody)
+        : isTextBody
+          ? personalizedBody
+          : buildEmailHtml(recipient.name, personalizedSubject, personalizedBody);
+
       const email: BatchEmail = {
         from: fromAddress,
         to: [recipient.email],
@@ -248,14 +272,8 @@ export async function POST(request: Request) {
         reply_to: extras.reply_to,
         headers: extras.headers,
         tags: extras.tags,
-        // text → true text/plain (no shell); html → verbatim; plain → branded shell.
-        ...(isTextBody
-          ? { text: personalizedBody }
-          : {
-              html: isHtmlBody
-                ? personalizedBody
-                : buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
-            }),
+        // text → true text/plain (no shell); html → escaped; plain → branded shell.
+        ...(isTextBody ? { text: bodyForEmail } : { html: bodyForEmail }),
       };
 
       included.push({ recipient, subject: personalizedSubject });
