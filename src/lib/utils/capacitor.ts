@@ -158,7 +158,7 @@ export async function triggerSelectionHaptic(): Promise<void> {
  * This parameter now names the glyph colour, matching the iOS mental model.
  * Keep it that way — describe what you want to SEE, not the enum.
  */
-export async function setStatusBarStyle(content: 'light' | 'dark' = 'dark'): Promise<void> {
+async function setStatusBarStyle(content: 'light' | 'dark' = 'dark'): Promise<void> {
   if (!isNativeApp()) return;
   try {
     await StatusBar.setStyle({

@@ -351,5 +351,3 @@ export function FairwayAgendaView({
     </div>
   );
 }
-
-export default FairwayAgendaView;

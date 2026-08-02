@@ -454,5 +454,3 @@ export function GoalsSection({
     </section>
   );
 }
-
-export default GoalsSection;

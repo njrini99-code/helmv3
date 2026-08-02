@@ -12,8 +12,9 @@
  *                      must belong to them; RLS backs both.
  *   idempotency        an unchanged `client_turn_id` returns the stored turn
  *                      instead of re-running the (paid) model.
- *   budget             the pre-flight gate still runs BEFORE the user turn is
- *                      appended, so an exhausted budget leaves no orphan.
+ *   budget             the pre-flight gate runs BEFORE both the conversation
+ *                      row is created and the user turn is appended, so an
+ *                      exhausted budget leaves no orphan of either.
  *   cost logging       token usage lands in `golf_coachhelm_llm_calls` and the
  *                      day's running spend, from the stream's finish callback.
  *   gateway            provider selection stays behind one abstraction.
@@ -47,6 +48,7 @@ import {
   MODEL_FOR_TASK,
 } from '@/lib/coachhelm/v3/llm/types';
 import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
 import {
   CoachContextError,
   resolveCoachChatContext,
@@ -197,8 +199,18 @@ export async function POST(req: NextRequest) {
   // approved action would leave a duplicate of the question above it.
   const isApprovalContinuation = uiMessages[uiMessages.length - 1]?.role !== 'user';
 
-  // ── Conversation: load (and verify ownership) or create ──────────────────
+  // Bound request concurrency at the door, independent of the dollar gate
+  // below — this is what actually shrinks the check-then-act race window on
+  // the daily budget (checkBudget/recordSpend are a read-then-upsert pair,
+  // not an atomic reservation; see budget.ts).
+  const rl = await checkRateLimit(`coachhelm:chat:${ctx.coach_id}`, RATE_LIMITS.API_GENERAL);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
+  }
+
+  // ── Conversation: load (and verify ownership), or resolve the id to create ──
   let conversationId = parsed.data.conversation_id ?? null;
+  let needsNewConversation = false;
   if (conversationId) {
     const existing = await getConversation(supabase, conversationId);
     if (!existing || existing.coach_id !== ctx.coach_id) {
@@ -211,14 +223,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ conversation_id: conversationId, replayed: true, messages });
     }
   } else {
-    const created = await createConversation(supabase, {
-      coach_id: ctx.coach_id,
-      title: userText.slice(0, 60) || 'New conversation',
-    });
-    conversationId = created.id;
+    needsNewConversation = true;
   }
 
-  // ── Budget gate BEFORE the user turn is appended ─────────────────────────
+  // ── Budget gate BEFORE anything externally visible happens ──────────────
+  // The conversation row itself must not be created before this passes —
+  // creating it first left an orphaned `golf_coachhelm_chat_conversations`
+  // row (no messages) on every gated request.
   const admin = createAdminClient();
   const gate = await checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD);
   if (!gate.allowed) {
@@ -236,6 +247,20 @@ export async function POST(req: NextRequest) {
       { error: message, reason: gate.fallback_reason ?? 'budget_gated' },
       { status: 429 },
     );
+  }
+
+  if (needsNewConversation) {
+    const created = await createConversation(supabase, {
+      coach_id: ctx.coach_id,
+      title: userText.slice(0, 60) || 'New conversation',
+    });
+    conversationId = created.id;
+  }
+  if (!conversationId) {
+    await logServerError('chat/stream: conversation id unresolved after gate', {
+      action: 'v3.chat.stream.conv',
+    });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 
   if (userText && !isApprovalContinuation) {

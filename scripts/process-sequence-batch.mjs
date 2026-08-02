@@ -49,9 +49,18 @@ const nowIso = () => new Date().toISOString();
 
 // One-click unsubscribe (RFC 8058) — the #1 free Gmail-Primary signal. Invisible header
 // (Gmail renders its own native button), so no salesy opt-out line in the body. The token
-// must match src/app/api/crm/unsubscribe/route.ts (same CRM_UNSUB_SECRET).
+// must match src/lib/crm/unsubscribe-token.ts (same CRM_UNSUB_SECRET) or the links this
+// run emails will not verify.
 const APP_URL = (env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com').replace(/\/+$/, '');
-const UNSUB_SECRET = env.CRM_UNSUB_SECRET || 'helm-sports-unsub-v1'; // must match src/app/api/crm/unsubscribe/route.ts
+// FAIL CLOSED: this used to fall back to the literal 'helm-sports-unsub-v1', which is in
+// source — anyone reading the repo could forge a suppression for a coach id they knew.
+// Signing with a source-visible key is worse than not sending, so refuse to run instead.
+const UNSUB_SECRET = env.CRM_UNSUB_SECRET || process.env.CRM_UNSUB_SECRET;
+if (!UNSUB_SECRET) {
+  console.error('Missing CRM_UNSUB_SECRET — refusing to sign unsubscribe tokens with a hardcoded key.');
+  console.error('Set it in .env.local (or the environment) to the SAME value as Vercel, or the emailed links will not verify.');
+  process.exit(1);
+}
 const UNSUB_MAILTO = env.HELM_UNSUB_EMAIL ?? 'admin@helmsportslabs.com';
 const unsubUrl = (id) => `${APP_URL}/api/crm/unsubscribe?c=${id}&t=${createHmac('sha256', UNSUB_SECRET).update(String(id)).digest('hex').slice(0, 16)}`;
 const tagVal = (v) => (String(v ?? '').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 60) || 'na'); // Resend tags: [A-Za-z0-9_-] only

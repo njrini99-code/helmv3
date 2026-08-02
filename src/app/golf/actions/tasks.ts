@@ -17,6 +17,11 @@ import { notifyTaskAssigned } from '@/lib/notifications';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  generateOccurrences,
+  serializeRecurrenceRule,
+  type RecurrenceRule,
+} from '@/lib/golf/recurrence';
 
 // ============================================================================
 // TYPES
@@ -142,12 +147,69 @@ async function completeTaskImpl(
       }
     }
 
+    await syncTaskStatusFromAssignments(supabase, taskId);
+
     revalidatePath('/golf/dashboard/tasks');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
     await logServerError(`[completeTask Error]: ${describeError(error)}`, { action: 'tasks.completeTask' });
     return formatSafeErrorResponse(error);
+  }
+}
+
+/**
+ * Roll the parent `golf_tasks.status` up from its assignments.
+ *
+ * The task list derives its badge from assignment progress, so nothing in the
+ * UI ever noticed that `golf_tasks.status` stayed 'pending' forever — but the
+ * reminder path reads the task, not the assignments, and had no way to tell a
+ * finished task from an open one. A player who completed a task early still
+ * got its reminder. Keeping the parent honest is what lets
+ * `getDueReminders` filter on it.
+ *
+ * Best-effort: a failure here must not fail the completion the player just
+ * made, so it logs and returns.
+ */
+async function syncTaskStatusFromAssignments(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  taskId: string,
+): Promise<void> {
+  try {
+    const { data: assignments, error } = await supabase
+      .from('golf_task_assignments')
+      .select('status')
+      .eq('task_id', taskId);
+
+    if (error || !assignments || assignments.length === 0) return;
+
+    const allDone = (assignments as Array<{ status: string | null }>).every(
+      (a) => a.status === 'completed',
+    );
+
+    const { error: updateError } = await supabase
+      .from('golf_tasks')
+      .update(
+        allDone
+          ? { status: 'completed', completed_at: new Date().toISOString() }
+          : { status: 'pending', completed_at: null },
+      )
+      .eq('id', taskId);
+
+    if (updateError) {
+      await logServerError(
+        `[syncTaskStatusFromAssignments]: ${describeError(updateError)}`,
+        { action: 'tasks.syncTaskStatusFromAssignments', extra: { taskId } },
+        'warning',
+      );
+    }
+  } catch (err) {
+    await logServerError(
+      `[syncTaskStatusFromAssignments]: ${describeError(err)}`,
+      { action: 'tasks.syncTaskStatusFromAssignments', extra: { taskId } },
+      'warning',
+    );
   }
 }
 
@@ -178,7 +240,14 @@ async function createTaskImpl(
   description?: string,
   dueDate?: string,
   priority?: string,
-  assignToPlayerIds?: string[]
+  assignToPlayerIds?: string[],
+  /**
+   * Optional category. Previously only tasks instantiated from a TEMPLATE ever
+   * carried one, so every hand-created task landed with category = NULL and
+   * was invisible under all six category filters — with no "Uncategorized"
+   * chip and no change to the count chips to signal that rows were dropped.
+   */
+  category?: string
 ): Promise<ActionResult<{ taskId: string }>> {
   try {
     const supabase = await createClient();
@@ -225,6 +294,7 @@ async function createTaskImpl(
         description: description || null,
         due_date: dueDate || null,
         priority: priority || 'normal',
+        category: category || null,
         status: 'pending',
         assigned_by: coach.id,
         created_at: new Date().toISOString(),
@@ -310,9 +380,260 @@ export async function createTask(
   description?: string,
   dueDate?: string,
   priority?: string,
-  assignToPlayerIds?: string[]
+  assignToPlayerIds?: string[],
+  category?: string
 ): Promise<ActionResult<{ taskId: string }>> {
-  return observedCreateTask(teamId, title, description, dueDate, priority, assignToPlayerIds);
+  return observedCreateTask(teamId, title, description, dueDate, priority, assignToPlayerIds, category);
+}
+
+// ============================================================================
+// CREATE RECURRING TASK (Coach only) — issue #1238
+// ============================================================================
+
+export interface CreateRecurringTaskInput {
+  teamId: string;
+  title: string;
+  description?: string;
+  /** First occurrence's due date, ISO `YYYY-MM-DD`. Anchors the series. */
+  startDate: string;
+  recurrence: RecurrenceRule;
+  priority?: string;
+  category?: string;
+  assignToPlayerIds?: string[];
+  /**
+   * Local time of day for each occurrence's reminder, `HH:mm`. Applied to that
+   * occurrence's own due date, so every instance gets its own reminder rather
+   * than the series sharing one.
+   */
+  reminderTime?: string;
+  /** Minutes from UTC (Date.getTimezoneOffset()), so reminders land at the coach's local time. */
+  timezoneOffset?: number;
+}
+
+/**
+ * Create a recurring task series.
+ *
+ * SERIES MODEL — deliberately identical to golf_events (see
+ * recurring-events.ts): the root row carries `recurrence_rule` and no parent;
+ * each occurrence carries `parent_task_id = root.id` and a NULL rule.
+ *
+ * Occurrences are MATERIALIZED rather than expanded at read time because each
+ * one needs state a virtual row cannot hold: its own golf_task_assignments
+ * (per-player completion), its own status rollup, and its own reminder row.
+ * That is also why every existing read path keeps working untouched — an
+ * occurrence is an ordinary task in every respect.
+ */
+async function createRecurringTaskImpl(
+  input: CreateRecurringTaskInput
+): Promise<ActionResult<{ rootTaskId: string; occurrenceCount: number }>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Only coaches can create tasks' };
+    }
+
+    if (!coach.organization_id) {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('id', input.teamId)
+      .eq('organization_id', coach.organization_id)
+      .single();
+
+    if (!team) {
+      return { success: false, error: 'Not authorized for this team' };
+    }
+
+    // generateOccurrences enforces MAX_SERIES_OCCURRENCES itself, so a runaway
+    // rule (daily with a far-future UNTIL) cannot fan out unbounded here.
+    const occurrenceDates = generateOccurrences(input.startDate, input.recurrence);
+    if (occurrenceDates.length === 0) {
+      return { success: false, error: 'That repeat pattern produces no dates. Check the end date.' };
+    }
+
+    const recurrenceRule = serializeRecurrenceRule(input.recurrence);
+    const now = new Date().toISOString();
+
+    // The FIRST occurrence is the series root: it carries the rule, so the
+    // series is discoverable from any occurrence via parent_task_id, and the
+    // root is itself a real, completable task rather than a hidden template.
+    const { data: rootTask, error: rootError } = await supabase
+      .from('golf_tasks')
+      .insert({
+        team_id: input.teamId,
+        title: input.title,
+        description: input.description || null,
+        due_date: occurrenceDates[0],
+        priority: input.priority || 'normal',
+        category: input.category || null,
+        status: 'pending',
+        assigned_by: coach.id,
+        recurrence_rule: recurrenceRule,
+        created_at: now,
+      })
+      .select('id')
+      .single();
+
+    if (rootError || !rootTask) {
+      await logServerError(`[createRecurringTask root]: ${describeError(rootError)}`, {
+        action: 'tasks.createRecurringTask',
+      });
+      return { success: false, error: 'Failed to create the recurring task' };
+    }
+
+    // Remaining occurrences reference the root and carry no rule of their own.
+    const childRows = occurrenceDates.slice(1).map((date) => ({
+      team_id: input.teamId,
+      title: input.title,
+      description: input.description || null,
+      due_date: date,
+      priority: input.priority || 'normal',
+      category: input.category || null,
+      status: 'pending',
+      assigned_by: coach.id,
+      parent_task_id: rootTask.id,
+      created_at: now,
+    }));
+
+    let createdIds: string[] = [rootTask.id];
+
+    if (childRows.length > 0) {
+      const { data: children, error: childError } = await supabase
+        .from('golf_tasks')
+        .insert(childRows)
+        .select('id');
+
+      if (childError) {
+        // Roll the root back rather than leaving a one-occurrence "series" that
+        // silently isn't one. The FK cascades, so this cleans up any partial
+        // child insert too.
+        await supabase.from('golf_tasks').delete().eq('id', rootTask.id);
+        await logServerError(`[createRecurringTask occurrences]: ${describeError(childError)}`, {
+          action: 'tasks.createRecurringTask',
+        });
+        return { success: false, error: 'Failed to create the recurring task' };
+      }
+
+      createdIds = createdIds.concat((children ?? []).map((c) => c.id));
+    }
+
+    // Assignments: every occurrence gets its own rows, so completing week 3
+    // says nothing about week 4.
+    if (input.assignToPlayerIds && input.assignToPlayerIds.length > 0) {
+      const assignments = createdIds.flatMap((taskId) =>
+        input.assignToPlayerIds!.map((playerId) => ({
+          task_id: taskId,
+          player_id: playerId,
+          status: 'pending',
+          created_at: now,
+        })),
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: assignError } = await (supabase as any)
+        .from('golf_task_assignments')
+        .insert(assignments);
+
+      if (assignError) {
+        // Non-fatal, but a series nobody is assigned to is close to useless —
+        // surface it rather than reporting a clean success.
+        await logServerError(`[createRecurringTask assignments]: ${describeError(assignError)}`, {
+          action: 'tasks.createRecurringTask',
+        });
+        return {
+          success: false,
+          error: 'The tasks were created but could not be assigned. Please check the roster and try again.',
+        };
+      }
+    }
+
+    // Per-occurrence reminders. Each instance gets its own row keyed to its own
+    // due date — the alternative (one reminder for the series) would fire once
+    // and never again. Best-effort: a reminder failure must not undo the tasks.
+    if (input.reminderTime) {
+      const reminderRows = createdIds.map((taskId, i) => ({
+        task_id: taskId,
+        scheduled_for: buildReminderTimestamp(
+          occurrenceDates[i]!,
+          input.reminderTime!,
+          input.timezoneOffset,
+        ),
+        reminder_type: 'in_app',
+        sent: false,
+        created_at: now,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: reminderError } = await (supabase as any)
+        .from('golf_task_reminders')
+        .insert(reminderRows);
+
+      if (reminderError) {
+        await logServerError(`[createRecurringTask reminders]: ${describeError(reminderError)}`, {
+          action: 'tasks.createRecurringTask',
+        }, 'warning');
+      }
+    }
+
+    revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    return {
+      success: true,
+      data: { rootTaskId: rootTask.id, occurrenceCount: createdIds.length },
+    };
+  } catch (error) {
+    await logServerError(`[createRecurringTask Error]: ${describeError(error)}`, {
+      action: 'tasks.createRecurringTask',
+    });
+    return formatSafeErrorResponse(error);
+  }
+}
+
+/**
+ * Combine an occurrence's local date with the coach's chosen local time into a
+ * UTC instant. `timezoneOffset` is `Date.getTimezoneOffset()` — minutes to ADD
+ * to local time to reach UTC — so a coach in EDT (offset 240) asking for 09:00
+ * gets 13:00Z, matching the one-off reminder path.
+ */
+function buildReminderTimestamp(
+  isoDate: string,
+  time: string,
+  timezoneOffset?: number,
+): string {
+  const [hours = 0, minutes = 0] = time.split(':').map(Number);
+  const base = new Date(`${isoDate}T00:00:00Z`);
+  base.setUTCHours(hours, minutes, 0, 0);
+  if (typeof timezoneOffset === 'number' && Number.isFinite(timezoneOffset)) {
+    base.setUTCMinutes(base.getUTCMinutes() + timezoneOffset);
+  }
+  return base.toISOString();
+}
+
+const observedCreateRecurringTask = withAdminObserved(
+  'createRecurringTask',
+  { sport: 'golf', feature: 'task_management' },
+  createRecurringTaskImpl,
+);
+
+export async function createRecurringTask(
+  input: CreateRecurringTaskInput
+): Promise<ActionResult<{ rootTaskId: string; occurrenceCount: number }>> {
+  return observedCreateRecurringTask(input);
 }
 
 // ============================================================================

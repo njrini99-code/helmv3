@@ -33,6 +33,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   STANDING_REFRESH_METRIC_IDS,
   ROUND_REFRESH_METRIC_IDS,
@@ -69,13 +70,20 @@ async function handle(): Promise<NextResponse> {
   const startedAt = Date.now();
   const supabase = createAdminClient();
 
-  // 1. Select every team. Sorted for stable chunking on retry.
+  // 1. Select every team. Ordered by id (unique) so page boundaries are stable
+  //    — PostgREST caps a single request at max_rows (1000, supabase/config.toml),
+  //    so an unpaginated select silently drops every team past the first page.
+  //    fetchAllRowsResult pages through the whole table and keeps the same
+  //    { data, error } destructure/branches below.
   let teamIds: string[] = [];
   try {
-    const { data, error } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .order('created_at', { ascending: true });
+    const { data, error } = await fetchAllRowsResult<{ id: string }>((from, to) =>
+      supabase
+        .from('golf_teams')
+        .select('id')
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
 
     if (error) {
       await logServerError(`standing-backfill team-select: ${error.message}`, {

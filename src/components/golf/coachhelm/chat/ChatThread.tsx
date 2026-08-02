@@ -325,7 +325,7 @@ function FollowUps({
  * work is in progress, and which work — is entirely in the label and the
  * `aria-live` announcement, so nothing is lost when the movement goes.
  */
-export function ProgressLine({ label }: { label: string }) {
+function ProgressLine({ label }: { label: string }) {
   return (
     <p
       className="flex items-center gap-2.5 font-fw-sans text-caption text-text-secondary"

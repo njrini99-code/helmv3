@@ -100,7 +100,7 @@ const IMPACT_MAP = {
 const PREF_KEY = 'helm-haptics-enabled';
 let prefCache: boolean | null = null;
 
-export function areHapticsEnabled(): boolean {
+function areHapticsEnabled(): boolean {
   if (prefCache !== null) return prefCache;
   if (typeof window === 'undefined') return true;
   try {

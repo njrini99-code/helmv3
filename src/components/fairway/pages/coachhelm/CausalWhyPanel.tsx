@@ -221,5 +221,3 @@ function CausalReadout({
     </div>
   );
 }
-
-export default CausalWhyPanel;

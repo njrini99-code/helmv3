@@ -180,6 +180,12 @@ interface SourceCtx {
   teamId: string | null;
   teamUserIds: Set<string> | null;
   teamConversationIds: Set<string> | null;
+  /** Signal a one-sided failure on a dual-table source (e.g. one of
+   *  golf_rounds/baseball_games errored but not both) without throwing —
+   *  the both-fail case still throws and degrades the kind entirely.
+   *  Feeds the SAME `degraded` array fetchGolfActivity already returns as
+   *  `degradedKinds`, per the module's documented guarantee. */
+  reportPartial: (kind: ActivityKind) => void;
 }
 
 type RoundSubmittedRow = {
@@ -227,6 +233,9 @@ async function fetchRoundSubmitted(ctx: SourceCtx): Promise<ActivityItem[]> {
   const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
   if (error && baseballRes.error) {
     throw new Error(`round_submitted: ${error.message}; baseball_game: ${baseballRes.error.message}`);
+  }
+  if (error || baseballRes.error) {
+    ctx.reportPartial('round_submitted');
   }
 
   const rows = error ? [] : (data ?? []) as unknown as RoundSubmittedRow[];
@@ -398,6 +407,9 @@ async function fetchMessageSent(ctx: SourceCtx): Promise<ActivityItem[]> {
   if (error && baseballRes.error) {
     throw new Error(`message_sent: ${error.message}; baseball_message_sent: ${baseballRes.error.message}`);
   }
+  if (error || baseballRes.error) {
+    ctx.reportPartial('message_sent');
+  }
 
   const rows = error ? [] : (data ?? []) as unknown as MessageRow[];
   const items: ActivityItem[] = [];
@@ -471,8 +483,15 @@ async function fetchEventCreated(ctx: SourceCtx): Promise<ActivityItem[]> {
   if (error && baseballRes.error) {
     throw new Error(`event_created: ${error.message}; baseball_event_created: ${baseballRes.error.message}`);
   }
+  if (error || baseballRes.error) {
+    ctx.reportPartial('event_created');
+  }
 
   const rows = error ? [] : (data ?? []) as unknown as EventRow[];
+  // Server runs in UTC (Vercel functions) — format explicitly and label it
+  // rather than let toLocaleString() silently resolve against the server's
+  // zone while ActivityFeed renders the row's own `ts` in the viewer's
+  // local zone (see LocalTime.tsx). Cosmetic-only; does not change `ts`.
   const items = rows
     .filter((r): r is EventRow & { created_at: string } => !!r.created_at)
     .map((r) => ({
@@ -480,7 +499,7 @@ async function fetchEventCreated(ctx: SourceCtx): Promise<ActivityItem[]> {
       kind: 'event_created' as const,
       ts: r.created_at,
       title: `${r.golf_teams?.name ?? 'A team'} scheduled "${r.title}"`,
-      detail: `${r.event_type} — starts ${new Date(r.start_time).toLocaleString()}`,
+      detail: `${r.event_type} — starts ${new Date(r.start_time).toLocaleString('en-US', { timeZone: 'UTC' })} UTC`,
       href: `/admin/teams/${r.team_id}`,
     }));
   for (const r of (baseballRes.error ? [] : baseballRes.data ?? []) as unknown as BaseballEventRow[]) {
@@ -490,7 +509,7 @@ async function fetchEventCreated(ctx: SourceCtx): Promise<ActivityItem[]> {
       kind: 'event_created',
       ts: r.created_at,
       title: `${r.baseball_teams?.name ?? 'A baseball team'} scheduled "${r.title}"`,
-      detail: `${r.event_type} — starts ${new Date(r.start_time).toLocaleString()}`,
+      detail: `${r.event_type} — starts ${new Date(r.start_time).toLocaleString('en-US', { timeZone: 'UTC' })} UTC`,
       href: `/admin/users?team=${r.team_id}`,
     });
   }
@@ -520,6 +539,9 @@ async function fetchDemoSession(ctx: SourceCtx): Promise<ActivityItem[]> {
   const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
   if (error && baseballRes.error) {
     throw new Error(`demo_session: ${error.message}; baseball_demo_session: ${baseballRes.error.message}`);
+  }
+  if (error || baseballRes.error) {
+    ctx.reportPartial('demo_session');
   }
 
   const rows = error ? [] : (data ?? []) as unknown as DemoRow[];
@@ -582,6 +604,9 @@ async function fetchDocumentUploaded(ctx: SourceCtx): Promise<ActivityItem[]> {
   const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
   if (error && baseballRes.error) {
     throw new Error(`document_uploaded: ${error.message}; baseball_document_uploaded: ${baseballRes.error.message}`);
+  }
+  if (error || baseballRes.error) {
+    ctx.reportPartial('document_uploaded');
   }
 
   const rows = error ? [] : (data ?? []) as unknown as DocRow[];
@@ -755,6 +780,11 @@ export async function fetchGolfActivity(options: FetchGolfActivityOptions = {}):
     ]);
   }
 
+  const degraded: ActivityKind[] = [];
+  const reportPartial = (kind: ActivityKind) => {
+    if (!degraded.includes(kind)) degraded.push(kind);
+  };
+
   const ctx: SourceCtx = {
     admin,
     cursor,
@@ -762,9 +792,9 @@ export async function fetchGolfActivity(options: FetchGolfActivityOptions = {}):
     teamId: options.teamId ?? null,
     teamUserIds,
     teamConversationIds,
+    reportPartial,
   };
 
-  const degraded: ActivityKind[] = [];
   const results = await Promise.all(
     kinds.map(async (kind): Promise<ActivitySourceResult> => {
       try {

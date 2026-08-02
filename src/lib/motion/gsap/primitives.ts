@@ -158,7 +158,7 @@ export function prepareDraw(path: SVGPathElement): number {
  * reference — the same schedule the in-app renderer uses, so a marketing hole
  * and a real hole draw at the same rate.
  */
-export function segmentDuration(yards: number): number {
+function segmentDuration(yards: number): number {
   const ratio = Math.min(1, Math.max(0, yards / DRAW.referenceYards));
   return DRAW.segmentMin + (DRAW.segmentMax - DRAW.segmentMin) * ratio;
 }

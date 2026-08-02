@@ -353,5 +353,3 @@ export function RosterHealthHeader({
     />
   );
 }
-
-export default RosterHealthHeader;

@@ -11,8 +11,10 @@
 // conflict is caught at PR time instead of at the next surface audit.
 //
 // Run: `node --test scripts/__tests__/token-files-no-conflict.test.mjs`
+// This previously ran under `node --test`, which nothing invokes, so it
+// never executed. Promoted to vitest (issue #1194).
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

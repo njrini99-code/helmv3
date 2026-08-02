@@ -542,5 +542,3 @@ export function FairwayPlayerAnnouncementCard({
     </Surface>
   );
 }
-
-export default FairwayPlayerAnnouncementCard;

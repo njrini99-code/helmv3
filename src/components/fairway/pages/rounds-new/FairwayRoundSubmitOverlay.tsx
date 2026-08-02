@@ -470,5 +470,3 @@ export function FairwayRoundSubmitOverlay({
     </LazyMotion>
   );
 }
-
-export default FairwayRoundSubmitOverlay;

@@ -122,7 +122,7 @@ export const TREND_ARROW: Record<TrendDirection, string> = {
  * metrics (the default) this is identical to the verdict arrow, so existing
  * call sites are unaffected.
  */
-export function trendArrow(verdict: TrendDirection, goodDirection: GoodDirection): string {
+function trendArrow(verdict: TrendDirection, goodDirection: GoodDirection): string {
   if (verdict === 'flat') return TREND_ARROW.flat;
   // improving+up OR declining+down ⇒ the raw number ROSE; otherwise it FELL.
   const rose = (verdict === 'improving') === (goodDirection === 'up');

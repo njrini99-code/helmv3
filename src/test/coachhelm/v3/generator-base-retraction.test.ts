@@ -71,8 +71,20 @@ function makeUpdateBuilder(table: string, payload: Record<string, unknown>) {
   recordedUpdates.push(rec);
   const thenable = {
     eq: vi.fn((...args: unknown[]) => (rec.filters.push({ op: 'eq', args }), thenable)),
-    then: (resolve: (v: unknown) => unknown) =>
-      Promise.resolve(resolve({ data: null, error: updateError })),
+    // The production update chain now terminates in `.select('id')` so the
+    // optimistic `.eq('lifecycle_state', ...)` guard's row-match is actually
+    // observable — without it, RunResult.retracted would count updates that
+    // matched zero rows as archives. Return the id row that was targeted so
+    // a successful (non-error) update genuinely proves a row was archived.
+    select: vi.fn((..._args: unknown[]) => thenable),
+    then: (resolve: (v: unknown) => unknown) => {
+      if (updateError) return Promise.resolve(resolve({ data: null, error: updateError }));
+      const idFilter = rec.filters.find((f) => f.op === 'eq' && f.args[0] === 'id');
+      const rowId = idFilter?.args[1];
+      return Promise.resolve(
+        resolve({ data: rowId !== undefined ? [{ id: rowId }] : [], error: null }),
+      );
+    },
   };
   return thenable;
 }

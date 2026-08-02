@@ -11,9 +11,6 @@
 /** Cookie that holds the user's currently-selected baseball team id. */
 export const ACTIVE_BASEBALL_TEAM_COOKIE = 'active_baseball_team';
 
-/** Cookie lifetime: 180 days. */
-export const ACTIVE_BASEBALL_TEAM_COOKIE_MAX_AGE = 60 * 60 * 24 * 180;
-
 /** How the user is related to the active team. */
 export type ActiveBaseballRole = 'player' | 'coach';
 

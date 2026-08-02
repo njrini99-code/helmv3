@@ -1,6 +1,8 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { logServerError } from '@/lib/server-error-logger';
 
 /**
  * Helm Bridge — Pulse Grid: every team (golf + baseball) as one row with a
@@ -42,7 +44,17 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
  * COST BOUND: a fixed, small number of queries regardless of team count —
  * 2 team-list reads, 4 membership reads, 5 event/activity reads (each
  * paginated past the PostgREST 1000-row cap via `fetchAllRowsResult`) — never
- * one query per team.
+ * one query per team. The two `.in('user_id', …)` reads additionally chunk
+ * their id list at ID_CHUNK_SIZE (200): the roster+staff population is
+ * platform-wide, and `src/lib/admin/auto-resolve.ts:87-105` measured the hard
+ * ceiling on this project at 584 ids / ~22.8 KB of URL — past it PostgREST
+ * returns a bare `400 Bad Request` before Postgres ever sees the query.
+ *
+ * TRUTHFULNESS: every one of those reads has its `.error` inspected. A failed
+ * read used to collapse into `data ?? []`, which renders as a confident "no
+ * activity / no errors" row — the exact opposite of the signal this grid
+ * exists to give. Failures now append to `degradedNote`, which the UI already
+ * shows, instead of being silently absorbed into the buckets.
  */
 
 const WINDOW_DAYS = 30;
@@ -138,11 +150,44 @@ function classifyHalo(daysSinceActivity: number | null): PulseHalo {
 
 type MembershipRow = { team_id: string | null; golf_players?: { user_id: string } | null; golf_coaches?: { user_id: string } | null; baseball_players?: { user_id: string } | null; baseball_coaches?: { user_id: string } | null };
 
+const BASE_DEGRADED_NOTE =
+  'Activity ticks combine rounds, games, lift sessions, and logins (roster/staff-resolved); errors combine team-tagged rows with user-resolved fallback. Per-feature usage detail is not reliably team-tagged in admin_events yet, so it is not shown here — see a team’s Thread for its full per-event history.';
+
 export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<PulseGridResult> {
   const admin = createAdminClient();
   const now = new Date();
   const ago30d = isoDaysAgo(WINDOW_DAYS, now);
   const generatedAt = now.toISOString();
+
+  // Reads that failed. A read error must never be absorbed into `data ?? []` —
+  // that turns "we could not tell" into a confident zero on the very rows the
+  // operator is scanning for silence. Named here, surfaced in `degradedNote`.
+  const degraded = new Set<string>();
+  async function noteFailure(
+    label: string,
+    error: { message: string; code?: string | null } | null,
+  ): Promise<boolean> {
+    if (!error) return false;
+    degraded.add(label);
+    await logServerError(`fetchPulseGrid: ${label} query failed: ${error.message}`, {
+      action: 'admin.pulse-grid.fetchPulseGrid',
+      errorCode: error.code ?? undefined,
+    });
+    return true;
+  }
+
+  /** One paginated read, error-checked. Partial pages are kept and flagged. */
+  async function fetchPaged<T>(
+    label: string,
+    build: (
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string | null } | null }>,
+  ): Promise<T[]> {
+    const { data, error } = await fetchAllRowsResult<T>(build);
+    await noteFailure(label, error);
+    return data ?? [];
+  }
 
   const [
     golfTeamsRes,
@@ -152,13 +197,13 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
     baseballMembersRes,
     baseballStaffRes,
   ] = await Promise.all([
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('golf_teams', (from, to) =>
       admin.from('golf_teams').select('id, name').order('id', { ascending: true }).range(from, to),
     ),
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('baseball_teams', (from, to) =>
       admin.from('baseball_teams').select('id, name').order('id', { ascending: true }).range(from, to),
     ),
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('golf roster membership', (from, to) =>
       admin
         .from('golf_team_members')
         .select('team_id, golf_players(user_id)')
@@ -166,14 +211,14 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         .order('id', { ascending: true })
         .range(from, to),
     ),
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('golf staff membership', (from, to) =>
       admin
         .from('golf_team_coach_staff')
         .select('team_id, golf_coaches(user_id)')
         .order('id', { ascending: true })
         .range(from, to),
     ),
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('baseball roster membership', (from, to) =>
       admin
         .from('baseball_team_members')
         .select('team_id, baseball_players(user_id)')
@@ -181,7 +226,7 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         .order('id', { ascending: true })
         .range(from, to),
     ),
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('baseball staff membership', (from, to) =>
       admin
         .from('baseball_team_coach_staff')
         .select('team_id, baseball_coaches(user_id)')
@@ -191,10 +236,10 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
   ]);
 
   const teams = new Map<string, MutableTeam>();
-  for (const t of (golfTeamsRes.data ?? []) as Array<{ id: string; name: string }>) {
+  for (const t of golfTeamsRes as Array<{ id: string; name: string }>) {
     teams.set(t.id, { teamId: t.id, name: t.name, sport: 'golf', playerCount: 0, days: emptyDays(WINDOW_DAYS, now) });
   }
-  for (const t of (baseballTeamsRes.data ?? []) as Array<{ id: string; name: string }>) {
+  for (const t of baseballTeamsRes as Array<{ id: string; name: string }>) {
     teams.set(t.id, { teamId: t.id, name: t.name, sport: 'baseball', playerCount: 0, days: emptyDays(WINDOW_DAYS, now) });
   }
 
@@ -217,27 +262,50 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
       allUserIds.add(uid);
     }
   }
-  ingestMembership((golfMembersRes.data ?? []) as unknown as MembershipRow[], 'golf_players', true);
-  ingestMembership((golfStaffRes.data ?? []) as unknown as MembershipRow[], 'golf_coaches', false);
-  ingestMembership((baseballMembersRes.data ?? []) as unknown as MembershipRow[], 'baseball_players', true);
-  ingestMembership((baseballStaffRes.data ?? []) as unknown as MembershipRow[], 'baseball_coaches', false);
+  ingestMembership(golfMembersRes as unknown as MembershipRow[], 'golf_players', true);
+  ingestMembership(golfStaffRes as unknown as MembershipRow[], 'golf_coaches', false);
+  ingestMembership(baseballMembersRes as unknown as MembershipRow[], 'baseball_players', true);
+  ingestMembership(baseballStaffRes as unknown as MembershipRow[], 'baseball_coaches', false);
 
   const userIdList = Array.from(allUserIds);
 
+  /**
+   * One `.in('user_id', …)` read, chunked at ID_CHUNK_SIZE and paginated
+   * per chunk. `userIdList` is every active rostered player + staff user
+   * platform-wide, so it grows without bound as teams onboard; past ~584 ids
+   * the URL alone is rejected with a bare 400 (auto-resolve.ts:87-105).
+   * `chunkIds([])` yields no batches, which is why the old
+   * `userIdList.length > 0` ternary is gone.
+   */
+  async function fetchChunkedByUserId<T>(
+    label: string,
+    build: (
+      batch: string[],
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string | null } | null }>,
+  ): Promise<T[]> {
+    const rows: T[] = [];
+    for (const batch of chunkIds(userIdList)) {
+      const { data, error } = await fetchAllRowsResult<T>((from, to) => build(batch, from, to));
+      await noteFailure(label, error);
+      rows.push(...(data ?? []));
+    }
+    return rows;
+  }
+
   const [loginsRes, teamErrorsRes, fallbackErrorsRes, roundsRes, gamesRes, liftRes] = await Promise.all([
-    userIdList.length > 0
-      ? fetchAllRowsResult((from, to) =>
-          admin
-            .from('admin_events')
-            .select('user_id, created_at')
-            .eq('event_type', 'login')
-            .gte('created_at', ago30d)
-            .in('user_id', userIdList)
-            .order('id', { ascending: true })
-            .range(from, to),
-        )
-      : Promise.resolve({ data: [] as Array<{ user_id: string | null; created_at: string | null }>, error: null }),
-    fetchAllRowsResult((from, to) =>
+    fetchChunkedByUserId('login attribution', (batch, from, to) =>
+      admin
+        .from('admin_events')
+        .select('user_id, created_at')
+        .eq('event_type', 'login')
+        .gte('created_at', ago30d)
+        .in('user_id', batch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchPaged('team-tagged errors', (from, to) =>
       admin
         .from('admin_events')
         .select('team_id, created_at, severity')
@@ -247,20 +315,18 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         .order('id', { ascending: true })
         .range(from, to),
     ),
-    userIdList.length > 0
-      ? fetchAllRowsResult((from, to) =>
-          admin
-            .from('admin_events')
-            .select('user_id, created_at, severity')
-            .eq('event_type', 'error')
-            .is('team_id', null)
-            .gte('created_at', ago30d)
-            .in('user_id', userIdList)
-            .order('id', { ascending: true })
-            .range(from, to),
-        )
-      : Promise.resolve({ data: [] as Array<{ user_id: string | null; created_at: string | null; severity: string | null }>, error: null }),
-    fetchAllRowsResult((from, to) =>
+    fetchChunkedByUserId('user-resolved errors', (batch, from, to) =>
+      admin
+        .from('admin_events')
+        .select('user_id, created_at, severity')
+        .eq('event_type', 'error')
+        .is('team_id', null)
+        .gte('created_at', ago30d)
+        .in('user_id', batch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchPaged('golf_rounds', (from, to) =>
       admin
         .from('golf_rounds')
         .select('team_id, created_at')
@@ -268,7 +334,7 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         .order('id', { ascending: true })
         .range(from, to),
     ),
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('baseball_games', (from, to) =>
       admin
         .from('baseball_games')
         .select('team_id, created_at')
@@ -276,7 +342,7 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         .order('id', { ascending: true })
         .range(from, to),
     ),
-    fetchAllRowsResult((from, to) =>
+    fetchPaged('helm_lifting_sessions', (from, to) =>
       admin
         .from('helm_lifting_sessions')
         .select('team_id, created_at')
@@ -287,29 +353,29 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
     ),
   ]);
 
-  for (const r of (loginsRes.data ?? []) as Array<{ user_id: string | null; created_at: string | null }>) {
+  for (const r of loginsRes as Array<{ user_id: string | null; created_at: string | null }>) {
     if (!r.user_id || !r.created_at) continue;
     for (const teamId of userTeamIds.get(r.user_id) ?? []) {
       bumpActivity(teams.get(teamId), r.created_at);
     }
   }
-  for (const r of (roundsRes.data ?? []) as Array<{ team_id: string | null; created_at: string | null }>) {
+  for (const r of roundsRes as Array<{ team_id: string | null; created_at: string | null }>) {
     if (!r.team_id) continue;
     bumpActivity(teams.get(r.team_id), r.created_at);
   }
-  for (const r of (gamesRes.data ?? []) as Array<{ team_id: string | null; created_at: string | null }>) {
+  for (const r of gamesRes as Array<{ team_id: string | null; created_at: string | null }>) {
     if (!r.team_id) continue;
     bumpActivity(teams.get(r.team_id), r.created_at);
   }
-  for (const r of (liftRes.data ?? []) as Array<{ team_id: string | null; created_at: string | null }>) {
+  for (const r of liftRes as Array<{ team_id: string | null; created_at: string | null }>) {
     if (!r.team_id) continue;
     bumpActivity(teams.get(r.team_id), r.created_at);
   }
-  for (const r of (teamErrorsRes.data ?? []) as Array<{ team_id: string | null; created_at: string | null; severity: string | null }>) {
+  for (const r of teamErrorsRes as Array<{ team_id: string | null; created_at: string | null; severity: string | null }>) {
     if (!r.team_id) continue;
     bumpError(teams.get(r.team_id), r.created_at, r.severity);
   }
-  for (const r of (fallbackErrorsRes.data ?? []) as Array<{ user_id: string | null; created_at: string | null; severity: string | null }>) {
+  for (const r of fallbackErrorsRes as Array<{ user_id: string | null; created_at: string | null; severity: string | null }>) {
     if (!r.user_id) continue;
     for (const teamId of userTeamIds.get(r.user_id) ?? []) {
       bumpError(teams.get(teamId), r.created_at, r.severity);
@@ -379,12 +445,16 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
     }
   });
 
+  const failureNote =
+    degraded.size > 0
+      ? ` INCOMPLETE THIS RUN — ${[...degraded].join(', ')} could not be read, so the counts below understate reality and the attention ordering is unreliable. Reload; if it persists, check error_logs for admin.pulse-grid.fetchPulseGrid.`
+      : '';
+
   return {
     teams: sorted,
     windowDays: WINDOW_DAYS,
     sort,
-    degradedNote:
-      'Activity ticks combine rounds, games, lift sessions, and logins (roster/staff-resolved); errors combine team-tagged rows with user-resolved fallback. Per-feature usage detail is not reliably team-tagged in admin_events yet, so it is not shown here — see a team’s Thread for its full per-event history.',
+    degradedNote: `${BASE_DEGRADED_NOTE}${failureNote}`,
     generatedAt,
   };
 }

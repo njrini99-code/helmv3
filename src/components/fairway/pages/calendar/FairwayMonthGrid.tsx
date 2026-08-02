@@ -306,5 +306,3 @@ export function FairwayMonthGrid({
     </div>
   );
 }
-
-export default FairwayMonthGrid;

@@ -1564,5 +1564,3 @@ function ConflictRow({ conflict }: { conflict: DecisionRoomConflict }) {
     </div>
   );
 }
-
-export default StaffDecisionRoomFairway;

@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -25,6 +26,7 @@ import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import {
   getMetricRenderConfig,
@@ -135,6 +137,25 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       warning = 'soft_cap_exceeded';
     }
 
+    // #1244: capture the baseline HERE rather than trusting every caller to.
+    // `acceptGoalSuggestion` (and the team fan-out) passed a hardcoded
+    // `baseline_value: null`, which left 9 of 19 live goals — including the
+    // only active one — unable to render a progress bar at all, because
+    // FairwayGoalCard correctly refuses to compute `(current - baseline) /
+    // (target - baseline)` without a baseline. The reading is available at this
+    // exact moment: it is the same standing value the progress evaluator will
+    // read on its very next pass. Resolve it once, centrally, so no create path
+    // can ship a baseline-less goal again.
+    //
+    // If there is genuinely no standing reading yet the baseline stays null and
+    // the card keeps its honest "Not started — baseline captured" empty state.
+    // We never substitute the target or zero.
+    let baselineValue = input.baseline_value;
+    if (baselineValue == null) {
+      const standing = await loadStandingForMetric(player_id, input.metric_id);
+      baselineValue = standing?.player_value ?? null;
+    }
+
     const insertPayload = {
       player_id,
       team_id,
@@ -149,8 +170,8 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       // generated value is an exact integer inside the CHECK range.
       started_at: goalWindow.window.started_at,
       ends_at: goalWindow.window.ends_at,
-      baseline_value: input.baseline_value,
-      current_value: input.baseline_value, // start equal; cron updates
+      baseline_value: baselineValue,
+      current_value: baselineValue, // start equal; cron updates
       target_value: input.target_value,
       target_source: input.target_source,
       // Coach-mandatory goals are auto-accepted on insert
@@ -214,8 +235,8 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
  * Honest: when the cron hasn't populated a standing row for the metric yet,
  * `hasStanding` is false and target/baseline are null — the UI then asks for a
  * manual target rather than inventing one. Player resolves their own standing;
- * a coach may pass an explicit `playerId` (coach-gated) to pre-fill a goal they
- * are assigning.
+ * a coach may pass an explicit `playerId` — gated by verifyPlayerAccess, i.e.
+ * only for a player they actually staff — to pre-fill a goal they are assigning.
  * ────────────────────────────────────────────────────────────────────────── */
 
 export interface GoalTargetSuggestion {
@@ -259,7 +280,7 @@ async function suggestGoalTargetImpl(
     if (!user) return base;
 
     // Resolve the target player. Self by default; a coach may pass an explicit
-    // playerId (coach-gated here; RLS still guards the eventual write).
+    // playerId, bound to this caller before we read that player's standing.
     let playerId = opts?.playerId ?? null;
     if (!playerId) {
       const { data: playerRow } = await supabase
@@ -269,12 +290,12 @@ async function suggestGoalTargetImpl(
         .maybeSingle();
       playerId = playerRow?.id ?? null;
     } else {
-      const { data: coachRow } = await supabase
-        .from('golf_coaches')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (!coachRow) return base; // only a coach may pre-fill another player's target
+      // DS-B2: the supplied playerId was only checked for "is a coach at all",
+      // with no relationship to that player — and loadStandingForMetric below
+      // reads golf_player_standing through the admin client, which bypasses
+      // golf_player_standing_coach_read. Restore that scope in the app layer.
+      const access = await verifyPlayerAccess(playerId, user.id, supabase);
+      if (!access.allowed) return base;
     }
     if (!playerId) return base;
 
@@ -311,7 +332,11 @@ export async function suggestGoalTarget(metricId: MetricId, opts?: { playerId?: 
   return observedSuggestGoalTarget(metricId, opts);
 }
 
-/** Pause an active goal. Only the player or assigning coach can call. */
+/**
+ * Pause an active goal. Callable by the goal's own player, or by a coach who
+ * staffs that player's team AND can see the goal (coach-assigned or shared) —
+ * see transitionGoal for how each of those is authorised.
+ */
 async function pauseGoalImpl(goalId: string): Promise<ActionResult> {
   return transitionGoal(goalId, 'paused');
 }
@@ -326,7 +351,10 @@ export async function pauseGoal(goalId: string): Promise<ActionResult> {
   return observedPauseGoal(goalId);
 }
 
-/** Abandon a goal (player gave up). Records reason if provided. */
+/**
+ * Abandon a goal. Records the decline reason if provided — those columns are
+ * player-attributed, and the coach UI passes no reason (see transitionGoal).
+ */
 async function abandonGoalImpl(goalId: string, reason?: string): Promise<ActionResult> {
   return transitionGoal(goalId, 'abandoned', reason);
 }
@@ -356,6 +384,46 @@ export async function resumeGoal(goalId: string): Promise<ActionResult> {
   return observedResumeGoal(goalId);
 }
 
+/**
+ * Apply a state transition to one goal.
+ *
+ * Two legitimate callers, authorised by different mechanisms:
+ *
+ *  - the goal's own player — `goals_player_own` (FOR ALL, player_id =
+ *    current_player_id()) authorises the UPDATE directly, so the RLS-scoped
+ *    write below is the whole story.
+ *
+ *  - a coach who staffs a team the goal's player is an active member of — and
+ *    `golf_goals` has NO coach-scoped UPDATE policy. `goals_coach_view` grants
+ *    SELECT only, so a coach's RLS-scoped UPDATE silently touches zero rows.
+ *    That is what the removed DS-9 marker described: coaches could not
+ *    transition a goal at all, and the buttons that call pauseGoal /
+ *    abandonGoal render ONLY for role === 'coach' (FairwayGoalCard), so the
+ *    whole surface was dead.
+ *
+ * The coach path is therefore authorised in the app layer with the same
+ * predicate the missing policy would carry, then executed with the admin
+ * client:
+ *   1. the goal is read through the CALLER'S OWN client, so `goals_coach_view`
+ *      (is_team_coach(team_id) AND (creator_role='coach' OR shared_with_coach))
+ *      decides visibility — a coach can never act on a private player goal,
+ *      nor on any goal of a team they do not staff;
+ *   2. `verifyPlayerAccess` must then grant on its COACH branch — the
+ *      `verify_coach_owns_player` RPC, a golf_team_coach_staff ↔ active
+ *      golf_team_members join. Team-scoped, not org-scoped: a coach in the
+ *      same organization but not staffing the player's team is refused.
+ * Only with both satisfied does the write run with elevated rights, still
+ * pinned to `.eq('id', goalId)`.
+ *
+ * The durable fix is a coach-scoped UPDATE policy on golf_goals; that is a
+ * migration, reported separately, and it would let the elevated write drop
+ * back to the user's own client with no other change here.
+ *
+ * Note on `reason`: the decline columns it writes are player-attributed
+ * (`player_decline_reason` / `player_declined_at`). The coach UI calls
+ * abandonGoal WITHOUT a reason, so the coach path never stamps them; keep it
+ * that way until a coach-side reason column exists.
+ */
 async function transitionGoal(
   goalId: string,
   newState: 'paused' | 'abandoned' | 'active',
@@ -365,6 +433,20 @@ async function transitionGoal(
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: 'Unauthorized' };
+
+    // RLS decides what this caller can even see (see the block comment above).
+    const { data: goal, error: readError } = await supabase
+      .from('golf_goals')
+      .select('id, player_id')
+      .eq('id', goalId)
+      .maybeSingle();
+    if (readError) {
+      await logServerError(`transitionGoal read failed: ${readError.message}`, {
+        action: 'v3.goals.transition',
+      });
+      return { ok: false, error: 'Goal not found or not permitted' };
+    }
+    if (!goal) return { ok: false, error: 'Goal not found or not permitted' };
 
     const update: Record<string, unknown> = {
       state: newState,
@@ -380,17 +462,65 @@ async function transitionGoal(
       update.outcome_evaluated_at = null;
     }
 
-    const { error } = await fromUntyped(supabase, 'golf_goals')
+    // DS-B2: PostgREST does not error on a zero-row UPDATE, so an RLS-filtered
+    // write reported `{ ok: true }` and the card showed a success toast for a
+    // transition that never happened. Zero affected rows is now a failure.
+    const { data: updated, error } = (await fromUntyped(supabase, 'golf_goals')
       .update(update)
-      .eq('id', goalId);
+      .eq('id', goalId)
+      .select('id')) as {
+        data: Array<{ id: string }> | null;
+        error: { message: string } | null;
+      };
 
     if (error) {
       return { ok: false, error: error.message };
     }
+
+    if (!updated || updated.length === 0) {
+      // Not the owning player (goals_player_own filtered the write out). The
+      // only other legitimate caller is a coach who staffs this player's team.
+      const access = await verifyPlayerAccess(goal.player_id, user.id, supabase);
+      if (access.reason === 'unavailable') {
+        // The probe failed rather than answering — never report that as a
+        // permission denial; the coach can simply retry.
+        return { ok: false, error: 'Temporarily unavailable. Please try again.' };
+      }
+      if (!access.allowed || access.reason !== 'coach') {
+        return { ok: false, error: 'Goal not found or not permitted' };
+      }
+
+      const { data: coachUpdated, error: coachError } = (await fromUntyped(
+        createAdminClient(),
+        'golf_goals',
+      )
+        .update(update)
+        .eq('id', goalId)
+        .select('id')) as {
+          data: Array<{ id: string }> | null;
+          error: { message: string } | null;
+        };
+
+      if (coachError) {
+        return { ok: false, error: coachError.message };
+      }
+      if (!coachUpdated || coachUpdated.length === 0) {
+        return { ok: false, error: 'Goal not found or not permitted' };
+      }
+    }
+
     revalidatePath('/golf/dashboard/my-development');
     revalidatePath('/golf/dashboard/coachhelm');
+    revalidatePath('/golf/dashboard/intelligence');
     return { ok: true, goal_id: goalId };
   } catch (err) {
+    // Reaches here for genuine faults only — e.g. createAdminClient() throwing
+    // on a missing service-role key, which otherwise fails silently as a
+    // toast the coach cannot act on.
+    await logServerError(
+      `transitionGoal exception: ${describeError(err)}`,
+      { action: 'v3.goals.transition' },
+    );
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

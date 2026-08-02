@@ -117,6 +117,21 @@ rules:
             getAuthedClient(...)
             ...
           }
+      # Third house helper, same shape: `requireSuperAdmin()`
+      # (src/lib/admin/require-super-admin.ts) wraps createClient() +
+      # `supabase.auth.getUser()` (line 109) + a super-admin role check, and
+      # THROWS on failure — a strictly stronger gate than the inline getUser()
+      # this rule looks for. The admin billing actions
+      # (src/app/admin/actions/billing.ts) call it on their first line and then
+      # use the admin client, which the rule read as an unauthenticated
+      # `.from()`. Added 2026-08-02 after it blocked `voidInvoice`, whose very
+      # next statements are an explicit IDOR guard.
+      - pattern-not-inside: |
+          export async function $F(...) {
+            ...
+            requireSuperAdmin(...)
+            ...
+          }
 
   # ---------------------------------------------------------------------------
   # DATA-LOSS — DELETE-then-INSERT in a save/sync/submit path

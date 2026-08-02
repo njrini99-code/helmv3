@@ -43,6 +43,8 @@ import { createClient } from '@/lib/supabase/server';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
 import { pct } from '@/lib/golf/stat-formulas';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
 
 interface RoundContext {
   id: string;
@@ -87,6 +89,11 @@ async function generateRoundRecapImpl(
 ): Promise<{ recap: string | null; cached: boolean }> {
   const supabase = await createClient();
 
+  // DS: this action had no auth check at all and is directly invocable as a
+  // server action independent of the round detail page's own access gate.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { recap: null, cached: false };
+
   // 1. Fetch round + verify status
   const { data: round } = await supabase
     .from('golf_rounds')
@@ -97,8 +104,28 @@ async function generateRoundRecapImpl(
     .maybeSingle<RoundContext & { status: string | null; ai_recap: string | null; ai_recap_generated_at: string | null }>();
 
   if (!round) return { recap: null, cached: false };
+
+  // DS: golf_rounds SELECT is visible to any teammate via is_golf_team_player,
+  // but the UPDATE that persists the recap below is owner/coach-only. Without
+  // this gate a teammate (or the shared demo account) could loop this call to
+  // force repeated, uncached LLM generations. Same ownership model as the
+  // UPDATE RLS policies (golf_rounds_update / _update_coach / _update_team).
+  const access = await verifyPlayerAccess(round.player_id, user.id, supabase);
+  if (!access.allowed) return { recap: null, cached: false };
+
   if (round.status !== 'completed') return { recap: null, cached: false };
   if (round.ai_recap) return { recap: round.ai_recap, cached: true };
+
+  // DS: LLM generation is expensive and compose()'s per-team budget gate is
+  // skipped entirely when the round's player has no primary coach on file
+  // (see resolveBillingCoachId below) — rate-limit per user as a backstop.
+  const rateLimit = await gateUserAction(
+    'round_recap',
+    user.id,
+    LLM_COMPOSE_RATE_LIMIT,
+    'Too many recap requests — please wait a moment and try again.',
+  );
+  if (!rateLimit.allowed) return { recap: null, cached: false };
 
   // 2. Pull peer context — player's recent stats cache for comparison
   const { data: stats } = await supabase
@@ -124,13 +151,22 @@ async function generateRoundRecapImpl(
 
   // 4. Persist. Cast through unknown until the generated DB types pick up
   // the new ai_recap columns (migration 20260503000000_golf_round_ai_recap).
-  await supabase
+  // DS: chain .select('id') and treat a 0-row result as a failed persist —
+  // the ownership gate above should make this unreachable now, but a silent
+  // RLS-filtered no-op here previously meant a recap was generated on every
+  // call and never cached.
+  const { data: persisted } = await supabase
     .from('golf_rounds')
     .update({
       ai_recap: recap,
       ai_recap_generated_at: new Date().toISOString(),
     } as unknown as never)
-    .eq('id', roundId);
+    .eq('id', roundId)
+    .select('id');
+
+  if (!persisted || (persisted as unknown[]).length === 0) {
+    return { recap: null, cached: false };
+  }
 
   // Gated: never runs on the render path (page.tsx's lazy first-generation
   // call), only when a real action entrypoint explicitly opts in. See the

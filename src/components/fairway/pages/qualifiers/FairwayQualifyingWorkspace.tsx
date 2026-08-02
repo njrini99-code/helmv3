@@ -586,5 +586,3 @@ function CoachPicks({
     </Surface>
   );
 }
-
-export default FairwayQualifyingWorkspace;

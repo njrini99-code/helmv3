@@ -103,5 +103,3 @@ export function ProgressTrack({
     </div>
   );
 }
-
-export default ProgressTrack;

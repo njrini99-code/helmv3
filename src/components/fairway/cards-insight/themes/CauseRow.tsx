@@ -350,5 +350,3 @@ export function CauseRow({
     </div>
   );
 }
-
-export default CauseRow;

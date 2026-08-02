@@ -1273,5 +1273,3 @@ function FairwaySubscribeSheet({ open, onOpenChange, canManageTeamFeed }: Fairwa
     </Sheet>
   );
 }
-
-export default FairwayCalendar;

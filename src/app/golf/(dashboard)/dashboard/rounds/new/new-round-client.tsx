@@ -342,9 +342,21 @@ export default function NewRoundClient() {
   useEffect(() => {
     const emergencyData = loadEmergencySave(null);
     if (!emergencyData) return;
-    // Only show recovery if there's meaningful data (at least some holes completed or shots tracked)
-    const hasData = emergencyData.completedHoleStats?.some(h => h != null) ||
-      Object.keys(emergencyData.inProgressShotsByHole || {}).length > 0;
+    // Only show recovery if there's meaningful data (at least some holes
+    // completed or shots tracked).
+    //
+    // `Object.keys(...).length > 0` was too weak: the tracker writes a key for
+    // the current hole as soon as you land on it, so a brand-new round with an
+    // EMPTY shot array still counted as "data" and every fresh start opened a
+    // modal offering to restore "0 completed holes". Offering to restore
+    // nothing is pure friction, and it trains players to dismiss the dialog
+    // reflexively — including the times it holds a real interrupted round.
+    // Require an actual shot, not merely the presence of a key.
+    const hasInProgressShots = Object.values(
+      emergencyData.inProgressShotsByHole || {},
+    ).some((shots) => Array.isArray(shots) && shots.length > 0);
+    const hasData =
+      emergencyData.completedHoleStats?.some(h => h != null) || hasInProgressShots;
     if (hasData) {
       pendingRecoveryRef.current = true;
       setShowNewRoundRecovery(true);
@@ -1894,8 +1906,10 @@ export default function NewRoundClient() {
               Recover Unsaved Progress?
             </h2>
             <p className="mb-6 text-center font-fw-sans text-sm text-text-tertiary">
-              Found locally saved data with {recoveredHoleCount} completed holes. This data may have
-              been saved when the app was interrupted.
+              {recoveredHoleCount > 0
+                ? `Found locally saved data with ${recoveredHoleCount} completed ${recoveredHoleCount === 1 ? 'hole' : 'holes'}.`
+                : 'Found shots saved locally for a hole in progress.'}{' '}
+              This data may have been saved when the app was interrupted.
             </p>
             <div className="flex gap-3">
               <FwButton variant="secondary" className="flex-1" onClick={handleDiscardRecovery}>

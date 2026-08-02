@@ -11,6 +11,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-metric';
 
 // ============================================================================
 // TYPES
@@ -194,8 +195,18 @@ async function createFocusAreaImpl(
     title: data.title,
     description: data.description,
     status,
-    target_metric: data.target_metric,
+    // #1239: store the canonical id when the metric resolves, so the progress
+    // driver recognizes it. Free-text custom metrics are preserved verbatim —
+    // they are a supported choice, they just track manually (the card says so).
+    target_metric: resolveFocusTargetMetric(data.target_metric) ?? data.target_metric,
     current_value: data.current_value,
+    // #1240: the value at creation IS the starting point. Capture it in its own
+    // immutable column — the driver overwrites current_value in place, so
+    // without this the baseline is destroyed on the first tracked update and
+    // the bar can only ever be a meaningless current/target ratio. When the
+    // area starts as 'proposed', acceptFocusArea re-stamps this at the moment
+    // the window actually opens.
+    baseline_value: data.current_value ?? null,
     target_value: data.target_value,
     started_at: startedAt,
     from_insight_id: data.from_insight_id ?? null,
@@ -304,8 +315,10 @@ async function createPlayerFocusAreaImpl(
     title: data.title,
     description: data.description,
     status: 'active',
-    target_metric: data.target_metric,
+    // #1239 / #1240 — same contract as the coach create path above.
+    target_metric: resolveFocusTargetMetric(data.target_metric) ?? data.target_metric,
     current_value: data.current_value,
+    baseline_value: data.current_value ?? null,
     target_value: data.target_value,
     started_at: new Date().toISOString(),
     from_insight_id: data.from_insight_id ?? null,
@@ -359,8 +372,29 @@ async function acceptFocusAreaImpl(
   }
 
   const nowIso = new Date().toISOString();
+  // #1240: acceptance is when the improvement window actually opens, so re-anchor
+  // the baseline to the value as of NOW. A prescription can sit in 'proposed' for
+  // days; measuring travel from the value the coach saw when drafting it would
+  // silently credit (or penalize) the player for rounds played before they ever
+  // agreed to the area. `current_value` is the reading at this instant, so it is
+  // both the honest baseline and the honest starting point.
+  //
+  // Read under the same RLS client that performs the update, so a row the player
+  // does not own yields nothing here AND is rejected by the update's own guards.
+  const { data: existing } = await fromUntyped(supabase, 'golf_player_focus_areas')
+    .select('current_value')
+    .eq('id', id)
+    .eq('status', 'proposed')
+    .maybeSingle();
+  const currentAtAccept = (existing as { current_value: number | null } | null)?.current_value ?? null;
+
   const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
-    .update({ status: 'active', started_at: nowIso, updated_at: nowIso })
+    .update({
+      status: 'active',
+      started_at: nowIso,
+      updated_at: nowIso,
+      baseline_value: currentAtAccept,
+    })
     .eq('id', id)
     .eq('status', 'proposed')
     .select('id');
@@ -968,7 +1002,9 @@ async function createFocusAreaFromReviewImpl(
     title: args.title,
     description: args.description,
     status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
-    target_metric: args.targetMetric ?? null,
+    // #1239: canonicalize so the progress driver recognizes it (this is the
+    // path that wrote the orphaned ids). Unrecognized free text is preserved.
+    target_metric: resolveFocusTargetMetric(args.targetMetric) ?? args.targetMetric ?? null,
     target_value: args.targetValue ?? null,
     from_review_id: args.reviewId,
     review_context: args.reviewContext ?? null,
@@ -1068,7 +1104,9 @@ async function createFocusAreaFromInsightV2Impl(
     title: args.title,
     description: args.description,
     status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
-    target_metric: args.targetMetric ?? null,
+    // #1239: canonicalize so the progress driver recognizes it (this is the
+    // path that wrote the orphaned ids). Unrecognized free text is preserved.
+    target_metric: resolveFocusTargetMetric(args.targetMetric) ?? args.targetMetric ?? null,
     target_value: args.targetValue ?? null,
     from_insight_id: args.insightId,
     started_at: isCoachPromoting ? null : nowIso,
@@ -1096,7 +1134,10 @@ async function createFocusAreaFromInsightV2Impl(
     insight_id: args.insightId,
     player_id: args.playerId,
     actor_id: user.id,
-    actor_role: 'coach',
+    // DS: this path is reachable by a player self-promoting their own insight
+    // (access.reason === 'self'), which was hardcoded to 'coach' — derive from
+    // the same isCoachPromoting branch used above for status/started_at.
+    actor_role: isCoachPromoting ? 'coach' : 'player',
     action_type: 'create_focus',
     metadata: { focus_area_id: row.id },
   });
@@ -1304,8 +1345,10 @@ async function createFocusAreaFromInsightImpl(
       // This legacy path is coach-only (golf_coaches row required above), so
       // it must never silently create active work on the player's behalf.
       status: 'proposed',
-      target_metric: data.target_metric || null,
+      // #1239 / #1240 — canonicalize, and capture the starting point.
+      target_metric: resolveFocusTargetMetric(data.target_metric) ?? data.target_metric ?? null,
       current_value: data.current_value ?? null,
+      baseline_value: data.current_value ?? null,
       target_value: data.target_value ?? null,
       from_insight_id: data.insight_id,
       started_at: null,
@@ -1337,6 +1380,9 @@ async function createFocusAreaFromInsightImpl(
     insight_id: data.insight_id,
     player_id: data.player_id,
     actor_id: user.id,
+    // DS: unlike createFocusAreaFromInsightV2, this legacy path requires a
+    // resolved golf_coaches row above (no player self-promotion branch
+    // exists here), so 'coach' is always correct.
     actor_role: 'coach',
     action_type: 'create_focus',
     metadata: { focus_area_id: focusArea.id },

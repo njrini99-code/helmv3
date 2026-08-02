@@ -250,5 +250,3 @@ export function PullToRefresh({
     </div>
   );
 }
-
-export default PullToRefresh;

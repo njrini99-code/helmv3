@@ -224,5 +224,3 @@ export function ActivateRecruitingFairway({
     </div>
   );
 }
-
-export default ActivateRecruitingFairway;

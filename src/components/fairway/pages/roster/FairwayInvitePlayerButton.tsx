@@ -354,5 +354,3 @@ export function FairwayInvitePlayerButton({
     </>
   );
 }
-
-export default FairwayInvitePlayerButton;

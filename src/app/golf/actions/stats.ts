@@ -242,6 +242,13 @@ async function refreshStatsCacheActionImpl(
           if (!membership) {
             return { success: false, error: 'Player not found on your team' };
           }
+        } else {
+          // DS-B10-6: previously fell through with no gate at all when the
+          // coach's team couldn't be resolved, letting an authenticated coach
+          // force a service-role recompute (refreshStatsCache -> admin
+          // client) for ANY player id. Fail closed instead of silently
+          // authorizing.
+          return { success: false, error: 'Not authorized to refresh this player' };
         }
       } else {
         // Player - verify it's their own record

@@ -46,6 +46,11 @@ function createChainableMock(maybeSingleData: unknown, onUpdate?: (payload: Reco
   }
   chain.update = vi.fn((payload: Record<string, unknown>) => {
     onUpdate?.(payload);
+    // The action treats a 0-row update result as a failed persist (see
+    // round-recap.ts's `.select('id')` check after `.update(...)`) — these
+    // tests exercise a successful, RLS-visible update, so the chain must
+    // resolve with a non-empty row once `.select('id')` is awaited.
+    chain.data = [{ id: 'round-1' }];
     return chain;
   });
   chain.maybeSingle = vi.fn(async () => ({ data: maybeSingleData, error: null }));
@@ -61,12 +66,19 @@ const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_player_stats_cache') {
     return createChainableMock(mockStats);
   }
+  if (table === 'golf_players') {
+    // verifyPlayerAccess self-access probe: the round's player_id belongs
+    // to the acting user, so this always resolves as the self-access case.
+    return createChainableMock({ id: 'player-1' });
+  }
   // golf_team_members / golf_team_coach_staff — no billing coach on file
   return createChainableMock(null);
 });
 
+const mockGetUser = vi.fn(async () => ({ data: { user: { id: 'user-1' } }, error: null }));
+
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(async () => ({ from: mockFrom })),
+  createClient: vi.fn(async () => ({ from: mockFrom, auth: { getUser: mockGetUser } })),
 }));
 
 // compose() returns the deterministic fallback verbatim (budget gate denied /

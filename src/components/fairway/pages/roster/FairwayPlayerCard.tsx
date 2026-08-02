@@ -209,5 +209,3 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
     </Surface>
   );
 }
-
-export default FairwayPlayerCard;

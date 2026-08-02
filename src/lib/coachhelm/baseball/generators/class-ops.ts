@@ -305,13 +305,6 @@ export function runBaseballClassOpsGenerators(inputs: ClassOpsInputs): BaseballI
   return out;
 }
 
-export const BASEBALL_CLASS_OPS_GENERATOR_IDS = [
-  'class_conflict',
-  'missing_acknowledgement',
-  'stale_source_data',
-  'tasks_unseen',
-] as const;
-
 export const BASEBALL_CLASS_OPS_INSIGHT_TYPES = [
   'coachhelm_class_conflict',
   'coachhelm_missing_acknowledgement',

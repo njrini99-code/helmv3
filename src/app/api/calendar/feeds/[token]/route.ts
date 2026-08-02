@@ -194,7 +194,7 @@ function generateICal(events: CalendarFeedEvent[], feedName: string, timezone: s
 // ============================================================================
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -292,8 +292,11 @@ export async function GET(
     if (eventsError) {
       await logServerError(`Calendar feed events query failed: ${eventsError.message}`, {
         action: 'calendarFeedApi.get.eventsQuery',
+        // NO `url: request.url` here. The feed_token IS the credential and it
+        // lives in the path, so the raw URL would persist a live, non-expiring
+        // bearer into error_logs.url, admin_events.url and the Sentry
+        // server_trace context. The static `route` above is what triage needs.
         route: '/api/calendar/feeds/[token]',
-        url: request.url,
         source: 'route_handler',
         sport: 'golf',
         featureArea: 'calendar',
@@ -326,8 +329,9 @@ export async function GET(
   } catch (error) {
     await logServerException(error, {
       action: 'calendarFeedApi.get',
+      // See the note above: the feed_token is a path-segment credential, so
+      // request.url must never reach a log sink.
       route: '/api/calendar/feeds/[token]',
-      url: request.url,
       source: 'route_handler',
       sport: 'golf',
       featureArea: 'calendar',

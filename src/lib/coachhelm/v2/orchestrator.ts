@@ -654,7 +654,14 @@ class CoachHelmIntelligence {
    * Generates enhanced round review with V2 intelligence
    *
    * @param roundId - The round's UUID
-   * @param playerId - The player's UUID
+   * @param playerId - The player's UUID as the caller believes it to be. It is
+   *   NOT trusted: this method resolves the round's real owner from
+   *   `golf_rounds.player_id` and keys every player-level layer on that value.
+   *   Callers only authorize the ROUND (e.g. `verifyRoundAccess`), so a
+   *   caller-supplied player id decoupled from the round would let a holder of
+   *   one round read — and write predictions/patterns for — another player.
+   *   Same shape as the correct-by-construction caller at
+   *   `src/app/golf/actions/round-review-system.ts:1031` (`ownerPlayerId`).
    */
   async generateRoundReview(
     roundId: string,
@@ -662,8 +669,43 @@ class CoachHelmIntelligence {
   ): Promise<IntelligentRoundReview | null> {
     await this.ensureCalibrationBootstrapped();
 
+    // Resolve the round's owner. This is the ONLY player identity used below —
+    // the class performs no authorization of its own (see fetchPlayerStats's
+    // admin-client note), so it must not accept a player identity that the
+    // round itself does not vouch for.
+    const roundOwnerClient = createAdminClient();
+    const { data: roundOwnerRow, error: roundOwnerError } = await roundOwnerClient
+      .from('golf_rounds')
+      .select('player_id')
+      .eq('id', roundId)
+      .maybeSingle();
+
+    if (roundOwnerError || !roundOwnerRow?.player_id) {
+      await logServerError(
+        `generateRoundReview could not resolve owner for round ${roundId}${roundOwnerError ? `: ${roundOwnerError.message}` : ''}`,
+        { action: 'coachhelm.orchestrator.generateRoundReview', featureArea: 'coachhelm', extra: { roundId } },
+      );
+      return null;
+    }
+
+    const ownerPlayerId = roundOwnerRow.player_id;
+    if (playerId && playerId !== ownerPlayerId) {
+      // Not fatal — the round owner wins — but it means a caller authorized a
+      // round and then asked for a different player's analysis.
+      await logServerError(
+        `generateRoundReview received a playerId that does not own round ${roundId}; using the round owner instead`,
+        {
+          action: 'coachhelm.orchestrator.generateRoundReview',
+          featureArea: 'coachhelm',
+          playerId: ownerPlayerId,
+          extra: { roundId, suppliedPlayerId: playerId },
+        },
+        'warning',
+      );
+    }
+
     // Get features
-    const features = await extractAllFeatures(playerId);
+    const features = await extractAllFeatures(ownerPlayerId);
     if (!features) {
       return null;
     }
@@ -672,32 +714,32 @@ class CoachHelmIntelligence {
     // the coach's window directly — otherwise a coach who widened the lookback
     // would see it honoured on the Insights surface but silently ignored in
     // every round review, which is worse than not having the setting.
-    const signalSettings = await getPlayerSignalSettings(playerId);
-    const miner = new PatternMiner(playerId, {
+    const signalSettings = await getPlayerSignalSettings(ownerPlayerId);
+    const miner = new PatternMiner(ownerPlayerId, {
       lookbackDays: signalSettings.patternLookbackDays,
       minRounds: signalSettings.minRoundsForSignal,
     });
     const patterns = await miner.minePatterns();
 
     // Get causal relationships
-    const causalEngine = new CausalEngine(playerId);
+    const causalEngine = new CausalEngine(ownerPlayerId);
     const causalInsights = await causalEngine.discoverCausalRelationships();
 
     // Get prediction when available, but do not block round-review generation
     // if the predictive layer has not produced a record for this player yet.
-    const predictor = new PerformancePredictor(playerId);
+    const predictor = new PerformancePredictor(ownerPlayerId);
     const prediction = await predictor.predictPerformance();
 
     // Pull the same evidence-rich layers used in full player analysis so
     // round reviews are grounded in shot data, stats, and root causes.
-    const shotMiner = new ShotPatternMiner(playerId);
+    const shotMiner = new ShotPatternMiner(ownerPlayerId);
     const shotPatterns = (await shotMiner.analyzeShotPatterns()) ?? undefined;
-    const lieAnalysis = (await analyzeLieSpecificMissPatterns(playerId)) ?? undefined;
-    const shotStateAnalysis = (await new ShotStateIntelligence(playerId).analyze()) ?? undefined;
-    const stats = await this.fetchPlayerStats(playerId);
+    const lieAnalysis = (await analyzeLieSpecificMissPatterns(ownerPlayerId)) ?? undefined;
+    const shotStateAnalysis = (await new ShotStateIntelligence(ownerPlayerId).analyze()) ?? undefined;
+    const stats = await this.fetchPlayerStats(ownerPlayerId);
 
     const playerLevelInsights = this.prioritizeInsights(await this.generateInsights(
-      playerId,
+      ownerPlayerId,
       features,
       patterns,
       causalInsights,
@@ -756,7 +798,7 @@ class CoachHelmIntelligence {
 
     return {
       roundId,
-      playerId,
+      playerId: ownerPlayerId,
       summary: this.buildRoundReviewSummary(prioritizedInsights, prediction, features),
       primaryTakeaway: primaryReviewInsight?.headline ?? composedReview.headline,
       patternsApplied: patterns.filter((p) => p.isActive).slice(0, 3),

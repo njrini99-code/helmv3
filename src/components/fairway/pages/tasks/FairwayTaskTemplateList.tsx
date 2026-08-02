@@ -404,5 +404,3 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
     </div>
   );
 }
-
-export default FairwayTaskTemplateList;

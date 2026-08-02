@@ -24,6 +24,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import {
   STANDING_REFRESH_METRIC_IDS,
   STANDING_REFRESH_DEFERRED_METRIC_IDS,
@@ -191,27 +192,50 @@ async function handle(): Promise<NextResponse> {
     const chunkPlayerIds = [...new Set((memberRows ?? []).map((m) => m.player_id as string))];
     if (chunkPlayerIds.length > 0) {
       const recentCutoff = new Date(Date.now() - RECENT_ACTIVITY_HOURS * 3_600_000).toISOString();
-      const [staleRes, recentRes] = await Promise.all([
-        supabase
-          .from('golf_player_stats_cache')
-          .select('player_id')
-          .in('player_id', chunkPlayerIds)
-          .eq('is_stale', true)
-          .limit(MAX_PRESWEEP_REFRESHES),
-        supabase
-          .from('golf_rounds')
-          .select('player_id')
-          .in('player_id', chunkPlayerIds)
-          .eq('status', 'completed')
-          .gte('updated_at', recentCutoff)
-          .limit(1000),
-      ]);
-      const toRefresh = [
-        ...new Set([
-          ...(staleRes.data ?? []).map((r) => r.player_id as string),
-          ...(recentRes.data ?? []).map((r) => r.player_id as string),
-        ]),
-      ].slice(0, MAX_PRESWEEP_REFRESHES);
+      // PostgREST filters travel in the URL: a 50-team chunk can hold up to 1000
+      // player uuids, well past the ~585-uuid edge limit, and the request is
+      // rejected with a bare 400 BEFORE Postgres sees it. Chunk at
+      // ID_CHUNK_SIZE and surface every batch error — an over-cap 400 used to
+      // collapse into an empty `data ?? []` and silently no-op the pre-sweep.
+      const staleIds: string[] = [];
+      const recentIds: string[] = [];
+      for (const batch of chunkIds(chunkPlayerIds)) {
+        const [staleRes, recentRes] = await Promise.all([
+          supabase
+            .from('golf_player_stats_cache')
+            .select('player_id')
+            .in('player_id', batch)
+            .eq('is_stale', true)
+            .limit(MAX_PRESWEEP_REFRESHES),
+          supabase
+            .from('golf_rounds')
+            .select('player_id')
+            .in('player_id', batch)
+            .eq('status', 'completed')
+            .gte('updated_at', recentCutoff)
+            .limit(1000),
+        ]);
+        if (staleRes.error) {
+          await logServerError(
+            `standing-refresh cache-presweep stale-select: ${staleRes.error.message}`,
+            { action: 'cron.v3.standing-refresh.cache-presweep' },
+          );
+        } else {
+          staleIds.push(...(staleRes.data ?? []).map((r) => r.player_id as string));
+        }
+        if (recentRes.error) {
+          await logServerError(
+            `standing-refresh cache-presweep recent-select: ${recentRes.error.message}`,
+            { action: 'cron.v3.standing-refresh.cache-presweep' },
+          );
+        } else {
+          recentIds.push(...(recentRes.data ?? []).map((r) => r.player_id as string));
+        }
+      }
+      const toRefresh = [...new Set([...staleIds, ...recentIds])].slice(
+        0,
+        MAX_PRESWEEP_REFRESHES,
+      );
       for (const pid of toRefresh) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: refreshErr } = await (supabase as any).rpc('refresh_player_stats_cache', {

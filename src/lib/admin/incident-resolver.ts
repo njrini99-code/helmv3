@@ -13,6 +13,7 @@
  * or future server actions that can prove a class of incident is fixed.
  */
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { Json } from '@/lib/types/database';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -52,16 +53,30 @@ export async function archiveIncidentsByCriteria(
   // Build a query that finds candidate rows. We do an in-memory filter step
   // afterwards for the JSON metadata predicates so we keep this readable and
   // resilient to PostgREST jsonb-operator quirks.
-  let query = admin
-    .from('admin_events')
-    .select('id, severity, metadata, message')
-    .in('severity', ACTIVE_SEVERITIES as unknown as AdminEventSeverity[]);
+  //
+  // PAGINATED on purpose: PostgREST caps a response at `max_rows = 1000`
+  // (supabase/config.toml), so an unbounded select archived at most 1,000 rows
+  // per bucket per run. That is invisible — the call returns cleanly with a
+  // truncated set. Worse, the metadata predicates below (`metricPrefix`,
+  // `errorCode`) are applied in MEMORY, i.e. AFTER the cap: with >1,000 active
+  // rows and no stable order, matching rows could fall outside the arbitrary
+  // slice on every run and never be archived at all. `.order('id')` is
+  // load-bearing — it is what keeps page boundaries from drifting.
+  const { data, error } = await fetchAllRowsResult((from, to) => {
+    let query = admin
+      .from('admin_events')
+      .select('id, severity, metadata, message')
+      .in('severity', ACTIVE_SEVERITIES as unknown as AdminEventSeverity[]);
 
-  if (messageMatch) {
-    query = query.ilike('message', messageMatch);
-  }
+    if (messageMatch) {
+      query = query.ilike('message', messageMatch);
+    }
 
-  const { data, error } = await query;
+    return query.order('id', { ascending: true }).range(from, to);
+  }, undefined, {
+    table: 'admin_events',
+    action: 'archiveIncidentsByCriteria',
+  });
   if (error) {
     // See the integrity-check route: a transport failure puts an entire
     // Cloudflare error page in `.message`, and this string is what the incident

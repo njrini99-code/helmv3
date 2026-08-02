@@ -16,7 +16,10 @@ import { coachHelmIntelligence, isCoachHelmEnabledForPlayer } from '@/lib/coachh
 import type { ComposedInsight, InsightEvidenceMetric, IntelligentRoundReview } from '@/lib/coachhelm/v2';
 import type { Json } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
-import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import {
+  verifyPlayerAccess as sharedVerifyPlayerAccess,
+  verifyTeamAccess as sharedVerifyTeamAccess,
+} from '@/lib/auth/verify-player-access';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { generateReviewContent } from './round-review-content';
@@ -953,6 +956,29 @@ async function computeAndStoreRoundReview(
       return { success: false, error: 'Round must be completed before generating a review' };
     }
 
+    // DS-4: the round is the authority on who the review belongs to. The caller
+    // used to be able to pass a `playerId` unrelated to `roundId` (the access
+    // gate only ever validated the playerId), which relabelled a teammate's
+    // review — and getRoundReview authorizes against the STORED player_id, so
+    // the real owner lost access to their own review. Everything below is
+    // computed and persisted against the round's own player_id, so the label
+    // and the content can no longer drift apart.
+    const ownerPlayerId = roundData.player_id;
+
+    // Cost/DoS guard: the caller's access was verified in
+    // generateAndStoreRoundReviewImpl against the SUPPLIED `playerId` only. A
+    // teammate can legitimately pass their OWN playerId alongside a
+    // teammate's `roundId` (visible to them via is_golf_team_player) and
+    // drive a full, expensive CoachHelm engine run for someone else's round.
+    // Re-validate against the round's actual owner before any expensive work
+    // (shot/hole fetches, comparison averages, CoachHelm enhancement) starts.
+    if (ownerPlayerId !== playerId) {
+      const ownerAccess = await verifyReviewAccess(supabase, ownerPlayerId, 'player_or_coach');
+      if (!ownerAccess.authorized) {
+        return { success: false, error: ownerAccess.error || 'Not authorized to generate review for this player' };
+      }
+    }
+
     // Fetch shot-level data
     const { data: shots } = await supabase
       .from('golf_shots')
@@ -984,7 +1010,7 @@ async function computeAndStoreRoundReview(
     const { data: playerRounds } = await supabase
       .from('golf_rounds')
       .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
-      .eq('player_id', playerId)
+      .eq('player_id', ownerPlayerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .neq('id', roundId)
@@ -1000,9 +1026,9 @@ async function computeAndStoreRoundReview(
 
     if (shotRows.length > 0) {
       try {
-        const coachHelmStatus = await isCoachHelmEnabledForPlayer(playerId);
+        const coachHelmStatus = await isCoachHelmEnabledForPlayer(ownerPlayerId);
         if (coachHelmStatus.effectivelyEnabled) {
-          coachHelmReview = await coachHelmIntelligence.generateRoundReview(roundId, playerId);
+          coachHelmReview = await coachHelmIntelligence.generateRoundReview(roundId, ownerPlayerId);
 
           if (coachHelmReview) {
             reviewContent = mergeCoachHelmReviewContent(reviewContent, coachHelmReview);
@@ -1037,7 +1063,7 @@ async function computeAndStoreRoundReview(
       .upsert(
         {
           round_id: roundId,
-          player_id: playerId,
+          player_id: ownerPlayerId,
           // Json's index signature does not accept typed shapes with optional
           // properties; double-cast through unknown is required by TS.
           round_stats: reviewContent as unknown as Json,
@@ -1068,7 +1094,7 @@ async function computeAndStoreRoundReview(
 
     const review: RoundReviewWithRound = {
       id: reviewId,
-      player_id: playerId,
+      player_id: ownerPlayerId,
       round_id: roundId,
       review_content: reviewContent,
       generated_at: new Date().toISOString(),
@@ -1181,6 +1207,21 @@ async function getStatAveragesImpl(
     if (playerError) return { success: false, error: 'Failed to fetch player stats' };
 
     const playerAvg = calculateComparisonAverages((playerRounds ?? []) as ComparisonRoundRow[]) ?? undefined;
+
+    // DS-3: behaviour change — a caller-supplied `teamId` that isn't theirs now
+    // returns 'Not authorized'. verifyReviewAccess above validates the PLAYER
+    // only; it never sees teamId, so any authenticated user could previously
+    // hand us an arbitrary team and read its 90-day aggregate through the
+    // service-role client below. Gate the supplied branch BEFORE the admin
+    // client exists (authenticate → authorize → then admin). The self-resolve
+    // branch is left alone — it derives the team from the already-authorized
+    // player.
+    if (teamId) {
+      const userId = access.userId;
+      if (!userId) return { success: false, error: 'Not authorized' };
+      const team = await sharedVerifyTeamAccess(teamId, userId, supabase);
+      if (!team.allowed) return { success: false, error: 'Not authorized' };
+    }
 
     // Player-scoped RLS on golf_rounds returns only own rounds, so the team
     // comparison would always be sparse. We've already authorized the caller

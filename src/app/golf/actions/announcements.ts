@@ -134,6 +134,19 @@ async function createEnrichedAnnouncementImpl(input: {
     const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     if (!teamId) return { success: false, error: 'Coach not assigned to a team' };
 
+    // DS-B10-1: recipientPlayerIds only went through shape validation (uuid
+    // array) — never checked against the actual roster. Left unchecked, a
+    // coach could point task assignments + the service-role email/push fan-out
+    // below at ANY player uuid, not just this team's. Intersect with the
+    // active roster before the id is used anywhere.
+    if (validated.recipientPlayerIds && validated.recipientPlayerIds.length > 0) {
+      const rosterIds = new Set(await getTeamPlayerIds(supabase, teamId));
+      const invalidIds = validated.recipientPlayerIds.filter(pid => !rosterIds.has(pid));
+      if (invalidIds.length > 0) {
+        return { success: false, error: 'Some selected players are not on your team' };
+      }
+    }
+
     // 1. Create the announcement
     const { data: announcement, error: annError } = await supabase
       .from('golf_announcements')
@@ -441,9 +454,14 @@ async function getAnnouncementsWithMetaImpl(
 
     const announcementIds = announcements.map(a => a.id);
 
-    // Fetch all recipients for these announcements (P275: bounded fan-out)
+    // Fetch all recipients for these announcements (P275: bounded fan-out).
+    // DS-B10-3: use the admin client, not the RLS-scoped one. Team membership
+    // is already authorized above; golf_ann_recipients_select_own would
+    // otherwise limit a player caller to only their OWN recipient rows,
+    // making every targeted announcement look empty (= "all-team") to the
+    // L558-563 filter below and defeating it entirely.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: allRecipients } = await (supabase as any)
+    const { data: allRecipients } = await (createAdminClient() as any)
       .from('golf_announcement_recipients')
       .select('announcement_id, player_id')
       .in('announcement_id', announcementIds)
@@ -637,6 +655,25 @@ async function getAnnouncementDetailImpl(
         .maybeSingle();
       if (!memberCheck) {
         return { success: false, error: 'Not authorized for this team' };
+      }
+
+      // DS-B10-3: team membership is not recipient membership. A targeted
+      // announcement deliberately excludes non-recipients, but the check
+      // above only verified the player is on the team. Resolve the true
+      // recipient set with the admin client — golf_ann_recipients_select_own
+      // RLS hides other players' recipient rows from this caller's own
+      // scoped client, which previously made this look like "all-team" to
+      // every player. An empty recipient set still means "all-team" (do not
+      // turn that into a denial); a non-empty set that excludes this player
+      // is reported as "not found" so existence isn't leaked.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: recipientGate } = await (createAdminClient() as any)
+        .from('golf_announcement_recipients')
+        .select('player_id')
+        .eq('announcement_id', announcementId) as { data: Array<{ player_id: string }> | null };
+      const gateRecipientIds = (recipientGate || []).map(r => r.player_id);
+      if (gateRecipientIds.length > 0 && !gateRecipientIds.includes(playerCheck.id)) {
+        return { success: false, error: 'Announcement not found' };
       }
     } else {
       return { success: false, error: 'Not authorized for this team' };

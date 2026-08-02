@@ -41,6 +41,8 @@ interface AdminConfig {
   insertError?: { message: string } | null;
   updateError?: { message: string } | null;
   deleteError?: { message: string } | null;
+  /** Failure of the service-role golf_player_classes ownership lookup. */
+  classLookupError?: { message: string } | null;
 }
 
 let adminCfg: AdminConfig;
@@ -56,6 +58,26 @@ function makeAdminBuilder(table: string) {
       return builder;
     });
   }
+  // removeClassFromCalendar resolves class ownership on the SERVICE-ROLE
+  // client (DS-B4) — on the session client a teammate's live class is hidden
+  // by RLS and reads back as "absent". Honor the eq filters like PostgREST
+  // would so the mock can't answer with a row the query didn't ask for.
+  builder.maybeSingle = vi.fn(async () => {
+    op.calls.push({ name: 'maybeSingle', args: [] });
+    if (table !== 'golf_player_classes') {
+      throw new Error(`unexpected admin maybeSingle on ${table}`);
+    }
+    if (adminCfg.classLookupError) {
+      return { data: null, error: adminCfg.classLookupError };
+    }
+    const row = classRow as Record<string, unknown> | null;
+    const matches =
+      row !== null &&
+      op.calls
+        .filter((c) => c.name === 'eq')
+        .every((c) => row[c.args[0] as string] === c.args[1]);
+    return { data: matches ? classRow : null, error: null };
+  });
   builder.range = vi.fn((from: number, to: number) => {
     op.calls.push({ name: 'range', args: [from, to] });
     if (adminCfg.existingError) {
@@ -288,19 +310,50 @@ describe("removeClassFromCalendar — class ownership (PR #259 review)", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects removing a LIVE class owned by another player — admin client never used", async () => {
+  it('rejects removing a LIVE class owned by another player — nothing is deleted', async () => {
     classRow = { id: CLASS_ID, player_id: 'player-OTHER' };
     const result = await removeClassFromCalendar(CLASS_ID, TEAM_ID);
     expect(result.success).toBe(false);
     expect(result.error).toBe('Not authorized to remove this class');
-    expect(adminFrom).not.toHaveBeenCalled();
+    // The admin client IS used — the ownership lookup must read PAST RLS (DS-B4),
+    // otherwise a teammate's live class is invisible and reads as an orphan.
+    // What must not happen is a write.
+    expect(opsByVerb('delete')).toHaveLength(0);
+  });
+
+  it('refuses when the ownership lookup itself fails — unknown owner is not an orphan', async () => {
+    adminCfg = { classLookupError: { message: 'db unreachable' } };
+    const result = await removeClassFromCalendar(CLASS_ID, TEAM_ID);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('db unreachable');
+    expect(opsByVerb('delete')).toHaveLength(0);
   });
 
   it('allows orphan cleanup when the class row no longer exists (scoped to own teams)', async () => {
+    // DELIBERATE: absence is cleanup, NOT a denial. Both call sites in
+    // /golf/dashboard/classes discard this result and delete the
+    // golf_player_classes row anyway, so denying on absence would strand the
+    // tagged events forever after one transient failure. Safe because the
+    // delete stays doubly scoped — this class's tag, and only teams the caller
+    // belongs to (asserted below, not merely assumed).
     classRow = null;
     const result = await removeClassFromCalendar(CLASS_ID, TEAM_ID);
     expect(result.success).toBe(true);
-    expect(adminFrom).toHaveBeenCalled();
+
+    const deleteOp = opsByVerb('delete')[0]!;
+    expect(deleteOp.calls.find((c) => c.name === 'like')?.args).toEqual([
+      'description',
+      `%${TAG}%`,
+    ]);
+    expect(deleteOp.calls.find((c) => c.name === 'in')?.args).toEqual(['team_id', [TEAM_ID]]);
+  });
+
+  it('orphan cleanup cannot reach a team the caller is not on', async () => {
+    classRow = null;
+    const result = await removeClassFromCalendar(CLASS_ID, 'team-NOT-MINE');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Player is not a member of this team');
+    expect(opsByVerb('delete')).toHaveLength(0);
   });
 });
 

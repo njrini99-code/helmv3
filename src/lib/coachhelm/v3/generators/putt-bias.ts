@@ -28,6 +28,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import type {
   ComposedContent,
@@ -179,19 +180,24 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     if (!rounds || rounds.length === 0) return null;
     const roundIds = rounds.map((r) => r.id);
 
-    const { data: putts, error: pErr } = await fromUntyped(supabase, 'golf_shots')
-      .select('putt_break, putt_made, putt_slope, distance_to_hole_before, distance_unit_before')
-      .eq('shot_type', 'putting')
-      .in('round_id', roundIds) as {
-        data: Array<{
-          putt_break: string | null;
-          putt_made: boolean | null;
-          putt_slope: string | null;
-          distance_to_hole_before: number | null;
-          distance_unit_before: string | null;
-        }> | null;
-        error: { message: string } | null;
-      };
+    interface PuttShotRow {
+      putt_break: string | null;
+      putt_made: boolean | null;
+      putt_slope: string | null;
+      distance_to_hole_before: number | null;
+      distance_unit_before: string | null;
+    }
+
+    // Paginated: a single player's completed-round putts can exceed the
+    // PostgREST 1000-row cap over a long enough window; `.order('id')` keeps
+    // page boundaries stable (LOAD-BEARING — do not swap for created_at desc).
+    const { data: putts, error: pErr } = await fetchAllRowsResult<PuttShotRow>((from, to) =>
+      fromUntyped(supabase, 'golf_shots')
+        .select('putt_break, putt_made, putt_slope, distance_to_hole_before, distance_unit_before')
+        .eq('shot_type', 'putting')
+        .in('round_id', roundIds)
+        .order('id', { ascending: true })
+        .range(from, to));
     if (pErr) throw new Error(`putt-bias putts query failed: ${pErr.message}`);
     if (!putts) return null;
 

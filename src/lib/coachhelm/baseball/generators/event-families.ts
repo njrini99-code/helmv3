@@ -506,32 +506,6 @@ export function runBaseballEventFamilyGenerators(
   return out;
 }
 
-export const BASEBALL_EVENT_FAMILY_GENERATOR_IDS = [
-  'hitter_first_pitch_take',
-  'hitter_zone_contact_decline',
-  'hitter_pull_rollover',
-  'hitter_game_cage_ev_gap',
-  'hitter_risp_gap',
-  'pitcher_first_pitch_strike',
-  'pitcher_two_strike_putaway',
-  'pitcher_velo_decay',
-  'pitcher_handedness_split',
-  'pitcher_pitch_mix_predictability',
-  'catcher_throw_accuracy',
-  'catcher_pop_time',
-  'catcher_block_miss',
-  'catcher_run_game_risk',
-  'catcher_workload',
-  'defense_error_cluster',
-  'defense_routine_reliability',
-  'defense_throw_accuracy',
-  'defense_bunt_pfp',
-  'baserunning_out_rate',
-  'baserunning_extra_base',
-  'baserunning_cs_decision',
-  'baserunning_first_to_third',
-] as const;
-
 export const BASEBALL_EVENT_FAMILY_INSIGHT_TYPES = [
   'coachhelm_hitter_first_pitch_take',
   'coachhelm_hitter_zone_contact',

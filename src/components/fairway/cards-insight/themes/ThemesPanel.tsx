@@ -118,5 +118,3 @@ export function ThemesPanel({
     </div>
   );
 }
-
-export default ThemesPanel;

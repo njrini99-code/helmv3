@@ -297,5 +297,3 @@ export function FairwayHoleConfig({
     </div>
   );
 }
-
-export default FairwayHoleConfig;
