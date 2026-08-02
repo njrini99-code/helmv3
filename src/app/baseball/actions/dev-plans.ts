@@ -21,10 +21,14 @@ import type {
 } from '@/lib/baseball/dev-plan-types';
 import { describeError } from '@/lib/utils/describe-error';
 
-// Re-exported for backward compatibility — the canonical definitions now
-// live in the plain (non-'use server') `dev-plan-types` module so client
-// components can import them directly.
-export type { GoalStatus, DevPlanGoal, DevelopmentalPlanWithGoals, DevPlanWithPlayer };
+// The canonical definitions live in the plain (non-'use server')
+// `dev-plan-types` module — import them from there directly.
+//
+// They are deliberately NOT re-exported here: in a 'use server' module the
+// transform registers every name in an `export type { … }` specifier list
+// as a server action, so the emitted module evaluates a runtime reference
+// to a type that does not exist and every action in the file throws
+// `ReferenceError` at module evaluation.
 
 const DEV_PLAN_PATH = '/baseball/dashboard/dev-plan';
 
