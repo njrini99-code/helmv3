@@ -154,7 +154,15 @@ async function recordGmailTouch(
     });
     if (error) throw error;
   } catch (err) {
-    console.error('[crm] gmail recordGmailTouch: contact-log insert failed:', err);
+    await logServerError(
+      `[CRM Gmail] recordGmailTouch: contact-log insert failed: ${describeError(err)}`,
+      {
+        action: 'recordGmailTouch',
+        featureArea: 'crm_gmail',
+        extra: { coachId: coach.id },
+      },
+      'warning',
+    );
   }
   try {
     const updates: Record<string, unknown> = { last_contacted_at: nowIso, updated_at: nowIso };
@@ -162,7 +170,15 @@ async function recordGmailTouch(
     const { error } = await client.from('crm_coaches').update(updates).eq('id', coach.id);
     if (error) throw error;
   } catch (err) {
-    console.error('[crm] gmail recordGmailTouch: status flip failed:', err);
+    await logServerError(
+      `[CRM Gmail] recordGmailTouch: status flip failed: ${describeError(err)}`,
+      {
+        action: 'recordGmailTouch',
+        featureArea: 'crm_gmail',
+        extra: { coachId: coach.id },
+      },
+      'warning',
+    );
   }
 }
 
@@ -187,7 +203,15 @@ async function bumpTemplateUsage(client: AnySupabase, templateId: string, sentCo
       .eq('id', templateId);
     if (error) throw error;
   } catch (err) {
-    console.error('[crm] gmail bumpTemplateUsage failed:', err);
+    await logServerError(
+      `[CRM Gmail] bumpTemplateUsage failed: ${describeError(err)}`,
+      {
+        action: 'bumpTemplateUsage',
+        featureArea: 'crm_gmail',
+        extra: { templateId, sentCount },
+      },
+      'warning',
+    );
   }
 }
 
@@ -227,7 +251,15 @@ async function markUndeliverable(client: AnySupabase, coachId: string) {
       .update({ email_status: 'unknown', updated_at: new Date().toISOString() })
       .eq('id', coachId);
   } catch (err) {
-    console.error('[crm] gmail markUndeliverable failed:', err);
+    await logServerError(
+      `[CRM Gmail] markUndeliverable failed: ${describeError(err)}`,
+      {
+        action: 'markUndeliverable',
+        featureArea: 'crm_gmail',
+        extra: { coachId },
+      },
+      'warning',
+    );
   }
 }
 

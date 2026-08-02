@@ -16300,7 +16300,9 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          parent_task_id: string | null
           priority: string | null
+          recurrence_rule: string | null
           reminder_at: string | null
           reminder_sent: boolean | null
           reminder_type: Database["public"]["Enums"]["reminder_type"] | null
@@ -16319,7 +16321,9 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          parent_task_id?: string | null
           priority?: string | null
+          recurrence_rule?: string | null
           reminder_at?: string | null
           reminder_sent?: boolean | null
           reminder_type?: Database["public"]["Enums"]["reminder_type"] | null
@@ -16338,7 +16342,9 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          parent_task_id?: string | null
           priority?: string | null
+          recurrence_rule?: string | null
           reminder_at?: string | null
           reminder_sent?: boolean | null
           reminder_type?: Database["public"]["Enums"]["reminder_type"] | null
@@ -16361,6 +16367,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "golf_tasks"
             referencedColumns: ["id"]
           },
           {
@@ -20243,6 +20256,19 @@ export type Database = {
       can_view_baseball_player:
         | { Args: { p_player_id: string }; Returns: boolean }
         | { Args: { p_player_id: string; p_team_id: string }; Returns: boolean }
+      check_rate_limit_atomic: {
+        Args: {
+          p_block_ms?: number
+          p_key: string
+          p_max_attempts: number
+          p_window_ms: number
+        }
+        Returns: {
+          blocked_until: string
+          count: number
+          window_start: string
+        }[]
+      }
       coach_id_for_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: string
@@ -20634,6 +20660,10 @@ export type Database = {
         }[]
       }
       get_users_with_auth: { Args: never; Returns: Json }
+      golf_announcement_addressed_to_me: {
+        Args: { p_announcement_id: string }
+        Returns: boolean
+      }
       golf_normalize_name: { Args: { p: string }; Returns: string }
       has_any_baseball_team_membership: {
         Args: { p_team_id: string }

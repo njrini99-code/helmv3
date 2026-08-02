@@ -3,38 +3,49 @@
 -- ----------------------------------------------------------------------------
 -- Issue #1229.
 --
--- "Send to specific players" is currently enforced ONLY in application code
--- (getAnnouncementsWithMetaImpl, src/app/golf/actions/announcements.ts, the
--- filter at the end of the impl). The RLS policy is team-wide, so any player
--- on the roster can read an announcement targeted away from them by querying
--- PostgREST directly with their own session — no privilege escalation needed.
+-- "Send to specific players" was enforced ONLY in application code
+-- (getAnnouncementsWithMetaImpl, src/app/golf/actions/announcements.ts). The
+-- RLS policy was team-wide, so any player on the roster could read an
+-- announcement targeted away from them by querying PostgREST directly with
+-- their own session — no privilege escalation needed.
 --
 -- Reproduced 2026-08-02 by role impersonation. An announcement targeted at two
--- named players was readable by a third, untargeted player:
+-- named players was readable by a third, untargeted player, with the coach as
+-- a non-vacuous control.
 --
---   Cole Bennett   (NOT targeted)  -> 5 announcements, sees the targeted one
---   Dylan Brooks   (targeted)      -> 5 announcements, sees the targeted one
---   Coach          (control)       -> 5 announcements, sees the targeted one
+-- ----------------------------------------------------------------------------
+-- WHY THE HELPER FUNCTION (learned the hard way)
+-- ----------------------------------------------------------------------------
+-- The obvious form of this policy — inlining `EXISTS (SELECT 1 FROM
+-- golf_announcement_recipients ...)` into the USING clause — DOES NOT WORK.
+-- A policy body IS subject to RLS on the tables it references, and
+-- golf_announcement_recipients carries `golf_ann_recipients_select_coaches`,
+-- which sub-selects golf_announcements right back. Postgres detects the cycle
+-- and every read fails with:
 --
--- The coach control returning rows is what proves the probe wasn't vacuous.
+--     42P17: infinite recursion detected in policy for relation
+--            "golf_announcements"
 --
--- This replaces the player half of "Team members can view announcements" with
--- a recipient-aware disjunct that mirrors the app filter exactly:
+-- An earlier revision of this file asserted the opposite ("a policy body is
+-- evaluated with the row owner's rights, so the sub-select is not itself
+-- RLS-filtered"). That was simply wrong, and applying it broke announcement
+-- reads in production until it was reverted. The recipient check therefore
+-- goes through golf_announcement_addressed_to_me(), a definer-rights helper
+-- created in 20260802115900, which bypasses the recipients table's policies
+-- and cuts the cycle. That helper takes no user argument — it reads auth.uid()
+-- itself — so a caller can only ever ask about their own targeting.
 --
---   * no rows in golf_announcement_recipients  -> all-team, everyone sees it
---   * rows exist                               -> only the listed players
+-- ----------------------------------------------------------------------------
+-- Semantics (mirrors the app filter exactly):
+--   * no rows in golf_announcement_recipients -> all-team, everyone sees it
+--   * rows exist                              -> only the listed players
+-- The coach/staff disjunct is unchanged: team-wide read, which compose and the
+-- acknowledgement surfaces depend on.
 --
--- The coach disjunct is unchanged: coaches keep team-wide read, which is what
--- the compose/acknowledgement surfaces depend on. Because the new policy is a
--- strict narrowing for players only, and the app already filters the same way,
--- no user-visible behaviour changes — the app-layer filter simply stops being
--- the only thing standing between a player and a targeted announcement.
---
--- Note golf_announcement_recipients has its own tight RLS
--- (golf_ann_recipients_select_own), which is why announcements.ts reads it
--- through the admin client. A policy body is evaluated with the row owner's
--- rights, not the caller's, so the EXISTS below sees every recipient row
--- regardless of that policy — the sub-select is not itself RLS-filtered.
+-- Verified against production after apply, with a targeted control row:
+--   COLE  (not targeted) -> 4 of 5 visible, targeted row NOT visible
+--   DYLAN (targeted)     -> 5 of 5 visible, targeted row visible
+--   COACH (control)      -> 5 of 5 visible, targeted row visible
 -- ============================================================================
 
 DROP POLICY IF EXISTS "Team members can view announcements" ON public.golf_announcements;
@@ -61,25 +72,11 @@ CREATE POLICY "Team members can view announcements"
         WHERE p.user_id = (SELECT auth.uid())
           AND tm.team_id = golf_announcements.team_id
       )
-      AND (
-        -- Untargeted => all-team.
-        NOT EXISTS (
-          SELECT 1
-          FROM golf_announcement_recipients r
-          WHERE r.announcement_id = golf_announcements.id
-        )
-        OR EXISTS (
-          SELECT 1
-          FROM golf_announcement_recipients r
-          JOIN golf_players p2 ON p2.id = r.player_id
-          WHERE r.announcement_id = golf_announcements.id
-            AND p2.user_id = (SELECT auth.uid())
-        )
-      )
+      AND public.golf_announcement_addressed_to_me(golf_announcements.id)
     )
   );
 
--- Supports both EXISTS probes above (and the app's own per-announcement
--- recipient fan-out, which currently does a full scan per batch).
+-- Supports the helper's two probes (and the app's own per-announcement
+-- recipient fan-out, which previously scanned).
 CREATE INDEX IF NOT EXISTS idx_golf_announcement_recipients_announcement_player
   ON public.golf_announcement_recipients (announcement_id, player_id);

@@ -159,6 +159,7 @@ describe('isTaskFormDirty (W4) — pure dirty check backing the guard', () => {
     dueDate: '',
     reminderAt: '',
     category: '',
+    repeatFreq: '',
     assignMode: 'all' as const,
     selectedPlayers: [] as string[],
   };
@@ -177,6 +178,7 @@ describe('isTaskFormDirty (W4) — pure dirty check backing the guard', () => {
     expect(isTaskFormDirty({ ...clean, dueDate: '2026-08-01' })).toBe(true);
     expect(isTaskFormDirty({ ...clean, reminderAt: '2026-08-01T09:00' })).toBe(true);
     expect(isTaskFormDirty({ ...clean, category: 'practice' })).toBe(true);
+    expect(isTaskFormDirty({ ...clean, repeatFreq: 'weekly' })).toBe(true);
     // Switching to "Specific players" is a change even before anyone is picked.
     expect(isTaskFormDirty({ ...clean, assignMode: 'specific' })).toBe(true);
     expect(isTaskFormDirty({ ...clean, selectedPlayers: ['p1'] })).toBe(true);
