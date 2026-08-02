@@ -79,35 +79,35 @@ const mkGoal = (over: Partial<Goal> & { metric_id?: Goal['metric_id']; category?
 });
 
 describe('rankEvidenceInsights (flat-feed ordering contract)', () => {
-  it('a high-confidence zero-impact approach diagnostic outranks an older zero-impact low-conf row', () => {
+  it('a high-confidence zero-impact approach diagnostic outranks an older zero-impact low-conf row', async () => {
     const strong = mk({ metric: 'approach_proximity_175_plus_ft', confidence: 0.9, strokes_impact: 0, created_at: '2026-01-01T00:00:00Z' });
     const weakButNewer = mk({ metric: 'penalty_rate_per_round', confidence: 0.3, strokes_impact: 0, created_at: '2026-06-01T00:00:00Z' });
-    const out = rankEvidenceInsights([weakButNewer, strong], {}, []);
+    const out = await rankEvidenceInsights([weakButNewer, strong], {}, []);
     expect(out[0]!.evidence.metric).toBe('approach_proximity_175_plus_ft');
   });
 
-  it('an urgent insight leads even when a non-urgent has higher impact', () => {
+  it('an urgent insight leads even when a non-urgent has higher impact', async () => {
     const urgent = mk({ metric: 'three_putt_chain', priority: 'urgent', strokes_impact: 0.4, confidence: 0.5 });
     const bigHigh = mk({ metric: 'scrambling_pct_sand', priority: 'high', strokes_impact: 6, confidence: 1 });
-    const out = rankEvidenceInsights([bigHigh, urgent], {}, []);
+    const out = await rankEvidenceInsights([bigHigh, urgent], {}, []);
     expect(out[0]!.evidence.metric).toBe('three_putt_chain');
   });
 
-  it('a descriptive par-scoring row sinks below an actionable zero-impact diagnostic', () => {
+  it('a descriptive par-scoring row sinks below an actionable zero-impact diagnostic', async () => {
     const par = mk({ metric: 'scoring_par_4', priority: 'medium', strokes_impact: 0, confidence: 1 });
     const diag = mk({ metric: 'putts_made_5_10ft_pct', priority: 'low', strokes_impact: 0, confidence: 0.5 });
-    const out = rankEvidenceInsights([par, diag], {}, []);
+    const out = await rankEvidenceInsights([par, diag], {}, []);
     expect(out[0]!.evidence.metric).toBe('putts_made_5_10ft_pct');
   });
 
-  it('a thin-sample zero-impact row sinks below a deep-sample peer', () => {
+  it('a thin-sample zero-impact row sinks below a deep-sample peer', async () => {
     const thin = mk({ metric: 'putts_made_25_plus_ft_pct', sample_n: 3, strokes_impact: 0, confidence: 0.5, id: 'thin' });
     const deep = mk({ metric: 'putts_made_25_plus_ft_pct', sample_n: 40, strokes_impact: 0, confidence: 0.5, id: 'deep' });
-    const out = rankEvidenceInsights([thin, deep], {}, []);
+    const out = await rankEvidenceInsights([thin, deep], {}, []);
     expect(out[0]!.id).toBe('deep');
   });
 
-  it('an up-weighted insight_type outranks an equal row of a different type', () => {
+  it('an up-weighted insight_type outranks an equal row of a different type', async () => {
     // Two rows identical in EVERY scoring input except insight_type (same metric
     // → same coachability, same sample/confidence/impact/priority). The weights
     // map is keyed by the insight_type COLUMN — if feedRankScore mis-reads
@@ -116,11 +116,11 @@ describe('rankEvidenceInsights (flat-feed ordering contract)', () => {
     // tie-break, leaving the wrong (newer) row first.
     const upweighted = mk({ insight_type: 'putt_distance_control', metric: 'putts_made_5_10ft_pct', id: 'up', created_at: '2026-01-01T00:00:00Z' });
     const neutral = mk({ insight_type: 'putt_make_rate', metric: 'putts_made_5_10ft_pct', id: 'neutral', created_at: '2026-06-01T00:00:00Z' });
-    const out = rankEvidenceInsights([neutral, upweighted], { putt_distance_control: 2.0 }, []);
+    const out = await rankEvidenceInsights([neutral, upweighted], { putt_distance_control: 2.0 }, []);
     expect(out[0]!.id).toBe('up');
   });
 
-  it('an active goal CAUSES a reorder — the goal touch is the sole differentiator', () => {
+  it('an active goal CAUSES a reorder — the goal touch is the sole differentiator', async () => {
     // Causal-reorder design: the two rows are identical in every scoring input
     // EXCEPT metric, and both metrics sit in the same coachable-timeframe bucket
     // (putts_made_10_15ft_pct and putts_made_15_25ft_pct are both 8 weeks →
@@ -139,13 +139,13 @@ describe('rankEvidenceInsights (flat-feed ordering contract)', () => {
     const otherRow = mk({ metric: 'putts_made_15_25ft_pct', id: 'other', created_at: '2026-06-01T00:00:00Z' });
 
     // Without the goal: pure tie → newer (otherRow) leads.
-    const withoutGoal = rankEvidenceInsights([goalRow, otherRow], {}, []);
+    const withoutGoal = await rankEvidenceInsights([goalRow, otherRow], {}, []);
     expect(withoutGoal[0]!.id).toBe('other');
 
     // With a goal touching ONLY goalRow (metric match; non-matching category):
     // the 1.5× boost flips the order so goalRow leads despite being older.
     const goals = [mkGoal({ metric_id: 'putts_made_10_15ft_pct', category: 'approach' })];
-    const withGoal = rankEvidenceInsights([otherRow, goalRow], {}, goals);
+    const withGoal = await rankEvidenceInsights([otherRow, goalRow], {}, goals);
     expect(withGoal[0]!.id).toBe('goal');
   });
 });
