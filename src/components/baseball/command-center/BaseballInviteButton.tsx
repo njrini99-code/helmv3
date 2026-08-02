@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { IconPlus, IconCopy, IconCheck, IconRefresh } from '@/components/icons';
+import { IconPlus, IconCopy, IconCheck, IconRefresh, IconX } from '@/components/icons';
 import { generateTeamInviteCode, regenerateTeamInviteCode } from '@/app/baseball/actions/teams';
 import { useToast } from '@/components/ui/sonner';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
@@ -145,9 +145,30 @@ export function BaseballInviteButton({
         onOpenChange={handleOpenChange}
         size="md"
         title={`Invite Player to ${teamName}`}
-        description="Share this link with players to invite them to your team. They'll be able to join by clicking the link and creating an account."
+        hideTitle
+        className="[&_.fw-modal-panel]:bg-[#FFFEFA] [&_.fw-modal-panel]:shadow-[0_20px_25px_-5px_rgba(28,25,23,0.28)]"
       >
-        <ModalShell.Body className="space-y-4">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-warm-200">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-warm-600 mb-1">
+              Roster invite
+            </p>
+            <h2 className="text-lg font-semibold tracking-tight text-warm-900">
+              Invite Player to {teamName}
+            </h2>
+            <p className="text-sm text-warm-700 mt-2">
+              Share this link with players to invite them to your team. They'll be able to join by clicking the link and creating an account.
+            </p>
+          </div>
+          <button
+            onClick={() => handleOpenChange(false)}
+            className="p-2 text-warm-700 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors flex-shrink-0"
+            aria-label="Close invite dialog"
+          >
+            <IconX size={20} />
+          </button>
+        </div>
+        <ModalShell.Body className="space-y-4 pt-4">
           {/* Loading State */}
           {loading && (
             <div className="flex items-center justify-center py-8" role="status" aria-live="polite">
