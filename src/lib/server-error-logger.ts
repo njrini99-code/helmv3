@@ -1,4 +1,21 @@
-'use server';
+// This module is intentionally NOT `'use server'`. A file-level `'use server'`
+// publishes every exported async function as a public, directly-POSTable
+// Server Action endpoint — whether or not any client component imports it.
+// logServerError/logServerException/logServerEvent write via the service-role
+// admin client and must only ever be called from server code. Precedent:
+// src/lib/golf/progress-drivers.ts:1-28.
+//
+// It deliberately does NOT `import 'server-only'`, even though every exported
+// function here is server-only in intent. This module is reached from client
+// components through admin/rls-denial.ts -> supabase/fetch-all-rows.ts ->
+// use-calendar-range-events.ts / use-task-realtime.ts, so the marker hard-fails
+// the build for /golf/dashboard/calendar and /golf/dashboard/tasks. A runtime
+// `typeof window` guard does not help: the bundler still places the module in
+// the client graph, and `server-only` throws at build time, not at call time.
+// The security property that matters is already enforced above — dropping the
+// file-level `'use server'` is what stops these being public POST endpoints.
+// Removing the client-side reachability of this module is tracked separately;
+// it needs fetch-all-rows.ts to stop depending on the admin logger.
 
 import * as Sentry from '@sentry/nextjs';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
@@ -9,6 +26,7 @@ import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml } from '@/lib/utils/describe-error';
+import { redactSensitiveUrl } from '@/lib/security/redact-url';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -86,7 +104,7 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
   return JSON.parse(JSON.stringify({
     action: context.action,
     route: context.route ?? null,
-    url: context.url ?? null,
+    url: redactSensitiveUrl(context.url ?? null),
     featureArea: context.featureArea ?? null,
     feature: context.feature ?? context.featureArea ?? null,
     source: context.source ?? 'server_action',
@@ -133,7 +151,7 @@ function buildAdminTitle(message: string, context: RoundErrorContext, severity: 
 }
 
 function buildUrl(context: RoundErrorContext): string | null {
-  if (context.url) return context.url;
+  if (context.url) return redactSensitiveUrl(context.url);
   if (context.route) return context.route;
   if (context.action) return `/server/${context.action}`;
   return null;

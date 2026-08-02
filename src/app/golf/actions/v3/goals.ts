@@ -137,6 +137,25 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       warning = 'soft_cap_exceeded';
     }
 
+    // #1244: capture the baseline HERE rather than trusting every caller to.
+    // `acceptGoalSuggestion` (and the team fan-out) passed a hardcoded
+    // `baseline_value: null`, which left 9 of 19 live goals — including the
+    // only active one — unable to render a progress bar at all, because
+    // FairwayGoalCard correctly refuses to compute `(current - baseline) /
+    // (target - baseline)` without a baseline. The reading is available at this
+    // exact moment: it is the same standing value the progress evaluator will
+    // read on its very next pass. Resolve it once, centrally, so no create path
+    // can ship a baseline-less goal again.
+    //
+    // If there is genuinely no standing reading yet the baseline stays null and
+    // the card keeps its honest "Not started — baseline captured" empty state.
+    // We never substitute the target or zero.
+    let baselineValue = input.baseline_value;
+    if (baselineValue == null) {
+      const standing = await loadStandingForMetric(player_id, input.metric_id);
+      baselineValue = standing?.player_value ?? null;
+    }
+
     const insertPayload = {
       player_id,
       team_id,
@@ -151,8 +170,8 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       // generated value is an exact integer inside the CHECK range.
       started_at: goalWindow.window.started_at,
       ends_at: goalWindow.window.ends_at,
-      baseline_value: input.baseline_value,
-      current_value: input.baseline_value, // start equal; cron updates
+      baseline_value: baselineValue,
+      current_value: baselineValue, // start equal; cron updates
       target_value: input.target_value,
       target_source: input.target_source,
       // Coach-mandatory goals are auto-accepted on insert

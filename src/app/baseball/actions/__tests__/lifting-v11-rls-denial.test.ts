@@ -20,6 +20,7 @@
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { flushRlsDenialLogs } from '@/lib/admin/rls-denial';
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(async () => ({
@@ -136,6 +137,7 @@ describe('logSetResult RLS-denial capture (regression: no double-fire)', () => {
   it('captures exactly ONE RLS denial event, with the precise table — not a second, bogus feature-area one from the wrapper fallback', async () => {
     await expect(logSetResult(BASE_INPUT)).rejects.toBeInstanceOf(BaseballActionError);
 
+    await flushRlsDenialLogs();
     const rlsEvents = mocks.logServerEvent.mock.calls.filter(
       (call): call is [string, ...unknown[]] =>
         typeof call[0] === 'string' && call[0].startsWith('RLS denial:'),
@@ -158,6 +160,7 @@ describe('logSetResult RLS-denial capture (regression: no double-fire)', () => {
 
     await expect(logSetResult(BASE_INPUT)).rejects.toBeInstanceOf(BaseballActionError);
 
+    await flushRlsDenialLogs();
     const rlsEvents = mocks.logServerEvent.mock.calls.filter(
       (call): call is [string, ...unknown[]] =>
         typeof call[0] === 'string' && call[0].startsWith('RLS denial:'),

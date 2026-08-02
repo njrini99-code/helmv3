@@ -36,6 +36,9 @@ export interface NotificationPreferences {
   // Push preferences
   push_messages: boolean;
   push_events: boolean;
+  /** Team announcements via push — its own key so muting calendar pushes
+   *  does not silently mute announcements too. */
+  push_announcements: boolean;
   push_task_reminders: boolean;
   /** CoachHelm AI insights via push. */
   push_coachhelm: boolean;
@@ -51,6 +54,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   email_coachhelm: true,
   push_messages: true,
   push_events: true,
+  push_announcements: true,
   push_task_reminders: true,
   push_coachhelm: true,
 };

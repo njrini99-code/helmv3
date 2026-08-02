@@ -93,6 +93,9 @@ describe('FairwayCreateTaskModal — footer composition (W1)', () => {
         undefined,
         undefined,
         ['p1'],
+        // category — absent here because no categories were passed in, so the
+        // picker never rendered and nothing could be chosen.
+        undefined,
       );
     });
   });

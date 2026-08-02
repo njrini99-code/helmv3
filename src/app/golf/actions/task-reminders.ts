@@ -462,7 +462,44 @@ async function getDueRemindersImpl(
       return { data: null, error: 'Failed to fetch due reminders' };
     }
 
-    return { data: reminders as TaskReminderWithTask[] };
+    // Drop reminders whose task is already finished. This path used to filter
+    // on `sent` and `scheduled_for` ONLY — nothing anywhere in this file was
+    // completion-aware — so a player who finished a task before its reminder
+    // date still got the email and push on the day. `golf_tasks.status` is now
+    // rolled up from its assignments when the last one completes (see
+    // syncTaskStatusFromAssignments in tasks.ts), which is what makes this
+    // check trustworthy; before that the column sat at 'pending' forever.
+    //
+    // Suppressed reminders are marked sent rather than merely skipped: the
+    // query orders by scheduled_for and takes the first `batchSize`, so a
+    // reminder that is filtered out but left `sent = false` would be re-fetched
+    // at the head of every tick forever and would eventually crowd real
+    // reminders out of the batch.
+    const dueReminders = (reminders ?? []) as TaskReminderWithTask[];
+    const completed = dueReminders.filter(
+      (r) => (r.task as { status?: string | null } | null)?.status === 'completed',
+    );
+
+    if (completed.length > 0) {
+      const { error: suppressError } = await supabase
+        .from('golf_task_reminders')
+        .update({
+          sent: true,
+          sent_at: new Date().toISOString(),
+          error: 'suppressed: task already completed',
+        })
+        .in('id', completed.map((r) => r.id));
+
+      if (suppressError) {
+        await logServerError(
+          `Error suppressing reminders for completed tasks: ${describeError(suppressError)}`,
+          { action: 'task_reminders.getDueReminders.suppressCompleted' },
+          'warning',
+        );
+      }
+    }
+
+    return { data: dueReminders.filter((r) => !completed.includes(r)) };
   } catch (error) {
     await logServerError(`Error in getDueReminders: ${describeError(error)}`, { action: 'task_reminders.getDueReminders' });
     return { data: null, error: 'An unexpected error occurred' };

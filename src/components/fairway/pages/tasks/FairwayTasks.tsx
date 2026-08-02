@@ -186,6 +186,14 @@ export function completionFeedback(
   return { kind: 'success', message: 'Marked complete.' };
 }
 
+/**
+ * Sentinel for the "Uncategorized" chip. A real category is free text from
+ * `golf_tasks.category`, so a bare 'uncategorized' could collide with a
+ * category a coach actually typed. The leading space keeps it distinct, and
+ * the chip renders its own label, so the sentinel is never shown to anyone.
+ */
+const UNCATEGORIZED = ' uncategorized';
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
@@ -253,20 +261,35 @@ export function FairwayTasks({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [tasks]);
 
+  // Tasks created from the Create-task dialog carry no category, so before this
+  // they matched NO category chip and vanished the moment a coach filtered by
+  // anything — silently, because the status counts don't move with the category
+  // filter. Give them a bucket of their own rather than leaving them
+  // unreachable. Only offered when such tasks actually exist.
+  const hasUncategorized = useMemo(() => tasks.some((t) => !t.category), [tasks]);
+
   // A stale category filter (the only task with that category was deleted) must
   // not silently hide the whole list — drop it when it no longer exists.
   useEffect(() => {
+    if (categoryFilter === UNCATEGORIZED) {
+      if (!hasUncategorized) setCategoryFilter(null);
+      return;
+    }
     if (categoryFilter && !categories.includes(categoryFilter)) {
       setCategoryFilter(null);
     }
-  }, [categories, categoryFilter]);
+  }, [categories, categoryFilter, hasUncategorized]);
 
   // P287 — status + text search + category, all honest predicates.
   const filteredTasks = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matched = tasks.filter((t) => {
       if (filter !== 'all' && t.status !== filter) return false;
-      if (categoryFilter && t.category !== categoryFilter) return false;
+      if (categoryFilter === UNCATEGORIZED) {
+        if (t.category) return false;
+      } else if (categoryFilter && t.category !== categoryFilter) {
+        return false;
+      }
       if (q) {
         const haystack = `${t.title} ${t.description ?? ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -438,7 +461,7 @@ export function FairwayTasks({
                 aria-label="Search tasks"
               />
             </div>
-            {categories.length > 0 && (
+            {(categories.length > 0 || hasUncategorized) && (
               <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by category">
                 <FilterPill
                   selected={categoryFilter === null}
@@ -457,6 +480,17 @@ export function FairwayTasks({
                     {cat}
                   </FilterPill>
                 ))}
+                {hasUncategorized && (
+                  <FilterPill
+                    selected={categoryFilter === UNCATEGORIZED}
+                    showCheck={false}
+                    onClick={() =>
+                      setCategoryFilter((c) => (c === UNCATEGORIZED ? null : UNCATEGORIZED))
+                    }
+                  >
+                    Uncategorized
+                  </FilterPill>
+                )}
               </div>
             )}
           </div>
@@ -598,6 +632,7 @@ export function FairwayTasks({
           teamId={teamId}
           players={players}
           playersError={playersError}
+          categories={categories}
         />
       )}
 

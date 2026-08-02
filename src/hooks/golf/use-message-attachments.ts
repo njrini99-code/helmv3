@@ -7,10 +7,8 @@ import {
   type PendingAttachment,
   STORAGE_BUCKET,
 } from '@/lib/storage/attachments';
-import {
-  sendGolfMessageWithAttachments,
-  type AttachmentUploadData,
-} from '@/app/golf/actions/messages';
+import { sendGolfMessageWithAttachments } from '@/app/golf/actions/messages';
+import type { AttachmentUploadData } from '@/app/golf/actions/message-attachments';
 import { logError } from '@/lib/error-logging';
 
 interface SendMessageWithAttachmentsOptions {

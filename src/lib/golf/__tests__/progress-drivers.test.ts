@@ -56,12 +56,28 @@ interface FocusAreaRow {
   target_metric: string | null;
   current_value: number | null;
   started_at: string | null;
+  baseline_value?: number | null;
+  snapshots?: unknown;
 }
 
 let focusAreaRows: FocusAreaRow[] = [];
 let roundRows: Array<{ id: string; player_id: string; round_date: string }> = [];
 let statsRows: Array<{ round_id: string; total_putts: number | null }> = [];
 const updateCalls: Array<{ id: string; patch: Record<string, unknown> }> = [];
+
+/**
+ * The reads are chunked (chunkIds) + paged (fetchAllRowsResult), so every
+ * select chain now terminates in `.order('id').range(from, to)`. The double
+ * returns the full row set on the first page; fetchAllRowsResult sees a short
+ * page and stops after one round trip.
+ */
+function pagedResult<T>(rows: T[]) {
+  return {
+    order: () => ({
+      range: async () => ({ data: rows, error: null }),
+    }),
+  };
+}
 
 function makeAdminClient() {
   return {
@@ -70,7 +86,7 @@ function makeAdminClient() {
         return {
           select: () => ({
             in: () => ({
-              eq: async () => ({ data: focusAreaRows, error: null }),
+              eq: () => pagedResult(focusAreaRows),
             }),
           }),
           update: (patch: Record<string, unknown>) => ({
@@ -86,7 +102,7 @@ function makeAdminClient() {
           select: () => ({
             in: () => ({
               eq: () => ({
-                gte: async () => ({ data: roundRows, error: null }),
+                gte: () => pagedResult(roundRows),
               }),
             }),
           }),
@@ -95,7 +111,7 @@ function makeAdminClient() {
       if (table === 'golf_round_stats_cache') {
         return {
           select: () => ({
-            in: async () => ({ data: statsRows, error: null }),
+            in: () => pagedResult(statsRows),
           }),
         };
       }
@@ -236,5 +252,154 @@ describe('runFocusAreaProgressForPlayers — standing fallback (B2 / P0 fix)', (
     const byId = new Map(updateCalls.map((c) => [c.id, c.patch]));
     expect(byId.get('area-legacy')?.current_value).toBe(30);
     expect(byId.get('area-fallback')?.current_value).toBe(0.4);
+  });
+});
+
+describe('runFocusAreaProgressForPlayers — baseline + snapshots (#1240 / #1241 / #1239)', () => {
+  beforeEach(() => {
+    focusAreaRows = [];
+    roundRows = [];
+    statsRows = [];
+    updateCalls.length = 0;
+    standingByPlayer.clear();
+    vi.clearAllMocks();
+  });
+
+  it('self-heals a missing baseline to the value as it stood BEFORE this write', () => {
+    // An area tracked before baseline_value existed has no starting point, and
+    // the true original is unrecoverable (the driver overwrote it in place).
+    // Stamping the pre-write value gives the card an honest "measured from
+    // here" anchor instead of leaving it blank forever.
+    focusAreaRows = [
+      {
+        id: 'area-heal',
+        player_id: 'p1',
+        target_metric: 'sg_putting',
+        current_value: 0.2,
+        started_at: '2026-06-01',
+        baseline_value: null,
+        snapshots: [],
+      },
+    ];
+    standingByPlayer.set('p1', new Map([['sg_putting', { player_value: 0.9 }]]));
+
+    return runFocusAreaProgressForPlayers(['p1']).then(() => {
+      const patch = updateCalls.find((c) => c.id === 'area-heal')?.patch;
+      expect(patch?.current_value).toBe(0.9);
+      expect(patch?.baseline_value).toBe(0.2);
+    });
+  });
+
+  it('never overwrites a baseline that already exists', async () => {
+    focusAreaRows = [
+      {
+        id: 'area-keep',
+        player_id: 'p1',
+        target_metric: 'sg_putting',
+        current_value: 0.2,
+        started_at: '2026-06-01',
+        baseline_value: -1.5,
+        snapshots: [],
+      },
+    ];
+    standingByPlayer.set('p1', new Map([['sg_putting', { player_value: 0.9 }]]));
+
+    await runFocusAreaProgressForPlayers(['p1']);
+
+    const patch = updateCalls.find((c) => c.id === 'area-keep')?.patch;
+    expect(patch?.current_value).toBe(0.9);
+    expect(patch).not.toHaveProperty('baseline_value');
+  });
+
+  it('appends a dated snapshot, deduped per UTC day (idempotent across submit + cron)', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    focusAreaRows = [
+      {
+        id: 'area-snap',
+        player_id: 'p1',
+        target_metric: 'sg_putting',
+        current_value: 0.2,
+        started_at: '2026-06-01',
+        baseline_value: 0.2,
+        // one older day + an entry for TODAY that must be replaced, not appended
+        snapshots: [
+          { date: '2026-07-01', value: 0.1 },
+          { date: today, value: 0.55 },
+        ],
+      },
+    ];
+    standingByPlayer.set('p1', new Map([['sg_putting', { player_value: 0.9 }]]));
+
+    await runFocusAreaProgressForPlayers(['p1']);
+
+    const snaps = updateCalls.find((c) => c.id === 'area-snap')?.patch.snapshots as
+      | { date: string; value: number }[]
+      | undefined;
+    expect(snaps).toEqual([
+      { date: '2026-07-01', value: 0.1 },
+      { date: today, value: 0.9 },
+    ]);
+  });
+
+  it('discards malformed snapshot entries rather than throwing on raw jsonb', async () => {
+    focusAreaRows = [
+      {
+        id: 'area-junk',
+        player_id: 'p1',
+        target_metric: 'sg_putting',
+        current_value: 0.2,
+        started_at: '2026-06-01',
+        baseline_value: 0.2,
+        snapshots: { not: 'an array' },
+      },
+    ];
+    standingByPlayer.set('p1', new Map([['sg_putting', { player_value: 0.9 }]]));
+
+    await runFocusAreaProgressForPlayers(['p1']);
+
+    const snaps = updateCalls.find((c) => c.id === 'area-junk')?.patch.snapshots as unknown[];
+    expect(Array.isArray(snaps)).toBe(true);
+    expect(snaps).toHaveLength(1);
+  });
+
+  it('tracks a LEGACY orphan id once canonicalized (#1239)', async () => {
+    // 'make_pct_5_10' matched neither vocabulary and silently no-op'd forever.
+    focusAreaRows = [
+      {
+        id: 'area-legacy',
+        player_id: 'p1',
+        target_metric: 'make_pct_5_10',
+        current_value: 58,
+        started_at: '2026-06-01',
+        baseline_value: 58,
+        snapshots: [],
+      },
+    ];
+    standingByPlayer.set('p1', new Map([['putts_made_5_10ft_pct', { player_value: 34.5 }]]));
+
+    const summary = await runFocusAreaProgressForPlayers(['p1']);
+
+    expect(summary.evaluated).toBe(1);
+    expect(updateCalls.find((c) => c.id === 'area-legacy')?.patch.current_value).toBe(34.5);
+  });
+
+  it('still skips a genuinely unrecognized custom metric (no fabrication)', async () => {
+    focusAreaRows = [
+      {
+        id: 'area-custom',
+        player_id: 'p1',
+        target_metric: 'Mental Toughness',
+        current_value: 3,
+        started_at: '2026-06-01',
+        baseline_value: 3,
+        snapshots: [],
+      },
+    ];
+    standingByPlayer.set('p1', new Map([['sg_putting', { player_value: 0.9 }]]));
+
+    const summary = await runFocusAreaProgressForPlayers(['p1']);
+
+    expect(summary.evaluated).toBe(0);
+    expect(updateCalls).toHaveLength(0);
   });
 });

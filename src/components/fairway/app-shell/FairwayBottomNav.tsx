@@ -33,6 +33,7 @@
 
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
+import { NavPendingDot } from './NavPending';
 import { IconLayoutGrid } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import type { FairwayIcon, NavItem, ShellLinkComponent } from './types';
@@ -217,6 +218,10 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
                 >
                   {item.shortLabel ?? item.label}
                 </span>
+                {/* Tab taps have the same silent server round trip as the rail.
+                    `ml-0` overrides the dot's default right-alignment so it
+                    centers under the label in this column layout. */}
+                <NavPendingDot className="ml-0 mt-0.5" />
               </Link>
             </li>
           );

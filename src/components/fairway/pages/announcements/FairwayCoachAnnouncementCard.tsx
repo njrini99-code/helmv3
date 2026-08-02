@@ -187,7 +187,9 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
 
             <span className="inline-flex items-center gap-1">
               <IconUsers size={12} className="text-text-tertiary" />
-              {ann.recipient_count > 0 ? `${ann.recipient_count} players` : 'All team'}
+              {ann.recipient_count > 0
+                  ? `${ann.recipient_count} ${ann.recipient_count === 1 ? 'player' : 'players'}`
+                  : 'All team'}
             </span>
 
             {/* Ack progress + avatar stack — honest: only with a real

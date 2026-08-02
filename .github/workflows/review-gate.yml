@@ -392,6 +392,21 @@ jobs:
             echo "No changed Dockerfiles for hadolint."
           fi
 
+  env-secrets:
+    name: env-secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+      - name: Check for hardcoded secret fallbacks
+        run: node scripts/check-env-secret-fallbacks.mjs
+
   all:
     name: all
     if: always()
@@ -408,6 +423,7 @@ jobs:
       - python
       - sqlfluff
       - hadolint
+      - env-secrets
     steps:
       - name: Fail if any required check failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

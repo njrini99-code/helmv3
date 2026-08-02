@@ -160,13 +160,15 @@ export function BaseballInviteButton({
               Share this link with players to invite them to your team. They'll be able to join by clicking the link and creating an account.
             </p>
           </div>
-          <button
+          <Button
             onClick={() => handleOpenChange(false)}
-            className="p-2 text-warm-700 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors flex-shrink-0"
+            variant="ghost"
+            size="sm"
+            className="flex-shrink-0"
             aria-label="Close invite dialog"
           >
             <IconX size={20} />
-          </button>
+          </Button>
         </div>
         <ModalShell.Body className="space-y-4 pt-4">
           {/* Loading State */}

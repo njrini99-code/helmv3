@@ -1,3 +1,13 @@
+/**
+ * @vitest-environment node
+ *
+ * Server-module test. The default project environment is jsdom, which
+ * defines `window` — and rls-denial.ts gates its capture on
+ * `typeof window === 'undefined'` so server-only logging never lands in a
+ * client bundle. Under jsdom that guard is false, the capture branch never
+ * runs, and these assertions silently test nothing. Pin to node so the code
+ * path under test is the one that actually executes on the server.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -55,7 +65,7 @@ import {
 // Intentionally NOT mocked (see the "RLS-denial capture" describe block
 // below) — the real isRlsDenial/maybeCaptureRlsDenial logic is exercised
 // against the (real) `logServerEvent` mock above.
-import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import { maybeCaptureRlsDenial, flushRlsDenialLogs } from '@/lib/admin/rls-denial';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -213,6 +223,7 @@ describe('withBaseballAction RLS-denial capture', () => {
 
     await expect(action()).rejects.toBeInstanceOf(BaseballActionError);
 
+    await flushRlsDenialLogs();
     const rlsCalls = mocks.logServerEvent.mock.calls.filter(
       (call) => typeof call[0] === 'string' && call[0].startsWith('RLS denial:'),
     );
@@ -245,6 +256,7 @@ describe('withBaseballAction RLS-denial capture', () => {
 
     await expect(action()).rejects.toBeInstanceOf(BaseballActionError);
 
+    await flushRlsDenialLogs();
     const rlsCalls = mocks.logServerEvent.mock.calls.filter(
       (call) => typeof call[0] === 'string' && call[0].startsWith('RLS denial:'),
     );
@@ -263,6 +275,7 @@ describe('withBaseballAction RLS-denial capture', () => {
     );
 
     await expect(action()).rejects.toBeInstanceOf(BaseballActionError);
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
     expect(mocks.logServerException).toHaveBeenCalledTimes(1);
   });

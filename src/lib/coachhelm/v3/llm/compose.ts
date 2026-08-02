@@ -77,7 +77,16 @@ export async function compose(
   const model_id = MODEL_FOR_TASK[req.task];
   const prompt_hash = await hashPrompt(req.prompt);
   const promptTokensEstimate = estimatePromptTokens(req.prompt);
-  const estimatedCost = estimateCostUsd(model_id, promptTokensEstimate, req.max_completion_tokens);
+  // Gate against the HARD cap (runLlmAttempt passes `max_completion_tokens *
+  // 2` as maxOutputTokens), not the nominal soft cap — otherwise a citation
+  // retry (below) plus a model that runs to its real ceiling can spend
+  // roughly double what the gate reserved before the next checkBudget call
+  // ever runs.
+  const estimatedCost = estimateCostUsd(
+    model_id,
+    promptTokensEstimate,
+    req.max_completion_tokens * 2,
+  );
 
   // --- 1. Budget gate ---
   // Only enforced when we have a coach to bill against. Some calls
@@ -133,25 +142,50 @@ export async function compose(
   // --- 3. Verify citations (retry once on failure) ---
   if (!attempt.verification.verified) {
     const retryPrompt = buildRetryPrompt(req.prompt, attempt.verification.unmatched_tokens);
-    try {
-      const retry = await runLlmAttempt(
-        { ...req, prompt: retryPrompt },
-        model_id,
-        estimatePromptTokens(retryPrompt),
-      );
-      total_prompt_tokens += retry.prompt_tokens;
-      total_completion_tokens += retry.completion_tokens;
-      attempt = retry;
-    } catch (err) {
-      // Retry crashed — count what we already spent on attempt 1 and
-      // fall back to the deterministic template.
-      return await fallbackFromLlmError(supabase, req, fallbackText, {
-        prompt_hash,
-        model_id,
-        err,
-        prompt_tokens: total_prompt_tokens,
-        completion_tokens: total_completion_tokens,
-      });
+    // The correction retry is a second billable call — re-gate it. Without
+    // this, a coach sitting just under their cap could spend roughly double
+    // the amount the original gate reserved, since the retry previously ran
+    // unconditionally.
+    const retryAllowed = req.coach_id
+      ? (
+          await checkBudget(
+            supabase,
+            req.coach_id,
+            estimateCostUsd(
+              model_id,
+              estimatePromptTokens(retryPrompt),
+              req.max_completion_tokens * 2,
+            ),
+          )
+        ).allowed
+      : true;
+    if (!retryAllowed) {
+      // Denied: fall through with `attempt` left as the unverified attempt-1
+      // result. The existing "unrecoverable verification failure" path below
+      // already discards it, records only attempt-1's spend, and returns the
+      // deterministic fallback — the same outcome as a retry that ran and
+      // failed again, just without spending the second call's money.
+    } else {
+      try {
+        const retry = await runLlmAttempt(
+          { ...req, prompt: retryPrompt },
+          model_id,
+          estimatePromptTokens(retryPrompt),
+        );
+        total_prompt_tokens += retry.prompt_tokens;
+        total_completion_tokens += retry.completion_tokens;
+        attempt = retry;
+      } catch (err) {
+        // Retry crashed — count what we already spent on attempt 1 and
+        // fall back to the deterministic template.
+        return await fallbackFromLlmError(supabase, req, fallbackText, {
+          prompt_hash,
+          model_id,
+          err,
+          prompt_tokens: total_prompt_tokens,
+          completion_tokens: total_completion_tokens,
+        });
+      }
     }
   }
 

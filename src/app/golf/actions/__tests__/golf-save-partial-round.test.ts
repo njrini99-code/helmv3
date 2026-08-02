@@ -1,4 +1,14 @@
 /**
+ * @vitest-environment node
+ *
+ * Server-module test. The default project environment is jsdom, which
+ * defines `window` — and rls-denial.ts gates its capture on
+ * `typeof window === 'undefined'` so server-only logging never lands in a
+ * client bundle. Under jsdom that guard is false, the capture branch never
+ * runs, and these assertions silently test nothing. Pin to node so the code
+ * path under test is the one that actually executes on the server.
+ */
+/**
  * Regression test for the no-existingRoundId fallback branch of
  * savePartialRound (golf.ts) — feature-sweep finding golf-player-logging
  * P0 2026-07-10.

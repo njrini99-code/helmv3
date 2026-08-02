@@ -172,19 +172,22 @@ beforeEach(() => {
 });
 
 describe('coach onboarding provisions the head-coach staff row', () => {
+  // The action takes ONE argument. It used to accept an optional
+  // `_preVerifiedUser` second parameter that this test passed to skip auth —
+  // but on a 'use server' export that parameter was attacker-supplied over the
+  // wire, so it was removed. Identity now always comes from the mocked
+  // supabase.auth.getUser() above, via withBaseballAction — which is the path
+  // production actually takes.
   async function onboard() {
-    return completeCoachOnboarding(
-      {
-        coachType: 'college',
-        schoolName: 'Test University',
-        division: 'D1',
-        city: 'Austin',
-        state: 'TX',
-        fullName: 'Head Coach',
-        title: 'Head Coach',
-      },
-      authUser as unknown as Parameters<typeof completeCoachOnboarding>[1],
-    );
+    return completeCoachOnboarding({
+      coachType: 'college',
+      schoolName: 'Test University',
+      division: 'D1',
+      city: 'Austin',
+      state: 'TX',
+      fullName: 'Head Coach',
+      title: 'Head Coach',
+    });
   }
 
   it('writes exactly one PRIMARY head-coach staff row bound to the new team', async () => {

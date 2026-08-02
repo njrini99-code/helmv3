@@ -50,6 +50,7 @@ import {
 // Shared with FairwayExpenseSummary's pie-chart legend so this list's dots
 // and that panel's swatches can never independently drift.
 import { CATEGORY_CONFIG } from './expense-category';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 export interface FairwayExpenseListProps {
   expenses: TravelExpense[];
@@ -85,7 +86,11 @@ const PAID_BY_TONE: Record<string, FwStatusTone> = {
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  // `expense_date` is a date-only column. Parsing it raw gives UTC midnight,
+  // which renders as the previous day for every negative-offset (i.e. US)
+  // user — an expense stored 2026-07-08 displayed as "Jul 7, 2026" while the
+  // CSV export of the same row correctly said 2026-07-08.
+  return parseDateOnly(dateStr).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

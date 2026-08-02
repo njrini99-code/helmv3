@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { assertQueryOk } from '@/lib/admin/data/assert-query-ok';
 
 export type EngagementBand = 'strong' | 'steady' | 'fading' | 'dormant';
 
@@ -106,6 +107,17 @@ function mergeRecent(
  * QUERY DISCIPLINE: every query is scoped to ONE user's resolved player/coach
  * id, counts use `head: true`, and the recent-activity lists are capped at 5
  * rows each (merged + sliced to 8) — no N+1, no unbounded scans.
+ *
+ * ERROR DISCIPLINE: a Supabase result is `{ data: null, error }` — it does not
+ * throw. Reading only `.data` turned any failed lookup into a confident false
+ * claim: a failed golf_players/golf_coaches read collapsed to `null` here and
+ * the panel rendered "this account has neither role", and a failed count
+ * collapsed to `?? 0` and understated the score. `.maybeSingle()` errors for
+ * real (it returns an error, not data, when the filter matches more than one
+ * row), so this was reachable. Every result is now asserted; the panel is
+ * PanelBoundary-wrapped (src/app/admin/users/[id]/page.tsx:103-105), so a
+ * throw renders an honest stale state. `null` keeps its ONE meaning: the user
+ * genuinely has neither role.
  */
 export async function fetchUserEngagement(userId: string): Promise<UserEngagementDetail | null> {
   const admin = createAdminClient();
@@ -117,6 +129,10 @@ export async function fetchUserEngagement(userId: string): Promise<UserEngagemen
     admin.from('golf_players').select('id').eq('user_id', userId).maybeSingle(),
     admin.from('golf_coaches').select('id').eq('user_id', userId).maybeSingle(),
   ]);
+
+  assertQueryOk(userRes, 'fetchUserEngagement: users');
+  assertQueryOk(playerRes, 'fetchUserEngagement: golf_players');
+  assertQueryOk(coachRes, 'fetchUserEngagement: golf_coaches');
 
   const lastActivity = (userRes.data as { last_seen: string | null } | null)?.last_seen ?? null;
   const playerId = (playerRes.data as { id: string } | null)?.id ?? null;
@@ -168,6 +184,13 @@ export async function fetchUserEngagement(userId: string): Promise<UserEngagemen
           .limit(5),
       ]);
 
+    assertQueryOk(roundsCountRes, 'fetchUserEngagement: golf_rounds count');
+    assertQueryOk(insightsCountRes, 'fetchUserEngagement: golf_coach_insights count');
+    assertQueryOk(reviewsCountRes, 'fetchUserEngagement: golf_round_reviews count');
+    assertQueryOk(roundsRes, 'fetchUserEngagement: golf_rounds');
+    assertQueryOk(insightsRes, 'fetchUserEngagement: golf_coach_insights');
+    assertQueryOk(reviewsRes, 'fetchUserEngagement: golf_round_reviews');
+
     rounds30d = roundsCountRes.count ?? 0;
     insightsEngaged30d = insightsCountRes.count ?? 0;
     reviewsViewed30d = reviewsCountRes.count ?? 0;
@@ -178,6 +201,7 @@ export async function fetchUserEngagement(userId: string): Promise<UserEngagemen
     );
   } else if (coachId) {
     const staffRes = await admin.from('golf_team_coach_staff').select('team_id').eq('coach_id', coachId).limit(20);
+    assertQueryOk(staffRes, 'fetchUserEngagement: golf_team_coach_staff');
     const teamIds = ((staffRes.data ?? []) as Array<{ team_id: string }>).map((r) => r.team_id);
 
     const [roundsCountRes, insightsCountRes, reviewsCountRes, insightsRes, reviewsRes] = await Promise.all([
@@ -187,7 +211,7 @@ export async function fetchUserEngagement(userId: string): Promise<UserEngagemen
             .select('id', { count: 'exact', head: true })
             .in('team_id', teamIds)
             .gte('created_at', ago30d)
-        : Promise.resolve({ count: 0 }),
+        : Promise.resolve({ count: 0, error: null }),
       admin
         .from('golf_coach_insights')
         .select('id', { count: 'exact', head: true })
@@ -211,6 +235,12 @@ export async function fetchUserEngagement(userId: string): Promise<UserEngagemen
         .order('created_at', { ascending: false })
         .limit(5),
     ]);
+
+    assertQueryOk(roundsCountRes, 'fetchUserEngagement: golf_rounds count');
+    assertQueryOk(insightsCountRes, 'fetchUserEngagement: golf_coach_insights count');
+    assertQueryOk(reviewsCountRes, 'fetchUserEngagement: golf_round_reviews count');
+    assertQueryOk(insightsRes, 'fetchUserEngagement: golf_coach_insights');
+    assertQueryOk(reviewsRes, 'fetchUserEngagement: golf_round_reviews');
 
     rounds30d = roundsCountRes.count ?? 0;
     insightsEngaged30d = insightsCountRes.count ?? 0;

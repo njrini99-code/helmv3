@@ -28,14 +28,12 @@ import {
   searchGolfMessages,
   getGolfActiveTeamConversationIds,
 } from '@/app/actions/messages';
-import type { MessageSearchResult } from '@/app/actions/messages';
 import {
   sendGolfMessageWithAttachments,
   getGolfMessageAttachments,
   deleteGolfMessageAttachment,
   getSignedUrlsForAttachments,
 } from './message-attachments';
-import type { AttachmentUploadData } from './message-attachments';
 
 const ACTION = 'golf.messages.createGolfConversation';
 
@@ -257,4 +255,14 @@ export {
   getSignedUrlsForAttachments,
 };
 
-export type { MessageSearchResult, AttachmentUploadData };
+// NOTE: do NOT re-export types from this module with `export type { … }`.
+// Next.js's 'use server' transform registers every name in an export
+// specifier list as a server action, so the emitted module evaluates a
+// runtime reference to a type that does not exist — `ReferenceError:
+// MessageSearchResult is not defined` — which takes down EVERY action on
+// this surface (send, mark-as-read, edit, delete), not just the type.
+// `export interface`/`export type X = …` declarations are erased normally
+// and stay safe; only the specifier-list form leaks. Consumers import
+// these types from their canonical plain modules instead:
+//   MessageSearchResult  → '@/app/actions/messages'
+//   AttachmentUploadData → '@/app/golf/actions/message-attachments'

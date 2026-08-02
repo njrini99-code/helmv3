@@ -183,7 +183,8 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
           .from('golf_player_focus_areas')
           .select(
             `id, player_id, coach_id, area_type, title, description, status, target_metric,
-             current_value, target_value, target_kind, target_date, target_rounds,
+             current_value, baseline_value, snapshots,
+             target_value, target_kind, target_date, target_rounds,
              started_at, completed_at, created_at, updated_at,
              from_review_id, from_insight_id, review_context, progress_notes`,
           )

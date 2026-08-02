@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 419', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 433', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -303,6 +303,10 @@ describe('global tripwire', () => {
     // 432 as of the class-schedule screenshot import (+1):
     // extractClassesFromScheduleImage in src/app/golf/actions/schedule-image.ts
     // — the vision-extraction action, withAdminObserved-wrapped.
-    expect(total).toBe(432);
+    // 433 as of security fixes: added logServerError wrapper in crm-gmail-send.ts.
+    // 433 also covers recurring tasks (#1238): createRecurringTask in
+    // src/app/golf/actions/tasks.ts — the series-create action, bounded by
+    // MAX_SERIES_OCCURRENCES and withAdminObserved-wrapped like its siblings.
+    expect(total).toBe(433);
   });
 });

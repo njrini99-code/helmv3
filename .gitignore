@@ -10,6 +10,9 @@ node_modules/
 ds-bundle/
 docs/redesign/
 
+# Security analysis tool scratch (deepsec, large node_modules ephemeral)
+.deepsec/
+
 # Full-stack-feature planning files
 .full-stack-feature/
 .full-stack-feature-archived-*/
