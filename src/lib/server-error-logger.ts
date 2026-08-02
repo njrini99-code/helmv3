@@ -4,7 +4,18 @@
 // logServerError/logServerException/logServerEvent write via the service-role
 // admin client and must only ever be called from server code. Precedent:
 // src/lib/golf/progress-drivers.ts:1-28.
-import 'server-only';
+//
+// It deliberately does NOT `import 'server-only'`, even though every exported
+// function here is server-only in intent. This module is reached from client
+// components through admin/rls-denial.ts -> supabase/fetch-all-rows.ts ->
+// use-calendar-range-events.ts / use-task-realtime.ts, so the marker hard-fails
+// the build for /golf/dashboard/calendar and /golf/dashboard/tasks. A runtime
+// `typeof window` guard does not help: the bundler still places the module in
+// the client graph, and `server-only` throws at build time, not at call time.
+// The security property that matters is already enforced above — dropping the
+// file-level `'use server'` is what stops these being public POST endpoints.
+// Removing the client-side reachability of this module is tracked separately;
+// it needs fetch-all-rows.ts to stop depending on the admin logger.
 
 import * as Sentry from '@sentry/nextjs';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';

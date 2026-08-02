@@ -1,4 +1,12 @@
-import { logServerEvent } from '@/lib/server-error-logger';
+// NOTE: '@/lib/server-error-logger' is imported LAZILY, inside a
+// `typeof window === 'undefined'` guard, rather than statically at the top of
+// this module. That module is `server-only` (it writes via the service-role
+// admin client), but this file is reached from client components through
+// fetch-all-rows.ts -> use-calendar-range-events.ts / use-task-realtime.ts. A
+// static import therefore pulled server-only code — plus createAdminClient and
+// node:async_hooks — into the client graph and hard-failed the build.
+// Client-side logging was never functional anyway: createAdminClient needs
+// SUPABASE_SERVICE_ROLE_KEY, which does not exist in the browser.
 import { featureForTable, type FeatureKey } from '@/lib/admin/feature-registry';
 
 /**
@@ -95,23 +103,29 @@ export function maybeCaptureRlsDenial(
     const table = resolveDenialTable(ctx.table, error?.message);
     const feature = ctx.feature ?? featureForTable(table) ?? undefined;
     const isStorm = trackDenialStorm(`${table}:${ctx.verb}`);
-    void logServerEvent(
-      `RLS denial: ${ctx.verb} on ${table}`,
-      {
-        action: ctx.action,
-        source: 'rls_denial',
-        errorCode: error?.code ?? '42501',
-        userId: ctx.userId ?? null,
-        sport: ctx.sport,
-        feature: feature ?? null,
-        metadata: { table, verb: ctx.verb, message: error?.message ?? null },
-        tags: isStorm ? { rls_denial_storm: 'true' } : undefined,
-        // Routine denials stay admin-feed-only; a storm crossing the
-        // threshold escalates to a real Sentry issue at 'error' severity.
-        skipSentry: !isStorm,
-      },
-      isStorm ? 'error' : 'warning',
-    ).catch(() => {});
+    if (typeof window === 'undefined') {
+      void import('@/lib/server-error-logger')
+        .then(({ logServerEvent }) =>
+          logServerEvent(
+            `RLS denial: ${ctx.verb} on ${table}`,
+            {
+              action: ctx.action,
+              source: 'rls_denial',
+              errorCode: error?.code ?? '42501',
+              userId: ctx.userId ?? null,
+              sport: ctx.sport,
+              feature: feature ?? null,
+              metadata: { table, verb: ctx.verb, message: error?.message ?? null },
+              tags: isStorm ? { rls_denial_storm: 'true' } : undefined,
+              // Routine denials stay admin-feed-only; a storm crossing the
+              // threshold escalates to a real Sentry issue at 'error' severity.
+              skipSentry: !isStorm,
+            },
+            isStorm ? 'error' : 'warning',
+          ),
+        )
+        .catch(() => {});
+    }
   } catch {
     // Never break the caller.
   }
