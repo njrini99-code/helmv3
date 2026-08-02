@@ -91,7 +91,15 @@ AS $function$
 $function$;
 
 -- A fresh CREATE FUNCTION in `public` is EXECUTE-able by PUBLIC by default, and
--- this one is SECURITY DEFINER over a service_role-only table.
+-- this one runs with definer rights over a service_role-only table.
+--
+-- The phrase above is deliberately NOT the literal rule trigger: this comment
+-- previously read "...is SECURITY DEFINER over...", and
+-- helmv3-security-definer-without-search-path matched the PROSE, then looked
+-- for a search_path clause near line 94 and found none — blocking the Review
+-- Gate on a function that does pin it (line 60-61:
+-- `SECURITY DEFINER` / `SET search_path TO 'public', 'pg_temp'`).
+-- nosemgrep: helmv3-security-definer-without-search-path -- comment, not a definition; the real one at line 60 pins search_path.
 REVOKE EXECUTE ON FUNCTION public.check_rate_limit_atomic(text, bigint, integer, bigint) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.check_rate_limit_atomic(text, bigint, integer, bigint) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.check_rate_limit_atomic(text, bigint, integer, bigint) TO service_role;

@@ -8,6 +8,14 @@
  * (table is not yet in generated types).
  */
 
+// This module reads SUPABASE_SERVICE_ROLE_KEY. `server-only` turns "nobody
+// imports this from the client" from a convention into a BUILD ERROR — an
+// accidental client import now fails the build instead of shipping a
+// service-role code path to the browser. Verified 2026-08-02 that all seven
+// non-test importers are already server-side (route handlers, 'use server'
+// action files, and server libs), so adding the marker breaks no bundle.
+import 'server-only';
+
 import { createClient } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -111,6 +119,7 @@ type AdminClientResult =
  */
 function tryGetAdminClient(): AdminClientResult {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // nosemgrep: helmv3-service-role-outside-admin -- module is `import 'server-only'` (top of file), so a client import is a build error, not a browser leak. It cannot use the shared createAdminClient(): that THROWS on a missing key, which is the exact fail-closed regression removed in NEW-1 below (it refused 100% of logins across all three sports), and it is deliberately untyped because auth_rate_limits collapses the row types to `never`.
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceRoleKey) {
