@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { withRateLimit } from '@/lib/middleware/rate-limit';
-import { RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
@@ -26,10 +25,44 @@ function readContextSport(context: unknown): TraceSport | null {
   return sport === 'golf' || sport === 'baseball' || sport === 'shared' ? sport : null;
 }
 
+/**
+ * 30 requests / 60s per IP — the WRITE-tier budget this route has always
+ * carried (`@/lib/rate-limit`'s `API_WRITE`, 30/60s). It is spelled out here
+ * rather than imported because `@/lib/auth/rate-limit` — the durable,
+ * Upstash-backed limiter this route moved to — has no `API_WRITE` bucket, and
+ * its `API_GENERAL` is the 100/60s READ-tier budget. Borrowing API_GENERAL
+ * would have tripled the per-IP cap on the one ANONYMOUS service-role write
+ * path in the app, which is the opposite of the intent of moving here.
+ */
+const LOG_ERROR_RATE_LIMIT = { maxAttempts: 30, windowMs: 60 * 1000 };
+
 export async function POST(request: NextRequest) {
-  const rateLimitResult = withRateLimit(request, RATE_LIMITS.API_WRITE);
-  if (rateLimitResult) {
-    return rateLimitResult;
+  // This is the one route that accepts ANONYMOUS writes into error_logs +
+  // admin_events via the service-role client, so its cap has to actually hold.
+  // It used to run on `src/lib/rate-limit.ts`, whose store is a process-local
+  // Map — on serverless that is per warm instance, so the effective cap was
+  // (instances x limit) and reset on every cold start. `checkRateLimit` from
+  // `@/lib/auth/rate-limit` is the limiter every other gated path already uses:
+  // Upstash-KV-first (shared across instances and deploys), in-memory only as a
+  // dev fallback. The leftmost X-Forwarded-For hop stays the key — on Vercel
+  // the edge sets that header itself, and rewriting the parsing here would be a
+  // guess at a platform contract rather than a fix. The BUDGET is unchanged by
+  // that move — see LOG_ERROR_RATE_LIMIT above.
+  const clientIp =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('x-real-ip') ??
+    'unknown';
+  const rateLimit = await checkRateLimit(`log-error:ip:${clientIp}`, LOG_ERROR_RATE_LIMIT);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.max(1, Math.ceil((rateLimit.resetAt - Date.now()) / 1000))),
+        },
+      },
+    );
   }
 
   // Off-prod runtimes (CI dev servers, local dev/next start, previews) hold

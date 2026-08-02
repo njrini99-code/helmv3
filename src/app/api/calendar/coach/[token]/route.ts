@@ -29,7 +29,7 @@ interface CoachStaffRow {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -173,10 +173,14 @@ export async function GET(
       },
     });
   } catch (error) {
+    // NO `url: request.url` here. The feed token is a live, non-expiring
+    // bearer credential carried in the URL PATH, and server-error-logger
+    // persists context.url verbatim to error_logs.url, admin_events.url and
+    // the Sentry `server_trace` context. The static `route` below is the safe
+    // value and is what buildUrl() falls back to.
     await logServerException(error, {
       action: 'calendarCoachFeedApi.get',
       route: '/api/calendar/coach/[token]',
-      url: request.url,
       source: 'route_handler',
       sport: 'golf',
       featureArea: 'calendar',

@@ -79,6 +79,28 @@ const DEFAULT_SOURCE_BY_KIND: Record<TimelineEventKind, SourceKind> = {
   system: 'system',
 };
 
+/**
+ * The ONLY event kinds that may select the service-role (RLS-bypass) client.
+ *
+ * The gate used to be keyed solely on `sourceKind`, which is derived from the
+ * caller-supplied `input.source` — so `{ kind: 'note', source: 'ai',
+ * visibility: 'staff_only' }` with `{ system: true }` would have selected the
+ * admin client and written a coach-authored note past the coach-only INSERT
+ * policy. `kind` (→ `event_type`) is now constrained too, so a coach-authored
+ * kind can never reach service-role no matter what provenance is claimed.
+ *
+ * 'lift' is MANDATORY here: `appendLiftTimelineEvent`'s player branch is the
+ * one legitimate service-role writer of a non-system kind (a player cannot
+ * write the coach-only timeline directly, and the PR is system-DETECTED from
+ * their own logged sets). Removing it silently breaks the lifting loop.
+ */
+const SYSTEM_ALLOWED_KINDS: ReadonlySet<TimelineEventKind> = new Set<TimelineEventKind>([
+  'ai',
+  'system',
+  'stat_milestone',
+  'lift',
+]);
+
 /** Map an event kind to its default visibility. Staff-private by default for AI. */
 const DEFAULT_VISIBILITY_BY_KIND: Record<TimelineEventKind, BaseballTimelineVisibility> = {
   stat: 'team',
@@ -173,10 +195,18 @@ export async function appendTimelineEvent(
   const visibility: BaseballTimelineVisibility =
     input.visibility ?? DEFAULT_VISIBILITY_BY_KIND[kind];
 
-  // SAFETY: only system/AI provenance is ever allowed to use the RLS-bypass
-  // admin client. A caller cannot smuggle a coach note through service-role.
+  // SAFETY: the RLS-bypass admin client requires ALL THREE of — an explicit
+  // `{ system: true }` opt-in from the (server-side) call site, system/AI
+  // provenance, and an event kind on the system allowlist. Provenance alone is
+  // caller-derived, so constraining it alone would not stop a coach-authored
+  // kind ('note', 'stat', 'recruiting', …) riding a `source: 'ai'` override
+  // past the coach-only INSERT policy. Constraining `kind` as well is what
+  // actually makes "a caller cannot smuggle a coach note through service-role"
+  // true.
   const useSystemClient =
-    opts.system === true && (sourceKind === 'system' || sourceKind === 'ai');
+    opts.system === true &&
+    (sourceKind === 'system' || sourceKind === 'ai') &&
+    SYSTEM_ALLOWED_KINDS.has(kind);
 
   const row: BaseballPlayerTimelineEventInsert = {
     team_id: teamId,

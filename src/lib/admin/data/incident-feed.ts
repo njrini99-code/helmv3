@@ -226,7 +226,8 @@ const REGRESSION_LOOKBACK_DAYS = 90;
  *
  * Deliberately a SECOND query rather than a join: it needs the fingerprints
  * of the current unresolved buckets, which are only known after the feed
- * query has run. Cheap — bounded by `IN (…)` on an indexed column.
+ * query has run. Cheap — bounded by `IN (…)` on an indexed column, and
+ * chunked to stay under PostgREST's URL limit (see trap: database.md).
  */
 export async function queryPriorResolutions(
   fingerprints: readonly string[],
@@ -237,21 +238,30 @@ export async function queryPriorResolutions(
   const admin = createAdminClient();
   const since = new Date(Date.now() - REGRESSION_LOOKBACK_DAYS * 24 * 3600_000).toISOString();
 
-  const { data } = await admin
-    .from('admin_events')
-    .select('fingerprint, resolved_at')
-    .eq('resolved', true)
-    .in('fingerprint', [...fingerprints])
-    .gte('resolved_at', since)
-    .order('resolved_at', { ascending: false });
+  // Chunk fingerprints at 200 per batch to stay well under PostgREST's
+  // ~22.8 KB URL limit (~585 UUIDs max). During error storms with many
+  // unresolved fingerprints, an unchunked .in() hits 400 Bad Request and
+  // the swallowed error causes regression tags to silently disappear —
+  // exactly when operators most need them.
+  const CHUNK_SIZE = 200;
+  for (let i = 0; i < fingerprints.length; i += CHUNK_SIZE) {
+    const chunk = fingerprints.slice(i, i + CHUNK_SIZE);
+    const { data } = await admin
+      .from('admin_events')
+      .select('fingerprint, resolved_at')
+      .eq('resolved', true)
+      .in('fingerprint', Array.from(chunk))
+      .gte('resolved_at', since)
+      .order('resolved_at', { ascending: false });
 
-  for (const row of data ?? []) {
-    const fp = row.fingerprint;
-    const at = row.resolved_at;
-    if (!fp || !at) continue;
-    // Rows arrive newest-first, so the FIRST sighting of a fingerprint is its
-    // most recent resolution — later ones are older and must not overwrite it.
-    if (!latest.has(fp)) latest.set(fp, at);
+    for (const row of data ?? []) {
+      const fp = row.fingerprint;
+      const at = row.resolved_at;
+      if (!fp || !at) continue;
+      // Rows arrive newest-first, so the FIRST sighting of a fingerprint is its
+      // most recent resolution — later ones are older and must not overwrite it.
+      if (!latest.has(fp)) latest.set(fp, at);
+    }
   }
   return latest;
 }

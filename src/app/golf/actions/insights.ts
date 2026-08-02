@@ -52,27 +52,12 @@ import { logServerError, logServerEvent, logServerException } from '@/lib/server
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
-import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
-
-// 2026-05-23: All user-callable CoachHelm engine entrypoints rate-limit at
-// 5/min/user — the engine runs are multi-second jobs that load shots, mine
-// patterns, predict, and write multiple tables. Without this, an authenticated
-// coach can hold a function instance hostage with a tight loop across the
-// roster. Audit finding P0-11.
-const COACHHELM_ENGINE_RATE_LIMIT = {
-  maxAttempts: 5,
-  windowMs: 60 * 1000,
-} as const;
-
-async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ allowed: true } | { allowed: false; error: string }> {
-  if (!userId) return { allowed: true }; // pre-auth callers already rejected upstream
-  const rl = await checkRateLimit(`coachhelm:engine:${userId}`, COACHHELM_ENGINE_RATE_LIMIT);
-  if (!rl.allowed) {
-    return { allowed: false, error: 'Too many analyze requests in the last minute — please wait a moment and try again.' };
-  }
-  return { allowed: true };
-}
+// 2026-08-01: gateCoachHelmEngineCall used to live here (private). Lifted into
+// @/lib/auth/action-rate-limit so alerts.ts, round-recap.ts, schedule-image.ts
+// and v3/llm.ts share ONE definition. Key is unchanged (`coachhelm:engine:<id>`),
+// so live counters are not orphaned.
+import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -2537,6 +2522,14 @@ async function generatePracticeRecommendationsImpl(playerId: string): Promise<{
       return { success: false, error: access.error || 'Not authorized' };
     }
 
+    // DS-02: analyzePlayer() is a multi-second, multi-table engine run. Without
+    // this gate an authenticated coach can loop it across the roster and hold a
+    // function instance hostage — same P0-11 vector analyzePlayerImpl gates for.
+    const rateLimit = await gateCoachHelmEngineCall(access.userId);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
+    }
+
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
@@ -2609,6 +2602,13 @@ async function generateTournamentPrepImpl(playerId: string): Promise<{
     const access = await verifyPlayerAccess(playerId);
     if (!access.authorized) {
       return { success: false, error: access.error || 'Not authorized' };
+    }
+
+    // DS-02: `depth: 'deep'` with predictions + trajectory is the heaviest
+    // engine path in the file. Gate it exactly like analyzePlayerImpl (L1740).
+    const rateLimit = await gateCoachHelmEngineCall(access.userId);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
     }
 
     const status = await isCoachHelmEnabledForPlayer(playerId);
@@ -2854,6 +2854,42 @@ async function recordInteractionImpl(
   metadata?: Record<string, unknown>
 ): Promise<{ success: boolean }> {
   try {
+    // DS-01: this action had zero auth work and forwarded a caller-supplied
+    // entityId straight into the learning store, which writes through the
+    // service-role client (behavior-learner.ts getClient()) — RLS is genuinely
+    // bypassed. Flooded 'dismiss' rows against another tenant's coach id
+    // throttle that coach's insight delivery (dismissalRate > 0.5 =>
+    // alertFrequency 'low'). Authenticate, then bind entityId to the caller.
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false };
+    }
+
+    if (entityType === 'player') {
+      const access = await verifyPlayerAccess(entityId);
+      if (!access.authorized) {
+        return { success: false };
+      }
+    } else {
+      // A user can hold more than one golf_coaches row (multi-org), so
+      // .single()/.maybeSingle() would be wrong here.
+      const { data: coachRows } = await supabase
+        .from('golf_coaches')
+        .select('id')
+        .eq('user_id', user.id);
+      const isSelfCoach = (coachRows ?? []).some((c) => c.id === entityId);
+      if (!isSelfCoach) {
+        return { success: false };
+      }
+    }
+
+    // Bound insert volume — the learning store is append-only and unbounded.
+    const rateLimit = await gateCoachHelmEngineCall(user.id);
+    if (!rateLimit.allowed) {
+      return { success: false };
+    }
+
     await coachHelmIntelligence.learn({
       entityId,
       entityType,
@@ -2901,6 +2937,35 @@ async function getCoachHelmStatusImpl(
   disabledReason?: string | null;
 }> {
   try {
+    // DS-03: this took a caller-supplied entityId with no session and no
+    // ownership check, and gate.ts defaults to the admin client — so RLS was
+    // not a backstop. It leaked the coach-authored disabledReason for any
+    // tenant and worked as an id-existence oracle. Denials return the same
+    // { success: false, enabled: true } shape the catch below returns, so the
+    // client (which renders off `enabled`) is unchanged and learns nothing.
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, enabled: true };
+    }
+
+    if (entityType === 'player') {
+      const access = await verifyPlayerAccess(entityId);
+      if (!access.authorized) {
+        return { success: false, enabled: true };
+      }
+    } else {
+      // Multi-org: a user can hold more than one golf_coaches row.
+      const { data: coachRows } = await supabase
+        .from('golf_coaches')
+        .select('id')
+        .eq('user_id', user.id);
+      const isSelfCoach = (coachRows ?? []).some((c) => c.id === entityId);
+      if (!isSelfCoach) {
+        return { success: false, enabled: true };
+      }
+    }
+
     const status = entityType === 'coach'
       ? await isCoachHelmEnabledForCoach(entityId)
       : await isCoachHelmEnabledForPlayer(entityId);

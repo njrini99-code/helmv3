@@ -294,7 +294,56 @@ export const LOWER_IS_BETTER_KEYWORDS = [
   'bogey',
   'score',
   'three_putt',
+  // #1242: the live inverted bars were all proximity metrics carrying legacy
+  // free-text ids ('Avg proximity 80-120y', 'avg_proximity_ft') that resolve in
+  // NEITHER registry. Deliberately narrow — bare 'distance' is NOT here because
+  // driving distance is higher-is-better; the catalog resolves that one at step
+  // 2 anyway, but a free-text "Carry Distance" must not be caught by a guess.
+  'proximity',
+  'dispersion',
+  'distance to',
 ] as const;
+
+/**
+ * Direction of improvement for a target metric, including the honest third
+ * state. `unknown` exists because there is no safe default: assuming
+ * higher-is-better is what made a player 56% WORSE than target render a full
+ * "100% there" bar (#1242).
+ */
+export type ResolvedMetricDirection = 'lower' | 'higher' | 'unknown';
+
+/**
+ * Resolve a target metric's direction of improvement.
+ *
+ * Resolution order:
+ *   1. The v3 canonical metric registry (`getMetricRenderConfig`) — the
+ *      authoritative source when `target_metric` is a registered id
+ *      (`sg_putting`, `approach_proximity_50_125ft`, …).
+ *   2. The focus-area metric catalog (`findMetric`) — the legacy display-label
+ *      vocabulary ("Putts Per Round", "1-Putt %", …), by stable key OR label.
+ *   3. A keyword heuristic for genuinely unregistered / custom free text, with
+ *      the make-rate guard: "___ made ___" / "___ hit ___" / "___ accuracy" is
+ *      higher-is-better even when it contains a lower-is-better keyword
+ *      (`putts_made_5_10ft_pct` — making MORE putts is better).
+ *   4. `unknown` — no guess. Callers must degrade honestly rather than pick a
+ *      direction; {@link getProgressPercent} returns null so no bar renders.
+ */
+export function resolveMetricDirection(
+  targetMetric: string | null | undefined,
+): ResolvedMetricDirection {
+  if (!targetMetric) return 'unknown';
+
+  const v3Cfg = getMetricRenderConfig(targetMetric);
+  if (v3Cfg) return v3Cfg.direction === 'lower_better' ? 'lower' : 'higher';
+
+  const catalogEntry = findMetric(targetMetric);
+  if (catalogEntry) return catalogEntry.direction === 'lower' ? 'lower' : 'higher';
+
+  const m = targetMetric.toLowerCase();
+  if (/\bmade\b|\bhit\b|\baccuracy\b/.test(m)) return 'higher';
+  if (LOWER_IS_BETTER_KEYWORDS.some((kw) => m.includes(kw))) return 'lower';
+  return 'unknown';
+}
 
 /**
  * Whether a target metric is "lower is better" — a real direction lookup
@@ -319,17 +368,7 @@ export const LOWER_IS_BETTER_KEYWORDS = [
  *      when it contains a lower-is-better keyword.
  */
 export function isLowerIsBetter(targetMetric: string | null | undefined): boolean {
-  if (!targetMetric) return false;
-
-  const v3Cfg = getMetricRenderConfig(targetMetric);
-  if (v3Cfg) return v3Cfg.direction === 'lower_better';
-
-  const catalogEntry = findMetric(targetMetric);
-  if (catalogEntry) return catalogEntry.direction === 'lower';
-
-  const m = targetMetric.toLowerCase();
-  if (/\bmade\b|\bhit\b|\baccuracy\b/.test(m)) return false;
-  return LOWER_IS_BETTER_KEYWORDS.some((kw) => m.includes(kw));
+  return resolveMetricDirection(targetMetric) === 'lower';
 }
 
 /**
@@ -358,25 +397,56 @@ export function formatTargetMetricLabel(targetMetric: string | null | undefined)
 }
 
 /**
- * Compute progress % toward a focus-area target, honoring lower-is-better
- * metrics. VERBATIM port of my-development/page.tsx `getProgressPercent`:
- *   - missing/zero target → 0
- *   - lower-is-better: current ≤ target → 100; else round(target / current * 100)
- *   - higher-is-better: round(current / target * 100), clamped 0–100
+ * Progress along a focus area's journey: how far the player has travelled from
+ * where they STARTED toward the target, direction-aware, clamped 0–100.
+ *
+ * `null` means "we cannot honestly compute this — render no bar". Callers must
+ * handle it; there is no safe numeric fallback.
+ *
+ * This replaces the old `current / target` ratio (#1240), which was not a
+ * progress measure at all: a brand-new 61 → 66 fairways area opened at "92%
+ * there" before the player had swung a club, and completing the entire
+ * objective moved the bar only 8 points. The ratio also inverted outright for
+ * lower-is-better metrics whose direction could not be resolved (#1242) — a
+ * player at 28 ft against an 18 ft target rendered a full "100% there" bar.
+ *
+ * Returns null when:
+ *   - current / target / baseline is missing — no journey to measure. Goals
+ *     have shown the honest version of this for a while
+ *     (FairwayGoalCard "Not started — baseline captured").
+ *   - the metric's direction is unknown — see {@link resolveMetricDirection}.
+ *   - baseline === target — a zero-length journey; every value is both 0% and
+ *     100% of it.
+ *   - the target sits on the WRONG side of the baseline for the metric's
+ *     direction (e.g. a lower-is-better area whose target is higher than where
+ *     it started). That is bad data, not progress, and rendering a bar for it
+ *     would be a confident lie of exactly the kind #1242 was.
  */
 export function getProgressPercent(
-  current: number | null,
-  target: number | null,
+  current: number | null | undefined,
+  target: number | null | undefined,
   targetMetric?: string | null,
-): number {
-  if (current == null || target == null || target === 0) return 0;
+  baseline?: number | null,
+): number | null {
+  if (current == null || target == null || baseline == null) return null;
 
-  if (isLowerIsBetter(targetMetric)) {
-    if (current <= target) return 100;
-    return Math.round((target / current) * 100);
-  }
+  const direction = resolveMetricDirection(targetMetric);
+  if (direction === 'unknown') return null;
 
-  if (target < 0) return 0;
-  return Math.min(100, Math.round((current / target) * 100));
+  // Reaching the target is 100% regardless of where the journey started —
+  // checked BEFORE the span guards below, because a baseline stamped after the
+  // player had already passed the target (the driver's self-heal on a
+  // pre-existing area) puts the target on the "wrong" side of it. That is a
+  // satisfied objective, not bad data, and must not fall through to no-bar.
+  const met = direction === 'lower' ? current <= target : current >= target;
+  if (met) return 100;
+
+  const span = target - baseline;
+  if (span === 0) return null;
+  if (direction === 'lower' && span > 0) return null;
+  if (direction === 'higher' && span < 0) return null;
+
+  const travelled = current - baseline;
+  return Math.max(0, Math.min(100, Math.round((travelled / span) * 100)));
 }
 

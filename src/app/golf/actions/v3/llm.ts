@@ -12,7 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import {
   composeRoundReview,
   type RoundReviewActiveGoal,
@@ -24,6 +24,7 @@ import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
 import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
 
 export interface LlmRoundReviewActionResult {
   ok: boolean;
@@ -49,6 +50,17 @@ async function generateLlmRoundReviewImpl(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: 'Unauthorized' };
 
+    // DS-44 (rate): composeRoundReview is a billable LLM call and had no rate
+    // limit of its own. Cap per-user retries. The *spend* half of DS-44 is the
+    // billing-owner gate below — this limiter caps frequency, not cost.
+    const rateLimit = await gateUserAction(
+      'v3llm',
+      user.id,
+      LLM_COMPOSE_RATE_LIMIT,
+      'Too many round-review requests. Please wait a moment and try again.',
+    );
+    if (!rateLimit.allowed) return { ok: false, error: rateLimit.error };
+
     const { data: round } = await supabase
       .from('golf_rounds')
       .select(
@@ -67,28 +79,19 @@ async function generateLlmRoundReviewImpl(
       .maybeSingle();
     if (!player) return { ok: false, error: 'Player not found' };
 
-    // Resolve the billing coach — primary coach of the player's
-    // (first active) team. golf_players has no team_id; the join goes
-    // through golf_team_members. null = no coach to bill against, in
-    // which case compose() skips the budget gate but still logs.
-    let billing_coach_id: string | null = null;
-    const { data: membership } = await supabase
-      .from('golf_team_members')
-      .select('team_id')
-      .eq('player_id', round.player_id)
-      .eq('status', 'active')
-      .limit(1)
-      .maybeSingle();
-    if (membership?.team_id) {
-      const { data: staff } = await supabase
-        .from('golf_team_coach_staff')
-        .select('coach_id')
-        .eq('team_id', membership.team_id)
-        .eq('is_primary', true)
-        .limit(1)
-        .maybeSingle();
-      billing_coach_id = staff?.coach_id ?? null;
+    // DS-44 (spend): resolve who the call is billed to, and refuse to make it
+    // if nobody can be. See resolveBillingCoach() for why null must not reach
+    // compose().
+    const billing = await resolveBillingCoach(supabase, round.player_id);
+    if (billing.coach_id === null) {
+      return await refuseUnbilledCompose(
+        'v3.llm.generateLlmRoundReview',
+        billing.reason,
+        round.player_id,
+        fallback_summary,
+      );
     }
+    const billing_coach_id: string = billing.coach_id;
 
     // W27 — load narrative_goal so the LLM can adjust tone.
     const intentResult = await loadAlertPostureForPlayer(round.player_id);
@@ -183,6 +186,17 @@ async function generateHeroNarrativeImpl(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: 'Unauthorized' };
 
+    // DS-44 (rate): this is the sharper of the two primitives — almost the
+    // whole prompt is caller-supplied — so cap per-user frequency here and
+    // gate the spend on a resolvable billing owner below.
+    const rateLimit = await gateUserAction(
+      'v3llm',
+      user.id,
+      LLM_COMPOSE_RATE_LIMIT,
+      'Too many requests. Please wait a moment and try again.',
+    );
+    if (!rateLimit.allowed) return { ok: false, error: rateLimit.error };
+
     const { data: player } = await supabase
       .from('golf_players')
       .select('id, first_name')
@@ -190,26 +204,17 @@ async function generateHeroNarrativeImpl(
       .maybeSingle();
     if (!player) return { ok: false, error: 'Player not found' };
 
-    // Bill against the primary coach of the player's first active team
-    // (same resolution as round-review). null = no budget gate.
-    let billing_coach_id: string | null = null;
-    const { data: membership } = await supabase
-      .from('golf_team_members')
-      .select('team_id')
-      .eq('player_id', input.player_id)
-      .eq('status', 'active')
-      .limit(1)
-      .maybeSingle();
-    if (membership?.team_id) {
-      const { data: staff } = await supabase
-        .from('golf_team_coach_staff')
-        .select('coach_id')
-        .eq('team_id', membership.team_id)
-        .eq('is_primary', true)
-        .limit(1)
-        .maybeSingle();
-      billing_coach_id = staff?.coach_id ?? null;
+    // DS-44 (spend): same billing-owner gate as round-review.
+    const billing = await resolveBillingCoach(supabase, input.player_id);
+    if (billing.coach_id === null) {
+      return await refuseUnbilledCompose(
+        'v3.llm.generateHeroNarrative',
+        billing.reason,
+        input.player_id,
+        input.fallback_text,
+      );
     }
+    const billing_coach_id: string = billing.coach_id;
 
     // W27 — load narrative_goal so the LLM can adjust tone.
     const intentResult = await loadAlertPostureForPlayer(input.player_id);
@@ -255,6 +260,120 @@ const observedGenerateHeroNarrative = withAdminObserved(
 
 export async function generateHeroNarrative(input: HeroNarrativeInput): Promise<LlmHeroNarrativeActionResult> {
   return observedGenerateHeroNarrative(input);
+}
+
+// ---------------------------------------------------------------------------
+// Internal: billing-owner resolution + the fail-closed refusal (DS-44).
+//
+// THE HOLE THIS CLOSES. compose() enforces the daily budget only inside
+// `if (req.coach_id)` (src/lib/coachhelm/v3/llm/compose.ts) — a null coach_id
+// is treated as a trusted system job, skips checkBudget() AND recordSpend(),
+// and buys a completely unmetered model call. Both actions in this file used
+// to hand compose() whatever the primary-coach lookup returned, including
+// null, so any player the lookup could not attribute (no active team
+// membership, or an active team carrying no coach staff row) was an
+// uncapped-spend path. The per-user rate limiter added above bounds how OFTEN
+// that happens; it does not bound the bill, because the bill is per-call and
+// the limiter has no notion of dollars.
+//
+// The fix is in this file rather than in compose(), because compose() is
+// shared with genuine system jobs that legitimately pass coach_id=null, and
+// widening its gate would need a platform-level budget row that does not
+// exist. What IS correct here is that a player-initiated request always has
+// an owner or must not be served: we prefer the team's primary coach, accept
+// any coach on the same team as a defensible fallback owner (the spend is the
+// team's either way), and otherwise refuse.
+//
+// Measured on prod 2026-08-01: all 13 teams have a primary coach, so the
+// any-staff tier currently changes nothing and exists as defence in depth;
+// 10 of 61 players have no active membership and are exactly the callers that
+// were previously unmetered — they now get the deterministic template.
+// ---------------------------------------------------------------------------
+
+/** Why a player-initiated LLM call has no coach to bill. */
+type NoBillingOwnerReason = 'no_active_team' | 'no_team_coach';
+
+type BillingOwner =
+  | { coach_id: string }
+  | { coach_id: null; reason: NoBillingOwnerReason };
+
+async function resolveBillingCoach(
+  supabase: ServerSupabase,
+  playerId: string,
+): Promise<BillingOwner> {
+  // golf_players has no team_id; the join goes through golf_team_members.
+  const { data: membership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  if (!membership?.team_id) return { coach_id: null, reason: 'no_active_team' };
+
+  // Primary coach first, then any coach on the team. Ordered rather than
+  // filtered on is_primary so a team whose primary flag was never set still
+  // has an owner. The trailing keys make the choice deterministic — two calls
+  // for the same team must always debit the same budget row, otherwise the
+  // per-coach daily cap is trivially doubled by alternating owners.
+  const { data: staff } = await supabase
+    .from('golf_team_coach_staff')
+    .select('coach_id')
+    .eq('team_id', membership.team_id)
+    .order('is_primary', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: true, nullsFirst: false })
+    .order('coach_id', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!staff?.coach_id) return { coach_id: null, reason: 'no_team_coach' };
+  return { coach_id: staff.coach_id };
+}
+
+/**
+ * Refuse an LLM call that nobody can be billed for.
+ *
+ * Returns the caller's deterministic template in exactly the shape compose()
+ * returns on budget exhaustion (`ok`, `used_llm:false`, `citations_verified:
+ * false`, `cost_usd: 0`), so every existing consumer degrades down the path it
+ * already handles — HeroNarrativeCard, for one, only swaps in prose when
+ * `ok && used_llm && citations_verified`, so this renders the fallback with no
+ * error state. No model call is made.
+ */
+async function refuseUnbilledCompose(
+  action: string,
+  reason: NoBillingOwnerReason,
+  playerId: string,
+  fallbackText: string,
+): Promise<{
+  ok: true;
+  text: string;
+  used_llm: false;
+  citations_verified: false;
+  cost_usd: 0;
+}> {
+  await logServerEvent(
+    `LLM compose refused: no billing coach for player_id=${playerId} (${reason}); served the deterministic template instead`,
+    {
+      action,
+      sport: 'golf',
+      feature: 'round_review_ai',
+      playerId,
+      errorCode: `llm_unbilled_${reason}`,
+      // Routine handled degradation, not a bug: the player still gets real
+      // prose. Keep it in the admin feed without opening a Sentry issue on
+      // every dashboard mount for the players this affects.
+      skipSentry: true,
+      extra: { reason },
+    },
+    'warning',
+  );
+  return {
+    ok: true,
+    text: fallbackText,
+    used_llm: false,
+    citations_verified: false,
+    cost_usd: 0,
+  };
 }
 
 // ---------------------------------------------------------------------------

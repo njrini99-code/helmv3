@@ -117,7 +117,9 @@ are unnecessary.
 
 ### Auth / using the app
 
-- Signup access-code gate default is `1881` (`SIGNUP_ACCESS_CODE`).
+- Signup access-code gate has **no committed default** — `SIGNUP_ACCESS_CODE`
+  must be set (locally and in Vercel) or shared-code signup is disabled and
+  only a coach's team join_code will get someone through the gate.
 - Local auth email confirmation is **disabled**, so signup logs you in
   immediately. The seed does NOT create `auth.users` — sign up via the app
   (coach = 3-step onboarding → `/golf/dashboard`; creates `golf_coaches` +

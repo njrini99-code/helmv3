@@ -28,6 +28,7 @@ import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
+import { verifySignupGate } from '@/lib/golf/signup-gate';
 
 export type LoginResult = {
   success: boolean;
@@ -39,6 +40,17 @@ export type LoginResult = {
 // Never hardcode credentials; the value is checked server-side only.
 const DEMO_ACCOUNT_EMAIL =
   (process.env.DEMO_ACCOUNT_EMAIL ?? 'demo@golfhelmdemo.com').toLowerCase().trim();
+
+// Per-(ip, email) password-reset limit — separate from RATE_LIMITS.PASSWORD_RESET
+// (which stays a stricter per-email-only bucket shared with baseball's auth
+// action). Sized with the same NAT headroom as RATE_LIMITS.DEMO_GATE in
+// lib/auth/rate-limit.ts: several teammates behind one campus egress IP must
+// each get their own budget, not share a single global counter.
+const PASSWORD_RESET_IP_LIMIT = {
+  maxAttempts: 10,
+  windowMs: 60 * 60 * 1000,
+  blockDurationMs: 60 * 60 * 1000,
+};
 
 /**
  * Sanitize a demo ref param: trim, cap at 80 chars, strip control characters.
@@ -302,6 +314,28 @@ async function signupActionImpl(
     };
   }
 
+  // B8-1: the access-code gate was enforced ONLY in the signup page's client
+  // component — nothing server-side ever re-checked it, so this action was
+  // directly POST-able and the gate was decorative. verifySignupGate re-runs
+  // the FULL check (global SIGNUP_ACCESS_CODE or a live golf_teams.join_code)
+  // against the grant the gate recorded, so a coach-invited player using only
+  // their team's join code still gets through exactly as before.
+  //
+  // Placed AFTER the IP rate limit deliberately: a miss falls through to a
+  // service-role join_code lookup, which must stay behind a throttle.
+  const gatePassed = await verifySignupGate();
+  if (!gatePassed) {
+    logSecurityEvent('Golf signup attempted without a valid access-code grant', 'warning', {
+      email: normalizedEmail,
+      ip,
+      sport: 'golf',
+    }).catch(() => {});
+    return {
+      success: false,
+      error: 'Your access code could not be verified. Please reload this page and enter your invite code again.',
+    };
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signUp({
@@ -332,6 +366,13 @@ async function signupActionImpl(
     }
 
     // Handle duplicate email
+    // DS: this branch is a deliberate account-existence oracle — an
+    // unauthenticated caller can learn whether an email is already
+    // registered. That's an intentional UX tradeoff (clear "sign in instead"
+    // guidance beats a vague generic error here) and is inconsistent with
+    // requestPasswordResetAction's always-generic response below on purpose,
+    // not by accident. Revisit only as a deliberate product decision, not a
+    // silent fix — see 2026-08-01 audit finding on signup enumeration.
     if (error.message.includes('already registered') || error.message.includes('already exists')) {
       return {
         success: false,
@@ -437,6 +478,32 @@ async function requestPasswordResetActionImpl(
 
   if (!rateLimit.allowed) {
     // Return generic message to prevent email enumeration
+    return {
+      success: true,
+      message: 'If an account exists with this email, a password reset link will be sent.',
+    };
+  }
+
+  // DS: this endpoint is unauthenticated and previously had no per-IP limit —
+  // the per-email bucket above bounds requests to ANY ONE address, but a
+  // single caller could still email-bomb an unbounded number of DIFFERENT
+  // addresses. Mirror loginAction/signupAction's IP-keyed check.
+  //
+  // Keyed on ip+email (not ip alone), sized like DEMO_GATE: college teams
+  // share one campus-wifi egress IP, so a plain ip-only bucket lets the
+  // 4th teammate to forget their password in an hour exhaust the whole
+  // team's budget and get told a reset link was sent when it wasn't. Keying
+  // on ip+email gives each teammate their own budget at that IP while still
+  // bounding how many times any single (ip, email) pair can be hammered.
+  const headersList = await headers();
+  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ipRateLimit = await checkRateLimit(
+    `password-reset:ip:${ip}:${normalizedEmail}`,
+    PASSWORD_RESET_IP_LIMIT,
+  );
+  if (!ipRateLimit.allowed) {
+    // Same generic response as the email-keyed branch above — don't reveal
+    // which limit tripped.
     return {
       success: true,
       message: 'If an account exists with this email, a password reset link will be sent.',

@@ -91,6 +91,19 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
+// Both payloads now gate the caller-supplied playerId / teamId with the shared
+// ownership helpers before reading anything. Those helpers have their own
+// suite (src/lib/auth/__tests__); here they are stubbed to "allowed" so these
+// specs keep testing payload shape, and the denial path is asserted explicitly.
+type MockVerifyResult = { allowed: boolean; reason: 'self' | 'coach' | 'denied' | 'unavailable' };
+const mockVerifyPlayerAccess = vi.fn(async (): Promise<MockVerifyResult> => ({ allowed: true, reason: 'self' }));
+const mockVerifyTeamAccess = vi.fn(async (): Promise<MockVerifyResult> => ({ allowed: true, reason: 'coach' }));
+
+vi.mock('@/lib/auth/verify-player-access', () => ({
+  verifyPlayerAccess: () => mockVerifyPlayerAccess(),
+  verifyTeamAccess: () => mockVerifyTeamAccess(),
+}));
+
 // ---------------------------------------------------------------------------
 // Import after mocks are set up
 // ---------------------------------------------------------------------------
@@ -195,6 +208,11 @@ describe('dashboard-data server actions', () => {
 
       expect(result.teamName).toBeNull();
       expect(result.joinCode).toBeNull();
+    });
+
+    it('refuses a teamId the caller does not staff', async () => {
+      mockVerifyTeamAccess.mockResolvedValueOnce({ allowed: false, reason: 'denied' });
+      await expect(getCoachDashboardData('coach-1', 'user-1', 'someone-elses-team')).rejects.toThrow('Unauthorized');
     });
 
     it('satisfies CoachDashboardPayload type contract', async () => {
@@ -402,6 +420,11 @@ describe('dashboard-data server actions', () => {
 
       expect(result.todayEvents).toEqual([]);
       expect(result.teamName).toBeNull();
+    });
+
+    it('refuses a playerId the caller does not own or coach', async () => {
+      mockVerifyPlayerAccess.mockResolvedValueOnce({ allowed: false, reason: 'denied' });
+      await expect(getPlayerDashboardData('teammate-9', 'user-1', 'team-1')).rejects.toThrow('Unauthorized');
     });
 
     it('satisfies PlayerDashboardPayload type contract', async () => {

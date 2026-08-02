@@ -22,6 +22,21 @@ import type {
 import { extractAllFeatures } from '../features';
 
 /**
+ * The pattern types this miner OWNS in the shared `golf_patterns_v2` table.
+ *
+ * `createPattern` is only ever called with 'conditional', 'compound' and
+ * 'anomaly'. ShotPatternMiner writes 'contextual' rows to the same table, so
+ * the stale-supersede in `savePatterns` must be scoped to this set — otherwise
+ * a round-level mine deactivates shot-dispersion patterns it never produced
+ * and cannot re-add.
+ */
+const SUPERSEDABLE_PATTERN_TYPES: readonly PatternType[] = [
+  'conditional',
+  'compound',
+  'anomaly',
+];
+
+/**
  * Build a stable signature for a pattern from its inputs. The signature is
  * deterministic across runs for the same player + same conditions + same
  * outcome metric, so re-running the miner produces the same ID and upserts
@@ -1115,6 +1130,14 @@ export class PatternMiner {
           .in('player_id', playerIds)
           .eq('is_active', true)
           .not('id', 'in', idList)
+          // Scope the supersede to the pattern types THIS miner owns.
+          // golf_patterns_v2 is shared: ShotPatternMiner writes
+          // pattern_type='contextual' rows (shot-pattern-miner.ts) that this
+          // batch can never contain, so without this predicate every
+          // round-level savePatterns() retired that player's shot-dispersion
+          // patterns as "stale". Keep in sync with createPattern's callers —
+          // this miner only ever emits conditional/compound/anomaly.
+          .in('pattern_type', SUPERSEDABLE_PATTERN_TYPES)
           // Keep coach-curated patterns visible; only retire auto-detected ones
           // (NULL or non-preserved lifecycle_state).
           .or('lifecycle_state.is.null,lifecycle_state.not.in.(confirmed,addressed,resolved,dismissed)');

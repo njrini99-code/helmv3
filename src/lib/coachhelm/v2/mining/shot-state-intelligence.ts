@@ -168,8 +168,6 @@ const AFTER_BUCKETS: DistanceBucket[] = [
   { min: 120, max: 600, label: '120y+' },
 ];
 
-const MIN_PLAYER_CONTEXT_SAMPLE = 5;
-const MIN_GLOBAL_CONTEXT_SAMPLE = 12;
 const MIN_MISS_SECTOR_SAMPLE = 3;
 const MIN_LIE_COMPARISON_SAMPLE = 4;
 
@@ -389,15 +387,22 @@ export class ShotStateIntelligence {
       return null;
     }
 
-    const globalContexts = this.aggregateByContext(states.filter((state) => state.shotType !== 'putting'));
     const playerContexts = this.aggregateByContext(playerStates);
-    const globalMissSectors = this.aggregateByMissSector(
-      states.filter((state) => state.shotType !== 'putting'),
-    );
+    // Miss sectors are a WITHIN-player comparison (this player's left misses vs
+    // their own right misses), so `playerStates` is the correct and only input.
+    const missSectors = this.aggregateByMissSector(playerStates);
 
     const insights = [
-      ...this.generateStateLeakInsights(playerContexts, globalContexts, playerRounds),
-      ...this.generateDangerSideInsights(globalMissSectors, playerRounds),
+      // NOTE (state_leak removed): there used to be a third generator here that
+      // compared each player context against a "global" baseline. After LIVE-18
+      // scoped loadShotStates() to `.eq('player_id', this.playerId)`, that
+      // baseline was built from the SAME rows as the player side, so every
+      // delta was exactly 0 and the generator returned [] for 100% of players —
+      // dead weight that read as a shipped insight type. Restoring it requires a
+      // genuinely cross-player cohort aggregate (precomputed, not per-tenant
+      // rows) passed in from outside this class; `ShotStateInsight['type']`
+      // still carries 'state_leak' so that work needs no type change.
+      ...this.generateDangerSideInsights(missSectors, playerRounds),
       ...this.generateLiePenaltyInsights(playerContexts, playerRounds),
     ]
       .sort((a, b) => b.strokeImpact - a.strokeImpact || b.confidence - a.confidence)
@@ -620,49 +625,6 @@ export class ShotStateIntelligence {
     }
 
     return map;
-  }
-
-  private generateStateLeakInsights(
-    playerContexts: Map<string, AggregateAccumulator>,
-    globalContexts: Map<string, AggregateAccumulator>,
-    playerRounds: number
-  ): ShotStateInsight[] {
-    const insights: ShotStateInsight[] = [];
-
-    for (const [key, playerAcc] of playerContexts) {
-      const globalAcc = globalContexts.get(key);
-      if (!globalAcc) continue;
-
-      const playerAgg = toAggregate(playerAcc);
-      const globalAgg = toAggregate(globalAcc);
-      if (playerAgg.sampleSize < MIN_PLAYER_CONTEXT_SAMPLE || globalAgg.sampleSize < MIN_GLOBAL_CONTEXT_SAMPLE) {
-        continue;
-      }
-
-      const deltaRemaining = playerAgg.avgRemainingAfter - globalAgg.avgRemainingAfter;
-      const deltaAfterYards = playerAgg.avgAfterYards - globalAgg.avgAfterYards;
-      if (deltaRemaining < 0.22 && deltaAfterYards < 8) continue;
-
-      const roundsFrequency = playerAgg.sampleSize / Math.max(1, playerRounds);
-      const strokeImpact = Math.max(0, deltaRemaining * roundsFrequency);
-
-      insights.push({
-        id: `state-leak-${key}`,
-        type: 'state_leak',
-        headline: `${contextLabelFromKey(key)} are leaking scoring`,
-        body: `${contextLabelFromKey(key)} finish ${formatYards(deltaAfterYards)} farther away than baseline and leave ${formatShots(deltaRemaining)} more to finish after each shot.`,
-        recommendation: `Treat ${contextLabelFromKey(key)} as a dedicated development window. The priority is reducing finish distance and avoiding the finish states that push this shot into extra cleanup work.`,
-        evidence: [
-          `Player avg after: ${formatYards(playerAgg.avgAfterYards)} vs baseline ${formatYards(globalAgg.avgAfterYards)}`,
-          `Player avg remaining: ${formatShots(playerAgg.avgRemainingAfter)} vs baseline ${formatShots(globalAgg.avgRemainingAfter)}`,
-          `Sample: ${playerAgg.sampleSize} shots across ${playerAgg.roundsCovered} rounds`,
-        ],
-        confidence: sampleConfidence(playerAgg.sampleSize, playerAgg.roundsCovered),
-        strokeImpact,
-      });
-    }
-
-    return insights;
   }
 
   private generateDangerSideInsights(

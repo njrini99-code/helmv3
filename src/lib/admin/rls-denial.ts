@@ -1,4 +1,12 @@
-import { logServerEvent } from '@/lib/server-error-logger';
+// NOTE: '@/lib/server-error-logger' is imported LAZILY, inside a
+// `typeof window === 'undefined'` guard, rather than statically at the top of
+// this module. That module is `server-only` (it writes via the service-role
+// admin client), but this file is reached from client components through
+// fetch-all-rows.ts -> use-calendar-range-events.ts / use-task-realtime.ts. A
+// static import therefore pulled server-only code — plus createAdminClient and
+// node:async_hooks — into the client graph and hard-failed the build.
+// Client-side logging was never functional anyway: createAdminClient needs
+// SUPABASE_SERVICE_ROLE_KEY, which does not exist in the browser.
 import { featureForTable, type FeatureKey } from '@/lib/admin/feature-registry';
 
 /**
@@ -72,11 +80,43 @@ function trackDenialStorm(key: string): boolean {
 }
 
 /**
+ * In-flight capture writes.
+ *
+ * The logger is imported lazily (see the note at the top of this file), so a
+ * capture completes a microtask or two AFTER `maybeCaptureRlsDenial` has
+ * already returned. The boolean return has to stay synchronous — every call
+ * site uses it to gate its own logging in a sync branch — so the promise is
+ * parked here instead of thrown away.
+ *
+ * That gives two things a bare `void import(...)` could not:
+ *   - `flushRlsDenialLogs()` for callers that CAN wait (a route handler's
+ *     `after()`, a cron tick) and would rather not lose the denial to an
+ *     instance teardown;
+ *   - a deterministic await for tests, which previously asserted on the mock
+ *     before the dynamic import had resolved and saw zero calls.
+ */
+let pendingCaptures: Promise<void>[] = [];
+
+/**
+ * Awaits every capture started so far. Safe to call when none are pending.
+ * Not required for correctness — captures still complete on their own — but
+ * it is the difference between "probably logged" and "logged".
+ */
+export async function flushRlsDenialLogs(): Promise<void> {
+  const inFlight = pendingCaptures;
+  pendingCaptures = [];
+  await Promise.allSettled(inFlight);
+}
+
+/**
  * Returns true when `error` was classified as an RLS denial (and a capture
  * was fired), false otherwise. Callers use this to gate their OWN generic
  * error logging — an RLS denial should produce exactly one admin_events
  * row (this capture), not one from here PLUS a second, generic one from
  * the caller. See savePartialRound in golf.ts for the canonical caller.
+ *
+ * The capture itself is asynchronous; await `flushRlsDenialLogs()` if you
+ * need it durably written before the current context can be torn down.
  */
 export function maybeCaptureRlsDenial(
   error: { code?: string | null; message?: string | null } | null | undefined,
@@ -95,23 +135,32 @@ export function maybeCaptureRlsDenial(
     const table = resolveDenialTable(ctx.table, error?.message);
     const feature = ctx.feature ?? featureForTable(table) ?? undefined;
     const isStorm = trackDenialStorm(`${table}:${ctx.verb}`);
-    void logServerEvent(
-      `RLS denial: ${ctx.verb} on ${table}`,
-      {
-        action: ctx.action,
-        source: 'rls_denial',
-        errorCode: error?.code ?? '42501',
-        userId: ctx.userId ?? null,
-        sport: ctx.sport,
-        feature: feature ?? null,
-        metadata: { table, verb: ctx.verb, message: error?.message ?? null },
-        tags: isStorm ? { rls_denial_storm: 'true' } : undefined,
-        // Routine denials stay admin-feed-only; a storm crossing the
-        // threshold escalates to a real Sentry issue at 'error' severity.
-        skipSentry: !isStorm,
-      },
-      isStorm ? 'error' : 'warning',
-    ).catch(() => {});
+    if (typeof window === 'undefined') {
+      pendingCaptures.push(
+        import('@/lib/server-error-logger')
+        .then(({ logServerEvent }) =>
+          logServerEvent(
+            `RLS denial: ${ctx.verb} on ${table}`,
+            {
+              action: ctx.action,
+              source: 'rls_denial',
+              errorCode: error?.code ?? '42501',
+              userId: ctx.userId ?? null,
+              sport: ctx.sport,
+              feature: feature ?? null,
+              metadata: { table, verb: ctx.verb, message: error?.message ?? null },
+              tags: isStorm ? { rls_denial_storm: 'true' } : undefined,
+              // Routine denials stay admin-feed-only; a storm crossing the
+              // threshold escalates to a real Sentry issue at 'error' severity.
+              skipSentry: !isStorm,
+            },
+            isStorm ? 'error' : 'warning',
+          ),
+        )
+          .then(() => undefined)
+          .catch(() => {}),
+      );
+    }
   } catch {
     // Never break the caller.
   }

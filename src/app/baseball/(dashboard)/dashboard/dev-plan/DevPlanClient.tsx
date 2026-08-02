@@ -62,9 +62,8 @@ import {
   getActiveDevPlan,
   completeGoalAsPlayer,
   uncompleteGoalAsPlayer,
-  type DevelopmentalPlanWithGoals,
-  type DevPlanGoal,
 } from '@/app/baseball/actions/dev-plans';
+import type { DevelopmentalPlanWithGoals, DevPlanGoal } from '@/lib/baseball/dev-plan-types';
 
 // Parses a date-only 'YYYY-MM-DD' string as LOCAL midnight (not UTC midnight),
 // avoiding the off-by-one that `new Date('YYYY-MM-DD')` + setHours(0,0,0,0)

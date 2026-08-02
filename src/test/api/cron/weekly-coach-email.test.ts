@@ -225,11 +225,11 @@ describe('GET /api/cron/v3/weekly-coach-email — opt-out gate', () => {
     expect(body.skipped_opted_out).toBe(0);
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
     expect(sendEmailMock.mock.calls[0]?.[0]?.to).toBe('c1@example.com');
-    // Idempotency: weekly-coach-email:<coachId>:<isoWeekStartKey>, so a
-    // retry within the same ISO week dedupes via Resend's Idempotency-Key
-    // instead of re-emailing the coach.
+    // Idempotency: weekly-coach-email:<coachId>:<teamId>:<isoWeekStartKey>,
+    // so a retry within the same ISO week dedupes via Resend's
+    // Idempotency-Key instead of re-emailing the coach.
     expect(sendEmailMock.mock.calls[0]?.[0]?.idempotencyKey).toMatch(
-      /^weekly-coach-email:c1:\d{4}-\d{2}-\d{2}$/,
+      /^weekly-coach-email:c1:t1:\d{4}-\d{2}-\d{2}$/,
     );
   });
 
@@ -269,9 +269,9 @@ describe('GET /api/cron/v3/weekly-coach-email — opt-out gate', () => {
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
     expect(sendEmailMock.mock.calls[0]?.[0]?.to).toBe('c2@example.com');
     // The opted-out coach (c1) never reaches sendEmail at all, so the only
-    // call's idempotencyKey must key off the opted-in coach (c2).
+    // call's idempotencyKey must key off the opted-in coach (c2) and its team.
     expect(sendEmailMock.mock.calls[0]?.[0]?.idempotencyKey).toMatch(
-      /^weekly-coach-email:c2:\d{4}-\d{2}-\d{2}$/,
+      /^weekly-coach-email:c2:t2:\d{4}-\d{2}-\d{2}$/,
     );
   });
 });

@@ -32,10 +32,11 @@ import {
   TextArea,
   RadioGroup,
   Checkbox,
+  Select,
   fairwayToast,
 } from '@/components/fairway';
 import { IconCheck } from '@/components/icons';
-import { createTask, setTaskReminder } from '@/app/golf/actions/tasks';
+import { createTask, createRecurringTask, setTaskReminder } from '@/app/golf/actions/tasks';
 import type { FairwayTaskPlayer } from './FairwayTasks';
 
 export interface FairwayCreateTaskModalProps {
@@ -50,6 +51,15 @@ export interface FairwayCreateTaskModalProps {
    * misleading "No players on the roster yet", and avoids a silent 0-player create.
    */
   playersError?: boolean;
+  /**
+   * Categories already in use on this team's tasks. A task created here used to
+   * land with category = NULL — matching NO category chip and silently
+   * disappearing whenever a coach filtered — because only template-instantiated
+   * tasks ever carried one. Offering the team's existing set (rather than a
+   * hardcoded taxonomy) keeps this consistent with the filter bar, which is
+   * likewise derived from real data.
+   */
+  categories?: string[];
 }
 
 type AssignMode = 'all' | 'specific';
@@ -93,6 +103,8 @@ export function isTaskFormDirty(fields: {
   description: string;
   dueDate: string;
   reminderAt: string;
+  category: string;
+  repeatFreq: string;
   assignMode: AssignMode;
   selectedPlayers: string[];
 }): boolean {
@@ -101,6 +113,8 @@ export function isTaskFormDirty(fields: {
     fields.description.trim() !== '' ||
     fields.dueDate !== '' ||
     fields.reminderAt !== '' ||
+    fields.category !== '' ||
+    fields.repeatFreq !== '' ||
     fields.assignMode !== 'all' ||
     fields.selectedPlayers.length > 0
   );
@@ -113,11 +127,17 @@ export function FairwayCreateTaskModal({
   teamId,
   players,
   playersError = false,
+  categories = [],
 }: FairwayCreateTaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [reminderAt, setReminderAt] = useState('');
+  const [category, setCategory] = useState('');
+  // #1238 — repeat. '' means a one-off task (the default), so the whole
+  // recurring path stays opt-in and every existing flow is untouched.
+  const [repeatFreq, setRepeatFreq] = useState('');
+  const [repeatUntil, setRepeatUntil] = useState('');
   const [assignMode, setAssignMode] = useState<AssignMode>('all');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -141,12 +161,15 @@ export function FairwayCreateTaskModal({
   // clean (untouched) form still closes immediately.
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
-  const isDirty = isTaskFormDirty({ title, description, dueDate, reminderAt, assignMode, selectedPlayers });
+  const isDirty = isTaskFormDirty({ title, description, dueDate, reminderAt, category, repeatFreq, assignMode, selectedPlayers });
 
   function reset() {
     setTitle('');
     setDescription('');
     setDueDate('');
+    setCategory('');
+    setRepeatFreq('');
+    setRepeatUntil('');
     setReminderAt('');
     setAssignMode('all');
     setSelectedPlayers([]);
@@ -211,11 +234,61 @@ export function FairwayCreateTaskModal({
       return;
     }
 
+    // A series is anchored on its first occurrence, so a repeat without a due
+    // date has nothing to repeat FROM. Block it here with a plain sentence
+    // rather than letting the server reject it after a round trip.
+    if (repeatFreq && !dueDate) {
+      setError('Pick a due date — a repeating task needs a first date to repeat from.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       const assignIds = assignMode === 'all' ? players.map((p) => p.id) : selectedPlayers;
+
+      // #1238 — a repeating task goes down the series path instead. It needs a
+      // due date to anchor the series, which the guard above already required
+      // when a repeat is chosen.
+      if (repeatFreq) {
+        const seriesResult = await createRecurringTask({
+          teamId,
+          title: title.trim(),
+          description: description.trim() || undefined,
+          startDate: dueDate,
+          recurrence: {
+            frequency: repeatFreq as 'daily' | 'weekly' | 'biweekly' | 'monthly',
+            ...(repeatUntil ? { until: repeatUntil } : {}),
+          },
+          category: category || undefined,
+          assignToPlayerIds: assignIds,
+          // Reuse the same reminder the one-off path offers, applied to each
+          // occurrence's own due date rather than shared across the series.
+          ...(reminderAt
+            ? {
+                reminderTime: reminderAt.slice(11, 16),
+                timezoneOffset: new Date().getTimezoneOffset(),
+              }
+            : {}),
+        });
+
+        if (!seriesResult.success || !seriesResult.data) {
+          setError(seriesResult.error ?? 'Failed to create the recurring task.');
+          setLoading(false);
+          return;
+        }
+
+        fairwayToast.success(
+          `Created ${seriesResult.data.occurrenceCount} ${
+            seriesResult.data.occurrenceCount === 1 ? 'task' : 'tasks'
+          } and assigned them.`,
+        );
+        reset();
+        await onTaskCreated();
+        onClose();
+        return;
+      }
 
       const result = await createTask(
         teamId,
@@ -224,6 +297,7 @@ export function FairwayCreateTaskModal({
         dueDate || undefined,
         undefined, // priority — defaults to 'normal' (legacy parity)
         assignIds,
+        category || undefined,
       );
 
       if (!result.success || !result.data) {
@@ -335,6 +409,64 @@ export function FairwayCreateTaskModal({
                   onChange={(e) => setReminderAt(e.target.value)}
                 />
               </FormField>
+            </div>
+
+            {/* Only offered once the team actually has categories to pick from —
+                inventing a taxonomy here would not match the filter bar, which
+                is derived from real task data. */}
+            {categories.length > 0 && (
+              <FormField
+                label="Category"
+                showOptional
+                help="Groups this task under the category filters."
+              >
+                <Select
+                  name="category"
+                  value={category}
+                  onValueChange={(v) => setCategory((v as string) ?? '')}
+                  options={[
+                    { label: 'No category', value: '' },
+                    ...categories.map((cat) => ({ label: cat, value: cat })),
+                  ]}
+                />
+              </FormField>
+            )}
+
+            {/* #1238 — repeat. Defaults to "Does not repeat", so nothing about
+                the one-off flow changes unless a coach opts in. */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <FormField
+                label="Repeat"
+                showOptional
+                help={repeatFreq ? 'Creates one task per occurrence.' : undefined}
+              >
+                <Select
+                  name="repeatFreq"
+                  value={repeatFreq}
+                  onValueChange={(v) => setRepeatFreq((v as string) ?? '')}
+                  options={[
+                    { label: 'Does not repeat', value: '' },
+                    { label: 'Daily', value: 'daily' },
+                    { label: 'Weekly', value: 'weekly' },
+                    { label: 'Every 2 weeks', value: 'biweekly' },
+                    { label: 'Monthly', value: 'monthly' },
+                  ]}
+                />
+              </FormField>
+              {repeatFreq && (
+                <FormField
+                  label="Repeat until"
+                  showOptional
+                  help="Leave blank for the next 52 occurrences."
+                >
+                  <Input
+                    type="date"
+                    name="repeatUntil"
+                    value={repeatUntil}
+                    onChange={(e) => setRepeatUntil(e.target.value)}
+                  />
+                </FormField>
+              )}
             </div>
 
             {/* Assignment */}

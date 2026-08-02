@@ -269,17 +269,31 @@ async function runCompleteCoachOnboardingCore(
 
 // ─── Complete Coach Onboarding (authenticated users) ────────────────────────
 
+/**
+ * IDENTITY IS NEVER TAKEN FROM THE WIRE.
+ *
+ * This file is `'use server'`, so every exported async function is a public,
+ * directly-POSTable endpoint keyed by its action id — and Next.js applies NO
+ * runtime type check to call-time arguments. An earlier revision accepted an
+ * optional `_preVerifiedUser: User` second parameter as a round-trip
+ * optimisation for the signup path; because the export is reachable from the
+ * client reference manifest (the coach-onboarding page imports it), that
+ * parameter was fully attacker-supplied. Passing a forged `{ id, email }`
+ * skipped `withBaseballAction` entirely and drove service-role INSERTs
+ * (organizations / baseball_coaches / baseball_teams / baseball_team_coach_staff
+ * with every can_* true) plus a `users.role -> 'coach'` flip, all keyed on the
+ * forged id.
+ *
+ * The parameter is gone. The exported action ALWAYS routes through
+ * `completeCoachOnboardingAction`, which resolves `ctx.user` server-side. The
+ * two in-module callers that genuinely hold a verified `User`
+ * (`signupAndCompleteCoachOnboardingImpl`) call the private
+ * `runCompleteCoachOnboardingCore` directly — that path is not exported and so
+ * has no action id.
+ */
 export async function completeCoachOnboarding(
   data: CoachOnboardingInput,
-  // Optional: pass pre-verified user from signupAndCompleteCoachOnboarding
-  // to avoid a redundant getUser() round-trip when the session cookie is not
-  // yet readable in the same request.
-  _preVerifiedUser?: User,
 ): Promise<OnboardingResult> {
-  if (_preVerifiedUser) {
-    return runCompleteCoachOnboardingCore(_preVerifiedUser, data);
-  }
-
   try {
     return await completeCoachOnboardingAction(data);
   } catch (error) {
@@ -405,18 +419,20 @@ async function signupAndCompleteCoachOnboardingImpl(data: {
 
       if (ownerUser) {
         console.info('[Onboarding] Email already registered — completing onboarding for verified owner:', ownerUser.id);
-        return completeCoachOnboarding(
-          {
-            coachType,
-            schoolName,
-            division: data.division,
-            city: data.city,
-            state: data.state,
-            fullName,
-            title: data.title,
-          },
-          ownerUser
-        );
+        // ownerUser was just proven to own this account (getUser() match or a
+        // successful signInWithPassword above), so call the private core
+        // directly rather than re-entering the exported action — see the
+        // "IDENTITY IS NEVER TAKEN FROM THE WIRE" note on
+        // completeCoachOnboarding.
+        return runCompleteCoachOnboardingCore(ownerUser, {
+          coachType,
+          schoolName,
+          division: data.division,
+          city: data.city,
+          state: data.state,
+          fullName,
+          title: data.title,
+        });
       }
 
       // Caller could not prove ownership of the existing account.
@@ -440,19 +456,18 @@ async function signupAndCompleteCoachOnboardingImpl(data: {
     ip,
   });
 
-  // Pass the pre-verified user directly — no second getUser() round-trip needed
-  return completeCoachOnboarding(
-    {
-      coachType,
-      schoolName,
-      division: data.division,
-      city: data.city,
-      state: data.state,
-      fullName,
-      title: data.title,
-    },
-    authData.user
-  );
+  // authData.user comes straight from this request's own supabase.auth.signUp
+  // — it is server-resolved, not client-supplied — so the private core runs
+  // directly and no second getUser() round-trip is needed.
+  return runCompleteCoachOnboardingCore(authData.user, {
+    coachType,
+    schoolName,
+    division: data.division,
+    city: data.city,
+    state: data.state,
+    fullName,
+    title: data.title,
+  });
 }
 
 // ─── Complete Signup (for OAuth users who need role selection) ───────────────
@@ -577,17 +592,86 @@ const completeBaseballSignupCoachAction = withBaseballAction(
     }
 
     const admin = createAdminClient();
-    const { error: coachError } = await admin.from('baseball_coaches').insert({
-      user_id: ctx.user.id,
-      coach_type: coachType,
-      full_name: ctx.user.user_metadata?.full_name || userEmail.split('@')[0] || 'Coach',
-      email: userEmail,
-      onboarding_completed: false,
-    });
+    const fullName = ctx.user.user_metadata?.full_name || userEmail.split('@')[0] || 'Coach';
 
-    if (coachError) {
+    // Create organization (required for team + staff + lifting setup)
+    const { data: org, error: orgError } = await admin
+      .from('organizations')
+      .insert({
+        name: `${fullName}'s Program`,
+        type: coachType,
+      })
+      .select('id')
+      .single();
+
+    if (orgError) {
+      await logServerError(`[Onboarding] Failed to create organization: ${describeDbError(orgError)}`, { action: 'onboarding.completeBaseballSignup' });
+      return { success: false, error: 'Unable to set up your program. Please try again.' };
+    }
+
+    // Create coach profile WITH organization_id (critical for lifting setup)
+    const { data: coachRow, error: coachError } = await admin
+      .from('baseball_coaches')
+      .insert({
+        user_id: ctx.user.id,
+        coach_type: coachType,
+        organization_id: org.id,
+        full_name: fullName,
+        email: userEmail,
+        onboarding_completed: false,
+      })
+      .select('id')
+      .single();
+
+    if (coachError || !coachRow) {
       await logServerError(`[Onboarding] Failed to create coach profile: ${describeDbError(coachError)}`, { action: 'onboarding.completeBaseballSignup' });
       return { success: false, error: 'Unable to create your profile. Please try again.' };
+    }
+
+    // Create team (required for lifting setup)
+    const joinCode = generateJoinCode();
+    const { data: teamRow, error: teamError } = await admin
+      .from('baseball_teams')
+      .insert({
+        name: `${fullName}'s Team`,
+        team_type: coachType,
+        organization_id: org.id,
+        join_code: joinCode,
+        created_by: coachRow.id,
+      })
+      .select('id')
+      .single();
+
+    if (teamError || !teamRow) {
+      await logServerError(`[Onboarding] Failed to create team (non-fatal): ${describeDbError(teamError)}`, { action: 'onboarding.completeBaseballSignup' });
+    } else {
+      // Link coach to team
+      const { error: staffError } = await admin
+        .from('baseball_team_coach_staff')
+        .insert({
+          team_id: teamRow.id,
+          coach_id: coachRow.id,
+          role: 'head_coach',
+          is_head_coach: true,
+          is_primary: true,
+          status: 'active',
+          title: 'Head Coach',
+          can_manage_roster: true,
+          can_manage_practice: true,
+          can_manage_lifting: true,
+          can_view_academics: true,
+          can_manage_imports: true,
+          can_manage_stats: true,
+          can_invite_staff: true,
+          can_manage_settings: true,
+          can_view_medical: true,
+          can_message_team: true,
+          can_manage_calendar: true,
+        });
+
+      if (staffError) {
+        await logServerError(`[Onboarding] Failed to staff-link coach to team (non-fatal): ${describeDbError(staffError)}`, { action: 'onboarding.completeBaseballSignup' });
+      }
     }
 
     revalidatePath('/baseball');

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { gateUserAction, VISION_EXTRACT_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import {
@@ -67,6 +68,21 @@ async function extractClassesFromScheduleImageImpl(
       success: false,
       error: 'That image is too large to process. Please upload an image under 12MB.',
     };
+  }
+
+  // DS-06: auth was the only gate on the one call in the app that runs a vision
+  // model over ~12MB of images — twice per invocation (reconcileDays does a
+  // second pass). recordVisionSpend only logs after the fact and never blocks,
+  // so an authenticated caller (including the shared demo account) could loop
+  // this and burn model spend. Hourly per-user cap, before any model call.
+  const gate = await gateUserAction(
+    'schedule_vision',
+    user.id,
+    VISION_EXTRACT_RATE_LIMIT,
+    'Too many schedule uploads. Please try again later.',
+  );
+  if (!gate.allowed) {
+    return { success: false, error: gate.error };
   }
 
   try {

@@ -23,6 +23,7 @@ import type { Database } from '@/lib/types/database';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
+import { bootstrapFromDb, calibrateConfidence } from '@/lib/coachhelm/v2/reasoning/confidence-calibrator';
 
 type Sb = SupabaseClient<Database>;
 
@@ -271,6 +272,43 @@ export function scoreInsight(
   return composite;
 }
 
+/**
+ * Async version of scoreInsight that applies calibration to the confidence value.
+ * Loads calibration buckets from the database and applies them to correct the
+ * raw confidence before computing the rank score.
+ *
+ * This is the preferred entry point for new code. Falls back to raw confidence
+ * if calibration load fails.
+ */
+export async function scoreInsightWithCalibration(
+  insight: RankableInsight,
+  weights: CoachWeights,
+  sb: Sb,
+  activeGoals: Goal[] = [],
+): Promise<number> {
+  // Load calibration record for this insight type. The initializer IS the
+  // fallback: if bootstrapFromDb throws, we keep the raw confidence. The catch
+  // used to re-assign that same value, which made the initializer dead code
+  // (CodeQL "useless assignment to local variable", alert 549) and forced an
+  // unused `_err` binding past the no-unused-vars lint.
+  let calibratedConfidence = insight.confidence;
+  try {
+    const record = await bootstrapFromDb(sb, insight.insight_type);
+    // Apply calibration to the raw confidence value
+    calibratedConfidence = calibrateConfidence(insight.confidence, record);
+  } catch {
+    // Calibration unavailable — keep the raw confidence assigned above.
+  }
+
+  // Compute score with calibrated confidence
+  const insightWithCalibratedConfidence: RankableInsight = {
+    ...insight,
+    confidence: calibratedConfidence,
+  };
+
+  return scoreInsight(insightWithCalibratedConfidence, weights, activeGoals);
+}
+
 /** Sort descending by score. Stable — equal scores preserve input order. */
 export function rankInsights<T extends RankableInsight>(
   insights: T[],
@@ -325,3 +363,4 @@ export async function loadCoachWeightsForPlayer(
   }
   return weights;
 }
+

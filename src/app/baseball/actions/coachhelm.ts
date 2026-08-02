@@ -36,7 +36,10 @@ import {
   type BaseballEngineRunResult,
 } from '@/lib/baseball/coachhelm/engine-run';
 
-export type { BaseballEngineRunResult } from '@/lib/baseball/coachhelm/engine-run';
+// (No `export type { … }` here: in a 'use server' module the transform
+// registers each specifier as a server action and the emitted code then
+// references a type at runtime, breaking every action in the file.
+// Import BaseballEngineRunResult from '@/lib/baseball/coachhelm/engine-run'.)
 
 // -----------------------------------------------------------------------------
 // runBaseballEngine — generate + persist insights for the active team.

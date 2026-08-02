@@ -179,7 +179,7 @@ async function tick(): Promise<{
   // 2. Process each enrollment in parallel; one failure shouldn't block the
   // batch.
   const settled = await Promise.allSettled(
-    enrollments.map((e) => processEnrollment(client, e)),
+    enrollments.map((e) => processEnrollment(client, e, nowIso)),
   );
 
   let rejected = 0;
@@ -225,12 +225,16 @@ async function processEnrollment(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any,
   enrollment: EnrollmentRow,
+  nowIso: string,
 ): Promise<{ outcome: ProcessOutcome }> {
   // ── Guard: skip if the PARENT sequence is paused (is_active = false).
   // Enrollments are fetched purely by their own status='active' +
   // next_send_at — without this check, pausing a whole sequence via
   // updateSequence({is_active:false}) had no effect on the cron: every
-  // individual enrollment kept firing on schedule regardless. ──
+  // individual enrollment kept firing on schedule regardless.
+  // This read runs BEFORE the claim below so a paused sequence causes no
+  // writes at all. Claiming first would lease next_send_at forward on every
+  // tick for enrollments that are never going to send. ──
   const { data: seqRow, error: seqErr } = await client
     .from('crm_sequences')
     .select('is_active')
@@ -240,6 +244,31 @@ async function processEnrollment(
     throw new Error(`Failed to load parent sequence: ${seqErr.message}`);
   }
   if (seqRow && (seqRow as { is_active: boolean }).is_active === false) {
+    return { outcome: 'skipped' };
+  }
+
+  // ── Claim the enrollment before doing anything that sends (app-layer CAS,
+  // no schema change). The route has no lock on the selected rows, so two
+  // overlapping invocations of this cron would both see the same due row and
+  // both send + double-insert crm_contact_log. Lease next_send_at forward
+  // under the SAME predicate that selected it (status='active' AND
+  // next_send_at<=now) — a concurrent tick's conditional update then affects
+  // 0 rows and it backs off. Still ahead of every send path, so the race it
+  // closes stays closed. A durable fix is a partial unique index on
+  // crm_contact_log (see needsMigration); this closes the window without one.
+  const leaseIso = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  const { data: claimed, error: claimErr } = await client
+    .from('crm_sequence_enrollments')
+    .update({ next_send_at: leaseIso })
+    .eq('id', enrollment.id)
+    .eq('status', 'active')
+    .lte('next_send_at', nowIso)
+    .select('id');
+  if (claimErr) {
+    throw new Error(`Failed to claim enrollment: ${claimErr.message}`);
+  }
+  if (!claimed || claimed.length === 0) {
+    // Another concurrent tick already claimed (or completed/stopped) this row.
     return { outcome: 'skipped' };
   }
 

@@ -81,6 +81,12 @@ export interface SaveCoachingPhilosophyResult {
 }
 
 async function revalidateCoachingPhilosophyPathsImpl(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
   revalidatePath('/golf/dashboard/settings/coaching-intelligence');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/alerts');

@@ -31,7 +31,15 @@ const { upsertMock, supersedeChain, fromUntypedMock, adminFromMock } = vi.hoiste
 
     // Chainable builder double: .update().in().eq().not() return the builder,
     // .or() is the awaited terminal that resolves to { error }.
-    const supersedeChain: Record<string, ReturnType<typeof vi.fn>> = {};
+    interface SupersedeChain {
+      update: ReturnType<typeof vi.fn>;
+      in: ReturnType<typeof vi.fn>;
+      eq: ReturnType<typeof vi.fn>;
+      not: ReturnType<typeof vi.fn>;
+      or: ReturnType<typeof vi.fn>;
+      delete: ReturnType<typeof vi.fn>;
+    }
+    const supersedeChain = {} as SupersedeChain;
     supersedeChain.update = vi.fn(() => supersedeChain);
     supersedeChain.in = vi.fn(() => supersedeChain);
     supersedeChain.eq = vi.fn(() => supersedeChain);
@@ -93,6 +101,49 @@ function makePattern(i: number, overrides: Partial<MinedPattern> = {}): MinedPat
   };
 }
 
+type TableRow = {
+  id: string;
+  player_id: string;
+  pattern_type: string;
+  is_active: boolean;
+  lifecycle_state: string | null;
+};
+
+/**
+ * Replay the filters recorded on the chainable double against an in-memory
+ * table, so the assertion is "which rows would this UPDATE actually touch?"
+ * rather than a filter-string comparison that can stay green while the blast
+ * radius changes.
+ */
+function matchedBySupersede(row: TableRow): boolean {
+  const PRESERVED = new Set(['confirmed', 'addressed', 'resolved', 'dismissed']);
+
+  const inCalls = supersedeChain.in.mock.calls as unknown as Array<[string, string[]]>;
+  for (const [column, values] of inCalls) {
+    if (!values.includes(String(row[column as keyof TableRow]))) return false;
+  }
+
+  const eqCalls = supersedeChain.eq.mock.calls as unknown as Array<[string, unknown]>;
+  for (const [column, value] of eqCalls) {
+    if (row[column as keyof TableRow] !== value) return false;
+  }
+
+  const notCalls = supersedeChain.not.mock.calls as unknown as Array<[string, string, string]>;
+  for (const [column, operator, list] of notCalls) {
+    if (operator !== 'in') throw new Error(`unhandled not() operator: ${operator}`);
+    const excluded = list.slice(1, -1).split(',').map((value) => value.replace(/"/g, ''));
+    if (excluded.includes(String(row[column as keyof TableRow]))) return false;
+  }
+
+  // Exactly one .or(), the coach-curated lifecycle preservation asserted above.
+  if (supersedeChain.or.mock.calls.length !== 1) {
+    throw new Error(`expected exactly one or() filter, saw ${supersedeChain.or.mock.calls.length}`);
+  }
+  if (row.lifecycle_state !== null && PRESERVED.has(row.lifecycle_state)) return false;
+
+  return true;
+}
+
 describe('PatternMiner.savePatterns soft-supersede (stale-data fix)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,11 +165,44 @@ describe('PatternMiner.savePatterns soft-supersede (stale-data fix)', () => {
     expect(supersedeChain.eq).toHaveBeenCalledWith('is_active', true);
     // Exclude the ids we just upserted (quoted for the PostgREST in-list).
     expect(supersedeChain.not).toHaveBeenCalledWith('id', 'in', '("p-1","p-2")');
+    // Scoped to the pattern types THIS miner emits. golf_patterns_v2 is shared
+    // with ShotPatternMiner ('contextual'), whose rows can never appear in this
+    // batch and must not be retired by it.
+    expect(supersedeChain.in).toHaveBeenCalledWith('pattern_type', [
+      'conditional',
+      'compound',
+      'anomaly',
+    ]);
     // Preserve coach-curated lifecycle states; NULL handled explicitly so
     // three-valued logic doesn't leak detected rows back in.
     expect(supersedeChain.or).toHaveBeenCalledWith(
       'lifecycle_state.is.null,lifecycle_state.not.in.(confirmed,addressed,resolved,dismissed)',
     );
+  });
+
+  it("leaves ShotPatternMiner's contextual patterns active for the same player", async () => {
+    // golf_patterns_v2 is shared. ShotPatternMiner writes pattern_type
+    // 'contextual' rows with lifecycle_state defaulting to 'detected' — which
+    // is NOT in the preserved set — so before the pattern_type scope every
+    // round-level mine silently retired that player's shot-dispersion
+    // patterns, and nothing in the request could add them back.
+    const miner = new PatternMiner('player-1');
+    await (miner as unknown as SavePatterns).savePatterns([makePattern(1), makePattern(2)]);
+
+    const table: TableRow[] = [
+      // Freshly upserted by this run — excluded by the not-in id list.
+      { id: 'p-1', player_id: 'player-1', pattern_type: 'conditional', is_active: true, lifecycle_state: 'detected' },
+      // Genuinely stale round-level pattern — this is what the supersede is for.
+      { id: 'stale-1', player_id: 'player-1', pattern_type: 'anomaly', is_active: true, lifecycle_state: 'detected' },
+      // Another miner's row for the same player — must survive.
+      { id: 'shot-1', player_id: 'player-1', pattern_type: 'contextual', is_active: true, lifecycle_state: 'detected' },
+      // Coach-curated row — must survive (pre-existing contract).
+      { id: 'kept-1', player_id: 'player-1', pattern_type: 'compound', is_active: true, lifecycle_state: 'confirmed' },
+      // Different player — must survive.
+      { id: 'other-1', player_id: 'player-2', pattern_type: 'anomaly', is_active: true, lifecycle_state: null },
+    ];
+
+    expect(table.filter(matchedBySupersede).map((r) => r.id)).toEqual(['stale-1']);
   });
 
   it('does not issue a supersede when there are no patterns', async () => {

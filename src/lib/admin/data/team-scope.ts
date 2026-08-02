@@ -71,26 +71,37 @@ export async function resolveTeamUserIds(teamId: string): Promise<Set<string>> {
       .select('coach_id, baseball_coaches(user_id)')
       .eq('team_id', teamId),
   ]);
-  if (membersRes.error && coachesRes.error && baseballMembersRes.error && baseballCoachesRes.error) {
-    throw new Error(
-      `resolveTeamUserIds: golf members=${membersRes.error.message}; golf coaches=${coachesRes.error.message}; baseball members=${baseballMembersRes.error.message}; baseball coaches=${baseballCoachesRes.error.message}`,
-    );
+  // Throw if ANY sub-query errored, not only if all four did. Coercing one
+  // errored result to `[]` while the others succeed returns a set that is
+  // silently missing a whole slice of the team — a coaches-only "roster" with
+  // no error attached, which is exactly the lying-dashboard failure the header
+  // above exists to prevent. Callers already degrade safely on a throw
+  // (activity.ts:765 / entity-thread.ts:408 `.catch(() => new Set())`,
+  // team-detail.ts:383 inside try/catch), so an honest empty result replaces a
+  // silent undercount without opening a new crash path.
+  const failures: string[] = [];
+  if (membersRes.error) failures.push(`golf members=${membersRes.error.message}`);
+  if (coachesRes.error) failures.push(`golf coaches=${coachesRes.error.message}`);
+  if (baseballMembersRes.error) failures.push(`baseball members=${baseballMembersRes.error.message}`);
+  if (baseballCoachesRes.error) failures.push(`baseball coaches=${baseballCoachesRes.error.message}`);
+  if (failures.length > 0) {
+    throw new Error(`resolveTeamUserIds: ${failures.join('; ')}`);
   }
 
   const ids = new Set<string>();
-  for (const row of (membersRes.error ? [] : membersRes.data ?? []) as unknown as TeamMemberEmbedRow[]) {
+  for (const row of (membersRes.data ?? []) as unknown as TeamMemberEmbedRow[]) {
     const uid = row.golf_players?.user_id;
     if (uid) ids.add(uid);
   }
-  for (const row of (coachesRes.error ? [] : coachesRes.data ?? []) as unknown as TeamCoachEmbedRow[]) {
+  for (const row of (coachesRes.data ?? []) as unknown as TeamCoachEmbedRow[]) {
     const uid = row.golf_coaches?.user_id;
     if (uid) ids.add(uid);
   }
-  for (const row of (baseballMembersRes.error ? [] : baseballMembersRes.data ?? []) as unknown as BaseballTeamMemberEmbedRow[]) {
+  for (const row of (baseballMembersRes.data ?? []) as unknown as BaseballTeamMemberEmbedRow[]) {
     const uid = row.baseball_players?.user_id;
     if (uid) ids.add(uid);
   }
-  for (const row of (baseballCoachesRes.error ? [] : baseballCoachesRes.data ?? []) as unknown as BaseballTeamCoachEmbedRow[]) {
+  for (const row of (baseballCoachesRes.data ?? []) as unknown as BaseballTeamCoachEmbedRow[]) {
     const uid = row.baseball_coaches?.user_id;
     if (uid) ids.add(uid);
   }
@@ -113,11 +124,16 @@ export async function resolveTeamConversationIds(teamId: string): Promise<Set<st
       .eq('team_id', teamId)
       .limit(500),
   ]);
-  if (golfRes.error && baseballRes.error) {
-    throw new Error(`resolveTeamConversationIds: golf=${golfRes.error.message}; baseball=${baseballRes.error.message}`);
+  // Same rule as resolveTeamUserIds: one errored side must not be coerced to
+  // `[]` and merged into a set that looks complete.
+  const convFailures: string[] = [];
+  if (golfRes.error) convFailures.push(`golf=${golfRes.error.message}`);
+  if (baseballRes.error) convFailures.push(`baseball=${baseballRes.error.message}`);
+  if (convFailures.length > 0) {
+    throw new Error(`resolveTeamConversationIds: ${convFailures.join('; ')}`);
   }
   return new Set([
-    ...((golfRes.error ? [] : golfRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
-    ...((baseballRes.error ? [] : baseballRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
+    ...((golfRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
+    ...((baseballRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
   ]);
 }

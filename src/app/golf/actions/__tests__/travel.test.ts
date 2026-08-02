@@ -359,6 +359,56 @@ describe('travel server actions', () => {
       });
       expect(result.success).toBe(false);
     });
+
+    // ---- DS-42 (B11-1): create was the last expense verb still gated on
+    // "is a coach at all". golf_travel_expenses_coach_all is ORG-scoped RLS, so
+    // that check let a men's-team coach INSERT onto the women's team with a
+    // caller-supplied team_id. Same staff-strict wall as update/delete.
+    it('runs the staff-strict team check on the caller-supplied team_id', async () => {
+      await createTravelExpense(validExpense);
+      expect(mockFrom).toHaveBeenCalledWith('golf_team_coach_staff');
+    });
+
+    it('rejects a team the coach is not staffed on', async () => {
+      // No staff row for this coach/team, and no staff rows at all + no
+      // organization_id on the coach row, so the legacy org fallback is dead too.
+      mockFromResult = createChainableMock({ data: null, error: null });
+
+      const result = await createTravelExpense(validExpense);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Not authorized for this team');
+    });
+
+    it('rejects an itinerary belonging to a different team', async () => {
+      // Staff lookup finds a row (coach IS staffed on their own team) but the
+      // supplied itinerary belongs to a sibling team — the expense would
+      // otherwise land in that team's list, summary and CSV export.
+      mockFromResult = createChainableMock(
+        { data: { id: 'new-1' }, error: null },
+        { maybeSingle: { data: { id: 'staff-1', team_id: 'other-team' }, error: null } },
+      );
+
+      const result = await createTravelExpense({
+        ...validExpense,
+        itinerary_id: '550e8400-e29b-41d4-a716-446655440009',
+      });
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Not authorized for this team');
+    });
+
+    it('accepts an itinerary on the same team', async () => {
+      // Guards the test above from passing for the wrong reason.
+      mockFromResult = createChainableMock(
+        { data: { id: 'new-1' }, error: null },
+        { maybeSingle: { data: { id: 'staff-1', team_id: validExpense.team_id }, error: null } },
+      );
+
+      const result = await createTravelExpense({
+        ...validExpense,
+        itinerary_id: '550e8400-e29b-41d4-a716-446655440009',
+      });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('updateTravelExpense', () => {
@@ -378,7 +428,16 @@ describe('travel server actions', () => {
 
   describe('deleteTravelExpense', () => {
     it('deletes from golf_travel_expenses', async () => {
-      mockFromResult = createChainableMock({ error: null });
+      // DS-42 staff-strict wall: the action now looks up the expense's own
+      // team_id (existence check) and re-verifies it via
+      // validateCoachTeamAccess's golf_team_coach_staff lookup before the
+      // delete — both go through `.maybeSingle()`, so seed that verb with a
+      // matching team row. The eventual `.delete().eq(...)` isn't a
+      // `maybeSingle` call, so it still resolves from the default result.
+      mockFromResult = createChainableMock(
+        { error: null },
+        { maybeSingle: { data: { team_id: 'team-1' }, error: null } },
+      );
       const result = await deleteTravelExpense('550e8400-e29b-41d4-a716-446655440002');
       expect(result.success).toBe(true);
       expect(mockFrom).toHaveBeenCalledWith('golf_travel_expenses');
@@ -395,7 +454,14 @@ describe('travel server actions', () => {
   // ========================================================================
   describe('getExpensesForItinerary', () => {
     it('returns empty array when no expenses', async () => {
-      mockFromResult = createChainableMock({ data: [], error: null });
+      // DS-42: callerMayAccessTravelTeam needs the itinerary's team_id (fetched
+      // via `.maybeSingle()`) and a matching golf_team_coach_staff row (also
+      // `.maybeSingle()`) before the actual (non-maybeSingle) expenses query
+      // below is even reached.
+      mockFromResult = createChainableMock(
+        { data: [], error: null },
+        { maybeSingle: { data: { team_id: 'team-1' }, error: null } },
+      );
       const result = await getExpensesForItinerary('550e8400-e29b-41d4-a716-446655440000');
       expect(result.success).toBe(true);
       expect(result.data).toEqual([]);
@@ -423,7 +489,11 @@ describe('travel server actions', () => {
 
   describe('getExpenseSummary', () => {
     it('returns zeroed summary with no expenses', async () => {
-      mockFromResult = createChainableMock({ data: [], error: null });
+      // DS-42: same team-access lookups as getExpensesForItinerary above.
+      mockFromResult = createChainableMock(
+        { data: [], error: null },
+        { maybeSingle: { data: { team_id: 'team-1' }, error: null } },
+      );
       const result = await getExpenseSummary('550e8400-e29b-41d4-a716-446655440000');
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
@@ -439,14 +509,19 @@ describe('travel server actions', () => {
     });
 
     it('aggregates expense amounts correctly', async () => {
-      mockFromResult = createChainableMock({
-        data: [
-          { category: 'lodging', amount: '200', paid_by: 'team' },
-          { category: 'meals', amount: '50', paid_by: 'player' },
-          { category: 'lodging', amount: '100', paid_by: 'team' },
-        ],
-        error: null,
-      });
+      // DS-42: same team-access lookups as the two tests above — the actual
+      // expense rows come back on the non-`maybeSingle` terminal call.
+      mockFromResult = createChainableMock(
+        {
+          data: [
+            { category: 'lodging', amount: '200', paid_by: 'team' },
+            { category: 'meals', amount: '50', paid_by: 'player' },
+            { category: 'lodging', amount: '100', paid_by: 'team' },
+          ],
+          error: null,
+        },
+        { maybeSingle: { data: { team_id: 'team-1' }, error: null } },
+      );
 
       const result = await getExpenseSummary('550e8400-e29b-41d4-a716-446655440000');
       expect(result.success).toBe(true);

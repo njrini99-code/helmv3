@@ -29,6 +29,7 @@ export type DeliveryNotificationKey =
   | 'email_coachhelm'
   | 'push_messages'
   | 'push_events'
+  | 'push_announcements'
   | 'push_task_reminders'
   | 'push_coachhelm';
 
@@ -87,6 +88,7 @@ export const DELIVERY_NOTIFICATION_GROUPS: readonly DeliveryNotificationGroup[] 
     label: 'Announcements',
     description: 'Team announcements and round activity.',
     emailKey: 'email_announcements',
+    pushKey: 'push_announcements',
     quietExempt: false,
   },
   {
@@ -139,6 +141,7 @@ const DEFAULT_DELIVERY_NOTIFICATION_PREFERENCES: DeliveryNotificationPreferences
   email_coachhelm: true,
   push_messages: false,
   push_events: false,
+  push_announcements: true,
   push_task_reminders: true,
   push_coachhelm: true,
   quiet_mode: false,

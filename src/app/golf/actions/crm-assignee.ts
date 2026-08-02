@@ -14,19 +14,46 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
-export async function setCoachAssignee(input: {
-  coach_id: string;
-  assignee: string | null;
-}): Promise<{ ok: boolean }> {
+// ---------------------------------------------------------------------------
+// Auth helper — mirrors crm-timeline.ts / crm-engagement.ts / resend-activity.ts.
+// DS-B10-4: this action mutated the admin-only crm_coaches table behind a
+// bare auth.getUser(), no role check. RLS ("Admins can update coaches")
+// backstops the write itself, but the app layer should deny non-admins
+// explicitly rather than rely solely on a silently-no-op'd UPDATE.
+// ---------------------------------------------------------------------------
+async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { error } = await supabase
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single<{ role: string }>();
+
+  if (!profile || profile.role !== 'admin') {
+    throw new Error('Forbidden');
+  }
+
+  return supabase;
+}
+
+export async function setCoachAssignee(input: {
+  coach_id: string;
+  assignee: string | null;
+}): Promise<{ ok: boolean }> {
+  const supabase = await requireAdmin();
+
+  // DS-B10-4: chain .select('id') so an RLS-filtered (zero-row) update is
+  // detected instead of being reported as { ok: true } for a write that
+  // never happened.
+  const { data, error } = await supabase
     .from('crm_coaches')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update({ assigned_to: input.assignee, updated_at: new Date().toISOString() } as any)
-    .eq('id', input.coach_id);
+    .eq('id', input.coach_id)
+    .select('id');
 
   if (error) {
     await logServerError(
@@ -42,6 +69,9 @@ export async function setCoachAssignee(input: {
         metadata: { coachId: input.coach_id },
       },
     );
+    return { ok: false };
+  }
+  if (!data || data.length === 0) {
     return { ok: false };
   }
   revalidatePath('/golf/admin/crm');

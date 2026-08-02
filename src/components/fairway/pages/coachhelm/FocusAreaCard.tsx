@@ -88,6 +88,7 @@ import {
   isLowerIsBetter,
   formatTargetMetricLabel,
 } from './areaTypes';
+import { isTrackableFocusMetric } from '@/lib/coachhelm/focus-areas/target-metric';
 
 /* ---------------------------------------------------------------------------
  * Types — the shared focus-area shape (superset of coach + player rows)
@@ -126,6 +127,20 @@ export interface FocusAreaCardData {
   target_metric?: string | null;
   current_value?: number | null;
   target_value?: number | null;
+  /**
+   * The measured value when tracking STARTED (#1240). Progress is travel from
+   * here to `target_value` — NOT `current / target`, which opened a brand-new
+   * 61 → 66 area at "92% there". Absent/null on rows whose original starting
+   * point is unrecoverable; the meter then renders no bar rather than guess.
+   */
+  baseline_value?: number | null;
+  /**
+   * Driver-written [{date, value}] history (#1241). Distinct from
+   * `progressHistory`, which is the coach/player's manual "Log progress" notes —
+   * the Trend series merges both, deduped per day, so an auto-tracked area
+   * finally trends instead of reading "—" forever.
+   */
+  snapshots?: { date: string; value: number }[] | null;
   /**
    * Measurable-target TIMEFRAME (Feature F). 'date' → hit by `target_date`;
    * 'rounds' → within `target_rounds`. null/absent → no timeframe (legacy rows).
@@ -383,16 +398,27 @@ function ProgressMeter({
   current,
   target,
   metric,
+  baseline,
   reduced,
 }: {
   current: number | null;
   target: number;
   metric: string | null | undefined;
+  baseline: number | null;
   reduced: boolean;
 }): ReactNode {
-  const pct = getProgressPercent(current, target, metric);
+  // `null` = we cannot honestly compute progress (unknown direction, or no
+  // baseline to measure travel from). Render the Now→Target pair WITHOUT a bar
+  // rather than falling back to a ratio — the old fallback opened a brand-new
+  // area at "92% there" (#1240) and rendered a full bar for a player 56% worse
+  // than target whenever direction could not be resolved (#1242).
+  const pct = getProgressPercent(current, target, metric, baseline);
   const lowerBetter = isLowerIsBetter(metric);
-  const met = pct >= 100;
+  const met = pct != null && pct >= 100;
+  // An area whose metric matches neither vocabulary will never be advanced by
+  // the progress driver (#1239). Say so, instead of showing an inert bar that
+  // silently never moves.
+  const autoTracked = isTrackableFocusMetric(metric);
   // Human label — NEVER the raw snake_case metric identifier (mustFix #202/#60;
   // this is the same leak formatTargetMetricLabel already closed on the
   // log-progress drawer + prescribed-area chip, just missed here originally).
@@ -430,7 +456,7 @@ function ProgressMeter({
             Target
           </span>
           {target}
-          {pct > 0 ? (
+          {pct != null && pct > 0 ? (
             <Badge tone={met ? 'success' : 'neutral'} size="sm" numeric className="ml-1 align-middle">
               {pct}% there
             </Badge>
@@ -442,14 +468,24 @@ function ProgressMeter({
           far along" reads render as one system. Amber (never red) is reserved
           for the trend classification, not the meter fill — a partial bar is
           "in progress", not "bad". */}
-      <ProgressTrack
-        pct={pct}
-        size="md"
-        tone={met ? 'done' : 'active'}
-        animateIn
-        reduced={reduced}
-        label={`${metricLabel}: ${pct}% toward target`}
-      />
+      {pct != null ? (
+        <ProgressTrack
+          pct={pct}
+          size="md"
+          tone={met ? 'done' : 'active'}
+          animateIn
+          reduced={reduced}
+          label={`${metricLabel}: ${pct}% toward target`}
+        />
+      ) : (
+        // No bar, and say why. Silence here is what let a wrong bar look
+        // authoritative; a one-line reason is honest and actionable.
+        <p className="font-fw-sans text-eyebrow text-text-tertiary">
+          {!autoTracked
+            ? 'Tracked manually — log progress to move this one.'
+            : 'Progress starts from the next update — no starting value on record.'}
+        </p>
+      )}
     </div>
   );
 }
@@ -605,13 +641,27 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
 
     // The per-area trend series (oldest→newest values). The Sparkline applies
     // the <2-points → em-dash honesty contract itself; we just pass the truth.
-    const series = useMemo(
-      () =>
-        (focusArea.progressHistory ?? [])
-          .map((e) => e.value)
-          .filter((v): v is number => typeof v === 'number' && Number.isFinite(v)),
-      [focusArea.progressHistory],
-    );
+    //
+    // #1241: this used to read ONLY `progressHistory` (manual "Log progress"
+    // notes), so an area the driver was advancing automatically had an empty
+    // series and rendered Trend "—" forever — even right after its value
+    // demonstrably moved. Merge the driver's own `snapshots` in, deduped per
+    // day (the measured snapshot wins over a same-day manual note, since it is
+    // the value the card is actually showing).
+    const series = useMemo(() => {
+      const byDay = new Map<string, number>();
+      const add = (at: string | null | undefined, value: unknown) => {
+        if (!at || typeof value !== 'number' || !Number.isFinite(value)) return;
+        byDay.set(at.slice(0, 10), value);
+      };
+      for (const e of focusArea.progressHistory ?? []) add(e.at, e.value);
+      // `snapshots` arrives as raw jsonb — never trust its shape.
+      const snaps = Array.isArray(focusArea.snapshots) ? focusArea.snapshots : [];
+      for (const s of snaps) add(s?.date, s?.value);
+      return [...byDay.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([, v]) => v);
+    }, [focusArea.progressHistory, focusArea.snapshots]);
     const hasTrend = series.length >= 2;
 
     // Trend classification is goodDirection-aware: for lower-is-better metrics,
@@ -788,6 +838,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 current={focusArea.current_value ?? null}
                 target={focusArea.target_value!}
                 metric={focusArea.target_metric}
+                baseline={focusArea.baseline_value ?? null}
                 reduced={reduced}
               />
 

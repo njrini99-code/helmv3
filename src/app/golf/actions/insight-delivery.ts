@@ -450,10 +450,11 @@ async function getTopInsightForPlayerImpl(
   // EXACTLY the feed pipeline — so the single-pick agrees with the list feed.
   const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
   const activeGoals = await loadActiveGoals(playerId).catch(() => []);
-  const ranked = rankEvidenceInsights(
+  const ranked = await rankEvidenceInsights(
     rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
     weights,
     activeGoals,
+    supabase,
   );
 
   // P1-09: apply the feedback overlay (hide dismissed, attach state) so the
@@ -618,7 +619,7 @@ async function getInsightsForPlayerImpl(
   // until calibration lands; active goals float goal-touching rows up.
   const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
   const activeGoals = await loadActiveGoals(playerId).catch(() => []);
-  const ranked = rankEvidenceInsights(filtered, weights, activeGoals);
+  const ranked = await rankEvidenceInsights(filtered, weights, activeGoals, supabase);
 
   // Finding 29: apply the SAME (player:category:metric-subject) dedupe the
   // coach feed uses (via the shared `dedupeBySubject` helper) so a player does
@@ -831,7 +832,8 @@ async function getInsightsForCoachWithMetaImpl(
   }
   // C2: collapse the 3 par_scoring rows into ONE "Scoring by par type" card
   // BEFORE dedupe — same IDENTICAL-application rule as dedupeBySubject itself.
-  const ranked = dedupeBySubject(collapseParScoring(rankEvidenceInsights(mapped, weights, goals)));
+  const rankedInsights = await rankEvidenceInsights(mapped, weights, goals, supabase);
+  const ranked = dedupeBySubject(collapseParScoring(rankedInsights));
 
   // P058: `total` is the FULL eligible count (post rank + dedupe, pre-slice),
   // so a capped page can honestly disclose "showing N of TOTAL" instead of
@@ -979,7 +981,8 @@ async function getTopInsightsForPlayersImpl(
     byPlayer.set(ins.player_id, arr);
   }
   for (const [pid, list] of byPlayer) {
-    const ranked = dedupeBySubject(collapseParScoring(rankEvidenceInsights(list)));
+    const rankedInsights = await rankEvidenceInsights(list, {}, [], supabase);
+    const ranked = dedupeBySubject(collapseParScoring(rankedInsights));
     const sliced = ranked.slice(0, limit);
     out.set(pid, sliced);
     // Record exposure for each player's surfaced head insight(s) on the roster
@@ -1077,8 +1080,11 @@ async function getRoundTakeawayInsightImpl(
   }
 
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
-  const ranked = rankEvidenceInsights(
+  const ranked = await rankEvidenceInsights(
     rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
+    {},
+    [],
+    supabase,
   );
 
   const takeaway = ranked[0] ?? null;

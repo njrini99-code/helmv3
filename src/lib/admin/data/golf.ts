@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { assertQueryOk } from '@/lib/admin/data/assert-query-ok';
 import { fetchAdminRollupA, type RollupA } from '@/app/golf/actions/admin/rollup-a';
 
 export type TeamHealth = 'active' | 'cooling' | 'dormant';
@@ -156,6 +157,24 @@ export async function fetchGolfTab(): Promise<{
           .range(from, to),
       ),
     ]);
+
+  // Only fetchAdminRollupA() can reject; every other read above resolves to
+  // `{ data: null, error }` / `{ count: null, error }` on a Supabase, RLS or
+  // schema failure. Without these checks the `?? []` / `?? 0` consumers below
+  // render a confident, WRONG tab — an empty Team Health table reads as "no
+  // teams exist", a failed LLM count reads as "0 calls / $0". Throwing lets
+  // PanelBoundary show PanelStale instead, exactly as the sibling
+  // fetchBaseballTab (src/lib/admin/data/baseball.ts:131-139) already does.
+  assertQueryOk(teamsRes, 'fetchGolfTab: golf_teams');
+  assertQueryOk(membersRes, 'fetchGolfTab: golf_team_members');
+  assertQueryOk(errorRes, 'fetchGolfTab: admin_events');
+  assertQueryOk(llmCallsCountRes, 'fetchGolfTab: golf_coachhelm_llm_calls count');
+  assertQueryOk(llmCostRes, 'fetchGolfTab: golf_coachhelm_llm_calls cost');
+  assertQueryOk(llmBudgetRes, 'fetchGolfTab: golf_coachhelm_llm_budget');
+  assertQueryOk(demoSessionsRes, 'fetchGolfTab: golf_demo_sessions');
+  assertQueryOk(demoRequestsRes, 'fetchGolfTab: demo_requests');
+  assertQueryOk(liftCountRes, 'fetchGolfTab: helm_lifting_sessions count');
+  assertQueryOk(liftAthletesRes, 'fetchGolfTab: helm_lifting_sessions athlete');
 
   const memberCounts = new Map<string, number>();
   for (const m of membersRes.data ?? []) {

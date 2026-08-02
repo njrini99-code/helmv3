@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { verifyPlayerAccess, verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTodayRangeForTz } from '@/lib/utils/timezone';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -268,6 +269,12 @@ async function getCoachDashboardDataImpl(
     }
     if (!user) throw new Error('Not authenticated');
     if (user.id !== userId) throw new Error('Unauthorized');
+
+    // DS-B2: teamId arrived from the caller and only `user.id === userId` bound
+    // this payload to anyone — RLS emptied the reads for a non-member but never
+    // refused the probe. Staffing the team is now an explicit precondition.
+    const teamAccess = await verifyTeamAccess(teamId, user.id, supabase);
+    if (!teamAccess.allowed) throw new Error('Unauthorized');
 
     const teamTimezone = (timezoneResult.data as { timezone?: string } | null)?.timezone || 'America/New_York';
     const { start: todayStart, end: todayEnd } = getTodayRange(teamTimezone);
@@ -792,6 +799,13 @@ async function getPlayerDashboardDataImpl(
         throw authError;
     }
     if (!user) throw new Error('Not authenticated');
+
+    // DS-B2: playerId arrived from the client and was never bound to the caller
+    // (`_userId` was deliberately ignored), so any authenticated player could
+    // read a teammate's rounds, handicap and stats cache. Same app-layer gate
+    // insight-evidence.ts (RP-1) added over the same data.
+    const playerAccess = await verifyPlayerAccess(playerId, user.id, supabase);
+    if (!playerAccess.allowed) throw new Error('Unauthorized');
 
     const playerTeamTimezone = (playerTimezoneResult.data as { timezone?: string } | null)?.timezone || 'America/New_York';
     const { start: todayStart, end: todayEnd } = getTodayRange(playerTeamTimezone);

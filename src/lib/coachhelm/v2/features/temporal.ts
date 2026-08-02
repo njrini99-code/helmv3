@@ -130,15 +130,26 @@ function determinePlayingFrequency(
  * Calculates trend (slope) of scores over time
  * Negative = improving (scores going down)
  * Positive = declining (scores going up)
+ *
+ * ORDERING: `rounds` arrives NEWEST-FIRST (the query at :38 orders round_date
+ * descending, and the :82-87 filters preserve it). The regression indexes the
+ * array as if it were time, so the array must be reversed into chronological
+ * order first — without that, the slope measured d(score)/d(going BACKWARDS in
+ * time) and an improving player produced a POSITIVE ("declining") slope,
+ * inverting the contract above. No current reader was wrong because both
+ * consumers of scoringTrend7Day read it through Math.abs (contextual.ts:172,
+ * orchestrator.ts:1691) and scoringTrend30Day has no reader at all — but the
+ * exported value was inverted for anyone who read the sign.
  */
-function calculateTrend(
+export function calculateTrend(
   rounds: Array<{ score_to_par: number | null; round_date: string }>
 ): number {
   if (rounds.length < 2) return 0;
 
   // Simple linear regression
   const n = rounds.length;
-  const scores = rounds.map((r) => r.score_to_par ?? 0);
+  // Reverse newest-first → oldest-first so index really does increase with time.
+  const scores = [...rounds].reverse().map((r) => r.score_to_par ?? 0);
 
   // Indices represent time (newer rounds have higher index)
   let sumX = 0;
