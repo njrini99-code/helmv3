@@ -1,4 +1,15 @@
+/**
+ * @vitest-environment node
+ *
+ * Server-module test. The default project environment is jsdom, which
+ * defines `window` — and rls-denial.ts gates its capture on
+ * `typeof window === 'undefined'` so server-only logging never lands in a
+ * client bundle. Under jsdom that guard is false, the capture branch never
+ * runs, and these assertions silently test nothing. Pin to node so the code
+ * path under test is the one that actually executes on the server.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { flushRlsDenialLogs } from '@/lib/admin/rls-denial';
 
 // Mock the terminal dependency (matches src/lib/admin/__tests__/rls-denial.test.ts)
 // so we exercise the REAL isRlsDenial/maybeCaptureRlsDenial logic end-to-end
@@ -70,6 +81,7 @@ describe('fetchAllRows', () => {
       ),
     ).rejects.toThrow('fetchAllRows: permission denied for table golf_rounds');
 
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
     const [message, eventCtx, severity] = mocks.logServerEvent.mock.calls[0]!;
     expect(message).toContain('RLS denial');
@@ -93,6 +105,7 @@ describe('fetchAllRows', () => {
         { table: 'golf_rounds', action: 'loadRounds' },
       ),
     ).rejects.toThrow('fetchAllRows: duplicate key value');
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
   });
 
@@ -102,6 +115,7 @@ describe('fetchAllRows', () => {
         page([], { message: 'new row violates row-level security policy for table "x"' }),
       ),
     ).rejects.toThrow();
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
     const [, eventCtx] = mocks.logServerEvent.mock.calls[0]!;
     expect(eventCtx).toMatchObject({ metadata: { table: 'x' } });
@@ -111,6 +125,7 @@ describe('fetchAllRows', () => {
     await expect(
       fetchAllRows<Row>(page([], { message: 'row-level security policy violated', code: '42501' })),
     ).rejects.toThrow();
+    await flushRlsDenialLogs();
     const [, eventCtx] = mocks.logServerEvent.mock.calls[0]!;
     expect(eventCtx).toMatchObject({ metadata: { table: 'unknown' } });
   });
@@ -119,6 +134,7 @@ describe('fetchAllRows', () => {
     await expect(
       fetchAllRows<Row>(page([], { message: 'network timeout' })),
     ).rejects.toThrow();
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
   });
 });
@@ -154,6 +170,7 @@ describe('fetchAllRowsResult', () => {
 
     expect(data).toBeNull();
     expect(error).toEqual({ message: 'permission denied for table golf_shots', code: '42501' });
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
     const [, eventCtx] = mocks.logServerEvent.mock.calls[0]!;
     expect(eventCtx).toMatchObject({
@@ -174,6 +191,7 @@ describe('fetchAllRowsResult', () => {
     );
     expect(data).toBeNull();
     expect(error).toEqual({ message: 'dup', code: '23505' });
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
   });
 
@@ -183,6 +201,7 @@ describe('fetchAllRowsResult', () => {
     );
     expect(data).toBeNull();
     expect(error).not.toBeNull();
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
     const [, eventCtx] = mocks.logServerEvent.mock.calls[0]!;
     // `RLS denial: select on unknown` is what the 2026-07-20 crm_coaches denial
@@ -194,6 +213,7 @@ describe('fetchAllRowsResult', () => {
     const { data, error } = await fetchAllRowsResult<Row>(page([], { message: 'timeout' }));
     expect(data).toBeNull();
     expect(error).not.toBeNull();
+    await flushRlsDenialLogs();
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
   });
 });

@@ -249,17 +249,20 @@ export const APPROACH_MISS_CONFIG: Record<ApproachMissDirection, {
     icon: '↓', 
     color: 'text-red-400' 
   },
-  long: { 
-    label: 'Long', 
-    shortLabel: 'L',
-    icon: '↑', 
-    color: 'text-orange-400' 
+  // 'Long' and 'Left' both rendered as a bare 'L' in the approach miss grid,
+  // so two adjacent buttons carried the same glyph and only the arrow told
+  // them apart — easy to mis-tap on a phone, in the field, mid-round.
+  long: {
+    label: 'Long',
+    shortLabel: 'LG',
+    icon: '↑',
+    color: 'text-orange-400'
   },
-  left: { 
-    label: 'Left', 
-    shortLabel: 'L',
-    icon: '←', 
-    color: 'text-blue-400' 
+  left: {
+    label: 'Left',
+    shortLabel: 'LT',
+    icon: '←',
+    color: 'text-blue-400'
   },
   right: { 
     label: 'Right', 

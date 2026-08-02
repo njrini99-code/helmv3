@@ -416,8 +416,19 @@ export function MessageThreadPane({
   const headerName = isGroup
     ? conversation.title || 'Team Group'
     : conversation.other_participant?.name || 'Unknown User';
+  // `is_group` is set for anything carrying `is_team_chat`, and a broadcast
+  // sent to ONE player carries it too (the flag is load-bearing for the
+  // conversation-create RLS workaround, so it can't just be dropped there).
+  // That made a plain two-person thread announce itself as "Group
+  // conversation" to both people in it. Read the participant count instead,
+  // and say nothing when the count is unknown rather than guess wrong.
+  const participantCount = conversation.participant_count ?? 0;
   const headerSubtitle = isGroup
-    ? 'Group conversation'
+    ? participantCount > 2
+      ? 'Group conversation'
+      : participantCount === 2
+        ? 'Direct message'
+        : ''
     : conversation.other_participant?.subtitle || '';
 
   return (

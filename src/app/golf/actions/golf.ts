@@ -22,6 +22,7 @@ import { formatSafeErrorResponse, CommonSchemas } from '@/lib/validation/server-
 import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
+import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
 // 2026-05-17: CoachHelm trigger now runs via after(postRoundTrigger) — see
 // docs/architecture/coachhelm-evidence-contract.md and Plan 04. The previous
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
@@ -760,6 +761,37 @@ function derivePuttMade(shot: ShotRecord): boolean | null {
   return shot.result === 'hole';
 }
 
+const toYards = (
+  distance: number | null | undefined,
+  unit: string | null | undefined,
+): number | null =>
+  distance == null ? null : unit === 'feet' ? distance / 3 : distance;
+
+/**
+ * Should this shot produce an `approach_miss_details` row?
+ *
+ * `shot_type` is assigned by ordinal, so 'approach' also covers layups on par
+ * 5s and the replayed tee shot after a penalty. Neither is a shot at the
+ * green, but the tracker still forces a miss direction on both (it offers no
+ * "laid up" option), so they used to be written as approach misses tagged
+ * 'short' — dragging every approach-miss aggregate short with them. Gate on
+ * the shared plausibility rule so those rows never reach the table.
+ */
+function isRealApproachShot(shot: ShotRecord, par: number): boolean {
+  const isApproachShot =
+    shot.shotType === 'approach' ||
+    shot.shotType === 'around_green' ||
+    (shot.shotType === 'tee' && par === 3);
+  if (!isApproachShot) return false;
+
+  return isPlausibleApproach({
+    distanceToHoleBeforeYards: toYards(shot.distanceToHoleBefore, shot.distanceUnitBefore),
+    distanceToHoleAfterYards: toYards(shot.distanceToHoleAfter, shot.distanceUnitAfter),
+    lieBefore: shot.lieBefore,
+    par,
+  });
+}
+
 /**
  * Calculate GIR (Green in Regulation) from shot data
  * GIR = reaching the green in (par - 2) strokes or fewer
@@ -1465,12 +1497,9 @@ async function submitGolfRoundComprehensiveImpl(
           });
         }
 
-        // Include tee shots on par-3s as approach shots (they ARE the approach)
-        const isApproachShot = shot.shotType === 'approach' ||
-          shot.shotType === 'around_green' ||
-          (shot.shotType === 'tee' && hole.par === 3);
-
-        if (isApproachShot &&
+        // Tee shots on par 3s ARE the approach; layups and post-penalty tee
+        // shots are NOT, even though they carry shot_type='approach'.
+        if (isRealApproachShot(shot, hole.par) &&
             shot.result !== 'green' && shot.result !== 'hole') {
           approachDetailsPayload.push({
             hole_number: hole.holeNumber,
@@ -5134,13 +5163,11 @@ async function savePartialRoundImpl(
           });
         }
 
-        // Include tee shots on par-3s as approach shots (they ARE the approach)
+        // Tee shots on par 3s ARE the approach; layups and post-penalty tee
+        // shots are NOT, even though they carry shot_type='approach'.
         const holeData = completedHolesByNumber.get(holeNumber);
-        const isApproachShot = shot.shotType === 'approach' ||
-          shot.shotType === 'around_green' ||
-          (shot.shotType === 'tee' && holeData?.par === 3);
-
-        if (isApproachShot &&
+        if (holeData?.par != null &&
+            isRealApproachShot(shot, holeData.par) &&
             shot.result !== 'green' && shot.result !== 'hole') {
           approachDetailsPayload.push({
             hole_number: holeNumber,

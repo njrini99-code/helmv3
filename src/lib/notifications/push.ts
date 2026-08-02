@@ -35,7 +35,15 @@ function pushDeliveryKeyFor(type: NotificationType): DeliveryNotificationKey | n
   switch (type) {
     case 'new_message':
       return 'push_messages';
+    // Announcements had NO switch of their own in the settings matrix — the
+    // Announcements row rendered an em-dash in the PUSH column — while still
+    // pushing here under 'push_events'. So a user who turned off calendar
+    // pushes silently lost announcement pushes too, including urgent and
+    // acknowledgement-required ones, with nothing in the UI saying so. Same
+    // defect as the CoachHelm one called out immediately below; this is the
+    // twin that was missed.
     case 'team_announcement':
+      return 'push_announcements';
     case 'qualifier_created':
     case 'qualifier_updated':
     case 'event_rsvp_reminder':

@@ -80,11 +80,43 @@ function trackDenialStorm(key: string): boolean {
 }
 
 /**
+ * In-flight capture writes.
+ *
+ * The logger is imported lazily (see the note at the top of this file), so a
+ * capture completes a microtask or two AFTER `maybeCaptureRlsDenial` has
+ * already returned. The boolean return has to stay synchronous — every call
+ * site uses it to gate its own logging in a sync branch — so the promise is
+ * parked here instead of thrown away.
+ *
+ * That gives two things a bare `void import(...)` could not:
+ *   - `flushRlsDenialLogs()` for callers that CAN wait (a route handler's
+ *     `after()`, a cron tick) and would rather not lose the denial to an
+ *     instance teardown;
+ *   - a deterministic await for tests, which previously asserted on the mock
+ *     before the dynamic import had resolved and saw zero calls.
+ */
+let pendingCaptures: Promise<void>[] = [];
+
+/**
+ * Awaits every capture started so far. Safe to call when none are pending.
+ * Not required for correctness — captures still complete on their own — but
+ * it is the difference between "probably logged" and "logged".
+ */
+export async function flushRlsDenialLogs(): Promise<void> {
+  const inFlight = pendingCaptures;
+  pendingCaptures = [];
+  await Promise.allSettled(inFlight);
+}
+
+/**
  * Returns true when `error` was classified as an RLS denial (and a capture
  * was fired), false otherwise. Callers use this to gate their OWN generic
  * error logging — an RLS denial should produce exactly one admin_events
  * row (this capture), not one from here PLUS a second, generic one from
  * the caller. See savePartialRound in golf.ts for the canonical caller.
+ *
+ * The capture itself is asynchronous; await `flushRlsDenialLogs()` if you
+ * need it durably written before the current context can be torn down.
  */
 export function maybeCaptureRlsDenial(
   error: { code?: string | null; message?: string | null } | null | undefined,
@@ -104,7 +136,8 @@ export function maybeCaptureRlsDenial(
     const feature = ctx.feature ?? featureForTable(table) ?? undefined;
     const isStorm = trackDenialStorm(`${table}:${ctx.verb}`);
     if (typeof window === 'undefined') {
-      void import('@/lib/server-error-logger')
+      pendingCaptures.push(
+        import('@/lib/server-error-logger')
         .then(({ logServerEvent }) =>
           logServerEvent(
             `RLS denial: ${ctx.verb} on ${table}`,
@@ -124,7 +157,9 @@ export function maybeCaptureRlsDenial(
             isStorm ? 'error' : 'warning',
           ),
         )
-        .catch(() => {});
+          .then(() => undefined)
+          .catch(() => {}),
+      );
     }
   } catch {
     // Never break the caller.

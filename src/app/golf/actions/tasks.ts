@@ -142,12 +142,69 @@ async function completeTaskImpl(
       }
     }
 
+    await syncTaskStatusFromAssignments(supabase, taskId);
+
     revalidatePath('/golf/dashboard/tasks');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
     await logServerError(`[completeTask Error]: ${describeError(error)}`, { action: 'tasks.completeTask' });
     return formatSafeErrorResponse(error);
+  }
+}
+
+/**
+ * Roll the parent `golf_tasks.status` up from its assignments.
+ *
+ * The task list derives its badge from assignment progress, so nothing in the
+ * UI ever noticed that `golf_tasks.status` stayed 'pending' forever — but the
+ * reminder path reads the task, not the assignments, and had no way to tell a
+ * finished task from an open one. A player who completed a task early still
+ * got its reminder. Keeping the parent honest is what lets
+ * `getDueReminders` filter on it.
+ *
+ * Best-effort: a failure here must not fail the completion the player just
+ * made, so it logs and returns.
+ */
+async function syncTaskStatusFromAssignments(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  taskId: string,
+): Promise<void> {
+  try {
+    const { data: assignments, error } = await supabase
+      .from('golf_task_assignments')
+      .select('status')
+      .eq('task_id', taskId);
+
+    if (error || !assignments || assignments.length === 0) return;
+
+    const allDone = (assignments as Array<{ status: string | null }>).every(
+      (a) => a.status === 'completed',
+    );
+
+    const { error: updateError } = await supabase
+      .from('golf_tasks')
+      .update(
+        allDone
+          ? { status: 'completed', completed_at: new Date().toISOString() }
+          : { status: 'pending', completed_at: null },
+      )
+      .eq('id', taskId);
+
+    if (updateError) {
+      await logServerError(
+        `[syncTaskStatusFromAssignments]: ${describeError(updateError)}`,
+        { action: 'tasks.syncTaskStatusFromAssignments', extra: { taskId } },
+        'warning',
+      );
+    }
+  } catch (err) {
+    await logServerError(
+      `[syncTaskStatusFromAssignments]: ${describeError(err)}`,
+      { action: 'tasks.syncTaskStatusFromAssignments', extra: { taskId } },
+      'warning',
+    );
   }
 }
 
@@ -178,7 +235,14 @@ async function createTaskImpl(
   description?: string,
   dueDate?: string,
   priority?: string,
-  assignToPlayerIds?: string[]
+  assignToPlayerIds?: string[],
+  /**
+   * Optional category. Previously only tasks instantiated from a TEMPLATE ever
+   * carried one, so every hand-created task landed with category = NULL and
+   * was invisible under all six category filters — with no "Uncategorized"
+   * chip and no change to the count chips to signal that rows were dropped.
+   */
+  category?: string
 ): Promise<ActionResult<{ taskId: string }>> {
   try {
     const supabase = await createClient();
@@ -225,6 +289,7 @@ async function createTaskImpl(
         description: description || null,
         due_date: dueDate || null,
         priority: priority || 'normal',
+        category: category || null,
         status: 'pending',
         assigned_by: coach.id,
         created_at: new Date().toISOString(),
@@ -310,9 +375,10 @@ export async function createTask(
   description?: string,
   dueDate?: string,
   priority?: string,
-  assignToPlayerIds?: string[]
+  assignToPlayerIds?: string[],
+  category?: string
 ): Promise<ActionResult<{ taskId: string }>> {
-  return observedCreateTask(teamId, title, description, dueDate, priority, assignToPlayerIds);
+  return observedCreateTask(teamId, title, description, dueDate, priority, assignToPlayerIds, category);
 }
 
 // ============================================================================

@@ -32,6 +32,7 @@ import {
   TextArea,
   RadioGroup,
   Checkbox,
+  Select,
   fairwayToast,
 } from '@/components/fairway';
 import { IconCheck } from '@/components/icons';
@@ -50,6 +51,15 @@ export interface FairwayCreateTaskModalProps {
    * misleading "No players on the roster yet", and avoids a silent 0-player create.
    */
   playersError?: boolean;
+  /**
+   * Categories already in use on this team's tasks. A task created here used to
+   * land with category = NULL — matching NO category chip and silently
+   * disappearing whenever a coach filtered — because only template-instantiated
+   * tasks ever carried one. Offering the team's existing set (rather than a
+   * hardcoded taxonomy) keeps this consistent with the filter bar, which is
+   * likewise derived from real data.
+   */
+  categories?: string[];
 }
 
 type AssignMode = 'all' | 'specific';
@@ -93,6 +103,7 @@ export function isTaskFormDirty(fields: {
   description: string;
   dueDate: string;
   reminderAt: string;
+  category: string;
   assignMode: AssignMode;
   selectedPlayers: string[];
 }): boolean {
@@ -101,6 +112,7 @@ export function isTaskFormDirty(fields: {
     fields.description.trim() !== '' ||
     fields.dueDate !== '' ||
     fields.reminderAt !== '' ||
+    fields.category !== '' ||
     fields.assignMode !== 'all' ||
     fields.selectedPlayers.length > 0
   );
@@ -113,11 +125,13 @@ export function FairwayCreateTaskModal({
   teamId,
   players,
   playersError = false,
+  categories = [],
 }: FairwayCreateTaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [reminderAt, setReminderAt] = useState('');
+  const [category, setCategory] = useState('');
   const [assignMode, setAssignMode] = useState<AssignMode>('all');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -141,12 +155,13 @@ export function FairwayCreateTaskModal({
   // clean (untouched) form still closes immediately.
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
-  const isDirty = isTaskFormDirty({ title, description, dueDate, reminderAt, assignMode, selectedPlayers });
+  const isDirty = isTaskFormDirty({ title, description, dueDate, reminderAt, category, assignMode, selectedPlayers });
 
   function reset() {
     setTitle('');
     setDescription('');
     setDueDate('');
+    setCategory('');
     setReminderAt('');
     setAssignMode('all');
     setSelectedPlayers([]);
@@ -224,6 +239,7 @@ export function FairwayCreateTaskModal({
         dueDate || undefined,
         undefined, // priority — defaults to 'normal' (legacy parity)
         assignIds,
+        category || undefined,
       );
 
       if (!result.success || !result.data) {
@@ -336,6 +352,27 @@ export function FairwayCreateTaskModal({
                 />
               </FormField>
             </div>
+
+            {/* Only offered once the team actually has categories to pick from —
+                inventing a taxonomy here would not match the filter bar, which
+                is derived from real task data. */}
+            {categories.length > 0 && (
+              <FormField
+                label="Category"
+                showOptional
+                help="Groups this task under the category filters."
+              >
+                <Select
+                  name="category"
+                  value={category}
+                  onValueChange={(v) => setCategory((v as string) ?? '')}
+                  options={[
+                    { label: 'No category', value: '' },
+                    ...categories.map((cat) => ({ label: cat, value: cat })),
+                  ]}
+                />
+              </FormField>
+            )}
 
             {/* Assignment */}
             <FormField label="Assign to">
