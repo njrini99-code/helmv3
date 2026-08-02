@@ -292,7 +292,7 @@ export async function scoreInsightWithCalibration(
     const record = await bootstrapFromDb(sb, insight.insight_type);
     // Apply calibration to the raw confidence value
     calibratedConfidence = calibrateConfidence(insight.confidence, record);
-  } catch (err) {
+  } catch (_err) {
     // If calibration fails, fall back to raw confidence (no-op)
     calibratedConfidence = insight.confidence;
   }
