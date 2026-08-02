@@ -7,6 +7,12 @@ import { derivePlayerQualifierProgress } from './qualifier-progress';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
+// Plain server module, NOT a 'use server' export surface — imported for use
+// here, never re-exported (see the header of progress-drivers.ts).
+import {
+  evaluateAndPersistGoals,
+  evaluateAndPersistFocusAreas,
+} from '@/lib/golf/progress-drivers';
 import { inngest, isInngestConfigured } from '@/lib/inngest/client';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
@@ -1947,6 +1953,49 @@ async function submitGolfRoundComprehensiveImpl(
             stack: err instanceof Error ? err.stack : undefined,
           },
         }, 'critical');
+      }
+
+      // ── Goal + focus-area progress (#1243) ──────────────────────────────
+      // A completed round is the state change these track, so advance them
+      // HERE. Before this, the ONLY caller of the progress drivers was the
+      // nightly standing-refresh cron (02:20 UTC), so a player finished a
+      // round, opened My Development to see whether it helped, and the bar had
+      // not moved — for up to ~24h. Verified end-to-end on 2026-08-02: two
+      // completed rounds took an accepted 61 → 66 fairways area from 61 to
+      // nowhere; invoking the cron by hand immediately produced the correct
+      // windowed 82.
+      //
+      // Deliberately placed BEFORE the Inngest branch below, which `return`s
+      // when Inngest is configured — putting this after it would leave the
+      // durable-queue path (i.e. production) still stale-until-morning.
+      //
+      // This is the round-SUBMIT write path, not a page render: it does not
+      // reintroduce the read-path-writes problem that had the on-view hooks
+      // removed (a page read racing the coachhelm crons into a 40P01 deadlock;
+      // see player-coachhelm-dashboard-readonly.test.ts). The drivers are
+      // idempotent and same-day deduped, so this composes with the nightly
+      // cron rather than replacing it — the cron stays as the durability net
+      // for players whose standing moves without a submission.
+      try {
+        await Promise.all([
+          evaluateAndPersistGoals(backgroundPlayerId),
+          evaluateAndPersistFocusAreas(backgroundPlayerId),
+        ]);
+        revalidatePath('/golf/dashboard/coachhelm');
+        revalidatePath('/golf/dashboard/intelligence');
+      } catch (progressErr) {
+        // Never let progress tracking take down round analysis behind it.
+        await logServerError(
+          `Post-round goal/focus-area progress failed: ${describeError(progressErr)}`,
+          {
+            action: 'submitGolfRoundComprehensive.progressDrivers',
+            featureArea: 'coachhelm',
+            roundId: backgroundRoundId,
+            playerId: backgroundPlayerId,
+            extra: { stack: progressErr instanceof Error ? progressErr.stack : undefined },
+          },
+          'warning',
+        );
       }
 
       // 2026-05-17: closes audit Finding 2 + A-NEW-6. Previously this fetched

@@ -121,6 +121,7 @@ import {
   findMetric,
   type FocusWindowRound,
 } from '@/lib/coachhelm/focus-areas/catalog';
+import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-metric';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
@@ -373,6 +374,77 @@ interface ActiveFocusArea {
   target_metric: string | null;
   current_value: number | null;
   started_at: string | null;
+  baseline_value: number | null;
+  snapshots: unknown;
+}
+
+/** One dated reading in a focus area's history (mirrors golf_goals.snapshots). */
+interface FocusSnapshot {
+  date: string;
+  value: number;
+}
+
+/**
+ * Append a dated reading to an area's history, deduped per UTC day (#1241).
+ * Same contract as the goal evaluator's snapshot append, so both surfaces trend
+ * off the same shape. Re-running on the same day overwrites that day's entry
+ * rather than growing the array, which keeps the driver idempotent — it runs
+ * both on round submit and from the nightly cron.
+ */
+function appendFocusSnapshot(existing: unknown, nowIso: string, value: number): FocusSnapshot[] {
+  const day = nowIso.slice(0, 10);
+  const prior: FocusSnapshot[] = Array.isArray(existing)
+    ? (existing as unknown[]).filter(
+        (s): s is FocusSnapshot =>
+          !!s &&
+          typeof s === 'object' &&
+          typeof (s as FocusSnapshot).date === 'string' &&
+          typeof (s as FocusSnapshot).value === 'number',
+      )
+    : [];
+
+  const idx = prior.findIndex((s) => s.date === day);
+  if (idx >= 0) {
+    const next = [...prior];
+    next[idx] = { date: day, value };
+    return next;
+  }
+  return [...prior, { date: day, value }];
+}
+
+/**
+ * Persist one area's advanced value, plus the two columns that let the card
+ * render honestly (#1240 baseline, #1241 history).
+ *
+ * Baseline self-heal: an area that was already being tracked before
+ * `baseline_value` existed has no recorded starting point, and the true
+ * original is genuinely unrecoverable (the tracker overwrote it in place). The
+ * migration backfills only areas it can PROVE were never tracked. For the rest
+ * we stamp the value as it stood immediately before this write — an honest
+ * "measured from here" anchor — so the bar starts working from the next
+ * observation instead of staying blank forever. Never overwrites a baseline
+ * that already exists.
+ */
+async function persistFocusAreaValue(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  area: ActiveFocusArea,
+  next: number,
+  nowIso: string,
+): Promise<boolean> {
+  const patch: Record<string, unknown> = {
+    current_value: next,
+    updated_at: nowIso,
+    snapshots: appendFocusSnapshot(area.snapshots, nowIso, next),
+  };
+  if (area.baseline_value == null) {
+    patch.baseline_value = area.current_value ?? next;
+  }
+
+  const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
+    .update(patch) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
+    .eq('id', area.id);
+  return !error;
 }
 
 /** golf_round_stats_cache columns we window, plus the round id to join dates. */
@@ -491,23 +563,30 @@ async function evaluateAreas(
   const players = new Set<string>();
   let updated = 0;
 
-  // Path 1 (legacy catalog): have a start + a key in the 14-metric windowable
-  // catalog — unchanged behavior.
-  const windowable = areas.filter(
-    (a) => a.started_at && isWindowableFocusMetric(a.target_metric),
+  // #1239: canonicalize FIRST. `target_metric` is free text, and a legacy
+  // display label ("Fairways Hit %") or a pre-canonical orphan
+  // ("make_pct_5_10") used to match neither path and silently no-op forever.
+  // resolveFocusTargetMetric folds those onto the stable id both paths below
+  // recognize; genuinely custom text still resolves to null and is skipped
+  // (correctly — the card now labels those areas as manual rather than
+  // implying a live feed).
+  const canonical = new Map<string, string | null>(
+    areas.map((a) => [a.id, resolveFocusTargetMetric(a.target_metric)]),
   );
 
-  // Path 2 (P0 fix — standing fallback): target_metric is NOT one of the 14
-  // legacy-catalog windowable keys, but IS a recognized v3-registry metric id
-  // (the namespace the primary insight/standing-prescribed create-focus-area
-  // flow actually writes). Read the player's live golf_player_standing value
-  // instead of silently no-oping forever.
-  const standingFallback = areas.filter(
-    (a) =>
-      !isWindowableFocusMetric(a.target_metric) &&
-      !!a.target_metric &&
-      isMetricId(a.target_metric),
+  // Path 1 (legacy catalog): have a start + a key in the windowable catalog.
+  const windowable = areas.filter(
+    (a) => a.started_at && isWindowableFocusMetric(canonical.get(a.id)),
   );
+
+  // Path 2 (standing fallback): not one of the windowable catalog keys, but IS
+  // a recognized v3-registry metric id — the namespace the insight/standing
+  // -prescribed create-focus-area flow actually writes. Read the player's live
+  // golf_player_standing value instead of silently no-oping forever.
+  const standingFallback = areas.filter((a) => {
+    const c = canonical.get(a.id);
+    return !!c && !isWindowableFocusMetric(c) && isMetricId(c);
+  });
 
   if (windowable.length === 0 && standingFallback.length === 0) {
     return { evaluated: 0, updated, players };
@@ -529,19 +608,21 @@ async function evaluateAreas(
     );
 
     for (const area of windowable) {
+      const metric = canonical.get(area.id) ?? area.target_metric;
       const startDate = area.started_at!.slice(0, 10);
       const playerRounds = roundsByPlayer.get(area.player_id) ?? [];
       const inWindow = playerRounds.filter((r) => r.round_date >= startDate);
-      const raw = aggregateFocusMetric(area.target_metric, inWindow);
+      const raw = aggregateFocusMetric(metric, inWindow);
       if (raw == null) continue; // no usable rounds yet → leave current_value as-is
 
-      const next = roundToMetric(area.target_metric, raw);
-      if (area.current_value != null && area.current_value === next) continue; // no-op
+      const next = roundToMetric(metric, raw);
+      // No-op only when there is also nothing else to record: an unchanged
+      // value still needs its baseline stamped the first time through (#1240).
+      if (area.current_value != null && area.current_value === next && area.baseline_value != null) {
+        continue;
+      }
 
-      const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
-        .update({ current_value: next, updated_at: nowIso }) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
-        .eq('id', area.id);
-      if (!error) updated += 1;
+      if (await persistFocusAreaValue(supabase, area, next, nowIso)) updated += 1;
     }
   }
 
@@ -551,18 +632,17 @@ async function evaluateAreas(
     ]);
 
     for (const area of standingFallback) {
-      const metricId = area.target_metric;
+      const metricId = canonical.get(area.id);
       if (!metricId || !isMetricId(metricId)) continue; // re-narrow (defensive; already filtered)
       const standing = standingByPlayer.get(area.player_id)?.get(metricId);
       if (!standing) continue; // no standing reading yet → leave current_value as-is (honest)
 
       const next = roundToMetric(metricId, standing.player_value);
-      if (area.current_value != null && area.current_value === next) continue; // no-op
+      if (area.current_value != null && area.current_value === next && area.baseline_value != null) {
+        continue;
+      }
 
-      const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
-        .update({ current_value: next, updated_at: nowIso }) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
-        .eq('id', area.id);
-      if (!error) updated += 1;
+      if (await persistFocusAreaValue(supabase, area, next, nowIso)) updated += 1;
     }
   }
 
@@ -593,7 +673,7 @@ async function runFocusAreaProgressForPlayersImpl(
   for (const batch of chunkIds(ids)) {
     const { data, error } = await fetchAllRowsResult<ActiveFocusArea>((from, to) =>
       fromUntyped(supabase, 'golf_player_focus_areas')
-        .select('id, player_id, target_metric, current_value, started_at')
+        .select('id, player_id, target_metric, current_value, started_at, baseline_value, snapshots')
         .in('player_id', batch)
         .eq('status', 'active')
         .order('id', { ascending: true })

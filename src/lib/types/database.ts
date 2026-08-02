@@ -14291,6 +14291,7 @@ export type Database = {
       golf_player_focus_areas: {
         Row: {
           area_type: string
+          baseline_value: number | null
           coach_id: string | null
           completed_at: string | null
           created_at: string | null
@@ -14305,6 +14306,7 @@ export type Database = {
           priority: number | null
           progress_notes: Json | null
           review_context: string | null
+          snapshots: Json
           started_at: string | null
           status: string | null
           target_date: string | null
@@ -14318,6 +14320,7 @@ export type Database = {
         }
         Insert: {
           area_type: string
+          baseline_value?: number | null
           coach_id?: string | null
           completed_at?: string | null
           created_at?: string | null
@@ -14332,6 +14335,7 @@ export type Database = {
           priority?: number | null
           progress_notes?: Json | null
           review_context?: string | null
+          snapshots?: Json
           started_at?: string | null
           status?: string | null
           target_date?: string | null
@@ -14345,6 +14349,7 @@ export type Database = {
         }
         Update: {
           area_type?: string
+          baseline_value?: number | null
           coach_id?: string | null
           completed_at?: string | null
           created_at?: string | null
@@ -14359,6 +14364,7 @@ export type Database = {
           priority?: number | null
           progress_notes?: Json | null
           review_context?: string | null
+          snapshots?: Json
           started_at?: string | null
           status?: string | null
           target_date?: string | null
