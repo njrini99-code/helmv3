@@ -287,89 +287,25 @@ export function getAreaAutoFill(
  * Progress — lower-is-better aware (shared by coach + player cards)
  * ------------------------------------------------------------------------- */
 
-/** Metrics whose value should DECREASE toward the target (golf is lower-is-better). */
-export const LOWER_IS_BETTER_KEYWORDS = [
-  'putt',
-  'penalty',
-  'bogey',
-  'score',
-  'three_putt',
-  // #1242: the live inverted bars were all proximity metrics carrying legacy
-  // free-text ids ('Avg proximity 80-120y', 'avg_proximity_ft') that resolve in
-  // NEITHER registry. Deliberately narrow — bare 'distance' is NOT here because
-  // driving distance is higher-is-better; the catalog resolves that one at step
-  // 2 anyway, but a free-text "Carry Distance" must not be caught by a guess.
-  'proximity',
-  'dispersion',
-  'distance to',
-] as const;
+/* #1266 — these four moved to `@/lib/coachhelm/focus-areas/direction` so a
+ * SERVER ACTION can reach them. They only ever depended on the v3 metric
+ * registry and the focus-area catalog (both lib), but living in this file —
+ * which imports the React icon barrel for AREA_TYPES — made them unusable from
+ * `development.ts`, and the write-time target guard needs the same direction
+ * resolution the cards use. Re-exported here verbatim so every existing
+ * import of areaTypes keeps working unchanged. */
+export {
+  LOWER_IS_BETTER_KEYWORDS,
+  resolveMetricDirection,
+  isLowerIsBetter,
+  describeWrongWayTarget,
+} from '@/lib/coachhelm/focus-areas/direction';
+export type { ResolvedMetricDirection } from '@/lib/coachhelm/focus-areas/direction';
 
-/**
- * Direction of improvement for a target metric, including the honest third
- * state. `unknown` exists because there is no safe default: assuming
- * higher-is-better is what made a player 56% WORSE than target render a full
- * "100% there" bar (#1242).
- */
-export type ResolvedMetricDirection = 'lower' | 'higher' | 'unknown';
-
-/**
- * Resolve a target metric's direction of improvement.
- *
- * Resolution order:
- *   1. The v3 canonical metric registry (`getMetricRenderConfig`) — the
- *      authoritative source when `target_metric` is a registered id
- *      (`sg_putting`, `approach_proximity_50_125ft`, …).
- *   2. The focus-area metric catalog (`findMetric`) — the legacy display-label
- *      vocabulary ("Putts Per Round", "1-Putt %", …), by stable key OR label.
- *   3. A keyword heuristic for genuinely unregistered / custom free text, with
- *      the make-rate guard: "___ made ___" / "___ hit ___" / "___ accuracy" is
- *      higher-is-better even when it contains a lower-is-better keyword
- *      (`putts_made_5_10ft_pct` — making MORE putts is better).
- *   4. `unknown` — no guess. Callers must degrade honestly rather than pick a
- *      direction; {@link getProgressPercent} returns null so no bar renders.
- */
-export function resolveMetricDirection(
-  targetMetric: string | null | undefined,
-): ResolvedMetricDirection {
-  if (!targetMetric) return 'unknown';
-
-  const v3Cfg = getMetricRenderConfig(targetMetric);
-  if (v3Cfg) return v3Cfg.direction === 'lower_better' ? 'lower' : 'higher';
-
-  const catalogEntry = findMetric(targetMetric);
-  if (catalogEntry) return catalogEntry.direction === 'lower' ? 'lower' : 'higher';
-
-  const m = targetMetric.toLowerCase();
-  if (/\bmade\b|\bhit\b|\baccuracy\b/.test(m)) return 'higher';
-  if (LOWER_IS_BETTER_KEYWORDS.some((kw) => m.includes(kw))) return 'lower';
-  return 'unknown';
-}
-
-/**
- * Whether a target metric is "lower is better" — a real direction lookup
- * against the canonical registries, NOT a naive keyword guess.
- *
- * A bare substring match on "putt" false-positives on MAKE-rate metrics like
- * `putts_made_5_10ft_pct` or "1-Putt %" — making more putts is better (higher
- * is better), even though the string contains "putt" (mustFix: direction
- * flipped for putts-made/percentage-made metrics).
- *
- * Resolution order:
- *   1. The v3 canonical metric registry (`getMetricRenderConfig`) — covers
- *      registered metric ids (`sg_putting`, `putts_made_5_10ft_pct`, …), the
- *      authoritative source when the target_metric matches one exactly.
- *   2. The focus-area metric catalog (`findMetric`) — covers the legacy
- *      display-label vocabulary ("Putts Per Round", "1-Putt %", "3-Putt %", …)
- *      by stable key OR label, case-insensitive.
- *   3. A genuinely unregistered / custom metric (free text in an "Other"
- *      area) — fall back to the keyword heuristic, but guard the exact
- *      false-positive that motivated this fix: a "___ made ___" / "___ hit
- *      ___" / "___ accuracy" phrasing is a make-rate (higher is better) even
- *      when it contains a lower-is-better keyword.
- */
-export function isLowerIsBetter(targetMetric: string | null | undefined): boolean {
-  return resolveMetricDirection(targetMetric) === 'lower';
-}
+// Bound locally as well as re-exported — same reason `findMetric` is (see the
+// note at the top of the import block): `getProgressPercent` below calls it,
+// and an `export … from` re-export creates no local binding.
+import { resolveMetricDirection } from '@/lib/coachhelm/focus-areas/direction';
 
 /**
  * Human display label for a `target_metric` — a raw `target_metric` is a

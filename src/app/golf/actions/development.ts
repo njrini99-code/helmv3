@@ -12,6 +12,7 @@ import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledg
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-metric';
+import { describeWrongWayTarget } from '@/lib/coachhelm/focus-areas/direction';
 
 // ============================================================================
 // TYPES
@@ -132,6 +133,31 @@ function focusAreaLifecycleError(status: string | null | undefined): string | nu
 // ============================================================================
 
 /**
+ * #1266 — refuse a target that asks the player to move the WRONG way.
+ *
+ * This has to happen on the write, not on the card. `getProgressPercent`
+ * returns 100 the moment the target is met, deliberately and before its span
+ * guards, because a baseline stamped after the player had already passed the
+ * target (the driver's self-heal) is a satisfied objective rather than bad
+ * data. That makes a mistyped target and a legitimate self-heal numerically
+ * identical after the fact — both are `baseline > target` on a higher-is-
+ * better metric — so a fairways-hit target of 66 against a baseline of 82
+ * rendered a confident "100% there" while the goal pointed downhill.
+ *
+ * At create time `current == baseline`, so the question is answerable exactly
+ * once, before the ambiguity exists. Returns the human-readable reason (which
+ * the modal surfaces inline) or null when the target is acceptable — callers
+ * build their own result shape because they do not all return the same one.
+ */
+function wrongWayTargetReason(args: {
+  targetMetric: string | null | undefined;
+  baselineValue: number | null | undefined;
+  targetValue: number | null | undefined;
+}): string | null {
+  return describeWrongWayTarget(args);
+}
+
+/**
  * Create a new focus area for a player
  * Only coaches who manage the player can create focus areas
  */
@@ -188,6 +214,13 @@ async function createFocusAreaImpl(
   // Timeframe columns (target_kind/target_date/target_rounds) are not yet in the
   // generated Database types (migration 20260621230000), so route the insert
   // through fromUntyped to persist them without an as-any cast scattered inline.
+  const wrongWay = wrongWayTargetReason({
+    targetMetric: data.target_metric,
+    baselineValue: data.current_value,
+    targetValue: data.target_value,
+  });
+  if (wrongWay) return { success: false, error: wrongWay };
+
   const { error } = await fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
     coach_id: data.coach_id,
@@ -308,6 +341,13 @@ async function createPlayerFocusAreaImpl(
   // Service-role client: RLS has no player self-insert policy. The ownership
   // check above is the gate — the player_id is forced to the resolved profile.
   const admin = createAdminClient();
+  const wrongWay = wrongWayTargetReason({
+    targetMetric: data.target_metric,
+    baselineValue: data.current_value,
+    targetValue: data.target_value,
+  });
+  if (wrongWay) return { success: false, error: wrongWay };
+
   const { error } = await fromUntyped(admin, 'golf_player_focus_areas').insert({
     player_id: player.id,
     coach_id: null,
@@ -511,6 +551,31 @@ async function updateFocusAreaImpl(
 
   if (coachError || !coach) {
     return { success: false, error: 'Not authorized to update focus areas' };
+  }
+
+  // #1266 — an EDIT can point the target the wrong way just as easily as a
+  // create can, and the edit form does not resend the baseline, so read the
+  // stored one. Only worth a round-trip when the caller is actually changing
+  // the target; otherwise leave existing rows alone (including legitimate
+  // self-heal rows, which must stay editable).
+  if ('target_value' in data && data.target_value !== null && data.target_value !== undefined) {
+    const { data: existing } = await fromUntyped(supabase, 'golf_player_focus_areas')
+      .select('baseline_value, current_value, target_metric')
+      .eq('id', id)
+      .maybeSingle();
+    const row = existing as {
+      baseline_value: number | null;
+      current_value: number | null;
+      target_metric: string | null;
+    } | null;
+    if (row) {
+      const wrongWay = wrongWayTargetReason({
+        targetMetric: data.target_metric ?? row.target_metric,
+        baselineValue: row.baseline_value ?? row.current_value,
+        targetValue: data.target_value,
+      });
+      if (wrongWay) return { success: false, error: wrongWay };
+    }
   }
 
   // Split the timeframe fields out so a partial update only touches them when the
@@ -1331,6 +1396,13 @@ async function createFocusAreaFromInsightImpl(
 
   // Create the focus area with link to source insight.
   // Live schema column is `from_insight_id`, not `source_insight_id`.
+  const wrongWay = wrongWayTargetReason({
+    targetMetric: data.target_metric,
+    baselineValue: data.current_value,
+    targetValue: data.target_value,
+  });
+  if (wrongWay) return { success: false, error: wrongWay };
+
   const { data: focusArea, error: insertError } = await supabase
     .from('golf_player_focus_areas')
     .insert({
