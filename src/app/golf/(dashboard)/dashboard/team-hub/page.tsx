@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamHubWrapper } from '@/components/fairway/pages/team-hub';
-import { EmptyState, Button } from '@/components/fairway';
+import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'Team Hub | Helm Golf',
@@ -31,7 +31,26 @@ export default async function TeamHubPage({
   if (!session) redirect('/golf/login');
 
   const { player } = session;
-  if (!player) redirect('/golf/dashboard'); // coaches → main dashboard
+  if (!player) {
+    // #1251 — a coach here used to `redirect('/golf/dashboard')`, and that
+    // redirect crashed React (#310, "rendered more hooks than during the
+    // previous render") on every coach load, thrown inside Next's client
+    // router rather than in any app component. The framework-level fix used
+    // for the bare redirect shims — intercepting the path in `next.config.mjs`
+    // `redirects()` before the page renders — cannot apply, because whether to
+    // redirect depends on the visitor's role and the config layer has no
+    // session. Rendering `<FeatureUnavailable>` IN PLACE removes the redirect
+    // (and whatever it was crashing on) rather than papering over it, and is
+    // the pattern every coach-only page already uses for the mirror case.
+    return (
+      <FeatureUnavailable
+        title="Team Hub"
+        message="Team Hub collects a player's own tasks, announcements, travel, and class schedule. As a coach you manage those from the team surfaces on your dashboard."
+        actionHref="/golf/dashboard"
+        actionLabel="Back to Dashboard"
+      />
+    );
+  }
 
   const supabase = await createClient();
 
