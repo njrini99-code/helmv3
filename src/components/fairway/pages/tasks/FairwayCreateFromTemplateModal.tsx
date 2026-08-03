@@ -27,6 +27,7 @@ import {
   Input,
   RadioGroup,
   Checkbox,
+  CheckboxGroup,
   fairwayToast,
 } from '@/components/fairway';
 import { IconCheck } from '@/components/icons';
@@ -68,12 +69,6 @@ export function FairwayCreateFromTemplateModal({
   );
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-
-  function togglePlayer(id: string) {
-    setSelectedPlayers((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
-    );
-  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -175,9 +170,20 @@ export function FairwayCreateFromTemplateModal({
               Add players to your team first, then you can assign tasks to them.
             </InlineNotice>
           ) : (
-            <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+            /* #1270 — CheckboxGroup, not a bare <div>: an ungrouped Base UI
+               Checkbox registers as a field of the enclosing <Form>, and outside
+               a Field.Root its validity stays `null`, which Form reads as
+               invalid and silently blocks submit. This modal's button IS
+               type="submit", so it would have been fully dead here. */
+            <CheckboxGroup
+              value={selectedPlayers}
+              onValueChange={(next) => setSelectedPlayers(next)}
+              className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2"
+            >
               {players.map((p) => {
                 const isSel = selectedPlayers.includes(p.id);
+                const playerName =
+                  `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
                 return (
                   <label
                     key={p.id}
@@ -188,7 +194,7 @@ export function FairwayCreateFromTemplateModal({
                         : 'border-border-subtle bg-surface hover:border-border-strong',
                     )}
                   >
-                    <Checkbox checked={isSel} onCheckedChange={() => togglePlayer(p.id)} />
+                    <Checkbox value={p.id} aria-label={playerName} />
                     <span
                       className={cn(
                         'font-fw-sans text-body font-medium',
@@ -200,7 +206,7 @@ export function FairwayCreateFromTemplateModal({
                   </label>
                 );
               })}
-            </div>
+            </CheckboxGroup>
           ))}
 
         <div className="flex items-center justify-end gap-3 pt-2">

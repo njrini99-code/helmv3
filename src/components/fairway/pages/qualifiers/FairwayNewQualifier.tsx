@@ -39,6 +39,7 @@ import {
   TextArea,
   NumberField,
   Checkbox,
+  CheckboxGroup,
   PlayerIdentity,
 } from '@/components/fairway';
 import { Users, Flag, MapPin } from 'lucide-react';
@@ -136,8 +137,6 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
       ? 'Entry deadline must be on or before the start date.'
       : null;
 
-  const toggle = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
   const selectAll = () => setSelected(players.map((p) => p.id));
   const clearAll = () => setSelected([]);
 
@@ -472,7 +471,22 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
               />
             </Surface>
           ) : (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            /* #1270 — this MUST stay a CheckboxGroup, not a bare <div> of
+               <Checkbox>es. Base UI's Checkbox calls `useField({ enabled:
+               !groupContext })`, so an ungrouped checkbox registers itself with
+               the enclosing <Form>. Outside a Field.Root it gets the default
+               field context, whose validity is `null` — and Form's submit
+               handler rejects with `!field.validityData.state.valid`, where
+               `!null` is true. Every roster checkbox therefore counted as a
+               permanently-invalid field, so Form called preventDefault() and
+               never invoked our onSubmit: "Create qualifier" did nothing, with
+               no error anywhere because there is no Field.Error to render one.
+               Inside a group, `enabled` is false and nothing registers. */
+            <CheckboxGroup
+              value={selected}
+              onValueChange={(next) => setSelected(next)}
+              className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+            >
               {players.map((p) => {
                 const isSel = selected.includes(p.id);
                 const playerName = `${p.first_name} ${p.last_name}`.trim() || 'Player';
@@ -493,11 +507,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                         sighted user reads the player's name right next to it
                         (P192). An explicit `aria-label` makes the name
                         authoritative regardless of Field context. */}
-                    <Checkbox
-                      checked={isSel}
-                      onCheckedChange={() => toggle(p.id)}
-                      aria-label={playerName}
-                    />
+                    <Checkbox value={p.id} aria-label={playerName} />
                     {/* Shared identity (avatar falls back to initials — this
                         roster has no avatar_url) so an entered player reads the
                         same here as on the roster/messages/CoachHelm surfaces;
@@ -510,7 +520,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                   </label>
                 );
               })}
-            </div>
+            </CheckboxGroup>
           )}
         </FormSection>
 
