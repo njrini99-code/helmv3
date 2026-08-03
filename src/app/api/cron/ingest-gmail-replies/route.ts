@@ -7,11 +7,15 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import {
   classifyInboundAutomation,
+  extractBouncedRecipients,
   isGmailReadConfigured,
   listInboundMessages,
+  listSentMessages,
+  readContactLogGmailId,
   resolveLookbackWindow,
   type InboundAutomationReason,
   type InboundGmailMessage,
+  type SentGmailMessage,
 } from '@/lib/crm/gmail-read';
 import type { Json } from '@/lib/types';
 import { describeError } from '@/lib/utils/describe-error';
@@ -53,6 +57,37 @@ import { describeError } from '@/lib/utils/describe-error';
 // `{ok:true, skipped:'not-armed'}` 200 when the gmail.readonly scope was
 // missing, so the cron board showed green while ingesting nothing, forever.
 // See reportDegraded.
+//
+// FOUR MORE FIXES (2026-08-01) — the campaign it needed to see was
+// structurally invisible to it, and bounces were being thrown away:
+//
+//   1. WIDENED BACKFILL CEILING. `?days=` was clamped to [1, 30], which
+//      cannot reach the March start of the campaign from today. The ceiling
+//      (MAX_LOOKBACK_DAYS in gmail-read.ts) is now 365 — the scheduled tick's
+//      DEFAULT_LOOKBACK_DAYS stays 7, so this run's own schedule and cost are
+//      unchanged. Recover a missed window by hand:
+//        curl -H "Authorization: Bearer $CRON_SECRET" \
+//             'https://<host>/api/cron/ingest-gmail-replies?days=180'
+//      A very wide window may still need several narrower requests inside the
+//      120s maxDuration — watch for a 504 rather than assume a 200 means done.
+//   2. ALL-MAIL SEARCH. The query was `in:inbox -from:me newer_than:Nd`,
+//      which misses anything archived, labelled, or filtered. It no longer
+//      scopes to Inbox — see listInboundMessages's query comment.
+//   3. BOUNCE SUPPRESSION. `null_return_path` / `failed_recipients` messages
+//      used to just increment a counter and get discarded. They now go
+//      through processBounce(): extract the failed address (X-Failed-
+//      Recipients, then the RFC 3464 DSN, then a scoped prose fallback),
+//      write crm_email_suppressions (reason 'hard_bounce', source 'admin' —
+//      mirrors src/app/api/webhooks/resend/route.ts's suppressEmail()), and
+//      flip crm_coaches.email_status='bounced'.
+//   4. SENT-MAIL SYNC. syncSentMail() reads `in:sent` over the same window
+//      and backfills crm_contact_log (contact_type 'email') for any 1:1 send
+//      made straight from the Gmail UI that never went through the app's
+//      compose flow — without a contact_log row a coach's reply has nothing
+//      to attribute against. Idempotent via metadata.gmail_message_id (see
+//      readContactLogGmailId in gmail-read.ts) — the same key the app's own
+//      compose-send path (crm-gmail-send.ts) already stamps, so a message
+//      sent through the app is never double-logged here.
 //
 // INERT until the gmail.readonly scope is added to the DWD client in Google
 // Workspace Admin (see src/lib/crm/gmail-read.ts header).
@@ -148,17 +183,6 @@ export async function GET(request: Request) {
       }
 
       const scanned = inbound.length;
-      if (scanned === 0) {
-        return NextResponse.json({
-          ok: true,
-          days,
-          scanned: 0,
-          matched: 0,
-          inserted: 0,
-          count: 0,
-          detail: `Scanned 0 messages over ${days}d.`,
-        });
-      }
 
       // Drop machine mail (bounces, vacation responders, no-reply blasts)
       // BEFORE anything is written. Without this the new unmatched table fills
@@ -168,11 +192,27 @@ export async function GET(request: Request) {
       let automated = 0;
       let unparseableSender = 0;
       const human: InboundGmailMessage[] = [];
+      const bounces: InboundGmailMessage[] = [];
       for (const message of inbound) {
         const reason = classifyInboundAutomation(message);
         if (reason) {
           automated++;
           automatedByReason.set(reason, (automatedByReason.get(reason) ?? 0) + 1);
+          // Only mail that actually LOOKS like a delivery report enters the
+          // bounce path. `null_return_path` alone is far too wide: RFC 3834
+          // requires vacation responders to use a null envelope sender too,
+          // so every ordinary out-of-office reply from a real coach would
+          // land here, extract nothing, and fire the "unparseable bounce"
+          // warning. That noise would then drown the signal that warning
+          // exists to carry. Require a machine-readable delivery-status part
+          // or an explicit failed-recipients header.
+          const looksLikeDeliveryReport =
+            reason === 'failed_recipients' ||
+            Boolean(message.deliveryStatusText) ||
+            Boolean(message.failedRecipients);
+          if (looksLikeDeliveryReport) {
+            bounces.push(message);
+          }
           continue;
         }
         if (!message.fromAddress) {
@@ -223,6 +263,21 @@ export async function GET(request: Request) {
         }
       }
 
+      let bounceSuppressed = 0;
+      let bounceCoachesMarked = 0;
+      let bounceExtractionFailed = 0;
+      for (let offset = 0; offset < bounces.length; offset += DATABASE_CONCURRENCY) {
+        const batch = bounces.slice(offset, offset + DATABASE_CONCURRENCY);
+        const outcomes = await Promise.all(batch.map((message) => processBounce(supabase, message)));
+        for (const outcome of outcomes) {
+          bounceSuppressed += outcome.suppressed;
+          bounceCoachesMarked += outcome.coachesMarked;
+          if (outcome.recipients === 0) bounceExtractionFailed++;
+        }
+      }
+
+      const sentSync = await syncSentMail(supabase, days, maxMessages);
+
       return NextResponse.json({
         ok: true,
         days,
@@ -230,6 +285,12 @@ export async function GET(request: Request) {
         automated,
         automatedByReason: Object.fromEntries(automatedByReason),
         unparseableSender,
+        bounces: {
+          detected: bounces.length,
+          suppressed: bounceSuppressed,
+          coachesMarked: bounceCoachesMarked,
+          extractionFailed: bounceExtractionFailed,
+        },
         matched,
         inserted,
         // `count` carries the unmatched-capture total because job-log.ts's
@@ -238,7 +299,13 @@ export async function GET(request: Request) {
         // background_job_logs.metadata. A key named `unmatched` would render
         // correctly here and then vanish from the cron board.
         count: unmatchedCaptured,
-        detail: `${days}d window: ${scanned} scanned, ${automated} automated, ${matched} coach-matched (${inserted} new replies), ${unmatchedCaptured} unmatched captured.`,
+        sentSync: { scanned: sentSync.scanned, matched: sentSync.matched, inserted: sentSync.inserted },
+        // Flat aliases: only these two extra numbers, plus everything already
+        // whitelisted, survive into background_job_logs.metadata — see the
+        // `count` comment above for why that matters.
+        sent: sentSync.inserted,
+        processed: bounceSuppressed,
+        detail: `${days}d window (all-mail): ${scanned} scanned, ${automated} automated (${bounces.length} bounces -> ${bounceSuppressed} suppressed/${bounceCoachesMarked} coaches marked${bounceExtractionFailed ? `, ${bounceExtractionFailed} unrecoverable` : ''}), ${matched} coach-matched (${inserted} new replies), ${unmatchedCaptured} unmatched captured. Sent sync: ${sentSync.scanned} scanned/${sentSync.matched} matched/${sentSync.inserted} logged.`,
       });
     } catch (err) {
       await logServerError(
@@ -444,6 +511,258 @@ async function insertUnmatched(
  */
 function messageKey(message: InboundGmailMessage): string {
   return message.messageIdHeader ?? `gmail:${message.gmailId}`;
+}
+
+// --- Bounce processing --------------------------------------------------------
+
+interface BounceOutcome { recipients: number; suppressed: number; coachesMarked: number; }
+
+/**
+ * Handle one bounce/DSN message: extract the failed address(es), suppress
+ * each, flip the matching coach's email_status. Never throws — every write is
+ * best-effort/logged, matching insertReply/insertUnmatched's style.
+ */
+async function processBounce(
+  supabase: ReturnType<typeof createAdminClient>,
+  message: InboundGmailMessage,
+): Promise<BounceOutcome> {
+  const recipients = extractBouncedRecipients(message);
+  if (recipients.length === 0) {
+    await logServerError(
+      `ingest-gmail-replies: bounce with no extractable recipient (gmail ${message.gmailId})`,
+      { action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron', extra: { gmailId: message.gmailId } },
+      'warning',
+    );
+    return { recipients: 0, suppressed: 0, coachesMarked: 0 };
+  }
+  let suppressed = 0;
+  let coachesMarked = 0;
+  for (const address of recipients) {
+    if (await suppressBouncedEmail(supabase, address)) suppressed++;
+    if (await markCoachBounced(supabase, address)) coachesMarked++;
+  }
+  return { recipients: recipients.length, suppressed, coachesMarked };
+}
+
+/**
+ * Idempotently add a bounced address to crm_email_suppressions. Mirrors
+ * src/app/api/webhooks/resend/route.ts's suppressEmail() (check-then-insert;
+ * the table's real UNIQUE(email, reason) constraint is the backstop). reason
+ * 'hard_bounce' / source 'admin' are both confirmed live values against
+ * crm_email_suppressions_reason_check / _source_check — 'admin' is already
+ * used by existing rows in this exact table.
+ */
+async function suppressBouncedEmail(
+  supabase: ReturnType<typeof createAdminClient>,
+  email: string,
+): Promise<boolean> {
+  const normalized = email.toLowerCase().trim();
+  if (!normalized) return false;
+  try {
+    const { data: existing } = await supabase
+      .from('crm_email_suppressions')
+      .select('id')
+      .eq('email', normalized)
+      .eq('reason', 'hard_bounce')
+      .maybeSingle();
+    if (existing) return false;
+    const { error } = await supabase.from('crm_email_suppressions').insert({
+      email: normalized,
+      reason: 'hard_bounce',
+      source: 'admin',
+    });
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    await logServerError(`ingest-gmail-replies bounce suppression failed for ${normalized}: ${describeError(err)}`, {
+      action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron', extra: { email: normalized },
+    });
+    return false;
+  }
+}
+
+/**
+ * Flip crm_coaches.email_status='bounced' for a bounced address, case-
+ * insensitively (crm_coaches.email is plain text, not citext — confirmed live
+ * — so this app-side ilike + exact-compare is required, same shape as
+ * resolveCoachIdsByEmail's pass 2 below). Bounces are rare per run so a
+ * per-address query (rather than that function's batching) is fine.
+ */
+async function markCoachBounced(
+  supabase: ReturnType<typeof createAdminClient>,
+  email: string,
+): Promise<boolean> {
+  const normalized = email.toLowerCase().trim();
+  if (!normalized) return false;
+  try {
+    const { data: rows } = await supabase
+      .from('crm_coaches')
+      .select('id, email')
+      .ilike('email', escapeLikePattern(normalized))
+      .limit(5);
+    const match = ((rows ?? []) as CoachEmailRow[]).find((r) => r.email?.toLowerCase() === normalized);
+    if (!match) return false;
+    const { error } = await supabase
+      .from('crm_coaches')
+      .update({ email_status: 'bounced', updated_at: new Date().toISOString() })
+      .eq('id', match.id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    await logServerError(`ingest-gmail-replies bounce email_status update failed for ${normalized}: ${describeError(err)}`, {
+      action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron', extra: { email: normalized },
+    });
+    return false;
+  }
+}
+
+// --- Sent-mail sync (attribution) --------------------------------------------
+
+/**
+ * Backfill crm_contact_log from the mailbox's own Sent folder so a coach
+ * reply has a send record to attribute against (item 4). Does NOT recover the
+ * April BCC blasts — Gmail never exposes Bcc recipients on the sender's own
+ * Sent copy (the To header on those is literally "undisclosed-recipients:;"),
+ * which is the documented, structural reason those never matched. This closes
+ * the gap for any 1:1 send made straight from the Gmail UI going forward.
+ *
+ * Idempotent: dedupes on metadata.gmail_message_id via readContactLogGmailId
+ * — the SAME key crm-gmail-send.ts's recordGmailTouch() already stamps on
+ * every app-sent email, so a message sent through the app is never
+ * double-logged here, and re-running this cron is a no-op for rows it
+ * already wrote.
+ */
+async function syncSentMail(
+  supabase: ReturnType<typeof createAdminClient>,
+  days: number,
+  maxMessages: number,
+): Promise<{ scanned: number; matched: number; inserted: number }> {
+  let sent: SentGmailMessage[];
+  try {
+    sent = await listSentMessages(days, maxMessages);
+  } catch (err) {
+    await logServerError(`ingest-gmail-replies sent-mail list failed: ${describeError(err)}`, {
+      action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron',
+    });
+    return { scanned: 0, matched: 0, inserted: 0 };
+  }
+  if (sent.length === 0) return { scanned: 0, matched: 0, inserted: 0 };
+
+  const recipients = Array.from(new Set(sent.flatMap((m) => m.toAddresses)));
+  const coachByEmail = await resolveCoachIdsByEmail(supabase, recipients);
+
+  const candidateIds = sent
+    .filter((m) => m.toAddresses.some((a) => coachByEmail.has(a)))
+    .map((m) => m.gmailId);
+  const existingKeys = await existingGmailContactLogKeys(supabase, candidateIds);
+
+  let matched = 0;
+  let inserted = 0;
+  for (let offset = 0; offset < sent.length; offset += DATABASE_CONCURRENCY) {
+    const batch = sent.slice(offset, offset + DATABASE_CONCURRENCY);
+    const outcomes = await Promise.all(
+      batch.map(async (message) => {
+        // EVERY matching recipient gets a row, not just the first. One
+        // message addressed to three coaches is three sends; logging only
+        // coach A leaves B and C with no send record, and because the dedupe
+        // key includes the gmail id, later runs would skip the message
+        // entirely and never repair them. Their replies would then have
+        // nothing to attribute against — precisely the failure this sync
+        // exists to close.
+        const coachIds = Array.from(
+          new Set(
+            message.toAddresses
+              .map((a) => coachByEmail.get(a))
+              .filter((id): id is string => Boolean(id)),
+          ),
+        );
+        if (coachIds.length === 0) return { matched: 0, inserted: 0 };
+
+        let wrote = 0;
+        for (const coachId of coachIds) {
+          if (existingKeys.has(`${message.gmailId}::${coachId}`)) continue;
+          if (await insertSentContactLog(supabase, message, coachId)) wrote += 1;
+        }
+        return { matched: coachIds.length, inserted: wrote };
+      }),
+    );
+    for (const o of outcomes) { matched += o.matched; inserted += o.inserted; }
+  }
+  return { scanned: sent.length, matched, inserted };
+}
+
+/**
+ * Which (gmail_message_id, coach_id) pairs are already logged.
+ *
+ * This IS the whole idempotency contract — crm_contact_log has no unique
+ * constraint on the gmail id, so nothing downstream catches a wrong answer.
+ * Two rules follow from that:
+ *
+ *  1. FAIL CLOSED. A swallowed error would read as "nothing is logged yet"
+ *     and re-insert every message in the window, once per run, forever. We
+ *     throw instead so syncSentMail aborts without writing.
+ *  2. CHUNK. `candidateIds` can hold up to MAX_MESSAGES ids; supabase-js
+ *     puts an `.in()` list in the query string, and ~500 ids is roughly
+ *     10 KB — past the usual 8 KB URL/header limit at the gateway. A 414
+ *     would have hit rule 1 anyway, but chunking stops it happening at all.
+ *     Each chunk is bounded well under PostgREST's 1000-row cap.
+ */
+async function existingGmailContactLogKeys(
+  supabase: ReturnType<typeof createAdminClient>,
+  gmailIds: string[],
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (gmailIds.length === 0) return out;
+
+  const CHUNK = 50;
+  for (let i = 0; i < gmailIds.length; i += CHUNK) {
+    const chunk = gmailIds.slice(i, i + CHUNK);
+    const { data, error } = await supabase
+      .from('crm_contact_log')
+      .select('coach_id, metadata')
+      .in('metadata->>gmail_message_id', chunk)
+      .range(0, 999);
+
+    if (error) {
+      throw new Error(
+        `sent-sync dedupe lookup failed (${chunk.length} ids): ${error.message}. ` +
+          'Aborting without writing — re-inserting would duplicate contact-log rows.',
+      );
+    }
+
+    for (const row of data ?? []) {
+      const id = readContactLogGmailId(row.metadata);
+      if (id && row.coach_id) out.add(`${id}::${row.coach_id}`);
+    }
+  }
+  return out;
+}
+
+/** Insert one sent-mail contact-log row. created_by intentionally omitted
+ *  (nullable FK — this write has no human actor, unlike recordGmailTouch's
+ *  app-triggered send). contact_date is the ACTUAL send time so a wide
+ *  backfill lands with correct history instead of "now". */
+async function insertSentContactLog(
+  supabase: ReturnType<typeof createAdminClient>,
+  message: SentGmailMessage,
+  coachId: string,
+): Promise<boolean> {
+  const { error } = await supabase.from('crm_contact_log').insert({
+    coach_id: coachId,
+    contact_type: 'email',
+    subject: message.subject,
+    notes: 'Synced from Gmail Sent (ingest-gmail-replies)',
+    contact_date: message.sentAt,
+    metadata: { channel: 'gmail_api', gmail_message_id: message.gmailId, source: 'gmail_sent_sync' },
+  });
+  if (error) {
+    await logServerError(`ingest-gmail-replies sent-mail contact-log insert failed: ${error.message}`, {
+      action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron',
+      extra: { gmailId: message.gmailId, coachId },
+    });
+    return false;
+  }
+  return true;
 }
 
 /**

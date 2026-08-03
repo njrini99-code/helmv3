@@ -32,7 +32,10 @@ export type TimelineIconKey =
   | 'IconCheckCircle2'
   // Distinct from contact_log's IconMessageSquare on purpose — an inbound reply
   // must not look like our own logged outreach at a glance.
-  | 'IconMessage';
+  | 'IconMessage'
+  // A demo tour is the coach being *inside the product*, so it gets the screen
+  // glyph rather than another message/mail shape.
+  | 'IconMonitor';
 
 export const TIMELINE_CONFIG: Record<TimelineSource, TimelineSourceConfig> = {
   contact_log: {
@@ -79,5 +82,16 @@ export const TIMELINE_CONFIG: Record<TimelineSource, TimelineSourceConfig> = {
     bgColor: 'bg-accent-650',
     iconKey: 'IconMessage',
     label: 'Reply',
+  },
+  // The second inbound source, and the one a rep most needs to spot after a
+  // reply — a coach who toured the demo has already self-qualified. Sits one
+  // rung deeper than reply in the same accent ramp so the two inbound sources
+  // read as a pair against the outbound sources, still no rainbow.
+  demo_session: {
+    color: 'text-accent-900',
+    ringColor: 'ring-accent-400',
+    bgColor: 'bg-accent-700',
+    iconKey: 'IconMonitor',
+    label: 'Demo',
   },
 };

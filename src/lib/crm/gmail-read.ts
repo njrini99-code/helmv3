@@ -130,6 +130,26 @@ function extractBodies(part: GmailPart | undefined): { text: string | null; html
 }
 
 /**
+ * First `message/delivery-status` part's raw text (RFC 3464 DSN). Mirrors
+ * extractBodies()'s depth-first walk shape — that walker only matches
+ * text/plain and text/html and silently skips this part, which is where a
+ * standards-conformant DSN actually reports the failed address(es).
+ */
+function extractDeliveryStatus(part: GmailPart | undefined): string | null {
+  let out: string | null = null;
+  const walk = (p: GmailPart | undefined) => {
+    if (!p || out !== null) return;
+    if (p.mimeType === 'message/delivery-status' && p.body?.data) {
+      out = b64urlDecode(p.body.data);
+      return;
+    }
+    for (const child of p.parts ?? []) walk(child);
+  };
+  walk(part);
+  return out;
+}
+
+/**
  * "Nick Rini <nick@x.com>" -> "nick@x.com", ORIGINAL CASING PRESERVED.
  *
  * Split out of parseAddress() on 2026-07-24 so the ingest cron can store a
@@ -316,6 +336,10 @@ export interface InboundGmailMessage {
   hasAutoReplyHeader: boolean;
   /** X-Failed-Recipients — present on delivery status notifications. */
   failedRecipients: string | null;
+  /** First message/delivery-status part's raw text (RFC 3464 DSN), or null. The
+   *  reliable machine-readable source for WHICH address bounced when a
+   *  university mail server generates a standards-conformant DSN. */
+  deliveryStatusText: string | null;
   /** Original Gmail API message, retained for lossless unmatched-mail recovery. */
   rawPayload: Json;
 }
@@ -331,12 +355,16 @@ export interface InboundGmailMessage {
  */
 export const DEFAULT_LOOKBACK_DAYS = 7;
 /**
- * Hard ceiling for a manual backfill. 30 days, because the per-message GET
- * fan-out in listInboundMessages has to finish inside the caller's maxDuration
- * (120s for the cron). Recover a longer gap as consecutive narrower windows —
- * both destination tables enforce UNIQUE(message_id), so overlaps are free.
+ * Hard ceiling for a manual backfill. 365 days, wide enough for a `?days=`
+ * backfill to reach back to the March start of the campaign this cron exists
+ * to recover replies from. The actual runtime safety valve is MAX_MESSAGES
+ * (500), NOT this constant — MAX_MESSAGES is independent of `days`, so
+ * raising the day ceiling does not raise the worst-case GET count per run,
+ * it only lets a wider window be requested. Recover a gap wider than one
+ * page's worth of mail as consecutive narrower windows — both destination
+ * tables enforce UNIQUE(message_id), so overlaps are free.
  */
-export const MAX_LOOKBACK_DAYS = 30;
+export const MAX_LOOKBACK_DAYS = 365;
 export const MIN_LOOKBACK_DAYS = 1;
 /** Message budget grows with the window, up to Gmail's own maxResults cap. */
 const MESSAGES_PER_DAY = 50;
@@ -354,7 +382,8 @@ const MESSAGE_FETCH_CONCURRENCY = 10;
  * The value is CLAMPED to [MIN_LOOKBACK_DAYS, MAX_LOOKBACK_DAYS] rather than
  * rejected, and anything unparseable falls back to the default — a scheduled
  * invocation passes no value at all, and a typo in a hand-run backfill
- * (`?days=3000`) must not become an unbounded mailbox scan.
+ * (`?days=3000`) must not become an unbounded mailbox scan (that ceiling is
+ * MAX_LOOKBACK_DAYS; the actual per-run cost cap is MAX_MESSAGES, below).
  *
  * Lives here rather than in the route because a Next.js App Router `route.ts`
  * may only export handlers and the known segment-config symbols; an exported
@@ -378,8 +407,9 @@ export function resolveLookbackWindow(rawDays: string | null): {
 }
 
 /**
- * List inbound messages from the impersonated mailbox's inbox within the
- * lookback window (not sent by the mailbox itself). Read-only.
+ * List inbound messages from the impersonated mailbox within the lookback
+ * window (not sent by the mailbox itself). Read-only. Scans ALL mail, not
+ * just Inbox — see the search-query comment below for why.
  *
  * `max` goes straight to Gmail's `maxResults`, which the API hard-caps at 500.
  * There is no pagination here on purpose: every listed message costs a second
@@ -393,7 +423,12 @@ export function resolveLookbackWindow(rawDays: string | null): {
 export async function listInboundMessages(lookbackDays = 2, max = 50): Promise<InboundGmailMessage[]> {
   if (!isGmailReadConfigured()) throw new Error('Gmail read is not configured (missing service-account env).');
   const token = await getReadToken();
-  const q = encodeURIComponent(`in:inbox -from:me newer_than:${lookbackDays}d`);
+  // No `in:` qualifier searches ALL mail (archived, labelled, filtered —
+  // everything `in:inbox` was missing) while Gmail's own default still
+  // excludes Spam and Trash without an explicit -in:spam -in:trash (documented
+  // Gmail search behavior). -in:drafts keeps an unsent draft in our own
+  // Compose window from ever being read as "inbound".
+  const q = encodeURIComponent(`-from:me -in:drafts newer_than:${lookbackDays}d`);
   const list = await gmailGet<{ messages?: Array<{ id: string }> }>(
     token,
     `/messages?q=${q}&maxResults=${max}`,
@@ -431,9 +466,191 @@ export async function listInboundMessages(lookbackDays = 2, max = 50): Promise<I
         hasAutoReplyHeader:
           header(msg, 'X-Autoreply') !== null || header(msg, 'X-Autorespond') !== null,
         failedRecipients: header(msg, 'X-Failed-Recipients'),
+        deliveryStatusText: extractDeliveryStatus(msg.payload),
         rawPayload: msg as unknown as Json,
       });
     }
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Bounce recipient extraction
+// ---------------------------------------------------------------------------
+
+export interface BounceRecipientSignals {
+  failedRecipients: string | null;
+  deliveryStatusText: string | null;
+  bodyText: string | null;
+}
+
+/**
+ * Pull the address(es) that bounced out of a DSN, most-reliable source first.
+ * Pure — narrow signals so a test can build a literal, matching
+ * InboundAutomationSignals's pattern above.
+ *
+ *   1. X-Failed-Recipients — de-facto standard many MTAs (incl. Google's own)
+ *      stamp with a comma/semicolon list of failed addresses. Authoritative
+ *      when present.
+ *   2. RFC 3464 `Final-Recipient: rfc822; addr` field(s) inside the
+ *      message/delivery-status part — the machine-readable part almost every
+ *      standards-conformant MTA (Postfix/Exchange/Sendmail) includes even
+ *      when X-Failed-Recipients is absent. Collects every occurrence (a
+ *      multi-recipient bounce can report more than one).
+ *   3. Best-effort prose fallback for bounces that skip both — scoped to the
+ *      single paragraph right after the "failed"/"undeliverable" phrase so a
+ *      DSN that quotes the ORIGINAL message underneath (with ITS OWN To/From
+ *      headers) can never leak an unrelated address into the result.
+ *
+ * Returns [] when nothing could be extracted — callers must log that
+ * (`processBounce` in the route does), never assume "no recipient failed".
+ */
+export function extractBouncedRecipients(message: BounceRecipientSignals): string[] {
+  const out = new Set<string>();
+
+  // A DSN is only PERMANENT when it says so. RFC 3464 emits the same report
+  // shape for `Action: delayed` (4.x.x transient — Gmail's "Delivery Status
+  // Notification (Delay)" after a greylist or a brief outage) and for
+  // `Action: relayed`/`expanded`, and those carry BOTH a null Return-Path and
+  // an X-Failed-Recipients header. Treating one as a hard bounce suppresses a
+  // coach whose mailbox is fine and whose mail delivers minutes later, with no
+  // signal that anything went wrong — an unrecoverable, silent loss of a real
+  // prospect. Bail before extracting anything unless the report is permanent.
+  if (message.deliveryStatusText && !isPermanentFailureDsn(message.deliveryStatusText)) {
+    return [];
+  }
+
+  if (message.failedRecipients) {
+    for (const raw of message.failedRecipients.split(/[;,]/)) {
+      const addr = parseAddress(raw);
+      if (addr) out.add(addr);
+    }
+    if (out.size > 0) return Array.from(out);
+  }
+
+  if (message.deliveryStatusText) {
+    const re = /Final-Recipient:\s*rfc822;\s*([^\s<>,;]+@[^\s<>,;]+)/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(message.deliveryStatusText)) !== null) {
+      const addr = parseAddress(m[1] ?? null);
+      if (addr) out.add(addr);
+    }
+    if (out.size > 0) return Array.from(out);
+  }
+
+  if (message.bodyText) {
+    const scoped = scopedBounceParagraph(message.bodyText);
+    if (scoped) {
+      const emailRe = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+      let m: RegExpExecArray | null;
+      while ((m = emailRe.exec(scoped)) !== null) out.add(m[0].toLowerCase());
+    }
+  }
+
+  return Array.from(out);
+}
+
+/**
+ * True only for a DSN reporting PERMANENT failure.
+ *
+ * RFC 3464 §2.3.3: `Action` is one of failed / delayed / delivered / relayed /
+ * expanded, and only `failed` is terminal. §2.3.4's `Status` is `class.subject
+ * .detail`, where class 5 is permanent and 4 is transient. We require either
+ * signal to say permanent, and we require at least one of them to be PRESENT —
+ * a report carrying neither is not something we will suppress a real address
+ * on. Fails closed by design: an unparseable DSN yields no suppression, which
+ * costs us one re-send, versus wrongly blacklisting a live coach forever.
+ */
+function isPermanentFailureDsn(deliveryStatusText: string): boolean {
+  const hasAction = /^\s*Action:/im.test(deliveryStatusText);
+  const hasStatus = /^\s*Status:/im.test(deliveryStatusText);
+  if (!hasAction && !hasStatus) return false;
+
+  if (/^\s*Action:\s*failed\b/im.test(deliveryStatusText)) return true;
+  // Status 5.x.x with no contradicting Action: failed line still counts —
+  // some MTAs omit Action entirely.
+  if (!hasAction && /^\s*Status:\s*5\.\d+\.\d+/im.test(deliveryStatusText)) return true;
+
+  return false;
+}
+
+/** Paragraph-scoped prose window for the last-resort fallback above. */
+function scopedBounceParagraph(bodyText: string): string | null {
+  const re =
+    /(?:failed permanently|wasn't delivered to|couldn't be delivered to|delivery to the following recipient[s]? failed)[\s\S]*?\n\s*\n[\s\S]*?(?=\n\s*\n|$)/i;
+  return bodyText.match(re)?.[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Sent-mail sync (attribution)
+// ---------------------------------------------------------------------------
+
+export interface SentGmailMessage {
+  gmailId: string;
+  /** Lowercased, via parseAddress — same normalization as InboundGmailMessage.fromAddress. */
+  toAddresses: string[];
+  subject: string | null;
+  sentAt: string;
+}
+
+/**
+ * List messages the impersonated mailbox itself sent within the lookback
+ * window (`in:sent`). Read-only, same token/scope as listInboundMessages.
+ * Feeds the sent-mail sync in ingest-gmail-replies/route.ts (item 4): a
+ * coach's reply needs an existing crm_contact_log row to attribute against,
+ * and any 1:1 send made straight from the Gmail UI (outside the app's
+ * compose flow) never produced one.
+ *
+ * format=metadata + repeated metadataHeaders keeps each fetch small since
+ * only the recipient and subject are read — no body decode needed.
+ */
+export async function listSentMessages(lookbackDays = 2, max = 50): Promise<SentGmailMessage[]> {
+  if (!isGmailReadConfigured()) throw new Error('Gmail read is not configured (missing service-account env).');
+  const token = await getReadToken();
+  const q = encodeURIComponent(`in:sent newer_than:${lookbackDays}d`);
+  const list = await gmailGet<{ messages?: Array<{ id: string }> }>(
+    token,
+    `/messages?q=${q}&maxResults=${max}`,
+  );
+  const refs = list.messages ?? [];
+  const out: SentGmailMessage[] = [];
+  for (let offset = 0; offset < refs.length; offset += MESSAGE_FETCH_CONCURRENCY) {
+    const batch = refs.slice(offset, offset + MESSAGE_FETCH_CONCURRENCY);
+    const messages = await Promise.all(
+      batch.map((ref) =>
+        gmailGet<GmailMessage>(
+          token,
+          `/messages/${ref.id}?format=metadata&metadataHeaders=To&metadataHeaders=Subject`,
+        ),
+      ),
+    );
+    for (const msg of messages) {
+      out.push({
+        gmailId: msg.id,
+        toAddresses: (header(msg, 'To') ?? '')
+          .split(',')
+          .map((a) => parseAddress(a))
+          .filter((a): a is string => Boolean(a)),
+        subject: header(msg, 'Subject'),
+        sentAt: msg.internalDate ? new Date(Number(msg.internalDate)).toISOString() : new Date().toISOString(),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Read the Gmail message id a crm_contact_log row was stamped with, or null.
+ * Both write paths — the app's compose-send (crm-gmail-send.ts's
+ * recordGmailTouch) and the sent-mail sync pass added to
+ * ingest-gmail-replies/route.ts — store it at metadata.gmail_message_id.
+ * crm_contact_log has NO unique constraint of any kind on this (verified live
+ * via pg_indexes), so this pure reader is the actual dedupe contract the two
+ * write paths hand-shake on; kept here, not in the route, so it is
+ * unit-testable without mocking Supabase.
+ */
+export function readContactLogGmailId(metadata: Json | null): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const value = (metadata as Record<string, Json>).gmail_message_id;
+  return typeof value === 'string' ? value : null;
 }
