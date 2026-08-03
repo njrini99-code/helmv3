@@ -185,6 +185,10 @@ export function FairwayIntentControl({
         data-intent={goal ?? 'none'}
         className={cn(
           'group inline-flex max-w-full items-center rounded-full align-middle',
+          // #1249 — 88x20 on a phone, repeated once per roster row. Raise the
+          // HIT area to the 44px floor without touching the StatusPill chrome
+          // this trigger exists to preserve (see .fw-touch-hit in globals.css).
+          'fw-touch-hit',
           'outline-none transition-[transform,box-shadow] [transition-duration:var(--fw-dur-fast)]',
           'focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           'hover:-translate-y-px active:translate-y-0 motion-reduce:transform-none',
