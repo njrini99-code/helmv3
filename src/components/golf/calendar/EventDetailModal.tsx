@@ -281,6 +281,8 @@ export function EventDetailModal({
     rsvpRead: true,
     availability: true,
     rsvpWrite: true,
+    // #1263 — opt-in, unlike the rest. See CalendarCapabilities.eventDocuments.
+    eventDocuments: false,
   },
 }: EventDetailModalProps) {
   const uid = useId();
@@ -1034,7 +1036,11 @@ export function EventDetailModal({
           {/* Document attachments — surfaces practice plans / scouting reports
               to attendees. Only renders for saved events; for new events the
               picker would have nothing to attach to. */}
-          {!isCreating && event && (
+          {/* #1263 — gated: this section's data layer is golf-only
+              (golf_event_documents / golf_documents), while the only host that
+              still renders this modal is the baseball calendar, where it can
+              never load or save anything. Off unless a host opts in. */}
+          {capabilities.eventDocuments && !isCreating && event && (
             <EventDocumentsSection
               eventId={event.id}
               teamId={event.team_id}
