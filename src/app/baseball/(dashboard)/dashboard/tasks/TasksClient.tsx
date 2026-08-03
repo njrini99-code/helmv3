@@ -9,6 +9,7 @@ import { getTeamTasks, getPlayerTasks, getTaskAssignments } from '@/app/baseball
 import type { BaseballTask } from '@/app/baseball/actions/tasks';
 import { TasksFairway } from '@/components/baseball/tasks/TasksFairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 interface RosterPlayer {
   id: string;
@@ -141,7 +142,7 @@ export default function TasksClient() {
 
   const now = new Date();
   const overdueCount = tasks.filter(
-    t => t.due_date && new Date(t.due_date) < now && t.status !== 'completed'
+    t => t.due_date && parseDateOnly(t.due_date) < now && t.status !== 'completed'
   ).length;
 
   return (

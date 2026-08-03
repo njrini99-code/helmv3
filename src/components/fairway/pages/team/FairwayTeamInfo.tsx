@@ -40,6 +40,7 @@ import {
   IconClipboardList,
 } from '@/components/icons';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy TeamInfoPlayer loader output EXACTLY
@@ -339,7 +340,7 @@ export function FairwayTeamInfo({
                 // and Team Hub's Tasks tab (TaskRow): a real due date in the
                 // past on a task that isn't complete.
                 const isOverdue =
-                  !!now && !!task.due_date && new Date(task.due_date) < now;
+                  !!now && !!task.due_date && parseDateOnly(task.due_date) < now;
                 return (
                   <Surface key={task.id} elevation="border" padding="md">
                     <div className="flex items-start gap-3">
@@ -371,7 +372,7 @@ export function FairwayTeamInfo({
                             suppressHydrationWarning
                           >
                             Due{' '}
-                            {new Date(task.due_date).toLocaleDateString(undefined, {
+                            {parseDateOnly(task.due_date).toLocaleDateString(undefined, {
                               month: 'short',
                               day: 'numeric',
                             })}
