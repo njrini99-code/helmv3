@@ -42,11 +42,17 @@ export function FeatureUnavailable({
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <PageContainer width="prose">
-        <ViewHeader title={title} description={message} />
+        {/* #1260 — these two used to receive the SAME `title` and `message`,
+            which rendered the heading and the sentence verbatim twice on every
+            role-denial screen. The anatomy (masthead over body) was right; the
+            content split was not. Each string now appears exactly once:
+            the masthead h1 names the surface, and the card states the reason
+            once above the CTA. Do not pass `description` to the ViewHeader or
+            `title` to the EmptyState here — that is precisely the duplication. */}
+        <ViewHeader title={title} />
         <EmptyState
           icon={<Lock className="h-7 w-7" strokeWidth={1.75} />}
-          title={title}
-          description={message}
+          title={message}
           action={
             <Button asChild variant="primary" rightIcon={<ArrowRight className="h-3.5 w-3.5" aria-hidden />}>
               <Link href={actionHref}>{actionLabel}</Link>
