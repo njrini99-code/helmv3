@@ -159,4 +159,83 @@ describe('useSequencedNavigation', () => {
     expect(mockReplace).not.toHaveBeenCalled();
     expect(locationReplace).not.toHaveBeenCalled();
   });
+
+  /**
+   * #welcome-hang — the regression that shipped past all of the tests above.
+   *
+   * The arming effect listed `router`, `onFade` and the three timing numbers in
+   * its dependency array, its cleanup cleared all three timers unconditionally,
+   * and an "arm only once" ref then refused to reschedule them. So ONE benign
+   * re-render — a new `useRouter()` identity is enough, and that is what
+   * happened — permanently killed the whole sequence. Captured live:
+   *
+   *   +2997ms  effect run; armed=true hasArmed=false
+   *   +2998ms  scheduled {fade 1650, nav 1900, failsafe 4500}
+   *   +3002ms  CLEANUP - clearing all timers
+   *   +3003ms  EARLY RETURN - nothing scheduled
+   *
+   * Every coach then sat on /golf/welcome indefinitely with only Skip working,
+   * INCLUDING the 4.5s failsafe that exists to catch exactly this, because it
+   * was cleared along with the others.
+   *
+   * The existing suite could not see it: it renders once and never re-renders,
+   * so the fatal second effect run never happened. These two assert the
+   * property that actually matters — the sequence survives re-renders — rather
+   * than re-asserting the timers fire from a single clean mount.
+   */
+  it('still navigates after a re-render changes the hook inputs', () => {
+    const onFade = vi.fn();
+    const { rerender } = renderHook(
+      ({ fade }: { fade: () => void }) => {
+        const destinationRef = useRef('/golf/dashboard');
+        return useSequencedNavigation({
+          armed: true,
+          destinationRef,
+          fadeAtMs: FADE,
+          navigateAtMs: NAV,
+          failsafeAtMs: FAILSAFE,
+          // A fresh function identity every render, standing in for any
+          // unstable input (the real one was `router`).
+          onFade: fade,
+        });
+      },
+      { initialProps: { fade: onFade } },
+    );
+
+    // Re-render immediately, exactly as the page did ~4ms after mount.
+    rerender({ fade: onFade });
+
+    vi.advanceTimersByTime(FADE);
+    expect(onFade, 'fade timer was destroyed by the re-render').toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(NAV - FADE);
+    expect(mockReplace, 'navigation timer was destroyed by the re-render').toHaveBeenCalledWith(
+      '/golf/dashboard',
+    );
+  });
+
+  it('survives repeated re-renders and never double-navigates', () => {
+    const onFade = vi.fn();
+    const { rerender } = renderHook(
+      ({ fade }: { fade: () => void }) => {
+        const destinationRef = useRef('/golf/dashboard');
+        return useSequencedNavigation({
+          armed: true,
+          destinationRef,
+          fadeAtMs: FADE,
+          navigateAtMs: NAV,
+          failsafeAtMs: FAILSAFE,
+          onFade: fade,
+        });
+      },
+      { initialProps: { fade: onFade } },
+    );
+
+    for (let i = 0; i < 5; i++) rerender({ fade: onFade });
+
+    vi.advanceTimersByTime(FAILSAFE + 100);
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    // The hard failsafe must stand down once the soft navigation has claimed it.
+    expect(locationReplace).not.toHaveBeenCalled();
+  });
 });
