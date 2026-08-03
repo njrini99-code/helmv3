@@ -193,20 +193,36 @@ AS $$
         gp.user_id = (SELECT auth.uid())
         -- the `_select_team` branch, verbatim, as EXISTS rather than extra
         -- JOINs so a player on several teams cannot multiply the row out
-        OR EXISTS (
-          SELECT 1
-          FROM golf_team_members gtm
-          JOIN golf_teams gt   ON gt.id = gtm.team_id
-          JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
-          WHERE gtm.player_id = gp.id
-            AND gc.user_id = (SELECT auth.uid())
-        )
+        -- STAFFING, not organisation membership.
+        --
+        -- This started as an org-level EXISTS (golf_team_members -> golf_teams
+        -- -> golf_coaches ON gc.organization_id = gt.organization_id) and that
+        -- WIDENED visibility. The pre-existing suite
+        -- supabase/tests/rls/golf_shot_detail_visibility.sql caught it in CI:
+        --
+        --   Failed test 5: same-org coach who does NOT staff the team CANNOT
+        --                  read putt_details        have: 1  want: 0
+        --   Failed test 6: ...same for approach_miss_details
+        --
+        -- The reason is spelled out in that file's own header: the old detail
+        -- policies only checked organisation membership themselves, and it was
+        -- the INHERITED per-row RLS on golf_shots that narrowed them to the
+        -- staffing coach. Both conjuncts had to hold. This routine runs with
+        -- definer rights precisely so it can skip that inherited RLS — which is
+        -- where the 3413ms -> 515ms comes from — so it must carry the staffing
+        -- check itself rather than inherit it.
+        --
+        -- user_is_coach_of_golf_player() is the canonical predicate for this
+        -- (golf_team_coach_staff -> golf_coaches -> golf_team_members, active
+        -- members only); reusing it keeps one definition of "coaches this
+        -- player" instead of a second, subtly different copy here.
+        OR public.user_is_coach_of_golf_player(gp.id)
       )
   );
 $$;
 
 COMMENT ON FUNCTION public.can_view_golf_shot(uuid) IS
-  'True when the caller may read the shot with this id: they own the round it belongs to, or they coach an organization one of whose teams rosters that player. Exists so putt_details / approach_miss_details can test one shot id against an index instead of materializing every shot id visible to the caller across their whole organization — measured at 3413ms -> 515ms for a 500-shot read. Definer rights are deliberate: they also skip the layered per-row RLS on golf_shots/holes/rounds/players, which was the bulk of the cost. Search path is pinned on the function itself.';
+  'True when the caller may read the shot with this id: they own the round it belongs to, or they STAFF a team that rosters that player (via user_is_coach_of_golf_player — golf_team_coach_staff, active members only). Staffing, not organisation membership: an org-level check here widened visibility and was caught by supabase/tests/rls/golf_shot_detail_visibility.sql tests 5-6, because the old detail policies inherited that narrowing from golf_shots RLS and this function deliberately skips it. Exists so putt_details / approach_miss_details can test one shot id against an index instead of materializing every shot id visible to the caller across their whole organization — measured at 3413ms -> 515ms for a 500-shot read. Definer rights are deliberate: they also skip the layered per-row RLS on golf_shots/holes/rounds/players, which was the bulk of the cost. Search path is pinned on the function itself.';
 
 REVOKE ALL ON FUNCTION public.can_view_golf_shot(uuid) FROM PUBLIC;
 -- Supabase default-grants EXECUTE to anon on new public functions; REVOKE FROM
