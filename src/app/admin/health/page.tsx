@@ -1,5 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFeatureHealth } from '@/lib/admin/data/feature-health';
+import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
 import { Eyebrow } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStale } from '../_components/PanelStates';
@@ -41,6 +42,50 @@ export default async function FeatureHealthPage() {
     );
   }
 
+  /**
+   * #1256 — AI availability sits in its OWN panel, deliberately not folded
+   * into the dot grid below.
+   *
+   * CoachHelm was 100% template-fallback for 8 days while this board showed a
+   * single amber dot for the subsystem. That is a category error, not a bug in
+   * the grid: the grid is computed from error counts with 2-window hysteresis,
+   * which is right for errors, but a total AI outage produces almost no error
+   * volume because falling back to a template is a SUCCESSFUL path that logs
+   * one throttled warning. A rate needs its own reading, and it must not
+   * inherit the hysteresis — one fully dark day is worth showing at once.
+   */
+  async function AiBody() {
+    const ai = await fetchAiAvailability();
+    if (ai.degraded) {
+      return (
+        <PanelStale
+          label="AI availability unavailable — golf_coachhelm_llm_calls did not respond"
+          error="Rendering neutral rather than a fabricated availability figure."
+        />
+      );
+    }
+    const dot =
+      ai.status === 'red'
+        ? 'bg-fw-danger'
+        : ai.status === 'amber'
+          ? 'bg-amber-500'
+          : ai.status === 'green'
+            ? 'bg-accent-500'
+            : 'bg-warm-300';
+    return (
+      <div className="flex items-start gap-3">
+        <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} aria-hidden />
+        <div>
+          <p className="text-sm font-medium text-warm-900">
+            CoachHelm AI ·{' '}
+            {ai.availability === null ? 'no signal' : `${Math.round(ai.availability * 100)}% availability`}
+          </p>
+          <p className="mt-0.5 text-sm text-warm-500">{ai.summary}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <AutoRefresh />
@@ -63,6 +108,9 @@ export default async function FeatureHealthPage() {
           feature tags before they reach this board.
         </p>
       </div>
+      <PanelBoundary title="AI availability">
+        <AiBody />
+      </PanelBoundary>
       <PanelBoundary title="Feature Health">
         <Body />
       </PanelBoundary>
