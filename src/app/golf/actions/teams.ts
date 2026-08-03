@@ -188,7 +188,7 @@ export async function validateGolfPlayerCanJoinTeam(
  * Add a golf player to a team via golf_team_members
  * Also notifies coaches when a player joins
  */
-async function joinGolfTeamImpl(playerId: string, teamId: string) {
+async function joinGolfTeamImpl(playerId: string, teamId: string, joinCode?: string) {
   const supabase = await createClient();
 
   // Validate first
@@ -215,14 +215,26 @@ async function joinGolfTeamImpl(playerId: string, teamId: string) {
     .eq('id', teamId)
     .single();
 
-  // Create team membership record
-  const { error } = await supabase
-    .from('golf_team_members')
-    .insert({
-      player_id: playerId,
-      team_id: teamId,
-      status: 'active',
-    });
+  // Create team membership record.
+  //
+  // #1257 — a player self-join now has to PROVE the join code. The old
+  // `"Players can join teams"` INSERT policy only asserted that the target team
+  // HAD a code; a WITH CHECK clause cannot see what the user typed, so any
+  // authenticated player could insert themselves into any team. That policy is
+  // gone, and the self-join goes through a SECURITY DEFINER RPC that resolves
+  // the team from the code server-side.
+  //
+  // The coach-side path (approving a join request, teams.ts:942) is unchanged —
+  // it is covered by `golf_team_members_insert_coach USING is_golf_team_coach()`.
+  const { error } = joinCode
+    ? await supabase.rpc('golf_join_team_with_code', { p_code: joinCode })
+    : await supabase
+        .from('golf_team_members')
+        .insert({
+          player_id: playerId,
+          team_id: teamId,
+          status: 'active',
+        });
 
   if (error) {
     maybeCaptureRlsDenial(error, {
@@ -295,8 +307,8 @@ const observedJoinGolfTeam = withAdminObserved(
   joinGolfTeamImpl,
 );
 
-export async function joinGolfTeam(playerId: string, teamId: string) {
-  return observedJoinGolfTeam(playerId, teamId);
+export async function joinGolfTeam(playerId: string, teamId: string, joinCode?: string) {
+  return observedJoinGolfTeam(playerId, teamId, joinCode);
 }
 
 /**
@@ -309,12 +321,16 @@ async function processGolfTeamInvitationImpl(joinCode: string, playerId: string)
   // Normalize join code to uppercase for case-insensitive matching
   const normalizedCode = joinCode.toUpperCase();
 
-  // Find the team by join code
-  const { data: team, error: teamError } = await supabase
-    .from('golf_teams')
-    .select('id, name, join_code')
-    .eq('join_code', normalizedCode)
-    .single();
+  // Find the team by join code.
+  //
+  // #1257 — resolving this with `.eq('join_code', …)` only worked because a
+  // policy read `USING (join_code IS NOT NULL)`, which made every team and
+  // every code readable by any signed-in user. The lookup is now a SECURITY
+  // DEFINER function that returns just the matching team and never its code.
+  const { data: teamRows, error: teamError } = await supabase
+    .rpc('golf_team_by_join_code', { p_code: normalizedCode });
+
+  const team = Array.isArray(teamRows) ? teamRows[0] : teamRows;
 
   if (teamError || !team) {
     return {
@@ -323,8 +339,10 @@ async function processGolfTeamInvitationImpl(joinCode: string, playerId: string)
     };
   }
 
-  // Join the team
-  return await joinGolfTeam(playerId, team.id);
+  // Pass the code through: the membership INSERT is performed by
+  // golf_join_team_with_code, which re-resolves the team from the code
+  // server-side rather than trusting a team id from the client.
+  return await joinGolfTeam(playerId, team.id, normalizedCode);
 }
 
 const observedProcessGolfTeamInvitation = withAdminObserved(

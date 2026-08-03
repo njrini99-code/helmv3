@@ -20670,7 +20670,27 @@ export type Database = {
         Args: { p_announcement_id: string }
         Returns: boolean
       }
+      golf_join_team_with_code: {
+        Args: { p_code: string }
+        Returns: {
+          team_id: string
+          team_name: string
+        }[]
+      }
       golf_normalize_name: { Args: { p: string }; Returns: string }
+      golf_team_by_join_code: {
+        Args: { p_code: string }
+        Returns: {
+          id: string
+          name: string
+          organization_city: string
+          organization_id: string
+          organization_logo_url: string
+          organization_name: string
+          organization_state: string
+          season: string
+        }[]
+      }
       has_any_baseball_team_membership: {
         Args: { p_team_id: string }
         Returns: boolean
@@ -20895,6 +20915,10 @@ export type Database = {
       sg_normalize_lie: { Args: { p_lie: string }; Returns: string }
       sg_scale_for_player: { Args: { p_player_id: string }; Returns: number }
       shares_my_baseball_organization: {
+        Args: { p_org_id: string }
+        Returns: boolean
+      }
+      shares_my_golf_organization: {
         Args: { p_org_id: string }
         Returns: boolean
       }

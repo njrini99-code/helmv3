@@ -43,6 +43,8 @@ import {
   completeAnnouncementTask,
 } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
+import { getPreviewUrl } from '@/app/golf/actions/documents';
+import { toast } from '@/components/ui/sonner';
 import { openExternalUrl } from '@/lib/utils/capacitor';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 
@@ -196,6 +198,9 @@ export function FairwayPlayerAnnouncementCard({
   const [detail, setDetail] = useState<GolfAnnouncementEnriched | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState(false);
+  // #1259 — attachment opens now round-trip to the server for a signed URL,
+  // so the row needs a per-document pending state.
+  const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [hasAcknowledged, setHasAcknowledged] = useState(!!ann.has_player_acknowledged);
   const [acknowledging, setAcknowledging] = useState(false);
   const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(new Set());
@@ -420,20 +425,40 @@ export function FairwayPlayerAnnouncementCard({
                   <DetailHeading>Attachments</DetailHeading>
                   <div className="flex flex-col gap-1.5">
                     {detail.documents.map((d) => {
-                      const url = d.document?.file_url;
+                      // #1259 — do NOT open `d.document.file_url`. That value was
+                      // written with getPublicUrl() against the PRIVATE `documents`
+                      // bucket, so it is a dead `/object/public/…` link: clicking it
+                      // navigated the player to raw storage JSON,
+                      // {"statusCode":"404","error":"Bucket not found"}. Ask the
+                      // server for a short-lived signed URL at click time instead.
+                      const hasDoc = Boolean(d.document_id);
                       return (
                         // eslint-disable-next-line helm/no-raw-button -- downloadable attachment row (icon tile + meta + download glyph); not a pill CTA
                         <button
                           key={d.document_id}
                           type="button"
-                          disabled={!url}
+                          disabled={!hasDoc || pendingDocId === d.document_id}
                           onClick={() => {
-                            if (url) void openExternalUrl(url);
+                            if (!d.document_id) return;
+                            setPendingDocId(d.document_id);
+                            void getPreviewUrl(d.document_id)
+                              .then((res) => {
+                                if (res.data?.url) {
+                                  void openExternalUrl(res.data.url);
+                                } else {
+                                  toast.error(
+                                    res.noContent
+                                      ? 'That attachment has no stored file.'
+                                      : 'Could not open that attachment.',
+                                  );
+                                }
+                              })
+                              .finally(() => setPendingDocId(null));
                           }}
                           className={cn(
                             'group/doc flex w-full items-center gap-3 rounded-fw-md border border-border-subtle bg-surface px-3.5 py-3 text-left',
                             'transition-colors duration-fast',
-                            url
+                            hasDoc
                               ? 'hover:border-border-strong hover:bg-surface-sunken'
                               : 'cursor-not-allowed opacity-50',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
@@ -453,7 +478,7 @@ export function FairwayPlayerAnnouncementCard({
                                 : ''}
                             </span>
                           </span>
-                          {url && (
+                          {hasDoc && (
                             <IconDownload
                               size={15}
                               className="flex-shrink-0 text-text-tertiary transition-colors group-hover/doc:text-accent-600"
