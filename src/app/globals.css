@@ -2073,44 +2073,6 @@
       min-width: 48px;
     }
 
-    /*
-     * #1249 — `.fw-touch-hit` raises a control to the 44px Apple-HIG floor
-     * WITHOUT changing its visual size, by growing an invisible ::after box
-     * centred on the element.
-     *
-     * `.touch-target` above sets min-height/min-width, which is right for a
-     * plain button but wrong for the controls that actually failed the audit:
-     * the roster's `Set intent` (88×20) and `Player status` (76×24) triggers
-     * both deliberately wrap a StatusPill and are documented as keeping that
-     * pill's chrome exactly — padding them to 44px would break the status-pill
-     * visual the whole roster reads by. Same for the 24×24 sidebar collapse
-     * chevron, which sits in a fixed rail slot.
-     *
-     * Stacked list rows are the worst case for mis-taps: a 20px-tall control
-     * repeated per row means adjacent rows fall inside one thumb contact
-     * patch, so a miss lands on the NEIGHBOURING player's control rather than
-     * doing nothing.
-     *
-     * Requires a positioned, non-`overflow:hidden` element. The pseudo-element
-     * is pointer-transparent to its own children but captures taps for the
-     * button because it is a descendant of it.
-     */
-    .fw-touch-hit {
-      position: relative;
-    }
-    .fw-touch-hit::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      min-height: 44px;
-      min-width: 44px;
-      height: 100%;
-      width: 100%;
-      /* Purely a hit area — never paints, never affects layout. */
-      pointer-events: auto;
-    }
   }
 
   /*
@@ -2128,6 +2090,46 @@
     .tap-44 [role="button"],
     .tap-44 a.btn {
       min-height: 44px;
+    }
+  }
+
+  /*
+   * #1249 — `.fw-touch-hit` raises a control to the 44px Apple-HIG floor
+   * WITHOUT changing its visual size, by growing an invisible ::after box
+   * centred on the element.
+   *
+   * Gated on `pointer: coarse`, NOT a width breakpoint, for the same reason
+   * `.tap-44` above is: the thing that needs a bigger target is a FINGER, not
+   * a narrow window. A coach on an iPad in landscape is past any phone
+   * breakpoint and still needs it; a desktop user who drags their window
+   * narrow does not.
+   *
+   * Distinct from `.tap-44`, which sets `min-height` and therefore inflates
+   * the control. That is wrong for the two roster triggers this exists for —
+   * `Set intent` (88x20) and `Player status` (76x24) both deliberately wrap a
+   * non-interactive StatusPill and their own comments record that they keep
+   * that chrome exactly. Stacked in a list, those are the worst case for
+   * mis-taps: adjacent rows fall inside one thumb contact patch, so a miss
+   * lands on the NEIGHBOURING player's control rather than doing nothing.
+   *
+   * Requires a positioned, non-`overflow:hidden` element.
+   */
+  @media (pointer: coarse) {
+    .fw-touch-hit {
+      position: relative;
+    }
+    .fw-touch-hit::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-height: 44px;
+      min-width: 44px;
+      height: 100%;
+      width: 100%;
+      /* Purely a hit area — never paints, never affects layout. */
+      pointer-events: auto;
     }
   }
 
