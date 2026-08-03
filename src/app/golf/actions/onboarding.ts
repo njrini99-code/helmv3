@@ -160,9 +160,29 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       updated_at: new Date().toISOString(),
     };
 
+    // #1250 — this was a bare INSERT, and `golf_coaches` has UNIQUE (user_id).
+    // A user who already had a coach row but `onboarding_completed = false`
+    // therefore hit a constraint violation on every attempt: the wizard reported
+    // "Failed to create coach profile. Please try again.", and retrying minted a
+    // fresh organization, failed the same way, and rolled that org back — a loop
+    // the user could never win and could not leave.
+    //
+    // Upsert is also the honest semantics: completeCoachOnboarding means "make
+    // my coach profile correct and mark me onboarded", which is idempotent.
+    //
+    // Not reachable in normal operation today — signup does not pre-create a
+    // coach row, no staff-invite flow does either, and this action is the only
+    // `golf_coaches` insert in the codebase — so this is hardening, not a live
+    // bug fix. It costs one word and removes an unrecoverable dead end.
+    const { data: preExistingCoach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
-      .insert(coachData)
+      .upsert(coachData, { onConflict: 'user_id' })
       .select('id')
       .single();
 
@@ -173,7 +193,11 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       return { success: false, error: 'Failed to create coach profile. Please try again.' };
     }
 
-    createdCoachId = coach.id;
+    // Only ever roll back a coach row THIS call created. With the upsert above,
+    // `coach.id` can now be a row that already existed, and the rollback paths
+    // below delete by that id — deleting a pre-existing coach profile because a
+    // later step failed would turn a recoverable error into data loss.
+    createdCoachId = preExistingCoach ? null : coach.id;
 
     // Step 3: Create team (now we have coach.id for created_by)
     const joinCode = generateJoinCode();
@@ -193,7 +217,9 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
     if (teamError || !team) {
       await logServerError(`[Onboarding] Team creation failed: ${describeError(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete coach and organization
-      await supabase.from('golf_coaches').delete().eq('id', coach.id);
+      // #1250 — only a row THIS call created; `coach.id` may now be a
+      // pre-existing profile (the write above is an upsert).
+      if (createdCoachId) await supabase.from('golf_coaches').delete().eq('id', createdCoachId);
       await supabase.from('organizations').delete().eq('id', org.id);
       return { success: false, error: 'Failed to create team. Please try again.' };
     }
@@ -220,7 +246,9 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       await logServerError(`[Onboarding] Team staff assignment failed: ${describeError(staffError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete team, coach, and organization
       await supabase.from('golf_teams').delete().eq('id', team.id);
-      await supabase.from('golf_coaches').delete().eq('id', coach.id);
+      // #1250 — only a row THIS call created; `coach.id` may now be a
+      // pre-existing profile (the write above is an upsert).
+      if (createdCoachId) await supabase.from('golf_coaches').delete().eq('id', createdCoachId);
       await supabase.from('organizations').delete().eq('id', org.id);
       return { success: false, error: 'Failed to assign coach to team. Please try again.' };
     }
