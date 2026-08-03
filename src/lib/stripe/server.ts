@@ -18,6 +18,24 @@ const STRIPE_API_VERSION = '2026-06-24.dahlia' satisfies Stripe.LatestApiVersion
 
 let client: Stripe | null = null;
 
+/**
+ * #1255 — is Stripe configured in THIS environment?
+ *
+ * `getStripe()` is deliberately lazy so importing this module never throws,
+ * which keeps `next build` working without Stripe. The cost of that is that a
+ * missing key is only discovered when a request actually reaches the API — and
+ * on /admin/billing that is after the admin has filled in the entire invoice
+ * (name, billing email, full address, line items). Production currently has no
+ * Stripe variables at all, so every submission of that form was guaranteed to
+ * fail at the last step.
+ *
+ * Surfaces call this to disclose the state UP FRONT instead. It only reports
+ * whether a key is present — never the key, and never any part of it.
+ */
+export function isStripeConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+}
+
 export function getStripe(): Stripe {
   if (client) return client;
 

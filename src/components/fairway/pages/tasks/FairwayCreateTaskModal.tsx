@@ -32,6 +32,7 @@ import {
   TextArea,
   RadioGroup,
   Checkbox,
+  CheckboxGroup,
   Select,
   fairwayToast,
 } from '@/components/fairway';
@@ -195,12 +196,6 @@ export function FairwayCreateTaskModal({
       return;
     }
     handleClose();
-  }
-
-  function togglePlayer(id: string) {
-    setSelectedPlayers((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
-    );
   }
 
   // `e` is optional — ModalShell.Footer's "Create task" button lives outside
@@ -511,9 +506,23 @@ export function FairwayCreateTaskModal({
                   </InlineNotice>
                 )
               ) : (
-                <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+                /* #1270 — CheckboxGroup, not a bare <div>. An ungrouped Base UI
+                   Checkbox registers itself as a field of the enclosing <Form>,
+                   and outside a Field.Root its validity stays `null`, which
+                   Form's `!field.validityData.state.valid` filter treats as
+                   invalid — silently killing every form submit with no error to
+                   show. The primary button here is type="button" so the click
+                   path dodges it, but Enter-in-a-field went through Form and
+                   died. Grouping sets `enabled: false`, so nothing registers. */
+                <CheckboxGroup
+                  value={selectedPlayers}
+                  onValueChange={(next) => setSelectedPlayers(next)}
+                  className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2"
+                >
                   {players.map((p) => {
                     const isSel = selectedPlayers.includes(p.id);
+                    const playerName =
+                      `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
                     return (
                       <label
                         key={p.id}
@@ -524,7 +533,10 @@ export function FairwayCreateTaskModal({
                             : 'border-border-subtle bg-surface hover:border-border-strong',
                         )}
                       >
-                        <Checkbox checked={isSel} onCheckedChange={() => togglePlayer(p.id)} />
+                        {/* Explicit name — same P192 reason as the qualifier
+                            roster: with no Field.Root in scope the checkbox has
+                            no labelId to borrow, so it would announce blank. */}
+                        <Checkbox value={p.id} aria-label={playerName} />
                         <span
                           className={cn(
                             'font-fw-sans text-body font-medium',
@@ -536,7 +548,7 @@ export function FairwayCreateTaskModal({
                       </label>
                     );
                   })}
-                </div>
+                </CheckboxGroup>
               ))}
           </Form>
         </ModalShell.Body>

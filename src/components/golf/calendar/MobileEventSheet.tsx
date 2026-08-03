@@ -62,6 +62,13 @@ export interface MobileEventFormData {
 }
 
 interface MobileEventSheetProps {
+  /**
+   * #1263 — render the per-event Documents panel. Defaults false: the section
+   * reads golf_event_documents / golf_documents, and the only host still
+   * rendering this sheet is the baseball calendar, where it can never load or
+   * save anything. Threaded from CalendarCapabilities.eventDocuments.
+   */
+  showDocuments?: boolean;
   isOpen: boolean;
   onClose: () => void;
   event: CalendarEvent | null;
@@ -120,6 +127,7 @@ export function MobileEventSheet({
   event,
   isCreating,
   isCoach,
+  showDocuments = false,
   onSave,
   onDelete,
   onSendReminder,
@@ -625,7 +633,7 @@ export function MobileEventSheet({
           )}
 
           {/* Document attachments — practice plans and other team files. */}
-          {!isCreating && event && (
+          {showDocuments && !isCreating && event && (
             <div className="px-5 pb-4">
               <div className="bg-warm-50 rounded-2xl p-4">
                 <EventDocumentsSection

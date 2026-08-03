@@ -61,6 +61,10 @@ function buildSupabaseMock() {
     seed(table: string, data: MockData, error: null | { message: string } = null) {
       resolvers.set(table, { data, error });
     },
+    /** Read a seeded row back — used by the rpc() mock to resolve a join code. */
+    peek(table: string) {
+      return resolvers.get(table);
+    },
     reset() {
       resolvers.clear();
       insertCalls.length = 0;
@@ -79,9 +83,44 @@ const mockGetUser = vi.fn(async () => ({
   error: null,
 }));
 
+/**
+ * #1257 — the join-code path no longer reads `golf_teams` directly. The old
+ * lookup only worked because a policy read `USING (join_code IS NOT NULL)`,
+ * which made every team row and every join code readable by any signed-in
+ * user. Resolution moved into two SECURITY DEFINER functions:
+ *
+ *   golf_team_by_join_code(p_code)   -> the single matching team, never its code
+ *   golf_join_team_with_code(p_code) -> re-resolves the team server-side and
+ *                                       performs the membership INSERT, so the
+ *                                       client never supplies the team id
+ *
+ * The mock resolves the lookup from the SAME `golf_teams` seed the tests
+ * already use, so a seeded team still stands in for "this code matches this
+ * team". Note what this means for the assertions below: the code -> team
+ * mapping is now enforced in SQL, so a unit test can no longer observe it in
+ * an insert payload. What it CAN still pin is that the flow goes through the
+ * definer functions with the normalized code — which is the part that lives in
+ * this file.
+ */
+const rpcCalls: Array<{ fn: string; args: Record<string, unknown> }> = [];
+
+const serverRpc = vi.fn(async (fn: string, args: Record<string, unknown>) => {
+  rpcCalls.push({ fn, args });
+  if (fn === 'golf_team_by_join_code') {
+    const seeded = serverMock.peek('golf_teams');
+    if (!seeded?.data) return { data: [], error: null };
+    return { data: [seeded.data], error: null };
+  }
+  if (fn === 'golf_join_team_with_code') {
+    return { data: null, error: null };
+  }
+  return { data: null, error: null };
+});
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     from: serverMock.from,
+    rpc: serverRpc,
     auth: { getUser: mockGetUser },
   })),
 }));
@@ -299,6 +338,8 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
   beforeEach(() => {
     serverMock.reset();
     adminMock.reset();
+    rpcCalls.length = 0;
+    serverRpc.mockClear();
   });
 
   it('routes MENS1234 to the mens team (team-mens), not team-womens', async () => {
@@ -317,10 +358,19 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
 
     expect(result.success).toBe(true);
 
-    // The golf_team_members insert must use team-mens, not team-womens
-    const memberInsert = serverMock.insertCalls.find((c) => c.table === 'golf_team_members');
-    expect(memberInsert).toBeDefined();
-    expect((memberInsert!.rows as Record<string, unknown>).team_id).toBe('team-mens');
+    // #1257 — the membership INSERT moved into golf_join_team_with_code, which
+    // re-resolves the team from the code in SQL instead of trusting a team id
+    // from the client. So the routing guarantee is no longer observable in an
+    // insert payload; what this file can still pin is that the flow resolves
+    // through the definer function with the exact code, and never falls back to
+    // a client-supplied team id.
+    expect(rpcCalls.map((c) => c.fn)).toEqual([
+      'golf_team_by_join_code',
+      'golf_join_team_with_code',
+    ]);
+    expect(rpcCalls[0]?.args).toEqual({ p_code: 'MENS1234' });
+    expect(rpcCalls[1]?.args).toEqual({ p_code: 'MENS1234' });
+    expect(serverMock.insertCalls.find((c) => c.table === 'golf_team_members')).toBeUndefined();
   });
 
   it('routes WOMN5678 to the womens team (team-womens), not team-mens', async () => {
@@ -336,9 +386,12 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
 
     expect(result.success).toBe(true);
 
-    const memberInsert = serverMock.insertCalls.find((c) => c.table === 'golf_team_members');
-    expect(memberInsert).toBeDefined();
-    expect((memberInsert!.rows as Record<string, unknown>).team_id).toBe('team-womens');
+    expect(rpcCalls.map((c) => c.fn)).toEqual([
+      'golf_team_by_join_code',
+      'golf_join_team_with_code',
+    ]);
+    expect(rpcCalls[0]?.args).toEqual({ p_code: 'WOMN5678' });
+    expect(rpcCalls[1]?.args).toEqual({ p_code: 'WOMN5678' });
   });
 
   it('rejects an invalid/unknown join code', async () => {
@@ -378,5 +431,8 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
     const result = await processGolfTeamInvitation('abcd1234', 'player-4');
 
     expect(result.success).toBe(true);
+    // Now directly observable: the definer function is asked for the UPPERCASED
+    // code, not the raw input.
+    expect(rpcCalls[0]).toEqual({ fn: 'golf_team_by_join_code', args: { p_code: 'ABCD1234' } });
   });
 });

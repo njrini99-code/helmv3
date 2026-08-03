@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { IconWarning, IconAlertCircle, IconInfo, IconWrench, IconLoader, IconChevronDown, IconChevronRight } from '@/components/icons';
 import type { DataQualityIssue, FixResult } from './tracer-types';
 import { Button } from '@/components/ui/button';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 interface DataQualityIssueRowProps {
   issue: DataQualityIssue;
@@ -124,7 +125,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
           {issue.round_id && (
             <div className="mt-1 text-eyebrow text-warm-400">
               Round: <span className="font-mono">{issue.round_id.slice(0, 8)}...</span>
-              {issue.round_date && <span className="ml-2">{new Date(issue.round_date).toLocaleDateString()}</span>}
+              {issue.round_date && <span className="ml-2">{parseDateOnly(issue.round_date).toLocaleDateString()}</span>}
             </div>
           )}
         </div>

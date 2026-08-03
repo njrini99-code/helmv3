@@ -67,6 +67,7 @@ import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPer
 import { createCoachNote } from '@/app/baseball/actions/coach-notes';
 import { removePlayerFromTeam } from '@/app/baseball/actions/roster';
 import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 // =============================================================================
 // PlayerProfileClient — MIGRATED to "The Living Annual" kit
@@ -1569,7 +1570,7 @@ export function PlayerProfileClient({
                 {tasks.map((task, i) => {
                   const isOverdue =
                     task.due_date &&
-                    new Date(task.due_date) < new Date() &&
+                    parseDateOnly(task.due_date) < new Date() &&
                     task.assignment_status !== 'completed';
                   return (
                     <Reveal key={task.id} staggerIndex={Math.min(i, 8)}>
@@ -1603,7 +1604,7 @@ export function PlayerProfileClient({
                                 'font-annual text-eyebrow',
                                 isOverdue ? 'font-semibold text-text-primary' : 'text-text-tertiary',
                               )}>
-                                Due {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                Due {parseDateOnly(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </span>
                             )}
                             {task.priority && (

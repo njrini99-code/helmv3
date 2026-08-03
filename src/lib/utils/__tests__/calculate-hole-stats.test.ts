@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateHoleStats } from '../ShotTrackingComprehensive';
+import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import {
   makeShotRecord,
   makeRoundHole,

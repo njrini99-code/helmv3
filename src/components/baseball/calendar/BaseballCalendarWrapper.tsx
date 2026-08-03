@@ -50,6 +50,15 @@ const BASEBALL_CALENDAR_CAPABILITIES = {
   rsvpRead: false,
   availability: false,
   rsvpWrite: true,
+  // #1263 — exactly the case the comment above describes. The per-event
+  // Documents panel reads golf_event_documents joined to golf_documents, and
+  // its write is fenced by an FK to golf_events plus a same-team trigger, so on
+  // a baseball event the list was permanently empty and the coach's "Attach
+  // document" picker could never be populated or saved. golf_event_documents
+  // has 0 rows, consistent with nobody ever having got anything out of it.
+  // Baseball has its own documents surface (baseball_documents); making this
+  // section sport-aware is a product call, not a bug fix.
+  eventDocuments: false,
 } satisfies Required<CalendarCapabilities>;
 
 // ── RSVP vocabulary bridge ─────────────────────────────────────────────────────

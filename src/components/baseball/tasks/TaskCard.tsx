@@ -10,6 +10,7 @@ import { completeTask, uncompleteTask, deleteTask } from '@/app/baseball/actions
 import { useToast } from '@/components/ui/sonner';
 import { Button, IconButton } from '@/components/ui/button';
 import { PaperCard } from '@/components/baseball/living-annual';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 // Living Annual ink system (no raw red/amber): `conditioning`/`academic` are
 // plain category labels, not error/warning states, so they read the clay
@@ -73,7 +74,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
   const totalCount = task.assignments.length;
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && completionRate < 100;
+  const isOverdue = task.due_date && parseDateOnly(task.due_date) < new Date() && completionRate < 100;
 
   // For player view: check if current player has completed this task
   const playerAssignment = currentPlayerId

@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { TaskCard } from './TaskCard';
 import { IconClipboardList } from '@/components/icons';
 import { staggerContainer } from '@/lib/coachhelm/v3/motion';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 interface Assignment {
   id: string;
@@ -44,7 +45,7 @@ export function TasksList({ tasks, filter, isCoach, currentPlayerId, onRefresh }
     if (filter === 'active') return task.status === 'active';
     if (filter === 'completed') return task.status === 'completed';
     if (filter === 'overdue') {
-      return task.due_date && new Date(task.due_date) < now && task.status !== 'completed';
+      return task.due_date && parseDateOnly(task.due_date) < now && task.status !== 'completed';
     }
     return true;
   });

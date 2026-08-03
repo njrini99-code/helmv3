@@ -147,6 +147,40 @@ export default async function LiftingDashboardPage({ searchParams }: PageProps) 
   }
 
   if (!orgId) {
+    // #1254 — athletes reach this page because the (dashboard) layout
+    // deliberately admits an helm_lifting_athletes row (case 3, "VIEW-ONLY
+    // shell ... lets a plain player reach athlete-facing routes"). This page
+    // only ever resolved orgId from a coach row or a viewer row, so for an
+    // athlete it fell through to redirect('/lifting/login') — while the layout
+    // had already rendered the shell. LabShell then prefetches all 11 coach nav
+    // links, every one of those routes redirects too, and the result was a
+    // measured 37 document loads and 1,735 requests in 10 seconds.
+    //
+    // Send them to the surface the layout admits them for. It renders their
+    // workout correctly and does not loop (measured: 1 document request).
+    const { data: athleteRow } = await fromUntyped(supabase, 'helm_lifting_athletes')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle() as { data: { id: string } | null };
+
+    if (athleteRow?.id) {
+      const { data: session } = await fromUntyped(supabase, 'helm_lifting_sessions')
+        .select('id')
+        .eq('athlete_id', athleteRow.id)
+        .in('status', ['assigned', 'in_progress'])
+        .order('scheduled_date', { ascending: true })
+        .limit(1)
+        .maybeSingle() as { data: { id: string } | null };
+
+      if (session?.id) {
+        redirect(`/lifting/dashboard/lift/${session.id}`);
+      }
+      // An athlete with nothing assigned has no lifting surface to land on;
+      // sending them back to the app root beats looping on this page.
+      redirect('/lifting/login?message=no_sessions');
+    }
+
     redirect('/lifting/login');
   }
 

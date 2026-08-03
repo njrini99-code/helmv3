@@ -55,11 +55,40 @@ export function useSequencedNavigation({
   onFade,
 }: SequencedNavigationOptions): SequencedNavigationControls {
   const router = useRouter();
-  const hasArmedRef = useRef(false);
   const hasNavigatedRef = useRef(false);
   // Timer ids kept on a ref so `cancel()` can reach them from outside the
   // effect that created them.
   const timerIdsRef = useRef<number[]>([]);
+
+  /**
+   * The volatile inputs live on refs so the arming effect can depend on
+   * `armed` ALONE.
+   *
+   * This is load-bearing, not tidiness. Anything in that effect's dependency
+   * array re-runs it, its cleanup unconditionally clears all three timers, and
+   * an "arm only once" guard then refused to reschedule them — so a SINGLE
+   * benign re-render permanently killed the sequence. Captured live on the
+   * welcome page:
+   *
+   *   +2997ms  effect run; armed=true hasArmed=false
+   *   +2998ms  scheduled {fade 1650, nav 1900, failsafe 4500}
+   *   +3002ms  CLEANUP - clearing all timers        <- effect re-ran 4ms later
+   *   +3003ms  EARLY RETURN - nothing scheduled     <- guard blocks rescheduling
+   *
+   * Net: zero live timers. No fade, no navigate, and the failsafe that exists
+   * precisely for this was cleared along with the rest, so the interstitial
+   * hung indefinitely and only the Skip button worked. `router` from
+   * `useRouter()` is the dep that changed identity here, but the specific
+   * culprit is not the point — the effect must be immune to ALL of them.
+   */
+  const onFadeRef = useRef(onFade);
+  const routerRef = useRef(router);
+  const timingRef = useRef({ fadeAtMs, navigateAtMs, failsafeAtMs });
+  useEffect(() => {
+    onFadeRef.current = onFade;
+    routerRef.current = router;
+    timingRef.current = { fadeAtMs, navigateAtMs, failsafeAtMs };
+  });
 
   const cancel = useCallback(() => {
     // Claim the navigation so neither the scheduled `router.replace` nor the
@@ -70,16 +99,23 @@ export function useSequencedNavigation({
   }, []);
 
   useEffect(() => {
-    if (!armed || hasArmedRef.current) return;
-    hasArmedRef.current = true;
+    if (!armed) return;
 
-    const fadeId = window.setTimeout(onFade, fadeAtMs);
+    // NOTE: no `hasArmedRef` guard. It was what turned a re-run into a
+    // permanent dead state, and with the dependency array narrowed to `armed`
+    // it is also unnecessary: the effect no longer re-runs on re-render. Its
+    // absence is additionally what makes this correct under React StrictMode,
+    // whose dev-mode mount -> cleanup -> mount cycle would otherwise clear the
+    // timers and then decline to reschedule them.
+    const { fadeAtMs: fadeAt, navigateAtMs: navAt, failsafeAtMs: failsafeAt } = timingRef.current;
+
+    const fadeId = window.setTimeout(() => onFadeRef.current(), fadeAt);
 
     const navId = window.setTimeout(() => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
-      router.replace(destinationRef.current);
-    }, navigateAtMs);
+      routerRef.current.replace(destinationRef.current);
+    }, navAt);
 
     const failsafeId = window.setTimeout(() => {
       if (hasNavigatedRef.current) return;
@@ -87,7 +123,7 @@ export function useSequencedNavigation({
       if (typeof window !== 'undefined') {
         window.location.replace(destinationRef.current);
       }
-    }, failsafeAtMs);
+    }, failsafeAt);
 
     timerIdsRef.current = [fadeId, navId, failsafeId];
 
@@ -97,7 +133,9 @@ export function useSequencedNavigation({
       window.clearTimeout(failsafeId);
       timerIdsRef.current = [];
     };
-  }, [armed, destinationRef, fadeAtMs, navigateAtMs, failsafeAtMs, onFade, router]);
+    // `destinationRef` is a ref (stable identity); every other input is read
+    // through a ref above precisely so it cannot land here.
+  }, [armed, destinationRef]);
 
   // Prefetch destination once armed, so the onward push is instant.
   //

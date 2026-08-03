@@ -1068,6 +1068,41 @@ async function getPreviewUrlImpl(
       if (versionLookupError) throw versionLookupError;
 
       if (!latestVersion) {
+        // #1259 — before giving up, derive the object path from the persisted
+        // file_url. Documents created before version rows existed (and the
+        // seeded set: 4 of 5 golf documents have no version row) otherwise have
+        // no signable path at all, so their attachments 404 forever.
+        //
+        // file_url was written with getPublicUrl() against a PRIVATE bucket, so
+        // it is a dead `/object/public/documents/<path>` link. The path segment
+        // is still correct — only the endpoint is wrong — so we can recover it
+        // and sign properly.
+        const { data: legacyDoc } = await supabase
+          .from('golf_documents')
+          .select('file_url, file_type')
+          .eq('id', documentId)
+          .maybeSingle();
+
+        const legacyPath = legacyDoc?.file_url
+          ? deriveStoragePathFromPublicUrl(legacyDoc.file_url)
+          : null;
+
+        if (legacyPath) {
+          const { data: legacySigned, error: legacySignError } = await supabase.storage
+            .from('documents')
+            .createSignedUrl(legacyPath, 3600);
+
+          if (!legacySignError && legacySigned?.signedUrl) {
+            return {
+              data: {
+                url: legacySigned.signedUrl,
+                mimeType: legacyDoc?.file_type || 'application/octet-stream',
+              },
+              error: null,
+            };
+          }
+        }
+
         // Genuinely nothing to preview — not a technical failure. Let the
         // caller render an honest empty state instead of a scary generic
         // "Preview unavailable" error.

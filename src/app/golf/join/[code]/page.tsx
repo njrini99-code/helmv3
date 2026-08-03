@@ -50,25 +50,20 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
     redirect(`/golf/player?joinCode=${code}`);
   }
 
-  // Find team by join code (case-insensitive - normalize to uppercase)
-  // Note: golf_teams.organization_id references the shared 'organizations' table in production
+  // Find team by join code (case-insensitive).
+  //
+  // #1257 — this used to be a direct `.eq('join_code', …)` against golf_teams,
+  // which only worked because a policy read `USING (join_code IS NOT NULL)`.
+  // Policies are OR'd, so that made EVERY team row and EVERY join code readable
+  // by any signed-in user. A USING clause cannot express "the one team matching
+  // the code I typed" — it can only widen visibility — so the lookup moved into
+  // a SECURITY DEFINER function that resolves the single match and, by design,
+  // does not return join_code at all.
   const normalizedCode = code.toUpperCase();
-  const { data: team, error: teamError } = await supabase
-    .from('golf_teams')
-    .select(`
-      id,
-      name,
-      season,
-      join_code,
-      organization:organizations (
-        name,
-        location_city,
-        location_state,
-        logo_url
-      )
-    `)
-    .eq('join_code', normalizedCode)
-    .single();
+  const { data: teamRows, error: teamError } = await supabase
+    .rpc('golf_team_by_join_code', { p_code: normalizedCode });
+
+  const team = Array.isArray(teamRows) ? teamRows[0] : teamRows;
 
   if (teamError || !team) {
     return (
@@ -102,7 +97,16 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
     );
   }
 
-  const organization = Array.isArray(team.organization) ? team.organization[0] : team.organization;
+  // The RPC returns the organization fields flattened alongside the team,
+  // rather than as an embedded PostgREST relation.
+  const organization = team.organization_name
+    ? {
+        name: team.organization_name,
+        location_city: team.organization_city,
+        location_state: team.organization_state,
+        logo_url: team.organization_logo_url,
+      }
+    : undefined;
 
   return (
     <GolfJoinTeamClient

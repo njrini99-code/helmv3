@@ -16,6 +16,7 @@ import { IconCalendar, IconCheck, IconClock, IconNote, IconRotateCcw } from '@/c
 import { getFullName } from '@/lib/utils';
 import { PaperCard, Eyebrow, InkBadge } from '@/components/baseball/living-annual';
 import type { DevPlanGoal, DevPlanWithPlayer, GoalStatus } from '@/lib/baseball/dev-plan-types';
+import { parseDateOnly } from '@/lib/utils/date-only';
 
 interface PlanDetailProps {
   plan: DevPlanWithPlayer;
@@ -144,7 +145,7 @@ export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: Pl
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                       {goal.target_date ? (
                         <p className="font-annual text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
-                          Target: {new Date(goal.target_date).toLocaleDateString()}
+                          Target: {parseDateOnly(goal.target_date).toLocaleDateString()}
                         </p>
                       ) : (
                         <span />

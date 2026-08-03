@@ -180,6 +180,9 @@ export function FairwayPlayerStatusBadge({
       aria-expanded={open}
       className={cn(
         'h-auto min-h-0 items-center rounded-full border-0 p-0 font-normal hover:bg-transparent',
+        // #1249 — 76x24 per roster row; expand the hit box to 44px without
+        // changing the pill's visual size (see .fw-touch-hit in globals.css).
+        'fw-touch-hit',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
         'focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'transition-opacity duration-fast motion-reduce:transition-none',

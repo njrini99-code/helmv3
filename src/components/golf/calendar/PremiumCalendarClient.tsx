@@ -146,6 +146,28 @@ export interface CalendarCapabilities {
   rsvpRead?: boolean;
   availability?: boolean;
   rsvpWrite?: boolean;
+  /**
+   * #1263 — the per-event Documents panel. Defaults OFF, deliberately.
+   *
+   * `EventDocumentsSection` is sport-agnostic in its props (eventId, teamId,
+   * isCoach) but not in its data layer: it reads `getDocuments` from
+   * `@/app/golf/actions/documents` and queries `golf_event_documents` joined to
+   * `golf_documents`, and the write is additionally fenced by an FK to
+   * `golf_events` plus a `golf_event_documents_assert_same_team` trigger.
+   *
+   * The only production consumer of this component is now
+   * BaseballCalendarWrapper — the golf calendar route renders FairwayCalendar,
+   * which has no document surface and only imports TYPES from EventDetailModal.
+   * So the panel was rendering exclusively for baseball, where the list query
+   * can only ever return nothing, the coach's "Attach document" picker can only
+   * ever be empty, and a selection could not be saved even if one existed.
+   * Consistent with that, `golf_event_documents` has 0 rows.
+   *
+   * Off by default means baseball simply has no documents panel rather than a
+   * permanently empty one promising a feature it does not have. A host that
+   * genuinely speaks golf documents opts in explicitly.
+   */
+  eventDocuments?: boolean;
 }
 
 async function loadGolfCalendarActions() {
@@ -197,6 +219,9 @@ const defaultCapabilities: Required<CalendarCapabilities> = {
   rsvpRead: true,
   availability: true,
   rsvpWrite: true,
+  // #1263 — OFF unless the host explicitly speaks golf documents. See the
+  // prop's own doc comment on CalendarCapabilities for why.
+  eventDocuments: false,
 };
 
 interface PremiumCalendarClientProps {
@@ -1388,6 +1413,7 @@ export function PremiumCalendarClient({
         event={selectedEvent}
         isCreating={isCreatingEvent}
         isCoach={isCoach}
+        showDocuments={resolvedCapabilities.eventDocuments}
         onSave={async (data: MobileEventFormData) => {
           setIsSavingEvent(true);
           const timezoneOffset = new Date().getTimezoneOffset();
