@@ -338,8 +338,28 @@ async function joinGolfTeamImpl(
           read: false,
         }));
 
-        // Notification shape includes metadata field not in generated types
-        await fromUntyped(supabase, 'notifications').insert(notifications);
+        // Written with the service-role client, not the caller's.
+        //
+        // `notifications_insert_own` is WITH CHECK (user_id = auth.uid()), so a
+        // player literally cannot address a row to their coach — every "New
+        // Player Joined" insert had been silently rejected since that policy
+        // landed, and the join swallowed it as a best-effort failure. The last
+        // notification this path produced was 2026-02-10.
+        //
+        // Elevating is safe here: the join itself was already authorized by
+        // golf_join_team_with_code above, the recipients are exactly the
+        // coaches of the org that owns the joined team, and the payload is
+        // server-derived. Same pattern as the CoachHelm dispatcher's in-app
+        // receipt (lib/coachhelm/v3/notifications/dispatch.ts).
+        const admin = createAdminClient();
+        const { error: notifyError } = await fromUntyped(admin, 'notifications').insert(notifications);
+        if (notifyError) {
+          await logServerError(
+            `join notification insert failed: ${describeError(notifyError)}`,
+            { action: 'teams.joinGolfTeam', featureArea: 'teams' },
+            'warning'
+          );
+        }
       }
     } catch (error) {
       // Don't fail the join if notification fails
