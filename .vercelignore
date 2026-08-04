@@ -11,3 +11,22 @@ archive/
 # Local-only artifacts
 docs/superpowers/
 *.pptx
+
+# Build + test output.
+#
+# These are already in .gitignore, which would normally be enough — but the
+# MOMENT this file exists, Vercel uses it INSTEAD of .gitignore rather than in
+# addition to it. So everything .gitignore was quietly keeping out of the
+# upload came back the first time anyone ran `vercel --prod` from a working
+# directory that had been built or tested in.
+#
+# That is not theoretical: a deploy on 2026-08-03 was rejected outright —
+#   "`files` should NOT have more than 15000 items, received 48139"
+# — because .next alone was 13 GB of Turbopack cache at the time.
+.next/
+node_modules/
+test-results/
+playwright-report/
+coverage/
+.turbo/
+*.tsbuildinfo

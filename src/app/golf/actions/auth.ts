@@ -323,8 +323,8 @@ async function signupActionImpl(
   //
   // Placed AFTER the IP rate limit deliberately: a miss falls through to a
   // service-role join_code lookup, which must stay behind a throttle.
-  const gatePassed = await verifySignupGate();
-  if (!gatePassed) {
+  const gate = await verifySignupGate();
+  if (!gate.passed) {
     logSecurityEvent('Golf signup attempted without a valid access-code grant', 'warning', {
       email: normalizedEmail,
       ip,
@@ -429,10 +429,24 @@ async function signupActionImpl(
   // so server components re-read the new authenticated session.
   revalidatePath('/golf/dashboard');
 
-  // Redirect based on role - coaches go to coach onboarding, players go to player onboarding
+  // Redirect based on role - coaches go to coach onboarding, players go to player onboarding.
+  //
+  // A PLAYER who cleared the gate with their coach's team join code carries it
+  // into onboarding as `?joinCode=`, which completePlayerOnboarding already
+  // consumes to auto-join the inviting team on completion (the same parameter
+  // the /golf/join/[code] invite link uses).
+  //
+  // Without this the code was verified and then thrown away in the same
+  // breath: a coach-invited player cleared the gate, finished onboarding with
+  // no team attached, and had to be invited a second time. Coaches keep going
+  // to their own onboarding — a join code is meaningless for them, since they
+  // create the team rather than join one.
+  const carryJoinCode = role === 'player' && gate.teamJoinCode;
   const redirectTo = role === 'coach'
     ? '/golf/coach'
-    : '/golf/player';
+    : carryJoinCode
+      ? `/golf/player?joinCode=${encodeURIComponent(gate.teamJoinCode as string)}`
+      : '/golf/player';
 
   return {
     success: true,

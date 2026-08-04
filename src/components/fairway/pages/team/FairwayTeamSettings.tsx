@@ -100,6 +100,7 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Resolve the absolute origin only after mount — rendering it during render
   // produced a hydration mismatch (the legacy code documents this). Seed empty,
@@ -231,6 +232,31 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
       setCopied(true);
       fairwayToast.success('Invite link copied');
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      fairwayToast.error('Could not copy to clipboard');
+    }
+  };
+
+  /**
+   * Copy the BARE CODE, not the link.
+   *
+   * A coach reading this out on the range says "your code is CCY2A8FK" — they
+   * cannot dictate a URL. The signup gate accepts exactly this string, so the
+   * code is what a player types to sign up and auto-join. The link below is
+   * still here for anyone who can paste.
+   */
+  const handleCopyInviteCode = async () => {
+    if (!team?.join_code) return;
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      fairwayToast.error('Clipboard is unavailable in this browser');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(team.join_code);
+      void triggerHaptic('light');
+      setCodeCopied(true);
+      fairwayToast.success('Team code copied');
+      setTimeout(() => setCodeCopied(false), 2000);
     } catch {
       fairwayToast.error('Could not copy to clipboard');
     }
@@ -385,64 +411,16 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
         }
       />
 
-      {/* ── Team information (editable) ─────────────────────────────────── */}
-      <Form spacing="roomy" onSubmit={handleUpdateTeam} className="mt-8">
-        <FormSection
-          title="Team information"
-          description="The program name and season shown across the app."
-        >
-          <div className="flex flex-col gap-5">
-            {genderLabel && (
-              <FormField
-                label="Program"
-                help="Set when the team is created — can't be changed."
-              >
-                <div className="flex min-h-[2.5rem] items-center">
-                  <Badge tone="accent" size="md">
-                    {genderLabel}
-                  </Badge>
-                </div>
-              </FormField>
-            )}
-            <FormField label="Team name">
-              <Input
-                name="name"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                placeholder="Team name"
-                disabled={isPending}
-              />
-            </FormField>
-            <FormField label="Season" help="Format: YYYY-YYYY">
-              <Input
-                name="season"
-                value={season}
-                onChange={(e) => setSeason(e.target.value)}
-                placeholder="e.g. 2024-2025"
-                disabled={isPending}
-              />
-            </FormField>
-          </div>
-
-          <div className="flex justify-end pt-1">
-            <Button
-              type="submit"
-              variant="secondary"
-              busy={isPending}
-              // Real dirty-state + error prevention (P359): disabled when the
-              // name is empty OR nothing changed vs the persisted team. Prevents
-              // saving a blank name and the "Save" no-op that implies an edit.
-              disabled={!teamName.trim() || !isEditDirty}
-              leftIcon={<IconCheck size={16} />}
-            >
-              Save changes
-            </Button>
-          </div>
-        </FormSection>
-      </Form>
-
       {/* ── Player invitations ──────────────────────────────────────────── */}
-      <section className="mt-10">
+      {/*
+          Deliberately FIRST, above the name/season form.
+
+          A coach opens this page to hand out their code, not to rename the
+          team — and at phone width the code sat below the fold behind two
+          text inputs and a Save button, so reading it out to a player meant
+          scrolling past edits they had no intention of making.
+      */}
+      <section className="mt-8">
         <div className="mb-5 flex flex-col gap-1">
           <h2 className="font-fw-display text-h2 text-text-primary">
             Player invitations
@@ -455,6 +433,37 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
         <Surface elevation="border" padding="md" className="flex flex-col gap-4">
           {team.join_code ? (
             <>
+              {/* THE CODE ITSELF, first and biggest.
+                  A coach on the range dictates "your code is CCY2A8FK" — they
+                  cannot read out a URL. This exact string is what the signup
+                  gate accepts, so a player types it at sign-up and lands on
+                  this team automatically. The copyable link below is for
+                  anyone who can paste instead. */}
+              <div className="flex flex-col gap-1.5">
+                <span className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                  Team code
+                </span>
+                <div className="flex items-center gap-3">
+                  <span
+                    data-testid="fw-team-join-code"
+                    className="select-all font-fw-mono text-h2 font-medium tracking-[0.18em] text-text-primary"
+                  >
+                    {team.join_code}
+                  </span>
+                  <Button
+                    variant={codeCopied ? 'secondary' : 'secondary'}
+                    size="sm"
+                    leftIcon={codeCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                    onClick={() => void handleCopyInviteCode()}
+                  >
+                    {codeCopied ? 'Copied' : 'Copy code'}
+                  </Button>
+                </div>
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  Players enter this when they sign up — it joins them to this team automatically.
+                </p>
+              </div>
+
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="fw-team-invite-link"
@@ -527,6 +536,62 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
           )}
         </Surface>
       </section>
+
+      {/* ── Team information (editable) ─────────────────────────────────── */}
+      <Form spacing="roomy" onSubmit={handleUpdateTeam} className="mt-10">
+        <FormSection
+          title="Team information"
+          description="The program name and season shown across the app."
+        >
+          <div className="flex flex-col gap-5">
+            {genderLabel && (
+              <FormField
+                label="Program"
+                help="Set when the team is created — can't be changed."
+              >
+                <div className="flex min-h-[2.5rem] items-center">
+                  <Badge tone="accent" size="md">
+                    {genderLabel}
+                  </Badge>
+                </div>
+              </FormField>
+            )}
+            <FormField label="Team name">
+              <Input
+                name="name"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="Team name"
+                disabled={isPending}
+              />
+            </FormField>
+            <FormField label="Season" help="Format: YYYY-YYYY">
+              <Input
+                name="season"
+                value={season}
+                onChange={(e) => setSeason(e.target.value)}
+                placeholder="e.g. 2024-2025"
+                disabled={isPending}
+              />
+            </FormField>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button
+              type="submit"
+              variant="secondary"
+              busy={isPending}
+              // Real dirty-state + error prevention (P359): disabled when the
+              // name is empty OR nothing changed vs the persisted team. Prevents
+              // saving a blank name and the "Save" no-op that implies an edit.
+              disabled={!teamName.trim() || !isEditDirty}
+              leftIcon={<IconCheck size={16} />}
+            >
+              Save changes
+            </Button>
+          </div>
+        </FormSection>
+      </Form>
 
       {/* ── Add a second team (program head affordance) ─────────────────── */}
       <section className="mt-10">

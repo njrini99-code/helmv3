@@ -17,7 +17,7 @@ export default function Error({
       component="GolfAdminPage"
       title="Failed to load admin"
       message="We couldn't load the admin dashboard. Please try again."
-      homePath="/golf/admin"
+      homePath="/admin"
     />
   );
 }

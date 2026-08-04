@@ -35,6 +35,17 @@ export interface TeamValidationResult {
   currentTeam?: { id: string; name: string };
 }
 
+/**
+ * A team already resolved via the SECURITY DEFINER `golf_team_by_join_code`.
+ * Threaded into the join path because a player who is not yet a member cannot
+ * read golf_teams directly — `golf_teams_select` gates on coach-or-member.
+ */
+export interface ResolvedTeamRef {
+  id: string;
+  name: string;
+  organizationId?: string | null;
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -78,7 +89,13 @@ function generateJoinCode(): string {
  */
 async function validateGolfPlayerCanJoinTeamImpl(
   playerId: string,
-  teamId: string
+  teamId: string,
+  /**
+   * The team as already resolved by the caller through the SECURITY DEFINER
+   * `golf_team_by_join_code`. Required in practice for a prospective member —
+   * see the existence check below for why a direct read cannot work.
+   */
+  resolvedTeam?: ResolvedTeamRef | null
 ): Promise<TeamValidationResult> {
   const supabase = await createClient();
 
@@ -121,14 +138,33 @@ async function validateGolfPlayerCanJoinTeamImpl(
     };
   }
 
-  // Get team being joined
-  const { data: targetTeam, error: teamError } = await supabase
-    .from('golf_teams')
-    .select('id, name')
-    .eq('id', teamId)
-    .single();
+  // Confirm the team being joined exists.
+  //
+  // This CANNOT be a plain read of golf_teams. `golf_teams_select` is
+  // `USING (is_golf_team_coach(id) OR is_golf_team_player(id))`, and a player
+  // about to join is, by definition, neither yet — the read returns zero rows
+  // for exactly the people this function exists to let through, and the join
+  // died here with a misleading "Team not found".
+  //
+  // The caller has already resolved the team through the SECURITY DEFINER
+  // `golf_team_by_join_code`, which is the only way to see a team you are not
+  // on. It passes that resolution in. This does not widen anything: the actual
+  // membership INSERT is performed by `golf_join_team_with_code`, which
+  // re-resolves the team from the code server-side and ignores any id it is
+  // handed. Validation is a pre-flight for error messaging; authorization
+  // lives in the definer function.
+  let targetTeam = resolvedTeam ?? null;
 
-  if (teamError || !targetTeam) {
+  if (!targetTeam) {
+    const { data } = await supabase
+      .from('golf_teams')
+      .select('id, name')
+      .eq('id', teamId)
+      .single();
+    targetTeam = data;
+  }
+
+  if (!targetTeam || targetTeam.id !== teamId) {
     return {
       canJoin: false,
       reason: 'Team not found',
@@ -179,20 +215,26 @@ const observedValidateGolfPlayerCanJoinTeam = withAdminObserved(
 
 export async function validateGolfPlayerCanJoinTeam(
   playerId: string,
-  teamId: string
+  teamId: string,
+  resolvedTeam?: ResolvedTeamRef | null
 ): Promise<TeamValidationResult> {
-  return observedValidateGolfPlayerCanJoinTeam(playerId, teamId);
+  return observedValidateGolfPlayerCanJoinTeam(playerId, teamId, resolvedTeam);
 }
 
 /**
  * Add a golf player to a team via golf_team_members
  * Also notifies coaches when a player joins
  */
-async function joinGolfTeamImpl(playerId: string, teamId: string, joinCode?: string) {
+async function joinGolfTeamImpl(
+  playerId: string,
+  teamId: string,
+  joinCode?: string,
+  resolvedTeam?: ResolvedTeamRef | null
+) {
   const supabase = await createClient();
 
   // Validate first
-  const validation = await validateGolfPlayerCanJoinTeam(playerId, teamId);
+  const validation = await validateGolfPlayerCanJoinTeam(playerId, teamId, resolvedTeam);
 
   if (!validation.canJoin) {
     return {
@@ -208,12 +250,30 @@ async function joinGolfTeamImpl(playerId: string, teamId: string, joinCode?: str
     .eq('id', playerId)
     .single();
 
-  // Get team details including organization
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id, name, organization_id')
-    .eq('id', teamId)
-    .single();
+  // Get team details including organization, for the coach notification below.
+  //
+  // Same RLS constraint as the validator, and it bites here too: this runs
+  // BEFORE the membership INSERT, so a joining player still cannot read the
+  // team and `team` came back null — which silently skipped the "a player
+  // joined your team" notification on every invite. Prefer the team the caller
+  // already resolved through the definer function.
+  let team: { id: string; name: string; organization_id: string | null } | null =
+    resolvedTeam
+      ? {
+          id: resolvedTeam.id,
+          name: resolvedTeam.name,
+          organization_id: resolvedTeam.organizationId ?? null,
+        }
+      : null;
+
+  if (!team) {
+    const { data } = await supabase
+      .from('golf_teams')
+      .select('id, name, organization_id')
+      .eq('id', teamId)
+      .single();
+    team = data;
+  }
 
   // Create team membership record.
   //
@@ -278,8 +338,28 @@ async function joinGolfTeamImpl(playerId: string, teamId: string, joinCode?: str
           read: false,
         }));
 
-        // Notification shape includes metadata field not in generated types
-        await fromUntyped(supabase, 'notifications').insert(notifications);
+        // Written with the service-role client, not the caller's.
+        //
+        // `notifications_insert_own` is WITH CHECK (user_id = auth.uid()), so a
+        // player literally cannot address a row to their coach — every "New
+        // Player Joined" insert had been silently rejected since that policy
+        // landed, and the join swallowed it as a best-effort failure. The last
+        // notification this path produced was 2026-02-10.
+        //
+        // Elevating is safe here: the join itself was already authorized by
+        // golf_join_team_with_code above, the recipients are exactly the
+        // coaches of the org that owns the joined team, and the payload is
+        // server-derived. Same pattern as the CoachHelm dispatcher's in-app
+        // receipt (lib/coachhelm/v3/notifications/dispatch.ts).
+        const admin = createAdminClient();
+        const { error: notifyError } = await fromUntyped(admin, 'notifications').insert(notifications);
+        if (notifyError) {
+          await logServerError(
+            `join notification insert failed: ${describeError(notifyError)}`,
+            { action: 'teams.joinGolfTeam', featureArea: 'teams' },
+            'warning'
+          );
+        }
       }
     } catch (error) {
       // Don't fail the join if notification fails
@@ -307,8 +387,13 @@ const observedJoinGolfTeam = withAdminObserved(
   joinGolfTeamImpl,
 );
 
-export async function joinGolfTeam(playerId: string, teamId: string, joinCode?: string) {
-  return observedJoinGolfTeam(playerId, teamId, joinCode);
+export async function joinGolfTeam(
+  playerId: string,
+  teamId: string,
+  joinCode?: string,
+  resolvedTeam?: ResolvedTeamRef | null
+) {
+  return observedJoinGolfTeam(playerId, teamId, joinCode, resolvedTeam);
 }
 
 /**
@@ -342,7 +427,15 @@ async function processGolfTeamInvitationImpl(joinCode: string, playerId: string)
   // Pass the code through: the membership INSERT is performed by
   // golf_join_team_with_code, which re-resolves the team from the code
   // server-side rather than trusting a team id from the client.
-  return await joinGolfTeam(playerId, team.id, normalizedCode);
+  //
+  // `team` is also handed down so the pre-flight validator does not have to
+  // re-read golf_teams under RLS — a read a prospective member can never
+  // satisfy, which silently killed every join.
+  return await joinGolfTeam(playerId, team.id, normalizedCode, {
+    id: team.id,
+    name: team.name,
+    organizationId: team.organization_id ?? null,
+  });
 }
 
 const observedProcessGolfTeamInvitation = withAdminObserved(
