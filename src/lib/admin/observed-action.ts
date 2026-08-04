@@ -6,6 +6,7 @@ import {
 } from '@/lib/admin/observe-action-result';
 import { createClient } from '@/lib/supabase/server';
 import { runWithRequestContext } from '@/lib/admin/request-context';
+import { assertGolfDemoWritable, isGolfDemoReadOnlyError } from '@/lib/demo/golf-read-only';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 /**
@@ -86,6 +87,21 @@ export function withAdminObserved<Args extends unknown[], R>(
      * enrichment must never mask the real failure.
      */
     contextFrom?: (args: Args) => ObservedActionContext;
+    /**
+     * Set true on a MUTATING golf action to block it for the shared demo
+     * account. Mirrors `withBaseballAction`'s `demoSafe`, which golf had no
+     * equivalent of — every prospect entering the public demo signs into the
+     * SAME Supabase account, so one visitor's write is visible to (and wrecks
+     * the tour for) every other concurrent visitor, and mutates the founder's
+     * own team, since the demo coach and the owner share one org and team.
+     *
+     * Declarative on purpose: the alternative was a hand-edited assertion in
+     * ~60 action bodies, where the one that gets missed is the one that
+     * matters. Marking it here keeps the guard next to the action's identity.
+     *
+     * Reads must NOT set this. Guarding a read would break the tour itself.
+     */
+    demoSafe?: boolean;
   },
   fn: (...args: Args) => Promise<R>,
 ): (...args: Args) => Promise<R> {
@@ -97,6 +113,19 @@ export function withAdminObserved<Args extends unknown[], R>(
     // Nested wrapped actions reuse the outer scope (see runWithRequestContext).
     return runWithRequestContext({ action: name }, async () => {
     try {
+      if (opts.demoSafe) {
+        // Resolve the email ONCE and hand it to the guard, rather than letting
+        // the guard run its own `getUser()`. That matters: the guard fails
+        // CLOSED on an unresolvable session, so a transient GoTrue blip would
+        // otherwise tell a real, paying coach that they are "in a read-only
+        // demo" and refuse to save their work. Going through
+        // `resolveObservedUser()` — which swallows and returns null — means an
+        // unresolvable session simply is not the demo account, and the action's
+        // own auth check (which every mutating action already performs) is what
+        // rejects it, with the correct message.
+        const { userEmail } = await resolveObservedUser();
+        await assertGolfDemoWritable(userEmail);
+      }
       const result = await fn(...args);
       // A successful action with no soft-failure envelope has nothing to
       // observe. Avoid a second GoTrue network request solely to enrich a
@@ -126,7 +155,10 @@ export function withAdminObserved<Args extends unknown[], R>(
       }
       return result;
     } catch (err) {
-      if (!isNextControlFlowError(err) && !isAdminAuthControlFlowError(err)) {
+      // A demo read-only rejection is the guard working as designed, not a
+      // defect. Reporting it would bury Sentry and admin_events in noise on
+      // any night a batch of prospects is touring the demo at once.
+      if (!isNextControlFlowError(err) && !isAdminAuthControlFlowError(err) && !isGolfDemoReadOnlyError(err)) {
         try {
           const throttleKey = throttleKeyFor(name, err);
           if (shouldEmit(throttleKey)) {

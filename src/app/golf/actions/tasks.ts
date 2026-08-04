@@ -215,7 +215,7 @@ async function syncTaskStatusFromAssignments(
 
 const observedCompleteTask = withAdminObserved(
   'completeTask',
-  { sport: 'golf', feature: 'task_management' },
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
   completeTaskImpl,
 );
 
@@ -370,7 +370,7 @@ async function createTaskImpl(
 
 const observedCreateTask = withAdminObserved(
   'createTask',
-  { sport: 'golf', feature: 'task_management' },
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
   createTaskImpl,
 );
 
@@ -626,7 +626,7 @@ function buildReminderTimestamp(
 
 const observedCreateRecurringTask = withAdminObserved(
   'createRecurringTask',
-  { sport: 'golf', feature: 'task_management' },
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
   createRecurringTaskImpl,
 );
 
@@ -713,7 +713,7 @@ async function deleteTaskImpl(taskId: string): Promise<ActionResult> {
 
 const observedDeleteTask = withAdminObserved(
   'deleteTask',
-  { sport: 'golf', feature: 'task_management' },
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
   deleteTaskImpl,
 );
 
@@ -843,7 +843,7 @@ async function setTaskReminderImpl(
 
 const observedSetTaskReminder = withAdminObserved(
   'setTaskReminder',
-  { sport: 'golf', feature: 'task_management' },
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
   setTaskReminderImpl,
 );
 
@@ -942,7 +942,7 @@ async function clearTaskReminderImpl(taskId: string): Promise<ActionResult> {
 
 const observedClearTaskReminder = withAdminObserved(
   'clearTaskReminder',
-  { sport: 'golf', feature: 'task_management' },
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
   clearTaskReminderImpl,
 );
 
@@ -1094,7 +1094,7 @@ async function createTaskTemplateImpl(
 
 const observedCreateTaskTemplate = withAdminObserved(
   'createTaskTemplate',
-  { sport: 'golf', feature: 'task_management' },
+  { demoSafe: true, sport: 'golf', feature: 'task_management' },
   createTaskTemplateImpl,
 );
 

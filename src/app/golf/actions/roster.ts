@@ -110,7 +110,7 @@ async function removePlayerFromTeamImpl(playerId: string): Promise<RosterActionR
 
 const observedRemovePlayerFromTeam = withAdminObserved(
   'removePlayerFromTeam',
-  { sport: 'golf', feature: 'roster_management' },
+  { demoSafe: true, sport: 'golf', feature: 'roster_management' },
   removePlayerFromTeamImpl,
 );
 

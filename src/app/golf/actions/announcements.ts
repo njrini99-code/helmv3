@@ -369,7 +369,7 @@ async function createEnrichedAnnouncementImpl(input: {
 
 const observedCreateEnrichedAnnouncement = withAdminObserved(
   'createEnrichedAnnouncement',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   createEnrichedAnnouncementImpl,
 );
 
@@ -893,7 +893,7 @@ async function completeAnnouncementTaskImpl(
 
 const observedCompleteAnnouncementTask = withAdminObserved(
   'completeAnnouncementTask',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   completeAnnouncementTaskImpl,
 );
 
@@ -962,7 +962,7 @@ async function deleteAnnouncementImpl(
 
 const observedDeleteAnnouncement = withAdminObserved(
   'deleteAnnouncement',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   deleteAnnouncementImpl,
 );
 
