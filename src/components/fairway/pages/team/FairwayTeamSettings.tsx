@@ -100,6 +100,7 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Resolve the absolute origin only after mount — rendering it during render
   // produced a hydration mismatch (the legacy code documents this). Seed empty,
@@ -231,6 +232,31 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
       setCopied(true);
       fairwayToast.success('Invite link copied');
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      fairwayToast.error('Could not copy to clipboard');
+    }
+  };
+
+  /**
+   * Copy the BARE CODE, not the link.
+   *
+   * A coach reading this out on the range says "your code is CCY2A8FK" — they
+   * cannot dictate a URL. The signup gate accepts exactly this string, so the
+   * code is what a player types to sign up and auto-join. The link below is
+   * still here for anyone who can paste.
+   */
+  const handleCopyInviteCode = async () => {
+    if (!team?.join_code) return;
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      fairwayToast.error('Clipboard is unavailable in this browser');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(team.join_code);
+      void triggerHaptic('light');
+      setCodeCopied(true);
+      fairwayToast.success('Team code copied');
+      setTimeout(() => setCodeCopied(false), 2000);
     } catch {
       fairwayToast.error('Could not copy to clipboard');
     }
@@ -455,6 +481,37 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
         <Surface elevation="border" padding="md" className="flex flex-col gap-4">
           {team.join_code ? (
             <>
+              {/* THE CODE ITSELF, first and biggest.
+                  A coach on the range dictates "your code is CCY2A8FK" — they
+                  cannot read out a URL. This exact string is what the signup
+                  gate accepts, so a player types it at sign-up and lands on
+                  this team automatically. The copyable link below is for
+                  anyone who can paste instead. */}
+              <div className="flex flex-col gap-1.5">
+                <span className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                  Team code
+                </span>
+                <div className="flex items-center gap-3">
+                  <span
+                    data-testid="fw-team-join-code"
+                    className="select-all font-fw-mono text-h2 font-medium tracking-[0.18em] text-text-primary"
+                  >
+                    {team.join_code}
+                  </span>
+                  <Button
+                    variant={codeCopied ? 'secondary' : 'secondary'}
+                    size="sm"
+                    leftIcon={codeCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                    onClick={() => void handleCopyInviteCode()}
+                  >
+                    {codeCopied ? 'Copied' : 'Copy code'}
+                  </Button>
+                </div>
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  Players enter this when they sign up — it joins them to this team automatically.
+                </p>
+              </div>
+
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="fw-team-invite-link"
