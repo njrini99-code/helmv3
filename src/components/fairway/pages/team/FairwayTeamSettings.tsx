@@ -411,64 +411,16 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
         }
       />
 
-      {/* ── Team information (editable) ─────────────────────────────────── */}
-      <Form spacing="roomy" onSubmit={handleUpdateTeam} className="mt-8">
-        <FormSection
-          title="Team information"
-          description="The program name and season shown across the app."
-        >
-          <div className="flex flex-col gap-5">
-            {genderLabel && (
-              <FormField
-                label="Program"
-                help="Set when the team is created — can't be changed."
-              >
-                <div className="flex min-h-[2.5rem] items-center">
-                  <Badge tone="accent" size="md">
-                    {genderLabel}
-                  </Badge>
-                </div>
-              </FormField>
-            )}
-            <FormField label="Team name">
-              <Input
-                name="name"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                placeholder="Team name"
-                disabled={isPending}
-              />
-            </FormField>
-            <FormField label="Season" help="Format: YYYY-YYYY">
-              <Input
-                name="season"
-                value={season}
-                onChange={(e) => setSeason(e.target.value)}
-                placeholder="e.g. 2024-2025"
-                disabled={isPending}
-              />
-            </FormField>
-          </div>
-
-          <div className="flex justify-end pt-1">
-            <Button
-              type="submit"
-              variant="secondary"
-              busy={isPending}
-              // Real dirty-state + error prevention (P359): disabled when the
-              // name is empty OR nothing changed vs the persisted team. Prevents
-              // saving a blank name and the "Save" no-op that implies an edit.
-              disabled={!teamName.trim() || !isEditDirty}
-              leftIcon={<IconCheck size={16} />}
-            >
-              Save changes
-            </Button>
-          </div>
-        </FormSection>
-      </Form>
-
       {/* ── Player invitations ──────────────────────────────────────────── */}
-      <section className="mt-10">
+      {/*
+          Deliberately FIRST, above the name/season form.
+
+          A coach opens this page to hand out their code, not to rename the
+          team — and at phone width the code sat below the fold behind two
+          text inputs and a Save button, so reading it out to a player meant
+          scrolling past edits they had no intention of making.
+      */}
+      <section className="mt-8">
         <div className="mb-5 flex flex-col gap-1">
           <h2 className="font-fw-display text-h2 text-text-primary">
             Player invitations
@@ -584,6 +536,62 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
           )}
         </Surface>
       </section>
+
+      {/* ── Team information (editable) ─────────────────────────────────── */}
+      <Form spacing="roomy" onSubmit={handleUpdateTeam} className="mt-10">
+        <FormSection
+          title="Team information"
+          description="The program name and season shown across the app."
+        >
+          <div className="flex flex-col gap-5">
+            {genderLabel && (
+              <FormField
+                label="Program"
+                help="Set when the team is created — can't be changed."
+              >
+                <div className="flex min-h-[2.5rem] items-center">
+                  <Badge tone="accent" size="md">
+                    {genderLabel}
+                  </Badge>
+                </div>
+              </FormField>
+            )}
+            <FormField label="Team name">
+              <Input
+                name="name"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="Team name"
+                disabled={isPending}
+              />
+            </FormField>
+            <FormField label="Season" help="Format: YYYY-YYYY">
+              <Input
+                name="season"
+                value={season}
+                onChange={(e) => setSeason(e.target.value)}
+                placeholder="e.g. 2024-2025"
+                disabled={isPending}
+              />
+            </FormField>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button
+              type="submit"
+              variant="secondary"
+              busy={isPending}
+              // Real dirty-state + error prevention (P359): disabled when the
+              // name is empty OR nothing changed vs the persisted team. Prevents
+              // saving a blank name and the "Save" no-op that implies an edit.
+              disabled={!teamName.trim() || !isEditDirty}
+              leftIcon={<IconCheck size={16} />}
+            >
+              Save changes
+            </Button>
+          </div>
+        </FormSection>
+      </Form>
 
       {/* ── Add a second team (program head affordance) ─────────────────── */}
       <section className="mt-10">
