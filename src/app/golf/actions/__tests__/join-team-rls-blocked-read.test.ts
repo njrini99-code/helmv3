@@ -69,6 +69,26 @@ const rpc = vi.fn(async (fn: string, args: Record<string, unknown>) => {
   return { data: null, error: null };
 });
 
+/** Rows written with the SERVICE-ROLE client, per table. */
+const adminInserts: Array<{ table: string; rows: unknown }> = [];
+
+function makeAdminChain(table: string) {
+  const chain: Record<string, unknown> = {};
+  for (const m of ['select', 'update', 'upsert', 'delete', 'eq', 'in', 'order', 'limit']) {
+    chain[m] = vi.fn(() => chain);
+  }
+  chain.insert = vi.fn((rows: unknown) => {
+    adminInserts.push({ table, rows });
+    return chain;
+  });
+  chain.single = vi.fn(async () => ({ data: null, error: null }));
+  chain.maybeSingle = vi.fn(async () => ({ data: null, error: null }));
+  chain.then = vi.fn((onFulfilled: (v: unknown) => void) => {
+    void Promise.resolve({ data: null, error: null }).then(onFulfilled);
+  });
+  return chain;
+}
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     from: vi.fn((table: string) => makeChain(table)),
@@ -76,6 +96,12 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: {
       getUser: vi.fn(async () => ({ data: { user: { id: USER_ID } }, error: null })),
     },
+  })),
+}));
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    from: vi.fn((table: string) => makeAdminChain(table)),
   })),
 }));
 
@@ -92,6 +118,7 @@ import { processGolfTeamInvitation } from '../teams';
 describe('joining a team when golf_teams is not readable by the joiner', () => {
   beforeEach(() => {
     rpcCalls.length = 0;
+    adminInserts.length = 0;
     joinRpcError = null;
     teamMembership = null;
     readable = {
@@ -102,7 +129,7 @@ describe('joining a team when golf_teams is not readable by the joiner', () => {
         first_name: 'QA',
         last_name: 'Recruit',
       },
-      golf_coaches: [],
+      golf_coaches: [{ id: 'coach-1', user_id: 'user-coach-1' }],
       // NOTE: no `golf_teams` entry — a prospective member cannot read it.
     };
   });
@@ -173,6 +200,40 @@ describe('joining a team when golf_teams is not readable by the joiner', () => {
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/your own player profile/i);
     expect(rpcCalls.find((c) => c.fn === 'golf_join_team_with_code')).toBeUndefined();
+  });
+
+  it('notifies the coach, naming the team it could never have read', async () => {
+    // Two separate reasons this used to produce nothing:
+    //   1. the team lookup feeding the message ran before the INSERT, so it
+    //      was RLS-denied and `team` was null — the whole block was skipped;
+    //   2. notifications_insert_own is WITH CHECK (user_id = auth.uid()), so a
+    //      player cannot address a row to their coach at all.
+    await processGolfTeamInvitation(CODE, PLAYER_ID);
+
+    const notify = adminInserts.find((i) => i.table === 'notifications');
+    expect(notify).toBeDefined();
+    const rows = notify!.rows as Array<Record<string, unknown>>;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.user_id).toBe('user-coach-1');
+    expect(rows[0]!.type).toBe('team_join');
+    expect(rows[0]!.body).toBe(`QA Recruit has joined ${TEAM.name}`);
+  });
+
+  it('sends the coach notification with the SERVICE-ROLE client, not the player’s', async () => {
+    // If this ever regresses to the caller's client, RLS silently drops it and
+    // the join still "succeeds" — which is exactly how it went unnoticed from
+    // 2026-02-10 onward.
+    await processGolfTeamInvitation(CODE, PLAYER_ID);
+
+    expect(adminInserts.some((i) => i.table === 'notifications')).toBe(true);
+  });
+
+  it('does not notify anyone when the join itself failed', async () => {
+    joinRpcError = { message: 'denied' };
+
+    await processGolfTeamInvitation(CODE, PLAYER_ID);
+
+    expect(adminInserts.find((i) => i.table === 'notifications')).toBeUndefined();
   });
 
   it('reports failure when the definer insert itself is rejected', async () => {
