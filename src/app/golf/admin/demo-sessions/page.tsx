@@ -50,8 +50,8 @@ export default async function DemoSessionsPage() {
     <div className="min-h-screen bg-[#FFFEFA] p-6 md:p-10">
       {/* ── Breadcrumb ─────────────────────────────────────────────────── */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-warm-400 mb-8">
-        <Link href="/golf/admin" className="hover:text-warm-700 transition-colors">
-          Admin
+        <Link href="/admin" className="hover:text-warm-700 transition-colors">
+          Helm Bridge
         </Link>
         <IconChevronRight className="w-3.5 h-3.5 text-warm-300" />
         <span className="text-warm-700 font-medium">Demo Sessions</span>

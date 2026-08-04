@@ -1367,8 +1367,8 @@ export default function CRMPage() {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-nav-bg/95 backdrop-blur-xl border-b border-nav-text/10">
         <div className="flex items-center gap-3 px-3 h-14">
           <a
-            href="/golf/admin"
-            aria-label="Back to admin dashboard"
+            href="/admin"
+            aria-label="Back to Helm Bridge"
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md text-nav-text-dim hover:bg-nav-surface hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nav-accent transition-colors"
           >
             <ArrowLeft size={18} />
@@ -1409,15 +1409,16 @@ export default function CRMPage() {
           {!sidebarCollapsed && <span className="font-semibold text-lg text-nav-text tracking-tight">Fairway CRM</span>}
         </div>
 
-        {/* Back to Dashboard */}
+        {/* Back to Helm Bridge — the admin dashboard. Not `/golf/admin`, which
+            is the retired console and now redirects here anyway. */}
         <div className="px-3 mb-2">
-          <a href="/golf/admin" className={cn(
+          <a href="/admin" className={cn(
             'flex items-center gap-3 px-3 py-2 rounded-fw-sm',
             'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition-all duration-200',
             sidebarCollapsed && 'justify-center'
           )}>
             <ArrowLeft size={16} className="flex-shrink-0" />
-            {!sidebarCollapsed && <span className="text-sm font-medium">Dashboard</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">Helm Bridge</span>}
           </a>
         </div>
 

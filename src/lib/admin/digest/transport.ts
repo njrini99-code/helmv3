@@ -28,6 +28,16 @@ export interface SendOpsDigestResult {
   skipped: boolean;
   reason?: string;
   messageId?: string;
+  /**
+   * The addresses this actually went to.
+   *
+   * Reported back so callers can log where a briefing landed. Without it,
+   * `{ sent: true }` cannot distinguish "never sent" from "sent to an address
+   * you weren't reading" — the exact ambiguity that made a 2026-08-04
+   * "the Cup of Helm never arrived" report take a full investigation to
+   * resolve (it had arrived, at the other address).
+   */
+  recipients?: string[];
 }
 
 const DEFAULT_FROM = 'Cup of Helm <bridge@helmsportslabs.com>';
@@ -73,8 +83,8 @@ export async function sendOpsAlert(alert: OpsAlert): Promise<SendOpsDigestResult
     text: alert.text,
     ...(alert.html ? { html: alert.html } : {}),
   });
-  if (error) return { sent: false, skipped: false, reason: error.message ?? 'send failed' };
-  return { sent: true, skipped: false, messageId: data?.id };
+  if (error) return { sent: false, skipped: false, reason: error.message ?? 'send failed', recipients: to };
+  return { sent: true, skipped: false, messageId: data?.id, recipients: to };
 }
 
 export async function sendOpsDigest(email: DigestEmail): Promise<SendOpsDigestResult> {

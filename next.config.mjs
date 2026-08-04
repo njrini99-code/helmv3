@@ -168,6 +168,23 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        // The legacy GolfHelm admin console. Helm Bridge (`/admin`) is the
+        // admin dashboard now, so nothing should land here — a super-admin
+        // backing out of the Coach CRM was being dropped onto this page
+        // instead of the Bridge.
+        //
+        // EXACT path only. `/golf/admin/crm` and `/golf/admin/demo-sessions`
+        // are still live and are NOT part of this redirect; a `/:path*` source
+        // here would take the CRM down with it.
+        //
+        // Deliberately not permanent: a 308 is cached hard by browsers, and
+        // this is a product decision that may be revisited. The old page.tsx
+        // stays in the tree so reverting is a one-line change.
+        source: '/golf/admin',
+        destination: '/admin',
+        permanent: false,
+      },
+      {
         source: '/golf/dashboard/hub',
         destination: '/golf/dashboard',
         permanent: false, // shim used redirect(), not permanentRedirect()

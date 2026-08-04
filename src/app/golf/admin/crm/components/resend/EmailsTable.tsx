@@ -140,17 +140,28 @@ export function EmailsTable({
           </span>
         </div>
 
-        {/* Status tabs */}
-        <div className="flex items-center gap-1 flex-wrap">
+        {/* Status filter chips.
+            `variant="ghost"`, NOT `primary`. These are filters, and only ONE is
+            ever selected — with `primary` the six unselected chips each kept the
+            variant's solid accent fill while the unselected branch below only
+            set a text colour, so they rendered dark-green label on dark-green
+            ground and could not be read. Only the selected chip looked right,
+            because `bg-nav-bg` happened to override the fill. */}
+        <div
+          role="group"
+          aria-label="Filter emails by delivery status"
+          className="flex items-center gap-1 flex-wrap"
+        >
           {STATUS_TABS.map((t) => (
-            <Button variant="primary"
+            <Button variant="ghost"
               key={t.id}
               onClick={() => setStatus(t.id)}
+              aria-pressed={status === t.id}
               className={cn(
                 'text-xs font-medium px-2.5 py-1 rounded-fw-sm transition-colors',
                 status === t.id
-                  ? 'bg-nav-bg text-nav-text'
-                  : 'text-text-secondary hover:bg-surface-sunken'
+                  ? 'bg-nav-bg text-nav-text hover:bg-nav-bg'
+                  : 'bg-transparent text-text-secondary hover:bg-surface-sunken'
               )}
             >
               {t.label}
