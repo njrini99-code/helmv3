@@ -165,3 +165,44 @@ export function zonedMidnight(iso: string, timezone: string | null | undefined):
   const { year, month, day } = getZonedDateParts(iso, timezone);
   return new Date(year, month - 1, day);
 }
+
+/**
+ * The calendar day an EVENT belongs on — the only correct way to bucket one
+ * into a day cell, because all-day and timed events store their day
+ * differently.
+ *
+ * An all-day event has no time of day. It is persisted as UTC midnight, so the
+ * date *as written in UTC* IS the intended calendar date: "Freshman Move-In on
+ * August 14" is stored `2026-08-14T00:00:00Z`. Running that through
+ * `zonedMidnight` re-reads it as an instant and converts it to the viewer's
+ * zone — 8 PM on August 13 in America/New_York — putting an all-day event one
+ * cell too early for every user west of UTC. That is exactly what a Guilford
+ * coach reported on 2026-08-04: five all-day events (move-in, check-in, first
+ * day of class…) each rendered one day early on the month grid, while every
+ * timed event on the same screen was correct.
+ *
+ * A timed event is a real instant and must be converted, or an 8 PM ET event
+ * shows up on tomorrow's cell.
+ *
+ * So: branch on `all_day`. Do NOT "simplify" this back to a single
+ * `zonedMidnight` call.
+ */
+export function eventCalendarDay(
+  iso: string,
+  allDay: boolean | null | undefined,
+  timezone: string | null | undefined,
+): Date {
+  const date = new Date(iso);
+  // An unparseable timestamp yields an Invalid Date rather than a throw.
+  // `zonedMidnight` would raise RangeError here (Intl rejects an invalid
+  // instant), which turns one malformed row into a blank calendar for the
+  // whole team instead of one missing chip.
+  if (Number.isNaN(date.getTime())) return date;
+
+  if (!allDay) return zonedMidnight(iso, timezone);
+  // Read the stored UTC fields, then rebuild as a local Date so the result
+  // keeps `zonedMidnight`'s contract: downstream date-fns calls read calendar
+  // fields through the process's own local getters, which are the exact
+  // inverse of `new Date(y, m, d)` within that same process.
+  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
