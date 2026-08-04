@@ -349,7 +349,7 @@ async function markAttendanceImpl(
 
 const observedMarkAttendance = withAdminObserved(
   'markAttendance',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   markAttendanceImpl,
 );
 
@@ -379,7 +379,7 @@ async function checkInPlayerImpl(
 
 const observedCheckInPlayer = withAdminObserved(
   'checkInPlayer',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   checkInPlayerImpl,
 );
 
@@ -404,7 +404,7 @@ async function markNoShowImpl(
 
 const observedMarkNoShow = withAdminObserved(
   'markNoShow',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   markNoShowImpl,
 );
 
@@ -505,7 +505,7 @@ async function bulkCheckInImpl(
 
 const observedBulkCheckIn = withAdminObserved(
   'bulkCheckIn',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   bulkCheckInImpl,
 );
 

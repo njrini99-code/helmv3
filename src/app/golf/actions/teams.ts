@@ -541,7 +541,7 @@ async function createTeamImpl(
 
 const observedCreateTeam = withAdminObserved(
   'createTeam',
-  { sport: 'golf', feature: 'team_info' },
+  { demoSafe: true, sport: 'golf', feature: 'team_info' },
   createTeamImpl,
 );
 
@@ -635,7 +635,7 @@ async function updateTeamImpl(
 
 const observedUpdateTeam = withAdminObserved(
   'updateTeam',
-  { sport: 'golf', feature: 'team_info' },
+  { demoSafe: true, sport: 'golf', feature: 'team_info' },
   updateTeamImpl,
 );
 
@@ -703,7 +703,7 @@ async function regenerateJoinCodeImpl(
 
 const observedRegenerateJoinCode = withAdminObserved(
   'regenerateJoinCode',
-  { sport: 'golf', feature: 'team_info' },
+  { demoSafe: true, sport: 'golf', feature: 'team_info' },
   regenerateJoinCodeImpl,
 );
 
@@ -1111,7 +1111,7 @@ async function acceptJoinRequestImpl(
 
 const observedAcceptJoinRequest = withAdminObserved(
   'acceptJoinRequest',
-  { sport: 'golf', feature: 'join_team_flow' },
+  { demoSafe: true, sport: 'golf', feature: 'join_team_flow' },
   acceptJoinRequestImpl,
 );
 
@@ -1235,7 +1235,7 @@ async function rejectJoinRequestImpl(
 
 const observedRejectJoinRequest = withAdminObserved(
   'rejectJoinRequest',
-  { sport: 'golf', feature: 'join_team_flow' },
+  { demoSafe: true, sport: 'golf', feature: 'join_team_flow' },
   rejectJoinRequestImpl,
 );
 

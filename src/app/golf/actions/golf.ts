@@ -2459,7 +2459,7 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
 
 const observedCreateGolfEvent = withAdminObserved(
   'createGolfEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   createGolfEventImpl,
 );
 
@@ -2708,7 +2708,7 @@ async function updateGolfEventImpl(
 
 const observedUpdateGolfEvent = withAdminObserved(
   'updateGolfEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   updateGolfEventImpl,
 );
 
@@ -2986,7 +2986,7 @@ async function deleteGolfEventImpl(
 
 const observedDeleteGolfEvent = withAdminObserved(
   'deleteGolfEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   deleteGolfEventImpl,
 );
 
@@ -3009,7 +3009,7 @@ async function deleteGolfEventPermanentlyImpl(
 
 const observedDeleteGolfEventPermanently = withAdminObserved(
   'deleteGolfEventPermanently',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   deleteGolfEventPermanentlyImpl,
 );
 
@@ -3215,7 +3215,7 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
 
 const observedCreateGolfQualifier = withAdminObserved(
   'createGolfQualifier',
-  { sport: 'golf', feature: 'qualifiers' },
+  { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   createGolfQualifierImpl,
 );
 
@@ -3427,7 +3427,7 @@ async function updateQualifierStatusImpl(
 
 const observedUpdateQualifierStatus = withAdminObserved(
   'updateQualifierStatus',
-  { sport: 'golf', feature: 'qualifiers' },
+  { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   updateQualifierStatusImpl,
 );
 
@@ -3559,7 +3559,7 @@ async function updateGolfQualifierDetailsImpl(
 
 const observedUpdateGolfQualifierDetails = withAdminObserved(
   'updateGolfQualifierDetails',
-  { sport: 'golf', feature: 'qualifiers' },
+  { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   updateGolfQualifierDetailsImpl,
 );
 
@@ -3643,7 +3643,7 @@ async function createAnnouncementImpl(data: {
 
 const observedCreateAnnouncement = withAdminObserved(
   'createAnnouncement',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   createAnnouncementImpl,
 );
 
@@ -3820,7 +3820,7 @@ async function updatePlayerStatusImpl(
 
 const observedUpdatePlayerStatus = withAdminObserved(
   'updatePlayerStatus',
-  { sport: 'golf', feature: 'roster_management' },
+  { demoSafe: true, sport: 'golf', feature: 'roster_management' },
   updatePlayerStatusImpl,
 );
 
@@ -4725,7 +4725,7 @@ async function addCoachBlockedTimeImpl(
 
 const observedAddCoachBlockedTime = withAdminObserved(
   'addCoachBlockedTime',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   addCoachBlockedTimeImpl,
 );
 
@@ -4793,7 +4793,7 @@ async function deleteCoachBlockedTimeImpl(id: string): Promise<ActionResult<void
 
 const observedDeleteCoachBlockedTime = withAdminObserved(
   'deleteCoachBlockedTime',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   deleteCoachBlockedTimeImpl,
 );
 
@@ -4873,7 +4873,7 @@ async function updateCoachBlockedTimeImpl(
 
 const observedUpdateCoachBlockedTime = withAdminObserved(
   'updateCoachBlockedTime',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   updateCoachBlockedTimeImpl,
 );
 

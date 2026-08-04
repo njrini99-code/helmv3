@@ -165,3 +165,58 @@ export function zonedMidnight(iso: string, timezone: string | null | undefined):
   const { year, month, day } = getZonedDateParts(iso, timezone);
   return new Date(year, month - 1, day);
 }
+
+/**
+ * The calendar day an EVENT belongs on — the only correct way to bucket one
+ * into a day cell, because all-day and timed events store their day
+ * differently.
+ *
+ * An all-day event has no time of day. It is persisted as UTC midnight, so the
+ * date *as written in UTC* IS the intended calendar date: "Freshman Move-In on
+ * August 14" is stored `2026-08-14T00:00:00Z`. Running that through
+ * `zonedMidnight` re-reads it as an instant and converts it to the viewer's
+ * zone — 8 PM on August 13 in America/New_York — putting an all-day event one
+ * cell too early for every user west of UTC. That is exactly what a Guilford
+ * coach reported on 2026-08-04: five all-day events (move-in, check-in, first
+ * day of class…) each rendered one day early on the month grid, while every
+ * timed event on the same screen was correct.
+ *
+ * A timed event is a real instant and must be converted, or an 8 PM ET event
+ * shows up on tomorrow's cell.
+ *
+ * So: branch on `all_day`. Do NOT "simplify" this back to a single
+ * `zonedMidnight` call.
+ */
+export function eventCalendarDay(
+  iso: string,
+  allDay: boolean | null | undefined,
+  timezone: string | null | undefined,
+): Date {
+  if (allDay) {
+    // Take the calendar date as WRITTEN, without ever parsing it as an instant.
+    //
+    // This has to be format-agnostic, because the SAME event reaches different
+    // surfaces as different strings. The calendar page and `useCalendarEvents`
+    // both normalize an all-day event into `start_date` as a zone-less
+    // "2026-08-14T00:00:00" (local midnight), while `start_time` stays the raw
+    // "2026-08-14T00:00:00+00:00" (UTC midnight). Parsing either as an instant
+    // and converting it re-introduces the very shift being fixed — just in
+    // opposite directions, so a fix aimed at one input silently breaks the
+    // other (UTC-reading is right for `start_time` but wrong for `start_date`
+    // east of UTC). The literal date prefix is the one thing both agree on,
+    // and it is what an all-day event actually means.
+    const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    if (parts) {
+      return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+    }
+  }
+
+  // An unparseable timestamp yields an Invalid Date rather than a throw.
+  // `zonedMidnight` would raise RangeError here (Intl rejects an invalid
+  // instant), which turns one malformed row into a blank calendar for the
+  // whole team instead of one missing chip.
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return date;
+
+  return zonedMidnight(iso, timezone);
+}

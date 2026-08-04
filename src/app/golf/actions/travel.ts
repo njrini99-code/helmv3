@@ -225,7 +225,7 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
 
 const observedCreateGolfTravelItinerary = withAdminObserved(
   'createGolfTravelItinerary',
-  { sport: 'golf', feature: 'travel' },
+  { demoSafe: true, sport: 'golf', feature: 'travel' },
   createGolfTravelItineraryImpl,
 );
 
@@ -350,7 +350,7 @@ async function updateGolfTravelItineraryImpl(input: UpdateTravelItineraryInput) 
 
 const observedUpdateGolfTravelItinerary = withAdminObserved(
   'updateGolfTravelItinerary',
-  { sport: 'golf', feature: 'travel' },
+  { demoSafe: true, sport: 'golf', feature: 'travel' },
   updateGolfTravelItineraryImpl,
 );
 
@@ -417,7 +417,7 @@ async function deleteGolfTravelItineraryImpl(itineraryId: string) {
 
 const observedDeleteGolfTravelItinerary = withAdminObserved(
   'deleteGolfTravelItinerary',
-  { sport: 'golf', feature: 'travel' },
+  { demoSafe: true, sport: 'golf', feature: 'travel' },
   deleteGolfTravelItineraryImpl,
 );
 
@@ -636,7 +636,7 @@ async function createTravelExpenseImpl(input: CreateExpenseInput) {
 
 const observedCreateTravelExpense = withAdminObserved(
   'createTravelExpense',
-  { sport: 'golf', feature: 'travel' },
+  { demoSafe: true, sport: 'golf', feature: 'travel' },
   createTravelExpenseImpl,
 );
 
@@ -712,7 +712,7 @@ async function updateTravelExpenseImpl(input: UpdateExpenseInput) {
 
 const observedUpdateTravelExpense = withAdminObserved(
   'updateTravelExpense',
-  { sport: 'golf', feature: 'travel' },
+  { demoSafe: true, sport: 'golf', feature: 'travel' },
   updateTravelExpenseImpl,
 );
 
@@ -776,7 +776,7 @@ async function deleteTravelExpenseImpl(expenseId: string) {
 
 const observedDeleteTravelExpense = withAdminObserved(
   'deleteTravelExpense',
-  { sport: 'golf', feature: 'travel' },
+  { demoSafe: true, sport: 'golf', feature: 'travel' },
   deleteTravelExpenseImpl,
 );
 

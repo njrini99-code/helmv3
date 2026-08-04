@@ -34,6 +34,10 @@ const sharedIgnoreErrors = [
   'BaseballCapabilityError',
   'BaseballDisabledSourceError',
   'BaseballDemoReadOnlyError',
+  // Golf's equivalent. A demo night puts many prospects on one shared account
+  // at once, so every "no, the demo is read-only" would otherwise arrive in
+  // Sentry as an error — dozens of them, all working as designed.
+  'GolfDemoReadOnlyError',
   'PlayerAccessError',
 ];
 

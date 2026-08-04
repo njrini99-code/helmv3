@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { formatEventTimeCompact, zonedMidnight } from '@/lib/calendar/timezone';
+import { formatEventTimeCompact, zonedMidnight, eventCalendarDay } from '@/lib/calendar/timezone';
 import { typeMeta } from './FairwayEventCard';
 
 /** A color-coded busy period for the coach availability overlay. */
@@ -131,7 +131,10 @@ export function FairwayMonthGrid({
         const s = eventStart(e);
         if (!s) continue;
         const at = new Date(s).getTime();
-        push(format(zonedMidnight(s, timezone), 'yyyy-MM-dd'), { kind: 'event', at, event: e });
+        // `eventCalendarDay`, NOT `zonedMidnight`: an all-day event is stored
+        // at UTC midnight, so converting it to the viewer's zone drops it one
+        // cell early for everyone west of UTC.
+        push(format(eventCalendarDay(s, e.all_day, timezone), 'yyyy-MM-dd'), { kind: 'event', at, event: e });
       }
     }
     for (const arr of map.values()) arr.sort((a, b) => a.at - b.at);

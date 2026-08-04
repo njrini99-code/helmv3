@@ -66,7 +66,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight } from '@/lib/calendar/timezone';
+import { zonedMidnight, eventCalendarDay } from '@/lib/calendar/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -643,7 +643,7 @@ export function FairwayCalendar({
         // with what FairwayAgendaView mode="day" actually renders for the
         // same day (both bucket by `teamTimezone`), or the hero count and
         // the visible list could silently disagree near a midnight boundary.
-        return isSameDay(zonedMidnight(s, teamTimezone), focusDate);
+        return isSameDay(eventCalendarDay(s, e.all_day, teamTimezone), focusDate);
       }).length;
     }
     const startMs = visibleWindow.start.getTime();
