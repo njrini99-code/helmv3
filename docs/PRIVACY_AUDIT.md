@@ -85,7 +85,7 @@ Apple requires users to be able to delete their account from within the app. Thi
 - **API Route:** `src/app/api/account/delete/route.ts` - DELETE endpoint
 - **Golf Settings:** `src/app/golf/(dashboard)/dashboard/settings/page.tsx` - "Danger Zone" section with Delete Account button (lines 491-508), uses `window.confirm()` dialog
 - **Baseball Settings:** `src/app/baseball/(dashboard)/dashboard/settings/page.tsx` - More robust flow with type-to-confirm "DELETE" (lines 296-369)
-- **Backend script:** `delete_user.mjs` (admin utility, hardcoded user ID)
+- ~~**Backend script:** `delete_user.mjs` (admin utility, hardcoded user ID)~~ — **REMOVED 2026-08-03.** It was a spent one-off: a repo-root script running under the service-role key with a hardcoded id for a single user, who no longer exists in `auth.users` or `public.users`. Account deletion is served by the API route above; recoverable from git history if ever needed.
 
 **Deletion Process:**
 1. Authenticates user via session
@@ -322,7 +322,7 @@ This app serves HIGH SCHOOL student athletes (minors under 18, potentially under
 ## 10. Additional Findings
 
 ### Hardcoded Credentials in Source
-- `delete_user.mjs` contains a hardcoded user ID (not a security issue, but poor practice)
+- ~~`delete_user.mjs` contains a hardcoded user ID (not a security issue, but poor practice)~~ — **RESOLVED 2026-08-03**: file deleted (see §Account Deletion above)
 - `datadog/setup-datadog-user.sql` has placeholder password `YOUR_SECURE_PASSWORD`
 
 ### Missing Privacy Features
