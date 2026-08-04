@@ -192,17 +192,31 @@ export function eventCalendarDay(
   allDay: boolean | null | undefined,
   timezone: string | null | undefined,
 ): Date {
-  const date = new Date(iso);
+  if (allDay) {
+    // Take the calendar date as WRITTEN, without ever parsing it as an instant.
+    //
+    // This has to be format-agnostic, because the SAME event reaches different
+    // surfaces as different strings. The calendar page and `useCalendarEvents`
+    // both normalize an all-day event into `start_date` as a zone-less
+    // "2026-08-14T00:00:00" (local midnight), while `start_time` stays the raw
+    // "2026-08-14T00:00:00+00:00" (UTC midnight). Parsing either as an instant
+    // and converting it re-introduces the very shift being fixed — just in
+    // opposite directions, so a fix aimed at one input silently breaks the
+    // other (UTC-reading is right for `start_time` but wrong for `start_date`
+    // east of UTC). The literal date prefix is the one thing both agree on,
+    // and it is what an all-day event actually means.
+    const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    if (parts) {
+      return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+    }
+  }
+
   // An unparseable timestamp yields an Invalid Date rather than a throw.
   // `zonedMidnight` would raise RangeError here (Intl rejects an invalid
   // instant), which turns one malformed row into a blank calendar for the
   // whole team instead of one missing chip.
+  const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return date;
 
-  if (!allDay) return zonedMidnight(iso, timezone);
-  // Read the stored UTC fields, then rebuild as a local Date so the result
-  // keeps `zonedMidnight`'s contract: downstream date-fns calls read calendar
-  // fields through the process's own local getters, which are the exact
-  // inverse of `new Date(y, m, d)` within that same process.
-  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  return zonedMidnight(iso, timezone);
 }

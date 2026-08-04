@@ -69,6 +69,26 @@ describe('eventCalendarDay', () => {
     }
   });
 
+  it('gives the same day for BOTH shapes the app hands it', () => {
+    // The same event arrives as two different strings depending on the surface:
+    //   start_time  -> "2026-08-14T00:00:00+00:00"  (raw, UTC midnight)
+    //   start_date  -> "2026-08-14T00:00:00"        (normalized, LOCAL midnight)
+    // A first attempt at this fix read the UTC fields, which is right for the
+    // raw string and wrong for the normalized one east of UTC — it would have
+    // fixed the month grid and broken the agenda for anyone in, say, Tokyo.
+    const SHAPES = [
+      '2026-08-14T00:00:00+00:00',
+      '2026-08-14T00:00:00Z',
+      '2026-08-14T00:00:00',
+      '2026-08-14',
+    ];
+    for (const tz of ['Pacific/Honolulu', ET, 'UTC', 'Asia/Tokyo']) {
+      for (const iso of SHAPES) {
+        expect(dayKey(iso, true, tz)).toBe('2026-08-14');
+      }
+    }
+  });
+
   it('treats a missing/unknown all_day flag as timed', () => {
     // `all_day` is nullable. Absent means "not marked all-day", and a timed
     // event must keep the zone conversion.
