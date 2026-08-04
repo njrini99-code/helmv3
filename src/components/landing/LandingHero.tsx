@@ -191,7 +191,11 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
                 alt=""
                 width={60}
                 height={60}
-                className="h-[30px] w-[30px]"
+                // object-contain: the source is 189x154 (WIDER than tall), so
+                // forcing a 30x30 box with the default object-fit:fill stretched it
+                // ~19%. Every other usage of this mark in the app already pins
+                // object-contain; these landing ones were the two that did not.
+                className="h-[30px] w-[30px] object-contain"
               />
               Explore GolfHelm
               <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>

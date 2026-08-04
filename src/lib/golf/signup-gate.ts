@@ -119,7 +119,9 @@ async function isValidTeamJoinCode(code: string): Promise<boolean> {
  * Every caller MUST rate-limit before reaching here — a miss falls through to
  * a service-role join_code lookup.
  */
-async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
+type SignupCodeMatch = 'none' | 'global' | 'team_join_code';
+
+async function classifySignupCode(candidate: string): Promise<SignupCodeMatch> {
   // DS-B2: no committed fallback. An unset SIGNUP_ACCESS_CODE used to make the
   // source-published literal the live gate value; empty now fails the guard
   // below closed, leaving only the team join_code path.
@@ -127,11 +129,15 @@ async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
   if (!accessCode) {
     await warnMissingAccessCodeOnce();
   } else if (candidate.toLowerCase() === accessCode.toLowerCase()) {
-    return true;
+    return 'global';
   }
 
   // Otherwise accept a real team join code so coach-invited players get in.
-  return isValidTeamJoinCode(candidate);
+  return (await isValidTeamJoinCode(candidate)) ? 'team_join_code' : 'none';
+}
+
+async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
+  return (await classifySignupCode(candidate)) !== 'none';
 }
 
 /**
@@ -199,16 +205,45 @@ export async function grantSignupAccess(code: string): Promise<boolean> {
  * interactive gate's budget, and so this path cannot be used as an unbounded
  * join_code oracle either.
  */
-export async function verifySignupGate(): Promise<boolean> {
+export interface SignupGateResult {
+  /** True when the recorded grant still validates. */
+  passed: boolean;
+  /**
+   * The TEAM JOIN CODE the visitor cleared the gate with, when that is what
+   * let them in (uppercased), otherwise null.
+   *
+   * Returned so `signupAction` can carry it into player onboarding as
+   * `?joinCode=`, which is the parameter completePlayerOnboarding already uses
+   * to auto-join the inviting team. Before this, a player who signed up with
+   * the code their coach gave them cleared the gate and was then dropped on
+   * onboarding with no team — the code was verified and discarded in the same
+   * breath, so they finished onboarding unattached and had to be invited a
+   * second time.
+   *
+   * Reuses the classification the gate already performed; it does NOT cost a
+   * second service-role join_code lookup or a second throttle slot.
+   */
+  teamJoinCode: string | null;
+}
+
+export async function verifySignupGate(): Promise<SignupGateResult> {
+  const denied: SignupGateResult = { passed: false, teamJoinCode: null };
+
   const cookieStore = await cookies();
   const granted = cookieStore.get(SIGNUP_GATE_COOKIE)?.value?.trim();
-  if (!granted) return false;
+  if (!granted) return denied;
 
   const rateLimit = await checkRateLimit(
     `signup:gate:verify:${await clientIp()}`,
     RATE_LIMITS.SIGNUP,
   );
-  if (!rateLimit.allowed) return false;
+  if (!rateLimit.allowed) return denied;
 
-  return isAcceptedSignupCode(granted);
+  const match = await classifySignupCode(granted);
+  if (match === 'none') return denied;
+
+  return {
+    passed: true,
+    teamJoinCode: match === 'team_join_code' ? granted.toUpperCase() : null,
+  };
 }
