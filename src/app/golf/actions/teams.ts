@@ -489,7 +489,11 @@ async function createTeamImpl(
 
   // Create team linked to coach's organization. gender is written explicitly so
   // the legacy create path no longer silently defaults every team to 'mens'.
-  const { data: newTeam, error: teamError } = await supabase
+  // Same RLS shape as addSecondTeam below: RETURNING is filtered by
+  // `golf_teams_select`, which needs a golf_team_coach_staff row that does not
+  // exist for a team being created right now. Insert under the caller's RLS,
+  // read back with admin, scoped to the unique join code.
+  const { error: teamError } = await supabase
     .from('golf_teams')
     .insert({
       name: name.trim(),
@@ -498,9 +502,17 @@ async function createTeamImpl(
       join_code: joinCode,
       organization_id: coach.organization_id,
       created_by: coach.id,
-    })
-    .select('id, name, season, join_code, created_at')
-    .single();
+    });
+
+  const newTeam = teamError
+    ? null
+    : (
+        await createAdminClient()
+          .from('golf_teams')
+          .select('id, name, season, join_code, created_at')
+          .eq('join_code', joinCode)
+          .maybeSingle()
+      ).data ?? null;
 
   if (teamError) {
     // 23505 = golf_teams_org_gender_uidx: the program already has a team of this
@@ -509,6 +521,12 @@ async function createTeamImpl(
       const label = gender === 'mens' ? "Men's" : "Women's";
       return { success: false, error: `Your program already has a ${label} team.` };
     }
+    return { success: false, error: 'Failed to create team. Please try again.' };
+  }
+
+  if (!newTeam) {
+    // The row went in but could not be read back even with admin — treat as a
+    // failure rather than pressing on with no team id to attach staff to.
     return { success: false, error: 'Failed to create team. Please try again.' };
   }
 
@@ -1492,7 +1510,25 @@ async function addSecondTeamImpl(
     return month >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
   })();
 
-  const { data: newTeam, error: teamError } = await supabase
+  // INSERT without RETURNING, then read back with the admin client.
+  //
+  // `.insert().select()` asks Postgres for a RETURNING clause, and RETURNING is
+  // filtered by the SELECT policy. `golf_teams_select` is
+  // `USING (is_golf_team_coach(id) OR is_golf_team_player(id))`, and
+  // `is_golf_team_coach` requires a golf_team_coach_staff row — which for a
+  // brand-new team does not exist yet; it is created a few lines below. So the
+  // creator could never read back the team they had just made, and the whole
+  // statement failed 42501 "new row violates row-level security policy".
+  //
+  // Observed on production 2026-08-05: Shenandoah's head coach could not add
+  // their Women's team at all, so the program had one team and the top-bar
+  // team toggle (which needs two) never appeared.
+  //
+  // The INSERT itself still goes through the caller's client, so the RLS write
+  // check still authorizes it. Only the read-back is elevated, scoped to the
+  // join code generated above (unique), and the org is asserted below before
+  // anything privileged happens.
+  const { error: teamError } = await supabase
     .from('golf_teams')
     .insert({
       name: name.trim(),
@@ -1501,9 +1537,17 @@ async function addSecondTeamImpl(
       join_code: joinCode,
       organization_id: coach.organization_id,
       created_by: coach.id,
-    })
-    .select('id, name, season, join_code, created_at, organization_id')
-    .single();
+    });
+
+  const newTeam = teamError
+    ? null
+    : (
+        await createAdminClient()
+          .from('golf_teams')
+          .select('id, name, season, join_code, created_at, organization_id')
+          .eq('join_code', joinCode)
+          .maybeSingle()
+      ).data ?? null;
 
   if (teamError || !newTeam) {
     // 23505 = the golf_teams_org_gender_uidx partial-unique guard. This catches
