@@ -325,7 +325,7 @@ describe('FEATURE_REGISTRY completeness', () => {
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 428 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 427 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -341,9 +341,7 @@ describe('FEATURE_REGISTRY completeness', () => {
     // 427 also covers recurring tasks (#1238): createRecurringTask (tasks.ts).
     // tasks.ts is already 'ALL'-mapped, so the live scanExports count picks it
     // up with no manifest edit needed.
-    // 428: joinProgramAsStaff (join_team_flow) — coaches and program
-    // administrators joining an EXISTING program with its team code.
-    expect(total).toBe(428);
+    expect(total).toBe(427);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {
