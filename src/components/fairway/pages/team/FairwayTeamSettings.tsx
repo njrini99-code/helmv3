@@ -130,6 +130,8 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
   const [codeCopied, setCodeCopied] = useState(false);
   /** Which program-team code was last copied, so only that row confirms. */
   const [copiedTeamId, setCopiedTeamId] = useState<string | null>(null);
+  /** Same, for the per-squad invite LINK. */
+  const [copiedLinkTeamId, setCopiedLinkTeamId] = useState<string | null>(null);
 
   // Resolve the absolute origin only after mount — rendering it during render
   // produced a hydration mismatch (the legacy code documents this). Seed empty,
@@ -308,6 +310,24 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
       setCopiedTeamId(pt.id);
       fairwayToast.success(`${squadLabel(pt.gender) ?? pt.name} code copied`);
       setTimeout(() => setCopiedTeamId((cur) => (cur === pt.id ? null : cur)), 2000);
+    } catch {
+      fairwayToast.error('Could not copy to clipboard');
+    }
+  };
+
+  /** Copy one squad's invite LINK, so the URL matches the squad it is for. */
+  const handleCopyProgramTeamLink = async (pt: FairwayProgramTeam) => {
+    if (!pt.join_code || !origin) return;
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      fairwayToast.error('Clipboard is unavailable in this browser');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(`${origin}/golf/join/${pt.join_code}`);
+      void triggerHaptic('light');
+      setCopiedLinkTeamId(pt.id);
+      fairwayToast.success(`${squadLabel(pt.gender) ?? pt.name} invite link copied`);
+      setTimeout(() => setCopiedLinkTeamId((cur) => (cur === pt.id ? null : cur)), 2000);
     } catch {
       fairwayToast.error('Could not copy to clipboard');
     }
@@ -537,17 +557,34 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
                           {pt.join_code ?? EM_DASH}
                         </span>
                         {pt.join_code && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="ml-auto"
-                            leftIcon={
-                              copiedTeamId === pt.id ? <IconCheck size={14} /> : <IconCopy size={14} />
-                            }
-                            onClick={() => void handleCopyProgramTeamCode(pt)}
-                          >
-                            {copiedTeamId === pt.id ? 'Copied' : 'Copy'}
-                          </Button>
+                          <span className="ml-auto flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              leftIcon={
+                                copiedTeamId === pt.id ? <IconCheck size={14} /> : <IconCopy size={14} />
+                              }
+                              onClick={() => void handleCopyProgramTeamCode(pt)}
+                            >
+                              {copiedTeamId === pt.id ? 'Copied' : 'Copy code'}
+                            </Button>
+                            {/* Per-squad link. The shared "Invite link" field
+                                below only ever renders the ACTIVE team's URL, so
+                                a coach who grabbed it while on Men's sent the
+                                men's link no matter who it was for — the same
+                                trap the labelled codes above close, one level
+                                down. */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              leftIcon={
+                                copiedLinkTeamId === pt.id ? <IconCheck size={14} /> : <IconLink size={14} />
+                              }
+                              onClick={() => void handleCopyProgramTeamLink(pt)}
+                            >
+                              {copiedLinkTeamId === pt.id ? 'Copied' : 'Copy link'}
+                            </Button>
+                          </span>
                         )}
                       </div>
                     );
@@ -590,6 +627,7 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
                 </div>
               )}
 
+              {!multiTeamProgram && (
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="fw-team-invite-link"
@@ -620,27 +658,35 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
                   }
                 />
               </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant={copied ? 'secondary' : 'primary'}
-                  leftIcon={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                  onClick={() => void handleCopyInviteLink()}
-                >
-                  {copied ? 'Copied to clipboard' : 'Copy invite link'}
-                </Button>
+                {/* The shared link button copies the ACTIVE team's URL, so it is
+                    single-team only. Two-squad programs copy per squad above. */}
+                {!multiTeamProgram && (
+                  <Button
+                    variant={copied ? 'secondary' : 'primary'}
+                    leftIcon={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    onClick={() => void handleCopyInviteLink()}
+                  >
+                    {copied ? 'Copied to clipboard' : 'Copy invite link'}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   busy={isPending}
                   leftIcon={<IconRefresh size={16} />}
                   onClick={handleRegenerateInviteCode}
                 >
-                  Regenerate invite code
+                  {multiTeamProgram
+                    ? `Regenerate ${squadLabel(team.gender) ?? 'this team'} code`
+                    : 'Regenerate invite code'}
                 </Button>
               </div>
 
               <p className="font-fw-sans text-caption text-text-tertiary">
-                Regenerating will invalidate the old invite link.
+                Regenerating will invalidate the old invite link
+                {multiTeamProgram ? ' for the team you are currently viewing.' : '.'}
               </p>
             </>
           ) : (

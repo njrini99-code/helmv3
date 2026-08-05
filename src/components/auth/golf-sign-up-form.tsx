@@ -4,13 +4,23 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signupAction } from '@/app/golf/actions/auth';
-import { Users, GraduationCap, AlertCircle } from 'lucide-react';
+import { joinProgramAsStaff } from '@/app/golf/actions/teams';
+import { Users, Shield, GraduationCap, AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 
-type Role = 'player' | 'coach';
+/**
+ * `admin` is the PROGRAM HEAD — a coach who runs both squads.
+ *
+ * It is not a platform role: it maps to `head_coach` staff rows on every team
+ * in the organization, which is exactly what makes the Men's/Women's toggle
+ * appear (`canSwitch = isHeadCoach && staffedTeams > 1`). A plain `coach` is
+ * staffed on the ONE team whose code they used, so they get full access to
+ * that squad and no toggle.
+ */
+type Role = 'player' | 'coach' | 'admin';
 
 function getSignupErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -74,10 +84,13 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
     setError(null);
 
     try {
+      // `admin` is a program-head COACH, not a separate auth role — the
+      // difference is which staff rows get written below.
+      const authRole = role === 'player' ? 'player' : 'coach';
       const result = await signupAction(
         formData.email,
         formData.password,
-        role,
+        authRole,
         formData.firstName,
         formData.lastName
       );
@@ -104,10 +117,30 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       // Coach-invited players carry a team join code from the invite link —
       // forward it to onboarding so they auto-join the inviting team. Everyone
       // else follows the normal onboarding path.
+      const code = joinCode?.trim().toUpperCase() ?? '';
+
+      // A COACH or ADMIN who signed up with a program's code joins THAT
+      // program. Sending them to /golf/coach would run new-program onboarding
+      // and create a second organization for a school that already exists.
+      if (role !== 'player' && code) {
+        const staff = await joinProgramAsStaff(
+          code,
+          role === 'admin' ? 'admin' : 'coach',
+          `${formData.firstName} ${formData.lastName}`.trim(),
+        );
+        if (!staff.success) {
+          setError(staff.error || 'Could not join that program. Check the code and try again.');
+          setIsLoading(false);
+          return;
+        }
+        router.push('/golf/dashboard');
+        return;
+      }
+
       const onboardingPath =
-        role === 'player' && joinCode
-          ? `/golf/player?joinCode=${encodeURIComponent(joinCode.trim().toUpperCase())}`
-          : result.redirectTo || (role === 'coach' ? '/golf/coach' : '/golf/player');
+        role === 'player' && code
+          ? `/golf/player?joinCode=${encodeURIComponent(code)}`
+          : result.redirectTo || (role !== 'player' ? '/golf/coach' : '/golf/player');
       router.push(onboardingPath);
     } catch (err) {
       setError(getSignupErrorMessage(err instanceof Error ? err.message : 'Signup failed'));
@@ -142,7 +175,7 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       {/* Role Selection */}
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-warm-700">I am a...</legend>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Button variant="primary"
             type="button"
             onClick={() => setRole('player')}
@@ -180,7 +213,31 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
               Coach
             </span>
           </Button>
+
+          <Button variant="primary"
+            type="button"
+            onClick={() => setRole('admin')}
+            aria-pressed={role === 'admin'}
+            className={`
+              p-4 rounded-md border-2 transition-colors
+              flex flex-col items-center gap-2
+              ${role === 'admin'
+                ? 'border-primary-600 bg-primary-50'
+                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+              }
+            `}
+          >
+            <Shield className={`w-6 h-6 ${role === 'admin' ? 'text-primary-600' : 'text-warm-400'}`} />
+            <span className={`text-sm font-medium ${role === 'admin' ? 'text-primary-600' : 'text-warm-700'}`}>
+              Administrator
+            </span>
+          </Button>
         </div>
+        <p className="text-xs text-warm-500">
+          {role === 'player' && 'You’ll join the team this code belongs to.'}
+          {role === 'coach' && 'Full access to the team this code belongs to.'}
+          {role === 'admin' && 'Runs the whole program — access to both the men’s and women’s teams, with a toggle to switch between them.'}
+        </p>
       </fieldset>
 
       {/* Name fields - side by side */}

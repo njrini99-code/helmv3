@@ -424,6 +424,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/teams.ts': [
         'validateGolfPlayerCanJoinTeam',
         'joinGolfTeam',
+        'joinProgramAsStaff',
         'processGolfTeamInvitation',
         'createTeamJoinRequest',
         'getTeamJoinRequests',

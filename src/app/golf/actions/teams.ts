@@ -1624,3 +1624,166 @@ export async function addSecondTeam(
 ): Promise<TeamActionResult<TeamData & { gender: string }>> {
   return observedAddSecondTeam(name, gender);
 }
+
+// ============================================================================
+// STAFF JOIN — a coach or program administrator joins an EXISTING program
+// ============================================================================
+
+/**
+ * What a staff member gets when they join with a team code.
+ *
+ * `coach`  — full access to the ONE team whose code they used. Staffed as
+ *            `assistant_coach`, which `is_golf_team_coach()` treats exactly
+ *            like a head coach for data access (it only asks whether a staff
+ *            row exists). They see no team toggle, because
+ *            `canSwitch = isHeadCoach && staffedTeams > 1` and they are
+ *            staffed on one.
+ * `admin`  — the program head. Staffed as `head_coach` on EVERY team in the
+ *            organization, so both conditions hold and the Men's/Women's
+ *            toggle appears.
+ */
+export type GolfStaffJoinRole = 'coach' | 'admin';
+
+export interface StaffJoinResult {
+  success: boolean;
+  error?: string;
+  /** Teams the caller now staffs, for the confirmation copy. */
+  teams?: { id: string; name: string; gender: string | null }[];
+  /** True when the caller ends up on more than one team (toggle will show). */
+  multiTeam?: boolean;
+}
+
+async function joinProgramAsStaffImpl(
+  joinCode: string,
+  staffRole: GolfStaffJoinRole,
+  fullName?: string,
+): Promise<StaffJoinResult> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { success: false, error: 'Not authenticated' };
+
+  const normalizedCode = joinCode.trim().toUpperCase();
+  if (!normalizedCode) return { success: false, error: 'Enter the code your program shared with you.' };
+
+  // Resolve the team through the SECURITY DEFINER lookup — the only way to see
+  // a team you do not yet staff. Same function the player join uses.
+  const { data: teamRows, error: teamError } = await supabase
+    .rpc('golf_team_by_join_code', { p_code: normalizedCode });
+  const codeTeam = Array.isArray(teamRows) ? teamRows[0] : teamRows;
+
+  if (teamError || !codeTeam) return { success: false, error: 'Invalid join code' };
+  if (!codeTeam.organization_id) {
+    return { success: false, error: 'That team is not attached to a program yet.' };
+  }
+
+  // A staff join must NEVER create a new organization. Coach onboarding does
+  // that for a brand-new program; joining with someone else's code has to
+  // attach to THEIR program, or the school ends up with two of itself.
+  const admin = createAdminClient();
+
+  const { data: existingCoach } = await admin
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  let coachId = existingCoach?.id ?? null;
+
+  if (!coachId) {
+    const { data: created, error: coachError } = await admin
+      .from('golf_coaches')
+      .insert({
+        user_id: user.id,
+        organization_id: codeTeam.organization_id,
+        full_name: fullName?.trim() || user.email || 'Coach',
+        onboarding_completed: true,
+      })
+      .select('id')
+      .single();
+
+    if (coachError || !created) {
+      await logServerError(
+        `[joinProgramAsStaff] coach create failed: ${describeError(coachError)}`,
+        { action: 'teams.joinProgramAsStaff' },
+      );
+      return { success: false, error: 'Could not set up your coach profile. Please try again.' };
+    }
+    coachId = created.id;
+  } else if (existingCoach?.organization_id !== codeTeam.organization_id) {
+    // Already a coach somewhere else. Refuse rather than silently move them
+    // between programs — that would strip their old team's staff access.
+    return {
+      success: false,
+      error: 'This account already belongs to another program. Use a different email to join this one.',
+    };
+  }
+
+  // Which teams to staff: just the code's team for a coach, the whole program
+  // for an administrator.
+  const { data: orgTeams } = await admin
+    .from('golf_teams')
+    .select('id, name, gender')
+    .eq('organization_id', codeTeam.organization_id);
+
+  const targetTeams = staffRole === 'admin'
+    ? (orgTeams ?? [])
+    : (orgTeams ?? []).filter((t) => t.id === codeTeam.id);
+
+  if (targetTeams.length === 0) {
+    return { success: false, error: 'That program has no teams to join yet.' };
+  }
+
+  const { data: alreadyStaffed } = await admin
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coachId);
+  const staffedIds = new Set((alreadyStaffed ?? []).map((r) => r.team_id));
+
+  const rows = targetTeams
+    .filter((t) => !staffedIds.has(t.id))
+    .map((t) => ({
+      team_id: t.id,
+      coach_id: coachId as string,
+      role: staffRole === 'admin' ? 'head_coach' : 'assistant_coach',
+      // is_primary marks the coach's home team. The code's team is home; for an
+      // admin the other squads are secondary, exactly like addSecondTeam.
+      is_primary: t.id === codeTeam.id && staffedIds.size === 0,
+    }));
+
+  if (rows.length > 0) {
+    const { error: staffError } = await admin.from('golf_team_coach_staff').insert(rows);
+    if (staffError) {
+      await logServerError(
+        `[joinProgramAsStaff] staff insert failed: ${describeError(staffError)}`,
+        { action: 'teams.joinProgramAsStaff' },
+      );
+      return { success: false, error: 'Could not add you to the team. Please try again.' };
+    }
+  }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/team');
+  revalidatePath('/golf/dashboard/roster');
+
+  const finalTeams = targetTeams.map((t) => ({ id: t.id, name: t.name, gender: t.gender ?? null }));
+  return {
+    success: true,
+    teams: finalTeams,
+    multiTeam: staffRole === 'admin' && finalTeams.length > 1,
+  };
+}
+
+const observedJoinProgramAsStaff = withAdminObserved(
+  'joinProgramAsStaff',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  joinProgramAsStaffImpl,
+);
+
+export async function joinProgramAsStaff(
+  joinCode: string,
+  staffRole: GolfStaffJoinRole,
+  fullName?: string,
+): Promise<StaffJoinResult> {
+  return observedJoinProgramAsStaff(joinCode, staffRole, fullName);
+}
