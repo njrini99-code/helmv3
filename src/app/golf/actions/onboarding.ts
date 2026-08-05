@@ -201,7 +201,15 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
 
     // Step 3: Create team (now we have coach.id for created_by)
     const joinCode = generateJoinCode();
-    const { data: team, error: teamError } = await supabase
+    // INSERT without RETURNING, then read back with admin.
+    //
+    // `.select()` after `.insert()` is a RETURNING clause, and RETURNING is
+    // filtered by the SELECT policy. `golf_teams_select` gates on
+    // `is_golf_team_coach(id)`, which requires the golf_team_coach_staff row
+    // created in Step 4 below — so at THIS point the coach cannot read the team
+    // they are creating, and the statement fails 42501. The write itself is
+    // fine; only the read-back is impossible. Scoped to the unique join code.
+    const { error: teamError } = await supabase
       .from('golf_teams')
       .insert({
         organization_id: org.id,
@@ -210,9 +218,17 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
         join_code: joinCode,
         created_by: coach.id,
         gender: validatedData.gender,
-      })
-      .select('id')
-      .single();
+      });
+
+    const team = teamError
+      ? null
+      : (
+          await createAdminClient()
+            .from('golf_teams')
+            .select('id')
+            .eq('join_code', joinCode)
+            .maybeSingle()
+        ).data ?? null;
 
     if (teamError || !team) {
       await logServerError(`[Onboarding] Team creation failed: ${describeError(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
