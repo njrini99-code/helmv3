@@ -80,9 +80,36 @@ export interface FairwayTeamSettingsCoach {
   full_name: string | null;
 }
 
+/** One team in a multi-team program, with its own invite code. */
+export interface FairwayProgramTeam {
+  id: string;
+  name: string;
+  gender: string | null;
+  join_code: string | null;
+}
+
 export interface FairwayTeamSettingsProps {
   coach: FairwayTeamSettingsCoach;
   team: FairwayTeamSettingsTeam | null;
+  /**
+   * Every team this coach staffs, when the program runs more than one.
+   *
+   * Programs with a Men's AND a Women's squad see BOTH invite codes here, each
+   * labelled with its squad. Before this, only the ACTIVE team's code was on
+   * screen and the other was reachable only by flipping the top-bar toggle
+   * first — two 8-character uppercase codes, same spot on the page, nothing on
+   * either saying which squad it belonged to. A coach writing both invite
+   * emails in one sitting could hand the women's team the men's code; it would
+   * be perfectly valid and put them on the wrong roster with nothing to flag it.
+   */
+  programTeams?: FairwayProgramTeam[];
+}
+
+/** "Men's" / "Women's" for a program-type value, else null. */
+function squadLabel(gender: string | null | undefined): string | null {
+  if (gender === 'mens') return "Men's";
+  if (gender === 'womens') return "Women's";
+  return null;
 }
 
 /** Compute the default season string ("YYYY-YYYY") the legacy form seeded. */
@@ -96,11 +123,13 @@ function defaultSeason(): string {
 
 const EM_DASH = '—';
 
-export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
+export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSettingsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
+  /** Which program-team code was last copied, so only that row confirms. */
+  const [copiedTeamId, setCopiedTeamId] = useState<string | null>(null);
 
   // Resolve the absolute origin only after mount — rendering it during render
   // produced a hydration mismatch (the legacy code documents this). Seed empty,
@@ -262,6 +291,28 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
     }
   };
 
+  /**
+   * Copy one squad's code in a two-squad program. Keyed by team id so only the
+   * row you clicked confirms — a shared "Copied" flag on two near-identical
+   * codes is exactly the ambiguity this section exists to remove.
+   */
+  const handleCopyProgramTeamCode = async (pt: FairwayProgramTeam) => {
+    if (!pt.join_code) return;
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      fairwayToast.error('Clipboard is unavailable in this browser');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(pt.join_code);
+      void triggerHaptic('light');
+      setCopiedTeamId(pt.id);
+      fairwayToast.success(`${squadLabel(pt.gender) ?? pt.name} code copied`);
+      setTimeout(() => setCopiedTeamId((cur) => (cur === pt.id ? null : cur)), 2000);
+    } catch {
+      fairwayToast.error('Could not copy to clipboard');
+    }
+  };
+
   const handleRegenerateInviteCode = () => {
     if (!team) return;
     void triggerHaptic('warning');
@@ -357,6 +408,9 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
   /* ──────────────────────────────────────────────────────────────────────
    * HAS TEAM — settings
    * ──────────────────────────────────────────────────────────────────── */
+  // Two-squad programs list every code; single-team programs keep one.
+  const multiTeamProgram = (programTeams?.length ?? 0) > 1 && !!team;
+
   const inviteUrl = team.join_code
     ? `${origin}/golf/join/${team.join_code}`
     : '';
@@ -439,30 +493,102 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
                   gate accepts, so a player types it at sign-up and lands on
                   this team automatically. The copyable link below is for
                   anyone who can paste instead. */}
-              <div className="flex flex-col gap-1.5">
-                <span className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
-                  Team code
-                </span>
-                <div className="flex items-center gap-3">
-                  <span
-                    data-testid="fw-team-join-code"
-                    className="select-all font-fw-mono text-h2 font-medium tracking-[0.18em] text-text-primary"
-                  >
-                    {team.join_code}
+              {multiTeamProgram ? (
+                /* BOTH squads' codes, each named.
+                   A two-squad program used to see only the ACTIVE team's code;
+                   the other one required flipping the top-bar toggle first. Two
+                   8-character uppercase codes in the same spot, neither saying
+                   which squad it belonged to — so writing both invite emails in
+                   one sitting could hand the women's team the men's code, land
+                   them on the wrong roster, and flag nothing. Both are on screen
+                   now, each with its own copy button, so what you copy is never
+                   ambiguous. */
+                <div className="flex flex-col gap-3">
+                  <span className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                    Team codes
                   </span>
-                  <Button
-                    variant={codeCopied ? 'secondary' : 'secondary'}
-                    size="sm"
-                    leftIcon={codeCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                    onClick={() => void handleCopyInviteCode()}
-                  >
-                    {codeCopied ? 'Copied' : 'Copy code'}
-                  </Button>
+                  {programTeams!.map((pt) => {
+                    const label = squadLabel(pt.gender);
+                    const isActive = pt.id === team.id;
+                    return (
+                      <div
+                        key={pt.id}
+                        data-testid="fw-program-team-code"
+                        data-team-gender={pt.gender ?? ''}
+                        className={cn(
+                          'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-fw-md border px-3 py-2.5',
+                          isActive
+                            ? 'border-accent-200 bg-accent-50/60'
+                            : 'border-border-subtle bg-surface-sunken',
+                        )}
+                      >
+                        <span className="flex min-w-[8.5rem] flex-col">
+                          <span className="font-fw-sans text-body-sm font-semibold text-text-primary">
+                            {label ?? pt.name}
+                          </span>
+                          <span className="font-fw-sans text-caption text-text-tertiary">
+                            {label ? pt.name : 'Team'}
+                          </span>
+                        </span>
+                        <span
+                          {...(isActive ? { 'data-testid': 'fw-team-join-code' } : {})}
+                          className="select-all font-fw-mono text-h3 font-medium tracking-[0.16em] text-text-primary"
+                        >
+                          {pt.join_code ?? EM_DASH}
+                        </span>
+                        {pt.join_code && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="ml-auto"
+                            leftIcon={
+                              copiedTeamId === pt.id ? <IconCheck size={14} /> : <IconCopy size={14} />
+                            }
+                            onClick={() => void handleCopyProgramTeamCode(pt)}
+                          >
+                            {copiedTeamId === pt.id ? 'Copied' : 'Copy'}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <p className="font-fw-sans text-caption text-text-secondary">
+                    Send each squad its own code. Players enter it at sign-up and join that
+                    team automatically.
+                  </p>
                 </div>
-                <p className="font-fw-sans text-caption text-text-secondary">
-                  Players enter this when they sign up — it joins them to this team automatically.
-                </p>
-              </div>
+              ) : (
+                /* THE CODE ITSELF, first and biggest.
+                    A coach on the range dictates "your code is CCY2A8FK" — they
+                    cannot read out a URL. This exact string is what the signup
+                    gate accepts, so a player types it at sign-up and lands on
+                    this team automatically. The copyable link below is for
+                    anyone who can paste instead. */
+                <div className="flex flex-col gap-1.5">
+                  <span className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                    Team code
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span
+                      data-testid="fw-team-join-code"
+                      className="select-all font-fw-mono text-h2 font-medium tracking-[0.18em] text-text-primary"
+                    >
+                      {team.join_code}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={codeCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                      onClick={() => void handleCopyInviteCode()}
+                    >
+                      {codeCopied ? 'Copied' : 'Copy code'}
+                    </Button>
+                  </div>
+                  <p className="font-fw-sans text-caption text-text-secondary">
+                    Players enter this when they sign up — it joins them to this team automatically.
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col gap-1.5">
                 <label
