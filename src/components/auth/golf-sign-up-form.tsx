@@ -104,9 +104,12 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       // Coach-invited players carry a team join code from the invite link —
       // forward it to onboarding so they auto-join the inviting team. Everyone
       // else follows the normal onboarding path.
+      const code = joinCode?.trim().toUpperCase() ?? '';
+
+
       const onboardingPath =
-        role === 'player' && joinCode
-          ? `/golf/player?joinCode=${encodeURIComponent(joinCode.trim().toUpperCase())}`
+        role === 'player' && code
+          ? `/golf/player?joinCode=${encodeURIComponent(code)}`
           : result.redirectTo || (role === 'coach' ? '/golf/coach' : '/golf/player');
       router.push(onboardingPath);
     } catch (err) {

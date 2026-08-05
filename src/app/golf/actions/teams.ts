@@ -10,6 +10,12 @@ import { revalidatePath } from 'next/cache';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  signStaffInvite,
+  verifyStaffInvite,
+  STAFF_INVITE_TTL_MS,
+  type StaffInviteRole,
+} from '@/lib/golf/staff-invite';
 
 // ============================================================================
 // TYPES
@@ -1623,4 +1629,223 @@ export async function addSecondTeam(
   gender: 'mens' | 'womens'
 ): Promise<TeamActionResult<TeamData & { gender: string }>> {
   return observedAddSecondTeam(name, gender);
+}
+
+// ============================================================================
+// STAFF INVITATIONS — coach-issued, never code-redeemed
+// ============================================================================
+//
+// A team's JOIN CODE is handed to every player, so it can never be what grants
+// staff access. These two actions split the decision from the redemption: a
+// head coach decides the role and mints a signed token; the recipient can only
+// redeem what they were sent. Changing "coach" to "admin" breaks the signature.
+
+export interface CreateStaffInviteResult {
+  success: boolean;
+  error?: string;
+  token?: string;
+  role?: StaffInviteRole;
+  expiresAt?: string;
+}
+
+async function createStaffInviteImpl(
+  teamId: string,
+  role: StaffInviteRole,
+): Promise<CreateStaffInviteResult> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { success: false, error: 'Not authenticated' };
+  if (role !== 'coach' && role !== 'admin') return { success: false, error: 'Unknown role' };
+
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!coach?.organization_id) return { success: false, error: 'Coach profile not found' };
+
+  // THE GATE. Only a HEAD COACH of this specific team may invite staff, and
+  // therefore only a head coach can choose whether the invitee becomes another
+  // head coach (program administrator). An assistant cannot escalate anyone —
+  // including themselves, since they cannot mint a token at all.
+  const { data: staffRow } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id, role')
+    .eq('team_id', teamId)
+    .eq('coach_id', coach.id)
+    .eq('role', 'head_coach')
+    .maybeSingle();
+  if (!staffRow) {
+    return { success: false, error: 'Only a head coach of this team can invite staff.' };
+  }
+
+  // The team must belong to the caller's own organization — an admin invite
+  // grants head_coach across the whole org, so this is what stops a head coach
+  // of program A minting one for program B.
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id, organization_id')
+    .eq('id', teamId)
+    .maybeSingle();
+  if (!team || team.organization_id !== coach.organization_id) {
+    return { success: false, error: 'That team is not part of your program.' };
+  }
+
+  const token = signStaffInvite(team.id, team.organization_id, role);
+  if (!token) {
+    await logServerError('[createStaffInvite] signing key unavailable', {
+      action: 'teams.createStaffInvite',
+    });
+    return { success: false, error: 'Staff invites are unavailable right now.' };
+  }
+
+  return {
+    success: true,
+    token,
+    role,
+    expiresAt: new Date(Date.now() + STAFF_INVITE_TTL_MS).toISOString(),
+  };
+}
+
+const observedCreateStaffInvite = withAdminObserved(
+  'createStaffInvite',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  createStaffInviteImpl,
+);
+
+export async function createStaffInvite(
+  teamId: string,
+  role: StaffInviteRole,
+): Promise<CreateStaffInviteResult> {
+  return observedCreateStaffInvite(teamId, role);
+}
+
+export interface RedeemStaffInviteResult {
+  success: boolean;
+  error?: string;
+  teams?: { id: string; name: string; gender: string | null }[];
+  multiTeam?: boolean;
+}
+
+async function redeemStaffInviteImpl(
+  token: string,
+  fullName?: string,
+): Promise<RedeemStaffInviteResult> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { success: false, error: 'Not authenticated' };
+
+  // The role is read out of the SIGNED payload. It is never taken from the
+  // caller, so there is nothing for a recipient to tamper with.
+  const verified = verifyStaffInvite(token);
+  if (!verified.ok) {
+    const message =
+      verified.reason === 'expired'
+        ? 'That invitation has expired. Ask your head coach for a new one.'
+        : verified.reason === 'unconfigured'
+          ? 'Staff invites are unavailable right now.'
+          : 'That invitation link is not valid.';
+    return { success: false, error: message };
+  }
+  const { t: teamId, o: organizationId, r: role } = verified.payload;
+
+  const admin = createAdminClient();
+
+  const { data: existingCoach } = await admin
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  let coachId = existingCoach?.id ?? null;
+
+  if (!coachId) {
+    const { data: created, error: coachError } = await admin
+      .from('golf_coaches')
+      .insert({
+        user_id: user.id,
+        organization_id: organizationId,
+        full_name: fullName?.trim() || user.email || 'Coach',
+        onboarding_completed: true,
+      })
+      .select('id')
+      .single();
+    if (coachError || !created) {
+      await logServerError(
+        `[redeemStaffInvite] coach create failed: ${describeError(coachError)}`,
+        { action: 'teams.redeemStaffInvite' },
+      );
+      return { success: false, error: 'Could not set up your coach profile. Please try again.' };
+    }
+    coachId = created.id;
+  } else if (existingCoach?.organization_id !== organizationId) {
+    // Refuse rather than move them: reassigning their organization would strip
+    // access to the program they already staff.
+    return {
+      success: false,
+      error: 'This account already belongs to another program. Use a different email to join this one.',
+    };
+  }
+
+  const { data: orgTeams } = await admin
+    .from('golf_teams')
+    .select('id, name, gender')
+    .eq('organization_id', organizationId);
+
+  // coach → the invited team only. admin → the whole program, which is what
+  // makes the Men's/Women's toggle appear (canSwitch needs head_coach on >1).
+  const targetTeams = role === 'admin'
+    ? (orgTeams ?? [])
+    : (orgTeams ?? []).filter((t) => t.id === teamId);
+  if (targetTeams.length === 0) {
+    return { success: false, error: 'That program has no teams to join yet.' };
+  }
+
+  const { data: alreadyStaffed } = await admin
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coachId);
+  const staffedIds = new Set((alreadyStaffed ?? []).map((r) => r.team_id));
+
+  const rows = targetTeams
+    .filter((t) => !staffedIds.has(t.id))
+    .map((t) => ({
+      team_id: t.id,
+      coach_id: coachId as string,
+      role: role === 'admin' ? 'head_coach' : 'assistant_coach',
+      is_primary: t.id === teamId && staffedIds.size === 0,
+    }));
+
+  if (rows.length > 0) {
+    const { error: staffError } = await admin.from('golf_team_coach_staff').insert(rows);
+    if (staffError) {
+      await logServerError(
+        `[redeemStaffInvite] staff insert failed: ${describeError(staffError)}`,
+        { action: 'teams.redeemStaffInvite' },
+      );
+      return { success: false, error: 'Could not add you to the team. Please try again.' };
+    }
+  }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/team');
+  revalidatePath('/golf/dashboard/roster');
+
+  const finalTeams = targetTeams.map((t) => ({ id: t.id, name: t.name, gender: t.gender ?? null }));
+  return { success: true, teams: finalTeams, multiTeam: role === 'admin' && finalTeams.length > 1 };
+}
+
+const observedRedeemStaffInvite = withAdminObserved(
+  'redeemStaffInvite',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  redeemStaffInviteImpl,
+);
+
+export async function redeemStaffInvite(
+  token: string,
+  fullName?: string,
+): Promise<RedeemStaffInviteResult> {
+  return observedRedeemStaffInvite(token, fullName);
 }

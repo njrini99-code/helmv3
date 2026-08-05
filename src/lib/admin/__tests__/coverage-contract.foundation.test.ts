@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 433', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 435', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -307,6 +307,10 @@ describe('global tripwire', () => {
     // 433 also covers recurring tasks (#1238): createRecurringTask in
     // src/app/golf/actions/tasks.ts — the series-create action, bounded by
     // MAX_SERIES_OCCURRENCES and withAdminObserved-wrapped like its siblings.
-    expect(total).toBe(433);
+    // creating a second organization for a school that already exists.
+    // 435: createStaffInvite + redeemStaffInvite — coach-issued staff
+    // invitations, replacing a join-code path that let any player
+    // grant themselves program-administrator.
+    expect(total).toBe(435);
   });
 });
