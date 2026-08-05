@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 433', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 435', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -308,6 +308,9 @@ describe('global tripwire', () => {
     // src/app/golf/actions/tasks.ts — the series-create action, bounded by
     // MAX_SERIES_OCCURRENCES and withAdminObserved-wrapped like its siblings.
     // creating a second organization for a school that already exists.
-    expect(total).toBe(433);
+    // 435: createStaffInvite + redeemStaffInvite — coach-issued staff
+    // invitations, replacing a join-code path that let any player
+    // grant themselves program-administrator.
+    expect(total).toBe(435);
   });
 });
