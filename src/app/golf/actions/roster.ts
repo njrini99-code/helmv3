@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
@@ -87,6 +87,19 @@ async function removePlayerFromTeamImpl(playerId: string): Promise<RosterActionR
     return { success: false, error: 'Player is not on your team' };
   }
 
+  // Read the names BEFORE the delete — afterwards the membership row is gone
+  // and the log could only name ids.
+  const { data: removedPlayer } = await supabase
+    .from('golf_players')
+    .select('first_name, last_name')
+    .eq('id', playerId)
+    .maybeSingle();
+  const { data: fromTeam } = await supabase
+    .from('golf_teams')
+    .select('name')
+    .eq('id', teamId)
+    .maybeSingle();
+
   // 4. Remove player from team (delete team membership)
   const { error: deleteError } = await supabase
     .from('golf_team_members')
@@ -99,7 +112,25 @@ async function removePlayerFromTeamImpl(playerId: string): Promise<RosterActionR
     return { success: false, error: 'Failed to remove player. Please try again.' };
   }
 
-  // 5. Revalidate relevant paths
+  // 5. Record WHO removed WHOM, and from where.
+  //
+  // Only FAILED actions were logged, so a successful removal left no trace at
+  // all. On 2026-08-05 two real Shenandoah players vanished from a roster and
+  // neither the coach nor the founder could tell from admin_events who had
+  // done it or when — there was simply nothing to read. A destructive action
+  // that succeeds silently is the one you most need a record of.
+  //
+  // logServerEvent (info), not logServerError: this is an audit trail of a
+  // legitimate coach action, not an incident. It must not page anyone.
+  const removedName = removedPlayer
+    ? `${removedPlayer.first_name ?? ''} ${removedPlayer.last_name ?? ''}`.trim() || playerId
+    : playerId;
+  await logServerEvent(
+    `Coach ${user.email ?? coach.id} removed ${removedName} (${playerId}) from ${fromTeam?.name ?? teamId}`,
+    { action: 'roster.removePlayerFromTeam', featureArea: 'roster' },
+  ).catch(() => {});
+
+  // 6. Revalidate relevant paths
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/roster');
   updateTag(CACHE_TAGS.DASHBOARD);
