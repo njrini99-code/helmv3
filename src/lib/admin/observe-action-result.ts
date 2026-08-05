@@ -58,6 +58,20 @@ const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
   // sports' auth actions, "…to continue your setup." during onboarding), so
   // match only the invariant head.
   /^an account with this email already exists/i,
+  // Already on a roster. A player who opens a second invite link — which
+  // happens whenever a program runs a Men's AND a Women's squad and the wrong
+  // code gets forwarded — is told they are already placed. That is the
+  // one-team-per-player rule working, not a defect. Observed live on
+  // 2026-08-05: a Shenandoah player on the women's team opened the men's
+  // invite link and the refusal was filed as an error-severity incident.
+  /^you are already (?:on|a member of)/i,
+  /already a member of this team/i,
+  // Field validation the form states up front. The action is telling the user
+  // to correct their input, which is the only thing it could do.
+  /must be after the start/i,
+  /^password must /i,
+  /^invalid join code/i,
+  /^please complete your player profile/i,
 ];
 
 /**

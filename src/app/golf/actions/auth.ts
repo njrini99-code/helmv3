@@ -19,6 +19,7 @@ import { validatePassword } from '@/lib/auth/password-validation';
 import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
 import { logServerError } from '@/lib/server-error-logger';
 import { getAppBaseUrl } from '@/lib/app-base-url';
+import { sendPasswordResetEmail } from '@/lib/auth/send-password-reset';
 import { DEMO_ENTER_EVENT } from '@/lib/demo/config';
 import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { captureServer } from '@/lib/analytics/posthog-server';
@@ -524,11 +525,26 @@ async function requestPasswordResetActionImpl(
     };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-    redirectTo: `${getAppBaseUrl()}/golf/reset-password`,
-  });
+  // Sent through OUR Resend account, not Supabase's built-in mailer.
+  //
+  // That mailer is rate limited to a couple of messages an hour: on
+  // 2026-08-05 two resets ~7 minutes apart produced one logged /recover, one
+  // that never reached the auth log at all, and NEITHER email arrived — while
+  // the UI said "Check your email" both times. A coach locked out the night
+  // their team signs up would have had no way back in, and nothing in the
+  // incident queue would have shown a failure.
+  //
+  // Resend is already the transport for every other email here, on a verified
+  // domain, and it writes to public.emails — so a reset that fails to deliver
+  // is now visible instead of silent.
+  const outcome = await sendPasswordResetEmail(
+    normalizedEmail,
+    `${getAppBaseUrl()}/golf/reset-password`,
+    'GolfHelm',
+  );
+  const error = outcome === 'send-failed' || outcome === 'link-failed' || outcome === 'unconfigured'
+    ? { message: `password reset delivery: ${outcome}` }
+    : null;
 
   if (error) {
     await logServerError(`[Golf Auth Error]: ${error.message}`, {
