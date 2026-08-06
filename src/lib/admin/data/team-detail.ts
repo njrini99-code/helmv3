@@ -165,6 +165,11 @@ interface TeamErrorRow {
   fingerprint: string | null;
 }
 
+/** Same row straight off PostgREST, before the created_at null is narrowed. */
+interface RawTeamErrorRow extends Omit<TeamErrorRow, 'created_at'> {
+  created_at: string | null;
+}
+
 /** Pure, unit-tested: group a team's already-fetched, already-scoped error
  *  rows by fingerprint (a row with no fingerprint is its own singleton
  *  cluster, keyed by its own id — never silently merged with unrelated
@@ -415,20 +420,57 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
 
   let errors: TeamDetailErrorCluster[] = [];
   try {
-    let q = admin
-      .from('admin_events')
-      .select('id, created_at, title, severity, fingerprint')
-      .eq('team_id', teamId)
-      .eq('event_type', 'error')
-      .order('created_at', { ascending: false })
-      .limit(TEAM_ERRORS_LIMIT);
-    q = excludeAuthNoise(q);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    const rows = ((data ?? []) as unknown as Array<{
-      id: string; created_at: string | null; title: string; severity: string; fingerprint: string | null;
-    }>).filter((r): r is TeamErrorRow => !!r.created_at);
-    errors = groupTeamErrorsByFingerprint(rows);
+    // Two things were making a team's error list disagree with every other
+    // Bridge surface (operator report, 2026-08-06 — "none of these are in sync,
+    // they're all over the place"):
+    //
+    //  1. ATTRIBUTION. `admin_events.team_id` is populated on 0.5% of rows (7 of
+    //     1412 in a week) and on ZERO error-severity rows — the same reason the
+    //     activity chart above resolves by user id instead. Keying only on it
+    //     made UNC Wilmington's page read "no errors" while the global feed
+    //     showed 88. Match the team's own users too.
+    //  2. SEVERITY. The filter was on `event_type`, never on severity, and 906
+    //     rows a week are event_type 'error' with severity 'info' — routine
+    //     "no completed rounds yet" soft-failures. Fixing attribution alone
+    //     would have emptied all 906 of those onto the page as defects. The
+    //     incident feed already excludes 'info'; this now agrees with it.
+    const selectCols = 'id, created_at, title, severity, fingerprint';
+    const baseQuery = () => {
+      const q = admin
+        .from('admin_events')
+        .select(selectCols)
+        .eq('event_type', 'error')
+        // severity is NOT NULL, so .neq cannot silently drop untyped rows.
+        .neq('severity', 'info')
+        .order('created_at', { ascending: false })
+        .limit(TEAM_ERRORS_LIMIT);
+      return excludeAuthNoise(q);
+    };
+
+    const teamUserIds = await resolveTeamUserIds(teamId);
+    const [byTeam, byUser] = await Promise.all([
+      baseQuery().eq('team_id', teamId),
+      teamUserIds.size > 0
+        ? baseQuery().in('user_id', Array.from(teamUserIds))
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (byTeam.error) throw new Error(byTeam.error.message);
+    if (byUser.error) throw new Error(byUser.error.message);
+
+    // Union the two attributions; an event carrying BOTH must count once.
+    const combined = [
+      ...((byTeam.data ?? []) as unknown as RawTeamErrorRow[]),
+      ...((byUser.data ?? []) as unknown as RawTeamErrorRow[]),
+    ];
+    const seen = new Set<string>();
+    const rows: TeamErrorRow[] = [];
+    for (const row of combined) {
+      if (!row.created_at || seen.has(row.id)) continue;
+      seen.add(row.id);
+      rows.push({ ...row, created_at: row.created_at });
+    }
+    rows.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
+    errors = groupTeamErrorsByFingerprint(rows.slice(0, TEAM_ERRORS_LIMIT));
   } catch {
     errors = [];
   }

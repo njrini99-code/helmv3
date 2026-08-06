@@ -22,6 +22,11 @@ const EXPECTED_REJECTIONS = [
   'Password must contain at least one special character (!@#$%^&*...)',
   'Invalid join code',
   'Please complete your player profile before joining a team',
+  // 2026-08-06 export: the two halves of the SAME password check were landing
+  // in different buckets — the app's own complexity rules at 'info', GoTrue's
+  // breach-corpus rejection at 'error' (n=5).
+  'Please choose a stronger password — this one is too common or has appeared in a data breach.',
+  'Invalid team code. Please check and try again.',
   // Pre-existing entries — kept so a future edit to the list cannot quietly
   // drop them while adding the new ones.
   'Invalid email or password',

@@ -87,7 +87,39 @@ function formatTimezoneOffset(offsetMinutes: number): string {
   return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-/** Mirrors golf.ts:buildDateTimeString — date + time + explicit offset. */
+/**
+ * Normalize a wall-clock time to strict `HH:MM:SS`.
+ *
+ * `golf_player_classes.start_time` is a Postgres `time` column, so PostgREST
+ * hands it back as "10:50:00" — while the class form emits "10:50". The sync
+ * used to append ":00" unconditionally, so every RE-sync of an already-saved
+ * class built "10:50:00:00" and Postgres rejected the entire batch:
+ *
+ *   invalid input syntax for type timestamp with time zone:
+ *   "2026-06-01T10:50:00:00-04:00"
+ *
+ * Three real players hit that on 2026-08-06 — editing a saved class failed
+ * outright. Accept either shape, and refuse anything else rather than hand
+ * Postgres a string it will reject.
+ */
+function normalizeTimeOfDay(value: string | null | undefined): string | null {
+  const match = (value ?? '').trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3] ?? '0');
+  if (hours > 23 || minutes > 59 || seconds > 59) return null;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+/**
+ * Mirrors golf.ts:buildDateTimeString — date + time + explicit offset.
+ * `time` must already be normalized; callers use normalizeTimeOfDay and
+ * surface an error rather than let an unparseable value become midnight (a
+ * fabricated 12:00 AM meeting is exactly what the class form avoids by
+ * storing NULL for "no time set").
+ */
 function buildDateTimeString(date: string, time: string, timezoneOffset?: number): string {
   const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '+00:00';
   return `${date}T${time}${tz}`;
@@ -241,6 +273,15 @@ async function syncClassToCalendarImpl(
       dayNumbers.add(getDayOfWeek(day));
     }
 
+    // Resolve the meeting times ONCE, before generating anything. An absent
+    // time keeps the long-standing 08:00/09:00 default; an unparseable one is
+    // refused outright rather than silently becoming midnight.
+    const startTimeOfDay = classData.start_time ? normalizeTimeOfDay(classData.start_time) : '08:00:00';
+    const endTimeOfDay = classData.end_time ? normalizeTimeOfDay(classData.end_time) : '09:00:00';
+    if (!startTimeOfDay || !endTimeOfDay) {
+      return { success: false, error: 'Class start and end times must look like HH:MM.' };
+    }
+
     for (const dayOfWeek of dayNumbers) {
       const firstDateStr = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
       const cursor = new Date(firstDateStr + 'T00:00:00Z');
@@ -256,8 +297,8 @@ async function syncClassToCalendarImpl(
           event_type: CLASS_EVENT_TYPE,
           // start_time/end_time are timestamptz — date + class time + explicit
           // offset, the same convention golf.ts events use.
-          start_time: buildDateTimeString(dateStr, `${classData.start_time || '08:00'}:00`, tzOffset),
-          end_time: buildDateTimeString(dateStr, `${classData.end_time || '09:00'}:00`, tzOffset),
+          start_time: buildDateTimeString(dateStr, startTimeOfDay, tzOffset),
+          end_time: buildDateTimeString(dateStr, endTimeOfDay, tzOffset),
           all_day: false,
           location,
           description,
