@@ -60,16 +60,30 @@ export function AvatarUpload({
     setUploading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      // getSession() reads the session the browser already holds. getUser()
+      // makes a NETWORK call to /auth/v1/user, and this code discarded its
+      // error — so a dropped request reported "You must be logged in to
+      // upload files" to a player who was perfectly well logged in. That
+      // request is at its most fragile in exactly this moment: the OS photo
+      // picker has just handed control back and the radio is still waking up.
+      // Reported by a Shenandoah player mid-onboarding, 2026-08-06.
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (!user) {
-        throw new Error('You must be logged in to upload files');
+      if (sessionError) {
+        // Unknown, NOT signed out — never tell someone to log in based on a
+        // lookup that failed.
+        throw new Error("Couldn't check your session just now. Check your connection and try again.");
+      }
+
+      const userId = session?.user?.id;
+      if (!userId) {
+        throw new Error('Your session has expired — please sign in again to upload a photo.');
       }
 
       // Generate unique filename in user's folder
       const fileExt = file.name.split('.').pop();
       const fileName = `avatar-${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${userId}/${fileName}`;
 
       // Upload file
       const { error: uploadError, data } = await supabase.storage

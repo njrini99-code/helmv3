@@ -72,6 +72,17 @@ const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
   /^password must /i,
   /^invalid join code/i,
   /^please complete your player profile/i,
+  // GoTrue's strength/HIBP rejection at signup. `password must …` above
+  // already covers the app's own complexity rules, so the two halves of the
+  // SAME check were landing in different severity buckets — the local rules
+  // at 'info', the breach-corpus rejection at 'error'. n=5 on 2026-08-06,
+  // and auth.signupAction deliberately does not log it itself precisely
+  // because it is expected user-facing validation.
+  /^please choose a stronger password/i,
+  // Mistyped or stale team code on the join form. Same nothing-to-fix class
+  // as `invalid join code` above, which only matched the other call site's
+  // wording.
+  /^invalid team code/i,
 ];
 
 /**
