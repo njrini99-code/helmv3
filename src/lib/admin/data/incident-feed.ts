@@ -250,6 +250,12 @@ export async function queryPriorResolutions(
       .from('admin_events')
       .select('fingerprint, resolved_at')
       .eq('resolved', true)
+      // A HUMAN must have resolved it for a later event to count as a
+      // regression. auto-resolve.ts:76 deliberately leaves resolved_by NULL on
+      // the nightly cron sweep, so without this every swept fingerprint that
+      // fired again looked like "a fix failed" — on 2026-08-05 all seven
+      // resolutions behind the badged rows were cron sweeps, i.e. 100% false.
+      .not('resolved_by', 'is', null)
       .in('fingerprint', Array.from(chunk))
       .gte('resolved_at', since)
       .order('resolved_at', { ascending: false });
