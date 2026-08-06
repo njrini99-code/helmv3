@@ -9,6 +9,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { Metadata } from 'next';
 import { logServerException } from '@/lib/server-error-logger';
+import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
 // Code-split the Fairway calendar surface — it's the ONLY tree the route
 // renders, so this next/dynamic keeps its chunk loaded only when actually
@@ -90,6 +91,12 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   let eventsData: { id: string; team_id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null; description: string | null; status: string | null; all_day: boolean | null; created_by: string | null; requires_rsvp: boolean | null; rsvp_deadline: string | null; max_attendees: number | null; parent_event_id: string | null; recurrence_rule: string | null }[] | null = null;
   let playersData: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[] = [];
   let teamTimezone: string | null = null;
+  // Class id → owning player. Class meetings live on the team calendar with no
+  // owner column, so this index is what lets the "All" lens say whose class a
+  // block is. `classOwnersResolved` distinguishes "nobody owns classes" from
+  // "the lookup failed" — see attributeClassEvents.
+  let classOwners: ClassOwnerIndex = {};
+  let classOwnersResolved = false;
 
   if (teamId) {
     // NOTE: cancelled events are INCLUDED on purpose — they render distinctly
@@ -97,7 +104,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
     // parent_event_id + recurrence_rule are REQUIRED end-to-end: without them
     // series members render as one-offs and the edit/delete scope picker never
     // appears (audit finding #6, which armed the P0 cascade delete).
-    const [eventsResult, teamMembersResult, teamSettingsResult] = await Promise.all([
+    const [eventsResult, teamMembersResult, teamSettingsResult, classOwnersResult] = await Promise.all([
       // Paginate past the PostgREST 1000-row server cap (audit F102): a busy
       // team's ±3-month window can exceed a single page, and a bare `.limit(500)`
       // silently dropped the overflow (events vanish from the calendar). A
@@ -126,6 +133,14 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
         .select('timezone')
         .eq('team_id', teamId)
         .maybeSingle(),
+      // Who owns which class. RLS does the scoping for us: a coach reads every
+      // rostered player's classes, a player reads only their own — so this
+      // index is already viewer-correct before attributeClassEvents runs.
+      supabase
+        .from('golf_player_classes')
+        .select('id, player_id')
+        .eq('team_id', teamId)
+        .limit(1000),
     ]);
 
     // A failed events fetch must NOT render as a cheerful empty calendar
@@ -140,6 +155,30 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
       .map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player)
       .filter((p): p is NonNullable<typeof p> => p !== null);
     teamTimezone = teamSettingsResult.data?.timezone || null;
+
+    // Only claim the ownership index is authoritative when the query actually
+    // succeeded — an error here must not read as "these classes belong to
+    // nobody", which would strip a player's own classes off their calendar.
+    const classRows = classOwnersResult.data ?? [];
+    // Resolved means we could genuinely map every readable class to a player:
+    // the class query succeeded AND either we have the roster to map onto or
+    // there are no classes to map. A silently-empty roster fetch would
+    // otherwise masquerade as "no classes have owners".
+    if (!classOwnersResult.error && (playersData.length > 0 || classRows.length === 0)) {
+      classOwnersResolved = true;
+      const playerById = new Map(playersData.map((p) => [p.id, p]));
+      classOwners = Object.fromEntries(
+        classRows.flatMap((row) => {
+          const player = row.player_id ? playerById.get(row.player_id) : undefined;
+          if (!player) return [];
+          return [[row.id, {
+            playerId: player.id,
+            firstName: player.first_name,
+            lastName: player.last_name,
+          }] as const];
+        }),
+      );
+    }
   }
 
   // Map golf_events to CalendarEvent format
@@ -181,6 +220,16 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
       parent_event_id: event.parent_event_id,
       recurrence_rule: event.recurrence_rule,
     };
+  });
+
+  // Label each class occurrence with the player it belongs to (and, for a
+  // player viewer, drop teammates' classes — see attributeClassEvents). Done
+  // here so `upcomingCount` below counts what the viewer will actually see;
+  // FairwayCalendar re-runs the same pure pass over client-fetched pages.
+  events = attributeClassEvents(events, classOwners, {
+    isCoach,
+    playerId,
+    ownersResolved: classOwnersResolved,
   });
 
   // Combine players and coaches for team members display (data already fetched in parallel above)
@@ -230,6 +279,9 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
         loadedRangeStart={threeMonthsAgo.toISOString()}
         loadedRangeEnd={threeMonthsAhead.toISOString()}
         initialEventId={initialEventId}
+        classOwners={classOwners}
+        classOwnersResolved={classOwnersResolved}
+        viewerPlayerId={playerId}
       />
     </div>
   );
