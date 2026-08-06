@@ -36,7 +36,7 @@ let eventRows: FeedEventRow[] = [];
 function makeBuilder(table: string) {
   const calls: RecordedCall[] = [];
   const builder: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'gte', 'lte', 'order', 'update', 'in']) {
+  for (const m of ['select', 'eq', 'neq', 'gte', 'lte', 'order', 'update', 'in']) {
     builder[m] = vi.fn((...args: unknown[]) => {
       calls.push({ name: m, args });
       return builder;
@@ -147,6 +147,10 @@ describe('ICS team feed route — windowing + UID stability + DTEND defense', ()
 
     // Paginated within the window (not a single capped request).
     expect(calls.some((c) => c.name === 'range')).toBe(true);
+
+    // A subscribed TEAM calendar must not carry a player's class schedule.
+    const neq = calls.find((c) => c.name === 'neq');
+    expect(neq?.args).toEqual(['event_type', 'class']);
   });
 
   it('paginates past the 1000-row PostgREST cap inside the window', async () => {

@@ -13,8 +13,26 @@ const mockNot = vi.fn(() => ({ order: mockOrder, limit: mockLimit, data: [], err
 const mockIn = vi.fn(() => ({ order: mockOrder, not: mockNot, limit: mockLimit, data: [], error: null }));
 const mockLt = vi.fn(() => ({ order: mockOrder, data: [], error: null }));
 const mockGte = vi.fn(() => ({ lt: mockLt, gte: vi.fn(), order: mockOrder, data: [], error: null, limit: mockLimit }));
+// Team-scoped event reads chain `.neq('event_type', 'class')` so a player's
+// synced class meetings don't count as the team's schedule.
+const mockNeq = vi.fn((_column?: string, _value?: unknown) => ({
+  eq: mockEq,
+  neq: mockNeq,
+  single: mockSingle,
+  maybeSingle: mockMaybeSingle,
+  in: mockIn,
+  gte: mockGte,
+  lt: mockLt,
+  not: mockNot,
+  order: mockOrder,
+  limit: mockLimit,
+  data: [],
+  error: null,
+  count: 0,
+}));
 const mockEq = vi.fn(() => ({
   eq: mockEq,
+  neq: mockNeq,
   single: mockSingle,
   maybeSingle: mockMaybeSingle,
   in: mockIn,
@@ -27,6 +45,7 @@ const mockEq = vi.fn(() => ({
 }));
 const mockSelect = vi.fn(() => ({
   eq: mockEq,
+  neq: mockNeq,
   in: mockIn,
   gte: mockGte,
   single: mockSingle,
@@ -63,7 +82,7 @@ function createChainableMock({
     error: null,
     count: Array.isArray(data) ? data.length : 0,
   };
-  for (const method of ['select', 'eq', 'in', 'gte', 'lt', 'not', 'order', 'limit']) {
+  for (const method of ['select', 'eq', 'neq', 'in', 'gte', 'lt', 'not', 'order', 'limit']) {
     chain[method] = vi.fn(() => chain);
   }
   chain.range = vi.fn((from: number, to: number) => ({
@@ -140,6 +159,26 @@ describe('dashboard-data server actions', () => {
   // getCoachDashboardData
   // ========================================================================
   describe('getCoachDashboardData', () => {
+    it('excludes synced class meetings from the team event count and list', async () => {
+      // A player's class schedule lives in golf_events on the TEAM calendar
+      // (that is what puts it on the calendar's "All" lens), so every
+      // team-scoped read has to say "team events only" or the dashboard counts
+      // one player's semester as the team's season — 192 upcoming on a team
+      // with 22 (coach report, 2026-08-05).
+      mockSingle.mockResolvedValue({
+        data: { id: 'team-1', name: 'Test Team', season: '2026', join_code: 'ABC123', created_at: '2026-01-01' },
+        error: null,
+      });
+
+      await getCoachDashboardData('coach-1', 'user-1', 'team-1');
+
+      const classFilters = mockNeq.mock.calls.filter(
+        (args) => args[0] === 'event_type' && args[1] === 'class',
+      );
+      // Both the "Upcoming events" count and the next-20 calendar list.
+      expect(classFilters.length).toBeGreaterThanOrEqual(2);
+    });
+
     it('returns correct shape with empty roster', async () => {
       // The function makes several parallel queries. For an empty roster scenario,
       // mock the team result and zero counts.

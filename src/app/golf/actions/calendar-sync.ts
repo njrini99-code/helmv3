@@ -8,6 +8,8 @@ import type { Database } from '@/lib/types/database';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { parseSemesterDates } from '@/lib/golf/semester';
+import { CLASS_EVENT_TYPE, classTag } from '@/lib/calendar/class-events';
 
 /**
  * Hard ceiling on occurrences generated for one class sync. ~400 covers a full
@@ -61,6 +63,7 @@ type GolfEventInsert = Database['public']['Tables']['golf_events']['Insert'];
 interface ExistingClassEventRow {
   id: string;
   title: string;
+  event_type: string | null;
   start_time: string;
   end_time: string | null;
   location: string | null;
@@ -203,7 +206,7 @@ async function syncClassToCalendarImpl(
     // anything the checks above didn't authorize.
     const admin = createAdminClient();
 
-    const classTag = `[class:${classId}]`;
+    const tag = classTag(classId);
     const tzOffset = classData.timezoneOffset;
 
     // Build shared event fields
@@ -215,8 +218,8 @@ async function syncClassToCalendarImpl(
       classData.instructor && `Instructor: ${classData.instructor}`,
       classData.credits && `Credits: ${classData.credits}`,
       classData.notes,
-      classTag,
-    ].filter(Boolean).join('\n') || classTag;
+      tag,
+    ].filter(Boolean).join('\n') || tag;
 
     // Generate one desired occurrence per weekly meeting, keyed by local date.
     // The calendar UI matches events by comparing start_time to the displayed
@@ -247,7 +250,10 @@ async function syncClassToCalendarImpl(
         desiredByDate.set(dateStr, {
           team_id: teamId,
           title,
-          event_type: 'other',
+          // A class meeting is NOT a team event. Typing it makes every
+          // team-scoped query able to say so in SQL instead of LIKE-scanning
+          // the description — see lib/calendar/class-events.ts.
+          event_type: CLASS_EVENT_TYPE,
           // start_time/end_time are timestamptz — date + class time + explicit
           // offset, the same convention golf.ts events use.
           start_time: buildDateTimeString(dateStr, `${classData.start_time || '08:00'}:00`, tzOffset),
@@ -272,9 +278,9 @@ async function syncClassToCalendarImpl(
     const { data: existingRows, error: existingError } = await fetchAllRowsResult((from, to) =>
       admin
         .from('golf_events')
-        .select('id, title, start_time, end_time, location, description')
+        .select('id, title, event_type, start_time, end_time, location, description')
         .eq('team_id', teamId)
-        .like('description', `%${classTag}%`)
+        .like('description', `%${tag}%`)
         .order('id', { ascending: true })
         .range(from, to),
       undefined,
@@ -309,6 +315,9 @@ async function syncClassToCalendarImpl(
       }
       const changed =
         existing.title !== desired.title ||
+        // Self-heals a row written before class events were typed, so a
+        // re-sync converges even if the one-off backfill missed it.
+        existing.event_type !== desired.event_type ||
         existing.location !== desired.location ||
         existing.description !== desired.description ||
         !sameInstant(existing.start_time, desired.start_time ?? null) ||
@@ -318,6 +327,7 @@ async function syncClassToCalendarImpl(
           id: existing.id,
           changes: {
             title: desired.title,
+            event_type: desired.event_type,
             start_time: desired.start_time,
             end_time: desired.end_time,
             location: desired.location,
@@ -489,11 +499,11 @@ async function removeClassFromCalendarImpl(classId: string, teamId?: string): Pr
   // Authz established above — admin client also required for the delete itself
   // because player RLS has no DELETE grant on golf_events. Scoped to the class
   // tag + the player's teams.
-  const classTag = `[class:${classId}]`;
+  const tag = classTag(classId);
   const { error } = await admin
     .from('golf_events')
     .delete()
-    .like('description', `%${classTag}%`)
+    .like('description', `%${tag}%`)
     .in('team_id', targetTeamIds);
 
   if (error) {
@@ -512,76 +522,6 @@ const observedRemoveClassFromCalendar = withAdminObserved(
 
 export async function removeClassFromCalendar(classId: string, teamId?: string): Promise<CalendarSyncResult> {
   return observedRemoveClassFromCalendar(classId, teamId);
-}
-
-/**
- * A caller-supplied semester start must be a real calendar date inside the
- * term's own window — on or after 1 January of the term year, and on or before
- * the term end. DS-B4: it was previously used verbatim, so a year-0001 start on
- * a "Fall 9999" term produced a five-century occurrence walk.
- */
-function isValidCustomStart(customStartDate: string, termYear: number, endDate: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(customStartDate)) return false;
-  const start = new Date(customStartDate + 'T00:00:00Z').getTime();
-  const lowerBound = new Date(`${termYear}-01-01T00:00:00Z`).getTime();
-  const upperBound = new Date(endDate + 'T00:00:00Z').getTime();
-  if (!Number.isFinite(start)) return false;
-  return start >= lowerBound && start <= upperBound;
-}
-
-/**
- * Parse semester string to get start and end dates
- * Format: "Fall 2025", "Spring 2026", etc.
- * If customStartDate is provided, use it instead of the default start date
- *
- * DS-B4: both inputs are caller-controlled, so the term year is bounded to a
- * plausible range and a custom start is range-checked against the term. An
- * unusable value returns null, which the caller surfaces as the existing
- * "Could not determine semester dates" error.
- */
-function parseSemesterDates(semester: string, customStartDate?: string): { start: string; end: string } | null {
-  if (typeof semester !== 'string') return null;
-
-  const match = semester.match(/(Fall|Spring|Summer|Winter)\s+(\d{4})/i);
-  if (!match || !match[1] || !match[2]) return null;
-
-  const term = match[1];
-  const year = match[2];
-  const yearNum = parseInt(year, 10);
-  // Anything outside this window is not a real academic term, and it is what
-  // made the generated range unbounded ("Fall 9999").
-  if (!Number.isFinite(yearNum) || yearNum < 2000 || yearNum > 2100) return null;
-
-  let defaultStartDate: string;
-  let endDate: string;
-
-  switch (term.toLowerCase()) {
-    case 'spring':
-      defaultStartDate = `${yearNum}-01-15`; // Mid-January
-      endDate = `${yearNum}-05-15`;   // Mid-May
-      break;
-    case 'summer':
-      defaultStartDate = `${yearNum}-06-01`; // Early June
-      endDate = `${yearNum}-08-15`;   // Mid-August
-      break;
-    case 'fall':
-      defaultStartDate = `${yearNum}-08-20`; // Late August
-      endDate = `${yearNum}-12-15`;   // Mid-December
-      break;
-    case 'winter':
-      defaultStartDate = `${yearNum}-12-15`; // Mid-December
-      endDate = `${yearNum + 1}-01-15`; // Mid-January next year
-      break;
-    default:
-      return null;
-  }
-
-  if (customStartDate) {
-    if (!isValidCustomStart(customStartDate, yearNum, endDate)) return null;
-    return { start: customStartDate, end: endDate };
-  }
-
-  return { start: defaultStartDate, end: endDate };
 }
 
 /**

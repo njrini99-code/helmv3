@@ -29,6 +29,7 @@ interface AdminOp {
 interface ExistingRow {
   id: string;
   title: string;
+  event_type: string | null;
   start_time: string;
   end_time: string | null;
   location: string | null;
@@ -227,6 +228,9 @@ function existingRowOn(date: string, id: string, overrides: Partial<ExistingRow>
   return {
     id,
     title: EXPECTED_TITLE,
+    // Synced class rows carry event_type 'class' — a row still on the legacy
+    // 'other' is what the re-sync self-heal exists to converge.
+    event_type: 'class',
     start_time: `${date}T09:00:00+00:00`,
     end_time: `${date}T10:15:00+00:00`,
     location: EXPECTED_LOCATION,
@@ -403,6 +407,32 @@ describe('syncClassToCalendar — diff upsert (no blanket delete)', () => {
     expect(opsByVerb('insert')).toHaveLength(0);
     expect(opsByVerb('update')).toHaveLength(0);
     expect(opsByVerb('delete')).toHaveLength(0);
+  });
+
+  it("types every generated occurrence as a class, not a team event", async () => {
+    adminCfg = { existingRows: [] };
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+
+    expect(result.success).toBe(true);
+    const rows = insertedRows();
+    expect(rows.length).toBeGreaterThan(0);
+    // event_type is what every team-scoped query filters on so one player's
+    // classes stop counting as the team's schedule.
+    expect(rows.every((r) => r.event_type === 'class')).toBe(true);
+  });
+
+  it("re-syncs a legacy 'other' row onto the class type", async () => {
+    adminCfg = {
+      existingRows: DESIRED_DATES.map((d, i) =>
+        existingRowOn(d, `ex-${i}`, { event_type: 'other' }),
+      ),
+    };
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+
+    expect(result.success).toBe(true);
+    expect(result.eventsCreated).toBe(0);
+    expect(result.eventsDeleted).toBe(0);
+    expect(result.eventsUpdated).toBe(DESIRED_DATES.length);
   });
 
   it('diff: inserts missing occurrences, updates changed rows, deletes ONLY orphaned rows by id', async () => {

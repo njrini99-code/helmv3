@@ -118,6 +118,11 @@ export default function GolfClassesPage() {
         credits: formData.credits,
         color: formData.color,
         notes: formData.notes || null,
+        // Persist the term. It drives the calendar sync's occurrence window AND
+        // bounds the availability fallback for a class that never synced —
+        // without it a weekly class reads as busy forever, including over the
+        // summer, so the fallback has to refuse to expand.
+        semester: formData.semester || null,
       })
       .select()
       .single();
@@ -165,6 +170,7 @@ export default function GolfClassesPage() {
         credits: formData.credits,
         color: formData.color,
         notes: formData.notes || null,
+        semester: formData.semester || null,
       })
       .eq('id', formData.id)
       .eq('player_id', playerId);
@@ -249,6 +255,9 @@ export default function GolfClassesPage() {
           credits: cls.credits || null,
           color: cls.color || generateClassColor(),
           notes: null,
+          // The vision parser derives the term from the screenshot — keep it
+          // (see handleAddClass) instead of dropping it on the floor.
+          semester: cls.semester || null,
         };
       });
       

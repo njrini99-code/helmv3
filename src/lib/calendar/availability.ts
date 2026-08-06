@@ -11,6 +11,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfEvent, GolfPlayerClass } from '@/lib/types/golf';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
+import { classIdFromDescription } from '@/lib/calendar/class-events';
+import { parseSemesterDates } from '@/lib/golf/semester';
 
 // ============================================================================
 // TYPES
@@ -38,7 +40,7 @@ interface WorkingHours {
 
 type TeamEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_time' | 'end_time' | 'created_by'
+  'id' | 'title' | 'start_time' | 'end_time' | 'created_by' | 'description'
 >;
 
 type AttendanceEventRow = Pick<
@@ -145,7 +147,7 @@ export async function getUserBusyPeriods(
     ? fetchAllRows<TeamEventRow>((from, to) =>
         supabase
           .from('golf_events')
-          .select('id, title, start_time, end_time, created_by')
+          .select('id, title, start_time, end_time, created_by, description')
           .in('team_id', teamIds)
           .neq('status', 'cancelled')
           .lte('start_time', maxIso)
@@ -179,7 +181,7 @@ export async function getUserBusyPeriods(
   const classesPromise = player
     ? supabase
         .from('golf_player_classes')
-        .select('id, class_name, days, start_time, end_time')
+        .select('id, class_name, days, start_time, end_time, semester')
         .eq('player_id', player.id)
     : Promise.resolve({ data: [] as GolfPlayerClass[] });
 
@@ -199,8 +201,43 @@ export async function getUserBusyPeriods(
     blockedTimesPromise,
   ]);
 
-  // Process team events
+  // A class meeting is a PERSONAL commitment that happens to live on the team
+  // calendar: syncClassToCalendar writes one golf_events row per occurrence so
+  // classes appear on the calendar's "All" lens, but nothing on the row says
+  // whose class it is. Sweeping golf_events by team therefore made one player's
+  // schedule everybody's busy time — a coach filtering the calendar to their own
+  // avatar saw the entire roster's classes (coach report, 2026-08-05). Split the
+  // sweep and keep only the occurrences THIS user owns.
+  const classEventsByClassId = new Map<string, TeamEventRow[]>();
+  const realTeamEvents: TeamEventRow[] = [];
   for (const event of teamEvents) {
+    const classId = classIdFromDescription(event.description);
+    if (!classId) {
+      realTeamEvents.push(event);
+      continue;
+    }
+    const forClass = classEventsByClassId.get(classId);
+    if (forClass) forClass.push(event);
+    else classEventsByClassId.set(classId, [event]);
+  }
+
+  // Ownership is resolved positively, never by absence: a tag that doesn't
+  // resolve to one of THIS player's classes (deleted class, another player's,
+  // or a row the caller can't read) stays OUT. Fail-closed is right here — an
+  // orphaned occurrence must not block anyone's calendar. A coach has no player
+  // row at all, so no class occurrence is ever theirs.
+  const ownedClassIds = new Set<string>();
+  if (player && classEventsByClassId.size > 0) {
+    const { data: ownedClasses } = await supabase
+      .from('golf_player_classes')
+      .select('id')
+      .eq('player_id', player.id)
+      .in('id', Array.from(classEventsByClassId.keys()));
+    for (const row of (ownedClasses ?? []) as { id: string }[]) ownedClassIds.add(row.id);
+  }
+
+  // Process team events
+  for (const event of realTeamEvents) {
     const startDateTime = new Date(event.start_time);
     const endDateTime = new Date(event.end_time || event.start_time);
 
@@ -213,6 +250,22 @@ export async function getUserBusyPeriods(
       ownerId: event.created_by || undefined,
       ownerType: isCoach ? 'coach' : 'player',
     });
+  }
+
+  // Process this player's OWN class occurrences. Typed 'class', not 'event' —
+  // the availability overlay labels and colors busy blocks off `type`.
+  for (const classId of ownedClassIds) {
+    for (const event of classEventsByClassId.get(classId) ?? []) {
+      busyPeriods.push({
+        start: new Date(event.start_time),
+        end: new Date(event.end_time || event.start_time),
+        type: 'class',
+        title: event.title,
+        eventId: event.id,
+        ownerId: player!.user_id,
+        ownerType: 'player',
+      });
+    }
   }
 
   // Process RSVP'd events (dedupe by event_id)
@@ -235,9 +288,12 @@ export async function getUserBusyPeriods(
     });
   }
 
-  // Process academic classes
+  // Process academic classes that were never synced onto the calendar. A synced
+  // class already contributed its real occurrences above; expanding it again
+  // here would double-count it into one merged block with a doubled-up title.
   if (classesResult.data) {
     for (const cls of classesResult.data as GolfPlayerClass[]) {
+      if (classEventsByClassId.has(cls.id)) continue;
       const classInstances = expandRecurringClass(cls, timeMin, timeMax);
       busyPeriods.push(...classInstances);
     }
@@ -312,8 +368,35 @@ function parseEventDateTime(date: string, time: string | null): Date {
 }
 
 /**
- * Expand a recurring class schedule into individual busy periods
- * Classes repeat weekly on specific days
+ * Meeting-day code → weekday index (0 = Sunday). golf_player_classes.days holds
+ * the SHORT codes the class UI writes ('M', 'T', 'W', 'Th', 'F', 'Sa', 'Su') —
+ * matching getDayOfWeek in calendar-sync, where 'T' is Tuesday and 'Th' is
+ * Thursday. Full names are accepted too because older/imported rows used them.
+ * A bare 'S' is ambiguous (Saturday or Sunday) and is deliberately unmapped.
+ */
+const DAY_CODE_TO_INDEX: Record<string, number> = {
+  su: 0, sun: 0, sunday: 0,
+  m: 1, mo: 1, mon: 1, monday: 1,
+  t: 2, tu: 2, tue: 2, tues: 2, tuesday: 2,
+  w: 3, we: 3, wed: 3, wednesday: 3,
+  th: 4, thu: 4, thur: 4, thurs: 4, r: 4, thursday: 4,
+  f: 5, fr: 5, fri: 5, friday: 5,
+  sa: 6, sat: 6, saturday: 6,
+};
+
+function weekdayIndex(dayCode: string): number | null {
+  return DAY_CODE_TO_INDEX[dayCode.trim().toLowerCase()] ?? null;
+}
+
+/**
+ * Expand a recurring class schedule into individual busy periods.
+ *
+ * ONLY used for a class with no synced calendar occurrences — a synced class
+ * already contributed its real rows. Bounded to the class's own term: a weekly
+ * rule with no end date would otherwise mark a player busy every Monday
+ * forever, including over the summer, and quietly break "find a time". A class
+ * whose `semester` is unreadable therefore expands to NOTHING rather than to a
+ * guess (legacy rows predate the column being persisted).
  */
 function expandRecurringClass(
   cls: GolfPlayerClass,
@@ -322,28 +405,39 @@ function expandRecurringClass(
 ): BusyPeriod[] {
   const periods: BusyPeriod[] = [];
 
-  if (!cls.days || cls.days.length === 0) {
+  if (!cls.days || cls.days.length === 0 || !cls.start_time || !cls.end_time) {
     return periods;
   }
 
-  const daysOfWeek = cls.days; // e.g., ['monday', 'wednesday', 'friday']
+  const term = parseSemesterDates(cls.semester);
+  if (!term) return periods;
 
-  // Iterate through each day in the range
-  const current = new Date(timeMin);
-  while (current <= timeMax) {
-    const dayName = current.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  const daysOfWeek = new Set(
+    cls.days.map(weekdayIndex).filter((d): d is number => d !== null)
+  );
+  if (daysOfWeek.size === 0) return periods;
 
-    if (daysOfWeek.includes(dayName) && cls.start_time && cls.end_time) {
+  // Clamp the walk to the intersection of the query window and the term.
+  const termStart = new Date(`${term.start}T00:00:00`);
+  const termEnd = new Date(`${term.end}T23:59:59`);
+  const current = new Date(Math.max(timeMin.getTime(), termStart.getTime()));
+  const until = new Date(Math.min(timeMax.getTime(), termEnd.getTime()));
+
+  while (current <= until) {
+    if (daysOfWeek.has(current.getDay())) {
       const start = setTimeOnDate(current, cls.start_time);
       const end = setTimeOnDate(current, cls.end_time);
-
-      periods.push({
-        start,
-        end,
-        type: 'class',
-        title: cls.class_name,
-        ownerId: undefined,
-      });
+      // The walk starts on a partial first day, so a meeting can fall before
+      // the window opens — keep only occurrences that actually overlap it.
+      if (end > timeMin && start < timeMax) {
+        periods.push({
+          start,
+          end,
+          type: 'class',
+          title: cls.class_name,
+          ownerId: undefined,
+        });
+      }
     }
 
     current.setDate(current.getDate() + 1);

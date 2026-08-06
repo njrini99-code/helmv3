@@ -38,6 +38,7 @@ import {
   nowIso,
   unavailableEnvelope,
 } from './provenance';
+import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 
 type Sb = SupabaseClient<Database>;
 type StatsRow = Record<string, unknown>;
@@ -944,6 +945,10 @@ export async function getUpcomingEvents(
     .from('golf_events')
     .select('id, title, event_type, start_time, end_time, location, requires_rsvp, rsvp_deadline, status')
     .eq('team_id', ctx.team_id)
+    // Players' synced class meetings share this table. Without this filter the
+    // LIMIT fills with one player's semester and CoachHelm tells the coach their
+    // week is classes (2026-08-05).
+    .neq('event_type', CLASS_EVENT_TYPE)
     .gte('start_time', now.toISOString())
     .lte('start_time', until.toISOString())
     .order('start_time', { ascending: true })

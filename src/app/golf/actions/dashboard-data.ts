@@ -7,6 +7,7 @@ import { getTodayRangeForTz } from '@/lib/utils/timezone';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 
 // ============================================================================
 // TYPES
@@ -312,7 +313,11 @@ async function getCoachDashboardDataImpl(
     ] = await Promise.all([
         supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', teamId).single(),
         supabase.from('golf_team_members').select('id', { count: 'exact', head: true }).eq('team_id', teamId).eq('status', 'active'),
-        supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).gte('start_time', now),
+        // Class meetings live on the team calendar but are one player's personal
+        // schedule — counting them made "Upcoming events" read 192 on a team
+        // with 22 real ones (coach report, 2026-08-05). event_type is NOT NULL,
+        // so .neq() can't silently drop untyped rows.
+        supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).gte('start_time', now),
         supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).in('status', ['upcoming', 'in_progress']),
         // Today's events + RSVP counts in a single RPC (consolidates the
         // sequential RSVP fetch that previously ran outside this Promise.all).
@@ -344,11 +349,13 @@ async function getCoachDashboardDataImpl(
             .not('published_at', 'is', null)
             .order('published_at', { ascending: false })
             .limit(5),
-        // Calendar events (moved from sequential fetch at end)
+        // Calendar events (moved from sequential fetch at end) — team events
+        // only; a player's class meetings are not the team's schedule.
         supabase
             .from('golf_events')
             .select('id, title, event_type, start_time, end_time, location, created_at, updated_at')
             .eq('team_id', teamId)
+            .neq('event_type', CLASS_EVENT_TYPE)
             .gte('start_time', now)
             .order('start_time', { ascending: true })
             .limit(20),
@@ -843,12 +850,14 @@ async function getPlayerDashboardDataImpl(
             .select('sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, scrambling_percentage, birdies, rounds_played, scoring_average, best_round, gir_percentage, driving_accuracy_percentage, putts_per_round')
             .eq('player_id', playerId)
             .maybeSingle(),
-        // Today's events
+        // Today's events. Team events only — a teammate's class meetings are
+        // not this player's schedule and must not fill their home dashboard.
         teamId
             ? supabase
                 .from('golf_events')
                 .select('id, title, event_type, start_time, end_time, location')
                 .eq('team_id', teamId)
+                .neq('event_type', CLASS_EVENT_TYPE)
                 .gte('start_time', todayStart)
                 .lt('start_time', todayEnd)
                 .order('start_time', { ascending: true })
@@ -863,6 +872,7 @@ async function getPlayerDashboardDataImpl(
                 .from('golf_events')
                 .select('id, title, event_type, start_time, end_time, location')
                 .eq('team_id', teamId)
+                .neq('event_type', CLASS_EVENT_TYPE)
                 .gte('start_time', todayEnd)
                 .order('start_time', { ascending: true })
                 .limit(15)

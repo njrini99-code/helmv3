@@ -16,6 +16,7 @@ import { generateCoachCalendar, convertToICalEvent } from '@/lib/calendar/ical';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { addMonths, format } from 'date-fns';
 import { logServerException } from '@/lib/server-error-logger';
+import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 
 interface CoachTeamAuthRpcClient {
   rpc(
@@ -126,6 +127,9 @@ export async function GET(
     let eventsQuery = supabase
       .from('golf_events')
       .select('*')
+      // Team events only — players' class meetings live on the same table but
+      // are personal schedules, not the coach's calendar (2026-08-05).
+      .neq('event_type', CLASS_EVENT_TYPE)
       .gte('start_time', format(startDate, 'yyyy-MM-dd'))
       .lte('start_time', format(endDate, 'yyyy-MM-dd'))
       .order('start_time', { ascending: true });

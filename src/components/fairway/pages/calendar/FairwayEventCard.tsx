@@ -38,6 +38,10 @@ const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
   workout: { label: 'Workout', tone: 'accent' },
   team_meeting: { label: 'Meeting', tone: 'neutral' },
   meeting: { label: 'Meeting', tone: 'neutral' },
+  // A synced class meeting. It shows on the team calendar's "All" lens by
+  // design, so it has to SAY it's a class — otherwise a roster's worth of
+  // classes reads as unexplained "Event" chips.
+  class: { label: 'Class', tone: 'neutral' },
   other: { label: 'Event', tone: 'neutral' },
 };
 
