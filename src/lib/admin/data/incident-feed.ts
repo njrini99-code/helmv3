@@ -5,6 +5,7 @@ import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
 import { getProductionDeployAt, RELEASE_GRACE_MS } from '@/lib/admin/auto-resolve';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
 import {
   mergeTriage,
   type AppTriageEventRow,
@@ -191,7 +192,7 @@ export async function queryAppErrorEvents(
       .order('id', { ascending: true })
       .range(from, to);
 
-    if (filters.severity !== 'info') query = query.neq('severity', 'info');
+    if (filters.severity !== 'info') query = query.in('severity', INCIDENT_SEVERITIES);
     if (filters.sport) query = query.eq('sport', filters.sport);
     if (filters.severity) query = query.eq('severity', filters.severity);
     if (filters.source) query = query.eq('source', filters.source);

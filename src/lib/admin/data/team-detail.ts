@@ -4,6 +4,9 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { classifyTeamHealth, type TeamHealth } from '@/lib/admin/data/golf';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { resolveTeamUserIds } from '@/lib/admin/data/team-scope';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Helm Bridge V2 — one team's whole story: roster health, staff, 30d
@@ -37,9 +40,13 @@ import { resolveTeamUserIds } from '@/lib/admin/data/team-scope';
  *     unbounded fetch. 1000 completed rounds for one team is a generous cap
  *     (a college team logging more than that in its most recent history
  *     before this query would need refreshing is not a realistic scale).
- *   - `admin_events.team_id` IS populated for `event_type = 'error'` (unlike
- *     login/signup — see `team-scope.ts`) — team errors filter directly by
- *     `.eq('team_id', teamId)`, no user-id indirection needed.
+ *   - `admin_events.team_id` is NOT reliably populated — this doc used to claim
+ *     it was, for `event_type = 'error'` specifically. Measured 2026-08-06: 7 of
+ *     1,412 rows in a week carried one, and ZERO error-severity rows did. Team
+ *     errors therefore match on `team_id` OR the team's own user ids (the same
+ *     `resolveTeamUserIds` indirection the login rows already needed), because
+ *     filtering on `team_id` alone showed every team "no errors" while the
+ *     platform feed showed 88.
  *   - Daily "logins" in `activityDaily` reuse `resolveTeamUserIds` (shared
  *     with `activity.ts`) since `admin_events` login rows never carry
  *     `team_id`.
@@ -108,6 +115,16 @@ export interface TeamDetailResult {
   activityDaily: TeamDetailDailyActivity[];
   errors: TeamDetailErrorCluster[];
   coachhelm: TeamDetailCoachHelmUsage | null;
+  /**
+   * Sections that FAILED to load, by name ('coaches', 'roster', 'errors', …).
+   *
+   * Every section above falls back to empty/null on a query failure so the page
+   * still renders — but empty and unavailable then look identical, and on an
+   * observability surface that reads as "this team is clean" at exactly the
+   * moment it is not. Anything listed here is unknown, not zero: render it as
+   * such rather than as an empty state. Always present, usually empty.
+   */
+  degraded: string[];
   /** Header health-badge input — MUST match /admin/golf's classifyTeamHealth
    *  input exactly: MAX(golf_rounds.created_at) for this team_id, NO status
    *  filter, NO roster filter (mirrors get_admin_rounds_rollup's
@@ -268,10 +285,19 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     : null;
 
   if (!team) {
-    return { team: null, coaches: [], roster: [], activityDaily: [], errors: [], coachhelm: null, teamLastActivity: null };
+    return { team: null, coaches: [], roster: [], activityDaily: [], errors: [], coachhelm: null, teamLastActivity: null, degraded: [] };
   }
 
   let coaches: TeamDetailCoach[] = [];
+  // Which sections could not be loaded. A bare `catch { x = [] }` made a
+  // FAILED query indistinguishable from a genuinely empty team — the Bridge
+  // rendered 'no coaches, no roster, no errors' and an operator read it as
+  // clean. An observability surface must never go quiet exactly when
+  // something is wrong. Nothing here throws: the page still renders, it just
+  // stops claiming the missing sections are empty.
+  const degraded: string[] = [];
+  const degradedDetail: string[] = [];
+
   let coachIds: string[] = [];
   try {
     const { data, error } = await admin
@@ -297,7 +323,9 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
         href: `/admin/users/${r.golf_coaches.user_id}`,
       }));
     coachIds = coaches.map((c) => c.id);
-  } catch {
+  } catch (sectionError) {
+    degraded.push('coaches');
+    degradedDetail.push(`coaches: ${describeError(sectionError)}`);
     coaches = [];
   }
 
@@ -314,7 +342,9 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
       .limit(TEAM_ROUNDS_LIMIT);
     if (error) throw new Error(error.message);
     roundsForTeam = (data ?? []) as unknown as RoundForTeamRow[];
-  } catch {
+  } catch (sectionError) {
+    degraded.push('rounds');
+    degradedDetail.push(`rounds: ${describeError(sectionError)}`);
     roundsForTeam = [];
   }
 
@@ -333,7 +363,9 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
       .maybeSingle();
     if (error) throw new Error(error.message);
     teamLastActivity = (data as { created_at: string | null } | null)?.created_at ?? null;
-  } catch {
+  } catch (sectionError) {
+    degraded.push('lastActivity');
+    degradedDetail.push(`lastActivity: ${describeError(sectionError)}`);
     teamLastActivity = null;
   }
 
@@ -376,7 +408,9 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
           href: `/admin/users/${r.golf_players.user_id}`,
         };
       });
-  } catch {
+  } catch (sectionError) {
+    degraded.push('roster');
+    degradedDetail.push(`roster: ${describeError(sectionError)}`);
     roster = [];
   }
 
@@ -414,7 +448,9 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
       .filter((r) => r.created_at && r.created_at >= ago30d)
       .map((r) => r.created_at as string);
     activityDaily = buildDailyActivity(roundTimestamps, loginTimestamps, DAILY_WINDOW_DAYS, now);
-  } catch {
+  } catch (sectionError) {
+    degraded.push('activity');
+    degradedDetail.push(`activity: ${describeError(sectionError)}`);
     activityDaily = [];
   }
 
@@ -441,7 +477,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
         .select(selectCols)
         .eq('event_type', 'error')
         // severity is NOT NULL, so .neq cannot silently drop untyped rows.
-        .neq('severity', 'info')
+        .in('severity', INCIDENT_SEVERITIES)
         .order('created_at', { ascending: false })
         .limit(TEAM_ERRORS_LIMIT);
       return excludeAuthNoise(q);
@@ -471,7 +507,9 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     }
     rows.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
     errors = groupTeamErrorsByFingerprint(rows.slice(0, TEAM_ERRORS_LIMIT));
-  } catch {
+  } catch (sectionError) {
+    degraded.push('errors');
+    degradedDetail.push(`errors: ${describeError(sectionError)}`);
     errors = [];
   }
 
@@ -525,10 +563,21 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
         cost30d: calls.reduce((sum, c) => sum + (c.cost_usd ?? 0), 0),
         budgetToday,
       };
-    } catch {
+    } catch (sectionError) {
+      degraded.push('coachhelm');
+      degradedDetail.push(`coachhelm: ${describeError(sectionError)}`);
       coachhelm = null;
     }
   }
 
-  return { team, coaches, roster, activityDaily, errors, coachhelm, teamLastActivity };
+  if (degraded.length > 0) {
+    // Surface in the Bridge's OWN feed — the failure that hid these sections
+    // is itself an incident worth seeing.
+    await logServerError(
+      `[Bridge] team detail rendered without ${degraded.length} section(s): ${degradedDetail.join('; ')}`,
+      { action: 'admin.getTeamDetail', feature: 'admin_bridge', sport: 'golf', teamId },
+    );
+  }
+
+  return { team, coaches, roster, activityDaily, errors, coachhelm, teamLastActivity, degraded };
 }

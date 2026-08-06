@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { fullName } from '@/lib/admin/data/activity';
+import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -309,7 +310,7 @@ async function checkTopErrorCluster(admin: AdminClient): Promise<BriefingCandida
     .from('admin_events')
     .select('id, created_at, title, severity, fingerprint')
     .eq('event_type', 'error')
-    .in('severity', ['error', 'critical'])
+    .in('severity', FAILURE_SEVERITIES)
     .gte('created_at', ago24h)
     .order('created_at', { ascending: false })
     .limit(500);

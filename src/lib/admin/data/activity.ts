@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { resolveTeamUserIds, resolveTeamConversationIds } from '@/lib/admin/data/team-scope';
+import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -664,7 +665,7 @@ async function fetchError(ctx: SourceCtx): Promise<ActivityItem[]> {
     .from('admin_events')
     .select('id, created_at, title, severity, fingerprint, team_id, sport')
     .eq('event_type', 'error')
-    .in('severity', ['error', 'critical'])
+    .in('severity', FAILURE_SEVERITIES)
     // Resolved errors are not activity. Without this the feed replayed
     // already-closed incidents as if they were happening now (281 such rows
     // on 2026-08-05), which is most of why the Bridge reads as stale.
