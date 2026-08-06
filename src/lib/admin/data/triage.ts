@@ -301,12 +301,38 @@ export function mergeTriage(input: {
     });
   }
 
-  // Rank by distinct affected users, then recency — NEVER raw volume
-  // (one retry-looping job must not bury a low-volume auth bug).
+  // Rank by LIVENESS BAND first, then distinct affected users, then recency —
+  // and NEVER by raw volume (one retry-looping job must not bury a low-volume
+  // auth bug; that property is preserved, affectedUsers is still the tiebreak).
+  //
+  // Why the band had to come first: affectedUsers is very nearly binary in
+  // production — on 2026-08-05 seven groups had exactly 1 user and ten had 0 —
+  // so it decided almost nothing and `lastSeen` was doing the real ordering
+  // from second place, where it could not outrank a stale 1-user row. The
+  // queue's top item was 8.1 hours silent while two incidents from the last
+  // 18 minutes sat at #8 and #9. Over the window the feed actually spans
+  // (168h), "how many people" is a far weaker signal than "is this happening
+  // right now", so freshness leads and headcount breaks ties within a band.
+  // ONE instant for the whole sort. Calling Date.now() inside the comparator
+  // would let a row change band mid-sort, which is a non-transitive comparator
+  // and an unstable (implementation-defined) result.
+  const nowMs = Date.now();
   return items.sort((a, b) => {
+    const bandDiff = livenessBand(a.lastSeen, nowMs) - livenessBand(b.lastSeen, nowMs);
+    if (bandDiff !== 0) return bandDiff;
     if (b.affectedUsers !== a.affectedUsers) return b.affectedUsers - a.affectedUsers;
     return b.lastSeen.localeCompare(a.lastSeen);
   });
+}
+
+/** 0 = live (<1h), 1 = recent (<6h), 2 = stale. Lower sorts first. */
+export function livenessBand(lastSeen: string, nowMs: number = Date.now()): 0 | 1 | 2 {
+  const seen = Date.parse(lastSeen);
+  if (Number.isNaN(seen)) return 2;
+  const ageMs = nowMs - seen;
+  if (ageMs < 60 * 60 * 1000) return 0;
+  if (ageMs < 6 * 60 * 60 * 1000) return 1;
+  return 2;
 }
 
 export function groupAppErrorEvents(rows: AppTriageEventRow[]): TriageItem[] {
