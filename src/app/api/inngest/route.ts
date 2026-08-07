@@ -85,14 +85,40 @@ function quietUnsignedProbes(handler: InngestHandler, method: string): InngestHa
     try {
       const response = (await (handler as (...a: unknown[]) => Promise<Response>)(...args)) as Response;
 
-      // Signature present but rejected → a genuine key mismatch. Say so once,
-      // in terms that name the fix.
+      // Signature present but rejected. The SDK gives back a bare 401 with no
+      // reason, and it rejects for two very different causes: the signature is
+      // older than five minutes (clock skew), or the HMAC doesn't match (wrong
+      // key). Guessing between them is how an operator gets sent to reissue a
+      // key that was never the problem — so measure the one we CAN measure.
+      // The `t=` half of the header is a plain unix timestamp and needs no
+      // secret to read, and five minutes is the SDK's own tolerance
+      // (RequestSignature.hasExpired in inngest@4).
       if (response?.status === 401 && signed) {
+        const sigHeader = req?.headers?.get?.('x-inngest-signature') ?? '';
+        const stamped = Number.parseInt(new URLSearchParams(sigHeader).get('t') ?? '', 10);
+        const skewSeconds = Number.isFinite(stamped)
+          ? Math.round(Math.abs(Date.now() - stamped * 1000) / 1000)
+          : null;
+        const expired = skewSeconds !== null && skewSeconds > 300;
+
         await logServerError(
-          '[inngest] A SIGNED request failed signature validation — INNGEST_SIGNING_KEY no longer matches the ' +
-            'Inngest app. Durable jobs are degraded: round analysis runs inline with no retry or crash recovery. ' +
-            'Fix: reissue the signing key in the Inngest dashboard, set it in Vercel production, and redeploy ' +
-            '(Vercel bakes env vars at build time, so a dashboard change alone has no effect).',
+          expired
+            ? `[inngest] A SIGNED request was rejected because its signature was ${skewSeconds}s old, past the ` +
+              "SDK's 5-minute tolerance. This is a clock/latency problem, NOT a bad key — do not reissue " +
+              'INNGEST_SIGNING_KEY on the strength of this line.'
+            : '[inngest] A SIGNED request failed signature validation' +
+              (skewSeconds === null ? '' : ` (signature was ${skewSeconds}s old, well inside the 5-minute window, ` +
+                'so this is a key mismatch and not clock skew)') +
+              ' — the INNGEST_SIGNING_KEY in Vercel Production does not match the Inngest app that is calling us. ' +
+              'Corroborating evidence, not inference: these land within seconds of every production deploy, which ' +
+              'is Inngest Cloud re-syncing; and INNGEST_EVENT_KEY from the same pair is rejected too — every round ' +
+              'submitted since 2026-07-30 logged "Inngest API Error: 404 Event key not found". Both values are ' +
+              'well-formed (signkey-prod-<64 hex> and an 86-char event key, no padding, not swapped), so they are ' +
+              'not mistyped: they belong to an Inngest app or environment that no longer recognises them. ' +
+              'Fix: open the Inngest app that syncs this deployment, copy its CURRENT event + signing keys into ' +
+              'Vercel Production — or delete the manual overrides and let the Inngest↔Vercel integration manage ' +
+              'them — then redeploy, because Vercel bakes env vars in at build time. ' +
+              'Until then durable jobs are degraded: round analysis runs inline, with no retry and no crash recovery.',
           { action: 'inngest.signatureValidation', featureArea: 'integrations' },
         );
       }
