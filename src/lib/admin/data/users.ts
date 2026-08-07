@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { classifyTeamHealth, type GolfTeamHealthRow } from '@/lib/admin/data/golf';
 import type { Database } from '@/lib/types/database';
+import { excludeAuthNoise } from '@/lib/admin/data/triage';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
 
 type UserRole = Database['public']['Enums']['user_role'];
 export const USER_ROLES: readonly UserRole[] = ['coach', 'player', 'admin'];
@@ -352,10 +354,19 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
         )
       : emptyRows,
     fetchAllRowsResult((from, to) =>
-      admin
-        .from('admin_events')
-        .select('team_id, sport, user_id')
-        .eq('event_type', 'error')
+      excludeAuthNoise(
+        admin
+          .from('admin_events')
+          .select('team_id, sport, user_id, severity')
+          .eq('event_type', 'error')
+          // This counted EVERY event_type='error' row regardless of severity,
+          // and `severity` was not even selected. Measured over 7 days: 593 of
+          // 629 counted rows (94%) were severity='info' — routine soft-failure
+          // narration like "no completed rounds yet". Of the users actually
+          // rendered, 31 were painted danger-red where 11 had a real error: a
+          // 65% false-positive rate on the console's primary attention column.
+          .in('severity', INCIDENT_SEVERITIES),
+      )
         .gte('created_at', ago7d)
         .order('id', { ascending: true })
         .range(from, to),

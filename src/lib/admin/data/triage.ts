@@ -11,6 +11,7 @@ import {
   extractActionName,
   extractCollapsedCount,
   extractRoute,
+  extractErrorCode,
 } from '@/lib/admin/incident-report';
 import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
 
@@ -165,6 +166,9 @@ export function mergeTriage(input: {
       message: issue.culprit,
       severity,
       source: 'sentry',
+      // Sentry issues carry no app metadata — explicit so the omission reads
+      // as deliberate rather than forgotten.
+      errorCode: null,
     });
     return {
     key: `sentry:${issue.id}`,
@@ -236,11 +240,15 @@ export function mergeTriage(input: {
     const stackTrace = mostRecentFirst.map((r) => r.stack_trace).find((s) => !!s) ?? null;
     const collapsedCount = bucket.rows.reduce((sum, r) => sum + extractCollapsedCount(r.metadata), 0);
 
+    const errorCode =
+      mostRecentFirst.map((r) => extractErrorCode(r.metadata)).find((c) => c !== null) ?? null;
+
     const classification = classifyIncident({
       title: last.title,
       message: last.message,
       severity: worst,
       source: last.source,
+      errorCode,
     });
 
     // REGRESSION: this fingerprint was resolved, and has fired again SINCE

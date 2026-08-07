@@ -35,9 +35,14 @@ export const dynamic = 'force-dynamic';
  * the all-clear case is one quiet green line, never an empty box.
  */
 async function BriefingStrip() {
-  const items = await fetchBriefing();
+  const { items, degraded } = await fetchBriefing().then((r) => ({
+    items: r.items,
+    degraded: r.degradedChecks,
+  }));
 
-  if (items.length === 0) {
+  // An all-clear is a CLAIM. Only make it when every check actually ran —
+  // otherwise a broken check renders as good news.
+  if (items.length === 0 && degraded.length === 0) {
     return (
       <p className="flex items-center gap-2 text-sm text-accent-700">
         <CheckCircle2 size={14} className="shrink-0" aria-hidden />
@@ -46,10 +51,24 @@ async function BriefingStrip() {
     );
   }
 
+  if (items.length === 0) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-fw-warning">
+        <AlertTriangle size={14} className="shrink-0" aria-hidden />
+        {degraded.length} {degraded.length === 1 ? 'check' : 'checks'} couldn&apos;t run — this is not an all-clear.
+      </p>
+    );
+  }
+
   return (
     <Surface as="section" padding="sm">
-      <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-        Needs your eyes
+      <h2 className="flex items-center justify-between gap-2 border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <span>Needs your eyes</span>
+        {degraded.length > 0 ? (
+          <span className="font-normal normal-case tracking-normal text-fw-warning">
+            {degraded.length} {degraded.length === 1 ? 'check' : 'checks'} couldn&apos;t run
+          </span>
+        ) : null}
       </h2>
       <ul className="mt-1 divide-y divide-warm-200/60">
         {items.map((item) => {

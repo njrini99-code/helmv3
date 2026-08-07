@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
+  Radar, CreditCard,
   RefreshCw, Dumbbell, Search,
 } from 'lucide-react';
 import {
@@ -73,6 +74,8 @@ const NAV_ICON_BY_HREF = {
   '/admin/jobs': Timer,
   '/admin/deploys': Rocket,
   '/admin/health': HeartPulse,
+  '/admin/teams': Radar,
+  '/admin/billing': CreditCard,
 } as const;
 
 /**

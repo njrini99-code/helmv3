@@ -382,17 +382,36 @@ const CHECKS: Array<(admin: AdminClient) => Promise<BriefingCandidate | null>> =
  * CALLER must have passed requireSuperAdmin() — every query below runs
  * against the service-role client (createAdminClient()).
  */
-export async function fetchBriefing(): Promise<BriefingItem[]> {
+export interface BriefingResult {
+  items: BriefingItem[];
+  /**
+   * Checks that THREW, by function name. Non-empty means this briefing is
+   * incomplete and the caller must not render an all-clear.
+   *
+   * Every check used to be wrapped in `catch { return null }` with no channel
+   * out, so a permission change or schema drift on one check silently deleted
+   * its signal forever — and because the panel renders a green "All clear —
+   * nothing needs your attention right now" on an empty list, a broken
+   * priority-0 check read as good news. This is the panel the console exists
+   * for; its failure mode must not be a checkmark. activity.ts:788-815 is the
+   * model this file's own header cites and then dropped the disclosure half of.
+   */
+  degradedChecks: string[];
+}
+
+export async function fetchBriefing(): Promise<BriefingResult> {
   const admin = createAdminClient();
+  const degradedChecks: string[] = [];
   const results = await Promise.all(
     CHECKS.map(async (check) => {
       try {
         return await check(admin);
       } catch {
+        degradedChecks.push(check.name || 'anonymous check');
         return null;
       }
     }),
   );
   const candidates = results.filter((c): c is BriefingCandidate => c !== null);
-  return rankBriefingItems(candidates);
+  return { items: rankBriefingItems(candidates), degradedChecks };
 }

@@ -36,7 +36,7 @@ import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
-import { classifyProviderFault } from '@/lib/admin/provider-fault';
+import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
@@ -2064,7 +2064,14 @@ async function submitGolfRoundComprehensiveImpl(
                   : {}),
               },
             },
-            'warning',
+            // Was a hardcoded 'warning'. providerFaultSeverity assigns 'error'
+            // to an operator-blocking fault, and 'warning' sits BELOW
+            // FAILURE_SEVERITIES — so a dead Inngest credential was excluded
+            // from the briefing's error-cluster check, the release ledger and
+            // every headline count. This was the lone hand-written outlier;
+            // schedule-image.ts, chat/stream/route.ts and compose.ts all use
+            // the helper.
+            fault ? providerFaultSeverity(fault).severity : 'warning',
           );
         }
       } else {

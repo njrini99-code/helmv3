@@ -773,22 +773,38 @@ export async function fetchGolfActivity(options: FetchGolfActivityOptions = {}):
 
   const admin = createAdminClient();
 
+  const degraded: ActivityKind[] = [];
+  const reportPartial = (kind: ActivityKind) => {
+    if (!degraded.includes(kind)) degraded.push(kind);
+  };
+
   let teamUserIds: Set<string> | null = null;
   let teamConversationIds: Set<string> | null = null;
   if (options.teamId) {
     const needsUserIds = kinds.includes('signup') || kinds.includes('sign_in');
     const needsConversationIds = kinds.includes('message_sent');
     const teamId = options.teamId;
+    // `.catch(() => new Set())` was SILENT: an empty id set makes every
+    // user-scoped kind return zero rows, so a failed roster resolution renders
+    // as "this team had no sign-ins and no messages" — indistinguishable from a
+    // genuinely dormant team, which is the exact judgment the operator is on
+    // this page to make. team-scope.ts throws deliberately; report it.
     [teamUserIds, teamConversationIds] = await Promise.all([
-      needsUserIds ? resolveTeamUserIds(teamId).catch(() => new Set<string>()) : Promise.resolve(null),
-      needsConversationIds ? resolveTeamConversationIds(teamId).catch(() => new Set<string>()) : Promise.resolve(null),
+      needsUserIds
+        ? resolveTeamUserIds(teamId).catch(() => {
+            reportPartial('signup');
+            reportPartial('sign_in');
+            return new Set<string>();
+          })
+        : Promise.resolve(null),
+      needsConversationIds
+        ? resolveTeamConversationIds(teamId).catch(() => {
+            reportPartial('message_sent');
+            return new Set<string>();
+          })
+        : Promise.resolve(null),
     ]);
   }
-
-  const degraded: ActivityKind[] = [];
-  const reportPartial = (kind: ActivityKind) => {
-    if (!degraded.includes(kind)) degraded.push(kind);
-  };
 
   const ctx: SourceCtx = {
     admin,

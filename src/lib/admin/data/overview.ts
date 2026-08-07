@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
 import type { AppTriageEventRow, TriageItem } from '@/lib/admin/data/triage';
+import { FAILURE_SEVERITIES, type AdminSeverity } from '@/lib/admin/severity';
 import {
   fetchIncidentFeed,
   DEFAULT_INCIDENT_WINDOW_HOURS,
@@ -239,8 +240,15 @@ export async function fetchOverviewSnapshot() {
   const featureHealthCriticalCount = featureHealth.red;
   const featureHealthAttentionCount = featureHealth.red === 0 && featureHealth.newFingerprints24h > 0 ? 1 : 0;
 
+  // FAILURE_SEVERITIES, not `=== 'critical'`. providerFaultSeverity assigns
+  // 'error' — not 'critical' — to every operator-blocking fault (a spent
+  // balance, a rejected key). Counting only 'critical' meant the headline
+  // could read "All systems nominal" while the KPI tile inches below was amber
+  // and the triage row sat right there. Production distribution makes this
+  // decisive: 82,965 'error' vs 166 'critical' — the banner was reading the
+  // 0.2% tier. See lib/admin/severity.ts for why the two tiers exist.
   const criticalIncidentGroups24h = incidentFeed24h.incidents.filter(
-    (item) => item.severity === 'critical',
+    (item) => FAILURE_SEVERITIES.includes(item.severity as AdminSeverity),
   ).length;
   const attentionFromDeploy = kpis.lastDeploy?.state === 'ERROR' ? 1 : 0;
   const banner = {

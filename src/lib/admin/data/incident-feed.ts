@@ -181,7 +181,16 @@ export async function queryAppErrorEvents(
   // matters most). `.order('id')` as a tiebreaker keeps page boundaries
   // stable alongside `created_at desc`, matching the fetchAllRowsResult
   // pattern already used by golf.ts/briefing.ts.
-  const { data } = await fetchAllRowsResult((from, to) => {
+  // THROW, don't swallow. This destructured only `data`, and
+  // fetchAllRowsResult returns `{ data: null, error }` when the first page
+  // fails — so a PostgREST fault (schema drift on any of the 14 columns in
+  // APP_EVENT_SELECT, a 400, a statement timeout) became `[]`, which becomes
+  // a confident `0` on the nav badge, the KPI strip, the triage queue AND the
+  // Errors tab at once. incident-count-agreement.test.ts then certifies those
+  // four agree — and they do, on zero. Every caller already renders inside a
+  // PanelBoundary that shows PanelStale on a throw, so failing loudly here is
+  // strictly better than a silent all-clear.
+  const { data, error } = await fetchAllRowsResult((from, to) => {
     let query = admin
       .from('admin_events')
       .select(APP_EVENT_SELECT)
@@ -200,6 +209,10 @@ export async function queryAppErrorEvents(
 
     return query;
   });
+
+  if (error) {
+    throw new Error(`queryAppErrorEvents: ${error.message}`);
+  }
 
   return (data ?? []) as unknown as AppTriageEventRow[];
 }

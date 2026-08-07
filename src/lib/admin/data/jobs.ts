@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isInngestConfigured } from '@/lib/inngest/client';
+import { assertQueryOk } from '@/lib/admin/data/assert-query-ok';
 import {
   CRON_REGISTRY,
   classifyCronStatus,
@@ -42,6 +43,8 @@ export interface LogHealth {
 
 export interface JobsTab {
   board: CronBoardRow[];
+  /** Job types whose run history could not be read. UNKNOWN, not "never ran". */
+  unreadableJobs: string[];
   integrity: IntegrityRow[];
   logHealth: LogHealth;
   inngestActivated: boolean;
@@ -106,6 +109,27 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     admin.from('background_job_logs').select('id', { count: 'exact', head: true }),
   ]);
 
+  // FAIL LOUDLY. None of these 21 results had its `.error` inspected, so a
+  // statement timeout on the two exact-count scans over the 92-94k-row
+  // admin_events/error_logs tables turned the whole board into 17 benign grey
+  // "awaiting first run" chips plus a "0 admin_events" tile — a positive claim
+  // that logging itself is dead, presented as fact. classifyCronStatus's own
+  // comment calls never-ran "the neutral, non-alarming status", which is
+  // exactly the wrong thing to show for a failed read. JobsBody already
+  // renders inside a PanelBoundary, so a throw degrades this one panel.
+  assertQueryOk(integrityRows, 'jobs.integrity');
+  assertQueryOk(adminEventsCount, 'jobs.adminEventsCount');
+  assertQueryOk(errorLogsCount, 'jobs.errorLogsCount');
+  assertQueryOk(jobLogsCount, 'jobs.jobLogsCount');
+
+  // Per-job reads degrade individually rather than taking the board down: one
+  // unreadable job must not hide the other sixteen. But it is NAMED, not
+  // silently rendered as "never ran".
+  const unreadableJobs: string[] = [];
+  CRON_REGISTRY.forEach((entry, i) => {
+    if (jobRunsPerJob[i]?.error) unreadableJobs.push(entry.jobType);
+  });
+
   const board: CronBoardRow[] = CRON_REGISTRY.map((entry, i) => {
     // Newest-first from the query above.
     const runs = (jobRunsPerJob[i]?.data ?? []) as BackgroundJobLogRow[];
@@ -148,6 +172,9 @@ export async function fetchJobsTab(): Promise<JobsTab> {
 
   return {
     board,
+    /** Job types whose run history could not be read — status is UNKNOWN for
+     *  these, not "never ran". Empty in the normal case. */
+    unreadableJobs,
     integrity: [...latestIntegrity.values()],
     logHealth: {
       adminEvents: adminEventsCount.count ?? 0,
