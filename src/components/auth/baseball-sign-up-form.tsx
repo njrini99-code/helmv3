@@ -22,7 +22,12 @@ function getSignupErrorMessage(error: string): string {
   if (lower.includes('invalid email') || lower.includes('validate email')) {
     return 'Please enter a valid email address.';
   }
-  if (lower.includes('weak password') || lower.includes('password')) {
+  // ONLY the raw GoTrue string. Same defect as the golf form: the bare
+  // `includes('password')` matched the server's own already-user-ready
+  // messages and replaced a precise, fixable reason ("missing a special
+  // character", "appeared in a data breach") with generic advice the client
+  // had already enforced.
+  if (lower.includes('weak password')) {
     return 'Password does not meet the requirements. Use at least 8 characters with uppercase, lowercase, number, and special character.';
   }
   if (lower.includes('network') || lower.includes('fetch')) {
