@@ -32,7 +32,8 @@ interface ActionResult<T = void> {
 export interface PlayerNotificationCounts {
   unreadAnnouncements: number;
   pendingTasks: number;
-  unreadMessages: number;
+  /** NULL means UNKNOWN — a read failed. Not the same as "no unread messages". */
+  unreadMessages: number | null;
   unseenTravel: number;
   calendarNotifications: number;
   unseenAnnouncements: GolfAnnouncementMeta[];
@@ -244,24 +245,33 @@ async function getPlayerNotificationCountsImpl(
       }
     }
 
-    // Count unread messages - batch query instead of N+1
-    let unreadMessages = 0;
+    // Count unread messages - batch query instead of N+1.
+    // Byte-identical swallow to the coach action — see the note there. `null`
+    // means UNKNOWN so the badge holds its previous value instead of showing a
+    // confident zero, and no failure is logged on this 45-second poll path.
+    let unreadMessages: number | null = 0;
+    const participantsError = conversationsResult.error != null;
     const participants = conversationsResult.data || [];
-    if (participants.length > 0) {
+
+    if (participantsError) {
+      unreadMessages = null;
+    } else if (participants.length > 0) {
       // Parallel queries instead of sequential N+1 loop
       // Each conversation has different last_read_at, so we parallelize the individual queries
       const counts = await Promise.all(
         participants.map(async (p) => {
-          const { count } = await supabase
+          const { count, error } = await supabase
             .from('golf_messages')
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', p.conversation_id)
             .neq('sender_id', userId)
             .gt('created_at', p.last_read_at || '1970-01-01');
-          return count || 0;
+          return error ? null : (count ?? 0);
         })
       );
-      unreadMessages = counts.reduce((sum, c) => sum + c, 0);
+      unreadMessages = counts.some((c) => c === null)
+        ? null
+        : counts.reduce((sum: number, c) => sum + (c ?? 0), 0);
     }
 
     // Count unseen travel itineraries
