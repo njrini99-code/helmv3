@@ -1,6 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
-import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
@@ -57,10 +55,8 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   // auto-advance never re-fires once play stops). No-op otherwise.
   await reconcileQualifierStatus(id);
 
-  // Get qualifier with entries. A discarded error here 404s a qualifier the
-  // coach just clicked on — "not found" is the answer to absent, not to
-  // unreadable.
-  const { data: qualifier, error: qualifierError } = await supabase
+  // Get qualifier with entries
+  const { data: qualifier } = await supabase
     .from('golf_qualifiers')
     .select(`
       *,
@@ -71,14 +67,6 @@ export default async function QualifierDetailPage({ params }: PageProps) {
     `)
     .eq('id', id)
     .maybeSingle();
-
-  if (qualifierError) {
-    await logServerError(
-      `[qualifier detail] qualifier read failed — would have 404'd a qualifier that exists: ${describeError(qualifierError)}`,
-      { action: 'qualifierDetail.qualifier', featureArea: 'qualifiers' },
-    );
-    throw new Error("Couldn't load this qualifier. Please try again.");
-  }
 
   if (!qualifier) {
     notFound();
@@ -104,27 +92,13 @@ export default async function QualifierDetailPage({ params }: PageProps) {
     entries: validEntries as unknown as QualifierEntryWithPlayer[]
   };
 
-  // Get all rounds for this qualifier with per-round details.
-  //
-  // This is the same defect fixed in the leaderboard ACTION (#1320), sitting
-  // here in the coach's detail PAGE: the breakdown below is built from these
-  // rows, so a failed read does not blank the page — it renders the full field
-  // with no scores against any of them. Coaches pick travel squads off this
-  // screen, and a confident wrong answer is worse than an error.
-  const { data: rounds, error: roundsError } = await supabase
+  // Get all rounds for this qualifier with per-round details
+  const { data: rounds } = await supabase
     .from('golf_rounds')
     .select('id, player_id, total_score, score_to_par, qualifier_round_number, round_date, course_name, status')
     .eq('qualifier_id', id)
     .eq('status', 'completed')
     .order('qualifier_round_number', { ascending: true });
-
-  if (roundsError) {
-    await logServerError(
-      `[qualifier detail] rounds read failed — would have shown the field with no scores: ${describeError(roundsError)}`,
-      { action: 'qualifierDetail.rounds', featureArea: 'qualifiers' },
-    );
-    throw new Error("Couldn't load scores for this qualifier. Please try again.");
-  }
 
   // Build per-player round breakdown for the coach view
   const roundBreakdownByPlayer: Record<string, {

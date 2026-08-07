@@ -1,6 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
-import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -47,12 +45,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
   const supabase = await createClient();
 
-  // Both reads on this page used to discard their error, and here the mask a
-  // failure wears is a 404: `!player` and `!membership` each call notFound(),
-  // so a coach clicking a player on their OWN roster was told that player does
-  // not exist. Absent and unreadable are not the same answer, and only the
-  // first one is a 404.
-  const { data: player, error: playerError } = await supabase
+  // Get the player with team membership verification
+  const { data: player } = await supabase
     .from('golf_players')
     .select(`
       id,
@@ -70,14 +64,6 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .eq('id', id)
     .maybeSingle();
 
-  if (playerError) {
-    await logServerError(
-      `[player detail] player read failed — would have 404'd a player who exists: ${describeError(playerError)}`,
-      { action: 'playerDetail.player', featureArea: 'roster', playerId: id },
-    );
-    throw new Error("Couldn't load this player. Please try again.");
-  }
-
   if (!player) {
     notFound();
   }
@@ -90,23 +76,12 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   }
 
   // Check team membership
-  const { data: membership, error: membershipError } = await supabase
+  const { data: membership } = await supabase
     .from('golf_team_members')
     .select('status')
     .eq('team_id', teamId)
     .eq('player_id', id)
     .maybeSingle();
-
-  // Same trap, and this one is the likelier of the two to fire: a failed
-  // membership read 404s a player who IS on the roster the coach just clicked
-  // them from.
-  if (membershipError) {
-    await logServerError(
-      `[player detail] membership read failed — would have 404'd a rostered player: ${describeError(membershipError)}`,
-      { action: 'playerDetail.membership', featureArea: 'roster', playerId: id },
-    );
-    throw new Error("Couldn't load this player. Please try again.");
-  }
 
   if (!membership) {
     notFound();
