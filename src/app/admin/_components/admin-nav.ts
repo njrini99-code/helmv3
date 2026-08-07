@@ -12,13 +12,15 @@ type AdminHref =
   | '/admin/utilization'
   | '/admin/jobs'
   | '/admin/deploys'
-  | '/admin/health';
+  | '/admin/health'
+  | '/admin/teams'
+  | '/admin/billing';
 
 export interface AdminNavEntry {
   label: string;
   href: AdminHref;
   key: string;
-  section: 'Operations' | 'Apps' | 'Platform';
+  section: 'Triage' | 'Customers' | 'Apps' | 'Platform' | 'Revenue';
   description: string;
   meta?: string;
 }
@@ -29,20 +31,36 @@ export interface AdminNavEntry {
  *  fixed (Lift Lab, Utilization) — never renumbering '1'-'9' avoids
  *  reassigning a shortcut an admin already has muscle memory for. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
-  { label: 'Overview', href: '/admin', key: '1', section: 'Operations', description: 'Command posture, triage, deploys', meta: 'live' },
-  { label: 'Activity', href: '/admin/activity', key: '2', section: 'Operations', description: 'User and product event stream' },
-  { label: 'Errors', href: '/admin/errors', key: '3', section: 'Operations', description: 'Sentry plus app incident groups', meta: 'trace' },
-  { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Operations', description: 'Access, sessions, auth failures' },
-  { label: 'Utilization', href: '/admin/utilization', key: 'U', section: 'Operations', description: 'Feature usage and adoption' },
+  // TRIAGE — "what is broken right now"
+  { label: 'Overview', href: '/admin', key: '1', section: 'Triage', description: 'Command posture, triage, deploys', meta: 'live' },
+  { label: 'Errors', href: '/admin/errors', key: '3', section: 'Triage', description: 'Sentry plus app incident groups', meta: 'trace' },
+  { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health across every app', meta: 'map' },
+  { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Triage', description: 'Crons, guards, integrity checks' },
+  // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
+  // being the one cross-sport board built to answer "who needs attention" —
+  // 30-day activity/error EKG with four triage sorts.
+  { label: 'Teams pulse', href: '/admin/teams', key: 'T', section: 'Triage', description: 'Cross-sport team activity and error EKG' },
+
+  // CUSTOMERS — "who is this, and how are they doing"
+  { label: 'Users & Teams', href: '/admin/users', key: '7', section: 'Customers', description: 'Accounts, teams, engagement' },
+  { label: 'Activity', href: '/admin/activity', key: '2', section: 'Customers', description: 'User and product event stream' },
+  { label: 'Utilization', href: '/admin/utilization', key: 'U', section: 'Customers', description: 'Feature usage and adoption' },
+
+  // APPS — per-sport production signals
   { label: 'Golf', href: '/admin/golf', key: '5', section: 'Apps', description: 'GolfHelm production signals' },
   { label: 'Baseball', href: '/admin/baseball', key: '6', section: 'Apps', description: 'BaseballHelm production signals' },
   { label: 'Lift Lab', href: '/admin/lifting', key: 'L', section: 'Apps', description: 'Cross-sport strength program activity' },
-  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Operations', description: 'Submit bugs, changes, additions', meta: 'issues' },
-  { label: 'Work log', href: '/admin/work', key: 'W', section: 'Operations', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
-  { label: 'Users & Teams', href: '/admin/users', key: '7', section: 'Platform', description: 'Accounts, teams, engagement' },
-  { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Platform', description: 'Crons, guards, integrity checks' },
+
+  // PLATFORM
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
-  { label: 'Health', href: '/admin/health', key: '0', section: 'Platform', description: 'Feature health across every app', meta: 'map' },
+  { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
+  { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
+
+  // REVENUE — zero inbound links repo-wide before this entry.
+  { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Invoices, Stripe posture' },
+
+  // INTAKE
+  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Submit bugs, changes, additions', meta: 'issues' },
 ] as const;
 
 /** Quick links in the Overview command header — must be real ADMIN_NAV routes. */

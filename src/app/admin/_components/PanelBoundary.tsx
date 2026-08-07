@@ -2,7 +2,6 @@
 
 import { Component, Suspense, useCallback, useState, useTransition, type ReactNode, type ErrorInfo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { SkeletonStat } from '@/components/fairway';
 import { Button } from '@/components/ui/button';
 import { logError } from '@/lib/error-logging';
 import { PanelStale } from './PanelStates';
@@ -148,7 +147,23 @@ export function PanelBoundary({
   children,
 }: {
   title: string;
-  skeleton?: ReactNode;
+  /**
+   * REQUIRED — deliberately no default.
+   *
+   * This used to fall back to a single `<SkeletonStat/>`: one metric card.
+   * That shape was right for a KPI tile and nothing else, and 25 of the 34
+   * boundaries in the Bridge omitted the prop — so a full page body, the
+   * 20-row deploys table and the feature dot grid all pre-painted as one
+   * small card and then reflowed on swap. Worst on /admin/deploys, where the
+   * boundary already sits inside a `<Surface>`: the default drew a visible
+   * card-in-a-card.
+   *
+   * A wrong skeleton is worse than none (it reserves the wrong box, so the
+   * swap is a layout jump rather than a fill), which is exactly why there is
+   * no "reasonable default" to have. `./PanelSkeletons.tsx` carries the two
+   * shapes that repeat across the console; anything else passes its own.
+   */
+  skeleton: ReactNode;
   children: ReactNode;
 }) {
   // Remounting the boundary subtree on retry gives the refreshed RSC payload
@@ -162,7 +177,7 @@ export function PanelBoundary({
       route={pathname ?? ''}
       onRetryReset={() => setAttempt((n) => n + 1)}
     >
-      <Suspense fallback={skeleton ?? <SkeletonStat />}>{children}</Suspense>
+      <Suspense fallback={skeleton}>{children}</Suspense>
     </PanelErrorBoundary>
   );
 }

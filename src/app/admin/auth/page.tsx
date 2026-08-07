@@ -11,11 +11,14 @@ import {
   Surface,
   SearchField,
   Button,
+  Skeleton,
+  SkeletonList,
   type FwStatusTone,
 } from '@/components/fairway';
 import { SessionsPanel } from '../_components/SessionsPanel';
 import { SportBadge, type BridgeSport } from '../_components/SportBadge';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
@@ -57,6 +60,23 @@ function UserLink({ userId, children }: { userId: string | null; children: React
     <Link href={`/admin/users/${userId}`} className="underline decoration-warm-300 hover:decoration-warm-600">
       {children}
     </Link>
+  );
+}
+
+/**
+ * `Runway` and `Sessions` each render their OWN `<Surface padding="md">` with
+ * a rule heading, so their fallback has to carry that shell too — a bare row
+ * list would pop into a card on swap, which is the layout jump the skeleton
+ * exists to prevent.
+ */
+function SurfacePanelSkeleton({ rows }: { rows: number }) {
+  return (
+    <Surface padding="md">
+      <Skeleton className="h-3 w-48" />
+      <div className="mt-4">
+        <SkeletonList rows={rows} />
+      </div>
+    </Surface>
   );
 }
 
@@ -284,13 +304,13 @@ export default async function AuthPage({
         <AuthFilterChips chips={chips} ariaLabel="Filter the sign-in feed" />
       </div>
 
-      <PanelBoundary title="Auth & sign-ins">
+      <PanelBoundary title="Auth & sign-ins" skeleton={<PanelPageSkeleton stats={3} rows={6} />}>
         <AuthBody filters={filters} />
       </PanelBoundary>
-      <PanelBoundary title="First 7 days">
+      <PanelBoundary title="First 7 days" skeleton={<SurfacePanelSkeleton rows={2} />}>
         <Runway />
       </PanelBoundary>
-      <PanelBoundary title="Active sessions">
+      <PanelBoundary title="Active sessions" skeleton={<SurfacePanelSkeleton rows={4} />}>
         <Sessions />
       </PanelBoundary>
     </div>

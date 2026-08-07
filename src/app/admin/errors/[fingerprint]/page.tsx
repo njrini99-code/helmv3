@@ -5,6 +5,7 @@ import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/
 import type { TriageSeverity } from '@/lib/admin/data/triage';
 import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
 import { CopyReportButton } from '../../_components/CopyReportButton';
 import { SportBadge, type BridgeSport } from '../../_components/SportBadge';
@@ -192,7 +193,7 @@ export default async function FingerprintDetailPage({
     <div className="space-y-4">
       <Link href="/admin/errors" className="text-xs text-warm-500 underline">← Errors</Link>
       <h1 className="break-words font-fw-mono text-lg text-warm-900 [overflow-wrap:anywhere]">fingerprint {fingerprint}</h1>
-      <PanelBoundary title="Fingerprint detail">
+      <PanelBoundary title="Fingerprint detail" skeleton={<PanelPageSkeleton stats={3} rows={4} />}>
         <Body />
       </PanelBoundary>
     </div>
