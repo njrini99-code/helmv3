@@ -5,7 +5,26 @@ import { redirect } from 'next/navigation';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeam } from '@/components/fairway/pages/team';
+import { InlineNotice } from '@/components/fairway';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type { Metadata } from 'next';
+
+/**
+ * Shown when a read behind Team Info fails. Deliberately NOT the redirect this
+ * page used to fall through to — see the comments at each call site.
+ */
+function TeamLoadFailure() {
+  return (
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
+        <InlineNotice tone="danger" title="Couldn't load your team">
+          <p>We couldn&apos;t reach your team just now. Nothing has changed on your roster — try again in a moment.</p>
+        </InlineNotice>
+      </div>
+    </div>
+  );
+}
 
 export const metadata: Metadata = {
   title: 'Team | GolfHelm',
@@ -132,23 +151,46 @@ export default async function TeamSettingsPage() {
 
   if (!player) redirect('/golf/dashboard');
 
-  // Get team_id via golf_team_members
-  const { data: teamMember } = await supabase
+  // Both reads below used to discard their error, and on this page the
+  // consequence of that is a SILENT REDIRECT: a failed read looks identical to
+  // "this player has no team", and the player is bounced to the dashboard with
+  // no message at all. That is worse than a wrong message — there is nothing to
+  // report, nothing to retry, and the Team tab simply appears not to work.
+  //
+  // The redirect is right for a player who genuinely has no team. It is wrong
+  // for a player whose team we merely failed to read.
+  const { data: teamMember, error: teamMemberError } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', player.id)
     .maybeSingle();
+
+  if (teamMemberError) {
+    await logServerError(
+      `[team] player membership read failed — would have silently redirected off the Team page: ${describeError(teamMemberError)}`,
+      { action: 'team.playerMembership', featureArea: 'team_info', playerId: player.id },
+    );
+    return <TeamLoadFailure />;
+  }
 
   if (!teamMember?.team_id) {
     redirect('/golf/dashboard'); // No team - redirect to dashboard
   }
 
   // Get team info for player view
-  const { data: team } = await supabase
+  const { data: team, error: teamError } = await supabase
     .from('golf_teams')
     .select('id, name, season, created_at, organization_id')
     .eq('id', teamMember.team_id)
     .maybeSingle();
+
+  if (teamError) {
+    await logServerError(
+      `[team] team read failed — would have silently redirected off the Team page: ${describeError(teamError)}`,
+      { action: 'team.teamRead', featureArea: 'team_info', playerId: player.id },
+    );
+    return <TeamLoadFailure />;
+  }
 
   if (!team) {
     redirect('/golf/dashboard');
@@ -160,12 +202,22 @@ export default async function TeamSettingsPage() {
   // two-coach program saw NO head coach. Resolve through golf_team_coach_staff
   // by THIS team_id, preferring the primary/head coach (is_primary first), then
   // take a single row.
-  const { data: staffRows } = await supabase
+  const { data: staffRows, error: staffError } = await supabase
     .from('golf_team_coach_staff')
     .select('coach_id, is_primary, role, created_at')
     .eq('team_id', teamMember.team_id)
     .order('is_primary', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: true });
+
+  // Cosmetic on its own — a failed staff read just hides the head coach's name
+  // — so it does not take down the page. It should not vanish in silence
+  // either, because "no coach listed" is exactly what F031 was raised about.
+  if (staffError) {
+    await logServerError(
+      `[team] staff read failed — the head coach will be missing from Team Info: ${describeError(staffError)}`,
+      { action: 'team.staffRead', featureArea: 'team_info', playerId: player.id },
+    );
+  }
 
   const headStaff = (staffRows ?? [])[0] ?? null;
 
@@ -188,11 +240,22 @@ export default async function TeamSettingsPage() {
 
   // Get roster (teammates) via golf_team_members (F083: active members only —
   // the player Team Info roster was listing pending/removed members too).
-  const { data: teamMembers } = await supabase
+  const { data: teamMembers, error: teamMembersError } = await supabase
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamMember.team_id)
     .eq('status', 'active');
+
+  // The roster IS the Team Info page. An unread roster renders as a team with
+  // no players on it, which a player would reasonably read as "everyone got
+  // removed" rather than "we couldn't load this".
+  if (teamMembersError) {
+    await logServerError(
+      `[team] roster read failed — would have shown a team with no players: ${describeError(teamMembersError)}`,
+      { action: 'team.roster', featureArea: 'team_info', playerId: player.id },
+    );
+    return <TeamLoadFailure />;
+  }
 
   const rosterPlayerIds = (teamMembers || []).map(tm => tm.player_id);
 
