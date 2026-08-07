@@ -20214,6 +20214,10 @@ export type Database = {
         Args: { p_team_id: string }
         Returns: boolean
       }
+      baseball_conversation_on_my_team: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       baseball_is_announcement_coach: {
         Args: { p_announcement_id: string }
         Returns: boolean
@@ -20670,9 +20674,25 @@ export type Database = {
         Args: { p_announcement_id: string }
         Returns: boolean
       }
+      golf_conversation_on_my_team: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       golf_join_team_with_code: {
         Args: { p_code: string }
         Returns: {
+          team_id: string
+          team_name: string
+        }[]
+      }
+      golf_my_join_requests: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          message: string
+          organization_name: string
+          status: string
           team_id: string
           team_name: string
         }[]

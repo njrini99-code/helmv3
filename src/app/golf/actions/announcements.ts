@@ -460,12 +460,29 @@ async function getAnnouncementsWithMetaImpl(
     // otherwise limit a player caller to only their OWN recipient rows,
     // making every targeted announcement look empty (= "all-team") to the
     // L558-563 filter below and defeating it entirely.
+    // The `error` is READ, and a failure fails CLOSED. This is the recipient
+    // gate itself: the filter at the bottom of this function treats "no
+    // recipient rows" as "addressed to the whole team". A failed read also
+    // produces no recipient rows, so discarding the error made every TARGETED
+    // announcement — the ones a coach deliberately sent to a subset — read as
+    // all-team and publish to the entire roster. A gate that fails open is not
+    // a gate.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: allRecipients } = await (createAdminClient() as any)
+    const { data: allRecipients, error: recipientsError } = await (createAdminClient() as any)
       .from('golf_announcement_recipients')
       .select('announcement_id, player_id')
       .in('announcement_id', announcementIds)
-      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null };
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null; error: { message?: string } | null };
+
+    if (recipientsError) {
+      await logServerError(
+        `[getAnnouncementsWithMeta] recipient gate read failed: ${describeError(recipientsError)}`,
+        { action: 'announcements.getAnnouncementsWithMeta', featureArea: 'announcements' },
+      );
+      // Refusing to render is the only honest option: we cannot tell an
+      // all-team announcement from a targeted one we failed to resolve.
+      return { success: false, error: 'Could not load announcements right now. Please try again.' };
+    }
 
     // Fetch all acknowledgements (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -666,11 +683,24 @@ async function getAnnouncementDetailImpl(
       // every player. An empty recipient set still means "all-team" (do not
       // turn that into a denial); a non-empty set that excludes this player
       // is reported as "not found" so existence isn't leaked.
+      // The `error` is READ, and a failure fails CLOSED — see the matching note
+      // in getAnnouncementsWithMeta. An empty set legitimately means "all-team",
+      // so a discarded error was indistinguishable from "everyone may read
+      // this", which is the wrong side to guess on for a targeted announcement.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: recipientGate } = await (createAdminClient() as any)
+      const { data: recipientGate, error: gateError } = await (createAdminClient() as any)
         .from('golf_announcement_recipients')
         .select('player_id')
-        .eq('announcement_id', announcementId) as { data: Array<{ player_id: string }> | null };
+        .eq('announcement_id', announcementId) as { data: Array<{ player_id: string }> | null; error: { message?: string } | null };
+
+      if (gateError) {
+        await logServerError(
+          `[getAnnouncementDetail] recipient gate read failed: ${describeError(gateError)}`,
+          { action: 'announcements.getAnnouncementDetail', featureArea: 'announcements' },
+        );
+        return { success: false, error: 'Announcement not found' };
+      }
+
       const gateRecipientIds = (recipientGate || []).map(r => r.player_id);
       if (gateRecipientIds.length > 0 && !gateRecipientIds.includes(playerCheck.id)) {
         return { success: false, error: 'Announcement not found' };

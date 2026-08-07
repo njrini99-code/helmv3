@@ -305,11 +305,13 @@ export default function GolfClassesPage() {
         throw error;
       }
 
-      // Sync all classes to calendar in parallel
+      // Sync all classes to calendar in parallel. The RESULTS decide what we
+      // claim below — see the note on the toast.
+      const syncFailures: string[] = [];
       if (data && teamId) {
         const syncPromises = data.map((insertedClass, i) => {
           const confirmedClass = confirmed[i];
-          if (!insertedClass || !confirmedClass) return Promise.resolve();
+          if (!insertedClass || !confirmedClass) return Promise.resolve(null);
 
           return syncClassToCalendar({
             id: insertedClass.id,
@@ -323,7 +325,13 @@ export default function GolfClassesPage() {
             building: confirmedClass.building || '',
             room: confirmedClass.room || '',
             credits: confirmedClass.credits,
-            semester: confirmedClass.semester || 'Spring 2026',
+            // NOT a hardcoded term. This read `|| 'Spring 2026'`, a term that
+            // has already ENDED — so any imported class whose semester the
+            // parser could not detect was dated into the past and generated
+            // zero future occurrences. The player saw "Synced to your calendar"
+            // and an empty calendar. detectSemester('') returns the current
+            // academic term.
+            semester: confirmedClass.semester || detectSemester(''),
             semesterStartDate: confirmedClass.semesterStartDate,
             color: confirmedClass.color || generateClassColor(),
             notes: '',
@@ -331,17 +339,35 @@ export default function GolfClassesPage() {
           }, insertedClass.id, playerId, teamId);
         });
 
-        await Promise.all(syncPromises);
+        const syncResults = await Promise.all(syncPromises);
+        syncResults.forEach((result, i) => {
+          if (result && !result.success) {
+            const label = confirmed[i]?.course_code || confirmed[i]?.course_name || 'A class';
+            syncFailures.push(`${label}: ${result.error ?? 'Unknown error'}`);
+          }
+        });
       }
 
       const importedCount = data?.length ?? confirmed.length;
       await fetchClasses();
       setShowConfirmModal(false);
       setParsedClasses([]);
-      fairwayToast.success(
-        `${importedCount} ${importedCount === 1 ? 'class' : 'classes'} imported`,
-        { description: 'Synced to your calendar.' },
-      );
+
+      // Say what actually happened. This toast fired unconditionally while
+      // every syncClassToCalendar result was thrown away, so an import that
+      // wrote no calendar events at all still reported "Synced to your
+      // calendar" — six classes in production imported with zero events.
+      if (syncFailures.length > 0) {
+        fairwayToast.error(
+          `${importedCount} imported, ${syncFailures.length} not added to your calendar`,
+          { description: syncFailures.slice(0, 3).join(' · ') },
+        );
+      } else {
+        fairwayToast.success(
+          `${importedCount} ${importedCount === 1 ? 'class' : 'classes'} imported`,
+          { description: 'Synced to your calendar.' },
+        );
+      }
     } catch {
       // Error handled by alert above
     }
