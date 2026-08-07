@@ -92,16 +92,33 @@ async function getCoachTeamId(
   return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
+/**
+ * The roster read behind every "send this to the whole team" decision.
+ *
+ * This used to discard its error and return `[]`, and `[]` is the single most
+ * dangerous value it can return: downstream, "no players" and "we could not
+ * read the players" are the same empty array, and every guard here is written
+ * as `targetPlayerIds.length > 0`. A failed read therefore did not fail — it
+ * quietly meant "send to nobody", while the announcement itself was created
+ * and the action returned success.
+ *
+ * So the result now says which of the two happened, and callers must decide.
+ */
+type TeamRosterIds =
+  | { ok: true; ids: string[] }
+  | { ok: false; error: unknown };
+
 async function getTeamPlayerIds(
   supabase: SupabaseClient,
   teamId: string
-): Promise<string[]> {
-  const { data } = await supabase
+): Promise<TeamRosterIds> {
+  const { data, error } = await supabase
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamId)
     .eq('status', 'active');
-  return (data || []).map(m => m.player_id);
+  if (error) return { ok: false, error };
+  return { ok: true, ids: (data || []).map(m => m.player_id) };
 }
 
 // ============================================================================
@@ -139,13 +156,35 @@ async function createEnrichedAnnouncementImpl(input: {
     // coach could point task assignments + the service-role email/push fan-out
     // below at ANY player uuid, not just this team's. Intersect with the
     // active roster before the id is used anywhere.
+    // Resolve the roster ONCE, and BEFORE anything is written.
+    //
+    // It used to be read twice, both times after validation and the second time
+    // after the announcement row already existed — so a roster read that failed
+    // left a published announcement addressed to nobody. Reading it up front
+    // means a failure costs nothing: we return before creating anything.
+    const roster = await getTeamPlayerIds(supabase, teamId);
+    if (!roster.ok) {
+      await logServerError(
+        `[createEnrichedAnnouncement] roster read failed: ${describeError(roster.error)}`,
+        { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load your roster just now, so nothing was sent. Please try again." };
+    }
+
     if (validated.recipientPlayerIds && validated.recipientPlayerIds.length > 0) {
-      const rosterIds = new Set(await getTeamPlayerIds(supabase, teamId));
+      // Note this is now reached only when the roster read SUCCEEDED. Before,
+      // a failed read emptied `rosterIds` and every selected player was
+      // therefore "not on your team" — accusing the coach of picking the wrong
+      // players when the truth was that we could not check.
+      const rosterIds = new Set(roster.ids);
       const invalidIds = validated.recipientPlayerIds.filter(pid => !rosterIds.has(pid));
       if (invalidIds.length > 0) {
         return { success: false, error: 'Some selected players are not on your team' };
       }
     }
+
+    // Who this actually reaches. Resolved before the write for the reason above.
+    const targetPlayerIds = validated.recipientPlayerIds ?? roster.ids;
 
     // 1. Create the announcement
     const { data: announcement, error: annError } = await supabase
@@ -169,11 +208,6 @@ async function createEnrichedAnnouncementImpl(input: {
     }
 
     const announcementId = announcement.id;
-
-    // Determine target players for task assignments
-    const targetPlayerIds = validated.recipientPlayerIds
-      ? validated.recipientPlayerIds
-      : await getTeamPlayerIds(supabase, teamId);
 
     // 2. Insert recipients (only if specific players selected)
     if (validated.recipientPlayerIds && validated.recipientPlayerIds.length > 0) {
@@ -530,9 +564,23 @@ async function getAnnouncementsWithMetaImpl(
       completedAssignments = (assignments || []).filter(a => a.status === 'completed');
     }
 
-    // Get total team member count for "all team" announcements
-    const teamPlayerIds = await getTeamPlayerIds(supabase, teamId);
-    const totalTeamCount = teamPlayerIds.length;
+    // Get total team member count for "all team" announcements.
+    //
+    // This is the DENOMINATOR of the acknowledgement progress a coach reads to
+    // decide whether everyone has signed the waiver. On a failed read it falls
+    // back to 0, which is wrong in a visible way (a real numerator over zero)
+    // rather than a plausible way — but it is still wrong, and it used to be
+    // wrong SILENTLY. Making it honest means typing it `number | null` and
+    // teaching the progress UI to render "unknown", which is a UI change and is
+    // deliberately not bundled here; this at least stops it happening unseen.
+    const teamPlayers = await getTeamPlayerIds(supabase, teamId);
+    if (!teamPlayers.ok) {
+      await logServerError(
+        `[getAnnouncements] roster count read failed — acknowledgement denominator is wrong: ${describeError(teamPlayers.error)}`,
+        { action: 'announcements.getAnnouncements', featureArea: 'announcements' },
+      );
+    }
+    const totalTeamCount = teamPlayers.ok ? teamPlayers.ids.length : 0;
 
     // Fetch player info for acknowledged players (for avatar display)
     const allAckPlayerIds = [...new Set((allAcks || []).map(a => a.player_id))];
@@ -833,8 +881,15 @@ async function getAnnouncementDetailImpl(
     const isAllTeam = (recipients || []).length === 0;
     let totalRecipients = 0;
     if (isAllTeam) {
-      const teamPlayerIds = await getTeamPlayerIds(supabase, ann.team_id);
-      totalRecipients = teamPlayerIds.length;
+      // Same denominator, same caveat as getAnnouncements above.
+      const teamPlayers = await getTeamPlayerIds(supabase, ann.team_id);
+      if (!teamPlayers.ok) {
+        await logServerError(
+          `[getAnnouncementById] roster count read failed — acknowledgement denominator is wrong: ${describeError(teamPlayers.error)}`,
+          { action: 'announcements.getAnnouncementById', featureArea: 'announcements' },
+        );
+      }
+      totalRecipients = teamPlayers.ok ? teamPlayers.ids.length : 0;
     } else {
       totalRecipients = (recipients || []).length;
     }
