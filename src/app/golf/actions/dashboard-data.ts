@@ -373,6 +373,33 @@ async function getCoachDashboardDataImpl(
             .limit(20),
     ]);
 
+    // A FAILED team read must not be reported as "you have no team".
+    //
+    // Only `.data` was read here. FairwayCoachDashboard renders the
+    // "Get your team set up" OnboardingSteps funnel whenever `team` is null, so
+    // one transient failure on this single query told the coach of an
+    // established, paying, 9-player program that they had no team and invited
+    // them to create one. That is the worst outcome in this whole family: not a
+    // wrong number, but a wrong answer to "does my team exist", pointing at a
+    // destructive next action.
+    //
+    // page.tsx:169-178 already documents the intended contract — "a real
+    // DB/network outage must SURFACE ... letting this throw only fires on a true
+    // failure" — and relies on getCoachDashboardData throwing. It did not. This
+    // makes that invariant true.
+    //
+    // PGRST116 is excluded deliberately: `.single()` raises it when the row
+    // genuinely is not there (a deleted team), and for that case the onboarding
+    // funnel IS the right screen. Everything else — timeout, lock wait, 5xx —
+    // goes to the route error boundary, which offers a retry.
+    if (teamResult.error && (teamResult.error as { code?: string }).code !== 'PGRST116') {
+        await logServerError(
+            `[getCoachDashboardData] team lookup failed: ${describeError(teamResult.error)}`,
+            { action: 'getCoachDashboardData', featureArea: 'coach_dashboard' },
+        );
+        throw new Error('Failed to load your team. Please try again.');
+    }
+
     const team = teamResult.data;
 
     // `.count || 0` collapsed the error channel into the same value as a
