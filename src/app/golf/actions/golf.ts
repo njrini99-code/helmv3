@@ -6111,19 +6111,46 @@ async function getQualifierLeaderboardImpl(
       .eq('id', qualifierId)
       .single();
 
-    if (qualifierError || !qualifier) {
+    // PGRST116 is PostgREST's "no rows" for .single(); that one really is
+    // "not found". Every other error is a read that failed, and telling a
+    // coach their qualifier doesn't exist because a connection dropped sends
+    // them looking for data loss that never happened.
+    if (qualifierError && (qualifierError as { code?: string }).code !== 'PGRST116') {
+      await logServerError(
+        `[getQualifierLeaderboard] qualifier read failed: ${describeError(qualifierError)}`,
+        { action: 'getQualifierLeaderboard.qualifier', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load this qualifier. Please try again." };
+    }
+
+    if (!qualifier) {
       return { success: false, error: 'Qualifier not found' };
     }
 
-    // Get current player (if exists)
-    const { data: currentPlayer } = await supabase
+    // Get current player (if exists).
+    //
+    // "No row" and "the read failed" are NOT the same answer, and this used to
+    // discard the error and treat both as no row. A coach legitimately has no
+    // golf_players row, so null is expected — but when the query itself fails,
+    // `isPlayerEntered` below would be computed against a player id we never
+    // learned, and the page would tell an entered player they hadn't entered
+    // and offer them the Enter button again.
+    const { data: currentPlayer, error: currentPlayerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (currentPlayerError) {
+      await logServerError(
+        `[getQualifierLeaderboard] player lookup failed: ${describeError(currentPlayerError)}`,
+        { action: 'getQualifierLeaderboard.playerLookup', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load this qualifier. Please try again." };
+    }
+
     // Get all entries with player info
-    const { data: entries } = await supabase
+    const { data: entries, error: entriesError } = await supabase
       .from('golf_qualifier_entries')
       .select(`
         player_id,
@@ -6135,6 +6162,18 @@ async function getQualifierLeaderboardImpl(
         )
       `)
       .eq('qualifier_id', qualifierId);
+
+    // A failed read is not an empty field. Without this branch the early
+    // return below answers `success: true, leaderboard: []` — the exact same
+    // payload as a qualifier nobody has entered yet — so an RLS denial or a
+    // dropped connection rendered as "no entries yet" on a full field.
+    if (entriesError) {
+      await logServerError(
+        `[getQualifierLeaderboard] entries read failed: ${describeError(entriesError)}`,
+        { action: 'getQualifierLeaderboard.entries', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load the field for this qualifier. Please try again." };
+    }
 
     if (!entries || entries.length === 0) {
       return {
@@ -6165,6 +6204,18 @@ async function getQualifierLeaderboardImpl(
       .select('player_id, qualifier_round_number, total_score, score_to_par')
       .eq('qualifier_id', qualifierId)
       .eq('status', 'completed');
+
+    // This one is the most dangerous of the three to swallow. Every downstream
+    // calculation reads `rounds || []`, so a failed read doesn't blank the
+    // page — it produces a complete, confident leaderboard in which nobody has
+    // posted a score. Coaches make lineup decisions off this screen.
+    if (roundsResult.error) {
+      await logServerError(
+        `[getQualifierLeaderboard] rounds read failed: ${describeError(roundsResult.error)}`,
+        { action: 'getQualifierLeaderboard.rounds', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load scores for this qualifier. Please try again." };
+    }
 
     const rounds = (roundsResult.data as unknown) as Array<{
       player_id: string;
