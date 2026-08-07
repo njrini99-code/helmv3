@@ -29,8 +29,20 @@
 --     baseball_lifting, baseball_messages, baseball_player_today,
 --     baseball_practice, baseball_signals, baseball_stats.
 --
---     Expect some baseball dots to move green -> amber on first deploy. That
---     is the defect being fixed, not a regression: those dots were green
+--     BLAST RADIUS, measured against production 2026-08-06 rather than
+--     estimated. Of the 39 distinct baseball heartbeat tables:
+--       - 16 have no `created_at` column at all, so the EXISTS gate below
+--         still resolves them NULL. Those features remain unable to go amber
+--         on heartbeat, and nothing on the board will say why. Fixing that
+--         means either adding the column or repointing the registry entry —
+--         a separate change, listed here so it is not mistaken for done.
+--       -  5 of the remaining 23 are empty tables (MAX(created_at) IS NULL),
+--         which also stays NULL. No change.
+--       - 18 carry data, and ALL 18 are already past the 6h 'high' threshold;
+--         15 are past 7 days. So expect up to 18 baseball dots to move
+--         green -> amber the first time this runs.
+--
+--     That is the defect being fixed, not a regression: those dots were green
 --     because the signal was missing, not because it was good. Features with
 --     no feature-tagged admin_events at all still hit the neutral-first rule
 --     and never reach the heartbeat check, so this cannot manufacture amber
