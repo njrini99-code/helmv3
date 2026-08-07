@@ -10,6 +10,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import type { Database } from '@/lib/types/database';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -467,20 +468,45 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const playerData = {
+    // A PARTIAL update must not write NULL over what it was not given.
+    //
+    // This built the full column set and coerced every absent optional field to
+    // `null`, then applied the whole object as an UPDATE. The onboarding page
+    // never sends email or phone (player/page.tsx:167 sends eight fields, not
+    // these two), and both are `.optional()` in the schema — so completing
+    // onboarding DESTROYED the address ensurePlayerRecord had written from the
+    // auth account minutes earlier. Measured in production: 22 of 22 August
+    // signups had golf_players.email = NULL, against 10 of 10 populated in
+    // April. Every coach's roster (roster.ts selects `email`) rendered a blank
+    // contact column for the entire current cohort — UNC Wilmington and both
+    // Shenandoah squads.
+    //
+    // Absent optional fields are now OMITTED from the write. Onboarding is a
+    // one-shot completion, not a profile editor, so it has no legitimate reason
+    // to clear a field it never asked about.
+    // Typed as the table's own Update shape rather than Record<string, unknown>,
+    // so a column name that does not exist is a compile error here.
+    type GolfPlayerWrite = Database['public']['Tables']['golf_players']['Update'];
+
+    const playerData: GolfPlayerWrite = {
       first_name: validatedData.firstName,
       last_name: validatedData.lastName,
-      email: validatedData.email || null,
-      phone: validatedData.phone || null,
-      graduation_year: validatedData.gradYear || null,
-      handicap: validatedData.handicap != null ? validatedData.handicap : null,
-      hometown: validatedData.hometown || null,
-      state: validatedData.state || null,
-      gpa: validatedData.gpa != null ? validatedData.gpa : null,
-      avatar_url: validatedData.avatarUrl || null,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };
+
+    // The signed-in account's address is the authoritative one, and the form
+    // does not collect it — so fall back to it rather than leaving the column
+    // empty. Without this a brand-new player is uncontactable by their coach.
+    const email = validatedData.email || user.email;
+    if (email) playerData.email = email;
+    if (validatedData.phone) playerData.phone = validatedData.phone;
+    if (validatedData.gradYear !== undefined) playerData.graduation_year = validatedData.gradYear;
+    if (validatedData.handicap !== undefined) playerData.handicap = validatedData.handicap;
+    if (validatedData.hometown) playerData.hometown = validatedData.hometown;
+    if (validatedData.state) playerData.state = validatedData.state;
+    if (validatedData.gpa !== undefined) playerData.gpa = validatedData.gpa;
+    if (validatedData.avatarUrl) playerData.avatar_url = validatedData.avatarUrl;
 
     let playerId = existingPlayer?.id ?? null;
 

@@ -161,13 +161,30 @@ async function getPlayerNotificationCountsImpl(
     // visibility filter below sees every recipient, not only the caller's.
     const announcementIds = announcements.map((ann) => ann.id);
     let allRecipients: Array<{ announcement_id: string; player_id: string }> = [];
+    // True when we could not establish who a targeted announcement is for. The
+    // visibility filter below must then surface NOTHING rather than guess.
+    let recipientGateUnresolved = false;
     if (announcementIds.length > 0) {
       const admin = createAdminClient();
+      // The `error` is READ, and a failure fails CLOSED. The comment directly
+      // above already names the hazard — "no visible recipients = fail open" —
+      // but the error channel was still discarded, so a FAILED read produced
+      // exactly the empty set that comment warns about, and every targeted
+      // announcement leaked its title and body to the whole roster.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: recipientRows } = await (admin as any)
+      const { data: recipientRows, error: recipientsError } = await (admin as any)
         .from('golf_announcement_recipients')
         .select('announcement_id, player_id')
         .in('announcement_id', announcementIds);
+
+      if (recipientsError) {
+        await logServerError(
+          `[getPlayerNotificationCounts] recipient gate read failed: ${describeError(recipientsError)}`,
+          { action: 'player-notifications.getPlayerNotificationCounts', featureArea: 'announcements' },
+        );
+        recipientGateUnresolved = true;
+      }
+
       allRecipients = (recipientRows as Array<{ announcement_id: string; player_id: string }> | null) ?? [];
     }
 
@@ -178,8 +195,12 @@ async function getPlayerNotificationCountsImpl(
       recipientsByAnn[r.announcement_id]!.push(r.player_id);
     }
 
-    // Filter announcements visible to this player
-    const visibleAnnouncements = announcements.filter(ann => {
+    // Filter announcements visible to this player.
+    //
+    // When the recipient gate could not be resolved, surface NOTHING. An
+    // undercounted badge is recoverable and self-corrects on the next poll;
+    // showing a coach's targeted announcement to the whole roster is neither.
+    const visibleAnnouncements = recipientGateUnresolved ? [] : announcements.filter(ann => {
       const recipients = recipientsByAnn[ann.id];
       if (!recipients || recipients.length === 0) return true; // all team
       return recipients.includes(playerId);
