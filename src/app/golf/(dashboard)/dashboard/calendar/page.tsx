@@ -56,26 +56,66 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   let teamId: string | null = null;
 
   let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
+  /** DB error from the membership read — checked after the try/catch, not inside it. */
+  let playerTeamError: { message?: string; code?: string } | null = null;
   try {
     const [coachTeamId, playerTeamResult, coachListResult] = await Promise.all([
       orgId
         ? resolveCoachTeamIdWithCookie(supabase, orgId, coach?.id ?? null)
         : Promise.resolve(null),
+      // `.eq('status','active')` matches what the DASHBOARD LAYOUT already
+      // filters on. The two disagreed: the layout resolved "my team" from
+      // active memberships only, this page from any membership. That asymmetry
+      // is what would let the shell print the right team name in the header
+      // while the body underneath rendered an empty season — the worst possible
+      // presentation of the failure.
+      //
+      // It also removes the maybeSingle cardinality hazard: without the filter,
+      // a transferred player holding an old inactive row plus a new active one
+      // matches two rows, and maybeSingle synthesises PGRST116 client-side.
+      // (Not firing today — all 69 membership rows are active — but the same
+      // swallow on the same table was already a live bug in the join flow.)
       playerId
-        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
-        : Promise.resolve({ data: null }),
+        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       orgId
         ? supabase.from('golf_coaches').select('id, full_name, avatar_url').eq('organization_id', orgId).order('full_name', { ascending: true }).limit(20)
         : Promise.resolve({ data: null }),
     ]);
 
+    // Captured, not swallowed — checked immediately after this block. It cannot
+    // be checked in here, because the catch below would swallow its own throw
+    // and log the failure twice.
+    playerTeamError = playerTeamResult.error ?? null;
+
     teamId = coachTeamId || playerTeamResult.data?.team_id || null;
     coachList = coachListResult.data || [];
   } catch (error) {
     void logServerException(error, { action: 'calendar-load', route: '/golf/dashboard/calendar', source: 'server_component', sport: 'golf' }, 'warning');
-    // Team resolution failed (network/DB) — rendering an empty calendar here
-    // is indistinguishable from "my season got wiped" (audit finding #20).
-    // Throw so the route error boundary renders a real, retryable error state.
+    // Catches the NETWORK-layer exceptions supabase-js does throw (fetch
+    // failure, aborted request) and anything resolveCoachTeamIdWithCookie
+    // raises. It does NOT catch database errors — see below.
+    throw new Error('Failed to load your team for the calendar. Please try again.');
+  }
+
+  // The `error` is READ.
+  //
+  // The try/catch above was written to guard exactly this failure — its own
+  // comment said rendering an empty calendar "is indistinguishable from 'my
+  // season got wiped'" — but it was dead for the channel it guarded:
+  // supabase-js does not REJECT on a database error, it RESOLVES with
+  // `{ data: null, error }`. So a statement timeout, pool exhaustion or a
+  // PostgREST 5xx fell straight past the catch, teamId became null, the entire
+  // events block was skipped, and the player got a silent empty calendar —
+  // precisely the outcome that comment exists to prevent. `revalidate = 30`
+  // then cached the empty render for 30 seconds, so the swallow actively
+  // prolonged the bad state.
+  //
+  // The same file already gets this right for the events fetch further down
+  // (`if (eventsResult.error) throw`). This is that pattern applied to the read
+  // which gates it.
+  if (playerTeamError) {
+    void logServerException(playerTeamError, { action: 'calendar-load', route: '/golf/dashboard/calendar', source: 'server_component', sport: 'golf' }, 'warning');
     throw new Error('Failed to load your team for the calendar. Please try again.');
   }
 

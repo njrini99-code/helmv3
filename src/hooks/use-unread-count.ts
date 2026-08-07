@@ -26,11 +26,22 @@ export function useUnreadCount() {
     }
 
     try {
-      // Get all conversation IDs the user is part of
-      const { data: participantData } = await supabase
+      // Get all conversation IDs the user is part of.
+      // The `error` is READ: a failed read used to fall into the same branch as
+      // "this user is in no conversations" and set the badge to a confident 0.
+      // Same defect as the golf coach/player actions; this baseball instance
+      // was missed by the original report and found in verification.
+      const { data: participantData, error: participantError } = await supabase
         .from('baseball_conversation_participants')
         .select('conversation_id, last_read_at')
         .eq('user_id', user.id);
+
+      if (participantError) {
+        // Leave the badge at whatever it already showed rather than claiming
+        // zero. It self-corrects on the next poll.
+        setLoading(false);
+        return;
+      }
 
       if (!participantData || participantData.length === 0) {
         conversationIdsRef.current = new Set();
@@ -43,19 +54,28 @@ export function useUnreadCount() {
 
       // Count unread messages across all conversations
       let totalUnread = 0;
+      let countUnknown = false;
 
       for (const participant of participantData) {
-        const { count } = await supabase
+        const { count, error } = await supabase
           .from('baseball_messages')
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', participant.conversation_id)
           .neq('sender_id', user.id)
           .gt('created_at', participant.last_read_at || '1970-01-01');
 
-        totalUnread += count || 0;
+        if (error) {
+          countUnknown = true;
+          break;
+        }
+        totalUnread += count ?? 0;
       }
 
-      setUnreadCount(totalUnread);
+      // One unreadable conversation makes the TOTAL unknown — showing the
+      // partial sum as if it were complete is the same lie, just smaller.
+      if (!countUnknown) {
+        setUnreadCount(totalUnread);
+      }
     } catch (error) {
       console.error('Error fetching unread count:', error);
     } finally {

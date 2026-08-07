@@ -405,7 +405,16 @@ async function fetchTeamThread(admin: AdminClient, teamId: string): Promise<Enti
   if (!team) return EMPTY;
   const sport: 'golf' | 'baseball' = golfTeam ? 'golf' : 'baseball';
 
-  const teamUserIds = await resolveTeamUserIds(teamId).catch(() => new Set<string>());
+  // `.catch(() => new Set())` was SILENT. An empty id set skips the
+  // admin_events_users source entirely (see the length guard below), so a
+  // failed roster resolution renders as "this team has no user-scoped
+  // activity" rather than as unknown. Register the source in the failed case
+  // so it reaches degradedSources instead of vanishing.
+  let rosterResolutionFailed = false;
+  const teamUserIds = await resolveTeamUserIds(teamId).catch(() => {
+    rosterResolutionFailed = true;
+    return new Set<string>();
+  });
   const userIdList = Array.from(teamUserIds);
 
   const sources: Record<string, Runner> = {
@@ -422,7 +431,13 @@ async function fetchTeamThread(admin: AdminClient, teamId: string): Promise<Enti
     },
   };
 
-  if (userIdList.length > 0) {
+  if (rosterResolutionFailed) {
+    // Throws immediately — the runner's own error path files it under
+    // degradedSources, which is exactly the "we could not look" signal.
+    sources.admin_events_users = async () => {
+      throw new Error('team roster could not be resolved — user-scoped activity is unknown, not empty');
+    };
+  } else if (userIdList.length > 0) {
     sources.admin_events_users = async () => {
       const { data, error } = await admin
         .from('admin_events')

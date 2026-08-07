@@ -58,7 +58,19 @@ describe('ThemeScript (#1044)', () => {
     expect(document.documentElement).toHaveAttribute('data-fw-theme', 'dark');
   });
 
-  it.each(['/baseball/dashboard', '/golf/dashboard-preview'])(
+  it('boots the same saved theme on the Bridge — /admin shares the golf_theme key', () => {
+    window.history.replaceState({}, '', '/admin/errors');
+    window.localStorage.setItem('golf_theme', 'dark');
+
+    runBoot();
+
+    expect(document.documentElement).toHaveClass('dark');
+    expect(document.documentElement).toHaveAttribute('data-fw-theme', 'dark');
+  });
+
+  // '/administration' guards the /admin prefix test: the boot script matches
+  // the exact path or the '/admin/' prefix, never a bare startsWith('/admin').
+  it.each(['/baseball/dashboard', '/golf/dashboard-preview', '/administration'])(
     'does not apply a GolfHelm preference on %s',
     (pathname) => {
       window.history.replaceState({}, '', pathname);

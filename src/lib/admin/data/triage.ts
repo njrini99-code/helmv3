@@ -2,7 +2,7 @@ import 'server-only';
 import type { SentryIssue } from '@/lib/admin/sentry-api';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import {
-  fetchIncidentFeed,
+  cachedIncidentFeed,
   DEFAULT_INCIDENT_WINDOW_HOURS,
   type IncidentFeedCounts,
 } from '@/lib/admin/data/incident-feed';
@@ -11,6 +11,7 @@ import {
   extractActionName,
   extractCollapsedCount,
   extractRoute,
+  extractErrorCode,
 } from '@/lib/admin/incident-report';
 import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
 
@@ -165,6 +166,9 @@ export function mergeTriage(input: {
       message: issue.culprit,
       severity,
       source: 'sentry',
+      // Sentry issues carry no app metadata — explicit so the omission reads
+      // as deliberate rather than forgotten.
+      errorCode: null,
     });
     return {
     key: `sentry:${issue.id}`,
@@ -236,11 +240,15 @@ export function mergeTriage(input: {
     const stackTrace = mostRecentFirst.map((r) => r.stack_trace).find((s) => !!s) ?? null;
     const collapsedCount = bucket.rows.reduce((sum, r) => sum + extractCollapsedCount(r.metadata), 0);
 
+    const errorCode =
+      mostRecentFirst.map((r) => extractErrorCode(r.metadata)).find((c) => c !== null) ?? null;
+
     const classification = classifyIncident({
       title: last.title,
       message: last.message,
       severity: worst,
       source: last.source,
+      errorCode,
     });
 
     // REGRESSION: this fingerprint was resolved, and has fired again SINCE
@@ -350,6 +358,11 @@ export async function fetchTriageQueue(
   sentry: AdminFetchResult<SentryIssue[]>;
   counts: IncidentFeedCounts;
 }> {
-  const feed = await fetchIncidentFeed({ windowHours });
+  // Memoised per request: Overview's fetchOverviewSnapshot() asks for this
+  // exact same default-window feed on the same render. `windowHours` is
+  // always a number here (default parameter), so it keys against overview's
+  // `cachedIncidentFeed(DEFAULT_INCIDENT_WINDOW_HOURS)` — see the wrapper's
+  // doc comment for why the argument must stay primitive.
+  const feed = await cachedIncidentFeed(windowHours);
   return { items: feed.incidents, sentry: feed.sentry, counts: feed.counts };
 }

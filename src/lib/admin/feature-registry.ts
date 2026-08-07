@@ -119,6 +119,19 @@ export interface FeatureDef {
   actions: Record<string, 'ALL' | string[]>;
   primaryTable: string | null;
   heartbeatTable: string | null;
+  /**
+   * Timestamp column on `heartbeatTable` that means "this feature was used",
+   * when it is not `created_at`. Omit for the overwhelming majority.
+   *
+   * Exists because three features' activity genuinely lives in a differently
+   * named column — `baseball_event_acknowledgements.acknowledged_at`,
+   * `baseball_demo_sessions.entered_at` — and the alternative was repointing
+   * them at some unrelated table that happens to have a `created_at`, which
+   * measures a different feature. get_feature_health() validates the name
+   * against information_schema exactly as it does the table name
+   * (20260807020000).
+   */
+  heartbeatColumn?: string;
   tier: FeatureTier;
   seasonalEmpty: boolean;
   neverNeutral?: boolean;
@@ -949,8 +962,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/video-classes.ts': ['runClassConflictDetection', 'updateClassConflictDisposition'],
     },
-    primaryTable: 'baseball_video_class_conflicts',
-    heartbeatTable: 'baseball_video_class_conflicts',
+    primaryTable: 'baseball_class_conflicts',
+    // Repointed 2026-08-07: the class-conflict rows this feature exists to raise.
+    heartbeatTable: 'baseball_class_conflicts',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Classes actions complete without server errors.',
@@ -962,8 +976,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/daily-contract.ts': ['acknowledgeDailyContract'],
     },
-    primaryTable: 'baseball_daily_contract_acknowledgements',
-    heartbeatTable: 'baseball_daily_contract_acknowledgements',
+    primaryTable: 'baseball_player_daily_contracts',
+    // Repointed 2026-08-07: its actions touch this table 14x, more than everything else combined.
+    heartbeatTable: 'baseball_player_daily_contracts',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Coach Command Center actions complete without server errors.',
@@ -977,8 +992,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/baseball/actions/coachhelm-actions.ts': ['convertInsightToAction', 'recordActionOutcomes'],
       'src/app/baseball/actions/coachhelm.ts': ['runBaseballEngine'],
     },
-    primaryTable: 'baseball_insights',
-    heartbeatTable: 'baseball_insights',
+    primaryTable: 'baseball_coach_insights',
+    // Repointed 2026-08-07: the insight rows a coach actually sees; baseball_ai_audit is the call log, which ticks even when generation produces nothing.
+    heartbeatTable: 'baseball_coach_insights',
     tier: 'high',
     seasonalEmpty: false,
     healthSignal: 'Baseball CoachHelm actions complete without server errors.',
@@ -991,7 +1007,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/baseball/actions/acknowledgements.ts': ['acknowledgeEvent', 'getMyEventAcknowledgements', 'withdrawAcknowledgement'],
     },
     primaryTable: 'baseball_event_acknowledgements',
+    // Repointed 2026-08-07: acknowledging is the activity; the table has no created_at, and baseball_events would measure the calendar instead.
     heartbeatTable: 'baseball_event_acknowledgements',
+    heartbeatColumn: 'acknowledged_at',
     tier: 'high',
     seasonalEmpty: false,
     healthSignal: 'Baseball Command Center actions complete without server errors.',
@@ -1030,7 +1048,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/baseball/actions/demo-access.ts': ['enterBaseballDemo', 'isBaseballDemoAvailable', 'isBaseballDemoSession'],
     },
     primaryTable: 'baseball_demo_sessions',
+    // Repointed 2026-08-07: entering the demo IS the activity; the table has no created_at.
     heartbeatTable: 'baseball_demo_sessions',
+    heartbeatColumn: 'entered_at',
     tier: 'med',
     seasonalEmpty: false,
     healthSignal: 'Baseball Demo Access actions complete without server errors.',
@@ -1043,7 +1063,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/baseball/actions/demo-tracking.ts': ['getBaseballDemoSessions'],
     },
     primaryTable: 'baseball_demo_sessions',
+    // Repointed 2026-08-07: same table, same column.
     heartbeatTable: 'baseball_demo_sessions',
+    heartbeatColumn: 'entered_at',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Demo Tracking actions complete without server errors.',
@@ -1055,8 +1077,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/dev-plans.ts': ['completeGoal', 'completeGoalAsPlayer', 'getActiveDevPlan', 'getDevPlanForCoach', 'getPlayerDevPlans', 'uncompleteGoal', 'uncompleteGoalAsPlayer', 'updateGoalProgress'],
     },
-    primaryTable: 'baseball_player_development_plans',
-    heartbeatTable: 'baseball_player_development_plans',
+    primaryTable: 'baseball_developmental_plans',
+    // Repointed 2026-08-07: the real table name; the registry had it as baseball_player_development_plans.
+    heartbeatTable: 'baseball_developmental_plans',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Dev Plans actions complete without server errors.',
@@ -1125,8 +1148,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       // longer an exported server action of this file).
       'src/app/baseball/actions/insights.ts': ['dismissInsight', 'markInsightAddressed', 'submitInsightFeedback'],
     },
-    primaryTable: 'baseball_insights',
-    heartbeatTable: 'baseball_insights',
+    primaryTable: 'baseball_coach_insights',
+    // Repointed 2026-08-07: the only table its actions touch.
+    heartbeatTable: 'baseball_coach_insights',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Insights actions complete without server errors.',
@@ -1138,8 +1162,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/interests.ts': ['addToInterests', 'getPlayerInterests', 'removeFromInterests', 'updateInterestStatus'],
     },
-    primaryTable: 'baseball_player_interests',
-    heartbeatTable: 'baseball_player_interests',
+    primaryTable: 'baseball_recruiting_interests',
+    // Repointed 2026-08-07: the real table name.
+    heartbeatTable: 'baseball_recruiting_interests',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Interests actions complete without server errors.',
@@ -1166,8 +1191,16 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/baseball/actions/lifting-v11.ts': ['addLiftDay', 'addLiftPrescription', 'addLiftSection', 'addLiftWeek', 'completeLiftSession', 'createLiftFollowupTask', 'createLiftProgram', 'createStrengthGroup', 'deleteLiftDay', 'deleteLiftPrescription', 'deleteLiftSection', 'deleteLiftWeek', 'deleteStrengthGroup', 'duplicateLiftDay', 'duplicateLiftWeek', 'getLiveWeightRoomSnapshot', 'logBodyweight', 'logSetResult', 'markExerciseObserved', 'modifySessionExercise', 'previewDynamicGroup', 'publishLiftDay', 'recomputeDynamicGroup', 'reorderLiftPrescriptions', 'reorderLiftSections', 'saveProgramAsTemplate', 'saveSorenessMap', 'seedDefaultStrengthGroups', 'sendLiftQuickMessage', 'setAvailabilityStatus', 'setGroupMembers', 'setStrengthMax', 'startLiftSession', 'substituteSessionExercise', 'updateLiftDay', 'updateLiftPrescription', 'updateLiftProgram', 'updateLiftSection', 'updateStrengthGroup'],
       'src/app/baseball/actions/lifting.ts': ['createExercise', 'createLiftAssignment', 'logLiftResult', 'submitReadinessCheckin', 'updateAssignmentStatus'],
     },
-    primaryTable: 'baseball_lift_programs',
-    heartbeatTable: 'baseball_lift_programs',
+    // Deliberately null, NOT helm_lifting_sessions. primaryTable feeds
+    // TABLE_TO_FEATURE, which attributes an RLS denial to one owning feature —
+    // and the helm_lifting_* tables are the cross-sport store shared by golf,
+    // baseball and Lift Lab, so a denial there cannot be blamed on baseball.
+    // Heartbeat and ownership are different questions; only the first has an
+    // answer here. (Guarded by feature-registry.test.ts "never maps a crm_ or
+    // helm_lifting_ table".)
+    primaryTable: null,
+    // Repointed 2026-08-07: baseball lifting was superseded by the cross-sport helm_lifting_* model: ZERO baseball_lift_* tables exist in production and all three lifting action files write helm_lifting_*.
+    heartbeatTable: 'helm_lifting_sessions',
     tier: 'high',
     seasonalEmpty: false,
     healthSignal: 'Baseball Lifting actions complete without server errors.',
@@ -1179,8 +1212,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/lineups.ts': ['deleteLineup', 'getTeamLineups', 'saveLineup', 'updateLineup'],
     },
-    primaryTable: 'baseball_lineups',
-    heartbeatTable: 'baseball_lineups',
+    primaryTable: 'baseball_team_lineups',
+    // Repointed 2026-08-07: the real table name.
+    heartbeatTable: 'baseball_team_lineups',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Lineups actions complete without server errors.',
@@ -1257,8 +1291,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/player-actions.ts': ['updatePlayerActionStatus'],
     },
-    primaryTable: 'baseball_player_actions',
-    heartbeatTable: 'baseball_player_actions',
+    primaryTable: 'baseball_actions',
+    // Repointed 2026-08-07: the real table name.
+    heartbeatTable: 'baseball_actions',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Player Actions actions complete without server errors.',
@@ -1285,8 +1320,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/baseball/actions/passport-settings.ts': ['clearPassportFieldOverride', 'setPassportFieldVisibility', 'updatePassportVisibility'],
       'src/app/baseball/actions/player-today-lift.ts': ['getPlayerLiftTodaySummary'],
     },
-    primaryTable: 'baseball_daily_contracts',
-    heartbeatTable: 'baseball_daily_contracts',
+    primaryTable: 'baseball_player_daily_contracts',
+    // Repointed 2026-08-07: the daily contract IS the player-today surface.
+    heartbeatTable: 'baseball_player_daily_contracts',
     tier: 'high',
     seasonalEmpty: false,
     healthSignal: 'Baseball Player Today actions complete without server errors.',
@@ -1338,8 +1374,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/player-access.ts': ['activateRecruitingExposure', 'deactivateRecruitingExposure'],
     },
-    primaryTable: 'baseball_recruiting_exposure',
-    heartbeatTable: 'baseball_recruiting_exposure',
+    primaryTable: null,
+    // Repointed 2026-08-07: DELIBERATELY no heartbeat. Activating recruiting exposure flips columns on baseball_players; that table's created_at is when the PLAYER was created, which would report a healthy heartbeat for a feature nobody has touched in a year. An explicit no-signal is honest; a wrong signal is not.
+    heartbeatTable: null,
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Recruiting actions complete without server errors.',
@@ -1351,8 +1388,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/recruiting-philosophy.ts': ['calculateMatchScoresForPlayers', 'getPlayerPercentile', 'getPlayerPercentiles', 'getRecruitingPhilosophy', 'recalculatePercentiles', 'resetRecruitingPhilosophy', 'saveRecruitingPhilosophy', 'updateGeographicPreferences', 'updateMinimumStandards', 'updatePositionPriorities', 'updateRecruitingWeights', 'updateTargetGradYears'],
     },
-    primaryTable: 'baseball_recruiting_philosophy',
-    heartbeatTable: 'baseball_recruiting_philosophy',
+    primaryTable: 'baseball_coach_recruiting_philosophy',
+    // Repointed 2026-08-07: the real table name.
+    heartbeatTable: 'baseball_coach_recruiting_philosophy',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Recruiting Philosophy actions complete without server errors.',
@@ -1377,8 +1415,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/scout-packet.ts': ['getScoutPacketPreview', 'getScoutPacketRoster', 'listScoutPacketLinks', 'mintScoutPacketLink', 'relabelScoutPacketLink', 'resolveScoutPacketByToken', 'revokeScoutPacketLink'],
     },
-    primaryTable: 'baseball_scout_packet_links',
-    heartbeatTable: 'baseball_scout_packet_links',
+    primaryTable: 'baseball_player_passport_share_tokens',
+    // Repointed 2026-08-07: minting a share link is the activity; its actions touch this table 7x.
+    heartbeatTable: 'baseball_player_passport_share_tokens',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Scout Packet actions complete without server errors.',
@@ -1473,8 +1512,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/timeline-acks.ts': ['acknowledgeTimelineEvent', 'getMyTimelineAcknowledgements', 'withdrawTimelineAcknowledgement'],
     },
-    primaryTable: 'baseball_timeline_acknowledgements',
-    heartbeatTable: 'baseball_timeline_acknowledgements',
+    primaryTable: 'baseball_player_timeline_events',
+    // Repointed 2026-08-07: timeline events themselves; the acks table has no created_at and only measures reading, not writing.
+    heartbeatTable: 'baseball_player_timeline_events',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Timeline actions complete without server errors.',
@@ -1513,8 +1553,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/baseball/actions/watchlist.ts': ['addToWatchlist', 'addWatchlistNote', 'checkWatchlistStatus', 'removeFromWatchlist', 'toggleWatchlistPlayer', 'updateWatchlistPriority', 'updateWatchlistStatus'],
     },
-    primaryTable: 'baseball_watchlist',
-    heartbeatTable: 'baseball_watchlist',
+    primaryTable: 'baseball_watchlists',
+    // Repointed 2026-08-07: the real table name, plural.
+    heartbeatTable: 'baseball_watchlists',
     tier: 'low',
     seasonalEmpty: false,
     healthSignal: 'Baseball Watchlist actions complete without server errors.',
@@ -1562,9 +1603,17 @@ export function featureForTable(table: string): FeatureKey | null {
 }
 
 /** p_features payload for get_feature_health(jsonb) — excludes the CRM row. */
-export function rpcInput(): Array<{ key: FeatureKey; heartbeat_table: string | null }> {
+export function rpcInput(): Array<{
+  key: FeatureKey;
+  heartbeat_table: string | null;
+  heartbeat_column?: string;
+}> {
   return FEATURE_REGISTRY.filter((def) => !def.excluded).map((def) => ({
     key: def.key,
     heartbeat_table: def.heartbeatTable,
+    // Omitted entirely when absent — get_feature_health() defaults to
+    // created_at, so sending the key as undefined/null would be equivalent but
+    // noisier on the wire for ~80 descriptors that don't need it.
+    ...(def.heartbeatColumn ? { heartbeat_column: def.heartbeatColumn } : {}),
   }));
 }

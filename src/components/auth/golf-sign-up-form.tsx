@@ -20,7 +20,20 @@ function getSignupErrorMessage(error: string): string {
   if (lower.includes('invalid email') || lower.includes('validate email')) {
     return 'Please enter a valid email address.';
   }
-  if (lower.includes('weak password') || lower.includes('password')) {
+  // ONLY the raw GoTrue string is rewritten. The bare `includes('password')`
+  // that used to sit here matched the server's OWN messages, which are already
+  // written for end users, and replaced them with advice the client had already
+  // disproved: the form enforces length >= 8 before it ever submits, so
+  // "use at least 8 characters" can never be the real problem by the time this
+  // runs.
+  //
+  // It captured both real rejections verbatim — "Password must contain at least
+  // one special character (!@#$%^&*...)" and "…this one is too common or has
+  // appeared in a data breach." Measured in production: 16 signup-blocking
+  // events in three days, every one shown with remediation that could not work.
+  // Adding characters never fixes a missing symbol, and nothing fixes a breached
+  // password. That is an unwinnable loop at the first step of signup.
+  if (lower.includes('weak password')) {
     return 'Password does not meet the requirements. Please use at least 8 characters.';
   }
   if (lower.includes('network') || lower.includes('fetch')) {

@@ -26,7 +26,8 @@ interface ActionResult<T = void> {
 
 export interface CoachNotificationCounts {
   calendarNotifications: number;
-  unreadMessages: number;
+  /** NULL means UNKNOWN — a read failed. Not the same as "no unread messages". */
+  unreadMessages: number | null;
 }
 
 /**
@@ -81,22 +82,45 @@ async function getCoachNotificationCountsImpl(
 
     const calendarNotifications = calendarResult.count || 0;
 
-    // Count unread messages
-    let unreadMessages = 0;
+    // Count unread messages.
+    //
+    // `count || 0` mapped the error channel onto the empty-result value: on a
+    // failed read `count` is null, so a fault rendered as a confident "no
+    // unread messages". Each conversation is counted independently, so a
+    // partial failure produced a partially-wrong badge (2 instead of 7) with
+    // nothing to indicate it. A failed participants read is worse — it yields
+    // [], skipping the loop, and zeroes every conversation at once.
+    //
+    // `null` now means UNKNOWN, and the badge holds its previous value rather
+    // than dropping to zero. Deliberately NOT returning `{success:false}`: the
+    // note at the top of this file records that doing so makes
+    // observeActionSoftFailure persist a row on every 45-second poll for the
+    // life of a stale tab, which would flood the Bridge during exactly the
+    // outage this is meant to survive. For the same reason there is no new log
+    // line on this path.
+    let unreadMessages: number | null = 0;
+    const participantsError = conversationsResult.error != null;
     const participants = conversationsResult.data || [];
-    if (participants.length > 0) {
+
+    if (participantsError) {
+      unreadMessages = null;
+    } else if (participants.length > 0) {
       const counts = await Promise.all(
         participants.map(async (p) => {
-          const { count } = await supabase
+          const { count, error } = await supabase
             .from('golf_messages')
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', p.conversation_id)
             .neq('sender_id', viewerId)
             .gt('created_at', p.last_read_at || '1970-01-01');
-          return count || 0;
+          return error ? null : (count ?? 0);
         })
       );
-      unreadMessages = counts.reduce((sum, c) => sum + c, 0);
+      // One unreadable conversation makes the TOTAL unknown — reporting the
+      // partial sum as if it were complete is the same lie, just smaller.
+      unreadMessages = counts.some((c) => c === null)
+        ? null
+        : counts.reduce((sum: number, c) => sum + (c ?? 0), 0);
     }
 
     return {

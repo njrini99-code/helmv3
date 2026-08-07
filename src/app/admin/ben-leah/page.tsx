@@ -1,12 +1,34 @@
 import { GitPullRequest, ImageUp, Link2, MessageSquarePlus, Tags } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { Eyebrow, Surface, StatusPill } from '@/components/fairway';
+import { Eyebrow, Skeleton, SkeletonList, Surface, StatusPill } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { BenLeahForm } from './BenLeahForm';
 import { BenLeahIssueBoard } from './BenLeahIssueBoard';
 
 export const dynamic = 'force-dynamic';
+
+// BenLeahForm is a client component and so never suspends on first paint —
+// but its chunk CAN suspend on a soft navigation into /admin/ben-leah, which
+// is the only moment this fallback is reachable. Shaped like the bare <form>
+// it fronts (no Surface: the form renders its own outer element).
+const INTAKE_SKELETON = (
+  <div className="space-y-4">
+    <Skeleton className="h-3 w-28" />
+    <Skeleton className="h-10 w-full rounded-fw-md" />
+    <Skeleton className="h-10 w-full rounded-fw-md" />
+    <Skeleton className="h-32 w-full rounded-fw-md" />
+    <Skeleton className="h-10 w-40 rounded-fw-md" />
+  </div>
+);
+
+// The board opens with a StatusPill cluster, then the issue rows.
+const TRACKER_SKELETON = (
+  <div className="space-y-4">
+    <Skeleton className="h-6 w-56 rounded-full" />
+    <SkeletonList rows={5} />
+  </div>
+);
 
 export default async function BenLeahPage() {
   await requireSuperAdmin();
@@ -43,7 +65,7 @@ export default async function BenLeahPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <PanelBoundary title="Ben + Leah issue intake">
+        <PanelBoundary title="Ben + Leah issue intake" skeleton={INTAKE_SKELETON}>
           <BenLeahForm />
         </PanelBoundary>
 
@@ -100,7 +122,7 @@ export default async function BenLeahPage() {
         </aside>
       </div>
 
-      <PanelBoundary title="Issue tracker">
+      <PanelBoundary title="Issue tracker" skeleton={TRACKER_SKELETON}>
         <BenLeahIssueBoard />
       </PanelBoundary>
 

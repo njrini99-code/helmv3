@@ -2,11 +2,11 @@
  * ThemeScript — no-FOUC theme boot (GolfHelm).
  *
  * A tiny inline <script> rendered in the root document <head>. It runs BEFORE
- * first paint on a hard load of /golf/dashboard, reads the device-local theme
- * choice (the same `golf_theme` key `useGolfTheme` writes), resolves `system`
- * against the OS, and sets the `.dark` class + `data-fw-theme` on <html> so the
- * very first painted frame is already in the correct theme — no flash of the
- * light theme for dark-mode users.
+ * first paint on a hard load of /golf/dashboard or /admin, reads the
+ * device-local theme choice (the same `golf_theme` key `useGolfTheme` writes),
+ * resolves `system` against the OS, and sets the `.dark` class + `data-fw-theme`
+ * on <html> so the very first painted frame is already in the correct theme —
+ * no flash of the light theme for dark-mode users.
  *
  * Keeping this in the root document head is important: a raw script in a
  * nested layout is rendered by React during soft navigation, where it does not
@@ -26,7 +26,17 @@
 // tokens resolve to their LIGHT values regardless of preference, so a dark-mode
 // user got a full-screen light page for the length of the hold and then a flip
 // to espresso on arrival — the light flash simply moved rather than going away.
-const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome')return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}}catch(e){}})();`;
+//
+// `/admin` (Helm Bridge) joins the guard for the same reason and at almost no
+// cost: the console is already 629 `warm-*` token classes with zero `bg-white`,
+// zero hardcoded hex and zero `dark:` overrides, and the `.dark` block in
+// design-tokens.css already inverts that whole ramp. Note it was ALREADY
+// reachable in dark — soft-navigating from a dark dashboard into /admin leaves
+// the `.dark` class on <html> (nothing removes it), so the Bridge rendered dark
+// on that path and light on a hard load. This makes the two agree. The prefix
+// test is `p.indexOf('/admin/')!==0` plus an exact `/admin`, so a future
+// `/administration`-style route is NOT swept in.
+const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome'&&p!='/admin'&&p.indexOf('/admin/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}}catch(e){}})();`;
 
 export function ThemeScript() {
   return <script dangerouslySetInnerHTML={{ __html: BOOT }} suppressHydrationWarning />;

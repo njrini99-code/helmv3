@@ -240,13 +240,30 @@ describe('dashboard-data server actions', () => {
       expect(result.joinCode).toBe('EAGLE1');
     });
 
-    it('handles null team gracefully', async () => {
-      mockSingle.mockResolvedValue({ data: null, error: { message: 'not found' } });
+    it('handles a genuinely missing team gracefully', async () => {
+      // PGRST116 is what `.single()` ACTUALLY returns when the row is not there.
+      // The mock used to send an error with no code at all, which no real
+      // PostgREST response looks like — and that shape is now the signal for an
+      // infrastructure fault (see the next test), so the stub has to be honest
+      // about which of the two it is modelling.
+      mockSingle.mockResolvedValue({ data: null, error: { message: 'not found', code: 'PGRST116' } });
 
       const result = await getCoachDashboardData('coach-1', 'user-1', 'nonexistent');
 
       expect(result.teamName).toBeNull();
       expect(result.joinCode).toBeNull();
+    });
+
+    it('THROWS when the team lookup fails for an infrastructure reason', async () => {
+      // A timeout or lock wait is not "you have no team". Falling through to a
+      // null team renders the "Create or join a team" onboarding funnel, which
+      // tells an established paying coach their program does not exist and
+      // points them at a destructive next action. It must reach the route error
+      // boundary instead, which offers a retry.
+      mockSingle.mockResolvedValue({ data: null, error: { message: 'canceling statement due to statement timeout', code: '57014' } });
+
+      await expect(getCoachDashboardData('coach-1', 'user-1', 'real-team'))
+        .rejects.toThrow(/failed to load your team/i);
     });
 
     it('refuses a teamId the caller does not staff', async () => {

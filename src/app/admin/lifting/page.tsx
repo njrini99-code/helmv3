@@ -2,6 +2,7 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchLiftingTab, type LiftingSessionFeedRow } from '@/lib/admin/data/lifting';
 import { Surface, StatStrip, StatusPill, TrendChart } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -126,7 +127,7 @@ export default async function LiftingAdminPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh />
-      <PanelBoundary title="Lift Lab">
+      <PanelBoundary title="Lift Lab" skeleton={<PanelPageSkeleton rows={6} />}>
         <LiftingBody />
       </PanelBoundary>
     </div>

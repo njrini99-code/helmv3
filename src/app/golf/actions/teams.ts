@@ -37,6 +37,14 @@ export interface TeamData {
 
 export interface TeamValidationResult {
   canJoin: boolean;
+  /**
+   * The player is ALREADY on the team they are trying to join. Distinct from
+   * every other `canJoin: false`, because the caller treats it as SUCCESS —
+   * the desired end state already holds. Kept separate rather than folded into
+   * `canJoin: true` so the join never re-runs the INSERT and the coach never
+   * gets a duplicate "player joined" notification.
+   */
+  alreadyOnThisTeam?: boolean;
   reason?: string;
   currentTeam?: { id: string; name: string };
 }
@@ -177,18 +185,38 @@ async function validateGolfPlayerCanJoinTeamImpl(
     };
   }
 
-  // Check if already on any team via golf_team_members
-  const { data: existingMembership } = await supabase
+  // Check if already on any team via golf_team_members.
+  //
+  // NOT `.maybeSingle()`. There is no unique constraint on player_id alone, so
+  // maybeSingle() raises PGRST116 the moment a player has two rows — and the
+  // error was DISCARDED here (only `data` was destructured), leaving
+  // `existingMembership` null and this guard silently passing. The one-team
+  // rule is then enforced nowhere in this function, and the failure surfaces
+  // later as a raw constraint error. Take the rows and reason about them.
+  const { data: memberships, error: membershipError } = await supabase
     .from('golf_team_members')
     .select('team_id')
-    .eq('player_id', playerId)
-    .maybeSingle();
+    .eq('player_id', playerId);
+
+  if (membershipError) {
+    // Never guess on a failed read here: guessing "no memberships" lets a
+    // player join a second team, and guessing the opposite locks out a
+    // legitimate first join.
+    return {
+      canJoin: false,
+      reason: 'Could not verify your current team. Please try again.',
+    };
+  }
+
+  const existingMembership = memberships?.find((m) => m.team_id === teamId) ?? memberships?.[0] ?? null;
 
   if (existingMembership) {
-    // Check if already on this team
+    // Already on the team being joined — the CALLER treats this as success and
+    // sends the player to their dashboard. See the note in joinGolfTeamImpl.
     if (existingMembership.team_id === teamId) {
       return {
         canJoin: false,
+        alreadyOnThisTeam: true,
         reason: 'You are already a member of this team',
       };
     }
@@ -241,6 +269,23 @@ async function joinGolfTeamImpl(
 
   // Validate first
   const validation = await validateGolfPlayerCanJoinTeam(playerId, teamId, resolvedTeam);
+
+  // ALREADY ON THIS TEAM IS SUCCESS, NOT FAILURE. Joining has to be idempotent.
+  //
+  // Measured on production 2026-08-06: three BRAND-NEW players hit
+  // "You are already a member of this team" within minutes of signing up —
+  // shcurry0621@ signed up 18:24:10 and saw it at 18:25:21, 67 seconds later.
+  // The membership already exists by the time this runs (signup through a join
+  // link creates it), so the join link's own confirmation step then reported
+  // the correct end state as an error. The last thing a new paying customer saw
+  // on their way in was a red failure, on a team they were already on.
+  //
+  // Anything that lands the player on the team they asked for is a success —
+  // whether this call created the row or found it already there. Only a
+  // DIFFERENT team is a real conflict, and that keeps its own message.
+  if (validation.alreadyOnThisTeam) {
+    return { success: true, alreadyMember: true };
+  }
 
   if (!validation.canJoin) {
     return {
@@ -795,24 +840,61 @@ async function createTeamJoinRequestImpl(
     return { success: false, error: 'Please complete your player profile before requesting to join a team' };
   }
 
-  // Find team by join code (case-insensitive)
+  // Find team by join code (case-insensitive), through the SECURITY DEFINER
+  // RPC — NOT a direct read.
+  //
+  // A direct `.eq('join_code', …)` on golf_teams is unsatisfiable by
+  // construction for the only population this feature serves. The sole
+  // non-admin SELECT policy is
+  // `golf_teams_select USING (is_golf_team_coach(id) OR is_golf_team_player(id))`,
+  // and a prospective joiner is neither — RLS filters on which rows you already
+  // belong to, not on the literal you searched for. So the read returned zero
+  // rows, `.single()` raised PGRST116, and the player was told their correct
+  // code was invalid. There was no code they could type that worked, and the
+  // coach saw no request. Live since 2026-08-03, when migration
+  // 20260803120200 dropped the permissive `golf_teams_select_by_join_code`
+  // policy and moved resolution into this RPC; every sibling call site was
+  // migrated (join/[code]/page.tsx, processGolfTeamInvitation) and this one
+  // was missed. Verified by impersonation: as a prospective joiner the direct
+  // read returns 0 rows and the RPC returns 1; as an existing member the same
+  // direct read returns 1.
   const normalizedCode = joinCode.toUpperCase();
-  const { data: team, error: teamError } = await supabase
-    .from('golf_teams')
-    .select('id, name, organization_id')
-    .eq('join_code', normalizedCode)
-    .single();
+  const { data: teamRows, error: teamError } = await supabase
+    .rpc('golf_team_by_join_code', { p_code: normalizedCode });
 
-  if (teamError || !team) {
+  if (teamError) {
+    // A failed lookup is NOT a bad code. Telling the player to check their
+    // typing when the query itself broke sends them into a loop that cannot
+    // terminate, and leaves nothing in the incident queue.
+    await logServerError(
+      `[createTeamJoinRequest] golf_team_by_join_code failed: ${describeError(teamError)}`,
+      { action: 'teams.createTeamJoinRequest' },
+    );
+    return { success: false, error: 'Could not verify that code right now. Please try again.' };
+  }
+
+  const team = Array.isArray(teamRows) ? teamRows[0] : teamRows;
+
+  if (!team) {
     return { success: false, error: 'Invalid team code. Please check and try again.' };
   }
 
-  // Check if already on any team
-  const { data: existingMembership } = await supabase
+  // Check if already on any team.
+  //
+  // NOT `.maybeSingle()`: there is no unique constraint on player_id alone, so
+  // it raises PGRST116 as soon as a player has two rows — and discarding the
+  // error would silently disable this guard. Same defect that was fixed in
+  // validateGolfPlayerCanJoinTeam.
+  const { data: memberships, error: membershipError } = await supabase
     .from('golf_team_members')
     .select('team_id')
-    .eq('player_id', playerId)
-    .maybeSingle();
+    .eq('player_id', playerId);
+
+  if (membershipError) {
+    return { success: false, error: 'Could not verify your current team. Please try again.' };
+  }
+
+  const existingMembership = memberships?.find((m) => m.team_id === team.id) ?? memberships?.[0] ?? null;
 
   if (existingMembership) {
     if (existingMembership.team_id === team.id) {
@@ -882,8 +964,25 @@ async function createTeamJoinRequestImpl(
           read: false,
         }));
 
-        // Notification shape includes metadata field not in generated types
-        await fromUntyped(supabase, 'notifications').insert(notifications);
+        // ADMIN client, and the error is READ.
+        //
+        // `notifications_insert_own` is WITH CHECK (user_id = auth.uid()), so
+        // writing a row addressed to the COACH with the PLAYER's own client is
+        // refused every single time — and this call discarded the result, so
+        // the refusal was invisible. The player filed a request and was told it
+        // was sent; the coach was never told anything. Notifying another user is
+        // by definition a cross-user write and belongs on the service client.
+        const { error: notifyError } = await fromUntyped(createAdminClient(), 'notifications')
+          .insert(notifications);
+
+        if (notifyError) {
+          // A request nobody is told about is functionally a request that was
+          // never made — worth an incident, not silence.
+          await logServerError(
+            `[createTeamJoinRequest] coach notification insert failed: ${describeError(notifyError)}`,
+            { action: 'teams.createTeamJoinRequest', featureArea: 'teams' },
+          );
+        }
       }
     } catch (error) {
       // Don't fail the request if notification fails
@@ -1104,8 +1203,12 @@ async function acceptJoinRequestImpl(
 
   if (player?.user_id && team) {
     try {
-      // Notification shape includes 'data' and custom 'type' not in generated types
-      await fromUntyped(supabase, 'notifications').insert({
+      // ADMIN client — this row is addressed to the PLAYER, written by the
+      // COACH, and notifications_insert_own only permits user_id = auth.uid().
+      // With the caller's client this was refused every time and the refusal
+      // was discarded: the coach approved the request and the player was never
+      // told.
+      const { error: notifyError } = await fromUntyped(createAdminClient(), 'notifications').insert({
         user_id: player.user_id,
         type: 'team_join_approved',
         title: 'Request Approved!',
@@ -1117,6 +1220,13 @@ async function acceptJoinRequestImpl(
         },
         read: false,
       });
+
+      if (notifyError) {
+        await logServerError(
+          `[acceptJoinRequest] player notification insert failed: ${describeError(notifyError)}`,
+          { action: 'teams.acceptJoinRequest', featureArea: 'teams' },
+        );
+      }
     } catch (error) {
       // Don't fail the approval if notification fails
       await logServerError(
@@ -1226,8 +1336,10 @@ async function rejectJoinRequestImpl(
 
   if (player?.user_id && team) {
     try {
-      // Notification shape includes 'data' and custom 'type' not in generated types
-      await fromUntyped(supabase, 'notifications').insert({
+      // ADMIN client — see the note in acceptJoinRequest. Same cross-user
+      // write, same silent RLS refusal, same outcome: the player waited on an
+      // answer that had already been given.
+      const { error: notifyError } = await fromUntyped(createAdminClient(), 'notifications').insert({
         user_id: player.user_id,
         type: 'team_join_rejected',
         title: 'Request Not Approved',
@@ -1242,6 +1354,13 @@ async function rejectJoinRequestImpl(
         },
         read: false,
       });
+
+      if (notifyError) {
+        await logServerError(
+          `[rejectJoinRequest] player notification insert failed: ${describeError(notifyError)}`,
+          { action: 'teams.rejectJoinRequest', featureArea: 'teams' },
+        );
+      }
     } catch (error) {
       // Don't fail the rejection if notification fails
       await logServerError(
@@ -1340,11 +1459,15 @@ async function getPlayerJoinRequestsImpl(
   status: string;
   message: string | null;
   created_at: string;
+  // NULLABLE. This was declared non-null while the value was, in production,
+  // always null — the embed that produced it could not be read under RLS by a
+  // pending requester, and an `as unknown as` cast asserted otherwise. Callers
+  // must handle the absence.
   team: {
     id: string;
     name: string;
     organization?: { name: string } | null;
-  };
+  } | null;
 }>>> {
   const supabase = await createClient();
 
@@ -1365,42 +1488,53 @@ async function getPlayerJoinRequestsImpl(
     return { success: false, error: 'Player not found' };
   }
 
-  // Get requests with team details
-  const { data: requests, error: requestsError } = await fromUntyped(supabase, 'golf_team_join_requests')
-    .select(`
-      id,
-      status,
-      message,
-      created_at,
-      team:golf_teams (
-        id,
-        name,
-        organization:organizations (
-          name
-        )
-      )
-    `)
-    .eq('player_id', playerId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+  // Get the pending requests. The team is resolved SEPARATELY, not embedded.
+  //
+  // This used to embed `team:golf_teams(id, name, organization:organizations(name))`,
+  // which is RLS-blind in exactly the way the join-code read above was: a
+  // player with a PENDING request is by definition not yet a member, so
+  // golf_teams_select cannot see the row and the embed resolves to `team: null`.
+  // The `as unknown as` cast below then asserted `team` was non-null, hiding
+  // that from every later reader, and JoinTeamSection renders `request.team.name`
+  // — so the moment a request could actually be filed, the whole Settings page
+  // would have died with "Cannot read properties of null".
+  // `golf_my_join_requests` resolves the team and organization names inside a
+  // SECURITY DEFINER function, scoped internally to golf_players.user_id =
+  // auth.uid(), so it answers for the caller and nobody else.
+  const { data: requests, error: requestsError } = await supabase.rpc('golf_my_join_requests');
 
   if (requestsError) {
     return { success: false, error: 'Failed to fetch requests' };
   }
 
+  const rows = (requests ?? []) as Array<{
+    id: string;
+    status: string;
+    message: string | null;
+    created_at: string;
+    team_id: string;
+    team_name: string | null;
+    organization_name: string | null;
+  }>;
+
   return {
     success: true,
-    data: requests as unknown as Array<{
-      id: string;
-      status: string;
-      message: string | null;
-      created_at: string;
-      team: {
-        id: string;
-        name: string;
-        organization?: { name: string } | null;
-      };
-    }>,
+    data: rows.map((r) => ({
+      id: r.id,
+      status: r.status,
+      message: r.message,
+      created_at: r.created_at,
+      // Typed NULLABLE, deliberately. The previous shape asserted a non-null
+      // team through an `as unknown as` cast while the value was in fact always
+      // null here — the cast is what made the crash invisible.
+      team: r.team_name
+        ? {
+            id: r.team_id,
+            name: r.team_name,
+            organization: r.organization_name ? { name: r.organization_name } : null,
+          }
+        : null,
+    })),
   };
 }
 
@@ -1417,11 +1551,12 @@ export async function getPlayerJoinRequests(
   status: string;
   message: string | null;
   created_at: string;
+  // NULLABLE — see the note on getPlayerJoinRequestsImpl.
   team: {
     id: string;
     name: string;
     organization?: { name: string } | null;
-  };
+  } | null;
 }>>> {
   return observedGetPlayerJoinRequests(playerId);
 }

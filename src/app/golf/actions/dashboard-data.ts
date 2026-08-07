@@ -8,6 +8,8 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -49,7 +51,8 @@ export interface TeamPulseData {
     stable: number;
     declining: number;
     topMover?: { name: string; delta: number };
-    roundsThisWeek: number;
+    /** NULLABLE — null means the count query failed, which is not the same as zero rounds. */
+    roundsThisWeek: number | null;
 }
 
 export interface StrokesGainedSnapshot {
@@ -97,10 +100,19 @@ export interface CoachDashboardPayload {
      * surface a "couldn't load" notice instead of the cheerful empty state.
      */
     todayScheduleError: boolean;
+    /**
+     * True when a read behind the team KPIs failed — the roster fetch, or
+     * either of the round fetches. Same honesty rule as todayScheduleError:
+     * every one of those failures otherwise renders as "no data yet", which on
+     * a real roster is indistinguishable from a wiped season.
+     */
+    teamStatsUnavailable: boolean;
     stats: {
-        rosterSize: number;
-        upcomingEvents: number;
-        activeQualifiers: number;
+        // NULLABLE. A failed count is not a zero. `.count || 0` turned a
+        // 12-player roster into a confident "0" whenever the query errored.
+        rosterSize: number | null;
+        upcomingEvents: number | null;
+        activeQualifiers: number | null;
         teamScoringAverage: number | null;
         previousAverage: number | null;
     };
@@ -361,10 +373,54 @@ async function getCoachDashboardDataImpl(
             .limit(20),
     ]);
 
+    // A FAILED team read must not be reported as "you have no team".
+    //
+    // Only `.data` was read here. FairwayCoachDashboard renders the
+    // "Get your team set up" OnboardingSteps funnel whenever `team` is null, so
+    // one transient failure on this single query told the coach of an
+    // established, paying, 9-player program that they had no team and invited
+    // them to create one. That is the worst outcome in this whole family: not a
+    // wrong number, but a wrong answer to "does my team exist", pointing at a
+    // destructive next action.
+    //
+    // page.tsx:169-178 already documents the intended contract — "a real
+    // DB/network outage must SURFACE ... letting this throw only fires on a true
+    // failure" — and relies on getCoachDashboardData throwing. It did not. This
+    // makes that invariant true.
+    //
+    // PGRST116 is excluded deliberately: `.single()` raises it when the row
+    // genuinely is not there (a deleted team), and for that case the onboarding
+    // funnel IS the right screen. Everything else — timeout, lock wait, 5xx —
+    // goes to the route error boundary, which offers a retry.
+    if (teamResult.error && (teamResult.error as { code?: string }).code !== 'PGRST116') {
+        await logServerError(
+            `[getCoachDashboardData] team lookup failed: ${describeError(teamResult.error)}`,
+            { action: 'getCoachDashboardData', featureArea: 'coach_dashboard' },
+        );
+        throw new Error('Failed to load your team. Please try again.');
+    }
+
     const team = teamResult.data;
-    const rosterSize = rosterCountResult.count || 0;
-    const upcomingEvents = eventsCountResult.count || 0;
-    const activeQualifiers = qualifiersCountResult.count || 0;
+
+    // `.count || 0` collapsed the error channel into the same value as a
+    // legitimately empty result. On a PostgREST error `count` is null, so a
+    // failed query rendered a confident `0` — a 12-player roster reported as
+    // an empty program, with nothing logged and HTTP 200. The `.error` was
+    // never read on any of these.
+    //
+    // The realistic trigger is not a total outage (verifyTeamAccess probes and
+    // fails closed before this runs, so that path already reaches the error
+    // boundary) but a per-query LOCK wait: `authenticated` carries
+    // lock_timeout=8s, and this repo has recurring bulk UPDATEs on golf_events
+    // and a nightly CoachHelm deadlock. Either makes ONE of these counts return
+    // 55P03/57014 while the gate RPC, which reads an untouched table, succeeds.
+    const rosterCountError = rosterCountResult.error != null;
+    const eventsCountError = eventsCountResult.error != null;
+    const qualifiersCountError = qualifiersCountResult.error != null;
+
+    const rosterSize = rosterCountError ? null : (rosterCountResult.count ?? 0);
+    const upcomingEvents = eventsCountError ? null : (eventsCountResult.count ?? 0);
+    const activeQualifiers = qualifiersCountError ? null : (qualifiersCountResult.count ?? 0);
 
     // Today events + RSVP counts are now delivered fully-shaped by the
     // get_coach_today_schedule RPC above. Capture the RPC error explicitly: a
@@ -374,7 +430,12 @@ async function getCoachDashboardDataImpl(
     const todayScheduleError = todayEventsResult.error != null;
     const todayEvents: TodayEvent[] = (todayEventsResult.data as TodayEvent[] | null) ?? [];
 
-    // Extract players
+    // Extract players. The roster error is the highest-impact of these: a
+    // swallowed failure here empties playerIds, which skips the whole
+    // `if (playerIds.length > 0)` branch below and blanks EVERY derived KPI —
+    // Recent Rounds, Top Players, scoring average, GIR%, Putts/Rd and Team
+    // Pulse — as "no data yet" rather than "we could not load this".
+    const rosterFetchError = playersResult.error != null;
     const teamMembersData = playersResult.data as Array<{ player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }> | null;
     const players = teamMembersData?.map(tm => tm.player).filter((p): p is NonNullable<typeof p> => p !== null) || [];
     const playerIds = players.map(p => p.id);
@@ -392,6 +453,8 @@ async function getCoachDashboardDataImpl(
         rosterSize: { label: 'Roster Size', value: rosterSize, sparkline: [] },
     };
     const teamPulse: TeamPulseData = { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 };
+    /** True when a read behind the team KPIs failed — see teamStatsUnavailable. */
+    let roundsFetchError = false;
 
     if (playerIds.length > 0) {
         // Both round queries are paginated via fetchAllRowsResult so the FULL
@@ -493,8 +556,15 @@ async function getCoachDashboardDataImpl(
         // (team scoring average, top players, monthly trend, sparklines, team
         // pulse trend) reads the same corrected value without having to know
         // this correction exists.
+        // These two also discarded `.error`. fetchAllRowsResult DOES return it,
+        // and captureIfDenial only captures RLS denials — a lock wait or a
+        // statement timeout was returned here and then dropped, blanking team
+        // scoring average, GIR%, Putts/Rd, top players and Team Pulse even when
+        // the roster itself loaded fine.
+        roundsFetchError = recentRoundsResult.error != null || allRoundsResult.error != null;
+
         const allRounds = (allRoundsResult.data || []).map(withCanonicalRoundTotal);
-        teamPulse.roundsThisWeek = weekRoundsResult.count || 0;
+        teamPulse.roundsThisWeek = weekRoundsResult.error ? null : (weekRoundsResult.count ?? 0);
 
         if (allRounds.length > 0) {
             // Group rounds by player once — used by both top-players and team-pulse rollups.
@@ -742,9 +812,29 @@ async function getCoachDashboardDataImpl(
         updated_at: event.updated_at || new Date().toISOString(),
     }));
 
+    // LOG every one of these. Today they leave no trace at all — no toast, no
+    // error boundary, no log line, HTTP 200 — which is exactly why nobody can
+    // say how often this fires. The current silence is not evidence that it
+    // doesn't.
+    const failedReads = [
+        rosterCountError && `rosterCount: ${describeError(rosterCountResult.error)}`,
+        eventsCountError && `upcomingEventsCount: ${describeError(eventsCountResult.error)}`,
+        qualifiersCountError && `activeQualifiersCount: ${describeError(qualifiersCountResult.error)}`,
+        rosterFetchError && `roster: ${describeError(playersResult.error)}`,
+        roundsFetchError && 'rounds: recent/all round fetch failed',
+    ].filter(Boolean);
+
+    if (failedReads.length > 0) {
+        await logServerError(
+            `[getCoachDashboardData] ${failedReads.length} dashboard read(s) failed — ${failedReads.join(' | ')}`,
+            { action: 'getCoachDashboardData', featureArea: 'coach_dashboard' },
+        );
+    }
+
     return {
         todayEvents,
         todayScheduleError,
+        teamStatsUnavailable: rosterFetchError || roundsFetchError,
         stats: {
             rosterSize,
             upcomingEvents,

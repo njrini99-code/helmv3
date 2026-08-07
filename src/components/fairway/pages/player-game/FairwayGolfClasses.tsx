@@ -87,6 +87,11 @@ export interface FairwayPlayerClass {
   credits: number | null;
   color: string | null;
   notes: string | null;
+  /** Academic term, e.g. "Fall 2026" — see the note on the page's own
+   *  PlayerClass. Not rendered here; present so the two shapes stay
+   *  structurally identical, which is the only thing keeping the handler
+   *  props assignable between them. */
+  semester: string | null;
   team_id: string | null;
   created_at: string | null;
   updated_at: string | null;

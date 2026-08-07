@@ -129,7 +129,12 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
         if (result.success && result.data) {
           setAnnouncements(result.data.unreadAnnouncements);
           setTasks(result.data.pendingTasks);
-          setMessages(result.data.unreadMessages);
+          // null means the count could not be read. HOLD the previous value
+          // rather than dropping the badge to 0 — a confident "no unread
+          // messages" during a transient fault is how a player misses a message
+          // entirely. It self-corrects on the next 45s poll.
+          const nextUnread = result.data.unreadMessages;
+          setMessages((prev) => nextUnread ?? prev);
           setTravel(result.data.unseenTravel ?? 0);
           setCalendarNotifications(result.data.calendarNotifications ?? 0);
           setUnseenAnnouncements(result.data.unseenAnnouncements);
@@ -140,7 +145,12 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
           stopPolling();
           sessionExpiredThisPoll = true;
         } else if (result.success && result.data) {
-          setMessages(result.data.unreadMessages);
+          // null means the count could not be read. HOLD the previous value
+          // rather than dropping the badge to 0 — a confident "no unread
+          // messages" during a transient fault is how a coach misses a message
+          // entirely. It self-corrects on the next 45s poll.
+          const nextCoachUnread = result.data.unreadMessages;
+          setMessages((prev) => nextCoachUnread ?? prev);
           setCalendarNotifications(result.data.calendarNotifications);
           setAnnouncements(0);
           setTasks(0);
