@@ -8,22 +8,25 @@
  * to a feature whose heartbeat is healthy.
  *
  * Found 2026-08-06 while sizing migration 20260806030000 (which taught the RPC
- * to accept `baseball\_%` heartbeats at all): of the 39 distinct baseball
- * heartbeat tables in the registry, 14 name a table that does not exist in the
- * database and 2 more name a table with no `created_at` column. Several are
- * near-misses of a real table — `baseball_watchlist` vs `baseball_watchlists`,
- * `baseball_video_class_conflicts` vs `baseball_class_conflicts` — which is
- * what a rename with no compile-time link to the schema looks like six months
- * on. `heartbeatTable` is typed `string | null`, so nothing caught it.
+ * to accept `baseball\_%` heartbeats at all): 18 of the 43 baseball features
+ * named a heartbeat that could never resolve — 15 pointing at a table that did
+ * not exist (14 distinct names) and 3 at a real table with no `created_at`.
+ * Many were near-misses of a real table — `baseball_watchlist` vs
+ * `baseball_watchlists`, `baseball_video_class_conflicts` vs
+ * `baseball_class_conflicts` — which is what a rename with no compile-time link
+ * to the schema looks like six months on. `heartbeatTable` is typed
+ * `string | null`, so nothing caught any of it.
  *
- * The broken entries are recorded below rather than guessed at. Repointing a
- * heartbeat decides what a feature's health MEANS, and a wrong guess is worse
- * than the current NULL: it makes a feature look healthy on an unrelated
- * table's writes. (`baseball_lift_programs` -> `baseball_program_settings` was
- * the closest textual match and is plainly wrong.) They need a domain call.
+ * All 18 were repointed on 2026-08-07, each to the table that feature's OWN
+ * server actions write — counted from the action manifest in its own registry
+ * entry, which is evidence, rather than from name similarity, which is a guess.
+ * (The closest textual match for `baseball_lift_programs` was
+ * `baseball_program_settings`, and it is plainly wrong; the real answer was
+ * `helm_lifting_sessions`.) The three with a differently named timestamp got
+ * `heartbeatColumn` instead of being repointed at an unrelated table that
+ * happens to have a `created_at`, which would measure a different feature.
  *
- * What this test does enforce: no NEW drift. Add a heartbeat table that does
- * not exist and this fails.
+ * What this test enforces now: no NEW drift, in either field.
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
@@ -52,21 +55,15 @@ function knownTables(): Set<string> {
  * `heartbeatTable: null` deliberately, which is an honest "no signal" rather
  * than an accidental one). Shrink this list; never grow it.
  */
-const HEARTBEAT_DEBT = new Set([
-  'baseball_daily_contract_acknowledgements',
-  'baseball_daily_contracts',
-  'baseball_insights',
-  'baseball_lift_programs',
-  'baseball_lineups',
-  'baseball_player_actions',
-  'baseball_player_development_plans',
-  'baseball_player_interests',
-  'baseball_recruiting_exposure',
-  'baseball_recruiting_philosophy',
-  'baseball_scout_packet_links',
-  'baseball_timeline_acknowledgements',
-  'baseball_video_class_conflicts',
-  'baseball_watchlist',
+const HEARTBEAT_DEBT = new Set<string>([
+  // Empty — all 18 were repointed on 2026-08-07, each to the table that
+  // feature's OWN server actions write (counted from the action manifest in
+  // its registry entry, not guessed from name similarity). `baseball_lifting`
+  // went to helm_lifting_sessions after production confirmed ZERO
+  // baseball_lift_* tables exist; `baseball_recruiting` went to null on
+  // purpose, because its only table is baseball_players and that created_at
+  // means "when the player was created", which would report a healthy
+  // heartbeat for a feature nobody has touched.
 ]);
 
 describe('feature registry heartbeats point at real tables', () => {
@@ -107,6 +104,42 @@ describe('feature registry heartbeats point at real tables', () => {
       `These are in HEARTBEAT_DEBT but the table now EXISTS. Delete them from ` +
         `the list so the guard covers them:\n${stale.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('every heartbeatColumn is a real column of that feature\'s heartbeat table', () => {
+    // get_feature_health() gates the column against information_schema exactly
+    // as it does the table, so a typo here does not error — it resolves NULL
+    // and silently disables the staleness rule, the same failure the table
+    // typos caused. Checked against the generated types so it fails at test
+    // time rather than in production silence.
+    const src = fs.readFileSync(path.join(process.cwd(), 'src/lib/types/database.ts'), 'utf8');
+    const bad: string[] = [];
+    for (const f of FEATURE_REGISTRY) {
+      if (!f.heartbeatColumn) continue;
+      if (!f.heartbeatTable) {
+        bad.push(`${f.key}: heartbeatColumn set but heartbeatTable is null`);
+        continue;
+      }
+      // Narrow to that table's own generated block before looking for the column.
+      const block = new RegExp(
+        `^ {6}${f.heartbeatTable}: \\{[\\s\\S]*?\\n {6}\\}`,
+        'm',
+      ).exec(src)?.[0];
+      if (!block) {
+        bad.push(`${f.key}: table ${f.heartbeatTable} not found in generated types`);
+      } else if (!new RegExp(`\\b${f.heartbeatColumn}\\??:`).test(block)) {
+        bad.push(`${f.key}: ${f.heartbeatTable} has no column ${f.heartbeatColumn}`);
+      }
+    }
+    expect(bad, bad.join('\n')).toEqual([]);
+  });
+
+  it('the heartbeatColumn guard is non-vacuous — it finds the real ones', () => {
+    // If the block regex silently matched nothing, the test above would pass
+    // while checking zero features. Three features carry a column today.
+    const withColumn = FEATURE_REGISTRY.filter((f) => f.heartbeatColumn);
+    expect(withColumn.length).toBeGreaterThanOrEqual(3);
+    expect(withColumn.map((f) => f.heartbeatColumn).sort()).toContain('entered_at');
   });
 
   it('every debt entry is actually referenced by the registry', () => {
