@@ -15,6 +15,7 @@ import noArbitraryTextPx from "./eslint-rules/no-arbitrary-text-px.mjs";
 import noBannedColor from "./eslint-rules/no-banned-color.mjs";
 import noArbitraryRadius from "./eslint-rules/no-arbitrary-radius.mjs";
 import noArbitraryBgWhite from "./eslint-rules/no-arbitrary-bg-white.mjs";
+import noUncheckedSupabaseError from "./eslint-rules/no-unchecked-supabase-error.mjs";
 
 // Downgrade every `error`-severity rule in a flat-config rules object to
 // `warn`. Used by W0 to ship the jsx-a11y recommended set + the six
@@ -65,6 +66,7 @@ export default tseslint.config(
           "no-banned-color": noBannedColor,
           "no-arbitrary-radius": noArbitraryRadius,
           "no-arbitrary-bg-white": noArbitraryBgWhite,
+          "no-unchecked-supabase-error": noUncheckedSupabaseError,
         },
       },
     },
@@ -87,6 +89,22 @@ export default tseslint.config(
       "helm/no-banned-color": "warn",
       "helm/no-arbitrary-radius": "warn",
       "helm/no-arbitrary-bg-white": "warn",
+
+      // 2026-08-07 code-red: a failed Supabase read must not render as an
+      // empty one. 15 instances of that were fixed across 12 files in a day.
+      //
+      // OFF here ON PURPOSE. `npm run lint` runs with --max-warnings 0 and is
+      // a hard CI gate, and this rule currently finds 1,111 call sites — so
+      // switching it on globally would fail the Lint job on every PR in the
+      // repo. That is a decision about how much debt to service, not one to
+      // slip in with a bug fix.
+      //
+      // It runs instead as a RATCHET: `npm run audit:supabase-errors` counts
+      // the violations and fails only if the number goes UP
+      // (.supabase-error-baseline.json). New code cannot add unchecked reads;
+      // the existing 1,111 can be paid down directory by directory, and the
+      // baseline lowered as they are. Flip this to "warn" once it reaches 0.
+      "helm/no-unchecked-supabase-error": "off",
     },
   },
   {
