@@ -231,8 +231,28 @@ export default function GolfClassesPage() {
   const handleDeleteClass = async () => {
     if (!selectedClass) return;
 
-    // Remove from calendar first
-    await removeClassFromCalendar(selectedClass.id);
+    // Remove from calendar FIRST, and only delete the class if that worked.
+    //
+    // The result used to be dropped and the class row deleted regardless. Once
+    // the row is gone nothing in any UI can target its `[class:<id>]` tag
+    // again, so the event series is stranded: the coach keeps seeing
+    // un-attributed phantom class blocks on the team calendar forever, and the
+    // player who caused it can never see them at all (attributeClassEvents
+    // hides class events whose owner cannot be resolved from every player).
+    // Meanwhile the player was told "Removed from your schedule and calendar."
+    //
+    // Keeping the class row on failure is what makes a retry possible — the
+    // server already treats a re-run as orphan cleanup, so pressing Delete
+    // again is safe and is the recovery path.
+    const removal = await removeClassFromCalendar(selectedClass.id);
+
+    if (!removal?.success) {
+      showToast(
+        `Couldn't remove this class from your calendar: ${removal?.error ?? 'Unknown error'}. The class was kept so you can try again.`,
+        'error',
+      );
+      return;
+    }
 
     // Then delete the class
     const { error } = await supabase
@@ -426,23 +446,42 @@ export default function GolfClassesPage() {
     if (!playerId) return;
     setDeletingAll(true);
     try {
-      // Delete all calendar events for these classes
-      const classIds = classes.map(c => c.id);
-      for (const classId of classIds) {
-        await removeClassFromCalendar(classId);
+      // Remove each class's calendar events, and REMEMBER which ones worked.
+      //
+      // This loop discarded every result and was then followed by one bulk
+      // `.eq('player_id', …)` delete, so a single transient failure inside a
+      // six-class loop stranded that class's whole event series while the toast
+      // announced "Your schedule and calendar are clear." Only classes whose
+      // events actually came off the calendar are deleted now; the rest stay so
+      // the player can retry them.
+      const removed: string[] = [];
+      const failed: string[] = [];
+      for (const cls of classes) {
+        const result = await removeClassFromCalendar(cls.id);
+        if (result?.success) removed.push(cls.id);
+        else failed.push(cls.class_name || 'A class');
       }
 
-      // Delete all classes
-      const { error } = await supabase
-        .from('golf_player_classes')
-        .delete()
-        .eq('player_id', playerId);
+      if (removed.length > 0) {
+        const { error } = await supabase
+          .from('golf_player_classes')
+          .delete()
+          .in('id', removed);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       await fetchClasses();
       setShowDeleteAllConfirm(false);
-      fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });
+
+      if (failed.length > 0) {
+        showToast(
+          `${removed.length} deleted. ${failed.length} could not be removed from your calendar and ${failed.length === 1 ? 'was' : 'were'} kept so you can try again: ${failed.slice(0, 3).join(', ')}`,
+          'error',
+        );
+      } else {
+        fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });
+      }
     } catch (_err) {
       showToast('Error deleting classes. Please try again.', 'error');
     } finally {
