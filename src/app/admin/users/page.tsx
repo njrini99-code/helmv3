@@ -459,7 +459,13 @@ export default async function UsersPage({
             </Button>
           ) : null}
           {team ? (
-            <span className="font-fw-mono text-xs text-warm-500">filtered to team {team}</span>
+            // Name, not the raw uuid — the operator arrived here by clicking a
+            // team by name, and a 36-char id tells them nothing about which
+            // filter is active. Falls back to the id if the filtered team
+            // isn't in this page's team set.
+            <span className="text-xs text-warm-500">
+              filtered to team {tab.teams.find((t) => t.teamId === team)?.name ?? team}
+            </span>
           ) : null}
           {sport ? (
             <span className="font-fw-mono text-xs text-warm-500">sport {sport}</span>
@@ -520,7 +526,9 @@ export default async function UsersPage({
           </div>
         </Surface>
 
-        <Surface padding="sm" className="border-fw-warning/40">
+        {/* The amber hairline is a SIGNAL, not chrome — an always-warning card
+            wrapped around an all-clear state trains the eye to ignore it. */}
+        <Surface padding="sm" className={cn(tab.atRisk.length > 0 && 'border-fw-warning/40')}>
           <SectionLabel>At-risk accounts ({tab.atRisk.length})</SectionLabel>
           <div className="mt-3">
             {tab.atRisk.length === 0 ? (

@@ -22,25 +22,31 @@
 --     tables, so all 43 registry rows whose heartbeatTable is a baseball_*
 --     table (39 distinct tables) resolved to NULL. A NULL heartbeat makes
 --     computeFeatureStatus() skip the staleness rule outright
---     (feature-health.ts:210) — meaning NO BaseballHelm feature could EVER go
+--     (feature-health.ts:214) — meaning NO BaseballHelm feature could EVER go
 --     amber on a dead heartbeat, however long its table had gone unwritten.
---     Ten of the 43 are tier 'high' (6h threshold): baseball_coachhelm,
---     baseball_command_center, baseball_games, baseball_import,
---     baseball_lifting, baseball_messages, baseball_player_today,
---     baseball_practice, baseball_signals, baseball_stats.
 --
---     BLAST RADIUS, measured against production 2026-08-06 rather than
---     estimated. Of the 39 distinct baseball heartbeat tables:
---       - 16 have no `created_at` column at all, so the EXISTS gate below
---         still resolves them NULL. Those features remain unable to go amber
---         on heartbeat, and nothing on the board will say why. Fixing that
---         means either adding the column or repointing the registry entry —
---         a separate change, listed here so it is not mistaken for done.
---       -  5 of the remaining 23 are empty tables (MAX(created_at) IS NULL),
---         which also stays NULL. No change.
---       - 18 carry data, and ALL 18 are already past the 6h 'high' threshold;
---         15 are past 7 days. So expect up to 18 baseball dots to move
---         green -> amber the first time this runs.
+--     BLAST RADIUS, measured against production 2026-08-06 per feature and
+--     against that feature's OWN tier threshold (TIER_THRESHOLDS in
+--     feature-registry.ts: high 6h, med 72h, low 336h — a uniform 6h reading
+--     badly overstates this). Of the 43 registry features with a baseball_*
+--     heartbeat:
+--       - 18 point at a table this migration still cannot resolve, so they
+--         stay NULL and remain unable to go amber. 15 of those 18 name a table
+--         that DOES NOT EXIST in the schema (14 distinct names, mostly
+--         near-miss typos: baseball_watchlist vs baseball_watchlists,
+--         baseball_lineups vs baseball_team_lineups, baseball_insights vs
+--         baseball_coach_insights); the other 3 name a real table that lacks
+--         the column (2 distinct: baseball_event_acknowledgements has
+--         acknowledged_at, baseball_demo_sessions has entered_at). So for the
+--         large majority the remedy is a REGISTRY
+--         TYPO FIX, not a schema change — recorded as debt with a drift guard
+--         in src/test/lib/admin/feature-registry-heartbeats.test.ts. Four of
+--         the ten tier-'high' baseball features are in this group
+--         (baseball_coachhelm, baseball_command_center, baseball_lifting,
+--         baseball_player_today), so they are NOT fixed by this migration.
+--       - Of the 25 that CAN now resolve: 5 sit on empty tables (MAX is NULL,
+--         no change), 5 are inside their threshold and stay green, and
+--         15 are past it and move green -> amber on first run.
 --
 --     That is the defect being fixed, not a regression: those dots were green
 --     because the signal was missing, not because it was good. Features with
@@ -53,6 +59,15 @@
 --     is already baseball-prefixed. Add the pattern in the same commit as the
 --     first lift_* heartbeatTable, not before; an allowlist entry with no
 --     caller is only attack surface on a dynamic-SQL path.
+--
+--     SEPARATE FINDING, surfaced by the same measurement and NOT addressed
+--     here: `baseball_lift_programs` is CREATED by
+--     20260624000063_baseball_v11_premium_lifting.sql:185 yet does not exist
+--     in production (information_schema returns 0 rows) and is absent from
+--     src/lib/types/database.ts. That is an unapplied migration or a partially
+--     applied one, not a registry typo, and it needs its own investigation —
+--     `schema_migrations` has recorded migrations as applied in this project
+--     that never ran.
 
 CREATE OR REPLACE FUNCTION public.get_feature_health(p_features jsonb) RETURNS jsonb
     LANGUAGE plpgsql STABLE SECURITY DEFINER

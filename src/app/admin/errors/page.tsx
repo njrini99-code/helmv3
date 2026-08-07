@@ -224,7 +224,7 @@ export default async function ErrorsPage({
           </Surface>
         ) : null}
         {showWiderWindowHint ? (
-          <Surface padding="sm" className="border border-warning/30 bg-warning/5">
+          <Surface padding="sm" className="border border-fw-warning/30 bg-fw-warning/5">
             <p className="text-body-sm text-warm-800">
               Nothing in the last {filters.windowHours}h
               {filters.sport ? ` for sport=${filters.sport}` : ''}, but there are unresolved incidents in the last 7 days

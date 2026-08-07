@@ -272,11 +272,16 @@ function SignalBoard({
           <div className="mt-3 space-y-2">
             {activity.map(([label, value, href]) => {
               const pct = totalActivity > 0 ? Math.round((value / totalActivity) * 100) : 0;
+              // `-mx-2 px-2 py-2`: this is a tap target on the Bridge's most
+              // phone-primary surface, and at py-0 it was a ~20px strip whose
+              // hover tint clipped hard against the text. Same negative-margin
+              // bleed the briefing strip above uses, so the label stays aligned
+              // with the section heading.
               return (
                 <Link
                   key={label}
                   href={href}
-                  className="grid grid-cols-[72px_1fr_44px] items-center gap-2 rounded-fw-md transition-colors hover:bg-surface-sunken"
+                  className="-mx-2 grid grid-cols-[72px_1fr_44px] items-center gap-2 rounded-fw-md px-2 py-2 transition-colors hover:bg-surface-sunken"
                 >
                   <span className="text-caption text-warm-600">{label}</span>
                   <span className="h-2 overflow-hidden rounded-full bg-warm-100">

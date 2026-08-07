@@ -1,6 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchJobsTab, type CronBoardRow, type CronRunSummary, type IntegrityRow, type InngestHealth } from '@/lib/admin/data/jobs';
-import { Surface, Inset, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
+import { Surface, Inset, StatTile, StatusPill, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
@@ -206,7 +206,7 @@ function CronJobCard({ row }: { row: CronBoardRow }) {
  * rows tucked behind a collapsed disclosure so 18 registry entries don't
  * blow the ~3-screen-height scroll budget.
  */
-function CronBoardCards({ rows }: { rows: CronBoardRow[] }) {
+function CronBoardCards({ rows, unreadable }: { rows: CronBoardRow[]; unreadable: readonly string[] }) {
   const alarmRows = rows.filter((r) => r.status === 'overdue' || r.status === 'failed');
   const restRows = rows.filter((r) => r.status !== 'overdue' && r.status !== 'failed');
 
@@ -218,6 +218,14 @@ function CronBoardCards({ rows }: { rows: CronBoardRow[] }) {
             <CronJobCard key={row.jobType} row={row} />
           ))}
         </div>
+      ) : unreadable.length > 0 ? (
+        // An all-clear is a CLAIM — the rule the Overview briefing strip already
+        // follows. A job whose run history could not be read is UNKNOWN, not "on
+        // schedule", so it never gets folded into the green count.
+        <PanelNoData
+          label={`${rows.length - unreadable.length} of ${rows.length} cron jobs on schedule`}
+          description={`${unreadable.length} could not be read this refresh — unknown, not healthy.`}
+        />
       ) : (
         <PanelAllClear label={`All ${rows.length} cron jobs on schedule`} checkedAt={new Date().toISOString()} />
       )}
@@ -244,7 +252,7 @@ function CronBoardCards({ rows }: { rows: CronBoardRow[] }) {
  * pan on a 390px phone, which is exactly the treatment MOBILE_DOCTRINE rule
  * 8 rules out for a phone-primary reading surface.
  */
-function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
+function CronBoardTable({ rows, unreadable }: { rows: CronBoardRow[]; unreadable: readonly string[] }) {
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
@@ -294,7 +302,7 @@ function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
         </table>
       </div>
       <div className="md:hidden">
-        <CronBoardCards rows={rows} />
+        <CronBoardCards rows={rows} unreadable={unreadable} />
       </div>
     </>
   );
@@ -442,8 +450,17 @@ async function JobsBody() {
           A job with no row yet reads &ldquo;awaiting first run&rdquo; (neutral) — never a red alarm until it has
           actually missed its schedule.
         </p>
+        {/* jobs.ts degrades per-job so one unreadable query can't take the whole
+            board down — but it NAMES those jobs, and dropping the name here is
+            exactly what turns "we could not look" into a benign grey chip. */}
+        {tab.unreadableJobs.length > 0 ? (
+          <InlineNotice tone="warning" title="Some jobs could not be read" className="mt-3">
+            {tab.unreadableJobs.join(', ')} — the run-history query failed this refresh, so these rows fall back to
+            &ldquo;never-ran&rdquo;. Treat that as unknown, not healthy. Reload to retry.
+          </InlineNotice>
+        ) : null}
         <div className="mt-3">
-          <CronBoardTable rows={tab.board} />
+          <CronBoardTable rows={tab.board} unreadable={tab.unreadableJobs} />
         </div>
       </Surface>
 
