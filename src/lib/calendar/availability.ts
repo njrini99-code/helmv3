@@ -392,11 +392,11 @@ function weekdayIndex(dayCode: string): number | null {
  * Expand a recurring class schedule into individual busy periods.
  *
  * ONLY used for a class with no synced calendar occurrences — a synced class
- * already contributed its real rows. Bounded to the class's own term: a weekly
- * rule with no end date would otherwise mark a player busy every Monday
- * forever, including over the summer, and quietly break "find a time". A class
- * whose `semester` is unreadable therefore expands to NOTHING rather than to a
- * guess (legacy rows predate the column being persisted).
+ * already contributed its real rows. Clamped to the class's own term where one
+ * is readable, so a weekly rule does not mark a player busy every Monday
+ * forever including over the summer. Where the term is NOT readable it still
+ * expands across the caller's query window — see the note at the clamp below
+ * for why refusing was worse than guessing here.
  */
 function expandRecurringClass(
   cls: GolfPlayerClass,
@@ -409,17 +409,29 @@ function expandRecurringClass(
     return periods;
   }
 
-  const term = parseSemesterDates(cls.semester);
-  if (!term) return periods;
-
   const daysOfWeek = new Set(
     cls.days.map(weekdayIndex).filter((d): d is number => d !== null)
   );
   if (daysOfWeek.size === 0) return periods;
 
-  // Clamp the walk to the intersection of the query window and the term.
-  const termStart = new Date(`${term.start}T00:00:00`);
-  const termEnd = new Date(`${term.end}T23:59:59`);
+  // A readable term clamps the walk. An unreadable one does NOT abort it.
+  //
+  // This used to `return periods` when `parseSemesterDates` came back null, on
+  // the reasoning that expanding without a term is a guess. The measurement
+  // that reasoning was missing: ALL 43 golf_player_classes rows in production
+  // have `semester = NULL`, so the early return fired every single time and
+  // class-conflict detection was dead platform-wide — "find a time" happily
+  // scheduled a coach on top of every player's lecture, silently.
+  //
+  // Expanding is not unbounded: `timeMin`/`timeMax` are the caller's own query
+  // window (a week, a month), so the worst case is a class that ended last term
+  // still reading as busy — a visible, correctable wrong answer. Refusing to
+  // expand is an invisible one, and on a scheduling surface a missed conflict
+  // is the more expensive of the two. Rows written from now on carry a real
+  // semester (both save paths persist it), so this fallback shrinks over time.
+  const term = parseSemesterDates(cls.semester);
+  const termStart = term ? new Date(`${term.start}T00:00:00`) : timeMin;
+  const termEnd = term ? new Date(`${term.end}T23:59:59`) : timeMax;
   const current = new Date(Math.max(timeMin.getTime(), termStart.getTime()));
   const until = new Date(Math.min(timeMax.getTime(), termEnd.getTime()));
 

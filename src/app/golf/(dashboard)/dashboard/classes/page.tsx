@@ -29,6 +29,15 @@ interface PlayerClass {
   credits: number | null;
   color: string | null;
   notes: string | null;
+  /**
+   * Academic term, e.g. "Fall 2026". Drives the calendar sync's occurrence
+   * window and the availability fallback. This field was MISSING from this
+   * interface while both save paths below were already writing the column —
+   * which is how the edit handler came to carry a comment asserting semester
+   * "is not persisted on golf_player_classes" and re-deriving the current term
+   * on every edit. The type was the evidence, and the type was wrong.
+   */
+  semester: string | null;
   team_id: string | null;
   created_at: string | null;
   updated_at: string | null;
@@ -135,17 +144,35 @@ export default function GolfClassesPage() {
 
     // Sync to calendar (timezoneOffset so class times store as local wall-time,
     // matching the event timestamp convention — not UTC wall-time)
+    // The sync's RESULT decides what we claim. This used to be a bare `await`
+    // with the return value dropped on the floor, followed unconditionally by
+    // "Synced to your calendar" — so every failure syncClassToCalendar reports
+    // (`Could not determine semester dates`, an RLS refusal, a bad time value)
+    // was announced to the player as a success. The class row saved, no events
+    // were written, and nothing anywhere said so. That is why this read as
+    // "sync silently does nothing" rather than as an error.
+    let syncFailure: string | null = null;
     if (newClass) {
-      await syncClassToCalendar(
+      const syncResult = await syncClassToCalendar(
         { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
         newClass.id, playerId, teamId,
       );
+      if (!syncResult?.success) {
+        syncFailure = syncResult?.error ?? 'Unknown error';
+      }
     }
 
     await fetchClasses();
     setShowAddModal(false);
     setEditingClass(null);
-    fairwayToast.success('Class added', { description: 'Synced to your calendar.' });
+    if (syncFailure) {
+      // The class IS saved — say so, and say exactly what did not happen.
+      fairwayToast.error('Class saved, but not added to your calendar', {
+        description: syncFailure,
+      });
+    } else {
+      fairwayToast.success('Class added', { description: 'Synced to your calendar.' });
+    }
   };
 
   const handleUpdateClass = async (formData: ClassFormData) => {
@@ -181,8 +208,9 @@ export default function GolfClassesPage() {
       throw error;
     }
 
-    // Re-sync to calendar (diff-upserts the series)
-    await syncClassToCalendar(
+    // Re-sync to calendar (diff-upserts the series). Same rule as the add path:
+    // the toast reports what actually happened, not what we hoped happened.
+    const syncResult = await syncClassToCalendar(
       { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
       formData.id, playerId, teamId,
     );
@@ -191,7 +219,13 @@ export default function GolfClassesPage() {
     setShowAddModal(false);
     setEditingClass(null);
     setShowDetailModal(false);
-    fairwayToast.success('Class updated', { description: 'Your calendar has been re-synced.' });
+    if (!syncResult?.success) {
+      fairwayToast.error('Class updated, but the calendar was not re-synced', {
+        description: syncResult?.error ?? 'Unknown error',
+      });
+    } else {
+      fairwayToast.success('Class updated', { description: 'Your calendar has been re-synced.' });
+    }
   };
 
   const handleDeleteClass = async () => {
@@ -342,14 +376,14 @@ export default function GolfClassesPage() {
       building: selectedClass.building || '',
       room: selectedClass.room || '',
       credits: selectedClass.credits,
-      // semester is not persisted on golf_player_classes, so on edit we re-derive
-      // the CURRENT term. detectSemester('') always returns a valid term string,
-      // so the calendar re-sync produces valid dates. LATENT ISSUE (P231): a class
-      // originally created for a DIFFERENT term gets its calendar events re-dated
-      // to the current term on edit. The real fix requires persisting semester (or
-      // semesterStartDate) on golf_player_classes — tracked separately; today this
-      // is masked by most classes being current-term.
-      semester: detectSemester(''),
+      // P231, fixed: `semester` IS a column on golf_player_classes and both save
+      // paths below write it — the comment that used to sit here claimed it was
+      // not persisted, and so re-derived the CURRENT term on every edit. That
+      // silently re-dated a Spring class's whole event series into the current
+      // term the first time anyone touched it. Prefer the stored value; fall
+      // back to the current term only for legacy rows written before the column
+      // was populated (all 43 rows in production as of 2026-08-07).
+      semester: selectedClass.semester || detectSemester(''),
       color: selectedClass.color || 'var(--color-primary-600)',
       notes: selectedClass.notes || '',
     });

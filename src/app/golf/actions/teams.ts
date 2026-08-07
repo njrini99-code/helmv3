@@ -37,6 +37,14 @@ export interface TeamData {
 
 export interface TeamValidationResult {
   canJoin: boolean;
+  /**
+   * The player is ALREADY on the team they are trying to join. Distinct from
+   * every other `canJoin: false`, because the caller treats it as SUCCESS —
+   * the desired end state already holds. Kept separate rather than folded into
+   * `canJoin: true` so the join never re-runs the INSERT and the coach never
+   * gets a duplicate "player joined" notification.
+   */
+  alreadyOnThisTeam?: boolean;
   reason?: string;
   currentTeam?: { id: string; name: string };
 }
@@ -177,18 +185,38 @@ async function validateGolfPlayerCanJoinTeamImpl(
     };
   }
 
-  // Check if already on any team via golf_team_members
-  const { data: existingMembership } = await supabase
+  // Check if already on any team via golf_team_members.
+  //
+  // NOT `.maybeSingle()`. There is no unique constraint on player_id alone, so
+  // maybeSingle() raises PGRST116 the moment a player has two rows — and the
+  // error was DISCARDED here (only `data` was destructured), leaving
+  // `existingMembership` null and this guard silently passing. The one-team
+  // rule is then enforced nowhere in this function, and the failure surfaces
+  // later as a raw constraint error. Take the rows and reason about them.
+  const { data: memberships, error: membershipError } = await supabase
     .from('golf_team_members')
     .select('team_id')
-    .eq('player_id', playerId)
-    .maybeSingle();
+    .eq('player_id', playerId);
+
+  if (membershipError) {
+    // Never guess on a failed read here: guessing "no memberships" lets a
+    // player join a second team, and guessing the opposite locks out a
+    // legitimate first join.
+    return {
+      canJoin: false,
+      reason: 'Could not verify your current team. Please try again.',
+    };
+  }
+
+  const existingMembership = memberships?.find((m) => m.team_id === teamId) ?? memberships?.[0] ?? null;
 
   if (existingMembership) {
-    // Check if already on this team
+    // Already on the team being joined — the CALLER treats this as success and
+    // sends the player to their dashboard. See the note in joinGolfTeamImpl.
     if (existingMembership.team_id === teamId) {
       return {
         canJoin: false,
+        alreadyOnThisTeam: true,
         reason: 'You are already a member of this team',
       };
     }
@@ -241,6 +269,23 @@ async function joinGolfTeamImpl(
 
   // Validate first
   const validation = await validateGolfPlayerCanJoinTeam(playerId, teamId, resolvedTeam);
+
+  // ALREADY ON THIS TEAM IS SUCCESS, NOT FAILURE. Joining has to be idempotent.
+  //
+  // Measured on production 2026-08-06: three BRAND-NEW players hit
+  // "You are already a member of this team" within minutes of signing up —
+  // shcurry0621@ signed up 18:24:10 and saw it at 18:25:21, 67 seconds later.
+  // The membership already exists by the time this runs (signup through a join
+  // link creates it), so the join link's own confirmation step then reported
+  // the correct end state as an error. The last thing a new paying customer saw
+  // on their way in was a red failure, on a team they were already on.
+  //
+  // Anything that lands the player on the team they asked for is a success —
+  // whether this call created the row or found it already there. Only a
+  // DIFFERENT team is a real conflict, and that keeps its own message.
+  if (validation.alreadyOnThisTeam) {
+    return { success: true, alreadyMember: true };
+  }
 
   if (!validation.canJoin) {
     return {

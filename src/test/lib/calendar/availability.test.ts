@@ -401,10 +401,38 @@ describe('getUserBusyPeriods — unsynced classes expand within their term only'
     expect(busy).toHaveLength(0);
   });
 
-  it('refuses to expand a class whose term is unknown', async () => {
+  it('still expands a class whose term is unknown, within the query window', async () => {
+    // REVERSED 2026-08-07, deliberately. This asserted `toHaveLength(0)` — that
+    // an unreadable term expands to NOTHING rather than to a guess. The
+    // reasoning was sound and the measurement behind it was missing: EVERY one
+    // of the 43 golf_player_classes rows in production has `semester = NULL`,
+    // so the refusal fired 100% of the time and class-conflict detection was
+    // dead platform-wide. "Find a time" scheduled coaches straight over
+    // players' lectures, silently.
+    //
+    // Expanding is bounded by the caller's own window (see the next test), so
+    // the worst case is a finished class still reading as busy — visible and
+    // correctable. A missed conflict is neither, and on a scheduling surface
+    // that is the more expensive error.
     const tables = baseTables();
     tables.golf_player_classes.push(classRow({ semester: null }));
     const [start, end] = dayWindow(MONDAY);
+
+    const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
+
+    expect(busy).toHaveLength(1);
+    expect(busy[0]?.type).toBe('class');
+  });
+
+  it('a term-less class is still bounded by the query window, not unbounded', async () => {
+    // The guard the reversal above must not lose: no term means "use the
+    // caller's window", never "walk forever". A window containing no meeting
+    // day yields nothing.
+    const tables = baseTables();
+    // classRow() meets Monday/Wednesday; ask about a Sunday.
+    const sunday = new Date(MONDAY); sunday.setDate(sunday.getDate() - 1);
+    tables.golf_player_classes.push(classRow({ semester: null }));
+    const [start, end] = dayWindow(sunday);
 
     const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
 
