@@ -20674,6 +20674,10 @@ export type Database = {
         Args: { p_announcement_id: string }
         Returns: boolean
       }
+      golf_conversation_created_by_me: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       golf_conversation_on_my_team: {
         Args: { p_conversation_id: string }
         Returns: boolean
