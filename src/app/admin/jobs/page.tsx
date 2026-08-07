@@ -1,9 +1,10 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchJobsTab, type CronBoardRow, type CronRunSummary, type IntegrityRow } from '@/lib/admin/data/jobs';
+import { fetchJobsTab, type CronBoardRow, type CronRunSummary, type IntegrityRow, type InngestHealth } from '@/lib/admin/data/jobs';
 import { Surface, Inset, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
@@ -20,6 +21,60 @@ const CRON_STATUS_TONE: Record<CronBoardRow['status'], FwStatusTone> = {
   failed: 'danger',
   'never-ran': 'neutral',
 };
+
+/**
+ * Inngest renders as three states, not a boolean. This tile printed the literal
+ * word "activated" whenever both env vars were set — all `isInngestConfigured()`
+ * can know — so a credential Inngest was actively REJECTING ("404 Event key not
+ * found", provider-fault.ts:96-99) read exactly like a working one. That is how
+ * a dead key survived 10 days here while every durable job silently went
+ * nowhere. `rejecting` is the state that word was hiding.
+ */
+const INNGEST_TONE: Record<InngestHealth['status'], FwStatusTone> = {
+  rejecting: 'danger',
+  activated: 'success',
+  // Keys deliberately absent is a config choice, not a fault — neutral, the
+  // same reasoning as 'never-ran' above.
+  'not-configured': 'neutral',
+};
+
+const INNGEST_LABEL: Record<InngestHealth['status'], string> = {
+  rejecting: 'rejecting keys',
+  activated: 'activated',
+  'not-configured': 'not configured',
+};
+
+/** The line under the pill. Says only what was MEASURED — "nothing has
+ *  rejected them" is the strongest true claim available, because the Bridge
+ *  never observes a successful Inngest delivery, only a failed one. */
+function InngestDetail({ inngest }: { inngest: InngestHealth }) {
+  if (inngest.status === 'not-configured') {
+    return (
+      <p className="mt-1.5 text-xs text-warm-500">
+        INNGEST_EVENT_KEY / INNGEST_SIGNING_KEY are absent from this deployment — events are not sent.
+      </p>
+    );
+  }
+  if (inngest.status === 'activated') {
+    return <p className="mt-1.5 text-xs text-warm-500">Keys are set and no Inngest fault is open.</p>;
+  }
+  return (
+    <>
+      <p className="mt-1.5 text-xs text-fw-danger-ink">
+        Keys are set but Inngest rejected them — events are dropped until the key is replaced.
+      </p>
+      <p className="mt-1 break-words font-fw-mono text-xs text-warm-500">
+        {inngest.faultCode ?? 'provider_inngest fault'}
+        {inngest.faultLastSeenAt ? (
+          <>
+            {' · last seen '}
+            <LocalTime iso={inngest.faultLastSeenAt} variant="datetime" />
+          </>
+        ) : null}
+      </p>
+    </>
+  );
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -408,9 +463,12 @@ async function JobsBody() {
         <StatTile label="job log rows" value={tab.logHealth.jobLogs} tone="neutral" mono />
         <Surface padding="sm">
           <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Inngest</p>
-          <p className="mt-1 text-sm text-warm-800">
-            {tab.inngestActivated ? 'activated' : 'not activated (keys absent)'}
-          </p>
+          <div className="mt-1.5">
+            <StatusPill tone={INNGEST_TONE[tab.inngest.status]} dot size="sm">
+              {INNGEST_LABEL[tab.inngest.status]}
+            </StatusPill>
+          </div>
+          <InngestDetail inngest={tab.inngest} />
         </Surface>
       </section>
     </div>
@@ -422,7 +480,7 @@ export default async function JobsPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <PanelBoundary title="Jobs & Integrity">
+      <PanelBoundary title="Jobs & Integrity" skeleton={<PanelPageSkeleton rows={8} />}>
         <JobsBody />
       </PanelBoundary>
     </div>

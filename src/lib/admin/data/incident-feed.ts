@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
@@ -356,3 +357,32 @@ export async function fetchIncidentFeed(
 
   return { incidents, appEvents, sentry, counts };
 }
+
+/**
+ * Per-request memoised DEFAULT-WINDOW feed — the one every unfiltered Bridge
+ * surface wants.
+ *
+ * One render of /admin asked for the identical 24h feed TWICE:
+ * `fetchOverviewSnapshot()` for the KPI strip and `fetchTriageQueue()` for the
+ * triage panel. Each ask is two Sentry round-trips (raw + filtered) plus a
+ * paginated `admin_events` scan plus a chunked `queryPriorResolutions()` —
+ * all of it duplicated for one screen.
+ *
+ * The wrapper takes a PRIMITIVE, and that is the entire point. React's
+ * `cache()` keys on argument REFERENCE identity, so two call sites each
+ * passing their own `{ windowHours: 24 }` object literal are two distinct keys
+ * and would miss the cache every single time — a memoisation that looks
+ * applied and does nothing. A number compares equal.
+ *
+ * Filtered callers (the Errors tab, `data/errors.ts`) deliberately keep
+ * calling `fetchIncidentFeed` directly: their filter object is exactly the
+ * shape that cannot be keyed this way, and their windows/filters vary per
+ * request anyway.
+ *
+ * Memoisation is per React request scope only — a route handler (the
+ * admin-digest cron calls `fetchTriageQueue`) gets a fresh fetch per call,
+ * which is what it wants.
+ */
+export const cachedIncidentFeed = cache((windowHours: number) =>
+  fetchIncidentFeed({ windowHours }),
+);

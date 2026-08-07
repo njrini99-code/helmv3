@@ -78,4 +78,41 @@ describe('Bridge navigation covers every route', () => {
     const keys = ADMIN_NAV.map((e) => e.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  it('the rail and ⌘K group by every section ADMIN_NAV actually uses', () => {
+    // AdminShell used to hand-list ['Operations', 'Apps', 'Platform']. When the
+    // nav was regrouped into Triage / Customers / Apps / Platform / Revenue,
+    // that tuple did not change — so the rail and the command menu silently
+    // dropped 10 of 17 entries (every Triage, Customers and Revenue tab,
+    // Overview and Errors among them) under an empty "Operations" heading.
+    // Nothing failed: the routes still resolved by URL, they were just
+    // unreachable by navigation. Caught locally, never shipped.
+    const shell = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/admin/_components/AdminShell.tsx'),
+      'utf8',
+    );
+    const sections = [...new Set(ADMIN_NAV.map((e) => e.section))];
+
+    // The grouping must be DERIVED from ADMIN_NAV, not restated. This is the
+    // load-bearing assertion — it is the one that fails on the pre-fix file.
+    expect(shell).toContain('const NAV_SECTION_ORDER = [...new Set(ADMIN_NAV.map(');
+
+    // Forward guard only: the tuple that caused the bug named 'Operations', a
+    // section ADMIN_NAV no longer has, so this loop could not have caught it in
+    // hindsight. It catches the NEXT person who restates today's section names.
+    const code = shell
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n')
+      .filter((l) => !l.trim().startsWith('*') && !l.trim().startsWith('//'))
+      .join('\n');
+    for (const section of sections) {
+      const literalTuple = new RegExp(`\\[\\s*'${section}'\\s*,`);
+      expect(
+        literalTuple.test(code),
+        `AdminShell.tsx hard-codes a section list starting '${section}'. ` +
+          `Derive it from ADMIN_NAV — a hand-listed tuple silently drops whole ` +
+          `sections when the nav is regrouped.`,
+      ).toBe(false);
+    }
+  });
 });

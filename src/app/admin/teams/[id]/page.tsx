@@ -8,6 +8,7 @@ import { classifyTeamHealth, type TeamHealth } from '@/lib/admin/data/golf';
 import { Surface, StatusPill, Badge, TrendChart, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData } from '../../_components/PanelStates';
 import { LocalTime } from '../../_components/LocalTime';
 import { RosterTable, type RosterDisplayRow } from './RosterTable';
@@ -284,7 +285,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ id:
       <Link href="/admin/golf" className="text-xs text-warm-500 underline">
         ← Golf
       </Link>
-      <PanelBoundary title="Team detail">
+      <PanelBoundary title="Team detail" skeleton={<PanelPageSkeleton rows={8} />}>
         <TeamDetailBody teamId={id} />
       </PanelBoundary>
     </div>

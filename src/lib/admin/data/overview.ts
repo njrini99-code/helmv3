@@ -1,11 +1,16 @@
 import 'server-only';
+// Two different caches live in this file and they are NOT interchangeable:
+// React `cache()` memoises within ONE request (fetchOverviewSnapshot, below),
+// `unstable_cache` persists across requests with a TTL + tags
+// (fetchBridgeErrorBadge, which is chrome on every navigation).
+import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
 import type { AppTriageEventRow, TriageItem } from '@/lib/admin/data/triage';
 import { FAILURE_SEVERITIES, type AdminSeverity } from '@/lib/admin/severity';
 import {
-  fetchIncidentFeed,
+  cachedIncidentFeed,
   DEFAULT_INCIDENT_WINDOW_HOURS,
   buildIncidentFeedFromSources,
   queryAppErrorEvents,
@@ -150,8 +155,21 @@ export const fetchBridgeErrorBadge = unstable_cache(
   { revalidate: 60, tags: [BRIDGE_INCIDENT_CACHE_TAG] },
 );
 
-/** CALLER must have passed requireSuperAdmin() (service-role reads). */
-export async function fetchOverviewSnapshot() {
+/**
+ * CALLER must have passed requireSuperAdmin() (service-role reads).
+ *
+ * `cache()`-memoised per request. The Overview page awaits this from TWO
+ * sibling Suspense boundaries — the status banner and the KPI/board stack are
+ * separate panels so "Needs your eyes" can stream between them without
+ * waiting on either (see src/app/admin/page.tsx) — and one render must not
+ * pay twice for what is in here: 11 parallel Supabase reads, the Vercel
+ * deployments API, and fetchFeatureHealth's per-feature Sentry sweep. Delete
+ * this wrapper and the page silently doubles every one of those.
+ *
+ * Zero arguments, so it keys cleanly. Per React request scope only — cron and
+ * route-handler callers still get a fresh fan-out per call.
+ */
+export const fetchOverviewSnapshot = cache(async () => {
   const admin = createAdminClient();
   const ago24h = isoHoursAgo(24);
   const today = isoStartOfToday();
@@ -170,7 +188,13 @@ export async function fetchOverviewSnapshot() {
     featureHealthRaw,
   ] = await Promise.all([
     fetchVercelDeployments(5),
-    fetchIncidentFeed({ windowHours: DEFAULT_INCIDENT_WINDOW_HOURS }),
+    // Memoised per request — fetchTriageQueue() asks for this exact same 24h
+    // feed on the same Overview render, and the feed is 2 Sentry round-trips
+    // + a paginated admin_events scan + a chunked prior-resolutions query.
+    // The wrapper takes a PRIMITIVE window on purpose: React cache() keys on
+    // argument reference identity, so passing `{ windowHours: 24 }` from two
+    // call sites would be two keys and would never hit.
+    cachedIncidentFeed(DEFAULT_INCIDENT_WINDOW_HOURS),
     admin.from('admin_events').select('id', { count: 'exact', head: true })
       .eq('event_type', 'security').gte('created_at', ago24h),
     admin.from('users').select('id', { count: 'exact', head: true })
@@ -270,4 +294,4 @@ export async function fetchOverviewSnapshot() {
   };
 
   return { kpis, banner, watcher, featureHealth };
-}
+});

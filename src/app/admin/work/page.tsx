@@ -2,7 +2,7 @@ import { GitPullRequest, ScrollText } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchWorkLog, type PrLifecycleState } from '@/lib/admin/github-pr-timeline';
 import type { WorkArea } from '@/lib/admin/pr-body-parser';
-import { Eyebrow, Surface, StatusPill } from '@/components/fairway';
+import { Eyebrow, Skeleton, SkeletonList, Surface, StatusPill } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -10,6 +10,16 @@ import { WorkTimeline, AREA_META, STATE_META } from './WorkTimeline';
 import { WorkFilterChips, type WorkFilterChip } from './WorkFilterChips';
 
 export const dynamic = 'force-dynamic';
+
+// WorkLogBody opens with the area/state filter chips and then the timeline —
+// no KPI strip, so no stat cards here (PanelPageSkeleton would reserve a row
+// that never arrives).
+const TIMELINE_SKELETON = (
+  <div className="space-y-4">
+    <Skeleton className="h-9 w-full max-w-md rounded-fw-md" />
+    <SkeletonList rows={6} />
+  </div>
+);
 
 const WORK_AREAS = Object.keys(AREA_META) as WorkArea[];
 const PR_STATES = Object.keys(STATE_META) as PrLifecycleState[];
@@ -154,7 +164,7 @@ export default async function WorkLogPage({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
-          <PanelBoundary title="Your PR timeline">
+          <PanelBoundary title="Your PR timeline" skeleton={TIMELINE_SKELETON}>
             <WorkLogBody areaFilter={areaFilter} stateFilter={stateFilter} />
           </PanelBoundary>
         </div>

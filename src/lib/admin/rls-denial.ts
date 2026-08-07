@@ -7,7 +7,26 @@
 // node:async_hooks — into the client graph and hard-failed the build.
 // Client-side logging was never functional anyway: createAdminClient needs
 // SUPABASE_SERVICE_ROLE_KEY, which does not exist in the browser.
-import { featureForTable, type FeatureKey } from '@/lib/admin/feature-registry';
+//
+// '@/lib/admin/feature-registry' is lazy for the SAME reason, minus the build
+// failure that made the first case obvious — it imported cleanly, so nothing
+// ever complained. It is the 86-entry Bridge registry (knownGaps prose,
+// server-action file paths), and its module-scope TABLE_TO_FEATURE IIFE pins
+// the whole thing, so a static value import shipped all of it to every paying
+// customer who opens the calendar or tasks page (FairwayCalendar.tsx,
+// PremiumCalendarClient.tsx, use-task-realtime.ts — all reached via
+// fetch-all-rows.ts).
+//
+// Measured with esbuild (--bundle --splitting --minify, browser target, entry
+// src/lib/supabase/fetch-all-rows.ts): the client entry chunk was 42,556 B raw
+// / 9,659 B gzipped and is now 1,912 B / 997 B. The registry moved into an
+// async chunk (41,071 B / 8,945 B) that the browser never requests, because
+// the only branch that imports it is the server-only one below.
+//
+// Keep BOTH imports dynamic. Re-adding a value import of either at the top of
+// this file silently re-pins ~8.7 KB gzipped onto customer-facing pages, with
+// no build error and no test failure to catch it.
+import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 /**
  * Helm Bridge capture class #1 — RLS denials. Spikes here have historically
@@ -133,13 +152,22 @@ export function maybeCaptureRlsDenial(
   if (!isRlsDenial(error)) return false;
   try {
     const table = resolveDenialTable(ctx.table, error?.message);
-    const feature = ctx.feature ?? featureForTable(table) ?? undefined;
     const isStorm = trackDenialStorm(`${table}:${ctx.verb}`);
     if (typeof window === 'undefined') {
       pendingCaptures.push(
-        import('@/lib/server-error-logger')
-        .then(({ logServerEvent }) =>
-          logServerEvent(
+        (async () => {
+          // Both imports are dynamic and live INSIDE this server-only branch —
+          // see the bundle note at the top of this file. featureForTable is a
+          // pure map lookup with no side effects, so resolving it here rather
+          // than above the guard changes nothing observable. `??` short-
+          // circuits, so a caller that passes an explicit `feature` never
+          // loads the registry chunk at all.
+          const feature =
+            ctx.feature ??
+            (await import('@/lib/admin/feature-registry')).featureForTable(table) ??
+            undefined;
+          const { logServerEvent } = await import('@/lib/server-error-logger');
+          await logServerEvent(
             `RLS denial: ${ctx.verb} on ${table}`,
             {
               action: ctx.action,
@@ -155,10 +183,8 @@ export function maybeCaptureRlsDenial(
               skipSentry: !isStorm,
             },
             isStorm ? 'error' : 'warning',
-          ),
-        )
-          .then(() => undefined)
-          .catch(() => {}),
+          );
+        })().catch(() => {}),
       );
     }
   } catch {

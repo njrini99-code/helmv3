@@ -2,7 +2,7 @@ import 'server-only';
 import type { SentryIssue } from '@/lib/admin/sentry-api';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import {
-  fetchIncidentFeed,
+  cachedIncidentFeed,
   DEFAULT_INCIDENT_WINDOW_HOURS,
   type IncidentFeedCounts,
 } from '@/lib/admin/data/incident-feed';
@@ -358,6 +358,11 @@ export async function fetchTriageQueue(
   sentry: AdminFetchResult<SentryIssue[]>;
   counts: IncidentFeedCounts;
 }> {
-  const feed = await fetchIncidentFeed({ windowHours });
+  // Memoised per request: Overview's fetchOverviewSnapshot() asks for this
+  // exact same default-window feed on the same render. `windowHours` is
+  // always a number here (default parameter), so it keys against overview's
+  // `cachedIncidentFeed(DEFAULT_INCIDENT_WINDOW_HOURS)` — see the wrapper's
+  // doc comment for why the argument must stay primitive.
+  const feed = await cachedIncidentFeed(windowHours);
   return { items: feed.incidents, sentry: feed.sentry, counts: feed.counts };
 }

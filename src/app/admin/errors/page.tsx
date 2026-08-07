@@ -18,6 +18,7 @@ import { TriageQueue } from '../_components/TriageQueue';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
 import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { CopyReportButton } from '../_components/CopyReportButton';
@@ -304,13 +305,19 @@ export default async function ErrorsPage({
                       // Link chips: the browser's default focus ring must not
                       // paint through on these keyboard-focusable filter chips.
                       'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
+                      // `text-warm-50`, not `text-white`: warm-900 INVERTS in
+                      // the dark token block (28,25,23 → 244,240,232), so a
+                      // literal white label on this selected chip would be
+                      // white-on-cream and unreadable once /admin follows the
+                      // theme. warm-50 inverts with it and is 250,250,249 in
+                      // light — visually the same chip it has always been.
                       current.get('source') === source
-                        ? 'border-warm-900 bg-warm-900 text-white'
+                        ? 'border-warm-900 bg-warm-900 text-warm-50'
                         : 'border-warm-200 bg-warm-50 text-warm-600 hover:bg-warm-100',
                     )}
                   >
                     {source}
-                    <span className={current.get('source') === source ? 'tabular-nums text-white' : 'tabular-nums text-warm-900'}>{count}</span>
+                    <span className={current.get('source') === source ? 'tabular-nums text-warm-50' : 'tabular-nums text-warm-900'}>{count}</span>
                   </Link>
                 ))}
               </div>
@@ -440,7 +447,10 @@ export default async function ErrorsPage({
       <AutoRefresh />
       {filters.feature ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex min-h-10 items-center rounded-full bg-warm-900 px-3 text-xs text-white">
+          {/* text-warm-50 for the same reason as the source chips above: the
+              warm-900 fill inverts to near-cream in dark, and a literal white
+              label would vanish on it. */}
+          <span className="inline-flex min-h-10 items-center rounded-full bg-warm-900 px-3 text-xs text-warm-50">
             feature: {FEATURE_LABELS[filters.feature] ?? filters.feature}
           </span>
           <Link
@@ -462,7 +472,7 @@ export default async function ErrorsPage({
           })),
         )}
       />
-      <PanelBoundary title="Errors">
+      <PanelBoundary title="Errors" skeleton={<PanelPageSkeleton rows={8} />}>
         <Body />
       </PanelBoundary>
     </div>

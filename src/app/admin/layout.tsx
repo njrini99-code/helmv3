@@ -4,6 +4,7 @@ import { fetchBridgeErrorBadge } from '@/lib/admin/data/overview';
 import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
 import { AdminMotionProvider } from './_motion-provider';
 import { AdminShell } from './_components/AdminShell';
+import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,14 @@ export default async function AdminLayout({
     <AdminMotionProvider>
       <AdminNativeGuard />
       <AdminShell email={probe.context.email} errorCount={errorCount}>
+        {/* Same mount as the golf dashboard shell (src/app/golf/(dashboard)/
+            layout.tsx): keeps the root-head ThemeScript boot hydrated and
+            OS-followed at runtime, including when the Bridge is entered by
+            soft navigation. The Bridge deliberately shares the `golf_theme`
+            preference rather than adding a second toggle to forget — the
+            token flip is the same one, and /admin is already 100% on the
+            same warm and fw token scales the .dark block inverts. */}
+        <ThemeApplier />
         {children}
       </AdminShell>
     </AdminMotionProvider>

@@ -1,5 +1,9 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { excludeAuthNoise } from '@/lib/admin/data/triage';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
 
 /**
  * Helm Bridge V2 — shared team-scoping resolvers.
@@ -22,7 +26,13 @@ import { createAdminClient } from '@/lib/supabase/admin';
  * Similarly, `golf_messages` carries no `team_id` at all — team scoping for
  * messages goes through `golf_conversations.team_id` (one row per thread).
  *
- * CALLER must have passed requireSuperAdmin() — both resolvers use the
+ * The SAME drift hits error counting, which is why `resolveTeamErrorCounts`
+ * lives here too: `team_id` IS written on some `admin_events` error rows (by
+ * `writeAdminTables()` in src/lib/server-error-logger.ts, and only when the
+ * call site passed `context.teamId`), but on so few of them that a
+ * team_id-only count is indistinguishable from "this team is clean."
+ *
+ * CALLER must have passed requireSuperAdmin() — every resolver here uses the
  * service-role client.
  */
 
@@ -136,4 +146,202 @@ export async function resolveTeamConversationIds(teamId: string): Promise<Set<st
     ...((golfRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
     ...((baseballRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
   ]);
+}
+
+/** The trailing window every Bridge surface means by "errors in the last 7
+ *  days" — /admin/golf's Team Health table, /admin/users' team rows, and the
+ *  team page's errors7d KPI. team-detail.ts's error CLUSTER list is
+ *  deliberately NOT windowed (most recent 300, whenever they happened), which
+ *  is why it is not a caller of the function below. */
+const TEAM_ERROR_WINDOW_DAYS = 7;
+
+interface TeamMembershipRow {
+  team_id: string | null;
+  golf_players?: { user_id: string } | null;
+  golf_coaches?: { user_id: string } | null;
+  baseball_players?: { user_id: string } | null;
+  baseball_coaches?: { user_id: string } | null;
+}
+
+interface ErrorAttributionRow {
+  id: string;
+  team_id: string | null;
+  user_id: string | null;
+}
+
+/**
+ * "Errors in the last 7 days" for MANY teams at once — the one implementation
+ * behind every Bridge surface that shows that number.
+ *
+ * WHY IT EXISTS (measured on production 2026-08-06): all three callers counted
+ * `admin_events` with `.eq('team_id', …)` alone. `team_id` is populated on 7 of
+ * 1,116 error rows in a week, and on ZERO rows of error-or-worse severity — so
+ * every golf team read exactly 0, while the same week's rows resolved through
+ * the roster were Guilford 4, Shenandoah Womens 7, Shenandoah 3, Demo
+ * University 4. TeamHealthTable's leader wash fires on
+ * `health === 'active' && errors7d === 0`, so the board was green-badging the
+ * three worst teams as its cleanest. This is the bulk generalisation of the
+ * single-team union `team-detail.ts` already runs.
+ *
+ * SEMANTICS, so a caller can trust the number:
+ *   - Severity filtered to INCIDENT_SEVERITIES with auth noise excluded, so it
+ *     agrees with the incident feed row-for-row instead of counting the ~94%
+ *     of `event_type='error'` rows that are severity 'info' narration.
+ *   - A row counts for a team if its `team_id` IS that team OR its `user_id`
+ *     is on that team's active roster / current coaching staff.
+ *   - A user on two teams credits the SAME row to BOTH of them: admin_events
+ *     cannot say which team the person was acting for, and silently picking
+ *     one would under-report the other. Counting is over a per-team Set of
+ *     event ids, so one row can never be counted twice FOR ONE TEAM — not when
+ *     it carries both attributions, not when two membership rows match it.
+ *
+ * COST: a fixed 6 queries regardless of team count (4 membership reads + 2
+ * event reads), never one per team. Each is chunked at ID_CHUNK_SIZE (200 —
+ * past ~585 uuids the PostgREST edge rejects the URL with a bare 400 before
+ * Postgres sees it, auto-resolve.ts:87-105) and paginated past the 1000-row
+ * page cap.
+ *
+ * THROWS on any read error rather than returning a short map: a swallowed
+ * error here renders as "this team is clean," the most misleading thing this
+ * function could possibly say. Callers that fail soft catch it themselves;
+ * callers that fail loud let it reach their PanelBoundary.
+ *
+ * CALLER must have passed requireSuperAdmin() — service-role client.
+ */
+export async function resolveTeamErrorCounts(
+  teamIds: readonly string[],
+): Promise<Map<string, number>> {
+  // Seed every requested team, so a caller never has to tell "no rows" apart
+  // from "key missing because the resolver forgot about this team."
+  const eventIdsByTeam = new Map<string, Set<string>>();
+  for (const id of teamIds) eventIdsByTeam.set(id, new Set<string>());
+  if (eventIdsByTeam.size === 0) return new Map();
+
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - TEAM_ERROR_WINDOW_DAYS * 86400_000).toISOString();
+  // De-duplicated by the Map above — a caller passing the same id twice must
+  // not double the `.in()` payload or the counts.
+  const teamIdList = Array.from(eventIdsByTeam.keys());
+
+  // 1. Bulk membership → user_id -> every REQUESTED team that user is on.
+  //    Same shape as resolveTeamUserIds, done once for all teams instead of
+  //    once per team.
+  const userTeamIds = new Map<string, Set<string>>();
+  async function ingestMembership(
+    label: string,
+    embed: 'golf_players' | 'golf_coaches' | 'baseball_players' | 'baseball_coaches',
+    build: (
+      batch: string[],
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: unknown[] | null; error: { message: string; code?: string | null } | null }>,
+  ): Promise<void> {
+    for (const batch of chunkIds(teamIdList)) {
+      const { data, error } = await fetchAllRowsResult<unknown>((from, to) => build(batch, from, to));
+      if (error) throw new Error(`resolveTeamErrorCounts: ${label}: ${error.message}`);
+      for (const row of (data ?? []) as TeamMembershipRow[]) {
+        const teamId = row.team_id;
+        const uid = row[embed]?.user_id;
+        if (!teamId || !uid || !eventIdsByTeam.has(teamId)) continue;
+        const teams = userTeamIds.get(uid) ?? new Set<string>();
+        teams.add(teamId);
+        userTeamIds.set(uid, teams);
+      }
+    }
+  }
+
+  await Promise.all([
+    ingestMembership('golf roster', 'golf_players', (batch, from, to) =>
+      admin
+        .from('golf_team_members')
+        .select('team_id, golf_players(user_id)')
+        .eq('status', 'active')
+        .in('team_id', batch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    ingestMembership('golf staff', 'golf_coaches', (batch, from, to) =>
+      admin
+        .from('golf_team_coach_staff')
+        .select('team_id, golf_coaches(user_id)')
+        .in('team_id', batch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    ingestMembership('baseball roster', 'baseball_players', (batch, from, to) =>
+      admin
+        .from('baseball_team_members')
+        .select('team_id, baseball_players(user_id)')
+        .eq('status', 'active')
+        .in('team_id', batch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    ingestMembership('baseball staff', 'baseball_coaches', (batch, from, to) =>
+      admin
+        .from('baseball_team_coach_staff')
+        .select('team_id, baseball_coaches(user_id)')
+        .in('team_id', batch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+  ]);
+
+  // 2. One windowed event read per attribution path — never per team.
+  const userIdList = Array.from(userTeamIds.keys());
+  const baseErrorQuery = () =>
+    excludeAuthNoise(
+      admin
+        .from('admin_events')
+        .select('id, team_id, user_id')
+        .eq('event_type', 'error')
+        // severity is NOT NULL, so .in() cannot silently drop untyped rows.
+        .in('severity', INCIDENT_SEVERITIES),
+    ).gte('created_at', since);
+
+  async function readErrors(
+    label: string,
+    ids: readonly string[],
+    build: (
+      batch: string[],
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: unknown[] | null; error: { message: string; code?: string | null } | null }>,
+  ): Promise<ErrorAttributionRow[]> {
+    const rows: ErrorAttributionRow[] = [];
+    // chunkIds([]) yields no batches, so an empty id list issues no query at
+    // all rather than an `.in(col, [])` that matches nothing.
+    for (const batch of chunkIds(ids)) {
+      const { data, error } = await fetchAllRowsResult<unknown>((from, to) => build(batch, from, to));
+      if (error) throw new Error(`resolveTeamErrorCounts: ${label}: ${error.message}`);
+      rows.push(...((data ?? []) as ErrorAttributionRow[]));
+    }
+    return rows;
+  }
+
+  const [teamTagged, userResolved] = await Promise.all([
+    readErrors('team-tagged errors', teamIdList, (batch, from, to) =>
+      baseErrorQuery().in('team_id', batch).order('id', { ascending: true }).range(from, to),
+    ),
+    readErrors('user-resolved errors', userIdList, (batch, from, to) =>
+      baseErrorQuery().in('user_id', batch).order('id', { ascending: true }).range(from, to),
+    ),
+  ]);
+
+  for (const row of teamTagged) {
+    if (row.team_id) eventIdsByTeam.get(row.team_id)?.add(row.id);
+  }
+  for (const row of userResolved) {
+    if (!row.user_id) continue;
+    // Both loops add the event ID to a Set, which is what makes the two
+    // attribution paths a union rather than a sum — an event that is BOTH
+    // team-tagged and user-resolved for the same team counts once.
+    for (const teamId of userTeamIds.get(row.user_id) ?? []) {
+      eventIdsByTeam.get(teamId)?.add(row.id);
+    }
+  }
+
+  const counts = new Map<string, number>();
+  for (const [teamId, ids] of eventIdsByTeam) counts.set(teamId, ids.size);
+  return counts;
 }

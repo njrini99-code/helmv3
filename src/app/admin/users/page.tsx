@@ -6,6 +6,7 @@ import { Surface, Inset, StatTile, StatStrip, StatusPill, SearchField, Button, t
 import { FairwayLargeTitle } from '@/components/fairway/app-shell';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData } from '../_components/PanelStates';
 import { SportBadge } from '../_components/SportBadge';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -551,7 +552,7 @@ export default async function UsersPage({
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <PanelBoundary title="Users & Teams">
+      <PanelBoundary title="Users & Teams" skeleton={<PanelPageSkeleton rows={8} />}>
         <Body />
       </PanelBoundary>
     </div>
