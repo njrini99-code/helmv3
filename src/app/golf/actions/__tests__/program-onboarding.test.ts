@@ -47,7 +47,15 @@ function buildSupabaseMock() {
     // Allow `await supabase.from(table).insert(row)` (PostgREST-style awaitable)
     chain.then = vi.fn((onFulfilled: (v: unknown) => void) => {
       const r = result();
-      void Promise.resolve(r).then(onFulfilled);
+      // A bare awaited SELECT resolves with `data` as an ARRAY of rows — the
+      // real client never hands a naked object to a non-single read. The
+      // membership guard reads golf_team_members this way (it dropped
+      // `.maybeSingle()`), so the stub must keep the array contract honest.
+      const value =
+        table === 'golf_team_members'
+          ? { ...r, data: r.data == null ? [] : Array.isArray(r.data) ? r.data : [r.data] }
+          : r;
+      void Promise.resolve(value).then(onFulfilled);
     });
 
     return chain;
