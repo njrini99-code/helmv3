@@ -65,6 +65,23 @@ function quietUnsignedProbes(handler: InngestHandler, method: string): InngestHa
     const req = args[0] as Request | undefined;
     const signed = Boolean(req?.headers?.get?.('x-inngest-signature'));
 
+    // SHORT-CIRCUIT before the SDK runs. Wrapping the handler in try/catch was
+    // not enough and I verified that against production: the SDK CATCHES its
+    // own signature failure, reports it, and returns 401 itself — it never
+    // throws, so an outer catch never sees it and the three Sentry groups kept
+    // firing. The only place to stop it is before delegating.
+    //
+    // The response is byte-identical to what the SDK already returned for an
+    // unsigned request (401 + {"message":"Unauthorized"}), so nothing about
+    // Inngest's own behaviour changes — real traffic from Inngest Cloud always
+    // carries x-inngest-signature and still reaches the SDK untouched.
+    if (!signed) {
+      return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     try {
       const response = (await (handler as (...a: unknown[]) => Promise<Response>)(...args)) as Response;
 
@@ -82,17 +99,9 @@ function quietUnsignedProbes(handler: InngestHandler, method: string): InngestHa
 
       return response;
     } catch (error) {
-      // The SDK throws for an unsigned request. That is a robot knocking on a
-      // public door, not a defect — answer 401 and do not file an incident.
-      if (!signed) {
-        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
-          status: 401,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
-
-      // Signed and still threw — real, and named rather than left as
-      // "[object Object]".
+      // Only reachable for a SIGNED request now — unsigned ones returned above
+      // without ever entering the SDK. A signed request that still throws is
+      // real, and is named here rather than left as "[object Object]".
       await logServerError(
         `[inngest] ${method} handler threw on a signed request: ${
           error instanceof Error ? error.message : JSON.stringify(error)
