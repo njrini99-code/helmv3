@@ -8,9 +8,12 @@ import type { CalendarEvent } from '@/lib/types/calendar';
  * legacy component's JSX/imports.
  */
 export interface DashboardStats {
-    rosterSize: number;
-    upcomingEvents: number;
-    activeQualifiers: number;
+    // NULLABLE — null means "we could not read this", which is NOT zero. The
+    // action used to collapse a failed count into 0 via `.count || 0`, so a
+    // 12-player roster rendered as an empty program.
+    rosterSize: number | null;
+    upcomingEvents: number | null;
+    activeQualifiers: number | null;
     teamScoringAverage: number | null;
     previousAverage?: number | null;
 }

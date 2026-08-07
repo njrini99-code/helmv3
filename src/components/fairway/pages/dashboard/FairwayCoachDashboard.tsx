@@ -452,9 +452,13 @@ export function FairwayCoachDashboard({
         : 'Scoring average has drifted up over the window.'
       : undefined;
 
+  // An unknown roster size (the count query failed) must not be treated as a
+  // small roster — that would tell a coach with a full squad to go invite
+  // players. Both notices stay hidden until we actually know the number.
   const showInviteNotice =
-    !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize < 20;
-  const rosterFull = !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize >= 20;
+    !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize != null && stats.rosterSize < 20;
+  const rosterFull =
+    !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize != null && stats.rosterSize >= 20;
 
   // Recent-rounds DataTable columns
   const roundColumns: ColumnDef<RoundRow, unknown>[] = [
@@ -815,18 +819,33 @@ export function FairwayCoachDashboard({
             />
           )}
 
-          {/* Roster is a real count (not a derived aggregate) — always honest. */}
-          <MetricCard
-            labelLines={2}
-            label="Roster"
-            value={stats.rosterSize}
-            icon={<IconUsers size={18} />}
-            footnote={
-              stats.activeQualifiers > 0
-                ? `${stats.activeQualifiers} active ${stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}`
-                : undefined
-            }
-          />
+          {/* Roster is a real count (not a derived aggregate) — always honest.
+              null means the count query FAILED, which is not zero: rendering a
+              confident "0" here told a coach with a full squad their program
+              was empty. Uses the same `empty` silhouette as the null KPIs above. */}
+          {stats.rosterSize != null ? (
+            <MetricCard
+              labelLines={2}
+              label="Roster"
+              value={stats.rosterSize}
+              icon={<IconUsers size={18} />}
+              footnote={
+                stats.activeQualifiers != null && stats.activeQualifiers > 0
+                  ? `${stats.activeQualifiers} active ${stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}`
+                  : undefined
+              }
+            />
+          ) : (
+            <MetricCard
+              labelLines={2}
+              label="Roster"
+              value={0}
+              icon={<IconUsers size={18} />}
+              empty
+              emptyMessage="Couldn't load"
+              footnote="Refresh to try again"
+            />
+          )}
         </div>
 
         {/* Invite + roster-cap notices as quiet matte status, not heavy cards */}
