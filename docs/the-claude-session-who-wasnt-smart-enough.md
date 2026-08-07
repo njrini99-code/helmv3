@@ -1851,3 +1851,34 @@ Not adversarially checked. Confirm against the real file before acting.
 - **[LOW]** CoachHelm hole/round miner types declare DB-nullable columns as non-null, licensing `?? 0` coercions that would fabricate 0-stroke, 0-putt, missed-green holes — `src/lib/coachhelm/v2/mining/correlation-discovery.ts:83`
 
   If either miner ever loses its `.eq('status','completed')` prefilter — or a completed round ever lands with a NULL hole (nothing in the schema prevents it; the columns are nullable with no default), the 96-row in-progress population becomes reachable. A NULL-putt hole would then count as a 0-putt hole inside `puttsOnGir` averages and a NULL gir as a MISSED green, so CoachHelm would tell a coach their player's putts-per-GIR improved when the truth is the data is absent. The types would still typecheck and no error would surface — "no data" silently becomes "perfect data".
+
+---
+
+## ⚠️ TOP PRIORITY — confirmed cross-tenant message breach, fix written but NOT applied
+
+`supabase/migrations/PENDING_golf_conversation_participants_tenant_isolation.sql`
+
+`golf_participants_insert_v2` WITH CHECK begins `(user_id = auth.uid()) OR …`
+with **no tenancy condition**. Any authenticated user can POST one row and join
+any golf conversation.
+
+Reproduced on production in a rolled-back transaction: a Denison University
+player inserted themselves into Guilford College's team chat and read **13
+private messages** plus **14 staff/player identities**, and could have posted as
+themselves. Coach↔player DMs are in the same table.
+
+**Status: fix written, attack-blocking VERIFIED, NOT APPLIED.** I could not build
+a control proving legitimate messaging survives — three attempts failed for
+reasons unrelated to the policy (one vacuous, two blocked earlier in the chain at
+`golf_conversations` INSERT). A probe whose control does not pass proves nothing,
+and golf messaging has already been broken twice this week by RLS changes that
+looked right in isolation. The blocker, the three hypotheses, and the exact steps
+to finish are written at the bottom of that migration file.
+
+**Do this first.** It is a live data-exposure hole between paying customers.
+
+Also worth explaining: 3 of 51 participant rows are for users who are neither the
+conversation creator nor a member of the conversation's team —
+`aperry3@guilford.edu` (×2) and `pvm05@su.edu` (a Shenandoah **Women's** member
+sitting in Shenandoah **Golf**'s conversation). Not proof of exploitation, but it
+should be explained before this is closed.
