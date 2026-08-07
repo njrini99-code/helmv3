@@ -356,16 +356,42 @@ async function getUpcomingRemindersImpl(
       supabase.from('golf_coaches').select('id').eq('user_id', userId).maybeSingle(),
       supabase.from('golf_players').select('id').eq('user_id', userId).maybeSingle(),
     ]);
+
+    // These two ids are the ONLY thing the filter at the bottom of this function
+    // matches on. Their errors used to be discarded, and a null id is not
+    // neutral here — it fails every clause. So one failed lookup silently
+    // dropped every reminder the user had and returned an empty list with no
+    // error: due tasks simply stopped being reminded about, and the reminders
+    // read below (which IS error-checked) made it look like the query had run
+    // fine. Not knowing who someone is means we cannot answer, not that they
+    // have nothing due.
+    if (coachResult.error || playerResult.error) {
+      await logServerError(
+        `[getUpcomingReminders] identity lookup failed — every reminder would have been filtered out: ${describeError(coachResult.error ?? playerResult.error)}`,
+        { action: 'task_reminders.getUpcomingReminders', userId },
+      );
+      return { data: null, error: 'Failed to fetch reminders' };
+    }
+
     const coachId = coachResult.data?.id ?? null;
     const playerId = playerResult.data?.id ?? null;
 
     // Task ids assigned to this player (via the M:N join).
     let assignedTaskIds: string[] = [];
     if (playerId) {
-      const { data: assignments } = await supabase
+      const { data: assignments, error: assignmentsError } = await supabase
         .from('golf_task_assignments')
         .select('task_id')
         .eq('player_id', playerId);
+      // Same trap one level down: an empty assignment set removes the only
+      // clause that matches a PLAYER's reminders.
+      if (assignmentsError) {
+        await logServerError(
+          `[getUpcomingReminders] assignment lookup failed — the player's reminders would have been dropped: ${describeError(assignmentsError)}`,
+          { action: 'task_reminders.getUpcomingReminders', userId },
+        );
+        return { data: null, error: 'Failed to fetch reminders' };
+      }
       assignedTaskIds = (assignments || []).map((a) => a.task_id);
     }
 
